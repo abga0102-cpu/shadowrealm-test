@@ -1563,16 +1563,18 @@ function rebirthUpgCost(costs, lvl) { return Math.max(1, Math.round(costs[lvl] /
    its children the moment it reaches level 1, so a player can spend one point
    in several bonuses to push deeper and come back later to max them out.
    Every node is reachable eventually — branches set the ORDER, never a
-   permanent lock-out. Costs are `tier` points per level, centralised in
-   TREE_TIER_COST so the whole tree can be rebalanced from one line.
+   permanent lock-out. Every price is a PE price derived from the node's tier,
+   centralised in PE_TIER_COST so the tree rebalances from one line.
    -------------------------------------------------------------------------- */
 /* ---- tree economy -------------------------------------------------------
-   A node's FIRST level is bought with Points d'Arbre (PA) from level-ups.
-   Every level after that is bought with Points d'Évolution (PE) from the
-   Raid Évolution. So levelling opens the tree, the Raid Évolution maxes it.
+   Points d'Évolution (PE) from the Raid Évolution are the ONLY currency the
+   tree accepts: they open a node and they pay for every level after it.
+   Opening is deliberately cheaper than levelling, so breadth stays affordable
+   and depth is what the Raid has to fund.
    ------------------------------------------------------------------------ */
-const TREE_TIER_COST = [1, 1, 2, 3];        // PA cost of the FIRST level, by tier
-const PE_TIER_COST  = [8, 14, 26, 45];      // base PE cost of levels 2+, by tier
+const PE_TIER_COST  = [8, 14, 26, 45];      // base PE cost of a node's levels, by tier
+const PE_FIRST_MUL  = 0.6;                  // opening a node costs less than levelling it
+const PA_TO_PE = 8;                         // legacy: 105 PA of unlocks buys 780 PE of unlocks
 const PE_LEVEL_GROWTH = 1.22;               // each further level costs more
 const PE_REWARD_BASE = 20, PE_REWARD_PER_LEVEL = 6;
 /* First-clear reward for a major Boss (floor 10, 20, 30, ...). Deeper bosses
@@ -1741,13 +1743,12 @@ const TREE_NODES = [
 ];
 const TREE_BY_ID = {};
 TREE_NODES.forEach((n) => {
-  n.cost = TREE_TIER_COST[n.tier - 1];
+  n.cost = Math.max(1, Math.round(PE_TIER_COST[n.tier - 1] * PE_FIRST_MUL));
   n.x = TREE_LANE_X[n.lane];
   n.y = TREE_ROW_Y(n.row);
   TREE_BY_ID[n.id] = n;
 });
 const TREE_TOTAL_LEVELS = TREE_NODES.reduce((a, n) => a + n.max, 0);
-const TREE_TOTAL_COST = TREE_NODES.reduce((a, n) => a + n.max * n.cost, 0);
 
 const ACCEL_DEFS = [
   { key: "a1",  mins: 1,  label: "1 min" },
@@ -1785,7 +1786,7 @@ function rid() { return Math.random().toString(36).slice(2, 9); }
 function defaultState(name) {
   return {
     version: SAVE_VERSION, playerName: name,
-    level: 1, exp: 0, statPoints: 0, treePoints: 0,
+    level: 1, exp: 0, statPoints: 0,
     stats: { sante: 0, degats: 0, crit: 0, critred: 0 },
     gold: 100, gems: 0, minerai: 400, poussiere: 0, eclat: 80, essence: 60,
     floor: 1, step: 1, recordFloor: 1, checkpoint: 1, bossClears: {},
@@ -1871,9 +1872,17 @@ function migrate(s, name) {
     if (!TREE_BY_ID[id]) delete merged.tree.levels[id];
     else merged.tree.levels[id] = Math.min(merged.tree.levels[id], TREE_BY_ID[id].max);
   });
-  if (s.treePoints === undefined) merged.treePoints = treePointsForLevel(merged.level);
-  if (hadGlobalHatch) merged.treePoints = (merged.treePoints || 0) + 1;
+  // PA is retired — PE is the tree's only currency now. Convert whatever this
+  // save still holds, at the rate that preserves its buying power. Only a save
+  // that actually carried PA is converted, so this can never become a faucet:
+  // a state written by this version has no treePoints and no tree.unlocked.
   if (typeof merged.pe !== "number") merged.pe = 0;
+  let paCarry = typeof s.treePoints === "number"
+    ? (merged.treePoints || 0)
+    : (legacy ? treePointsForLevel(merged.level) + (merged.treePoints || 0) : 0);
+  if (hadGlobalHatch) paCarry += 1;
+  if (paCarry > 0) merged.pe += Math.round(paCarry * PA_TO_PE);
+  delete merged.treePoints;
   if (!merged.bossRewardsClaimed || typeof merged.bossRewardsClaimed !== "object") {
     // older saves only had bossClears — treat those as already rewarded
     merged.bossRewardsClaimed = Object.assign({}, merged.bossClears || {});
@@ -1916,26 +1925,24 @@ function treeSum(s, effect) {
 /* a node's prerequisites are met when each listed node is at level >= 1 */
 function treeReqOk(s, node) { return node.req.every((r) => treeLv(s, r) >= 1); }
 function treeNextLevel(s, node) { return treeLv(s, node.id) + 1; }
-/* what the NEXT level of this node costs: {kind:"PA"|"PE", amount} */
+/* what the NEXT level of this node costs — always PE: {kind:"PE", amount} */
 function treeNextCost(s, node) {
   const lv = treeLv(s, node.id);
-  if (lv === 0) return { kind: "PA", amount: node.cost };
+  if (lv === 0) return { kind: "PE", amount: node.cost };
   const base = PE_TIER_COST[node.tier - 1];
   return { kind: "PE", amount: Math.round(base * Math.pow(PE_LEVEL_GROWTH, lv - 1)) };
 }
-function treeAfford(s, node) {
-  const c = treeNextCost(s, node);
-  return c.kind === "PA" ? s.treePoints >= c.amount : (s.pe || 0) >= c.amount;
-}
+function treeAfford(s, node) { return (s.pe || 0) >= treeNextCost(s, node).amount; }
 function treeCanBuy(s, node) {
   return !s.tree.active && treeLv(s, node.id) < node.max &&
     treeReqOk(s, node) && treeAfford(s, node);
 }
-/* total PE needed to max every node past its first level */
+/* total PE needed to open AND max every node */
 function treeTotalPE() {
   let t = 0;
   TREE_NODES.forEach((nd) => {
     const base = PE_TIER_COST[nd.tier - 1];
+    t += nd.cost;
     for (let lv = 1; lv < nd.max; lv++) t += Math.round(base * Math.pow(PE_LEVEL_GROWTH, lv - 1));
   });
   return t;
@@ -2266,7 +2273,6 @@ function grantLevels(s) {
     s.exp -= expToNext(s.level);
     s.level += 1;
     s.statPoints += RULES.STAT_POINTS_PER_LEVEL;
-    s.treePoints += s.level % 5 === 0 ? 2 : 1;
   }
   if (s.level >= RULES.MAX_LEVEL) { s.exp = 0; s.ascensionAvailable = true; }
   return s;
@@ -3010,7 +3016,7 @@ function startResearch(id) {
   if (lv >= node.max || !treeReqOk(S, node) || !treeAfford(S, node)) return false;
   const price = treeNextCost(S, node);
   update((st) => {
-    if (price.kind === "PA") st.treePoints -= price.amount; else st.pe -= price.amount;
+    st.pe -= price.amount;
     const t = treeTime(st, node, lv + 1);
     if (t <= 0) {
       applyTreeLevel(st, node);
@@ -3835,11 +3841,11 @@ const RESOURCE_INFO = {
   essence:   { icon: "essence", c: "#FFC29B", label: "Essence animale", get: (s) => s.essence,
     desc: "Améliore le niveau de tes Familiers.",
     from: ["Raid Familier", "Récolte automatique — 25 % d'une entrée par heure"] },
-  pa:        { icon: "pa", c: "#FFD65E", label: "Points d'Arbre", get: (s) => s.treePoints,
-    desc: "Débloque le premier niveau d'un nœud de l'Arbre personnel.",
-    from: ["Montée de niveau — +1, et +2 aux multiples de 5"] },
+  pa:        { icon: "pa", c: "#FFD65E", label: "Points de Statistique", get: (s) => s.statPoints,
+    desc: "S'attribuent librement entre Santé, Dégâts, Chance critique et Réduction critique.",
+    from: ["Montée de niveau — +" + RULES.STAT_POINTS_PER_LEVEL + " par niveau"] },
   pe:        { icon: "chart", c: "#3FCFD6", label: "Points d'Évolution", get: (s) => s.pe,
-    desc: "Paie les niveaux suivants d'un nœud de l'Arbre déjà débloqué.",
+    desc: "Seule ressource de l'Arbre personnel : ouvre un nœud, puis paie chacun de ses niveaux suivants.",
     from: ["Raid Évolution — seule source, jamais la Récolte automatique"] },
   key:       { icon: "key", c: "#E8B44A", label: "Clés de Raid", get: (s) => s.universalKeys,
     desc: "Une clé est consommée à chaque tentative de Raid. La Récolte automatique n'en consomme aucune.",
@@ -4756,13 +4762,12 @@ function scrArbre() {
       '</span><b style="color:var(--goldLit)">' + r[2] + v.toFixed(v % 1 ? 1 : 0) + "%</b></div>";
   }).join("");
 
-  const intro = "Le <b>1er niveau</b> d’un nœud coûte des <b>PA</b> (level-ups : +1 par niveau, +2 aux multiples de 5). " +
-    "Les niveaux suivants coûtent des <b>PE</b> gagnés au <b>Raid Évolution</b>. " +
+  const intro = "Les <b>PE</b> gagnés au <b>Raid Évolution</b> sont la <b>seule</b> ressource de l’Arbre : " +
+    "ils ouvrent un nœud, puis paient chacun de ses niveaux suivants. Ouvrir coûte moins cher que monter. " +
     "Un nœud compte comme activé dès <b>1/X</b> : tu peux ouvrir la suite immédiatement et revenir le maxer plus tard.";
 
   return topbar("Arbre Personnel",
-      '<span class="pill" style="color:var(--purpleLit);border-color:var(--purple)">' + ic("pa", 11) + S.treePoints + " PA</span>" +
-      '<span class="pill" style="color:#8FEFF4;border-color:var(--cyan);margin-left:4px">' + ic("chart", 11) + fmt(S.pe || 0) + " PE</span>") +
+      '<span class="pill" data-act="resInfo" data-arg="pe" style="cursor:pointer;color:#8FEFF4;border-color:var(--cyan)">' + ic("chart", 11) + fmt(S.pe || 0) + " PE</span>") +
     '<div class="pad mt10">' +
       (activeNode ? '<div class="card lit frame">' +
         '<div class="between"><div><div class="bb small" style="color:var(--goldLit)">' + esc(activeNode.label) +
@@ -4819,7 +4824,7 @@ function scrArbre() {
       '<div class="sect" style="margin:16px 0 9px">Points d’Évolution</div>' +
       '<div class="card"><div class="between"><div>' +
         '<div class="bb small" style="color:#8FEFF4">' + fmt(S.pe || 0) + " PE disponibles</div>" +
-        '<div class="mute tiny b">Gagnés au Raid Évolution · servent aux niveaux 2+</div></div>' + ic("chart", 22) + "</div>" +
+        '<div class="mute tiny b">Gagnés au Raid Évolution · ouvrent les nœuds et paient leurs niveaux</div></div>' + ic("chart", 22) + "</div>" +
         '<div class="mt8">' + meter(Math.min(100, ((S.pe || 0) / Math.max(1, treeTotalPE())) * 100), C.cyan,
           fmt(S.pe || 0) + " / " + fmt(treeTotalPE()) + " PE pour tout maxer") + "</div>" +
         '<div class="mt8">' + btn(ic("chart", 13) + "Aller au Raid Évolution", { cls: "ghost", small: true, act: "go", arg: "raid" }) + "</div>" +
@@ -5292,8 +5297,6 @@ const SCREENS = {
 /* ---- level-up celebration (sheet §14) ---- */
 let seenLevel = null;
 function showLevelUp(from, to) {
-  let pa = 0;
-  for (let l = from + 1; l <= to; l++) pa += l % 5 === 0 ? 2 : 1;
   const gained = to - from;
   const row = (label, val, col) => '<div class="kv"><span class="dim">' + label +
     '</span><b style="color:' + col + '">' + val + "</b></div>";
@@ -5316,7 +5319,6 @@ function showLevelUp(from, to) {
     '<div class="card" style="padding:9px 11px">' +
       row("Niveaux gagnés", "+" + gained, "var(--goldLit)") +
       row("Points de statistiques", "+" + gained * RULES.STAT_POINTS_PER_LEVEL, "var(--greenLit)") +
-      row("Points d'Ascension", "+" + pa, "var(--purpleLit)") +
     "</div>" +
     (to >= RULES.MAX_LEVEL ? '<div class="notice mt10 center"><b class="gt">Épreuve d\'Ascension débloquée</b></div>' : "") +
     '<div class="mt10">' + btn("OK", { cls: "green", act: "closeModal" }) + "</div>",
@@ -5535,13 +5537,11 @@ function showTreeNode(id) {
     action = btn("Une recherche est déjà active", { cls: "ghost", small: true, dis: true });
     note = "Une seule recherche à la fois.";
   } else if (!afford) {
-    action = btn(ic(price.kind === "PA" ? "pa" : "chart", 13) + "Rechercher · " + price.amount + " " + price.kind,
+    action = btn(ic("chart", 13) + "Rechercher · " + price.amount + " PE",
       { cls: "purple", small: true, dis: true });
-    const have = price.kind === "PA" ? S.treePoints : (S.pe || 0);
-    note = "Il te manque " + (price.amount - have) + " " + price.kind +
-      (price.kind === "PE" ? " — gagne-en au Raid Évolution." : " — monte de niveau pour en gagner.");
+    note = "Il te manque " + (price.amount - (S.pe || 0)) + " PE — gagne-en au Raid Évolution.";
   } else {
-    action = btn(ic(price.kind === "PA" ? "pa" : "chart", 13) + "Rechercher · " + price.amount + " " + price.kind,
+    action = btn(ic("chart", 13) + "Rechercher · " + price.amount + " PE",
       { cls: "purple", small: true, act: "research", arg: id });
   }
 
@@ -5579,7 +5579,7 @@ function showTreeNode(id) {
             ic("clock", 12) + fmtTime(Math.max(0, (S.tree.activeEnd - Date.now()) / 1000)) + "</b></div>"
           : '<div class="kv"><span class="dim">Coût</span><b class="row gap4" style="color:' +
             (afford ? "var(--goldLit)" : "var(--textMute)") + '">' +
-            ic(price.kind === "PA" ? "pa" : "chart", 12) + price.amount + " " + price.kind + "</b></div>" +
+            ic("chart", 12) + price.amount + " PE</b></div>" +
           '<div class="kv"><span class="dim">Durée</span><b class="row gap4">' + ic("clock", 12) +
             (dur <= 0 ? "Instantané" : fmtDur(dur)) + "</b></div>") +
     "</div>" +
