@@ -1,0 +1,6 @@
+# never let line-ending conversion touch the artwork
+*.png binary
+*.jpg binary
+*.jpeg binary
+# the game itself is text; normalise it in the repo
+*.html text eol=lf

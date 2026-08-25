@@ -1,0 +1,10 @@
+# local tooling, not part of the game
+.claude/
+
+# previous build kept locally for reference
+Archive/
+
+# OneDrive / OS noise
+desktop.ini
+Thumbs.db
+.DS_Store
