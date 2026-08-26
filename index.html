@@ -80,8 +80,8 @@ body{
 
 /* ornamented section header — sheet §1 "diviseurs & en-têtes" */
 .sect{
-  display:flex;align-items:center;gap:8px;margin:8px 14px 5px;
-  font-family:var(--fd);font-size:12px;font-weight:900;letter-spacing:2.2px;
+  display:flex;align-items:center;gap:8px;margin:7px 14px 4px;
+  font-family:var(--fd);font-size:11.5px;font-weight:900;letter-spacing:2px;
   text-transform:uppercase;color:var(--goldLit);text-shadow:0 0 12px #E8B44A44,0 1px 0 #000;
 }
 .sect::before{
@@ -383,16 +383,19 @@ body{
 .tab .dot{top:5px;right:24%}
 
 /* ---------- rates table ---------- */
-.rateBox{background:linear-gradient(180deg,#0A101Ccc,#070C15cc);border:1px solid var(--borderSoft);border-radius:9px;padding:6px 9px;margin-top:8px;box-shadow:inset 0 1px 3px #00000073}
+.rateBox{background:linear-gradient(180deg,#0A101Ccc,#070C15cc);border:1px solid var(--borderSoft);border-radius:9px;padding:6px 9px;margin-top:6px;box-shadow:inset 0 1px 3px #00000073}
 .rateRow{display:flex;align-items:center;padding:0;line-height:1.45;font-size:11px;font-weight:800}
 .rateRow .nm{flex:1;display:flex;align-items:center;gap:6px;color:var(--textDim);font-weight:700}
 .rateRow b{width:52px;text-align:right;font-weight:800}
 .rdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 7px currentColor,inset 0 1px 0 #ffffff66}
 .rateHead{display:flex;align-items:center;margin-bottom:3px;padding-bottom:3px;border-bottom:1px solid var(--borderSoft);color:var(--textMute);font-size:9.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase}
 .rateHead .nm{flex:1}.rateHead b{width:52px;text-align:right}
+.rateCols{display:flex;flex-wrap:wrap}
+.rateCols>.rateRow{width:50%;padding-right:8px}
+.rateBox.twoUp .rateHead b{width:auto}
 
 /* ---------- items & rarity frames (sheet §11) ---------- */
-.slotGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.slotGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
 .eqSlot{
   position:relative;min-height:94px;padding:8px 6px;text-align:center;cursor:pointer;border-radius:11px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -454,12 +457,29 @@ body{
 .navLbl{color:var(--textDim);font-size:9.5px;font-weight:800;letter-spacing:.2px}
 /* skill / research node tile (sheet §5) */
 .eggCard{
-  position:relative;padding:10px 6px;text-align:center;border-radius:11px;
+  position:relative;padding:6px 5px;text-align:center;border-radius:10px;
   background:linear-gradient(180deg,#1B2942,#0E1726);border:1px solid var(--border);
   box-shadow:inset 0 1px 0 #ffffff17,0 2px 7px #00000059;
 }
+/* collapsible section: the gold .sect header doubles as the toggle, so a
+   documentation-heavy screen opens compact and the player expands what they
+   actually need. */
+.fold{padding:0;background:none;border:none;box-shadow:none;margin-bottom:6px}
+.fold>summary{
+  display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;padding:7px 0 6px;
+  font-family:var(--fd);font-size:12px;font-weight:900;letter-spacing:2.2px;
+  text-transform:uppercase;color:var(--goldLit);text-shadow:0 0 12px #E8B44A44,0 1px 0 #000;
+}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{
+  content:"";flex:0 0 auto;width:7px;height:7px;background:var(--gold);
+  transform:rotate(45deg);box-shadow:0 0 9px var(--gold),inset 0 0 0 1px #FFE7B0;
+}
+.fold>summary::after{content:"+";margin-left:auto;font-size:15px;color:var(--goldDim);line-height:1}
+.fold[open]>summary::after{content:"\2013"}
+.fold>.card{margin-bottom:2px}
 .raidCard{
-  position:relative;padding:11px;margin-bottom:8px;border-radius:12px;
+  position:relative;padding:7px 9px;margin-bottom:4px;border-radius:11px;
   background:linear-gradient(90deg,#1D2C48,#141F35 45%,#101A2C);border:1px solid var(--border);border-left:3px solid;
   box-shadow:inset 0 1px 0 #ffffff17,0 2px 8px #00000059;
 }
@@ -3824,8 +3844,12 @@ function topbar(title, right) {
     '</div><h2 class="title flex1">' + title + "</h2>" + (right || "") + "</div>";
 }
 function ratesTable(rates, nextRates, curLabel, nextLabel, order) {
-  let h = '<div class="rateBox"><div class="rateHead"><span class="nm">Rareté</span><b>' + curLabel + "</b>" +
-    (nextRates ? "<b>" + nextLabel + '</b><b style="color:' + C.green + '">Gain</b>' : "") + "</div>";
+  // Without a next-level column this is just eight name/value pairs, so it
+  // pairs up into two columns and costs half the height.
+  const twoUp = !nextRates;
+  let h = '<div class="rateBox' + (twoUp ? " twoUp" : "") + '"><div class="rateHead"><span class="nm">Rareté</span><b>' +
+    curLabel + "</b>" + (nextRates ? "<b>" + nextLabel + '</b><b style="color:' + C.green + '">Gain</b>' : "") + "</div>";
+  if (twoUp) h += '<div class="rateCols">';
   (order || RARITY_ORDER).forEach((r) => {
     const cur = rates[r], nxt = nextRates ? nextRates[r] : cur, delta = nxt - cur;
     if (cur < 0.05 && nxt < 0.05) return;
@@ -3837,7 +3861,7 @@ function ratesTable(rates, nextRates, curLabel, nextLabel, order) {
         (Math.abs(delta) < 0.05 ? "—" : (delta >= 0.05 ? "+" : "") + delta.toFixed(1) + "%") + "</b>" : "") +
       "</div>";
   });
-  return h + "</div>";
+  return h + (twoUp ? "</div>" : "") + "</div>";
 }
 
 /* ---------------------------- info popups ---------------------------------
@@ -4379,7 +4403,7 @@ function scrPersonnage() {
           btn("+5", { small: true, act: "alloc", arg: s.key, arg2: 5, dis: S.statPoints < 5, style: "background:" + s.color + ";color:#fff" }) +
           btn("Max", { small: true, act: "alloc", arg: s.key, arg2: "max", dis: S.statPoints < 1, style: "background:" + s.color + ";color:#fff" }) +
         "</div></div>").join("") +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------- ÉQUIPEMENT ---------------- */
@@ -4417,7 +4441,7 @@ function scrEquipement() {
       '<div class="notice mt14">La difficulté des ennemis s\'adapte à ta puissance d\'équipement (facteur borné 0.85×–1.45×). ' +
       "Monte le niveau de la Forge pour de meilleurs taux de rareté.</div>" +
       '<div class="mt10">' + btn(ic("bag", 15) + "Ouvrir l'Inventaire (" + S.inventory.length + ")", { cls: "ghost", act: "go", arg: "inventaire" }) + "</div>" +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------- INVENTAIRE ---------------- */
@@ -4466,7 +4490,7 @@ function scrInventaire() {
             btn(ic("cycle", 10) + Math.floor((equipRank(it.rarity) + 1) * 5 + it.power * 0.2),
               { small: true, cls: "dark", act: "recycle", arg: it.id, style: "padding:5px 8px;font-size:10.5px" }) +
           "</div></div>").join("")) +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------- COMPÉTENCES ---------------- */
@@ -4529,7 +4553,7 @@ function scrCompetences() {
             : btn("Équiper", { small: true, cls: "ghost", act: "autoEquipSkill", arg: def.id, style: "padding:5px 8px;font-size:11px" })) +
           "</div>";
       }).join("")) +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------- FAMILIERS ---------------- */
@@ -4546,8 +4570,8 @@ function scrFamiliers() {
     const egg = S.eggs[i];
     const eggArt = (r) => ASSETS["egg_" + String(r).toLowerCase()];
     if (!egg) { eggCells += '<div class="eggCard mute" style="opacity:.35">' +
-      (eggArt("commun") ? '<img src="' + eggArt("commun") + '" style="width:30px;height:30px;object-fit:contain;filter:grayscale(1)">' : ic("egg", 28)) +
-      '<div class="tiny b mt6">Vide</div></div>'; continue; }
+      (eggArt("commun") ? '<img src="' + eggArt("commun") + '" style="width:22px;height:22px;object-fit:contain;filter:grayscale(1)">' : ic("egg", 20)) +
+      '<div class="tiny b mt4">Vide</div></div>'; continue; }
     const remain = (egg.hatchEnd - now) / 1000;
     const ready = remain <= 0;
     eggCells += '<div class="eggCard rf" style="border-color:' + RARITY[egg.rarity].c + ";--rc:" + RARITY[egg.rarity].c + '">' +
@@ -4573,9 +4597,9 @@ function scrFamiliers() {
       (() => {
         const p = S.pets.find((x) => x.id === S.activePetId);
         if (!p) {
-          return '<div class="card frame center"><img src="' + petArt(null) +
-            '" style="width:76px;height:76px;object-fit:contain;filter:grayscale(.7);opacity:.6">' +
-            '<div class="mute b mt6">Aucun familier actif</div></div>';
+          return '<div class="mute tiny b row gap6" style="margin-bottom:4px"><img src="' + petArt(null) +
+            '" style="width:18px;height:18px;object-fit:contain;filter:grayscale(1);opacity:.5">' +
+            "Aucun familier actif</div>";
         }
         const rc = RARITY[p.rarity].c;
         const lv = p.level || 0;
@@ -4612,15 +4636,15 @@ function scrFamiliers() {
                   style: "--bA:#FFA872;--bB:#DB6224;--bS:#7A310C;--bE:#FFD9C0;--bT:#2A0F03" }) + "</div>") +
         "</div>";
       })() +
-      '<div class="card mt10"><div class="between"><div><div class="bb gt" style="font-size:13px;letter-spacing:1px">MAÎTRISE FAMILIER</div>' +
+      '<div class="card mt6"><div class="between"><div><div class="bb gt" style="font-size:13px;letter-spacing:1px">MAÎTRISE FAMILIER</div>' +
         starRow("pet", "#FFC29B") +
         '<div class="mute tiny b">' + S.petMastery.progress + "/" + mreq + " invocations</div></div>" +
         '<b style="color:#FFC29B;font-size:18px;text-shadow:0 0 12px ' + ORANGE + '80">' + S.petMastery.level + "/" + RULES.MASTERY_MAX + "</b></div>" +
-        '<div class="mt8">' + meter((S.petMastery.progress / mreq) * 100, ORANGE, S.petMastery.progress + " / " + mreq) + "</div>" +
+        '<div class="mt6">' + meter((S.petMastery.progress / mreq) * 100, ORANGE, S.petMastery.progress + " / " + mreq) + "</div>" +
         ascendCta("pet") +
         ratesTable(rates, S.petMastery.level < RULES.MASTERY_MAX ? getRates("pet", S.petMastery.level + 1, S.ascension, starsOf(S, "pet")) : null,
           "Actuel", "Niv." + (S.petMastery.level + 1)) +
-        '<div class="row gap6 mt10">' +
+        '<div class="row gap6 mt6">' +
           btn(ic("egg", 14) + "Invoquer · 10", { small: true, act: "summonEgg", arg: 1,
             dis: S.essence < 10 || S.eggs.length >= S.eggSlots,
             style: "--bA:#FFA872;--bB:#DB6224;--bS:#7A310C;--bE:#FFD9C0;--bT:#2A0F03" }) +
@@ -4632,16 +4656,16 @@ function scrFamiliers() {
       "</div>" +
       '<div class="sect" style="margin:16px 0 9px">Œufs (' + S.eggs.length + "/" + S.eggSlots + ")</div>" +
       '<div class="slotGrid">' + eggCells + "</div>" +
-      (S.eggSlots < RULES.EGG_SLOT_MAX ? '<div class="mt8">' +
-        btn("+1 Emplacement d'Œuf · " + ic("gem", 13) + "300", { cls: "purple", small: true, act: "buyEggSlot",
-          dis: S.level < 10 || S.gems < 300 }) +
-        (S.level < 10 ? '<div class="mute tiny center mt6">Niveau 10 requis</div>' : "") + "</div>" : "") +
+      (S.eggSlots < RULES.EGG_SLOT_MAX ? '<div class="mt4" style="margin-top:4px">' +
+        btn("+1 Emplacement · " + ic("gem", 12) + "300" + (S.level < 10 ? " · niv. 10" : ""),
+          { cls: "purple", small: true, act: "buyEggSlot",
+            dis: S.level < 10 || S.gems < 300, style: "padding:4px 9px;font-size:10.5px" }) + "</div>" : "") +
       '<div class="sect" style="margin:16px 0 9px">Collection (' + S.pets.length + ")</div>" +
-      '<div class="notice" style="margin-bottom:8px">Fusion : ' +
+      '<div class="mute tiny" style="margin-bottom:2px;line-height:1.35">Fusion : ' +
         RARITY_ORDER.slice(0, -1).map((r) => petFuseNeed(r) + " " + RARITY[r].label).join(" → ") +
         " → " + RARITY[RARITY_ORDER[RARITY_ORDER.length - 1]].label +
-        ". Instantanée, sans minuteur. Les doublons les moins améliorés sont consommés en premier.</div>" +
-      (S.pets.length === 0 ? '<div class="notice center">Aucun familier. Fais éclore un œuf.</div>'
+        ". Les doublons les moins améliorés partent en premier.</div>" +
+      (S.pets.length === 0 ? '<div class="mute tiny center" style="padding:6px 0">Aucun familier. Fais éclore un œuf.</div>'
         : RARITY_ORDER.filter((r) => byRar[r]).map((r) => {
         const list = byRar[r];
         const rc = RARITY[r].c;
@@ -4683,7 +4707,7 @@ function scrFamiliers() {
             meter((Math.min(list.length, need) / need) * 100, canFuse ? C.green : rc) + "</div>") +
           "</div>";
       }).join("")) +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 /* ---------------- RAID ---------------- */
 function scrRaid() {
@@ -4706,20 +4730,21 @@ function scrRaid() {
     const r = S.raids[id], meta = RAIDS[id];
     const bonus = S.raidKeyBonus === id ? 1 : 0;
     const cap = RULES.RAID_KEY_CAP + bonus;
-    return '<div class="raidCard" style="border-left-color:' + meta.color + '">' +
-      '<div class="between"><div class="row gap8">' +
-        '<div class="imini" style="width:38px;height:38px;background:linear-gradient(180deg,' + meta.color + '33,' + meta.color +
-        '0f);border-color:' + meta.color + ';box-shadow:0 0 11px ' + meta.color + '47">' + ic(meta.icon, 22) + "</div>" +
-        '<div><div class="bb small">' + meta.name + '</div><div class="mute tiny b">Niveau ' + r.level + "/" + RULES.RAID_MAX_LEVEL +
-        " · record " + r.record + "</div></div></div>" +
-        '<div class="col gap4" style="align-items:flex-end"><div class="b small row gap4" style="color:' + meta.color + '">+' +
-        fmt(raidReward(id, r.level)) + " " + meta.reward + "</div>" +
-        '<div class="mute tiny b row gap4">' + ic("key", 11) + r.keys + "/" + cap + "</div></div></div>" +
-      '<div class="mute tiny b mt6">Ennemis ' + raidEnemyCount(id, r.level) + " · PV " + fmt(raidEnemyHP(id, r.level)) +
-        " · Dégâts " + fmt(raidEnemyDamage(id, r.level)) + "</div>" +
-      '<div class="row gap6 mt8">' +
-        btn(ic("key", 13) + "Lancer", { small: true, cls: "green", act: "startRaid", arg: id, arg2: "0", dis: r.keys <= 0 }) +
-        btn("Clé univ. (" + S.universalKeys + ")", { small: true, cls: "ghost", act: "startRaid", arg: id, arg2: "1", dis: S.universalKeys <= 0 }) +
+    const detail = "Niv " + r.level + "/" + RULES.RAID_MAX_LEVEL + " · rec " + r.record +
+      " · " + raidEnemyCount(id, r.level) + " ennemis · " + fmt(raidEnemyHP(id, r.level)) + " PV";
+    return '<div class="raidCard" style="border-left-color:' + meta.color + '" title="' + esc(detail) +
+      " · " + fmt(raidEnemyDamage(id, r.level)) + ' dégâts">' +
+      '<div class="row gap8">' +
+        '<div class="imini" style="width:28px;height:28px;background:linear-gradient(180deg,' + meta.color + '33,' + meta.color +
+        '0f);border-color:' + meta.color + ';box-shadow:0 0 11px ' + meta.color + '47">' + ic(meta.icon, 16) + "</div>" +
+        '<div class="flex1"><div class="b small row gap4" style="justify-content:space-between">' +
+          '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + meta.name + "</span>" +
+          '<span style="color:' + meta.color + ';flex:0 0 auto">+' + fmt(raidReward(id, r.level)) + " " + meta.reward + "</span></div>" +
+        '<div class="mute tiny b row gap4">' + ic("key", 10) + r.keys + "/" + cap + " · " + detail + "</div></div>" +
+        btn(ic("key", 12) + "Lancer", { small: true, cls: "green", act: "startRaid", arg: id, arg2: "0",
+          dis: r.keys <= 0, style: "width:auto;padding:5px 9px" }) +
+        btn(ic("star", 12), { small: true, cls: "ghost", act: "startRaid", arg: id, arg2: "1",
+          dis: S.universalKeys <= 0, style: "width:auto;padding:5px 8px" }) +
       "</div></div>";
   }).join("");
 
@@ -4733,11 +4758,11 @@ function scrRaid() {
           style: "width:auto;padding:7px 10px" }) + "</div>" +
         '<div class="mt8">' + meter((S.universalKeys / RULES.UNIVERSAL_KEY_CAP) * 100, C.gold,
           S.universalKeys + " / " + RULES.UNIVERSAL_KEY_CAP) + "</div>" +
-        '<div class="mute tiny mt6">Pubs simulées (comme dans l\'app d\'origine). ' +
-        RULES.RAID_FREE_KEYS + " clés gratuites par raid chaque jour, plafond " + RULES.RAID_KEY_CAP + ".</div></div>" +
-      '<div class="sect" style="margin:16px 0 9px">Raids disponibles</div>' + cards +
-      '<div class="notice">Victoire : +1 niveau de raid et la récompense. Défaite : la clé est consommée, le niveau reste.</div>' +
-    '<div style="height:6px"></div></div>';
+        '<div class="mute tiny mt6">' + RULES.RAID_FREE_KEYS + " clés gratuites par raid chaque jour, plafond " +
+        RULES.RAID_KEY_CAP + ". L\'étoile lance avec une clé universelle.</div></div>" +
+      '<div class="sect">Raids disponibles</div>' + cards +
+      '<div class="mute tiny center mt6">Victoire : +1 niveau et la récompense. Défaite : la clé est consommée, le niveau reste.</div>' +
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------- ARBRE ---------------- */
@@ -4858,7 +4883,7 @@ function scrArbre() {
         (accelPct > 0 ? '<div class="tiny b mt6 row gap4" style="color:#8FEFF4">' + ic("bolt", 11) +
           "Bonus Arbre : accélérateurs +" + accelPct + "% efficacité</div>" : "") +
       "</div>" +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------------------- tree node types -----------------------------
@@ -5095,7 +5120,7 @@ function scrRebirth() {
                 dis: S.rebirth.pr < cost, style: "padding:6px 9px;font-size:11px;width:auto" })) +
           "</div>";
       }).join("") +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------- ASCENSION ---------------- */
@@ -5135,7 +5160,7 @@ function scrAscension() {
         '<span class="pill"' + (got ? ' style="color:var(--greenLit);border-color:#3FB950"' : "") + ">" +
         (got ? "Acquis" : "—") + "</span></div>"; }).join("") +
       '<div class="notice tiny mt6">Les taux Divin n\'apparaissent qu\'après une Ascension (jusqu\'à 6% à maîtrise maximale).</div>' +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------- BOUTIQUE ---------------- */
@@ -5169,7 +5194,7 @@ function scrBoutique() {
           dis: S.level < 10 || S.eggSlots >= RULES.EGG_SLOT_MAX || S.gems < 300, style: "width:auto;padding:5px 10px" }) +
       "</div></div>" +
       '<div class="mute tiny center mt8" style="font-style:italic">F2P : tout reste accessible avec le temps ; les achats ne font qu\'accélérer.</div>' +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------- ÉVÉNEMENT ---------------- */
@@ -5207,7 +5232,7 @@ function scrEvenement() {
           "</div>";
       }).join("") +
       '<div class="mute tiny center mt8">Objectif global : ≈ 1h à 1h30 d\'accélération selon ton activité.</div>' +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------- CLASSEMENT ---------------- */
@@ -5233,7 +5258,7 @@ function scrClassement() {
           '</span><b>niv. ' + S.raids[id].record + "</b></div>").join("") +
         '<div class="kv"><span class="dim row gap6">' + ic("banner", 13) + 'Points de Guerre</span><b style="color:var(--purpleLit)">' + fmt(S.warScore) + "</b></div>" +
       "</div>" +
-    '<div style="height:6px"></div></div>';
+    '<div style="height:2px"></div></div>';
 }
 
 /* ---------------- CHAT / CLAN (server-only) ---------------- */
@@ -5260,15 +5285,17 @@ function scrParametres() {
         '<b style="font-size:15px">' + esc(S.playerName) + "</b></div></div>" +
         btn("Renommer", { small: true, cls: "ghost", act: "rename", style: "width:auto;padding:5px 10px" }) + "</div>" +
         '<div class="divider"></div>' +
-        '<div class="kv"><span class="dim">Niveau</span><b>' + S.level + " / " + RULES.MAX_LEVEL + "</b></div>" +
-        '<div class="kv"><span class="dim">Étage · record</span><b>' + S.floor + " · " + S.recordFloor + "</b></div>" +
-        '<div class="kv"><span class="dim">Puissance</span><b style="color:var(--goldLit)">' + fmt(S.power) + "</b></div>" +
-        '<div class="kv"><span class="dim">Rebirth · Ascension</span><b>' + S.rebirth.count + " · " + S.ascension + "</b></div>" +
-        '<div class="kv"><span class="dim">Environnement</span><b>' +
-          (ENV_NAMES[combat && combat.bg] || "—") + "</b></div>" +
-        '<div class="kv"><span class="dim">Jours simulés</span><b>' + (S.testDays || 0) + "</b></div>" +
+        '<div class="row" style="flex-wrap:wrap">' + [
+          ["Niveau", S.level + " / " + RULES.MAX_LEVEL, ""],
+          ["Étage · record", S.floor + " · " + S.recordFloor, ""],
+          ["Puissance", fmt(S.power), "color:var(--goldLit)"],
+          ["Rebirth · Asc.", S.rebirth.count + " · " + S.ascension, ""],
+          ["Environnement", ENV_NAMES[combat && combat.bg] || "—", ""],
+          ["Jours simulés", String(S.testDays || 0), ""],
+        ].map((r) => '<div style="width:50%"><div class="kv" style="border:none;padding:2px 0">' +
+          '<span class="dim">' + r[0] + '</span><b style="' + r[2] + '">' + r[1] + "</b></div></div>").join("") + "</div>" +
       "</div>" +
-      '<div class="sect" style="margin:16px 0 9px">Sauvegarde</div>' +
+      '<details class="fold"><summary>Sauvegarde</summary>' +
       '<div class="card"><div class="dim small" style="line-height:1.5">Progression enregistrée dans le ' +
         "<b>localStorage</b> du navigateur (clé <code>" + SAVE_KEY + "</code>), toutes les 8 s et à la fermeture. " +
         "Pas de sauvegarde cloud sans le serveur.</div>" +
@@ -5276,25 +5303,25 @@ function scrParametres() {
           btn(ic("save", 14) + "Sauver", { small: true, cls: "green", act: "saveNow" }) +
           btn(ic("upload", 14) + "Exporter", { small: true, cls: "ghost", act: "exportSave" }) +
           btn(ic("download", 14) + "Importer", { small: true, cls: "ghost", act: "importSave" }) +
-        "</div></div>" +
-      '<div class="sect" style="margin:16px 0 9px">Outils de test</div>' +
+        "</div></div></details>" +
+      '<details class="fold"><summary>Outils de test</summary>' +
       '<div class="card"><div class="dim small">Comme dans l\'app d\'origine : avance d\'une journée complète ' +
         "(recharge les clés, termine les recherches et les œufs, applique les gains AFK plafonnés).</div>" +
-        '<div class="mt10">' + btn(ic("forward", 14) + "Simuler 1 jour", { cls: "blue", small: true, act: "warpDay" }) + "</div></div>" +
-      '<div class="sect" style="margin:16px 0 9px">Compte</div>' +
+        '<div class="mt10">' + btn(ic("forward", 14) + "Simuler 1 jour", { cls: "blue", small: true, act: "warpDay" }) + "</div></div></details>" +
+      '<details class="fold"><summary>Compte</summary>' +
       '<div class="card"><div class="dim small" style="line-height:1.5">L\'app d\'origine gère un mode invité et ' +
         "« Continuer avec Google » via le backend Emergent, avec migration de progression. " +
         "Cette version est locale et anonyme.</div>" +
-        '<div class="mt10">' + btn(ic("trash", 14) + "Réinitialiser la progression", { cls: "red", small: true, act: "askReset" }) + "</div></div>" +
-      '<div class="sect" style="margin:16px 0 9px">À propos</div>' +
+        '<div class="mt10">' + btn(ic("trash", 14) + "Réinitialiser la progression", { cls: "red", small: true, act: "askReset" }) + "</div></div></details>" +
+      '<details class="fold"><summary>À propos</summary>' +
       '<div class="card"><div class="dim small" style="line-height:1.6">' +
         "<b>Shadowreach</b> — portage fichier-unique du projet Expo/React&nbsp;Native + FastAPI. " +
         "Moteur de combat, forge, compétences, familiers, raids, arbre, rebirth et ascension repris " +
         "des mêmes formules (<code>src/game/config.ts</code>).<br><br>" +
         "Non inclus, car nécessitant le serveur : chat monde/clan, clans, classement mondial, " +
         "connexion Google, sauvegarde cloud, achats intégrés." +
-      "</div></div>" +
-    '<div style="height:6px"></div></div>';
+      "</div></div></details>" +
+    '<div style="height:2px"></div></div>';
 }
 
 /* =========================================================================
