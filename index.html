@@ -2554,6 +2554,7 @@ function makeEnemy(mode, opts) {
     hp = Math.floor(raidEnemyHP(opts.raidId, opts.raidLevel) * t.hpMul);
     dmg = Math.floor(raidEnemyDamage(opts.raidId, opts.raidLevel) * t.dmgMul);
   }
+  preloadFrames(t.img);
   return {
     id: rid(), type: t, x: opts.x, hp, maxHP: hp, dmg,
     tier: tierKey, name: opts.name || t.name,
@@ -3869,6 +3870,27 @@ function oneVfxHTML(c, fx, scale, groundY, uni, vs) {
    -------------------------------------------------------------------------- */
 const ATTACK_WINDOW = 0.2;
 const FRAME_CACHE = {};
+/* An attack frame is only ever named when a swing starts, so the browser had
+   never fetched it: the <img> src changed to a cold URL and the sprite rendered
+   nothing until the download finished. That is the character vanishing on the
+   first blow. Two defences -- fetch the frames when the fighter appears, and
+   fall back to the idle sprite for any frame that is not decoded yet, so a slow
+   network degrades to "no attack pose" instead of "no character". */
+const IMG_CACHE = {};
+function preloadImg(url) {
+  if (!url) return null;
+  if (!IMG_CACHE[url]) { const im = new Image(); im.src = url; IMG_CACHE[url] = im; }
+  return IMG_CACHE[url];
+}
+function imgReady(url) {
+  const im = IMG_CACHE[url];
+  return !!(im && im.complete && im.naturalWidth > 0);
+}
+function preloadFrames(key) {
+  if (!key) return;
+  preloadImg(ASSETS[key]);
+  attackFrames(key).forEach(preloadImg);
+}
 function attackFrames(key) {
   if (FRAME_CACHE[key]) return FRAME_CACHE[key];
   const out = [];
@@ -3882,7 +3904,9 @@ function spriteFrame(key, attacking, t) {
   if (!f.length || !(attacking > 0)) return ASSETS[key];
   // attacking counts DOWN, so progress runs 0 -> 1 across the swing
   const p = Math.min(0.999, Math.max(0, 1 - attacking / ATTACK_WINDOW));
-  return f[Math.floor(p * f.length)];
+  const url = f[Math.floor(p * f.length)];
+  // never hand the DOM a frame that would render as a hole
+  return imgReady(url) ? url : ASSETS[key];
 }
 
 /* Read of a fight, in the nameplate. Compares how long you need to put this
@@ -6531,6 +6555,8 @@ document.getElementById("app").addEventListener("click", (e) => {
 
 /* ---------------- go ---------------- */
 boot();
+// the hero is in every fight, so his frames are worth having up front
+preloadFrames("hero");
 render();
 rafLoop();
 
