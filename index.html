@@ -30,14 +30,28 @@
   --fu:"Segoe UI",Roboto,system-ui,-apple-system,sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* One number drives the whole interface. Every icon, tile, slot and type size
+   is expressed against --s, so a 320px phone and a 520px tablet get the same
+   layout at a readable size instead of the same pixels in a letterbox.
+   Height matters as much as width here -- a short landscape phone needs the
+   chrome to shrink even when it is wide. */
+:root{--s:1}
+@media(min-width:380px){:root{--s:1.05}}
+@media(min-width:430px){:root{--s:1.12}}
+@media(min-width:500px){:root{--s:1.2}}
+@media(min-width:600px){:root{--s:1.28}}
+@media(max-height:700px){:root{--s:.94}}
+@media(max-height:620px){:root{--s:.88}}
+@media(max-width:340px){:root{--s:.9}}
 html,body{margin:0;padding:0;height:100%;background:#04070d;overflow:hidden}
 body{
+  font-size:calc(16px * var(--s));
   font-family:var(--fu);
   color:var(--text); display:flex; align-items:center; justify-content:center;
   background:radial-gradient(120% 90% at 50% 0%,#0D1524 0%,#070B13 60%,#04070d 100%);
 }
 #app{
-  width:100%; max-width:440px; height:100%; max-height:940px; position:relative;
+  width:100%; max-width:calc(440px * var(--s)); height:100%; max-height:1100px; position:relative;
   display:flex; flex-direction:column; overflow:hidden;
   background:
     radial-gradient(140% 60% at 50% 0%,#1A2942 0%,transparent 62%),
@@ -59,7 +73,7 @@ body{
 .mt6{margin-top:5px}.mt8{margin-top:6px}.mt10{margin-top:8px}.mt14{margin-top:10px}
 .center{text-align:center}
 .dim{color:var(--textDim)}.mute{color:var(--textMute)}
-.small{font-size:11px}.tiny{font-size:9px}
+.small{font-size:calc(11px * var(--s))}.tiny{font-size:calc(9px * var(--s))}
 .b{font-weight:800}.bb{font-weight:900}
 .hide{display:none!important}
 
@@ -81,7 +95,7 @@ body{
 /* ornamented section header — sheet §1 "diviseurs & en-têtes" */
 .sect{
   display:flex;align-items:center;gap:8px;margin:7px 14px 4px;
-  font-family:var(--fd);font-size:11.5px;font-weight:900;letter-spacing:2px;
+  font-family:var(--fd);font-size:calc(11.5px * var(--s));font-weight:900;letter-spacing:2px;
   text-transform:uppercase;color:var(--goldLit);text-shadow:0 0 12px #E8B44A44,0 1px 0 #000;
 }
 .sect::before{
@@ -105,7 +119,7 @@ body{
 .btn{
   --bA:#FFD65E; --bB:#E8A21C; --bS:#9A6406; --bE:#FFF2BE; --bT:#2A1B03; --bSh:0 1px 0 #ffffff59;
   position:relative;border:2px solid #0A1020;border-radius:13px;padding:10px 14px;
-  font:inherit;font-family:var(--fu);font-weight:900;font-size:13px;letter-spacing:.6px;
+  font:inherit;font-family:var(--fu);font-weight:900;font-size:calc(13px * var(--s));letter-spacing:.6px;
   color:var(--bT);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
   width:100%;
   background:linear-gradient(180deg,var(--bA) 0%,var(--bB) 100%);
@@ -127,7 +141,7 @@ body{
   --bA:#8E9BB0; --bB:#6B7789; --bS:#4A5364; --bE:#B9C3D2; --bT:#DDE4EE; --bSh:0 1px 0 #00000073;
   filter:none;opacity:1;cursor:not-allowed;
 }
-.btn.sm{padding:5px 10px;font-size:11.5px;border-radius:11px;gap:6px;box-shadow:inset 0 2px 0 var(--bE),inset 0 -2px 0 var(--bS),0 3px 0 #0A1020,0 4px 9px #00000059}
+.btn.sm{padding:5px 10px;font-size:calc(11.5px * var(--s));border-radius:11px;gap:6px;box-shadow:inset 0 2px 0 var(--bE),inset 0 -2px 0 var(--bS),0 3px 0 #0A1020,0 4px 9px #00000059}
 .btn.sm:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 2px 0 var(--bE),0 1px 0 #0A1020}
 /* light faces keep dark text, saturated faces get white text with a dark outline */
 .btn.green {--bA:#7BE06A;--bB:#2FA23C;--bS:#176B22;--bE:#C6F7BC;--bT:#FFFFFF;--bSh:0 2px 0 #0B3B14}
@@ -309,7 +323,7 @@ body{
 /* ---------- skill bar (sheet §4 bottom row) ---------- */
 #skillbar{display:flex;align-items:center;gap:5px;padding:5px 14px 0;flex:0 0 auto}
 .slot{
-  width:36px;height:36px;border-radius:9px;flex:0 0 auto;position:relative;overflow:hidden;cursor:pointer;
+  width:calc(36px * var(--s));height:calc(36px * var(--s));border-radius:9px;flex:0 0 auto;position:relative;overflow:hidden;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:linear-gradient(180deg,#1B2942,#0D1522);border:1px solid #3B4F73;
   box-shadow:inset 0 1px 0 #ffffff1f,inset 0 -3px 6px #00000059,0 2px 6px #00000073;
@@ -327,7 +341,7 @@ body{
    the arena takes whatever is left, so the screen never scrolls and the fight
    is as large as the device allows. */
 #screen.fixed{overflow:hidden;display:flex;flex-direction:column}
-#screen.fixed #arenaSlot{flex:1 1 auto;min-height:104px;display:flex}
+#screen.fixed #arenaSlot{flex:1 1 auto;min-height:calc(104px * var(--s));display:flex}
 #screen.fixed #arena{height:auto;flex:1 1 auto}
 #screen.fixed>*:not(#arenaSlot){flex:0 0 auto}
 /* forge panel: three tight rows instead of six stacked blocks */
@@ -336,7 +350,7 @@ body{
 .fgCond>.lbl{display:flex;justify-content:space-between;font-size:9px;font-weight:800;margin-bottom:2px}
 /* home skill bar companion chip */
 .petMini{
-  flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:38px;padding:0 8px;cursor:pointer;border-radius:10px;
+  flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:calc(38px * var(--s));padding:0 8px;cursor:pointer;border-radius:10px;
   background:linear-gradient(180deg,#1B2942,#0D1522);border:1px solid #3B4F73;
   box-shadow:inset 0 1px 0 #ffffff1f,0 2px 6px #00000073;
 }
@@ -365,7 +379,7 @@ body{
 /* floating combat feedback — layered outline like the sheet */
 .foeTag{
   position:absolute;top:-25px;left:-22px;right:-22px;text-align:center;
-  font-size:8.5px;font-weight:900;letter-spacing:.3px;white-space:nowrap;
+  font-size:calc(9px * var(--s));font-weight:900;letter-spacing:.3px;white-space:nowrap;
   text-shadow:0 1px 3px #000,0 0 8px #000;pointer-events:none;
 }
 .float .fLbl{
@@ -459,7 +473,7 @@ body{
 .navGrid{display:flex;justify-content:space-between;padding:2px 14px 0;gap:5px}
 .navBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
 .navInner{
-  width:100%;max-width:33px;aspect-ratio:1;border-radius:8px;position:relative;overflow:hidden;
+  width:100%;max-width:calc(33px * var(--s));aspect-ratio:1;border-radius:8px;position:relative;overflow:hidden;
   display:flex;align-items:center;justify-content:center;border:1px solid #ffffff33;
   box-shadow:inset 0 1px 0 #ffffff59,inset 0 -8px 14px #00000059,0 3px 9px #00000080;
 }
@@ -471,7 +485,7 @@ body{
 .navInner.art>img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 3px 7px #000000a6)}
 .navInner.art.lk>img{filter:grayscale(1) brightness(.62) contrast(.9)}
 .navInner.art>.lkIco{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.navLbl{color:var(--textDim);font-size:8.5px;font-weight:800;letter-spacing:0;line-height:1.1}
+.navLbl{color:var(--textDim);font-size:calc(8.5px * var(--s));font-weight:800;letter-spacing:0;line-height:1.1}
 /* skill / research node tile (sheet §5) */
 .eggCard{
   position:relative;padding:6px 5px;text-align:center;border-radius:10px;
@@ -482,7 +496,7 @@ body{
    Owned tiles glow, unowned ones stay drained so the collection reads at a
    glance without a single row of text. */
 .skGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
-.skGrid .skTile{aspect-ratio:auto;height:44px}
+.skGrid .skTile{aspect-ratio:auto;height:calc(44px * var(--s))}
 .skTile{
   position:relative;aspect-ratio:1;border-radius:10px;cursor:pointer;overflow:hidden;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
@@ -501,12 +515,12 @@ body{
 /* collapsible section: the gold .sect header doubles as the toggle, so a
    documentation-heavy screen opens compact and the player expands what they
    actually need. */
-.fold{padding:0;background:none;border:none;box-shadow:none;margin-bottom:6px}
+.fold{display:block;padding:0;background:none;border:none;box-shadow:none;margin-bottom:6px}
 /* HUD shortcuts: same chip language as the currencies, sized to the menu
    button so the top-right row stays one height. The dot rides the Recolte
    button when there is something to claim. */
 .hudBtn{
-  position:relative;width:26px;height:26px;border-radius:9px;cursor:pointer;flex:0 0 auto;
+  position:relative;width:calc(26px * var(--s));height:calc(26px * var(--s));border-radius:9px;cursor:pointer;flex:0 0 auto;
   display:flex;align-items:center;justify-content:center;
   border:2px solid #0A1020;background:linear-gradient(180deg,#2A3752,#131C2E);
   box-shadow:inset 0 2px 0 #ffffff1f,0 2px 0 #0A1020;color:var(--textDim);
@@ -527,18 +541,16 @@ body{
   background:#0A1020ee;border:1px solid currentColor;white-space:nowrap;
   box-shadow:0 1px 4px #000000a6;
 }
-.fold>summary{
-  display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;padding:5px 0 4px;
-  font-family:var(--fd);font-size:12px;font-weight:900;letter-spacing:2.2px;
+.fold>.foldT{
+  display:flex;align-items:center;gap:8px;padding:4px 0 3px;
+  font-family:var(--fd);font-size:calc(11px * var(--s));font-weight:900;letter-spacing:2px;
   text-transform:uppercase;color:var(--goldLit);text-shadow:0 0 12px #E8B44A44,0 1px 0 #000;
 }
-.fold>summary::-webkit-details-marker{display:none}
-.fold>summary::before{
-  content:"";flex:0 0 auto;width:7px;height:7px;background:var(--gold);
+.fold>.foldT::before{
+  content:"";flex:0 0 auto;width:6px;height:6px;background:var(--gold);
   transform:rotate(45deg);box-shadow:0 0 9px var(--gold),inset 0 0 0 1px #FFE7B0;
 }
-.fold>summary::after{content:"+";margin-left:auto;font-size:15px;color:var(--goldDim);line-height:1}
-.fold[open]>summary::after{content:"\2013"}
+.fold>.foldT::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#8A652266,transparent)}
 .fold>.card{margin-bottom:2px}
 .raidCard{
   position:relative;padding:7px 9px;margin-bottom:4px;border-radius:11px;
@@ -550,7 +562,7 @@ body{
   border-radius:10px;padding:8px 10px;color:var(--textDim);font-size:11px;line-height:1.4;
   box-shadow:inset 0 1px 2px #00000059;
 }
-.kv{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:3px 0;border-bottom:1px solid var(--borderSoft)}
+.kv{display:flex;justify-content:space-between;gap:8px;font-size:calc(11.5px * var(--s));padding:3px 0;border-bottom:1px solid var(--borderSoft)}
 .kv:last-child{border:none}
 .kv b{font-weight:800}
 /* pity / progress meter (sheet §14) */
@@ -631,11 +643,11 @@ body{
   background:linear-gradient(180deg,#1E2D49,#0C1320);box-shadow:inset 0 1px 0 #ffffff1a,0 2px 7px #00000073;
 }
 .scroller{max-height:216px;overflow-y:auto;padding-right:2px}
-h2.title{font-family:var(--fd);font-size:15.5px;font-weight:900;letter-spacing:1.3px;text-transform:uppercase;margin:0;color:var(--goldLit);text-shadow:0 2px 0 #000,0 0 16px #E8B44A33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+h2.title{font-family:var(--fd);font-size:calc(15.5px * var(--s));font-weight:900;letter-spacing:1.3px;text-transform:uppercase;margin:0;color:var(--goldLit);text-shadow:0 2px 0 #000,0 0 16px #E8B44A33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #topbar{position:relative;display:flex;align-items:center;gap:10px;padding:7px 14px 6px;flex:0 0 auto}
 #topbar::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:1px;background:linear-gradient(90deg,#8A6522aa,#8A652233 55%,transparent)}
 .back{
-  width:28px;height:28px;border-radius:8px;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  width:calc(28px * var(--s));height:calc(28px * var(--s));border-radius:8px;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(180deg,#22314F,#111A2C);border:1px solid var(--border);color:var(--textDim);
   box-shadow:inset 0 1px 0 #ffffff1a,0 2px 6px #00000059;
 }
@@ -1017,24 +1029,26 @@ const ICON_MASK = {
   skull:     { m: "curse",     c: "#B15CF6" },
   slow:      { m: "curse",     c: "#8B6BD6" },
 };
+/* every size in the game funnels through here, so scaling it scales the lot */
+function px(n) { return "calc(" + n + "px * var(--s))"; }
 function ic(name, size, style) {
-  const s = size || 18;
+  const s = px(size || 18);
   const mk = ICON_MASK[name];
   if (mk) {
     const u = "url(art/vfx/" + mk.m + ".png) center/contain no-repeat";
-    return '<i class="ico" style="width:' + s + "px;height:" + s + "px" + (style ? ";" + style : "") +
+    return '<i class="ico" style="width:' + s + ";height:" + s + (style ? ";" + style : "") +
       '"><span style="display:block;width:100%;height:100%;background:' + mk.c +
       ";-webkit-mask:" + u + ";mask:" + u + '"></span></i>';
   }
   const art = ICON_ART[name];
   if (art) {
-    return '<i class="ico" style="width:' + s + "px;height:" + s + "px" + (style ? ";" + style : "") +
+    return '<i class="ico" style="width:' + s + ";height:" + s + (style ? ";" + style : "") +
       '"><img src="' + art + '" style="width:100%;height:100%;object-fit:contain;display:block" alt=""></i>';
   }
   const g = ICO[name];
-  if (!g) return '<i class="ico" style="width:' + s + 'px;height:' + s + 'px"></i>';
-  return '<i class="ico" style="width:' + s + "px;height:" + s + "px" + (style ? ";" + style : "") + '">' +
-    '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" aria-hidden="true">' + g + "</svg></i>";
+  if (!g) return '<i class="ico" style="width:' + s + ";height:" + s + '"></i>';
+  return '<i class="ico" style="width:' + s + ";height:" + s + (style ? ";" + style : "") + '">' +
+    '<svg width="100%" height="100%" viewBox="0 0 24 24" aria-hidden="true">' + g + "</svg></i>";
 }
 
 /* ---------------------------- environments --------------------------------
@@ -4171,18 +4185,12 @@ function toast(msg, ok, sub, icon) {
   toastTimer = setTimeout(() => { const t = document.getElementById("toast"); if (t) t.remove(); }, 1700);
 }
 /* framed dialog: optional gold title bar + close chip, body below (sheet §6) */
-/* render() rebuilds #screen wholesale, and on a timer screen that happens every
-   second, which snapped every open <details> shut. Folds now carry a key and
-   their open state lives here, outside the DOM, so a re-render restores it. */
-const openFolds = new Set();
+/* Sections used to collapse behind a toggle. Nothing hides now: the header
+   stays as a divider and the body is always on screen, so every screen reads at
+   a glance and nothing costs an extra click to reach. */
 function fold(key, title, body, style) {
-  return '<details class="fold" data-fold="' + key + '"' + (openFolds.has(key) ? " open" : "") +
-    (style ? ' style="' + style + '"' : "") + "><summary>" + title + "</summary>" + body + "</details>";
-}
-function rememberFolds(root) {
-  root.querySelectorAll("details[data-fold]").forEach((d) => {
-    if (d.open) openFolds.add(d.dataset.fold); else openFolds.delete(d.dataset.fold);
-  });
+  return '<section class="fold" data-fold="' + key + '"' +
+    (style ? ' style="' + style + '"' : "") + '><div class="foldT">' + title + "</div>" + body + "</section>";
 }
 function openModal(html, title) {
   closeModal();
@@ -5822,7 +5830,6 @@ function render() {
   checkBossReward();
   checkLevelUp();
   const sc = document.getElementById("screen");
-  rememberFolds(sc);
   const keep = sc.scrollTop;
   const fn = SCREENS[route] || scrAccueil;
   sc.className = route === "accueil" ? "fixed" : "";
