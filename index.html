@@ -559,6 +559,47 @@ body{
   animation:slideIn .2s ease-out;max-width:360px;margin:0 auto;
 }
 @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* Forge reveal. Pure CSS keyframes rather than JS timers: nothing to clear if
+   the modal is closed mid-animation, and the stagger on the result cards is a
+   single calc() instead of a chain of setTimeouts. Auto-forge never opens this
+   modal, so the animation only ever plays on a forge the player asked for. */
+.fgStage{position:relative;height:84px;display:flex;align-items:center;justify-content:center;margin-bottom:2px}
+.fgPlate{
+  position:absolute;width:60px;height:60px;border-radius:50%;
+  background:radial-gradient(circle at 50% 34%,#2A3752,#0B1120 72%);
+  border:1px solid var(--border);box-shadow:inset 0 2px 7px #000000a6,0 3px 10px #00000073;
+}
+.fgRing{
+  position:absolute;width:60px;height:60px;border-radius:50%;
+  border:2px solid var(--rc);animation:fgRing .6s .26s ease-out both;
+}
+.fgSpark{position:absolute;width:60px;height:60px;animation:fgSpark .5s .26s ease-out both}
+.fgSpark i{
+  position:absolute;left:50%;top:50%;width:2px;height:11px;margin:-5px 0 0 -1px;border-radius:1px;
+  background:linear-gradient(var(--rc),transparent);transform-origin:50% 120%;
+}
+.fgHammer{position:absolute;color:var(--goldLit);animation:fgHit .5s cubic-bezier(.4,1.5,.5,1) both}
+.fgItem{
+  position:relative;z-index:2;line-height:0;
+  animation:fgPop .52s .28s cubic-bezier(.3,1.7,.5,1) both;filter:drop-shadow(0 0 11px var(--rc));
+}
+@keyframes fgHit{
+  0%{transform:translate(-30px,-40px) rotate(-54deg);opacity:0}
+  30%{opacity:1}
+  52%{transform:translate(-5px,-4px) rotate(8deg);opacity:1}
+  70%{transform:translate(-14px,-17px) rotate(-14deg);opacity:.85}
+  100%{transform:translate(-34px,-46px) rotate(-54deg);opacity:0}
+}
+@keyframes fgRing{0%{transform:scale(.45);opacity:0}18%{opacity:.9}100%{transform:scale(2.4);opacity:0}}
+@keyframes fgSpark{0%{transform:scale(.4) rotate(0);opacity:0}20%{opacity:1}100%{transform:scale(1.9) rotate(22deg);opacity:0}}
+@keyframes fgPop{0%{transform:scale(.18) rotate(-18deg);opacity:0}
+  58%{transform:scale(1.24) rotate(6deg);opacity:1}100%{transform:none;opacity:1}}
+@keyframes fgCard{0%{transform:translateY(9px) scale(.82);opacity:0}100%{transform:none;opacity:1}}
+.fgCard{animation:fgCard .34s both}
+@media(prefers-reduced-motion:reduce){
+  .fgRing,.fgSpark,.fgHammer,.fgItem,.fgCard{animation:none}
+  .fgHammer,.fgRing,.fgSpark{opacity:0}
+}
 .resGrid{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:7px 0}
 .resItem{
   width:60px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 3px;border-radius:10px;border:1px solid;
@@ -5670,11 +5711,24 @@ function showForgeResult(res) {
   const rates = getRates("forge", S.forge.level, S.ascension, starsOf(S, "forge"));
   const best = res.reduce((a, b) => equipRank(b.rarity) > equipRank(a.rarity) ? b : a, res[0]);
   const bc = RARITY[best.rarity].c;
-  openModal('<div class="center" style="margin-bottom:6px">' + ic("hammer", 34) + "</div>" +
+  // eight sparks around the impact point
+  const sparks = Array.from({ length: 8 }, (_, i) =>
+    '<i style="transform:rotate(' + (i * 45) + 'deg) translateY(-19px)"></i>').join("");
+  openModal('<div class="fgStage" style="--rc:' + bc + '">' +
+      '<div class="fgPlate"></div>' +
+      '<div class="fgRing"></div>' +
+      '<div class="fgSpark">' + sparks + "</div>" +
+      '<div class="fgHammer">' + ic("hammer", 25) + "</div>" +
+      '<div class="fgItem">' + slotIcon(best.slot, 46, best) + "</div>" +
+    "</div>" +
     '<div class="modalT" style="color:' + bc + ';text-shadow:0 2px 0 #000,0 0 18px ' + bc + '80">' +
       RARITY[best.rarity].label.toUpperCase() + " OBTENU</div>" +
-    '<div class="resGrid">' + res.map((r) =>
-      '<div class="resItem rf" style="border-color:' + RARITY[r.rarity].c + ";--rc:" + RARITY[r.rarity].c + '">' +
+    '<div class="mute tiny center b" style="letter-spacing:.5px;margin-top:2px">' +
+      esc(SLOT_LABEL[best.slot] || best.slot) + " · " + fmt(best.power) + " puissance</div>" +
+    // the batch fans in behind the reveal rather than all at once
+    '<div class="resGrid">' + res.map((r, i) =>
+      '<div class="resItem rf fgCard" style="animation-delay:' + (0.5 + i * 0.06).toFixed(2) +
+      "s;border-color:" + RARITY[r.rarity].c + ";--rc:" + RARITY[r.rarity].c + '">' +
       '<span style="position:relative;z-index:1">' + slotIcon(r.slot, 22, r) + "</span>" + rtag(r.rarity) + "</div>").join("") + "</div>" +
     '<div class="dim small center" style="margin-bottom:10px">Équipement ajouté à l\'Inventaire.</div>' +
     '<div class="mute tiny center b" style="letter-spacing:.6px">TAUX ACTUELS · FORGE NIV.' + S.forge.level + "</div>" +
