@@ -341,7 +341,7 @@ body{
    the arena takes whatever is left, so the screen never scrolls and the fight
    is as large as the device allows. */
 #screen.fixed{overflow:hidden;display:flex;flex-direction:column}
-#screen.fixed #arenaSlot{flex:1 1 auto;min-height:calc(104px * var(--s));display:flex}
+#screen.fixed #arenaSlot{flex:1 1 auto;min-height:calc(150px * var(--s));display:flex}
 #screen.fixed #arena{height:auto;flex:1 1 auto}
 #screen.fixed>*:not(#arenaSlot){flex:0 0 auto}
 /* forge panel: three tight rows instead of six stacked blocks */
@@ -528,13 +528,16 @@ body{
 .hudBtn:hover{border-color:var(--gold);color:var(--goldLit)}
 .hudBtn.ready{color:var(--goldLit);border-color:var(--goldDim)}
 .hudBtn .dot{position:absolute;top:-2px;right:-2px}
-/* the home tiles are grouped now, so the group label doubles as the divider */
-.navCat{
-  display:flex;align-items:center;gap:6px;padding:2px 14px 0;
-  font-family:var(--fd);font-size:9px;font-weight:900;letter-spacing:1.4px;
+/* A stacked label above each group cost a row per category -- six rows for ten
+   tiles. The label now sits beside its tiles, so a category is one row and the
+   three of them take half the height they did. */
+.navRow{display:flex;align-items:center;gap:9px;padding:3px 14px 0}
+.navRow>.navCat{
+  flex:0 0 calc(52px * var(--s));text-align:right;line-height:1.05;
+  font-family:var(--fd);font-size:calc(8.5px * var(--s));font-weight:900;letter-spacing:.8px;
   text-transform:uppercase;color:var(--textMute);
 }
-.navCat::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#8A652266,transparent)}
+.navRow>.navGrid{flex:1;padding:0}
 .fxBub{
   position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);z-index:3;
   font-size:8.5px;font-weight:900;line-height:1;padding:2px 5px;border-radius:999px;
@@ -1243,14 +1246,26 @@ function bossFor(floor) { return BOSS_DEFS[Math.floor(floor / RULES.BOSS_EVERY -
 function typeById(id) { return ENEMY_TYPES.find((t) => t.id === id) || ENEMY_TYPES[0]; }
 
 
+/* Only `speed` varied, so a Dague swung 1.5x as often as an Épée for identical
+   damage and was simply the best weapon in the game. `hit` is the weight of one
+   blow, set against the speed so the DPS lands in a narrow band and the choice
+   is about feel and range rather than one right answer.
+
+     Épée      1.00 x 1.00 = 1.00     Arc       1.05 x 0.90 = 0.95
+     Hache     0.85 x 1.24 = 1.05     Arbalète  0.90 x 1.10 = 0.99
+     Masse     0.80 x 1.35 = 1.08     Bâton     1.00 x 0.95 = 0.95
+     Dague     1.50 x 0.70 = 1.05
+
+   Melee sits about 8% above ranged because it has to walk into reach and stand
+   in the enemy's swing to earn it. */
 const WEAPON_TYPES = {
-  epee:     { id: "epee",     name: "Épée",     attackType: "MELEE",  range: 46,  speed: 1.0 },
-  hache:    { id: "hache",    name: "Hache",    attackType: "MELEE",  range: 48,  speed: 0.85 },
-  masse:    { id: "masse",    name: "Masse",    attackType: "MELEE",  range: 46,  speed: 0.8 },
-  dague:    { id: "dague",    name: "Dague",    attackType: "MELEE",  range: 42,  speed: 1.5 },
-  arc:      { id: "arc",      name: "Arc",      attackType: "RANGED", range: 220, speed: 1.05, projectile: "arrow" },
-  arbalete: { id: "arbalete", name: "Arbalète", attackType: "RANGED", range: 240, speed: 0.9,  projectile: "bolt" },
-  baton:    { id: "baton",    name: "Bâton",    attackType: "RANGED", range: 210, speed: 1.0,  projectile: "magic" },
+  epee:     { id: "epee",     name: "Épée",     attackType: "MELEE",  range: 46,  speed: 1.0,  hit: 1.00 },
+  hache:    { id: "hache",    name: "Hache",    attackType: "MELEE",  range: 48,  speed: 0.85, hit: 1.24 },
+  masse:    { id: "masse",    name: "Masse",    attackType: "MELEE",  range: 46,  speed: 0.8,  hit: 1.35 },
+  dague:    { id: "dague",    name: "Dague",    attackType: "MELEE",  range: 42,  speed: 1.5,  hit: 0.70 },
+  arc:      { id: "arc",      name: "Arc",      attackType: "RANGED", range: 220, speed: 1.05, hit: 0.90, projectile: "arrow" },
+  arbalete: { id: "arbalete", name: "Arbalète", attackType: "RANGED", range: 240, speed: 0.9,  hit: 1.10, projectile: "bolt" },
+  baton:    { id: "baton",    name: "Bâton",    attackType: "RANGED", range: 210, speed: 1.0,  hit: 0.95, projectile: "magic" },
 };
 const WEAPON_LIST = Object.keys(WEAPON_TYPES);
 
@@ -2716,6 +2731,8 @@ function applyDamageToEnemy(c, e, dmg, crit, color) {
   e.hitFlash = 0.28;
   e.recoil = 0.22;
   addShake(c, crit ? 5 : 2.5);
+  // an ordinary blow used to be a tint and nothing else
+  addBurst(c, "hit", e.x, color || "#FFE9A8");
   c.floats.push({ id: rid(), x: e.x, val: dmg, crit, color, born: Date.now() });
   if (crit) addBurst(c, "crit", e.x, color);
   if (e.hp <= 0 && e.alive) {
@@ -2780,7 +2797,9 @@ function tick() {
   if (target) {
     const dist = target.x - c.heroX;
     const inRange = dist <= wt.range + 2;
-    if (wt.attackType === "MELEE" && !inRange) {
+    // Range used to be checked for melee only, so a bow with 220 of reach still
+    // fired at a target 240 away. Everyone closes to their own range now.
+    if (!inRange) {
       const wob = 0.88 + 0.2 * Math.sin(now / 230);
       c.heroX = Math.min(target.x - wt.range, c.heroX + dv.moveSpeed * dt * wob);
     } else {
@@ -2800,7 +2819,7 @@ function tick() {
           * (dv.petElem === "toxique" ? 1.10 : 1);
         const swingDelay = wt.attackType === "MELEE" ? HIT_DELAY_MELEE : HIT_DELAY_RANGED;
         for (let sw = 0; sw < swings; sw++) {
-          let dmg = dv.damage * styleMul * buffDmg * vuln;
+          let dmg = dv.damage * (wt.hit || 1) * styleMul * buffDmg * vuln;
           const crit = Math.random() * 100 < dv.critChance;
           if (crit) dmg *= dv.critMult;
           if (c.boss) dmg *= (1 + dv.bossDmg / 100);
@@ -2948,6 +2967,7 @@ function tick() {
 }
 
 let bossReward = null;   // surfaced by the UI right after a first Boss clear
+let notable = null;      // milestone worth a toast, drained on the next render
 function handleCombatEnd(c) {
   if (c.ctx === "raid") {
     const won = c.status === "won";
@@ -2964,6 +2984,9 @@ function handleCombatEnd(c) {
     rewardAcc.gold = 0; rewardAcc.exp = 0;
     grantLevels(s);
     if (won) {
+      // a floor clears every half minute, so only the milestones get a toast
+      if (c.elite && !c.boss) notable = { msg: "Élite vaincue · étage " + c.floor, icon: "swords" };
+      if (s.floor + 1 > s.recordFloor) notable = { msg: "Nouveau record · étage " + (s.floor + 1), icon: "trophy" };
       if (c.boss) {
         const bk = String(c.floor);
         s.bossClears[bk] = true;
@@ -3492,7 +3515,7 @@ const RANGED_IDS = ["arc", "arbalete", "baton"];
 /* width-to-height of each sprite, so none of them stretch */
 const WEAPON_ASPECT = { epee: 0.543, hache: 0.359, masse: 0.258, dague: 0.301, arc: 0.219, arbalete: 0.664, baton: 0.93 };
 const WEAPON_SILVER = "#d6dae4";
-const ARENA_H = 286, CHAR = 64;
+const ARENA_H = 286, CHAR = 78;   // sprite unit; scaled to the arena at draw time
 
 const P = { hero: HERO_START, en: {} };   // smoothed positions
 let arenaEl = null, arenaNodes = null, arenaT = 0;
@@ -3660,7 +3683,7 @@ function skillVfxHTML(c, scale, groundY, uni, vs) {
   const cast = (c.skillFxs || []).map((fx) => oneVfxHTML(c, fx, scale, groundY, uni, vs)).join("");
   const now = Date.now();
   if (c.bursts && c.bursts.length) c.bursts = c.bursts.filter((b) => now - b.born < b.max * 1000);
-  const burst = (c.bursts || []).map((b) => oneBurstHTML(b, scale, groundY, vs)).join("");
+  const burst = (c.bursts || []).map((b) => oneBurstHTML(b, scale, groundY, vs, uni)).join("");
   if (!cast && !burst) return "";
   return '<div class="vfx" style="position:absolute;inset:0;pointer-events:none;z-index:6">' +
     cast + burst + "</div>";
@@ -3697,21 +3720,25 @@ function slashHTML(attacking, size) {
 
 /* One-shot bursts sit outside the skill system: they are fired by events rather
    than by a cast, and a death has to outlive the enemy that caused it. */
-const BURST_DUR = { crit: 0.34, death: 0.52 };
+const BURST_DUR = { hit: 0.30, crit: 0.50, death: 0.72 };
 function addBurst(c, kind, x, color) {
   if (!c.bursts) c.bursts = [];
   c.bursts.push({ kind, x, color, born: Date.now(), max: BURST_DUR[kind] });
-  if (c.bursts.length > 12) c.bursts.shift();
+  if (c.bursts.length > 18) c.bursts.shift();
 }
-function oneBurstHTML(b, scale, groundY, vs) {
+function oneBurstHTML(b, scale, groundY, vs, uni) {
   const p = Math.max(0, Math.min(1, (Date.now() - b.born) / (b.max * 1000)));
-  const x = b.x * scale, y = groundY - 30 * (vs || 1);
-  if (b.kind === "crit") {
-    const d = (36 + p * 78) * scale;
-    return vfxLayer("crit", x, y, d, d, b.color, 1 - p, "rotate(" + (p * 22).toFixed(0) + "deg)");
+  const x = b.x * scale, y = groundY - (uni || CHAR) / 2;
+  if (b.kind === "hit") {
+    const d = (18 + p * 40) * scale;
+    return vfxLayer("impact", x, y, d, d, b.color, (1 - p) * 0.75);
   }
-  const d = (48 + p * 42) * scale;              // death: rises as it thins out
-  return vfxLayer("death", x, y - p * 24 * scale, d, d, b.color, (1 - p) * 0.9);
+  if (b.kind === "crit") {
+    const d = (36 + p * 92) * scale;
+    return vfxLayer("crit", x, y, d, d, b.color, 1 - p, "rotate(" + (p * 26).toFixed(0) + "deg)");
+  }
+  const d = (48 + p * 52) * scale;              // death: rises as it thins out
+  return vfxLayer("death", x, y - p * 28 * scale, d, d, b.color, (1 - p) * 0.9);
 }
 
 /* The hit flash is the same sprite trick, driven off the flash timer the units
@@ -3903,18 +3930,21 @@ function drawArena() {
   if (lastDecor !== dKey) { arenaNodes.decor.innerHTML = decorHTML(c.bg, c.floor || 1); lastDecor = dKey; }
 
   // smoothing toward the simulation snapshot
-  P.hero += (c.heroX - P.hero) * 0.22;
+  // 0.22 chased the simulation hard enough to look stepped; 0.13 glides
+  P.hero += (c.heroX - P.hero) * 0.13;
   const live = {};
   c.enemies.forEach((e) => {
     live[e.id] = 1;
     if (P.en[e.id] == null) P.en[e.id] = e.x;
-    P.en[e.id] += (e.x - P.en[e.id]) * 0.22;
+    P.en[e.id] += (e.x - P.en[e.id]) * 0.13;
   });
   Object.keys(P.en).forEach((id) => { if (!live[id]) delete P.en[id]; });
 
   const wt = WEAPON_TYPES[D.weapon] || WEAPON_TYPES.epee;
   const tgt = c.enemies.filter((e) => e.alive).sort((a, b) => a.x - b.x)[0];
-  const heroMoving = !!tgt && wt.attackType === "MELEE" && c.heroAttacking <= 0 && (tgt.x - c.heroX) > wt.range + 4;
+  // the walk cycle now follows the same rule the movement does, so an archer
+  // closing the gap is animated as walking rather than gliding
+  const heroMoving = !!tgt && c.heroAttacking <= 0 && (tgt.x - c.heroX) > wt.range + 4;
 
   // best equipped rarity → aura
   let bestIdx = -1, auraRar = null;
@@ -4626,12 +4656,9 @@ function scrAccueil() {
           "<span>AUTO</span><i></i></div>" +
       "</div>" +
     "</div></div>" +
-    '<div class="navCat">Progression</div>' +
-    '<div class="navGrid">' + progBtns.map(tile).join("") + "</div>" +
-    '<div class="navCat">Contenu</div>' +
-    '<div class="navGrid">' + playBtns.map(tile).join("") + "</div>" +
-    '<div class="navCat">Social</div>' +
-    '<div class="navGrid">' + socialBtns.map(tile).join("") + "</div>" +
+    [["Progression", progBtns], ["Contenu", playBtns], ["Social", socialBtns]].map((g) =>
+      '<div class="navRow"><div class="navCat">' + g[0] + "</div>" +
+      '<div class="navGrid">' + g[1].map(tile).join("") + "</div></div>").join("") +
     '<div style="height:4px"></div>';
 }
 
@@ -5876,6 +5903,11 @@ function showLevelUp(from, to) {
     "Niveau supérieur !");
 }
 /* a first-Boss-clear accelerator is announced as soon as the fight settles */
+function checkNotable() {
+  if (!notable) return;
+  const n = notable; notable = null;
+  toast(n.msg, true, null, n.icon);
+}
 function checkBossReward() {
   if (!bossReward) return;
   const r = bossReward; bossReward = null;
@@ -5897,6 +5929,7 @@ function render() {
   renderHUD();
   renderTabs();
   checkBossReward();
+  checkNotable();
   checkLevelUp();
   const sc = document.getElementById("screen");
   const keep = sc.scrollTop;
