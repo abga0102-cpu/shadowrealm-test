@@ -2687,9 +2687,19 @@ function runDueHits(c, now) {
 const HIT_DELAY_MELEE = 0.12;   // mid-swing of the 0.2s attack window
 const HIT_DELAY_RANGED = 0.15;  // the projectile converges in about 5 frames
 function skillHitDelay(kind) { return Math.min(0.3, vfxDur(kind) * 0.4); }
+/* A hit that only tints a sprite for 150ms reads as nothing happened. Every
+   landed blow now shoves the target, and the heavier ones kick the whole arena
+   for a moment -- the shake decays on wall-clock so a paused fight cannot leave
+   the board off-centre. */
+function addShake(c, mag) {
+  const now = Date.now();
+  c.shake = { mag: Math.max(mag, (c.shake && c.shake.until > now) ? c.shake.mag : 0), until: now + 170 };
+}
 function applyDamageToEnemy(c, e, dmg, crit, color) {
   e.hp -= dmg;
-  e.hitFlash = 0.15;
+  e.hitFlash = 0.28;
+  e.recoil = 0.22;
+  addShake(c, crit ? 5 : 2.5);
   c.floats.push({ id: rid(), x: e.x, val: dmg, crit, color, born: Date.now() });
   if (crit) addBurst(c, "crit", e.x, color);
   if (e.hp <= 0 && e.alive) {
@@ -2836,6 +2846,7 @@ function tick() {
   c.enemies.forEach((e) => {
     if (!e.alive) return;
     e.hitFlash = Math.max(0, e.hitFlash - dt);
+    e.recoil = Math.max(0, (e.recoil || 0) - dt);
     e.attacking = Math.max(0, e.attacking - dt);
     const dist = e.x - c.heroX;
     const fireRange = e.ranged ? 150 : 40;
@@ -3618,9 +3629,12 @@ function staffHTML(color, swing, size) {
    VFX strips. Everything is vector/CSS driven off a single 0..1 progress value
    so the whole thing costs nothing and scales with the arena.
    -------------------------------------------------------------------------- */
+/* Effects ran fast enough to read as a flicker. Everything is roughly half
+   again as long, and the heavier the effect the more it gained -- a Cataclysme
+   should take its time. */
 const VFX_DUR = {
-  impact: 0.55, pierce: 0.60, vortex: 0.95, bolt: 0.60, wave: 0.85,
-  meteor: 1.05, aura: 1.10, curse: 0.90, poison: 1.20, heal: 1.00, cataclysm: 1.40,
+  impact: 0.80, pierce: 0.90, vortex: 1.45, bolt: 0.90, wave: 1.30,
+  meteor: 1.70, aura: 1.60, curse: 1.35, poison: 1.60, heal: 1.45, cataclysm: 2.30,
 };
 function vfxDur(kind) { return VFX_DUR[kind] || 0.4; }
 
@@ -3702,11 +3716,16 @@ function oneVfxHTML(c, fx, scale, groundY) {
   const p = Math.max(0, Math.min(1, 1 - fx.life / dur));   // 0 -> 1 over the effect
   const col = fx.color;
   const fade = 1 - p;
-  const hx = P.hero * scale + 26;
+  // A unit is drawn at left = x*scale - size/2, top = groundY - size, so its
+  // centre is (x*scale, groundY - size/2). The old anchors were x + 26 and a
+  // flat groundY - 30, which put every effect low and to the right of whatever
+  // it was supposed to be hitting.
+  const hx = P.hero * scale;
   const foes = c.enemies.filter((e) => e.alive);
   const fxs = foes.map((e) => (P.en[e.id] != null ? P.en[e.id] : e.x) * scale);
   const cx = fxs.length ? fxs.reduce((a, b) => a + b, 0) / fxs.length : hx + 120;
-  const midY = groundY - 30;
+  const foeSize = foes.length && foes.some((e) => e.boss) ? CHAR * 1.45 : CHAR;
+  const midY = groundY - foeSize / 2;
   const S = scale;                    // every effect stays proportional to the arena
   let h = "";
 
@@ -3792,6 +3811,22 @@ function spriteFrame(key, attacking, t) {
   return f[Math.floor(p * f.length)];
 }
 
+/* Read of a fight, in the nameplate. Compares how long you need to put this
+   enemy down against how long it needs to put you down, using the same derived
+   stats the combat itself runs on. Under half the time it needs is comfortable,
+   past four fifths is genuinely dangerous. Colour-blind players still have the
+   tier colour on the pill and the health bars, so this adds a read rather than
+   being the only one. */
+const THREAT_C = { easy: "#57E07A", even: "#F5C542", hard: "#FF5A5A" };
+function threatOf(c, e) {
+  const d = D;
+  const dps = Math.max(1, d.damage * d.attackSpeed * (1 + d.critChance / 100 * (d.critMult - 1)));
+  const ttk = Math.max(0, e.maxHP) / dps;                       // seconds to kill it
+  const foeDps = Math.max(0.01, (e.dmg || 1) / 1.4) * (1 - Math.min(85, d.dmgRed) / 100);
+  const ttl = Math.max(0.01, (c.heroMaxHP || d.maxHP)) / foeDps; // seconds to be killed
+  const r = ttk / ttl;
+  return r < 0.45 ? "easy" : r < 1.05 ? "even" : "hard";
+}
 /* ---- the per-frame arena draw ---- */
 function drawArena() {
   if (!arenaEl || !arenaNodes || !document.body.contains(arenaEl)) return;
@@ -3801,6 +3836,16 @@ function drawArena() {
   const w = arenaEl.clientWidth || 360;
   const scale = w / AW;
   const groundY = ARENA_H - 58;
+  {
+    const sh = c && c.shake && c.shake.until > Date.now() ? c.shake : null;
+    const k = sh ? (sh.until - Date.now()) / 170 : 0;
+    const off = sh ? sh.mag * k : 0;
+    const tf = off > 0.15
+      ? "translate(" + (Math.sin(arenaT * 0.9) * off).toFixed(2) + "px," +
+        (Math.cos(arenaT * 1.3) * off * 0.6).toFixed(2) + "px)"
+      : "";
+    if (arenaNodes.layer.style.transform !== tf) arenaNodes.layer.style.transform = tf;
+  }
 
   if (!c) { arenaNodes.layer.innerHTML = ""; return; }
 
@@ -3903,7 +3948,7 @@ function drawArena() {
     const phase = (x % 100) / 16;
     const idle = Math.sin(t * 0.0045 + phase) * 2 + Math.sin(t * 0.0019 + phase) * 1;
     const tilt = Math.sin(t * 0.0045 + phase) * 2.4;
-    const lunge = e.attacking > 0 ? -12 : 0;
+    const lunge = (e.attacking > 0 ? -12 : 0) + (e.recoil > 0 ? e.recoil * 46 : 0);
     const knock = e.hitFlash > 0 ? 7 : 0;
     const hpPct = Math.max(0, (e.hp / e.maxHP) * 100);
     html += '<div class="unit" style="left:' + (x - size / 2) + 'px;top:' + (groundY - size) + 'px;' +
@@ -3914,9 +3959,9 @@ function drawArena() {
       (e.hitFlash > 0 ? sparkHTML(e.hitFlash, 0.15, size, '#FFFFFF') : '') +
       '<div class="hpMini foe" style="top:-12px"><i style="width:' + hpPct + '%;background:' +
       (e.boss ? "#E5484D" : "#ff7b3f") + '"></i></div>' +
-      ((e.boss || e.elite || (e.tier && e.tier !== "COMMUN"))
-        ? '<div class="foeTag" style="color:' + (ENEMY_TIERS[e.tier] || ENEMY_TIERS.COMMUN).c + '">' +
-          esc(e.name || e.type.name) + "</div>" : "") +
+      // every enemy is named now, because the colour is the point
+      '<div class="foeTag" style="color:' + THREAT_C[threatOf(c, e)] + '">' +
+        esc(e.name || e.type.name) + "</div>" +
       '</div>';
   });
 
