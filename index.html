@@ -2897,7 +2897,12 @@ function tick() {
     e.attacking = Math.max(0, e.attacking - dt);
     const dist = e.x - c.heroX;
     const fireRange = e.ranged ? 150 : 40;
-    if (dist > fireRange) {
+    // e.x is clamped to heroX + fireRange, but (x + 40) - x is not exactly 40
+    // for every float, so dist could settle at 40.000000000000014 and keep the
+    // enemy in the approach branch for ever -- walking on the spot, its attack
+    // cooldown never ticking. It only bit melee enemies, because a ranged one
+    // is still being closed on by the hero and never comes to rest.
+    if (dist > fireRange + 0.01) {
       const wob = 0.86 + 0.24 * Math.sin(now / 250 + e.phase);
       e.x = Math.max(c.heroX + fireRange, e.x - ENEMY_SPEED * e.speedVar * dt * wob);
     } else {
