@@ -2650,6 +2650,29 @@ function fxList(c, bag) {
   });
   return out;
 }
+/* Damage used to apply on the same frame the swing started, so a bow dealt its
+   damage while the arrow was still leaving the string and Cataclysme killed the
+   wave before the fireball touched anything. A hit is now queued and lands when
+   the visual reaches the sprite.
+
+   Targets are captured at cast time, so a hit can never leak into the next wave
+   after the enemies are replaced, and anything that died in between is skipped
+   -- which is what an area effect should do anyway. */
+function scheduleHit(c, delay, fn) {
+  if (delay <= 0) { fn(); return; }
+  (c.hits = c.hits || []).push({ at: Date.now() + delay * 1000, fn: fn });
+}
+function runDueHits(c, now) {
+  if (!c.hits || !c.hits.length) return;
+  const due = c.hits.filter((h) => now >= h.at);
+  if (!due.length) return;
+  c.hits = c.hits.filter((h) => now < h.at);
+  due.forEach((h) => h.fn());
+}
+/* how long the visual needs to reach the sprite */
+const HIT_DELAY_MELEE = 0.12;   // mid-swing of the 0.2s attack window
+const HIT_DELAY_RANGED = 0.15;  // the projectile converges in about 5 frames
+function skillHitDelay(kind) { return Math.min(0.3, vfxDur(kind) * 0.4); }
 function applyDamageToEnemy(c, e, dmg, crit, color) {
   e.hp -= dmg;
   e.hitFlash = 0.15;
@@ -2735,14 +2758,20 @@ function tick() {
         const buffDmg = 1 + fxVal(c, "buffs", "force") / 100;
         const vuln = (1 + fxVal(c, "debuffs", "vuln") / 100)
           * (dv.petElem === "toxique" ? 1.10 : 1);
+        const swingDelay = wt.attackType === "MELEE" ? HIT_DELAY_MELEE : HIT_DELAY_RANGED;
         for (let sw = 0; sw < swings; sw++) {
           let dmg = dv.damage * styleMul * buffDmg * vuln;
           const crit = Math.random() * 100 < dv.critChance;
           if (crit) dmg *= dv.critMult;
           if (c.boss) dmg *= (1 + dv.bossDmg / 100);
           dmg = Math.floor(dmg * (0.9 + Math.random() * 0.2));
-          applyDamageToEnemy(c, target, dmg, crit, sw ? "#FFC29B" : "#FFE9A8");
-          if (dv.lifesteal > 0) c.heroHP = Math.min(c.heroMaxHP, c.heroHP + dmg * dv.lifesteal / 100);
+          const col = sw ? "#FFC29B" : "#FFE9A8";
+          const steal = dv.lifesteal;
+          scheduleHit(c, swingDelay, () => {
+            if (!target.alive) return;
+            applyDamageToEnemy(c, target, dmg, crit, col);
+            if (steal > 0) c.heroHP = Math.min(c.heroMaxHP, c.heroHP + dmg * steal / 100);
+          });
         }
         if (wt.attackType === "RANGED") {
           c.projs.push({ id: rid(), x: c.heroX + 20, toX: target.x,
@@ -2769,11 +2798,11 @@ function tick() {
         if (def.mult > 0) {
           const sdmg = Math.floor(skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level)
             * (1 + (dv.skillDmgBonus || 0) / 100));
-          if (def.type === "AOE" || def.type === "CHAINE" || def.type === "DEBUFF") {
-            c.enemies.filter((e) => e.alive).forEach((e) => applyDamageToEnemy(c, e, sdmg, true, def.color));
-          } else {
-            applyDamageToEnemy(c, target, sdmg, true, def.color);
-          }
+          const wide = def.type === "AOE" || def.type === "CHAINE" || def.type === "DEBUFF";
+          const struck = wide ? c.enemies.filter((e) => e.alive) : [target];
+          scheduleHit(c, skillHitDelay(fxKind), () => {
+            struck.forEach((e) => { if (e && e.alive) applyDamageToEnemy(c, e, sdmg, true, def.color); });
+          });
         }
         if (def.heal) {
           const amt = Math.floor(c.heroMaxHP * skillHeal(def, S.skills[sid].level) / 100);
@@ -2837,6 +2866,9 @@ function tick() {
     }
     e.x = Math.max(c.heroX + 30, Math.min(AW - 24, e.x));
   });
+
+  // hits land before the win check, so a killing blow ends the wave on its frame
+  runDueHits(c, now);
 
   // ---- projectiles / floats / fx ----
   c.projs = c.projs.map((p) => {
