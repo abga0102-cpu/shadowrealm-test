@@ -559,9 +559,9 @@ body{
   animation:slideIn .2s ease-out;max-width:360px;margin:0 auto;
 }
 @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.resGrid{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:10px 0}
+.resGrid{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:7px 0}
 .resItem{
-  width:60px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 4px;border-radius:11px;border:1px solid;
+  width:60px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 3px;border-radius:10px;border:1px solid;
   background:linear-gradient(180deg,#1E2D49,#0C1320);box-shadow:inset 0 1px 0 #ffffff1a,0 2px 7px #00000073;
 }
 .scroller{max-height:216px;overflow-y:auto;padding-right:2px}
@@ -5831,8 +5831,8 @@ function showSkillResult(res) {
     const def = SKILL_BY_ID[r.id];
     const col = RARITY[r.rarity].c;
     const cat = def ? SKILL_CATS[def.cat] : null;
-    return '<div class="resItem rf" style="width:74px;border-color:' + col + ";--rc:" + col + '">' +
-      '<span style="position:relative;z-index:1">' + ic(def ? def.icon : "sparkle", 24) + "</span>" +
+    return '<div class="resItem rf" style="width:58px;border-color:' + col + ";--rc:" + col + '">' +
+      '<span style="position:relative;z-index:1">' + ic(def ? def.icon : "sparkle", 18) + "</span>" +
       '<div class="tiny bb" style="color:' + col + ';line-height:1.1">' + esc(def ? def.name : r.id) + "</div>" +
       (cat ? '<span class="tag" style="color:' + cat.c + ";border-color:" + cat.c + '66">' + cat.label + "</span>" : "") +
       '<div class="tiny b" style="color:' + (r.dup ? "var(--textMute)" : "var(--greenLit)") + '">' +
