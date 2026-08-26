@@ -273,6 +273,12 @@ body{
 #treeWrap::before{content:"";position:absolute;inset:0;background:linear-gradient(#050A1266,#050A12aa);pointer-events:none}
 #treeWrap>svg{position:relative;z-index:1}
 #aDecor{position:absolute;inset:0;z-index:1;pointer-events:none;filter:brightness(.46) saturate(.66) blur(.3px)}
+/* #aLayer had no rule at all, so it was static with z-index auto. That was fine
+   until the hit shake put a transform on it -- a transform makes a stacking
+   context, the whole layer collapsed to z-index 0, and the scenery at z-index 1
+   jumped in front of the fighters. It only showed during a blow, which is
+   exactly when the shake runs. Pinning it above the decor fixes it for good. */
+#aLayer{position:absolute;inset:0;z-index:2;pointer-events:none}
 #arenaShade{position:absolute;inset:0;background:linear-gradient(#00040a26,#00040a55,#000308c4)}
 /* floor header + step track (sheet §4) */
 .floorTag{position:absolute;top:7px;left:0;right:0;pointer-events:none;z-index:6;display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -345,9 +351,9 @@ body{
 #screen.fixed #arena{height:auto;flex:1 1 auto}
 #screen.fixed>*:not(#arenaSlot){flex:0 0 auto}
 /* forge panel: three tight rows instead of six stacked blocks */
-.fgRow{display:flex;align-items:center;gap:7px}
+.fgRow{display:flex;align-items:center;gap:6px}
 .fgCond{flex:1;min-width:0}
-.fgCond>.lbl{display:flex;justify-content:space-between;font-size:9px;font-weight:800;margin-bottom:2px}
+.fgCond>.lbl{display:flex;justify-content:space-between;font-size:calc(8.5px * var(--s));font-weight:800;margin-bottom:1px}
 /* home skill bar companion chip */
 .petMini{
   flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:calc(38px * var(--s));padding:0 8px;cursor:pointer;border-radius:10px;
@@ -471,9 +477,9 @@ body{
 
 /* ---------- misc widgets ---------- */
 .navGrid{display:flex;justify-content:space-between;padding:2px 14px 0;gap:5px}
-.navBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+.navBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
 .navInner{
-  width:100%;max-width:calc(33px * var(--s));aspect-ratio:1;border-radius:8px;position:relative;overflow:hidden;
+  width:100%;max-width:calc(44px * var(--s));aspect-ratio:1;border-radius:10px;position:relative;overflow:hidden;
   display:flex;align-items:center;justify-content:center;border:1px solid #ffffff33;
   box-shadow:inset 0 1px 0 #ffffff59,inset 0 -8px 14px #00000059,0 3px 9px #00000080;
 }
@@ -485,7 +491,7 @@ body{
 .navInner.art>img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 3px 7px #000000a6)}
 .navInner.art.lk>img{filter:grayscale(1) brightness(.62) contrast(.9)}
 .navInner.art>.lkIco{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.navLbl{color:var(--textDim);font-size:calc(8.5px * var(--s));font-weight:800;letter-spacing:0;line-height:1.1}
+.navLbl{color:var(--textDim);font-size:calc(9.5px * var(--s));font-weight:800;letter-spacing:.1px;line-height:1.15}
 /* skill / research node tile (sheet §5) */
 .eggCard{
   position:relative;padding:6px 5px;text-align:center;border-radius:10px;
@@ -1172,11 +1178,14 @@ function enemyCount(floor, step) {
   return Math.min(RULES.MAX_ENEMIES, 1 + r);
 }
 
+/* `proj` decides what a ranged enemy actually throws. It used to be inferred
+   from the sprite name -- anything that was not enemy_mage fired an arrow --
+   so a Mage Abyssal shot arrows. */
 const ENEMY_TYPES = [
   { id: "goblin",   name: "Gobelin",          img: "enemy_goblin",   ranged: false, hpMul: 0.9,  dmgMul: 0.95 },
   { id: "orc",      name: "Orc",              img: "enemy_orc",      ranged: false, hpMul: 1.2,  dmgMul: 1.1 },
-  { id: "skeleton", name: "Archer Squelette", img: "enemy_skeleton", ranged: true,  hpMul: 0.8,  dmgMul: 1.0 },
-  { id: "mage",     name: "Mage Noir",        img: "enemy_mage",     ranged: true,  hpMul: 0.85, dmgMul: 1.15 },
+  { id: "skeleton", name: "Archer Squelette", img: "enemy_skeleton", ranged: true,  proj: "arrow", hpMul: 0.8,  dmgMul: 1.0 },
+  { id: "mage",     name: "Mage Noir",        img: "enemy_mage",     ranged: true,  proj: "magic", hpMul: 0.85, dmgMul: 1.15 },
 ];
 /* ---------------------------- bestiary ------------------------------------
    Enemies now have a rarity tier, and elites / bosses have real identities
@@ -1202,15 +1211,20 @@ function enemyTierFor(floor) {
 }
 
 /* Named elites — one per 5-floor elite step, cycling as you climb. */
+/* `base` picks the stat profile, and it used to drag the attack behaviour along
+   with it -- so the Chevalier Squelette, built on the archer for its stats, drew
+   a sword and shot arrows. A Chaman stood in melee and an Assassin sniped from
+   the back. Each elite now states how it fights, independently of whose numbers
+   it borrows. */
 const ELITE_DEFS = [
-  { id: "chevalier",  name: "Chevalier Squelette", base: "skeleton", tier: "RARE",       img: "elite_chevalier" },
-  { id: "chaman",     name: "Chaman Gobelin",      base: "goblin",   tier: "RARE",       img: "elite_chaman" },
-  { id: "gardien",    name: "Gardien de Pierre",   base: "orc",      tier: "EPIQUE",     img: "elite_gardien" },
-  { id: "assassin",   name: "Assassin des Ombres", base: "mage",     tier: "EPIQUE",     img: "elite_assassin" },
-  { id: "corrompue",  name: "Bête Corrompue",      base: "orc",      tier: "EPIQUE",     img: "elite_corrompue" },
-  { id: "abyssal",    name: "Mage Abyssal",        base: "mage",     tier: "LEGENDAIRE", img: "elite_abyssal" },
-  { id: "guerre",     name: "Bête de Guerre",      base: "orc",      tier: "LEGENDAIRE", img: "elite_guerre" },
-  { id: "demoniaque", name: "Seigneur Démoniaque", base: "orc",      tier: "MYTHIQUE",   img: "elite_demoniaque" },
+  { id: "chevalier",  name: "Chevalier Squelette", base: "skeleton", tier: "RARE",       img: "elite_chevalier",  ranged: false },
+  { id: "chaman",     name: "Chaman Gobelin",      base: "goblin",   tier: "RARE",       img: "elite_chaman",     ranged: true,  proj: "magic" },
+  { id: "gardien",    name: "Gardien de Pierre",   base: "orc",      tier: "EPIQUE",     img: "elite_gardien",    ranged: false },
+  { id: "assassin",   name: "Assassin des Ombres", base: "mage",     tier: "EPIQUE",     img: "elite_assassin",   ranged: false },
+  { id: "corrompue",  name: "Bête Corrompue",      base: "orc",      tier: "EPIQUE",     img: "elite_corrompue",  ranged: false },
+  { id: "abyssal",    name: "Mage Abyssal",        base: "mage",     tier: "LEGENDAIRE", img: "elite_abyssal",    ranged: true,  proj: "magic" },
+  { id: "guerre",     name: "Bête de Guerre",      base: "orc",      tier: "LEGENDAIRE", img: "elite_guerre",     ranged: false },
+  { id: "demoniaque", name: "Seigneur Démoniaque", base: "orc",      tier: "MYTHIQUE",   img: "elite_demoniaque", ranged: false },
 ];
 /* Named floor bosses, rotating every 10 floors. */
 const BOSS_DEFS = [
@@ -1218,7 +1232,8 @@ const BOSS_DEFS = [
   { id: "ogre",        name: "Ogre Brute",         img: "boss_ogre",        tier: "EPIQUE" },
   { id: "squelette",   name: "Squelette Géant",    img: "boss_squelette",   tier: "EPIQUE" },
   { id: "golem",       name: "Golem de Fer",       img: "boss_golem",       tier: "LEGENDAIRE" },
-  { id: "dragon",      name: "Dragon des Cendres", img: "boss_dragon",      tier: "MYTHIQUE" },
+  // a dragon that has to walk up and bite you is not a dragon
+  { id: "dragon",      name: "Dragon des Cendres", img: "boss_dragon",      tier: "MYTHIQUE", ranged: true, proj: "magic" },
 ];
 /* Raid bosses — one identity per raid. */
 const RAID_BOSSES = {
@@ -2556,13 +2571,14 @@ function spawnCampaign(s) {
   for (let i = 0; i < count; i++) {
     let type, name, tier;
     if (boss) {
-      type = Object.assign({}, ENEMY_TYPES[1], { id: bossDef.id, name: bossDef.name, img: bossDef.img, ranged: false });
+      type = Object.assign({}, ENEMY_TYPES[1], { id: bossDef.id, name: bossDef.name, img: bossDef.img,
+        ranged: !!bossDef.ranged, proj: bossDef.proj || "magic" });
       name = bossDef.name; tier = bossDef.tier;
     } else if (elite) {
       const base = typeById(eliteDef.base);
-      // elites keep the base type's behaviour (ranged / melee) but use their own art
+      // the base lends its numbers; how the elite fights is its own business
       type = Object.assign({}, base, { id: eliteDef.id, name: eliteDef.name,
-        img: eliteDef.img || base.img });
+        img: eliteDef.img || base.img, ranged: !!eliteDef.ranged, proj: eliteDef.proj || "arrow" });
       name = eliteDef.name; tier = eliteDef.tier;
     } else {
       type = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
@@ -2904,9 +2920,9 @@ function tick() {
         const totalRed = Math.min(85, dv.dmgRed + fxVal(c, "buffs", "rempart"));
         dmg = Math.floor(dmg * (1 - totalRed / 100) * (0.9 + Math.random() * 0.2));
         if (e.ranged) {
+          const pk = e.type.proj || "arrow";
           c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX,
-            color: e.type.img === "enemy_mage" ? "#B15CF6" : "#CFCFCF",
-            kind: e.type.img === "enemy_mage" ? "magic" : "arrow", life: 0.35 });
+            color: pk === "magic" ? "#B15CF6" : "#CFCFCF", kind: pk, life: 0.35 });
         }
         // the hero's blows already waited for their animation; the enemy's did
         // not, so a mage's bolt landed before it had left his hand
@@ -4623,10 +4639,10 @@ function scrAccueil() {
         '<i class="catBar" style="background:' + wCol + '"></i>' +
       "</div>" + sb + "</div>" +
     '<div id="fxbar"></div>' +
-    '<div class="pad mt6"><div class="card frame">' +
+    '<div class="pad mt4"><div class="card frame" style="padding:7px 8px">' +
       '<div class="fgRow">' +
-        '<div class="imini" style="width:26px;height:26px;border-color:var(--goldDim);flex:0 0 auto">' + ic("hammer", 15) + "</div>" +
-        '<span class="bb gt" style="font-size:12px;letter-spacing:.8px;flex:0 0 auto">FORGE NIV.' + S.forge.level + "</span>" +
+        '<div class="imini" style="width:21px;height:21px;border-color:var(--goldDim);flex:0 0 auto">' + ic("hammer", 12) + "</div>" +
+        '<span class="bb gt" style="font-size:11px;letter-spacing:.6px;flex:0 0 auto">FORGE NIV.' + S.forge.level + "</span>" +
         starRow("forge", "var(--goldLit)") +
         '<div class="flex1"></div>' +
         '<div class="row gap3 b" style="color:var(--blueLit);font-size:11px;flex:0 0 auto">' + ic("minerai", 12) + fmt(S.minerai) + "</div>" +
