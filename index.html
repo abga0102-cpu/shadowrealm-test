@@ -1458,44 +1458,83 @@ const SKILL_CATS = {
   SOIN:    { label: "Soin",     c: "#3FE0C0" },
   ULTIME:  { label: "Ultime",   c: "#F5C542" },
 };
+/* Every skill carries a FIXED rarity. It is not a label: it sets how strong the
+   skill is (SKILL_RARITY_MUL below) and how hard it is to draw, because the
+   summon rolls a rarity from the mastery table and then picks a skill from
+   that tier. Duplicates still level whatever you already own.
+
+   The tiers narrow on purpose -- 4 / 4 / 4 / 4 / 1 / 1. Commun holds a
+   self-sufficient starter kit (a hit, an AoE, a heal, a debuff) because a
+   player at Maitrise 0 draws Commun 100% of the time. Divin holds Cataclysme
+   alone and its rate stays at 0% until the first Ascension, which makes the
+   ultimate a real prize rather than a lucky roll. */
+const SKILL_RARITY_MUL = { COMMUN: 1, RARE: 1.12, EPIQUE: 1.28, MYTHIQUE: 1.5, LEGENDAIRE: 1.8, DIVIN: 2.2 };
+function skillRarityMul(def) { return SKILL_RARITY_MUL[def.rarity] || 1; }
+/* the three power reads, so combat and UI can never disagree */
+function skillMult(def) { return (def.mult || 0) * skillRarityMul(def); }
+function skillHeal(def) { return def.heal ? def.heal * skillRarityMul(def) : 0; }
+function skillEff(def) {
+  if (!def.eff) return null;
+  return Object.assign({}, def.eff, { value: Math.round(def.eff.value * skillRarityMul(def) * 10) / 10 });
+}
 const SKILL_DEFS = [
   /* ---- ATTAQUE : single target ---- */
-  { id: "frappe",      name: "Frappe Sombre",    cat: "ATTAQUE", type: "MONO",   cd: 4,  mult: 3.2, color: "#F0883E", icon: "slash",     fx: "impact" },
-  { id: "taillade",    name: "Taillade",         cat: "ATTAQUE", type: "MONO",   cd: 3,  mult: 2.4, color: "#FF9C6B", icon: "blade",     fx: "impact" },
-  { id: "percee",      name: "Percée",           cat: "ATTAQUE", type: "MONO",   cd: 6,  mult: 4.6, color: "#FF6B4A", icon: "pierce",    fx: "pierce" },
-  { id: "execution",   name: "Exécution",        cat: "ATTAQUE", type: "MONO",   cd: 11, mult: 7.5, color: "#E5484D", icon: "execute",   fx: "impact" },
+  { id: "taillade",    name: "Taillade",         cat: "ATTAQUE", type: "MONO",   rarity: "COMMUN",     cd: 3,  mult: 2.4, color: "#FF9C6B", icon: "blade",     fx: "impact",
+    desc: "Un coup rapide et sans fioriture. Peu de dégâts, mais il revient sans arrêt." },
+  { id: "frappe",      name: "Frappe Sombre",    cat: "ATTAQUE", type: "MONO",   rarity: "RARE",       cd: 4,  mult: 3.2, color: "#F0883E", icon: "slash",     fx: "impact",
+    desc: "Une frappe unique chargée d'ombre. Bon compromis entre dégâts et recharge." },
+  { id: "percee",      name: "Percée",           cat: "ATTAQUE", type: "MONO",   rarity: "EPIQUE",     cd: 6,  mult: 4.6, color: "#FF6B4A", icon: "pierce",    fx: "pierce",
+    desc: "Un estoc qui traverse l'armure. Lourds dégâts sur une seule cible." },
+  { id: "execution",   name: "Exécution",        cat: "ATTAQUE", type: "MONO",   rarity: "LEGENDAIRE", cd: 11, mult: 7.5, color: "#E5484D", icon: "execute",   fx: "impact",
+    desc: "Le coup de grâce. Les plus gros dégâts mono-cible du jeu, au prix d'une longue recharge." },
 
   /* ---- AOE : every enemy ---- */
-  { id: "vortex",      name: "Vortex Arcanique", cat: "AOE",     type: "AOE",    cd: 6,  mult: 2.4, color: "#9B5CF6", icon: "spiral",    fx: "vortex" },
-  { id: "chaine",      name: "Chaîne Foudre",    cat: "AOE",     type: "CHAINE", cd: 5,  mult: 2.0, color: "#3FCFD6", icon: "chain",     fx: "bolt" },
-  { id: "onde",        name: "Onde de Choc",     cat: "AOE",     type: "AOE",    cd: 7,  mult: 2.8, color: "#4A90D9", icon: "wave",      fx: "wave" },
-  { id: "meteore",     name: "Météore",          cat: "AOE",     type: "AOE",    cd: 9,  mult: 4.0, color: "#FF7A3D", icon: "meteor",    fx: "meteor" },
+  { id: "chaine",      name: "Chaîne Foudre",    cat: "AOE",     type: "CHAINE", rarity: "COMMUN",     cd: 5,  mult: 2.0, color: "#3FCFD6", icon: "chain",     fx: "bolt",
+    desc: "Un arc électrique qui rebondit d'un ennemi à l'autre et touche toute la vague." },
+  { id: "vortex",      name: "Vortex Arcanique", cat: "AOE",     type: "AOE",    rarity: "RARE",       cd: 6,  mult: 2.4, color: "#9B5CF6", icon: "spiral",    fx: "vortex",
+    desc: "Une spirale d'énergie qui aspire et broie tous les ennemis présents." },
+  { id: "onde",        name: "Onde de Choc",     cat: "AOE",     type: "AOE",    rarity: "EPIQUE",     cd: 7,  mult: 2.8, color: "#4A90D9", icon: "wave",      fx: "wave",
+    desc: "Une déflagration circulaire qui balaie tout ce qui entoure le héros." },
+  { id: "meteore",     name: "Météore",          cat: "AOE",     type: "AOE",    rarity: "MYTHIQUE",   cd: 9,  mult: 4.0, color: "#FF7A3D", icon: "meteor",    fx: "meteor",
+    desc: "Un bloc incandescent s'écrase sur l'arène. La zone la plus dévastatrice hors Ultime." },
 
   /* ---- BUFF : timed, on the hero ---- */
-  { id: "rempart",     name: "Rempart",          cat: "BUFF",    type: "BUFF",   cd: 12, mult: 0,   color: "#4A90D9", icon: "shield",    fx: "aura",
-    eff: { key: "rempart", stat: "dmgRed",   value: 35, dur: 6, label: "Rempart" } },
-  { id: "force",       name: "Force",            cat: "BUFF",    type: "BUFF",   cd: 10, mult: 0,   color: "#3FB950", icon: "power",     fx: "aura",
+  { id: "force",       name: "Force",            cat: "BUFF",    type: "BUFF",   rarity: "RARE",       cd: 10, mult: 0,   color: "#3FB950", icon: "power",     fx: "aura",
+    desc: "Décuple la puissance de frappe du héros pendant quelques secondes.",
     eff: { key: "force",   stat: "dmg",      value: 40, dur: 7, label: "Force" } },
-  { id: "hate",        name: "Hâte",             cat: "BUFF",    type: "BUFF",   cd: 13, mult: 0,   color: "#84E891", icon: "haste",     fx: "aura",
+  { id: "rempart",     name: "Rempart",          cat: "BUFF",    type: "BUFF",   rarity: "EPIQUE",     cd: 12, mult: 0,   color: "#4A90D9", icon: "shield",    fx: "aura",
+    desc: "Un bouclier de lumière qui absorbe une partie des dégâts subis.",
+    eff: { key: "rempart", stat: "dmgRed",   value: 35, dur: 6, label: "Rempart" } },
+  { id: "hate",        name: "Hâte",             cat: "BUFF",    type: "BUFF",   rarity: "MYTHIQUE",   cd: 13, mult: 0,   color: "#84E891", icon: "haste",     fx: "aura",
+    desc: "Accélère les attaques du héros : plus de coups portés sur la même durée.",
     eff: { key: "hate",    stat: "haste",    value: 30, dur: 6, label: "Hâte" } },
 
   /* ---- DEBUFF : timed, on the enemies ---- */
-  { id: "malediction", name: "Malédiction",      cat: "DEBUFF",  type: "DEBUFF", cd: 8,  mult: 1.2, color: "#B15CF6", icon: "skull",     fx: "curse",
-    eff: { key: "vuln",    stat: "vuln",     value: 30, dur: 6, label: "Vulnérable" } },
-  { id: "lenteur",     name: "Lenteur",          cat: "DEBUFF",  type: "DEBUFF", cd: 9,  mult: 0,   color: "#8B6BD6", icon: "slow",      fx: "curse",
-    eff: { key: "slow",    stat: "slow",     value: 40, dur: 7, label: "Lenteur" } },
-  { id: "poison",      name: "Poison",           cat: "DEBUFF",  type: "DEBUFF", cd: 8,  mult: 0.5, color: "#7ED321", icon: "poison",    fx: "poison",
+  { id: "poison",      name: "Poison",           cat: "DEBUFF",  type: "DEBUFF", rarity: "COMMUN",     cd: 8,  mult: 0.5, color: "#7ED321", icon: "poison",    fx: "poison",
+    desc: "Empoisonne la vague : des dégâts continus qui s'ajoutent à tout le reste.",
     eff: { key: "poison",  stat: "poison",   value: 22, dur: 8, label: "Poison" } },
+  { id: "malediction", name: "Malédiction",      cat: "DEBUFF",  type: "DEBUFF", rarity: "EPIQUE",     cd: 8,  mult: 1.2, color: "#B15CF6", icon: "skull",     fx: "curse",
+    desc: "Marque les ennemis : ils encaissent davantage de dégâts de toutes tes sources.",
+    eff: { key: "vuln",    stat: "vuln",     value: 30, dur: 6, label: "Vulnérable" } },
+  { id: "lenteur",     name: "Lenteur",          cat: "DEBUFF",  type: "DEBUFF", rarity: "MYTHIQUE",   cd: 9,  mult: 0,   color: "#8B6BD6", icon: "slow",      fx: "curse",
+    desc: "Ralentit les ennemis, qui frappent nettement moins souvent.",
+    eff: { key: "slow",    stat: "slow",     value: 40, dur: 7, label: "Lenteur" } },
 
   /* ---- SOIN ---- */
-  { id: "benediction", name: "Bénédiction",      cat: "SOIN",    type: "HEAL",   cd: 10, mult: 0,   color: "#F5C542", icon: "sparkle",   fx: "heal",  heal: 14 },
-  { id: "soin",        name: "Soin",             cat: "SOIN",    type: "HEAL",   cd: 7,  mult: 0,   color: "#3FE0C0", icon: "heal",      fx: "heal",  heal: 9 },
-  { id: "regeneration",name: "Régénération",     cat: "SOIN",    type: "BUFF",   cd: 14, mult: 0,   color: "#5CE8B0", icon: "regen",     fx: "heal",
+  { id: "soin",        name: "Soin",             cat: "SOIN",    type: "HEAL",   rarity: "COMMUN",     cd: 7,  mult: 0,   color: "#3FE0C0", icon: "heal",      fx: "heal",  heal: 9,
+    desc: "Referme les blessures. Rapide et fiable." },
+  { id: "benediction", name: "Bénédiction",      cat: "SOIN",    type: "HEAL",   rarity: "RARE",       cd: 10, mult: 0,   color: "#F5C542", icon: "sparkle",   fx: "heal",  heal: 14,
+    desc: "Une vague de lumière qui restaure une large part des points de vie d'un coup." },
+  { id: "regeneration",name: "Régénération",     cat: "SOIN",    type: "BUFF",   rarity: "MYTHIQUE",   cd: 14, mult: 0,   color: "#5CE8B0", icon: "regen",     fx: "heal",
+    desc: "Régénère des points de vie en continu pendant toute la durée de l'effet.",
     eff: { key: "regen",   stat: "regen",    value: 3, dur: 8, label: "Régén." } },
 
-  /* ---- ULTIME : rare, expensive, decisive ---- */
-  { id: "cataclysme",  name: "Cataclysme",       cat: "ULTIME",  type: "AOE",    cd: 22, mult: 11,  color: "#F5C542", icon: "cataclysm", fx: "cataclysm" },
+  /* ---- ULTIME : the Ascension prize ---- */
+  { id: "cataclysme",  name: "Cataclysme",       cat: "ULTIME",  type: "AOE",    rarity: "DIVIN",      cd: 22, mult: 11,  color: "#F5C542", icon: "cataclysm", fx: "cataclysm",
+    desc: "L'arène entière s'embrase. Les dégâts les plus dévastateurs du jeu, sur tous les ennemis à la fois." },
 ];
+const SKILLS_BY_RARITY = {};
+SKILL_DEFS.forEach((d) => { (SKILLS_BY_RARITY[d.rarity] = SKILLS_BY_RARITY[d.rarity] || []).push(d); });
 const SKILL_BY_ID = {};
 SKILL_DEFS.forEach((d) => { SKILL_BY_ID[d.id] = d; });
 
@@ -2628,7 +2667,7 @@ function tick() {
           life: vfxDur(fxKind), max: vfxDur(fxKind) });
         if (c.skillFxs.length > 4) c.skillFxs.shift();
         if (def.mult > 0) {
-          const sdmg = Math.floor(skillDamageMult(dv.damage * def.mult, S.skills[sid].level)
+          const sdmg = Math.floor(skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level)
             * (1 + (dv.skillDmgBonus || 0) / 100));
           if (def.type === "AOE" || def.type === "CHAINE" || def.type === "DEBUFF") {
             c.enemies.filter((e) => e.alive).forEach((e) => applyDamageToEnemy(c, e, sdmg, true, def.color));
@@ -2637,13 +2676,13 @@ function tick() {
           }
         }
         if (def.heal) {
-          const amt = Math.floor(c.heroMaxHP * def.heal / 100);
+          const amt = Math.floor(c.heroMaxHP * skillHeal(def) / 100);
           c.heroHP = Math.min(c.heroMaxHP, c.heroHP + amt);
           c.floats.push({ id: rid(), x: c.heroX, val: amt, crit: false, color: "#84E891", born: now, heal: true });
         }
         if (def.eff) {
           // buffs land on the hero, debuffs on the wave
-          fxAdd(c, def.cat === "DEBUFF" ? "debuffs" : "buffs", def.eff, now);
+          fxAdd(c, def.cat === "DEBUFF" ? "debuffs" : "buffs", skillEff(def), now);
         }
       }
     });
@@ -2932,8 +2971,12 @@ function summonSkill(n) {
       const rolls = Math.random() * 100 < dblChance ? 2 : 1;
       for (let r = 0; r < rolls; r++) {
         const rates = getRates("skill", s.skillMastery.level, s.ascension, starsOf(s, "skill"));
-        const rar = rollRarity(rates);
-        const def = SKILL_DEFS[Math.floor(Math.random() * SKILL_DEFS.length)];
+        let rar = rollRarity(rates);
+        // a tier can legitimately be empty of skills; step down rather than fail
+        let ri = RARITY_ORDER.indexOf(rar);
+        while (ri > 0 && !(SKILLS_BY_RARITY[rar] || []).length) { ri -= 1; rar = RARITY_ORDER[ri]; }
+        const pool = SKILLS_BY_RARITY[rar] || SKILL_DEFS;
+        const def = pool[Math.floor(Math.random() * pool.length)];
         const existing = s.skills[def.id];
         if (existing) {
           const need = skillDupesNeeded(existing.level);
@@ -4394,7 +4437,7 @@ function scrPersonnage() {
       src("cycle", C.purple, "Rebirth (" + S.rebirth.count + ")", "+" + ((S.rebirth.upgrades.damage || 0) * 2) + "% Dégâts · +" + ((S.rebirth.upgrades.life || 0) * 2.5) + "% Vie") +
       src("sparkle", "#B15CF6", "Compétences actives", skills.length ? skills.map((id) => {
         const def = SKILL_DEFS.find((x) => x.id === id);
-        return def.mult > 0 ? def.name + " ~" + fmt(Math.floor(skillDamageMult(D.damage * def.mult, S.skills[id].level)
+        return def.mult > 0 ? def.name + " ~" + fmt(Math.floor(skillDamageMult(D.damage * skillMult(def), S.skills[id].level)
           * (1 + (D.skillDmgBonus || 0) / 100))) : def.name;
       }).join(" · ") : "Aucune") +
       src("star", "#FF4D8D", "Ascension " + S.ascension, S.ascension ? "Taux Divin débloqués" : "Non ascensionné") +
@@ -4555,7 +4598,7 @@ function scrCompetences() {
             SKILL_CATS[def.cat].c + '66">' + SKILL_CATS[def.cat].label + "</span></div>" +
           '<div class="mute tiny b" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Niv.' +
           sk.level + "/" + RULES.SKILL_MAX_LEVEL + " · CD " + def.cd + "s" +
-          (def.mult > 0 ? " · x" + skillDamageMult(def.mult, sk.level).toFixed(2) + " dégâts" : " · soutien") + "</div>" +
+          (def.mult > 0 ? " · x" + skillDamageMult(skillMult(def), sk.level).toFixed(2) + " dégâts" : " · soutien") + "</div>" +
           '<div class="mt6">' + bar((sk.count / need) * 100, def.color, 5) + "</div>" +
           '<div class="mute tiny">Doublons ' + sk.count + "/" + need + "</div></div>" +
           (equipped ? '<span class="pill" style="color:' + C.green + ';border-color:' + C.green + '">Équipée</span>'
