@@ -4260,6 +4260,71 @@ function showHarvestModal() {
   if (ov) ov.setAttribute("data-modal", "harvest");
 }
 
+/* The upgrade sheet answers "what does this buy me?" before it asks for the
+   gold. The rarity table used to sit permanently on the home panel, where it
+   was reference material nobody reads twice; here it is the whole point --
+   current rates against the ones the next level unlocks. The confirm at the
+   foot is the only place the upgrade actually fires. */
+function showForgeUpgrade() {
+  const lv = S.forge.level;
+  const atMax = lv >= RULES.FORGE_MAX;
+  const cost = forgeUpgCostFor(S);
+  const time = forgeUpgTimeFor(S);
+  const need = forgeProgressNeed(lv);
+  const have = Math.min(need, S.forge.progress || 0);
+  const gaugeOk = have >= need;
+  const goldOk = S.gold >= cost;
+  const busy = S.forge.upgradeEnd > Date.now();
+  const cut = Math.min(FORGE_COST_CUT_CAP, treeSum(S, "forgeCost"));
+  const cur = getRates("forge", lv, S.ascension, starsOf(S, "forge"));
+  const nxt = atMax ? null : getRates("forge", lv + 1, S.ascension, starsOf(S, "forge"));
+
+  let action, note = "";
+  if (atMax) {
+    action = btn("Forge au niveau maximum", { cls: "ghost", small: true, dis: true });
+  } else if (busy) {
+    action = btn(ic("clock", 13) + "Amélioration en cours", { cls: "ghost", small: true, dis: true });
+    note = "Termine ou accélère l'amélioration en cours depuis l'Accueil.";
+  } else if (!gaugeOk || !goldOk) {
+    action = btn(ic("hammer", 13) + "Améliorer · " + fmt(cost) + " Or", { small: true, dis: true });
+    note = !gaugeOk && !goldOk
+      ? "Il te manque " + (need - have) + " forge" + (need - have > 1 ? "s" : "") + " et " + fmt(cost - S.gold) + " Or."
+      : !gaugeOk ? "Forge encore " + (need - have) + " fois pour remplir la jauge."
+      : "Il te manque " + fmt(cost - S.gold) + " Or — tente le Raid Or.";
+  } else {
+    action = btn(ic("hammer", 14) + "Améliorer · " + fmt(cost) + " Or",
+      { cls: "green", small: true, act: "forgeUpgrade" });
+  }
+
+  openModal(
+    '<div class="center" style="margin-bottom:6px">' + ic("hammer", 28) + "</div>" +
+    '<div class="modalT center" style="color:var(--goldLit)">NIV.' + lv +
+      (atMax ? "" : ' <span style="color:var(--textMute)">→</span> NIV.' + (lv + 1)) + "</div>" +
+    '<div class="dim tiny center" style="margin:3px 0 7px">' +
+      (atMax ? "La Forge ne peut plus progresser."
+        : "Chaque niveau améliore les taux de rareté de tout ce que tu forges.") + "</div>" +
+
+    (atMax ? "" :
+      '<div class="mute tiny b center" style="letter-spacing:.5px;margin-bottom:2px">CE QUE CE NIVEAU CHANGE</div>' +
+      ratesTable(cur, nxt, "Niv." + lv, "Niv." + (lv + 1), EQUIP_RARITY_ORDER)) +
+
+    '<div class="card mt6" style="padding:7px 9px">' +
+      '<div class="kv"><span class="dim">Jauge de forge</span><b style="color:' +
+        (gaugeOk ? "var(--greenLit)" : "var(--textMute)") + '">' + have + " / " + need + "</b></div>" +
+      (atMax ? "" :
+        '<div class="kv"><span class="dim">Coût</span><b class="row gap4" style="color:' +
+          (goldOk ? "var(--goldLit)" : "var(--textMute)") + '">' + ic("gold", 12) + fmt(cost) + "</b></div>" +
+        (cut > 0 ? '<div class="kv"><span class="dim">Réduction de l\'Arbre</span><b style="color:var(--greenLit)">−' +
+          cut + "%</b></div>" : "") +
+        '<div class="kv"><span class="dim">Durée</span><b class="row gap4">' + ic("clock", 12) +
+          (time <= 0 ? "Instantané" : fmtTime(time)) + "</b></div>") +
+    "</div>" +
+
+    '<div class="mt8">' + action + "</div>" +
+    (note ? '<div class="mute tiny center mt6" style="line-height:1.45">' + note + "</div>" : "") +
+    '<div class="mt6">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
+    "Améliorer la Forge");
+}
 /* ---------------- HUD ---------------- */
 function renderHUD() {
   const hud = document.getElementById("hud");
@@ -4317,9 +4382,7 @@ function renderTabs() {
 
 /* ---------------- ACCUEIL ---------------- */
 function scrAccueil() {
-  const curRates = getRates("forge", S.forge.level, S.ascension, starsOf(S, "forge"));
   const atMax = S.forge.level >= RULES.FORGE_MAX;
-  const nextRates = atMax ? null : getRates("forge", S.forge.level + 1, S.ascension, starsOf(S, "forge"));
   const upgCost = forgeUpgCostFor(S);
   const upgTime = forgeUpgTimeFor(S);
   const upgrading = S.forge.upgradeEnd > Date.now();
@@ -4373,10 +4436,11 @@ function scrAccueil() {
     upg = '<div class="fgRow mt6">' +
         condBar(fgFull, "Jauge", fgHave + "/" + fgNeed, gaugePct, C.gold) +
         condBar(goldOk, "Or", fmt(S.gold) + "/" + fmt(upgCost), goldPct, C.gold) +
+        // always clickable: the sheet is where you find out what the level buys
         btn('<span class="col" style="align-items:center;line-height:1.1">' +
           '<span class="row gap3">' + ic("hammer", 12) + "Niv." + (S.forge.level + 1) + "</span>" +
           '<span style="font-size:8.5px;opacity:.8">' + (upgTime <= 0 ? "INSTANT" : fmtTime(upgTime)) + "</span></span>",
-          { small: true, act: "forgeUpgrade", dis: !fgFull || !goldOk,
+          { small: true, cls: (fgFull && goldOk) ? "green" : "", act: "forgeUpgradeAsk",
             style: "width:auto;padding:4px 9px;flex:0 0 auto" }) +
       "</div>";
   }
@@ -4452,9 +4516,6 @@ function scrAccueil() {
         '<div class="tgl ' + (S.forge.autoForge ? "on" : "off") + '" data-act="autoForge">' +
           "<span>AUTO</span><i></i></div>" +
       "</div>" +
-      fold("forgeRates", "Taux de rareté",
-        ratesTable(curRates, nextRates, "Actuel", "Niv." + (S.forge.level + 1), EQUIP_RARITY_ORDER),
-        "margin:2px 0 0") +
     "</div></div>" +
     '<div class="navCat">Progression</div>' +
     '<div class="navGrid">' + progBtns.map(tile).join("") + "</div>" +
@@ -6093,7 +6154,9 @@ const ACT = {
     const r = forgeSummon(parseInt(a, 10));
     if (r.length) showForgeResult(r); else toast("Minerai insuffisant");
   },
+  forgeUpgradeAsk: () => showForgeUpgrade(),
   forgeUpgrade: () => {
+    closeModal();
     const r = upgradeForge();
     if (r.ok) toast(r.instant ? "Forge améliorée !" : "Amélioration lancée", true);
     else toast(r.reason === "gold" ? "Or insuffisant"
