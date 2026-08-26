@@ -306,7 +306,7 @@ body{
 }
 
 /* ---------- skill bar (sheet §4 bottom row) ---------- */
-#skillbar{display:flex;align-items:center;gap:5px;padding:8px 14px 0;flex:0 0 auto}
+#skillbar{display:flex;align-items:center;gap:5px;padding:5px 14px 0;flex:0 0 auto}
 .slot{
   width:36px;height:36px;border-radius:9px;flex:0 0 auto;position:relative;overflow:hidden;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -322,6 +322,17 @@ body{
 }
 .slot.locked{cursor:default;filter:saturate(.3) brightness(.75)}
 .slot.locked .tiny{margin-top:2px}
+/* Home is a fixed column: everything below the arena has a natural height and
+   the arena takes whatever is left, so the screen never scrolls and the fight
+   is as large as the device allows. */
+#screen.fixed{overflow:hidden;display:flex;flex-direction:column}
+#screen.fixed #arenaSlot{flex:1 1 auto;min-height:124px;display:flex}
+#screen.fixed #arena{height:auto;flex:1 1 auto}
+#screen.fixed>*:not(#arenaSlot){flex:0 0 auto}
+/* forge panel: three tight rows instead of six stacked blocks */
+.fgRow{display:flex;align-items:center;gap:7px}
+.fgCond{flex:1;min-width:0}
+.fgCond>.lbl{display:flex;justify-content:space-between;font-size:9px;font-weight:800;margin-bottom:2px}
 /* home skill bar companion chip */
 .petMini{
   flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:38px;padding:0 8px;cursor:pointer;border-radius:10px;
@@ -340,7 +351,7 @@ body{
 }
 .slot.cooling .skfx{filter:grayscale(.72) brightness(.5)}
 .slot .catBar{position:absolute;left:0;right:0;bottom:0;height:3px;border-radius:0 0 10px 10px}
-#fxbar{display:flex;gap:4px;padding:6px 14px 0;flex-wrap:wrap;flex:0 0 auto;min-height:0}
+#fxbar{display:flex;gap:4px;padding:0 14px;flex-wrap:wrap;flex:0 0 auto;min-height:0}
 .fxChip{
   display:flex;align-items:center;gap:4px;padding:2px 7px 2px 4px;border-radius:999px;
   font-size:9.5px;font-weight:900;letter-spacing:.2px;
@@ -442,10 +453,10 @@ body{
 }
 
 /* ---------- misc widgets ---------- */
-.navGrid{display:flex;justify-content:space-between;padding:13px 14px 0;gap:5px}
+.navGrid{display:flex;justify-content:space-between;padding:4px 14px 0;gap:5px}
 .navBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
 .navInner{
-  width:100%;max-width:42px;aspect-ratio:1;border-radius:10px;position:relative;overflow:hidden;
+  width:100%;max-width:38px;aspect-ratio:1;border-radius:9px;position:relative;overflow:hidden;
   display:flex;align-items:center;justify-content:center;border:1px solid #ffffff33;
   box-shadow:inset 0 1px 0 #ffffff59,inset 0 -8px 14px #00000059,0 3px 9px #00000080;
 }
@@ -457,7 +468,7 @@ body{
 .navInner.art>img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 3px 7px #000000a6)}
 .navInner.art.lk>img{filter:grayscale(1) brightness(.62) contrast(.9)}
 .navInner.art>.lkIco{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.navLbl{color:var(--textDim);font-size:9.5px;font-weight:800;letter-spacing:.2px}
+.navLbl{color:var(--textDim);font-size:9px;font-weight:800;letter-spacing:.1px;line-height:1.2}
 /* skill / research node tile (sheet §5) */
 .eggCard{
   position:relative;padding:6px 5px;text-align:center;border-radius:10px;
@@ -469,7 +480,7 @@ body{
    actually need. */
 .fold{padding:0;background:none;border:none;box-shadow:none;margin-bottom:6px}
 .fold>summary{
-  display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;padding:7px 0 6px;
+  display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;padding:5px 0 4px;
   font-family:var(--fd);font-size:12px;font-weight:900;letter-spacing:2.2px;
   text-transform:uppercase;color:var(--goldLit);text-shadow:0 0 12px #E8B44A44,0 1px 0 #000;
 }
@@ -4165,35 +4176,37 @@ function scrAccueil() {
 
   let upg;
   if (atMax) {
-    upg = '<div class="notice center mt10"><b class="gt">Forge au niveau maximum</b></div>';
+    upg = '<div class="mute tiny center mt4"><b class="gt">Forge au niveau maximum</b></div>';
   } else if (upgrading) {
-    upg = '<div class="card lit mt10" style="padding:9px 10px">' +
-      '<div class="row gap10"><div class="flex1">' +
-        '<div class="b tiny" style="color:var(--goldLit)">AMÉLIORATION → NIV.' + (S.forge.level + 1) + "</div>" +
-        '<div class="mt6">' + bar(100 - (upgRemain / Math.max(1, upgTime)) * 100, C.gold, 7) + "</div></div>" +
-      '<b class="row gap4" style="color:var(--goldLit);font-size:13px">' + ic("clock", 12) + fmtTime(upgRemain) + "</b></div>" +
-      '<div class="row gap4 mt8" style="flex-wrap:wrap">' +
-        (forgeAccels || '<span class="mute tiny">Aucun accélérateur disponible</span>') + "</div></div>";
+    upg = '<div class="card lit mt4" style="padding:4px 7px">' +
+      '<div class="row gap8"><div class="flex1">' +
+        '<div class="b" style="font-size:9px;color:var(--goldLit)">AMÉLIORATION → NIV.' + (S.forge.level + 1) + "</div>" +
+        '<div class="mt4">' + bar(100 - (upgRemain / Math.max(1, upgTime)) * 100, C.gold, 5) + "</div></div>" +
+      '<b class="row gap3" style="color:var(--goldLit);font-size:11px">' + ic("clock", 11) + fmtTime(upgRemain) + "</b></div>" +
+      '<div class="row gap3 mt3" style="flex-wrap:nowrap;overflow-x:auto">' +
+        (forgeAccels || '<span class="mute tiny">Aucun accélérateur</span>') + "</div></div>";
   } else if (upgDone) {
-    upg = '<div class="mt10">' + btn(ic("check", 13) + "Récupérer Niv." + (S.forge.level + 1), { cls: "green", act: "forgeCollect" }) + "</div>";
+    upg = '<div class="mt6">' + btn(ic("check", 13) + "Récupérer Niv." + (S.forge.level + 1), { cls: "green", small: true, act: "forgeCollect" }) + "</div>";
   } else {
     // both conditions shown explicitly so the disabled button is never a mystery
     const cond = (ok, label) =>
       '<span class="row gap4 tiny b" style="color:' + (ok ? "var(--greenLit)" : "var(--textMute)") + '">' +
       ic(ok ? "check" : "cross", 10) + label + "</span>";
-    upg = '<div class="mt10">' +
-      '<div class="between" style="margin-bottom:5px">' +
-        cond(fgFull, "Jauge " + fgHave + "/" + fgNeed) +
-        cond(goldOk, "Or " + fmt(S.gold) + " / " + fmt(upgCost)) +
-      "</div>" +
-      '<div style="margin-bottom:7px">' + meter((fgHave / fgNeed) * 100, fgFull ? C.green : C.gold,
-        fgFull ? "Jauge pleine" : fgHave + " / " + fgNeed + " forges") + "</div>" +
-      btn('<span class="row gap6">' + ic("hammer", 15) + "Améliorer la Forge</span>" +
-        '<span class="col" style="align-items:flex-end;line-height:1.15"><span class="row gap4">' + ic("gold", 12) + fmt(upgCost) + "</span>" +
-        '<span style="font-size:9px;opacity:.75">' + (upgTime <= 0 ? "INSTANTANÉ" : fmtTime(upgTime)) + "</span></span>",
-        { act: "forgeUpgrade", dis: !fgFull || !goldOk, style: "justify-content:space-between" }) +
-      (!fgFull ? '<div class="mute tiny center mt6">Forge encore ' + (fgNeed - fgHave) + " fois pour remplir la jauge</div>"
-        : !goldOk ? '<div class="mute tiny center mt6">Il manque ' + fmt(upgCost - S.gold) + " Or — tente le Raid Or</div>" : "") +
+    // gauge and gold side by side, the upgrade button on the same line
+    const gaugePct = (fgHave / fgNeed) * 100;
+    const goldPct = Math.min(100, (S.gold / Math.max(1, upgCost)) * 100);
+    const condBar = (okFlag, label, val, pct, col) =>
+      '<div class="fgCond"><div class="lbl"><span class="mute">' + label + "</span>" +
+      '<span style="color:' + (okFlag ? "var(--greenLit)" : "var(--textMute)") + '">' + val + "</span></div>" +
+      bar(pct, okFlag ? C.green : col, 4) + "</div>";
+    upg = '<div class="fgRow mt6">' +
+        condBar(fgFull, "Jauge", fgHave + "/" + fgNeed, gaugePct, C.gold) +
+        condBar(goldOk, "Or", fmt(S.gold) + "/" + fmt(upgCost), goldPct, C.gold) +
+        btn('<span class="col" style="align-items:center;line-height:1.1">' +
+          '<span class="row gap3">' + ic("hammer", 12) + "Niv." + (S.forge.level + 1) + "</span>" +
+          '<span style="font-size:8.5px;opacity:.8">' + (upgTime <= 0 ? "INSTANT" : fmtTime(upgTime)) + "</span></span>",
+          { small: true, act: "forgeUpgrade", dis: !fgFull || !goldOk,
+            style: "width:auto;padding:4px 9px;flex:0 0 auto" }) +
       "</div>";
   }
   const fCost = forgeCost(S.forge.level);
@@ -4238,30 +4251,17 @@ function scrAccueil() {
         '<i class="catBar" style="background:' + wCol + '"></i>' +
       "</div>" + sb + "</div>" +
     '<div id="fxbar"></div>' +
-    '<div class="pad mt8"><div class="card frame">' +
-      '<div class="row gap10">' +
-        '<div class="imini" style="width:42px;height:42px;border-color:var(--goldDim)">' + ic("hammer", 24) + "</div>" +
-        '<div class="flex1"><div class="between">' +
-          '<div class="row gap6" style="align-items:center">' +
-            '<span class="bb gt" style="font-size:14px;letter-spacing:1px">FORGE NIV.' + S.forge.level + "</span>" +
-            starRow("forge", "var(--goldLit)") + "</div>" +
-          '<div class="row gap4 b" style="color:var(--blueLit);font-size:12px">' + ic("minerai", 13) + fmt(S.minerai) + "</div>" +
-        "</div>" +
-        '<div class="mt6">' + meter(Math.min(100, (S.minerai / fCost) * 100), C.blue,
-          fmt(Math.min(S.minerai, fCost)) + " / " + fmt(fCost) + " Minerai") + "</div></div>" +
+    '<div class="pad mt6"><div class="card frame">' +
+      '<div class="fgRow">' +
+        '<div class="imini" style="width:26px;height:26px;border-color:var(--goldDim);flex:0 0 auto">' + ic("hammer", 15) + "</div>" +
+        '<span class="bb gt" style="font-size:12px;letter-spacing:.8px;flex:0 0 auto">FORGE NIV.' + S.forge.level + "</span>" +
+        starRow("forge", "var(--goldLit)") +
+        '<div class="flex1"></div>' +
+        '<div class="row gap3 b" style="color:var(--blueLit);font-size:11px;flex:0 0 auto">' + ic("minerai", 12) + fmt(S.minerai) + "</div>" +
       "</div>" +
-      '<details class="fold" style="margin-bottom:2px"><summary>Taux de rareté</summary>' +
-      ratesTable(curRates, nextRates, "Actuel", "Niv." + (S.forge.level + 1), EQUIP_RARITY_ORDER) +
-      "</details>" +
       upg +
       ascendCta("forge") +
-      '<div class="divider"></div>' +
-      '<div class="between tiny b" style="margin-bottom:6px">' +
-        '<span class="mute">Coût par forge</span>' +
-        '<span class="row gap4" style="color:var(--blueLit)">' + ic("minerai", 11) + fmt(fCost) +
-          '<span class="mute" style="font-weight:700">&nbsp;· +1 jauge</span></span>' +
-      "</div>" +
-      '<div class="row gap6">' +
+      '<div class="row gap6 mt6">' +
         btn('<span class="row gap6">' + ic("hammer", 14) + "Forger</span>" +
             '<span class="row gap4">' + ic("minerai", 12) + fmt(fCost) + "</span>",
           { cls: "blue", small: true, act: "forge", arg: 1, dis: S.minerai < fCost,
@@ -4278,6 +4278,9 @@ function scrAccueil() {
         '<div class="tgl ' + (S.forge.autoForge ? "on" : "off") + '" data-act="autoForge">' +
           "<span>AUTO</span><i></i></div>" +
       "</div>" +
+      '<details class="fold" style="margin:2px 0 0"><summary>Taux de rareté</summary>' +
+      ratesTable(curRates, nextRates, "Actuel", "Niv." + (S.forge.level + 1), EQUIP_RARITY_ORDER) +
+      "</details>" +
     "</div></div>" +
     '<div class="navGrid">' + navBtns.map(tile).join("") + "</div>" +
     '<div class="navGrid mt6">' + sysBtns.map(tile).join("") + "</div>" +
@@ -5402,6 +5405,7 @@ function render() {
   const sc = document.getElementById("screen");
   const keep = sc.scrollTop;
   const fn = SCREENS[route] || scrAccueil;
+  sc.className = route === "accueil" ? "fixed" : "";
   sc.innerHTML = fn();
   attachArena();
   sc.scrollTop = keep;
