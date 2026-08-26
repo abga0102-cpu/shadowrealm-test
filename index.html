@@ -341,7 +341,7 @@ body{
    the arena takes whatever is left, so the screen never scrolls and the fight
    is as large as the device allows. */
 #screen.fixed{overflow:hidden;display:flex;flex-direction:column}
-#screen.fixed #arenaSlot{flex:1 1 auto;min-height:calc(150px * var(--s));display:flex}
+#screen.fixed #arenaSlot{flex:1 1 auto;min-height:calc(190px * var(--s));display:flex}
 #screen.fixed #arena{height:auto;flex:1 1 auto}
 #screen.fixed>*:not(#arenaSlot){flex:0 0 auto}
 /* forge panel: three tight rows instead of six stacked blocks */
@@ -528,16 +528,7 @@ body{
 .hudBtn:hover{border-color:var(--gold);color:var(--goldLit)}
 .hudBtn.ready{color:var(--goldLit);border-color:var(--goldDim)}
 .hudBtn .dot{position:absolute;top:-2px;right:-2px}
-/* A stacked label above each group cost a row per category -- six rows for ten
-   tiles. The label now sits beside its tiles, so a category is one row and the
-   three of them take half the height they did. */
-.navRow{display:flex;align-items:center;gap:9px;padding:3px 14px 0}
-.navRow>.navCat{
-  flex:0 0 calc(52px * var(--s));text-align:right;line-height:1.05;
-  font-family:var(--fd);font-size:calc(8.5px * var(--s));font-weight:900;letter-spacing:.8px;
-  text-transform:uppercase;color:var(--textMute);
-}
-.navRow>.navGrid{flex:1;padding:0}
+/* ten painted tiles, two rows of five, no headings */
 .fxBub{
   position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);z-index:3;
   font-size:8.5px;font-weight:900;line-height:1;padding:2px 5px;border-radius:999px;
@@ -2912,15 +2903,21 @@ function tick() {
         if (crit) dmg *= 1.6 * (1 - dv.critRed / 100);
         const totalRed = Math.min(85, dv.dmgRed + fxVal(c, "buffs", "rempart"));
         dmg = Math.floor(dmg * (1 - totalRed / 100) * (0.9 + Math.random() * 0.2));
-        c.heroHP -= dmg;
-        c.heroHit = 0.15;
-        c.floats.push({ id: rid(), x: c.heroX, val: dmg, crit, color: "#FF6B6B", born: now });
         if (e.ranged) {
           c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX,
             color: e.type.img === "enemy_mage" ? "#B15CF6" : "#CFCFCF",
             kind: e.type.img === "enemy_mage" ? "magic" : "arrow", life: 0.35 });
         }
-        if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+        // the hero's blows already waited for their animation; the enemy's did
+        // not, so a mage's bolt landed before it had left his hand
+        scheduleHit(c, e.ranged ? HIT_DELAY_RANGED : HIT_DELAY_MELEE, () => {
+          if (c.status !== "fight") return;
+          c.heroHP -= dmg;
+          c.heroHit = 0.22;
+          addShake(c, crit ? 4 : 2);
+          c.floats.push({ id: rid(), x: c.heroX, val: dmg, crit, color: "#FF6B6B", born: Date.now() });
+          if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+        });
         }
       }
     }
@@ -4584,22 +4581,20 @@ function scrAccueil() {
       "</div>";
   }
   const fCost = forgeCost(S.forge.level);
-  // grouped by what you go there to do, rather than ten tiles in a heap
-  const progBtns = [
+  // two plain rows of five, the way they started
+  const navBtns = [
     { label: "Personnage", icon: "hero", color: "#5A7099", go: "personnage", badge: S.statPoints > 0 },
-    { label: "Arbre", icon: "tree", color: "#2F8A45", go: "arbre", badge: !S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n)) },
-    { label: "Rebirth", icon: "cycle", color: "#6B3AC4", go: "rebirth", badge: canRebirth() },
-    { label: "Ascension", icon: "star", color: "#B0862C", go: "ascension", badge: S.ascensionAvailable },
-  ];
-  const playBtns = [
     { label: "Raid", icon: "flame", color: "#C22127", go: "raid", badge: RAID_IDS.some((r) => S.raids[r].keys > 0), lock: S.level < RULES.RAID_UNLOCK_LEVEL ? RULES.RAID_UNLOCK_LEVEL : 0 },
-    { label: "Familiers", icon: "paw", color: "#C4711E", go: "familiers", badge: S.eggs.some((e) => e.hatchEnd <= Date.now()) },
-    { label: "Événement", icon: "gift", color: "#C22127", go: "evenement", badge: true },
-  ];
-  const socialBtns = [
+    { label: "Arbre", icon: "tree", color: "#2F8A45", go: "arbre", badge: !S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n)) },
     { label: "Clan", icon: "banner", color: "#B0862C", go: "clan", lock: S.level < 10 ? 10 : 0 },
-    { label: "Classement", icon: "trophy", color: "#5A7099", go: "classement" },
     { label: "Boutique", icon: "shop", color: "#3B7FC4", go: "boutique" },
+  ];
+  const sysBtns = [
+    { label: "Familiers", icon: "paw", color: "#C4711E", go: "familiers", badge: S.eggs.some((e) => e.hatchEnd <= Date.now()) },
+    { label: "Ascension", icon: "star", color: "#B0862C", go: "ascension", badge: S.ascensionAvailable },
+    { label: "Rebirth", icon: "cycle", color: "#6B3AC4", go: "rebirth", badge: canRebirth() },
+    { label: "Événement", icon: "gift", color: "#C22127", go: "evenement", badge: true },
+    { label: "Classement", icon: "trophy", color: "#5A7099", go: "classement" },
   ];
   const tile = (b) => {
     const art = ASSETS["nav_" + b.go];
@@ -4656,9 +4651,8 @@ function scrAccueil() {
           "<span>AUTO</span><i></i></div>" +
       "</div>" +
     "</div></div>" +
-    [["Progression", progBtns], ["Contenu", playBtns], ["Social", socialBtns]].map((g) =>
-      '<div class="navRow"><div class="navCat">' + g[0] + "</div>" +
-      '<div class="navGrid">' + g[1].map(tile).join("") + "</div></div>").join("") +
+    '<div class="navGrid">' + navBtns.map(tile).join("") + "</div>" +
+    '<div class="navGrid mt6">' + sysBtns.map(tile).join("") + "</div>" +
     '<div style="height:4px"></div>';
 }
 
