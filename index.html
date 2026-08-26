@@ -3725,6 +3725,19 @@ function vfxLayer(key, x, y, w, h, col, op, tf) {
 
 /* The basic attack reuses the same masked-sprite trick: the arc sweeps through
    the swing and fades as it goes, so it reads as a trail rather than a flash. */
+/* A bow does not swing. The slash arc used to play for every weapon, so an
+   archer drew a sword trail and a Baton cast by slashing. Ranged weapons get a
+   release flash at the hand instead -- the projectile carries the rest. */
+function releaseHTML(attacking, size, col) {
+  const q = Math.min(1, Math.max(0, 1 - attacking / ATTACK_WINDOW));
+  const hand = heroHand(attacking);
+  const d = size * (0.20 + q * 0.30);
+  const m = "url(" + ASSETS.vfx_spark + ") center/contain no-repeat";
+  return '<div class="slash" style="left:' + (hand.x * size - d / 2).toFixed(1) +
+    "px;top:" + (hand.y * size - d / 2 - size * 0.10).toFixed(1) + "px;width:" + d.toFixed(1) +
+    "px;height:" + d.toFixed(1) + "px;opacity:" + ((1 - q) * 0.85).toFixed(3) +
+    ";background:" + col + ";-webkit-mask:" + m + ";mask:" + m + '"></div>';
+}
 function slashHTML(attacking, size) {
   const q = Math.min(1, Math.max(0, 1 - attacking / ATTACK_WINDOW));
   const d = size * (0.95 + q * 0.45);
@@ -4007,7 +4020,11 @@ function drawArena() {
 
       '<img src="' + spriteFrame("hero", c.heroAttacking, t) + '" style="transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
       weaponHTML(D.weapon, weaponColor, c.heroAttacking > 0, t, size) +
-      (c.heroAttacking > 0 ? slashHTML(c.heroAttacking, size) : '') +
+      (c.heroAttacking > 0
+        ? (RANGED_IDS.includes(D.weapon)
+            ? releaseHTML(c.heroAttacking, size, weaponColor)
+            : slashHTML(c.heroAttacking, size))
+        : '') +
       (c.heroHit > 0 ? sparkHTML(c.heroHit, 0.15, size, '#FF9A5A') : '') +
       '<div class="hpMini" style="top:-12px"><i style="width:' + hpPct + '%"></i></div>' +
       '</div>';
