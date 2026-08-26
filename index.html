@@ -478,6 +478,26 @@ body{
   background:linear-gradient(180deg,#1B2942,#0E1726);border:1px solid var(--border);
   box-shadow:inset 0 1px 0 #ffffff17,0 2px 7px #00000059;
 }
+/* skill grid: four tiles a row, rarity on the border, level on the corner.
+   Owned tiles glow, unowned ones stay drained so the collection reads at a
+   glance without a single row of text. */
+.skGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
+.skGrid .skTile{aspect-ratio:auto;height:44px}
+.skTile{
+  position:relative;aspect-ratio:1;border-radius:10px;cursor:pointer;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  border:1px solid var(--border);background:linear-gradient(180deg,#1B2942,#0D1522);
+  box-shadow:inset 0 1px 0 #ffffff1a,0 2px 6px #00000073;
+}
+.skTile:active{transform:translateY(1px)}
+.skTile .skLv{
+  position:absolute;right:2px;bottom:2px;font-size:8.5px;font-weight:900;
+  padding:0 3px;border-radius:5px;background:#0A1020cc;color:var(--textDim);
+}
+.skTile .skEq{position:absolute;left:3px;top:3px;width:6px;height:6px;border-radius:50%;
+  background:#3FB950;box-shadow:0 0 6px #3FB950}
+.skTile.locked{opacity:.32;filter:grayscale(1)}
+.skTile .skNm{display:none}
 /* collapsible section: the gold .sect header doubles as the toggle, so a
    documentation-heavy screen opens compact and the player expands what they
    actually need. */
@@ -1470,12 +1490,22 @@ const SKILL_CATS = {
    ultimate a real prize rather than a lucky roll. */
 const SKILL_RARITY_MUL = { COMMUN: 1, RARE: 1.12, EPIQUE: 1.28, MYTHIQUE: 1.5, LEGENDAIRE: 1.8, DIVIN: 2.2 };
 function skillRarityMul(def) { return SKILL_RARITY_MUL[def.rarity] || 1; }
-/* the three power reads, so combat and UI can never disagree */
+/* The three power reads, so combat and UI can never disagree. All three take
+   the owned level: damage already scaled with it, but healing and buff/debuff
+   effects did not, so levelling a Rempart from 1 to 50 changed nothing at all.
+   Support now grows in both strength and duration, gently enough that the 85%
+   damage-reduction cap is still the thing that bounds it. */
 function skillMult(def) { return (def.mult || 0) * skillRarityMul(def); }
-function skillHeal(def) { return def.heal ? def.heal * skillRarityMul(def) : 0; }
-function skillEff(def) {
+function skillHeal(def, level) {
+  return def.heal ? def.heal * skillRarityMul(def) * (1 + ((level || 1) - 1) * 0.02) : 0;
+}
+function skillEff(def, level) {
   if (!def.eff) return null;
-  return Object.assign({}, def.eff, { value: Math.round(def.eff.value * skillRarityMul(def) * 10) / 10 });
+  const g = (level || 1) - 1;
+  return Object.assign({}, def.eff, {
+    value: Math.round(def.eff.value * skillRarityMul(def) * (1 + g * 0.008) * 10) / 10,
+    dur: Math.round(def.eff.dur * (1 + g * 0.012) * 10) / 10,
+  });
 }
 const SKILL_DEFS = [
   /* ---- ATTAQUE : single target ---- */
@@ -2676,13 +2706,13 @@ function tick() {
           }
         }
         if (def.heal) {
-          const amt = Math.floor(c.heroMaxHP * skillHeal(def) / 100);
+          const amt = Math.floor(c.heroMaxHP * skillHeal(def, S.skills[sid].level) / 100);
           c.heroHP = Math.min(c.heroMaxHP, c.heroHP + amt);
           c.floats.push({ id: rid(), x: c.heroX, val: amt, crit: false, color: "#84E891", born: now, heal: true });
         }
         if (def.eff) {
           // buffs land on the hero, debuffs on the wave
-          fxAdd(c, def.cat === "DEBUFF" ? "debuffs" : "buffs", skillEff(def), now);
+          fxAdd(c, def.cat === "DEBUFF" ? "debuffs" : "buffs", skillEff(def, S.skills[sid].level), now);
         }
       }
     });
@@ -4498,6 +4528,7 @@ function scrEquipement() {
 
 /* ---------------- INVENTAIRE ---------------- */
 let invFilter = "ALL";
+let skillFilter = "ALL";
 function scrInventaire() {
   const list = invFilter === "ALL" ? S.inventory : S.inventory.filter((i) => i.slot === invFilter);
   const sorted = list.slice().sort((a, b) =>
@@ -4546,6 +4577,96 @@ function scrInventaire() {
 }
 
 /* ---------------- COMPÉTENCES ---------------- */
+/* Skill sheet: what it does in words, what it does in numbers right now, what
+   the next level changes, and how far the duplicates have got. Same shape as
+   the tree-node sheet so the two read alike. */
+const SKILL_TYPE_LABEL = { MONO: "Cible unique", AOE: "Toute la vague", CHAINE: "Rebonds en chaîne",
+  BUFF: "Bonus sur le héros", DEBUFF: "Malus sur la vague", HEAL: "Soin immédiat" };
+function skillEffectLine(def, level) {
+  const e = skillEff(def, level);
+  if (def.mult > 0) {
+    const d = computeDerived(S);
+    const raw = skillDamageMult(d.damage * skillMult(def), level) * (1 + (d.skillDmgBonus || 0) / 100);
+    return fmt(Math.floor(raw)) + " dégâts" + (def.type === "MONO" ? "" : " à chaque ennemi");
+  }
+  if (def.heal) return "+" + skillHeal(def, level).toFixed(1) + "% des PV max, immédiat";
+  if (e) {
+    const unit = e.stat === "regen" ? "%/s" : "%";
+    const what = e.stat === "dmg" ? "dégâts du héros" : e.stat === "dmgRed" ? "dégâts subis en moins"
+      : e.stat === "haste" ? "vitesse d'attaque" : e.stat === "vuln" ? "dégâts subis par les ennemis"
+      : e.stat === "slow" ? "lenteur des ennemis" : e.stat === "poison" ? "dégâts de poison par seconde"
+      : e.stat === "regen" ? "régénération" : e.stat;
+    return "+" + e.value + unit + " " + what + " pendant " + e.dur + "s";
+  }
+  return "—";
+}
+function showSkillCard(id) {
+  const def = SKILL_BY_ID[id];
+  if (!def) return;
+  const sk = S.skills[id];
+  const rc = RARITY[def.rarity].c;
+  const cat = SKILL_CATS[def.cat];
+  const lv = sk ? sk.level : 0;
+  const maxed = lv >= RULES.SKILL_MAX_LEVEL;
+  const need = sk ? skillDupesNeeded(lv) : 0;
+  const slotIdx = S.skillSlots.indexOf(id);
+  const equipped = slotIdx >= 0;
+  const openSlots = skillSlotCount(S);
+  const freeSlot = S.skillSlots.slice(0, openSlots).indexOf(null);
+
+  let action, note = "";
+  if (!sk) {
+    action = btn(ic("lock", 13) + "Non possédée", { cls: "ghost", small: true, dis: true });
+    note = "Invoque des compétences avec des Éclats. " + RARITY[def.rarity].label +
+      " : " + (getRates("skill", S.skillMastery.level, S.ascension, starsOf(S, "skill"))[def.rarity] || 0).toFixed(1) +
+      "% par invocation à ta Maîtrise actuelle.";
+  } else if (equipped) {
+    action = btn(ic("cross", 13) + "Retirer de l'emplacement " + (slotIdx + 1),
+      { cls: "dark", small: true, act: "unequipSkill", arg: id });
+  } else if (freeSlot >= 0) {
+    action = btn(ic("check", 13) + "Équiper · emplacement " + (freeSlot + 1),
+      { cls: "green", small: true, act: "autoEquipSkill", arg: id });
+  } else {
+    action = btn(ic("swords", 13) + "Remplacer une compétence", { cls: "blue", small: true, act: "skillSlot", arg: "0" });
+    note = "Tous les emplacements sont occupés — choisis lequel remplacer.";
+  }
+
+  openModal(
+    '<div class="row gap10" style="margin-bottom:9px">' +
+      '<div class="imini" style="width:44px;height:44px;background:linear-gradient(180deg,' + shade(def.color, 20) + "," +
+        shade(def.color, -40) + ');border-color:' + rc + ';box-shadow:0 0 12px ' + rc + '4d">' + ic(def.icon, 25) + "</div>" +
+      '<div class="flex1"><div class="bb" style="font-size:14px;color:' + def.color + '">' + esc(def.name) + "</div>" +
+      '<div class="row gap4 mt4" style="flex-wrap:wrap">' + rtag(def.rarity) +
+        '<span class="pill" style="color:' + cat.c + ";border-color:" + cat.c + '99">' + cat.label + "</span>" +
+        '<span class="pill">' + (SKILL_TYPE_LABEL[def.type] || def.type) + "</span>" +
+        (sk ? '<span class="pill" style="color:' + (maxed ? "var(--greenLit)" : "var(--text)") + ";border-color:" +
+          (maxed ? "#3FB950" : "#33486F") + '">Niv. ' + lv + " / " + RULES.SKILL_MAX_LEVEL + "</span>" : "") +
+      "</div></div></div>" +
+
+    '<div class="notice" style="border-left-color:' + def.color + '">' + esc(def.desc) + "</div>" +
+
+    '<div class="card mt6" style="padding:8px 10px">' +
+      '<div class="kv"><span class="dim">Effet actuel</span><b style="color:' + def.color + '">' +
+        (sk ? skillEffectLine(def, lv) : "—") + "</b></div>" +
+      (sk && !maxed ? '<div class="kv"><span class="dim">Au niveau ' + (lv + 1) + '</span><b style="color:var(--greenLit)">' +
+        skillEffectLine(def, lv + 1) + "</b></div>" : "") +
+      '<div class="kv"><span class="dim">Recharge</span><b class="row gap4">' + ic("clock", 12) + def.cd + "s</b></div>" +
+      '<div class="kv"><span class="dim">Bonus de rareté</span><b style="color:' + rc + '">×' +
+        skillRarityMul(def).toFixed(2) + "</b></div>" +
+    "</div>" +
+
+    (sk && !maxed
+      ? '<div class="mt6"><div class="between tiny b" style="margin-bottom:3px">' +
+          '<span class="mute">DOUBLONS POUR LE NIVEAU ' + (lv + 1) + "</span>" +
+          '<span style="color:' + def.color + '">' + sk.count + " / " + need + "</span></div>" +
+          meter((sk.count / need) * 100, def.color, "") + "</div>"
+      : sk && maxed ? '<div class="mute tiny center mt6">Niveau maximum atteint.</div>' : "") +
+
+    '<div class="mt8">' + action + "</div>" +
+    (note ? '<div class="mute tiny mt6" style="line-height:1.45">' + note + "</div>" : "") +
+    '<div class="mt6">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
+    esc(def.name));
+}
 function scrCompetences() {
   const rates = getRates("skill", S.skillMastery.level, S.ascension, starsOf(S, "skill"));
   const mreq = masteryReq(S.skillMastery.level);
@@ -4574,37 +4695,40 @@ function scrCompetences() {
         '<b style="color:var(--purpleLit);font-size:18px;text-shadow:0 0 12px #9B5CF680">' + S.skillMastery.level + "/" + RULES.MASTERY_MAX + "</b></div>" +
         '<div class="mt8">' + meter((S.skillMastery.progress / mreq) * 100, C.purple, S.skillMastery.progress + " / " + mreq) + "</div>" +
         ascendCta("skill") +
+        '<details class="fold" style="margin:2px 0 0"><summary>Taux de rareté</summary>' +
         ratesTable(rates, S.skillMastery.level < RULES.MASTERY_MAX ? getRates("skill", S.skillMastery.level + 1, S.ascension, starsOf(S, "skill")) : null,
-          "Actuel", "Niv." + (S.skillMastery.level + 1)) +
-        '<div class="row gap6 mt10">' +
+          "Actuel", "Niv." + (S.skillMastery.level + 1)) + "</details>" +
+        '<div class="row gap6 mt6">' +
           btn(ic("sparkle", 14) + "Invoquer · " + SKILL_SUMMON_COST, { cls: "purple", small: true, act: "summonSkill", arg: 1, dis: S.eclat < SKILL_SUMMON_COST }) +
           btn("x10 · " + SKILL_SUMMON_COST * 10, { cls: "purple", small: true, act: "summonSkill", arg: 10, dis: S.eclat < SKILL_SUMMON_COST * 10, style: "max-width:96px" }) +
         "</div></div>" +
       '<div class="sect" style="margin:16px 0 9px">Emplacements actifs</div>' +
       '<div class="row gap6">' + slots + "</div>" +
-      '<div class="mute tiny mt6">Les compétences équipées se déclenchent automatiquement selon leur temps de recharge.</div>' +
-      '<div class="sect" style="margin:16px 0 9px">Possédées (' + owned.length + "/" + SKILL_DEFS.length + ")</div>" +
-      (owned.length === 0 ? '<div class="notice center">Aucune compétence. Invoque avec des Éclats.</div>'
-        : owned.map((def) => {
-        const sk = S.skills[def.id];
-        const need = skillDupesNeeded(sk.level);
-        const equipped = S.skillSlots.includes(def.id);
-        return '<div class="itemRow" style="border-left-color:' + def.color + '">' +
-          '<div class="imini" style="width:34px;height:34px;background:linear-gradient(180deg,' + shade(def.color, 18) + "," +
-          shade(def.color, -38) + ');border-color:' + def.color + ';box-shadow:0 0 11px ' + def.color + '4d">' + ic(def.icon, 21) + "</div>" +
-          '<div class="flex1"><div class="row gap6" style="min-width:0">' +
-            '<span class="b small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + def.name + "</span>" +
-            '<span class="tag" style="flex:0 0 auto;color:' + SKILL_CATS[def.cat].c + ";border-color:" +
-            SKILL_CATS[def.cat].c + '66">' + SKILL_CATS[def.cat].label + "</span></div>" +
-          '<div class="mute tiny b" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Niv.' +
-          sk.level + "/" + RULES.SKILL_MAX_LEVEL + " · CD " + def.cd + "s" +
-          (def.mult > 0 ? " · x" + skillDamageMult(skillMult(def), sk.level).toFixed(2) + " dégâts" : " · soutien") + "</div>" +
-          '<div class="mt6">' + bar((sk.count / need) * 100, def.color, 5) + "</div>" +
-          '<div class="mute tiny">Doublons ' + sk.count + "/" + need + "</div></div>" +
-          (equipped ? '<span class="pill" style="color:' + C.green + ';border-color:' + C.green + '">Équipée</span>'
-            : btn("Équiper", { small: true, cls: "ghost", act: "autoEquipSkill", arg: def.id, style: "padding:5px 8px;font-size:11px" })) +
-          "</div>";
-      }).join("")) +
+      '<div class="mute tiny mt4">Les compétences équipées se déclenchent seules dès que leur recharge est finie.</div>' +
+      '<div class="sect">Collection (' + owned.length + "/" + SKILL_DEFS.length + ")</div>" +
+      // one tab per category, plus Tout; the count tells you what is left to find
+      '<div class="seg">' + ["ALL"].concat(Object.keys(SKILL_CATS)).map((k) => {
+        const inCat = k === "ALL" ? SKILL_DEFS : SKILL_DEFS.filter((d) => d.cat === k);
+        const have = inCat.filter((d) => S.skills[d.id]).length;
+        return '<span class="' + (skillFilter === k ? "on" : "") + '" data-act="skillFilter" data-arg="' + k + '">' +
+          (k === "ALL" ? "Tout" : SKILL_CATS[k].label) +
+          '<b style="opacity:.6;font-weight:700"> ' + have + "/" + inCat.length + "</b></span>";
+      }).join("") + "</div>" +
+      '<div class="skGrid mt6">' + SKILL_DEFS
+        .filter((d) => skillFilter === "ALL" || d.cat === skillFilter)
+        .map((def) => {
+          const sk = S.skills[def.id];
+          const rc = RARITY[def.rarity].c;
+          const equipped = sk && S.skillSlots.includes(def.id);
+          return '<div class="skTile' + (sk ? "" : " locked") + '" data-act="skillCard" data-arg="' + def.id +
+            '" title="' + esc(def.name) + " · " + RARITY[def.rarity].label + '" style="border-color:' + rc + (sk ? ";box-shadow:inset 0 1px 0 #ffffff1a,0 0 9px " + rc + "44" : "") + '">' +
+            (equipped ? '<div class="skEq"></div>' : "") +
+            '<div style="color:' + def.color + '">' + ic(def.icon, 20) + "</div>" +
+            '<div class="skNm" style="color:' + (sk ? "var(--text)" : "var(--textMute)") + '">' + def.name + "</div>" +
+            (sk ? '<span class="skLv">' + sk.level + "</span>" : "") +
+            "</div>";
+        }).join("") + "</div>" +
+      (owned.length === 0 ? '<div class="mute tiny center mt4">Aucune compétence — invoque avec des Éclats.</div>' : "") +
     '<div style="height:2px"></div></div>';
 }
 
@@ -5822,6 +5946,12 @@ const ACT = {
     else toast("Poussière insuffisante");
   },
   invFilter: (a) => { invFilter = a; render(); },
+  skillFilter: (a) => { skillFilter = a; render(); },
+  skillCard: (a) => showSkillCard(a),
+  unequipSkill: (a) => {
+    update((s) => { const i = s.skillSlots.indexOf(a); if (i >= 0) s.skillSlots[i] = null; });
+    closeModal(); toast("Déséquipé"); render();
+  },
 
   // skills
   summonSkill: (a) => {
@@ -5834,6 +5964,7 @@ const ACT = {
   autoEquipSkill: (a) => {
     const empty = S.skillSlots.slice(0, skillSlotCount(S)).indexOf(null);
     equipSkill(empty >= 0 ? empty : 0, a);
+    closeModal();
     toast("Compétence équipée", true);
   },
 
