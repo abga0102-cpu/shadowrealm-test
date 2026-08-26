@@ -56,7 +56,7 @@ body{
 .gap4{gap:4px}.gap6{gap:6px}.gap8{gap:8px}.gap10{gap:10px}
 .flex1{flex:1;min-width:0}
 .pad{padding:0 14px}
-.mt6{margin-top:6px}.mt8{margin-top:8px}.mt10{margin-top:10px}.mt14{margin-top:14px}
+.mt6{margin-top:5px}.mt8{margin-top:6px}.mt10{margin-top:8px}.mt14{margin-top:10px}
 .center{text-align:center}
 .dim{color:var(--textDim)}.mute{color:var(--textMute)}
 .small{font-size:11px}.tiny{font-size:9px}
@@ -65,7 +65,7 @@ body{
 
 /* framed panel — bevelled navy plate with a top sheen (sheet §7) */
 .card{
-  position:relative;border-radius:12px;padding:12px;
+  position:relative;border-radius:12px;padding:10px;
   background:linear-gradient(180deg,#1B2942 0%,#141F35 46%,#101A2C 100%);
   border:1px solid var(--border);
   box-shadow:inset 0 1px 0 #ffffff1c, inset 0 -1px 0 #00000059, 0 3px 10px #00000066;
@@ -80,7 +80,7 @@ body{
 
 /* ornamented section header — sheet §1 "diviseurs & en-têtes" */
 .sect{
-  display:flex;align-items:center;gap:8px;margin:18px 14px 9px;
+  display:flex;align-items:center;gap:8px;margin:8px 14px 5px;
   font-family:var(--fd);font-size:12px;font-weight:900;letter-spacing:2.2px;
   text-transform:uppercase;color:var(--goldLit);text-shadow:0 0 12px #E8B44A44,0 1px 0 #000;
 }
@@ -127,7 +127,7 @@ body{
   --bA:#8E9BB0; --bB:#6B7789; --bS:#4A5364; --bE:#B9C3D2; --bT:#DDE4EE; --bSh:0 1px 0 #00000073;
   filter:none;opacity:1;cursor:not-allowed;
 }
-.btn.sm{padding:7px 11px;font-size:11.5px;border-radius:11px;gap:6px;box-shadow:inset 0 2px 0 var(--bE),inset 0 -2px 0 var(--bS),0 3px 0 #0A1020,0 4px 9px #00000059}
+.btn.sm{padding:5px 10px;font-size:11.5px;border-radius:11px;gap:6px;box-shadow:inset 0 2px 0 var(--bE),inset 0 -2px 0 var(--bS),0 3px 0 #0A1020,0 4px 9px #00000059}
 .btn.sm:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 2px 0 var(--bE),0 1px 0 #0A1020}
 /* light faces keep dark text, saturated faces get white text with a dark outline */
 .btn.green {--bA:#7BE06A;--bB:#2FA23C;--bS:#176B22;--bE:#C6F7BC;--bT:#FFFFFF;--bSh:0 2px 0 #0B3B14}
@@ -308,7 +308,7 @@ body{
 /* ---------- skill bar (sheet §4 bottom row) ---------- */
 #skillbar{display:flex;align-items:center;gap:5px;padding:8px 14px 0;flex:0 0 auto}
 .slot{
-  width:46px;height:46px;border-radius:11px;flex:0 0 auto;position:relative;overflow:hidden;cursor:pointer;
+  width:42px;height:42px;border-radius:10px;flex:0 0 auto;position:relative;overflow:hidden;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:linear-gradient(180deg,#1B2942,#0D1522);border:1px solid #3B4F73;
   box-shadow:inset 0 1px 0 #ffffff1f,inset 0 -3px 6px #00000059,0 2px 6px #00000073;
@@ -383,12 +383,12 @@ body{
 .tab .dot{top:5px;right:24%}
 
 /* ---------- rates table ---------- */
-.rateBox{background:linear-gradient(180deg,#0A101Ccc,#070C15cc);border:1px solid var(--borderSoft);border-radius:9px;padding:8px 10px;margin-top:10px;box-shadow:inset 0 1px 3px #00000073}
-.rateRow{display:flex;align-items:center;padding:2px 0;font-size:11.5px;font-weight:800}
+.rateBox{background:linear-gradient(180deg,#0A101Ccc,#070C15cc);border:1px solid var(--borderSoft);border-radius:9px;padding:6px 9px;margin-top:8px;box-shadow:inset 0 1px 3px #00000073}
+.rateRow{display:flex;align-items:center;padding:0;line-height:1.45;font-size:11px;font-weight:800}
 .rateRow .nm{flex:1;display:flex;align-items:center;gap:6px;color:var(--textDim);font-weight:700}
 .rateRow b{width:52px;text-align:right;font-weight:800}
 .rdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 7px currentColor,inset 0 1px 0 #ffffff66}
-.rateHead{display:flex;align-items:center;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--borderSoft);color:var(--textMute);font-size:9.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase}
+.rateHead{display:flex;align-items:center;margin-bottom:3px;padding-bottom:3px;border-bottom:1px solid var(--borderSoft);color:var(--textMute);font-size:9.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase}
 .rateHead .nm{flex:1}.rateHead b{width:52px;text-align:right}
 
 /* ---------- items & rarity frames (sheet §11) ---------- */
@@ -408,7 +408,7 @@ body{
 .rf{position:relative}
 .rf::after{content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;opacity:.55;box-shadow:0 0 13px var(--rc,transparent),inset 0 0 16px var(--rc,transparent)}
 .itemRow{
-  display:flex;align-items:center;gap:9px;padding:8px 10px;margin-bottom:6px;border-radius:10px;position:relative;
+  display:flex;align-items:center;gap:9px;padding:6px 9px;margin-bottom:4px;border-radius:10px;position:relative;
   background:linear-gradient(90deg,#1D2C48,#131E33 40%,#101A2C);border:1px solid var(--border);border-left-width:3px;
   box-shadow:inset 0 1px 0 #ffffff14,0 2px 6px #00000047;
 }
@@ -465,10 +465,10 @@ body{
 }
 .notice{
   background:linear-gradient(180deg,#0C1320b3,#080D16b3);border:1px solid var(--borderSoft);border-left:2px solid var(--goldDim);
-  border-radius:10px;padding:11px 12px;color:var(--textDim);font-size:11.5px;line-height:1.55;
+  border-radius:10px;padding:8px 10px;color:var(--textDim);font-size:11px;line-height:1.4;
   box-shadow:inset 0 1px 2px #00000059;
 }
-.kv{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:5px 0;border-bottom:1px solid var(--borderSoft)}
+.kv{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:3px 0;border-bottom:1px solid var(--borderSoft)}
 .kv:last-child{border:none}
 .kv b{font-weight:800}
 /* pity / progress meter (sheet §14) */
@@ -482,7 +482,7 @@ body{
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
 #overlay>.card{
-  width:100%;max-width:338px;max-height:84%;overflow-y:auto;padding:0;animation:pop .18s ease-out;
+  width:100%;max-width:338px;max-height:88%;overflow-y:auto;padding:0;animation:pop .18s ease-out;
   border-color:#4A6494;box-shadow:0 0 0 1px #00000099,0 18px 46px #000000c4,0 0 34px #E8B44A1f;
 }
 #overlay>.card>.mbody{padding:14px}
@@ -508,11 +508,11 @@ body{
   background:linear-gradient(180deg,#1E2D49,#0C1320);box-shadow:inset 0 1px 0 #ffffff1a,0 2px 7px #00000073;
 }
 .scroller{max-height:216px;overflow-y:auto;padding-right:2px}
-h2.title{font-family:var(--fd);font-size:17px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase;margin:0;color:var(--goldLit);text-shadow:0 2px 0 #000,0 0 16px #E8B44A33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#topbar{position:relative;display:flex;align-items:center;gap:10px;padding:11px 14px 8px;flex:0 0 auto}
+h2.title{font-family:var(--fd);font-size:15.5px;font-weight:900;letter-spacing:1.3px;text-transform:uppercase;margin:0;color:var(--goldLit);text-shadow:0 2px 0 #000,0 0 16px #E8B44A33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topbar{position:relative;display:flex;align-items:center;gap:10px;padding:7px 14px 6px;flex:0 0 auto}
 #topbar::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:1px;background:linear-gradient(90deg,#8A6522aa,#8A652233 55%,transparent)}
 .back{
-  width:32px;height:32px;border-radius:9px;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:8px;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(180deg,#22314F,#111A2C);border:1px solid var(--border);color:var(--textDim);
   box-shadow:inset 0 1px 0 #ffffff1a,0 2px 6px #00000059;
 }
@@ -1189,9 +1189,8 @@ function starRow(sys, col) {
 }
 function ascendCta(sys, col) {
   if (!canAscend(S, sys)) return "";
-  return '<div class="mt8">' + btn(ic("star", 14) + "ASCENSION ★",
-    { cls: "purple", act: "ascendAsk", arg: sys }) +
-    '<div class="mute tiny center mt4">Maîtrise au maximum — une Ascension est disponible</div></div>';
+  return '<div class="mt6">' + btn(ic("star", 14) + "ASCENSION ★ — maîtrise au maximum",
+    { cls: "purple", small: true, act: "ascendAsk", arg: sys }) + "</div>";
 }
 
 function ascensionPreview(s, sys) {
@@ -4254,7 +4253,7 @@ function scrAccueil() {
     "</div></div>" +
     '<div class="navGrid">' + navBtns.map(tile).join("") + "</div>" +
     '<div class="navGrid mt10">' + sysBtns.map(tile).join("") + "</div>" +
-    '<div class="pad mt10"><div class="card row gap8" data-act="harvest" style="cursor:pointer;padding:10px 12px">' +
+    '<div class="pad mt6"><div class="card row gap8" data-act="harvest" style="cursor:pointer;padding:10px 12px">' +
       ic("moon", 18) +
       '<div class="flex1"><div class="between"><span class="b small">Récolte automatique</span>' +
         '<span class="tiny b" style="color:' +
@@ -4344,7 +4343,7 @@ function scrPersonnage() {
     '<div class="flex1"><div class="b small">' + label + '</div><div class="mute tiny b">' + val + "</div></div></div>";
 
   return topbar("Personnage", '<span class="pill" data-act="resInfo" data-arg="pa" style="cursor:pointer;color:var(--goldLit);border-color:var(--goldDim)">' + ic("pa", 11) + S.statPoints + " pts</span>") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
     '<div class="card frame"><div class="bb gt" style="font-size:13px;letter-spacing:1.2px;margin-bottom:4px">STATISTIQUES DE COMBAT</div>' +
       '<div class="row" style="flex-wrap:wrap">' +
         cell("PV Max", fmt(D.maxHP), "#E5484D", "maxhp") + cell("Dégâts", fmt(D.damage), "#F0883E", "damage") +
@@ -4380,7 +4379,7 @@ function scrPersonnage() {
           btn("+5", { small: true, act: "alloc", arg: s.key, arg2: 5, dis: S.statPoints < 5, style: "background:" + s.color + ";color:#fff" }) +
           btn("Max", { small: true, act: "alloc", arg: s.key, arg2: "max", dis: S.statPoints < 1, style: "background:" + s.color + ";color:#fff" }) +
         "</div></div>").join("") +
-    '<div style="height:30px"></div></div>';
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------- ÉQUIPEMENT ---------------- */
@@ -4407,7 +4406,7 @@ function scrEquipement() {
   Object.values(S.equipped).forEach((it) => { if (it) { totDmg += it.damage; totHp += it.hp; totPow += it.power; } });
 
   return topbar("Équipement") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       '<div class="card frame"><div class="between"><div><div class="mute tiny b" style="letter-spacing:.6px">PUISSANCE ÉQUIPÉE</div>' +
         '<div class="bb gt row gap6" style="font-size:21px">' + ic("swords", 19) + fmt(totPow) + "</div></div>" +
         '<div class="col gap4" style="align-items:flex-end">' +
@@ -4418,7 +4417,7 @@ function scrEquipement() {
       '<div class="notice mt14">La difficulté des ennemis s\'adapte à ta puissance d\'équipement (facteur borné 0.85×–1.45×). ' +
       "Monte le niveau de la Forge pour de meilleurs taux de rareté.</div>" +
       '<div class="mt10">' + btn(ic("bag", 15) + "Ouvrir l'Inventaire (" + S.inventory.length + ")", { cls: "ghost", act: "go", arg: "inventaire" }) + "</div>" +
-    '<div style="height:30px"></div></div>';
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------- INVENTAIRE ---------------- */
@@ -4439,7 +4438,7 @@ function scrInventaire() {
   const filters = ["ALL"].concat(SLOTS);
 
   return topbar("Inventaire", '<span class="pill">' + S.inventory.length + " objets</span>") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       '<div class="card frame"><div class="row" style="flex-wrap:wrap">' + res.map((r) =>
         '<div class="row gap6" style="width:33.33%;padding:6px 0">' + ic(r.icon, 20) +
         '<div><div class="mute tiny b" style="letter-spacing:.3px">' + r.label.toUpperCase() +
@@ -4467,7 +4466,7 @@ function scrInventaire() {
             btn(ic("cycle", 10) + Math.floor((equipRank(it.rarity) + 1) * 5 + it.power * 0.2),
               { small: true, cls: "dark", act: "recycle", arg: it.id, style: "padding:5px 8px;font-size:10.5px" }) +
           "</div></div>").join("")) +
-    '<div style="height:30px"></div></div>';
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------- COMPÉTENCES ---------------- */
@@ -4492,10 +4491,10 @@ function scrCompetences() {
   }
 
   return topbar("Compétences", '<span class="pill" data-act="resInfo" data-arg="eclat" style="cursor:pointer;color:#C79BFF;border-color:#9B5CF6">' + ic("eclat", 11) + fmt(S.eclat) + "</span>") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       '<div class="card frame"><div class="between"><div><div class="bb gt" style="font-size:13px;letter-spacing:1px">MAÎTRISE COMPÉTENCE</div>' +
         starRow("skill", "#C79BFF") +
-        '<div class="mute tiny b">' + S.skillMastery.progress + "/" + mreq + " invocations · " + S.skillMastery.count + " au total</div></div>" +
+        '<div class="mute tiny b">' + S.skillMastery.progress + "/" + mreq + " invocations</div></div>" +
         '<b style="color:var(--purpleLit);font-size:18px;text-shadow:0 0 12px #9B5CF680">' + S.skillMastery.level + "/" + RULES.MASTERY_MAX + "</b></div>" +
         '<div class="mt8">' + meter((S.skillMastery.progress / mreq) * 100, C.purple, S.skillMastery.progress + " / " + mreq) + "</div>" +
         ascendCta("skill") +
@@ -4507,7 +4506,7 @@ function scrCompetences() {
         "</div></div>" +
       '<div class="sect" style="margin:16px 0 9px">Emplacements actifs</div>' +
       '<div class="row gap6">' + slots + "</div>" +
-      '<div class="mute small mt6">Les compétences équipées se déclenchent automatiquement selon leur temps de recharge.</div>' +
+      '<div class="mute tiny mt6">Les compétences équipées se déclenchent automatiquement selon leur temps de recharge.</div>' +
       '<div class="sect" style="margin:16px 0 9px">Possédées (' + owned.length + "/" + SKILL_DEFS.length + ")</div>" +
       (owned.length === 0 ? '<div class="notice center">Aucune compétence. Invoque avec des Éclats.</div>'
         : owned.map((def) => {
@@ -4530,7 +4529,7 @@ function scrCompetences() {
             : btn("Équiper", { small: true, cls: "ghost", act: "autoEquipSkill", arg: def.id, style: "padding:5px 8px;font-size:11px" })) +
           "</div>";
       }).join("")) +
-    '<div style="height:30px"></div></div>';
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------- FAMILIERS ---------------- */
@@ -4570,7 +4569,7 @@ function scrFamiliers() {
 
   const ORANGE = "#FF7A3D";
   return topbar("Familiers", '<span class="pill" data-act="resInfo" data-arg="essence" style="cursor:pointer;color:#FFC29B;border-color:' + ORANGE + '">' + ic("essence", 11) + fmt(S.essence) + "</span>") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       (() => {
         const p = S.pets.find((x) => x.id === S.activePetId);
         if (!p) {
@@ -4684,19 +4683,19 @@ function scrFamiliers() {
             meter((Math.min(list.length, need) / need) * 100, canFuse ? C.green : rc) + "</div>") +
           "</div>";
       }).join("")) +
-    '<div style="height:30px"></div></div>';
+    '<div style="height:6px"></div></div>';
 }
 /* ---------------- RAID ---------------- */
 function scrRaid() {
   const running = combat && combat.ctx === "raid" && !combat.trial;
   if (S.level < RULES.RAID_UNLOCK_LEVEL) {
-    return topbar("Raids") + '<div class="pad mt10"><div class="notice center">Les Raids se débloquent au Niveau ' +
+    return topbar("Raids") + '<div class="pad mt6"><div class="notice center">Les Raids se débloquent au Niveau ' +
       RULES.RAID_UNLOCK_LEVEL + ".</div></div>";
   }
   if (running) {
     const rm = RAIDS[combat.raidId];
     return topbar(rm.name) + '<div id="arenaSlot"></div>' + combatBarHTML() +
-      '<div class="pad mt10"><div class="card frame center">' +
+      '<div class="pad mt6"><div class="card frame center">' +
       '<div class="row gap8" style="justify-content:center">' + ic(rm.icon, 22) +
       '<span class="bb gt" style="font-size:14px;letter-spacing:1.2px">RAID EN COURS</span></div>' +
       '<div class="mute small mt6">Niveau ' + combat.raidLevel + " · récompense " +
@@ -4725,7 +4724,7 @@ function scrRaid() {
   }).join("");
 
   return topbar("Raids", '<span class="pill" data-act="resInfo" data-arg="key" style="cursor:pointer;color:var(--goldLit);border-color:var(--goldDim)">' + ic("key", 11) + S.universalKeys + "</span>") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       '<div class="card frame"><div class="between"><div><div class="bb small">Clés universelles</div>' +
         '<div class="mute tiny b">' + S.universalKeys + "/" + RULES.UNIVERSAL_KEY_CAP + " · " +
         (RULES.UNIVERSAL_KEY_DAILY - S.adKeysToday) + " pub restantes aujourd'hui</div></div>" +
@@ -4738,7 +4737,7 @@ function scrRaid() {
         RULES.RAID_FREE_KEYS + " clés gratuites par raid chaque jour, plafond " + RULES.RAID_KEY_CAP + ".</div></div>" +
       '<div class="sect" style="margin:16px 0 9px">Raids disponibles</div>' + cards +
       '<div class="notice">Victoire : +1 niveau de raid et la récompense. Défaite : la clé est consommée, le niveau reste.</div>' +
-    '<div style="height:30px"></div></div>';
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------- ARBRE ---------------- */
@@ -4792,7 +4791,7 @@ function scrArbre() {
 
   return topbar("Arbre Personnel",
       '<span class="pill" data-act="resInfo" data-arg="pe" style="cursor:pointer;color:#8FEFF4;border-color:var(--cyan)">' + ic("chart", 11) + fmt(S.pe || 0) + " PE</span>") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       (activeNode ? '<div class="card lit frame">' +
         '<div class="between"><div><div class="bb small" style="color:var(--goldLit)">' + esc(activeNode.label) +
           " · niv." + activeLv + "/" + activeNode.max + "</div>" +
@@ -4859,7 +4858,7 @@ function scrArbre() {
         (accelPct > 0 ? '<div class="tiny b mt6 row gap4" style="color:#8FEFF4">' + ic("bolt", 11) +
           "Bonus Arbre : accélérateurs +" + accelPct + "% efficacité</div>" : "") +
       "</div>" +
-    '<div style="height:30px"></div></div>';
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------------------- tree node types -----------------------------
@@ -5069,7 +5068,7 @@ function scrRebirth() {
   }
 
   return topbar("Rebirth", '<span class="pill" style="color:var(--purpleLit);border-color:var(--purple)">' + ic("cycle", 11) + fmt(S.rebirth.pr) + " PR</span>") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       '<div class="card frame center">' + ic("cycle", 40) +
         '<div class="bb gt mt6" style="font-size:17px;letter-spacing:1.4px">REBIRTH ' + S.rebirth.count + "</div>" +
         body +
@@ -5096,7 +5095,7 @@ function scrRebirth() {
                 dis: S.rebirth.pr < cost, style: "padding:6px 9px;font-size:11px;width:auto" })) +
           "</div>";
       }).join("") +
-    '<div style="height:30px"></div></div>';
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------- ASCENSION ---------------- */
@@ -5104,7 +5103,7 @@ function scrAscension() {
   const running = combat && combat.trial;
   if (running) {
     return topbar("Épreuve d'Ascension") + '<div id="arenaSlot"></div>' + combatBarHTML() +
-      '<div class="pad mt10"><div class="card frame center">' +
+      '<div class="pad mt6"><div class="card frame center">' +
       '<div class="row gap8" style="justify-content:center">' + ic("crown", 22) +
       '<span class="bb gt" style="font-size:14px;letter-spacing:1.2px">LE GARDIEN DE L\'ASCENSION</span></div>' +
       '<div class="mute small mt6">Bats-le pour ascensionner.</div></div></div>';
@@ -5112,7 +5111,7 @@ function scrAscension() {
   const done = S.ascension >= 3;
   const gems = done ? 0 : ASCENSION_GEMS[S.ascension];
   return topbar("Ascension", '<span class="pill" style="color:#FF9BC1;border-color:#FF4D8D">' + ic("star", 11) + "Palier " + S.ascension + "/3</span>") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       '<div class="card frame center">' + ic("star", 42) +
         '<div class="bb gt mt6" style="font-size:17px;letter-spacing:1.4px">' +
         (done ? "ASCENSION MAXIMALE" : ASCENSION_NAMES[S.ascension].toUpperCase()) + "</div>" +
@@ -5135,8 +5134,8 @@ function scrAscension() {
         '<div class="mute tiny b row gap4">' + ic("gem", 10) + "+" + ASCENSION_GEMS[i] + " · reset niveau · taux Divin</div></div>" +
         '<span class="pill"' + (got ? ' style="color:var(--greenLit);border-color:#3FB950"' : "") + ">" +
         (got ? "Acquis" : "—") + "</span></div>"; }).join("") +
-      '<div class="notice mt10">Les taux Divin n\'apparaissent qu\'après une Ascension (jusqu\'à 6% à maîtrise maximale).</div>' +
-    '<div style="height:30px"></div></div>';
+      '<div class="notice tiny mt6">Les taux Divin n\'apparaissent qu\'après une Ascension (jusqu\'à 6% à maîtrise maximale).</div>' +
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------- BOUTIQUE ---------------- */
@@ -5147,31 +5146,30 @@ const GEM_DEALS = [
   { id: "minerai", label: "Sac de 5000 Minerai",     cost: 300, icon: "minerai", color: C.blue },
 ];
 function scrBoutique() {
-  const medal = (icon, color) => '<div class="imini" style="width:40px;height:40px;background:linear-gradient(180deg,' +
-    color + '33,' + color + '0f);border-color:' + color + '80;box-shadow:0 0 11px ' + color + '3d">' + ic(icon, 23) + "</div>";
+  const medal = (icon, color) => '<div class="imini" style="width:27px;height:27px;background:linear-gradient(180deg,' +
+    color + '33,' + color + '0f);border-color:' + color + '80;box-shadow:0 0 11px ' + color + '3d">' + ic(icon, 16) + "</div>";
   return topbar("Boutique", '<span class="pill" data-act="resInfo" data-arg="gems" style="cursor:pointer;color:#FF9BC1;border-color:#FF4D8D">' + ic("gem", 11) + fmt(S.gems) + "</span>") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       '<div class="sect" style="margin:0 0 9px">Gemmes</div>' +
       '<div class="row gap8">' + GEM_PACKS.map((p, i) =>
-        '<div class="card frame flex1 center" style="padding:11px 8px">' + ic("gem", 27) +
-        '<div class="bb" style="font-size:15px;margin:5px 0 7px;color:#FF9BC1">' + fmt(p.gems) + "</div>" +
+        '<div class="card frame flex1 center" style="padding:6px 5px">' + ic("gem", 19) +
+        '<div class="bb" style="font-size:15px;margin:3px 0 5px;color:#FF9BC1">' + fmt(p.gems) + "</div>" +
         btn(p.price, { small: true, cls: "green", act: "buyPack" }) + "</div>").join("") + "</div>" +
-      '<div class="mute small mt6">Les Gemmes s\'obtiennent aussi via l\'Ascension (1000 / 1500 / 2000).</div>' +
+      '<div class="mute tiny mt6">Les Gemmes s\'obtiennent aussi via l\'Ascension (1000 / 1500 / 2000).</div>' +
       '<div class="sect" style="margin:16px 0 9px">Dépenser tes Gemmes</div>' +
       GEM_DEALS.map((d) =>
-        '<div class="card mt8"><div class="between"><div class="row gap10">' + medal(d.icon, d.color) +
+        '<div class="card mt6" style="padding:5px 8px"><div class="between"><div class="row gap10">' + medal(d.icon, d.color) +
         '<div class="b small">' + d.label + "</div></div>" +
-        btn(ic("gem", 12) + d.cost, { small: true, cls: "purple", act: "buyDeal", arg: d.id, dis: S.gems < d.cost, style: "width:auto;padding:7px 11px" }) +
+        btn(ic("gem", 12) + d.cost, { small: true, cls: "purple", act: "buyDeal", arg: d.id, dis: S.gems < d.cost, style: "width:auto;padding:5px 10px" }) +
         "</div></div>").join("") +
-      '<div class="card mt8"><div class="between"><div class="row gap10">' + medal("egg", C.gold) +
+      '<div class="card mt6" style="padding:5px 8px"><div class="between"><div class="row gap10">' + medal("egg", C.gold) +
         '<div><div class="b small">+1 Slot d\'Œuf</div><div class="mute tiny">' +
         (S.level < 10 ? "Niveau 10 requis" : S.eggSlots + "/" + RULES.EGG_SLOT_MAX) + "</div></div></div>" +
         btn(ic("gem", 12) + "300", { small: true, cls: "purple", act: "buyEggSlot",
-          dis: S.level < 10 || S.eggSlots >= RULES.EGG_SLOT_MAX || S.gems < 300, style: "width:auto;padding:7px 11px" }) +
+          dis: S.level < 10 || S.eggSlots >= RULES.EGG_SLOT_MAX || S.gems < 300, style: "width:auto;padding:5px 10px" }) +
       "</div></div>" +
-      '<div class="mute small center mt14" style="font-style:italic">F2P : tout le contenu reste accessible avec le temps. ' +
-      "Les achats ne font qu'accélérer.</div>" +
-    '<div style="height:30px"></div></div>';
+      '<div class="mute tiny center mt8" style="font-style:italic">F2P : tout reste accessible avec le temps ; les achats ne font qu\'accélérer.</div>' +
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------- ÉVÉNEMENT ---------------- */
@@ -5187,35 +5185,35 @@ function scrEvenement() {
   };
   const doneCount = EVENT_MISSIONS.filter((m) => S.eventClaims[m.id]).length;
   return topbar("Événement") +
-    '<div class="pad mt10">' +
-      '<div class="card frame center">' + ic("bolt", 40) +
-        '<div class="bb gt mt6" style="font-size:16px;letter-spacing:1.3px">LUNDI D\'ACCÉLÉRATION</div>' +
-        '<div class="dim small center mt6" style="line-height:1.55">24h de récompenses en Accélérateurs. ' +
-        "Utilise-les sur l'Arbre, la Forge et l'éclosion des Œufs.</div>" +
-        '<div class="mt10">' + meter((doneCount / EVENT_MISSIONS.length) * 100, C.cyan,
+    '<div class="pad mt6">' +
+      '<div class="card frame center">' + ic("bolt", 27) +
+        '<div class="bb gt mt4" style="font-size:14px;letter-spacing:1.2px">LUNDI D\'ACCÉLÉRATION</div>' +
+        '<div class="dim tiny center mt4" style="line-height:1.4">24h de récompenses en Accélérateurs — ' +
+        "Arbre, Forge et éclosion des Œufs.</div>" +
+        '<div class="mt6">' + meter((doneCount / EVENT_MISSIONS.length) * 100, C.cyan,
           doneCount + " / " + EVENT_MISSIONS.length + " missions") + "</div></div>" +
       '<div class="sect" style="margin:16px 0 9px">Missions</div>' +
       EVENT_MISSIONS.map((m) => {
         const claimed = S.eventClaims[m.id];
         const ready = eventDone(m.id);
         return '<div class="itemRow" style="border-left-color:' + (claimed ? C.green : ready ? C.gold : C.cyan) + '">' +
-          '<div class="imini" style="width:30px;height:30px;border-color:' + (claimed ? "#3FB950" : C.cyan) +
-          '80">' + ic(claimed ? "check" : "gift", 17) + "</div>" +
+          '<div class="imini" style="width:26px;height:26px;border-color:' + (claimed ? "#3FB950" : C.cyan) +
+          '80">' + ic(claimed ? "check" : "gift", 15) + "</div>" +
           '<div class="flex1"><div class="b small">' + m.label + "</div>" +
-          '<div class="tiny b row gap4" style="color:#8FEFF4;margin-top:2px">' + ic("bolt", 10) + m.reward + "</div></div>" +
+          '<div class="tiny b row gap4" style="color:#8FEFF4;margin-top:1px">' + ic("bolt", 10) + m.reward + "</div></div>" +
           (claimed ? '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">Réclamé</span>'
             : btn(ready ? "Réclamer" : progText(m.id), { small: true, cls: ready ? "green" : "dark",
-                act: "claimEvent", arg: m.id, dis: !ready, style: "width:auto;padding:7px 11px" })) +
+                act: "claimEvent", arg: m.id, dis: !ready, style: "width:auto;padding:5px 10px" })) +
           "</div>";
       }).join("") +
-      '<div class="mute small center mt14">Objectif global : ≈ 1h à 1h30 d\'accélération selon ton activité.</div>' +
-    '<div style="height:30px"></div></div>';
+      '<div class="mute tiny center mt8">Objectif global : ≈ 1h à 1h30 d\'accélération selon ton activité.</div>' +
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------- CLASSEMENT ---------------- */
 function scrClassement() {
   return topbar("Classement") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       '<div class="card frame"><div class="row gap10">' +
         '<div class="avatar" style="width:46px;height:46px"><img src="' + ASSETS.hero + '"></div>' +
         '<div class="flex1"><div class="mute tiny b" style="letter-spacing:.6px">TA POSITION</div>' +
@@ -5235,13 +5233,13 @@ function scrClassement() {
           '</span><b>niv. ' + S.raids[id].record + "</b></div>").join("") +
         '<div class="kv"><span class="dim row gap6">' + ic("banner", 13) + 'Points de Guerre</span><b style="color:var(--purpleLit)">' + fmt(S.warScore) + "</b></div>" +
       "</div>" +
-    '<div style="height:30px"></div></div>';
+    '<div style="height:6px"></div></div>';
 }
 
 /* ---------------- CHAT / CLAN (server-only) ---------------- */
 function scrServerOnly(title, endpoints, blurb) {
   return topbar(title) +
-    '<div class="pad mt10"><div class="card frame center">' + ic("plug", 38) +
+    '<div class="pad mt6"><div class="card frame center">' + ic("plug", 38) +
       '<div class="bb gt mt6" style="font-size:14px;letter-spacing:1.2px">FONCTION SERVEUR</div>' +
       '<div class="dim small mt6" style="line-height:1.6">' + blurb + "</div></div>" +
       '<div class="sect" style="margin:16px 0 9px">Routes concernées</div>' +
@@ -5255,12 +5253,12 @@ function scrServerOnly(title, endpoints, blurb) {
 /* ---------------- PARAMÈTRES ---------------- */
 function scrParametres() {
   return topbar("Réglages") +
-    '<div class="pad mt10">' +
+    '<div class="pad mt6">' +
       '<div class="card frame"><div class="between"><div class="row gap10">' +
         '<div class="avatar" style="width:44px;height:44px"><img src="' + ASSETS.hero + '"></div>' +
         '<div><div class="mute tiny b" style="letter-spacing:.6px">JOUEUR</div>' +
         '<b style="font-size:15px">' + esc(S.playerName) + "</b></div></div>" +
-        btn("Renommer", { small: true, cls: "ghost", act: "rename", style: "width:auto;padding:7px 11px" }) + "</div>" +
+        btn("Renommer", { small: true, cls: "ghost", act: "rename", style: "width:auto;padding:5px 10px" }) + "</div>" +
         '<div class="divider"></div>' +
         '<div class="kv"><span class="dim">Niveau</span><b>' + S.level + " / " + RULES.MAX_LEVEL + "</b></div>" +
         '<div class="kv"><span class="dim">Étage · record</span><b>' + S.floor + " · " + S.recordFloor + "</b></div>" +
@@ -5296,7 +5294,7 @@ function scrParametres() {
         "Non inclus, car nécessitant le serveur : chat monde/clan, clans, classement mondial, " +
         "connexion Google, sauvegarde cloud, achats intégrés." +
       "</div></div>" +
-    '<div style="height:30px"></div></div>';
+    '<div style="height:6px"></div></div>';
 }
 
 /* =========================================================================
