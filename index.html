@@ -246,7 +246,7 @@ body{
 
 /* ---------- arena ---------- */
 #arena{
-  position:relative;width:100%;height:286px;overflow:hidden;background:#080d16;flex:0 0 auto;
+  position:relative;width:100%;height:216px;overflow:hidden;background:#080d16;flex:0 0 auto;
   border-top:1px solid #00000099;border-bottom:1px solid #00000099;
 }
 #arena::after{
@@ -308,7 +308,7 @@ body{
 /* ---------- skill bar (sheet §4 bottom row) ---------- */
 #skillbar{display:flex;align-items:center;gap:5px;padding:8px 14px 0;flex:0 0 auto}
 .slot{
-  width:42px;height:42px;border-radius:10px;flex:0 0 auto;position:relative;overflow:hidden;cursor:pointer;
+  width:36px;height:36px;border-radius:9px;flex:0 0 auto;position:relative;overflow:hidden;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:linear-gradient(180deg,#1B2942,#0D1522);border:1px solid #3B4F73;
   box-shadow:inset 0 1px 0 #ffffff1f,inset 0 -3px 6px #00000059,0 2px 6px #00000073;
@@ -322,8 +322,9 @@ body{
 }
 .slot.locked{cursor:default;filter:saturate(.3) brightness(.75)}
 .slot.locked .tiny{margin-top:2px}
+/* home skill bar companion chip */
 .petMini{
-  flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:46px;padding:0 9px;cursor:pointer;border-radius:11px;
+  flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:38px;padding:0 8px;cursor:pointer;border-radius:10px;
   background:linear-gradient(180deg,#1B2942,#0D1522);border:1px solid #3B4F73;
   box-shadow:inset 0 1px 0 #ffffff1f,0 2px 6px #00000073;
 }
@@ -390,6 +391,8 @@ body{
 .rdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 7px currentColor,inset 0 1px 0 #ffffff66}
 .rateHead{display:flex;align-items:center;margin-bottom:3px;padding-bottom:3px;border-bottom:1px solid var(--borderSoft);color:var(--textMute);font-size:9.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase}
 .rateHead .nm{flex:1}.rateHead b{width:52px;text-align:right}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.duo>.itemRow{margin-bottom:0}
 .rateCols{display:flex;flex-wrap:wrap}
 .rateCols>.rateRow{width:50%;padding-right:8px}
 .rateBox.twoUp .rateHead b{width:auto}
@@ -440,9 +443,9 @@ body{
 
 /* ---------- misc widgets ---------- */
 .navGrid{display:flex;justify-content:space-between;padding:13px 14px 0;gap:5px}
-.navBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer}
+.navBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
 .navInner{
-  width:100%;max-width:60px;aspect-ratio:1;border-radius:13px;position:relative;overflow:hidden;
+  width:100%;max-width:42px;aspect-ratio:1;border-radius:10px;position:relative;overflow:hidden;
   display:flex;align-items:center;justify-content:center;border:1px solid #ffffff33;
   box-shadow:inset 0 1px 0 #ffffff59,inset 0 -8px 14px #00000059,0 3px 9px #00000080;
 }
@@ -4247,8 +4250,9 @@ function scrAccueil() {
         '<div class="mt6">' + meter(Math.min(100, (S.minerai / fCost) * 100), C.blue,
           fmt(Math.min(S.minerai, fCost)) + " / " + fmt(fCost) + " Minerai") + "</div></div>" +
       "</div>" +
-      '<div class="mute tiny b mt6">Meilleur taux de rareté à chaque niveau supérieur</div>' +
+      '<details class="fold" style="margin-bottom:2px"><summary>Taux de rareté</summary>' +
       ratesTable(curRates, nextRates, "Actuel", "Niv." + (S.forge.level + 1), EQUIP_RARITY_ORDER) +
+      "</details>" +
       upg +
       ascendCta("forge") +
       '<div class="divider"></div>' +
@@ -4276,22 +4280,22 @@ function scrAccueil() {
       "</div>" +
     "</div></div>" +
     '<div class="navGrid">' + navBtns.map(tile).join("") + "</div>" +
-    '<div class="navGrid mt10">' + sysBtns.map(tile).join("") + "</div>" +
-    '<div class="pad mt6"><div class="card row gap8" data-act="harvest" style="cursor:pointer;padding:10px 12px">' +
-      ic("moon", 18) +
-      '<div class="flex1"><div class="between"><span class="b small">Récolte automatique</span>' +
+    '<div class="navGrid mt6">' + sysBtns.map(tile).join("") + "</div>" +
+    '<div class="pad mt6 row gap6" style="align-items:stretch"><div class="card row gap6 flex1" data-act="harvest" style="cursor:pointer;padding:6px 9px;min-width:0">' +
+      ic("moon", 15) +
+      '<div class="flex1" style="min-width:0"><div class="between"><span class="b small">Récolte automatique</span>' +
         '<span class="tiny b" style="color:' +
           (S.harvest.secs >= harvestCapSeconds(S) ? "var(--goldLit)" : "var(--textMute)") + '">' +
           fmtDur(Math.floor(S.harvest.secs)) + " / " + afkCapHours(S) + "h</span></div>" +
         '<div class="mt4">' + meter(Math.min(100, (S.harvest.secs / harvestCapSeconds(S)) * 100),
           S.harvest.secs >= harvestCapSeconds(S) ? C.gold : C.blue, "") + "</div></div>" +
-      (harvestIsEmpty(S) ? "" : '<div class="dot"></div>') + ic("chevron", 11) +
-    "</div></div>" +
-    '<div class="pad mt14"><div class="card row gap8" data-act="go" data-arg="chat" style="cursor:pointer;padding:10px 12px">' +
-      ic("chat", 18) + '<span class="flex1 small dim b">' +
-      (S.level >= RULES.CHAT_UNLOCK_LEVEL ? "Chat Monde &amp; Clan" : "Chat débloqué au Niveau " + RULES.CHAT_UNLOCK_LEVEL) +
-      "</span>" + ic("chevron", 12) + "</div></div>" +
-    '<div style="height:20px"></div>';
+      (harvestIsEmpty(S) ? "" : '<div class="dot"></div>') +
+    "</div>" +
+    '<div class="card row gap6" data-act="go" data-arg="chat" style="cursor:pointer;padding:6px 9px;flex:0 0 auto">' +
+      ic("chat", 16) + '<span class="tiny dim b">' +
+      (S.level >= RULES.CHAT_UNLOCK_LEVEL ? "Chat" : "Niv." + RULES.CHAT_UNLOCK_LEVEL) +
+      "</span>" + ic("chevron", 11) + "</div></div>" +
+    '<div style="height:4px"></div>';
 }
 
 /* ---------------- PERSONNAGE ---------------- */
@@ -4377,8 +4381,7 @@ function scrPersonnage() {
         cell("Régén.", D.regen.toFixed(2) + "%/s", "#3FB950", "regen") + cell("Vol de Vie", D.lifesteal.toFixed(2) + "%", "#3FA7FF", "lifesteal") +
         cell("Dégâts Boss", "+" + D.bossDmg.toFixed(0) + "%", "#E5484D", "bossdmg") + cell("Arme", WEAPON_TYPES[D.weapon].name, "#EDE9F5", "weapon") +
       "</div></div>" +
-    '<div class="card mt10"><div class="bb gt" style="font-size:13px;letter-spacing:1.2px">SOURCES DE PUISSANCE</div>' +
-      '<div class="mute small" style="margin-bottom:4px">Ce que chaque système apporte à ton personnage.</div>' +
+    '<details class="fold"><summary>Sources de puissance</summary><div class="card">' +
       src("shield", "#5A7099", "Équipement", "+" + fmt(eqDmg) + " Dégâts · +" + fmt(eqHp) + " PV") +
       src("paw", "#FF7A3D", pet ? "Familier " + RARITY[pet.rarity].label : "Familier", petPct ? "+" + petPct + "% Dégâts &amp; PV" : "Aucun actif") +
       src("hammer", C.gold, "Forge Niv." + S.forge.level, "+" + (S.forge.level * 2) + "% Dégâts &amp; PV") +
@@ -4389,20 +4392,20 @@ function scrPersonnage() {
           * (1 + (D.skillDmgBonus || 0) / 100))) : def.name;
       }).join(" · ") : "Aucune") +
       src("star", "#FF4D8D", "Ascension " + S.ascension, S.ascension ? "Taux Divin débloqués" : "Non ascensionné") +
-    "</div>" +
-    '<div class="sect" style="margin:16px 0 9px">Points de Statistiques (' + S.statPoints + ")</div>" +
-    '<div class="mute small">Chaque niveau octroie +5 points. Répartition manuelle.</div>' +
+    "</div></details>" +
+    '<div class="sect">Points de Statistiques (' + S.statPoints + ")</div>" +
+    '<div class="duo">' +
     STAT_META.map((s) =>
-      '<div class="card mt8"><div class="between"><div class="row gap10">' +
-        '<div class="imini" style="width:36px;height:36px;background:linear-gradient(180deg,' + s.color + '33,' + s.color +
-        '0f);border-color:' + s.color + '80;box-shadow:0 0 10px ' + s.color + '3d">' + ic(s.icon, 19) + "</div>" +
-        '<div><div class="b small">' + s.label + '</div><div class="mute tiny">' + s.desc + "</div></div></div>" +
-        '<b style="font-size:18px;color:' + s.color + ';text-shadow:0 0 12px ' + s.color + '66">' + S.stats[s.key] + "</b></div>" +
-        '<div class="row gap6 mt10">' +
-          btn("+1", { small: true, act: "alloc", arg: s.key, arg2: 1, dis: S.statPoints < 1, style: "background:" + s.color + ";color:#fff" }) +
-          btn("+5", { small: true, act: "alloc", arg: s.key, arg2: 5, dis: S.statPoints < 5, style: "background:" + s.color + ";color:#fff" }) +
-          btn("Max", { small: true, act: "alloc", arg: s.key, arg2: "max", dis: S.statPoints < 1, style: "background:" + s.color + ";color:#fff" }) +
-        "</div></div>").join("") +
+      '<div class="card" style="padding:7px 8px"><div class="between"><div class="row gap6">' +
+        '<div class="imini" style="width:26px;height:26px;background:linear-gradient(180deg,' + s.color + '33,' + s.color +
+        '0f);border-color:' + s.color + '80;box-shadow:0 0 10px ' + s.color + '3d">' + ic(s.icon, 15) + "</div>" +
+        '<div><div class="b" style="font-size:10.5px">' + s.label + '</div><div class="mute" style="font-size:9px">' + s.desc + "</div></div></div>" +
+        '<b style="font-size:15px;color:' + s.color + ';text-shadow:0 0 12px ' + s.color + '66">' + S.stats[s.key] + "</b></div>" +
+        '<div class="row gap4 mt6">' +
+          btn("+1", { small: true, act: "alloc", arg: s.key, arg2: 1, dis: S.statPoints < 1, style: "padding:3px 0;font-size:10px;background:" + s.color + ";color:#fff" }) +
+          btn("+5", { small: true, act: "alloc", arg: s.key, arg2: 5, dis: S.statPoints < 5, style: "padding:3px 0;font-size:10px;background:" + s.color + ";color:#fff" }) +
+          btn("Max", { small: true, act: "alloc", arg: s.key, arg2: "max", dis: S.statPoints < 1, style: "padding:3px 0;font-size:10px;background:" + s.color + ";color:#fff" }) +
+        "</div></div>").join("") + "</div>" +
     '<div style="height:2px"></div></div>';
 }
 
@@ -5075,9 +5078,9 @@ function scrRebirth() {
 
   let body;
   if (ok) {
-    body = '<div class="dim small mt6" style="line-height:1.55">Renais pour gagner <b style="color:var(--purpleLit)">' +
-        pr + " PR</b>.<br>Tu conserves " + keepPct + "% de ton étage (" + S.floor + " → " + after + ").</div>" +
-      '<div class="mt10">' + btn(ic("cycle", 15) + "Renaître · +" + pr + " PR", { cls: "purple", act: "doRebirth" }) + "</div>";
+    body = '<div class="dim tiny mt4" style="line-height:1.4">Renais pour gagner <b style="color:var(--purpleLit)">' +
+        pr + " PR</b> · tu conserves " + keepPct + "% de ton étage (" + S.floor + " → " + after + ").</div>" +
+      '<div class="mt6">' + btn(ic("cycle", 14) + "Renaître · +" + pr + " PR", { cls: "purple", small: true, act: "doRebirth" }) + "</div>";
   } else if (notUnlocked) {
     body = '<div class="dim small mt6" style="line-height:1.55">Atteins l' + "’" + "étage " + RULES.REBIRTH_UNLOCK_FLOOR +
         " pour débloquer le Rebirth.<br>Record actuel : étage " + S.recordFloor + ".</div>" +
@@ -5094,32 +5097,32 @@ function scrRebirth() {
 
   return topbar("Rebirth", '<span class="pill" style="color:var(--purpleLit);border-color:var(--purple)">' + ic("cycle", 11) + fmt(S.rebirth.pr) + " PR</span>") +
     '<div class="pad mt6">' +
-      '<div class="card frame center">' + ic("cycle", 40) +
-        '<div class="bb gt mt6" style="font-size:17px;letter-spacing:1.4px">REBIRTH ' + S.rebirth.count + "</div>" +
+      '<div class="card frame center">' + ic("cycle", 26) +
+        '<div class="bb gt mt4" style="font-size:15px;letter-spacing:1.2px">REBIRTH ' + S.rebirth.count + "</div>" +
         body +
         '<div class="mute tiny mt10 row gap4" style="justify-content:center">' + ic("banner", 11) +
         "Points de Guerre : " + fmt(S.warScore) + " (" + RULES.WAR_POINTS_PER_PR + "/PR)</div>" +
       "</div>" +
       '<div class="sect" style="margin:16px 0 9px">Améliorations permanentes</div>' +
+      '<div class="duo">' +
       REBIRTH_UPGRADES.map((u) => {
         const lvl = S.rebirth.upgrades[u.key] || 0;
         const maxed = lvl >= u.max;
         const cost = maxed ? 0 : rebirthUpgCost(u.costs, lvl);
         const uc = maxed ? C.green : C.purple;
-        return '<div class="itemRow" style="border-left-color:' + uc + '">' +
-          '<div class="imini" style="width:30px;height:30px;border-color:' + uc + '80;box-shadow:0 0 9px ' + uc + '33">' +
-          ic(u.icon, 18) + "</div>" +
-          '<div class="flex1"><div class="between"><span class="b small">' + u.label + "</span>" +
-            '<span class="pill" style="padding:1px 8px;font-size:10.5px;color:' + (maxed ? C.green : uc) +
-              ";border-color:" + (maxed ? C.green : uc) + '99">Niv. ' + lvl + " / " + u.max + "</span></div>" +
-          '<div class="mute tiny b">Actuel : +' + (lvl * u.perLvl).toFixed(u.perLvl < 1 ? 2 : 0) + u.unit +
-          (maxed ? "" : " → +" + ((lvl + 1) * u.perLvl).toFixed(u.perLvl < 1 ? 2 : 0) + u.unit) + "</div>" +
-          '<div class="mt6">' + bar((lvl / u.max) * 100, maxed ? C.green : C.purple, 4) + "</div></div>" +
-          (maxed ? '<span class="pill" style="color:' + C.green + ';border-color:' + C.green + '">MAX</span>'
-            : btn(cost + " PR", { small: true, cls: "purple", act: "buyRebirth", arg: u.key,
-                dis: S.rebirth.pr < cost, style: "padding:6px 9px;font-size:11px;width:auto" })) +
+        // the level pill already says X / Y, so the duplicate progress bar goes
+        return '<div class="itemRow" style="border-left-color:' + uc + ';gap:5px;padding:3px 6px">' +
+          '<div class="imini" style="width:22px;height:22px;border-color:' + uc + '80;box-shadow:0 0 9px ' + uc + '33">' +
+          ic(u.icon, 13) + "</div>" +
+          '<div class="flex1" style="min-width:0"><div class="b" style="font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + u.label +
+            ' <span class="mute">' + lvl + "/" + u.max + "</span></div>" +
+          '<div class="mute b" style="font-size:9px">+' + (lvl * u.perLvl).toFixed(u.perLvl < 1 ? 2 : 0) + u.unit +
+          (maxed ? "" : " → +" + ((lvl + 1) * u.perLvl).toFixed(u.perLvl < 1 ? 2 : 0) + u.unit) + "</div></div>" +
+          (maxed ? '<span class="pill" style="padding:1px 6px;font-size:9px;color:' + C.green + ';border-color:' + C.green + '">MAX</span>'
+            : btn(cost, { small: true, cls: "purple", act: "buyRebirth", arg: u.key,
+                dis: S.rebirth.pr < cost, style: "padding:4px 7px;font-size:10px;width:auto" })) +
           "</div>";
-      }).join("") +
+      }).join("") + "</div>" +
     '<div style="height:2px"></div></div>';
 }
 
