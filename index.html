@@ -327,7 +327,7 @@ body{
    the arena takes whatever is left, so the screen never scrolls and the fight
    is as large as the device allows. */
 #screen.fixed{overflow:hidden;display:flex;flex-direction:column}
-#screen.fixed #arenaSlot{flex:1 1 auto;min-height:124px;display:flex}
+#screen.fixed #arenaSlot{flex:1 1 auto;min-height:104px;display:flex}
 #screen.fixed #arena{height:auto;flex:1 1 auto}
 #screen.fixed>*:not(#arenaSlot){flex:0 0 auto}
 /* forge panel: three tight rows instead of six stacked blocks */
@@ -456,10 +456,10 @@ body{
 }
 
 /* ---------- misc widgets ---------- */
-.navGrid{display:flex;justify-content:space-between;padding:4px 14px 0;gap:5px}
-.navBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.navGrid{display:flex;justify-content:space-between;padding:2px 14px 0;gap:5px}
+.navBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
 .navInner{
-  width:100%;max-width:38px;aspect-ratio:1;border-radius:9px;position:relative;overflow:hidden;
+  width:100%;max-width:33px;aspect-ratio:1;border-radius:8px;position:relative;overflow:hidden;
   display:flex;align-items:center;justify-content:center;border:1px solid #ffffff33;
   box-shadow:inset 0 1px 0 #ffffff59,inset 0 -8px 14px #00000059,0 3px 9px #00000080;
 }
@@ -471,7 +471,7 @@ body{
 .navInner.art>img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 3px 7px #000000a6)}
 .navInner.art.lk>img{filter:grayscale(1) brightness(.62) contrast(.9)}
 .navInner.art>.lkIco{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.navLbl{color:var(--textDim);font-size:9px;font-weight:800;letter-spacing:.1px;line-height:1.2}
+.navLbl{color:var(--textDim);font-size:8.5px;font-weight:800;letter-spacing:0;line-height:1.1}
 /* skill / research node tile (sheet §5) */
 .eggCard{
   position:relative;padding:6px 5px;text-align:center;border-radius:10px;
@@ -502,6 +502,25 @@ body{
    documentation-heavy screen opens compact and the player expands what they
    actually need. */
 .fold{padding:0;background:none;border:none;box-shadow:none;margin-bottom:6px}
+/* HUD shortcuts: same chip language as the currencies, sized to the menu
+   button so the top-right row stays one height. The dot rides the Recolte
+   button when there is something to claim. */
+.hudBtn{
+  position:relative;width:26px;height:26px;border-radius:9px;cursor:pointer;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid #0A1020;background:linear-gradient(180deg,#2A3752,#131C2E);
+  box-shadow:inset 0 2px 0 #ffffff1f,0 2px 0 #0A1020;color:var(--textDim);
+}
+.hudBtn:hover{border-color:var(--gold);color:var(--goldLit)}
+.hudBtn.ready{color:var(--goldLit);border-color:var(--goldDim)}
+.hudBtn .dot{position:absolute;top:-2px;right:-2px}
+/* the home tiles are grouped now, so the group label doubles as the divider */
+.navCat{
+  display:flex;align-items:center;gap:6px;padding:2px 14px 0;
+  font-family:var(--fd);font-size:9px;font-weight:900;letter-spacing:1.4px;
+  text-transform:uppercase;color:var(--textMute);
+}
+.navCat::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#8A652266,transparent)}
 .fxBub{
   position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);z-index:3;
   font-size:8.5px;font-weight:900;line-height:1;padding:2px 5px;border-radius:999px;
@@ -4269,6 +4288,9 @@ function renderHUD() {
       '<div class="row gap4">' +
         '<div class="curr" data-act="resInfo" data-arg="minerai" style="cursor:pointer">' + ic("minerai", 15) + "<b>" + fmt(S.minerai) + "</b>" +
           '<span class="plus" data-act="go" data-arg="accueil">' + ic("plus", 10) + "</span></div>" +
+        '<div class="hudBtn' + (harvestIsEmpty(S) ? "" : " ready") + '" data-act="harvest" title="Récolte automatique">' +
+          ic("moon", 14) + (harvestIsEmpty(S) ? "" : '<span class="dot"></span>') + "</div>" +
+        '<div class="hudBtn" data-act="go" data-arg="chat" title="Chat Monde &amp; Clan">' + ic("chat", 14) + "</div>" +
         '<div class="menuBtn" data-act="go" data-arg="parametres">' + ic("menu", 15) + "</div>" +
       "</div>" +
     "</div>";
@@ -4359,19 +4381,22 @@ function scrAccueil() {
       "</div>";
   }
   const fCost = forgeCost(S.forge.level);
-  const navBtns = [
+  // grouped by what you go there to do, rather than ten tiles in a heap
+  const progBtns = [
     { label: "Personnage", icon: "hero", color: "#5A7099", go: "personnage", badge: S.statPoints > 0 },
-    { label: "Raid", icon: "flame", color: "#C22127", go: "raid", badge: RAID_IDS.some((r) => S.raids[r].keys > 0), lock: S.level < RULES.RAID_UNLOCK_LEVEL ? RULES.RAID_UNLOCK_LEVEL : 0 },
     { label: "Arbre", icon: "tree", color: "#2F8A45", go: "arbre", badge: !S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n)) },
-    { label: "Clan", icon: "banner", color: "#B0862C", go: "clan", lock: S.level < 10 ? 10 : 0 },
-    { label: "Boutique", icon: "shop", color: "#3B7FC4", go: "boutique" },
-  ];
-  const sysBtns = [
-    { label: "Familiers", icon: "paw", color: "#C4711E", go: "familiers", badge: S.eggs.some((e) => e.hatchEnd <= Date.now()) },
-    { label: "Ascension", icon: "star", color: "#B0862C", go: "ascension", badge: S.ascensionAvailable },
     { label: "Rebirth", icon: "cycle", color: "#6B3AC4", go: "rebirth", badge: canRebirth() },
+    { label: "Ascension", icon: "star", color: "#B0862C", go: "ascension", badge: S.ascensionAvailable },
+  ];
+  const playBtns = [
+    { label: "Raid", icon: "flame", color: "#C22127", go: "raid", badge: RAID_IDS.some((r) => S.raids[r].keys > 0), lock: S.level < RULES.RAID_UNLOCK_LEVEL ? RULES.RAID_UNLOCK_LEVEL : 0 },
+    { label: "Familiers", icon: "paw", color: "#C4711E", go: "familiers", badge: S.eggs.some((e) => e.hatchEnd <= Date.now()) },
     { label: "Événement", icon: "gift", color: "#C22127", go: "evenement", badge: true },
+  ];
+  const socialBtns = [
+    { label: "Clan", icon: "banner", color: "#B0862C", go: "clan", lock: S.level < 10 ? 10 : 0 },
     { label: "Classement", icon: "trophy", color: "#5A7099", go: "classement" },
+    { label: "Boutique", icon: "shop", color: "#3B7FC4", go: "boutique" },
   ];
   const tile = (b) => {
     const art = ASSETS["nav_" + b.go];
@@ -4431,22 +4456,12 @@ function scrAccueil() {
         ratesTable(curRates, nextRates, "Actuel", "Niv." + (S.forge.level + 1), EQUIP_RARITY_ORDER),
         "margin:2px 0 0") +
     "</div></div>" +
-    '<div class="navGrid">' + navBtns.map(tile).join("") + "</div>" +
-    '<div class="navGrid mt6">' + sysBtns.map(tile).join("") + "</div>" +
-    '<div class="pad mt6 row gap6" style="align-items:stretch"><div class="card row gap6 flex1" data-act="harvest" style="cursor:pointer;padding:6px 9px;min-width:0">' +
-      ic("moon", 15) +
-      '<div class="flex1" style="min-width:0"><div class="between"><span class="b small">Récolte automatique</span>' +
-        '<span class="tiny b" style="color:' +
-          (S.harvest.secs >= harvestCapSeconds(S) ? "var(--goldLit)" : "var(--textMute)") + '">' +
-          fmtDur(Math.floor(S.harvest.secs)) + " / " + afkCapHours(S) + "h</span></div>" +
-        '<div class="mt4">' + meter(Math.min(100, (S.harvest.secs / harvestCapSeconds(S)) * 100),
-          S.harvest.secs >= harvestCapSeconds(S) ? C.gold : C.blue, "") + "</div></div>" +
-      (harvestIsEmpty(S) ? "" : '<div class="dot"></div>') +
-    "</div>" +
-    '<div class="card row gap6" data-act="go" data-arg="chat" style="cursor:pointer;padding:6px 9px;flex:0 0 auto">' +
-      ic("chat", 16) + '<span class="tiny dim b">' +
-      (S.level >= RULES.CHAT_UNLOCK_LEVEL ? "Chat" : "Niv." + RULES.CHAT_UNLOCK_LEVEL) +
-      "</span>" + ic("chevron", 11) + "</div></div>" +
+    '<div class="navCat">Progression</div>' +
+    '<div class="navGrid">' + progBtns.map(tile).join("") + "</div>" +
+    '<div class="navCat">Contenu</div>' +
+    '<div class="navGrid">' + playBtns.map(tile).join("") + "</div>" +
+    '<div class="navCat">Social</div>' +
+    '<div class="navGrid">' + socialBtns.map(tile).join("") + "</div>" +
     '<div style="height:4px"></div>';
 }
 
