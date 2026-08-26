@@ -1236,10 +1236,14 @@ const BOSS_DEFS = [
   { id: "dragon",      name: "Dragon des Cendres", img: "boss_dragon",      tier: "MYTHIQUE", ranged: true, proj: "magic" },
 ];
 /* Raid bosses — one identity per raid. */
+/* Raid bosses were spawned with a hard-coded ranged:false at every one of the
+   three sites, so the Dragon Ancestral walked up to bite and the Lord
+   Demoniaque swung his fists. They state how they fight here, like the floor
+   bosses and the elites do. */
 const RAID_BOSSES = {
   minerai:    { name: "Titan des Abysses",  tier: "LEGENDAIRE", img: "raidboss_minerai" },
-  or:         { name: "Dragon Ancestral",   tier: "LEGENDAIRE", img: "raidboss_or" },
-  competence: { name: "Lord Démoniaque",    tier: "MYTHIQUE",   img: "raidboss_competence" },
+  or:         { name: "Dragon Ancestral",   tier: "LEGENDAIRE", img: "raidboss_or",         ranged: true, proj: "magic" },
+  competence: { name: "Lord Démoniaque",    tier: "MYTHIQUE",   img: "raidboss_competence", ranged: true, proj: "magic" },
   familier:   { name: "Bête Corrompue",     tier: "EPIQUE",     img: "raidboss_familier" },
   evolution:  { name: "Titan des Abysses",  tier: "MYTHIQUE",   img: "raidboss_evolution" },
 };
@@ -2603,7 +2607,7 @@ function spawnRaidWave(raidId, level) {
   if (raidId === "minerai") {
     const rb2 = RAID_BOSSES[raidId];
     const t = Object.assign({}, ENEMY_TYPES[1], { id: "boss", name: rb2.name,
-      img: rb2.img || "boss_golem", ranged: false });
+      img: rb2.img || "boss_golem", ranged: !!rb2.ranged, proj: rb2.proj || "magic" });
     return { enemies: [makeEnemy("raid", { type: t, name: rb2.name, tier: rb2.tier,
       raidId, raidLevel: level, x: AW - 60, boss: true })], pending: 0 };
   }
@@ -2614,7 +2618,7 @@ function spawnRaidWave(raidId, level) {
     // the lead enemy of the wave is the raid's named boss; the rest are escorts
     if (i === 0 && rb3) {
       const bt = Object.assign({}, ENEMY_TYPES[1],
-        { id: "raidboss", name: rb3.name, img: rb3.img, ranged: false });
+        { id: "raidboss", name: rb3.name, img: rb3.img, ranged: !!rb3.ranged, proj: rb3.proj || "magic" });
       enemies.push(makeEnemy("raid", { type: bt, name: rb3.name, tier: rb3.tier,
         raidId, raidLevel: level, x: AW - 50, boss: true }));
       continue;
@@ -2959,7 +2963,8 @@ function tick() {
       c.pending -= 1;
       const rbw = c.pending === 0 ? RAID_BOSSES[c.raidId] : null;   // final wave = the boss
       const t = rbw
-        ? Object.assign({}, ENEMY_TYPES[1], { id: "raidboss", name: rbw.name, img: rbw.img, ranged: false })
+        ? Object.assign({}, ENEMY_TYPES[1], { id: "raidboss", name: rbw.name, img: rbw.img,
+            ranged: !!rbw.ranged, proj: rbw.proj || "magic" })
         : ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
       c.enemies = [makeEnemy("raid", { type: t, name: rbw ? rbw.name : undefined,
         tier: rbw ? rbw.tier : undefined, boss: !!rbw,
