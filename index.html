@@ -2242,6 +2242,15 @@ function harvestClaim(s) {
   h.secs = 0;
   return got;
 }
+/* The badge is a call to action, not a running total. A trickle of Minerai two
+   minutes after the last claim is not worth interrupting anyone for, so the
+   button only lights up once the reserve is half its cap. Claiming stays
+   available the whole time -- harvestIsEmpty still gates the button itself. */
+const HARVEST_NOTIFY_AT = 0.5;
+function harvestNotify(s) {
+  const cap = harvestCapSeconds(s);
+  return !harvestIsEmpty(s) && cap > 0 && (s.harvest.secs || 0) >= cap * HARVEST_NOTIFY_AT;
+}
 function harvestIsEmpty(s) {
   const g = s.harvest;
   return !g || (Math.floor(g.minerai) + Math.floor(g.essence) + Math.floor(g.eclat) + Math.floor(g.gold)) <= 0;
@@ -4453,8 +4462,8 @@ function renderHUD() {
       '<div class="row gap4">' +
         '<div class="curr" data-act="resInfo" data-arg="minerai" style="cursor:pointer">' + ic("minerai", 15) + "<b>" + fmt(S.minerai) + "</b>" +
           '<span class="plus" data-act="go" data-arg="accueil">' + ic("plus", 10) + "</span></div>" +
-        '<div class="hudBtn' + (harvestIsEmpty(S) ? "" : " ready") + '" data-act="harvest" title="Récolte automatique">' +
-          ic("moon", 14) + (harvestIsEmpty(S) ? "" : '<span class="dot"></span>') + "</div>" +
+        '<div class="hudBtn' + (harvestNotify(S) ? " ready" : "") + '" data-act="harvest" title="Récolte automatique">' +
+          ic("moon", 14) + (harvestNotify(S) ? '<span class="dot"></span>' : "") + "</div>" +
         '<div class="hudBtn" data-act="go" data-arg="chat" title="Chat Monde &amp; Clan">' + ic("chat", 14) + "</div>" +
         '<div class="menuBtn" data-act="go" data-arg="parametres">' + ic("menu", 15) + "</div>" +
       "</div>" +
