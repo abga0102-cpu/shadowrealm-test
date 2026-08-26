@@ -1188,7 +1188,7 @@ const RARITY_MUL = { COMMUN: 1, RARE: 1.8, EPIQUE: 3.2, MYTHIQUE: 5.6,
 const RATE_ANCHORS = {
   forge: {
     m0:  { COMMUN: 100, RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,  HEROIQUE: 0, ANCESTRAL: 0, LEGENDAIRE: 0, DIVIN: 0 },
-    m50: { COMMUN: 14,  RARE: 24, EPIQUE: 24, MYTHIQUE: 18, HEROIQUE: 11, ANCESTRAL: 6, LEGENDAIRE: 3, DIVIN: 0 },
+    m50: { COMMUN: 26,  RARE: 28, EPIQUE: 22, MYTHIQUE: 13, HEROIQUE: 6.5, ANCESTRAL: 3, LEGENDAIRE: 1.5, DIVIN: 0 },
   },
   skill: {
     m0:  { COMMUN: 100, RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,  LEGENDAIRE: 0, DIVIN: 0 },
@@ -4526,9 +4526,64 @@ function scrEquipement() {
     '<div style="height:2px"></div></div>';
 }
 
+/* Bulk recycle. S.inventory only ever holds UNEQUIPPED gear -- equipItem moves
+   the item into S.equipped and pushes the replaced one back -- so this can
+   never eat what the hero is wearing. It still confirms first: it is the only
+   irreversible action in the game that can touch dozens of items at once. */
+function recycleValue(it) {
+  return Math.floor(((equipRank(it.rarity) + 1) * 5 + it.power * 0.2) * (1 + treeSum(S, "dust") / 100));
+}
+function recycleBatch(rarity) {
+  const hit = S.inventory.filter((x) => x.rarity === rarity);
+  if (!hit.length) return { n: 0, dust: 0 };
+  const dust = hit.reduce((a, x) => a + recycleValue(x), 0);
+  update((st) => {
+    st.inventory = st.inventory.filter((x) => x.rarity !== rarity);
+    st.poussiere += dust;
+  });
+  return { n: hit.length, dust: dust };
+}
+function showRecyclePicker() {
+  const rows = EQUIP_RARITY_ORDER.map((r) => {
+    const hit = S.inventory.filter((x) => x.rarity === r);
+    const dust = hit.reduce((a, x) => a + recycleValue(x), 0);
+    const c = RARITY[r].c;
+    return '<div class="itemRow" style="border-left-color:' + c + ";opacity:" + (hit.length ? 1 : 0.4) +
+      '" data-act="setRecycleRarity" data-arg="' + r + '">' +
+      '<div class="imini" style="width:22px;height:22px;border-color:' + c + '80">' + ic("bag", 12) + "</div>" +
+      '<div class="flex1"><div class="b small" style="color:' + c + '">' + RARITY[r].label + "</div>" +
+      '<div class="mute tiny b">' + hit.length + " objet" + (hit.length > 1 ? "s" : "") +
+        (hit.length ? " · +" + fmt(dust) + " poussière" : "") + "</div></div>" +
+      (recycleRarity === r ? '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">Choisi</span>' : "") +
+      "</div>";
+  }).join("");
+  openModal(rows + '<div class="mt6">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
+    "Choisir une rareté");
+}
+function askRecycleBatch() {
+  const hit = S.inventory.filter((x) => x.rarity === recycleRarity);
+  const c = RARITY[recycleRarity].c;
+  if (!hit.length) { toast("Aucun objet " + RARITY[recycleRarity].label); return; }
+  const dust = hit.reduce((a, x) => a + recycleValue(x), 0);
+  const best = hit.slice().sort((a, b) => b.power - a.power)[0];
+  openModal('<div class="center" style="margin-bottom:6px">' + ic("trash", 30) + "</div>" +
+    '<div class="modalT center" style="color:' + c + '">' + hit.length + " OBJET" + (hit.length > 1 ? "S" : "") + "</div>" +
+    '<div class="dim small center" style="margin:4px 0 8px;line-height:1.5">Recycler tous tes objets <b style="color:' +
+      c + '">' + RARITY[recycleRarity].label + "</b> ?<br>Tu récupères <b style=\"color:var(--purpleLit)\">" +
+      fmt(dust) + '</b> poussière.</div>' +
+    '<div class="card" style="padding:7px 9px"><div class="kv"><span class="dim">Meilleur objet concerné</span><b>' +
+      esc(SLOT_LABEL[best.slot] || best.slot) + " · " + fmt(best.power) + "</b></div>" +
+    '<div class="kv"><span class="dim">Équipement porté</span><b style="color:var(--greenLit)">jamais touché</b></div></div>' +
+    '<div class="mute tiny center mt6">Action irréversible.</div>' +
+    '<div class="row gap6 mt8">' +
+      btn("Annuler", { cls: "ghost", small: true, act: "closeModal" }) +
+      btn(ic("trash", 13) + "Recycler", { cls: "red", small: true, act: "doRecycleBatch" }) +
+    "</div>", "Recyclage groupé");
+}
 /* ---------------- INVENTAIRE ---------------- */
 let invFilter = "ALL";
 let skillFilter = "ALL";
+let recycleRarity = "COMMUN";
 function scrInventaire() {
   const list = invFilter === "ALL" ? S.inventory : S.inventory.filter((i) => i.slot === invFilter);
   const sorted = list.slice().sort((a, b) =>
@@ -4553,6 +4608,22 @@ function scrInventaire() {
       '<div class="seg mt10">' + filters.map((f) =>
         '<span class="' + (invFilter === f ? "on" : "") + '" data-act="invFilter" data-arg="' + f + '">' +
         (f === "ALL" ? "Tout" : f === "accessoire" ? "Anneau" : SLOT_LABEL[f]) + "</span>").join("") + "</div>" +
+      // pick a rarity, then clear every unequipped item of it in one go
+      (() => {
+        const n = S.inventory.filter((x) => x.rarity === recycleRarity).length;
+        const c = RARITY[recycleRarity].c;
+        return '<div class="row gap6 mt6">' +
+          btn('<span class="row gap4" style="min-width:0"><i class="rdot" style="background:' + c + ";color:" + c +
+              '"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+              RARITY[recycleRarity].label + "</span></span>" +
+              '<span class="mute" style="font-weight:700">' + n + "</span>",
+            { small: true, cls: "ghost", act: "pickRecycleRarity",
+              style: "flex:1;justify-content:space-between;padding:5px 9px" }) +
+          btn(ic("trash", 12) + "Recycler tout",
+            { small: true, cls: "dark", act: "askRecycleBatch", dis: n === 0,
+              style: "width:auto;padding:5px 9px" }) +
+        "</div>";
+      })() +
       '<div class="sect" style="margin:16px 0 9px">Objets</div>' +
       (sorted.length === 0 ? '<div class="notice center">Aucun objet. Forge de l\'équipement depuis l\'Accueil.</div>'
         : sorted.map((it) =>
@@ -5946,6 +6017,15 @@ const ACT = {
     else toast("Poussière insuffisante");
   },
   invFilter: (a) => { invFilter = a; render(); },
+  pickRecycleRarity: () => showRecyclePicker(),
+  setRecycleRarity: (a) => { recycleRarity = a; closeModal(); render(); },
+  askRecycleBatch: () => askRecycleBatch(),
+  doRecycleBatch: () => {
+    const r = recycleBatch(recycleRarity);
+    closeModal();
+    toast(r.n ? r.n + " objet" + (r.n > 1 ? "s" : "") + " recyclé" + (r.n > 1 ? "s" : "") + " · +" + fmt(r.dust) + " poussière" : "Rien à recycler", !!r.n);
+    render();
+  },
   skillFilter: (a) => { skillFilter = a; render(); },
   skillCard: (a) => showSkillCard(a),
   unequipSkill: (a) => {
