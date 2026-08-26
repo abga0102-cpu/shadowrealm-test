@@ -1001,16 +1001,20 @@ function enemyDamage(floor) {
   const anchor = 1.8 * Math.pow(FLOOR_KNEE, 1.10) + 2;
   return Math.floor(anchor * Math.pow(1.055, floor - FLOOR_KNEE));
 }
-/* Floors are a steady trickle, never a fortune. The exponent matters more than
-   the coefficient here: at 0.90 the reward was near-linear in the floor, so
-   deep runs kept scaling and floor gold alone could pay for Forge upgrades.
-   At 0.62 it flattens hard -- the cut is ~55% at floor 10 and ~85% by floor
-   200, which is what keeps late-game income under control.
+/* Floors are the SECONDARY income -- roughly a fifth to a quarter of the gold
+   a player earns, next to the Raid Or's half and the Récolte's sixth. The flat
+   0.62 exponent left them at 0-8% of income from the mid game on, so climbing
+   paid nothing and only the Raid mattered. They now use the same shape as
+   enemyHP: a mild curve up to a knee, then a 1.04 compound, so a deeper floor
+   is genuinely worth more without ever rivalling the Raid Or.
 
-   Raid Or stays the real income and the Forge upgrade stays the only gold sink
-   in the game, so both are left untouched. AFK gold is derived from this
-   function, so it scales down with it and keeps its share of the mix. */
-function goldReward(floor) { return Math.floor(0.55 * Math.pow(floor, 0.62) + 2); }
+   The Récolte automatique derives its gold from this function, so its per-hour
+   constant below is what keeps it a complement rather than a replacement. */
+const GOLD_KNEE = 25;
+function goldReward(floor) {
+  const base = 0.8 * Math.pow(Math.min(floor, GOLD_KNEE), 0.72) + 3;
+  return Math.floor(floor <= GOLD_KNEE ? base : base * Math.pow(1.04, floor - GOLD_KNEE));
+}
 /* cut to roughly a third, and flattened, so deep floors cannot outrun the
    curve above. AFK EXP is derived from this, so it scales down with it. */
 function expReward(floor)  { return Math.floor(4.5 * Math.pow(floor, 1.05) + 4); }
@@ -1281,13 +1285,25 @@ function rollRarity(rates, order) {
 }
 
 function forgeCost(forgeLevel) { return Math.floor(20 * Math.pow(1.14, forgeLevel) + 10); }
-/* Gold sink. 1.5^level put Forge 40+ out of reach forever (63.8b at L50);
-   1.33 keeps the top of the track a long grind without making it fiction. */
-const FORGE_UPG_BASE = 150, FORGE_UPG_GROWTH = 1.33;
+/* THE gold sink, and the reason gold is worth managing at all. Tuned against
+   the full income model -- floors + Raid Or + Récolte + the Rebirth gold bonus,
+   for a player who plays ~2h a day and spends every Raid key, with the Raid Or
+   level derived from the floor whose wave HP it matches rather than assumed.
+   One upgrade should cost ~0.3 days of income at Forge 10, 1.1 at 20, 2.3 at
+   30, 4.5 at 40 and 4.9 at 50, so the gauge regularly fills before the gold.
+
+   A plain exponential cannot hold that shape. Income is nearly flat while the
+   Raid Or is stuck at level 1 (floors 1-30), then compounds hard once floors
+   and Raid levels start feeding each other, so the cost has to ACCELERATE:
+   TAPER^(n*n) takes per-level growth from 7% at Forge 1 to 44% at Forge 50. */
+const FORGE_UPG_BASE = 2600, FORGE_UPG_GROWTH = 1.0725, FORGE_UPG_TAPER = 1.003;
 /* the Forge gauge: this many successful forges fill it for a given level.
    Both the gauge AND the gold are required before an upgrade can start. */
 function forgeProgressNeed(level) { return 5 + Math.floor(level * 1.5); }
-function forgeUpgradeCost(level) { return Math.floor(FORGE_UPG_BASE * Math.pow(FORGE_UPG_GROWTH, level - 1)); }
+function forgeUpgradeCost(level) {
+  const n = level - 1;
+  return Math.floor(FORGE_UPG_BASE * Math.pow(FORGE_UPG_GROWTH, n) * Math.pow(FORGE_UPG_TAPER, n * n));
+}
 const FORGE_UPGRADE_TIMES = { 1: 0, 2: 0, 3: 0, 4: 300, 5: 600, 6: 900, 7: 1200, 8: 1800, 9: 3000, 10: 3600 };
 function forgeUpgradeTime(level) {
   if (level <= 3) return 0;
@@ -1588,8 +1604,11 @@ function bossFirstClearReward(floor) {
   const qty = Math.min(5, 1 + Math.floor((tier - 1) / 4));  // 1..5 of them
   return { key, qty };
 }
-/* gold faucet: one Raid Or run should be worth a solid stretch of floors */
-const RAID_OR_BASE = 3000, RAID_OR_GROWTH = 1.17;
+/* The primary gold faucet: one Raid Or run should be worth a solid stretch of
+   floors. 1.17 over 50 levels was 2566x, which outran every cost curve the
+   Forge could carry and pushed the Raid to 100% of late income. 1.14 is 758x --
+   still the dominant source, but floors and the Récolte keep a visible share. */
+const RAID_OR_BASE = 3000, RAID_OR_GROWTH = 1.14;
 /* Raid level 1 rewards. These also set the Récolte automatique's hourly
    rates: Minerai 100% of an entry, Essence and Compétence 25% each. */
 const RAID_BASE = { minerai: 1000, familier: 120, competence: 50 };
@@ -1993,9 +2012,12 @@ function harvestRates(s) {
     gold: goldReward(s.floor) * HARVEST_GOLD_PER_HOUR * eff,
   };
 }
-/* gold is floor-driven rather than raid-driven, and stays deliberately capped
-   so the Raid Or keeps its place as the real gold source */
-const HARVEST_GOLD_PER_HOUR = 720;
+/* Gold is floor-driven rather than raid-driven. 720/h meant the Récolte paid
+   as if the player killed 720 enemies an hour, against ~400 for someone
+   actually playing -- so idling out-earned playing, and the Récolte was 57% of
+   early income. At 60/h an hour of Récolte is worth about a quarter of an hour
+   of active play, which is what makes it a complement. */
+const HARVEST_GOLD_PER_HOUR = 60;
 
 function harvestAdvance(s, seconds) {
   const h = s.harvest;
@@ -2777,9 +2799,11 @@ function forgeSummon(n) {
   return results;
 }
 
-/* tree-adjusted forge upgrade cost & duration */
+/* tree-adjusted forge upgrade cost & duration. The cost branch is 5 levels of
+   -5%, so -25% is the real ceiling; the old 70 cap was never reachable. */
+const FORGE_COST_CUT_CAP = 25;
 function forgeUpgCostFor(s) {
-  const cut = Math.min(70, treeSum(s, "forgeCost"));
+  const cut = Math.min(FORGE_COST_CUT_CAP, treeSum(s, "forgeCost"));
   return Math.max(1, Math.floor(forgeUpgradeCost(s.forge.level) * (1 - cut / 100)));
 }
 function forgeUpgTimeFor(s) {
