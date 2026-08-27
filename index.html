@@ -533,6 +533,12 @@ body{
    button so the top-right row stays one height. The dot rides the Recolte
    button when there is something to claim. */
 /* the (i) affordance, wherever a rarity needs explaining */
+/* a skill the Lord Demoniaque has sealed: still cooling down, still unusable */
+.slot.sealed{filter:grayscale(1) brightness(.6)}
+.slot.sealed::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;
+  border:1px solid #B15CF6;box-shadow:inset 0 0 10px #B15CF666;pointer-events:none;
+}
 /* auto-cast switch, sized to the skill slots it sits beside */
 .autoSk{
   flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
@@ -1274,9 +1280,11 @@ const RAID_BOSSES = {
   minerai:    { name: "Titan des Abysses",  tier: "LEGENDAIRE", img: "raidboss_minerai",
     abils: ["carapace", "regenCristal", "sismique"] },
   or:         { name: "Dragon Ancestral",   tier: "LEGENDAIRE", img: "raidboss_or",         ranged: true, proj: "magic",
-    abils: ["souffleLave", "cupidite", "ailesCendre"] },
-  competence: { name: "Lord Démoniaque",    tier: "MYTHIQUE",   img: "raidboss_competence", ranged: true, proj: "magic" },
-  familier:   { name: "Bête Corrompue",     tier: "EPIQUE",     img: "raidboss_familier" },
+    abils: ["souffleLave", "fournaise", "ailesCendre"] },
+  competence: { name: "Lord Démoniaque",    tier: "MYTHIQUE",   img: "raidboss_competence", ranged: true, proj: "magic",
+    abils: ["sceau", "lameArdente", "orbeInfernal"] },
+  familier:   { name: "Bête Corrompue",     tier: "EPIQUE",     img: "raidboss_familier",
+    abils: ["corruption", "bond", "meute"] },
   evolution:  { name: "Titan des Abysses",  tier: "MYTHIQUE",   img: "raidboss_evolution" },
 };
 /* Elite floors are always ODD multiples of 5 (the even ones are Boss floors),
@@ -3015,6 +3023,9 @@ const ELITE_ABIL = {
   },
   sismique: {
     label: "Onde sismique", c: "#E8B44A",
+    // Once per fight, and only when it is hurt: the Titan puts both fists
+    // through the floor below 40% health. Two seconds of warning, then the hero
+    // is thrown to the edge and left flat on his back.
     tick(c, e, dt) {
       if (e.quakeWind > 0) {
         e.quakeWind = Math.max(0, e.quakeWind - dt);
@@ -3023,20 +3034,23 @@ const ELITE_ABIL = {
         c.heroHP -= d;
         c.heroHit = 0.3;
         c.heroX = 24;
-        addShake(c, 12);
+        c.heroStun = 2;
+        addShake(c, 14);
         addBurst(c, "crit", c.heroX, "#E8B44A");
         c.floats.push({ id: rid(), x: c.heroX, val: d, crit: true, color: "#E8B44A", born: Date.now() });
+        c.floats.push({ id: rid(), x: c.heroX, val: 0, crit: false, color: "#E8B44A",
+          born: Date.now() + 1, text: "ÉTOURDI" });
         if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
         return;
       }
-      e.quakeCd = (e.quakeCd == null ? 5 : e.quakeCd) - dt;
-      if (e.quakeCd <= 0) {
-        e.quakeCd = 15; e.quakeWind = 2;
-        addBurst(c, "hit", e.x, "#E8B44A");
-        addShake(c, 4);
-      }
+      if (e.quaked || e.hp > e.maxHP * 0.4) return;
+      e.quaked = true; e.quakeWind = 2;
+      addBurst(c, "hit", e.x, "#E8B44A");
+      addShake(c, 5);
     },
-    state(e) { return e.quakeWind > 0 ? "SÉISME…" : ""; },
+    state(e) {
+      return e.quakeWind > 0 ? "SÉISME…" : combat && combat.heroStun > 0 ? "ÉTOURDI" : "";
+    },
   },
 
   // Dragon Ancestral -- purple and molten gold, caught mid-breath. It burns you
@@ -3058,7 +3072,7 @@ const ELITE_ABIL = {
         if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
         return;
       }
-      e.chanCd = (e.chanCd == null ? 4 : e.chanCd) - dt;
+      e.chanCd = (e.chanCd == null ? 1.5 : e.chanCd) - dt;
       if (e.chanCd <= 0) {
         e.chanCd = 16; e.channel = 3;
         addBurst(c, "hit", e.x, "#FF7A3D");
@@ -3066,27 +3080,34 @@ const ELITE_ABIL = {
     },
     state(e) { return e.channel > 0 ? "SOUFFLE" : ""; },
   },
-  cupidite: {
-    label: "Cupidité", c: "#E8B44A",
-    // every blow it lands takes a bite out of what you carry home, up to 40%.
-    // The only counter is killing it faster, which is the point of a gold raid.
-    onLand(c) {
-      if (c.ctx !== "raid") return;
-      const before = c.goldStolen || 0;
-      c.goldStolen = Math.min(0.4, before + 0.05);
-      if (c.goldStolen === before) return;
-      c.floats.push({ id: rid(), x: c.heroX, val: 0, crit: false, color: "#E8B44A",
-        born: Date.now(), text: "OR −" + Math.round(c.goldStolen * 100) + "%" });
+  fournaise: {
+    label: "Fournaise", c: "#FF7A3D",
+    // It heats its own lair. Nothing happens for twelve seconds, then the air
+    // itself starts costing you, and it keeps climbing. A soft timer: the raid
+    // rewards killing it quickly without touching what you take home.
+    tick(c, e, dt) {
+      e.heat = (e.heat || 0) + dt;
+      if (e.heat < 12) return;
+      e._fn = (e._fn || 0) + dt;
+      if (e._fn < 1) return;
+      e._fn = 0;
+      const steps = Math.floor((e.heat - 12) / 8);
+      const pct = Math.min(0.05, 0.01 + 0.005 * steps);
+      const d = Math.max(1, Math.floor(c.heroMaxHP * pct));
+      c.heroHP -= d;
+      c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#FF7A3D", born: Date.now() });
+      if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
     },
-    state() {
-      return combat && combat.goldStolen
-        ? "OR −" + Math.round(combat.goldStolen * 100) + "%" : "";
+    state(e) {
+      if (!((e.heat || 0) >= 12)) return "";
+      const steps = Math.floor((e.heat - 12) / 8);
+      return "FOURNAISE " + Math.round(Math.min(5, 1 + 0.5 * steps) * 10) / 10 + "%";
     },
   },
   ailesCendre: {
     label: "Ailes de cendre", c: "#CFCFCF",
     tick(c, e, dt) {
-      e.wingCd = (e.wingCd == null ? 6 : e.wingCd) - dt;
+      e.wingCd = (e.wingCd == null ? 2.5 : e.wingCd) - dt;
       if (e.wingCd > 0) return;
       e.wingCd = 17;
       c.heroX = 24;
@@ -3095,6 +3116,142 @@ const ELITE_ABIL = {
       addBurst(c, "hit", c.heroX, "#CFCFCF");
     },
     state() { return combat && fxVal(combat, "debuffs", "cendre") ? "CENDRES" : ""; },
+  },
+
+  // Lord Demoniaque -- black and gold armour wreathed in fire, a burning
+  // greatsword in one hand and a fireball hanging in the other. Boss of the
+  // skill raid, so he goes after your skills.
+  sceau: {
+    label: "Sceau de silence", c: "#B15CF6",
+    tick(c, e, dt) {
+      e.sealCd = (e.sealCd == null ? 1.5 : e.sealCd) - dt;
+      if (e.sealCd > 0) return;
+      e.sealCd = 15;
+      const live = S.skillSlots.slice(0, skillSlotCount(S))
+        .filter((sid) => sid && S.skills[sid] && !skillSealed(c, sid));
+      if (!live.length) return;
+      const sid = live[Math.floor(Math.random() * live.length)];
+      c.sealed = c.sealed || {};
+      c.sealed[sid] = Date.now() + 8000;
+      const def = SKILL_BY_ID[sid];
+      addBurst(c, "crit", c.heroX, "#B15CF6");
+      c.floats.push({ id: rid(), x: c.heroX, val: 0, crit: false, color: "#B15CF6",
+        born: Date.now(), text: "SCELLÉ · " + (def ? def.name : sid) });
+    },
+    state(c2) {
+      if (!combat || !combat.sealed) return "";
+      const n = Object.keys(combat.sealed).filter((k) => skillSealed(combat, k)).length;
+      return n ? "SCEAU " + n : "";
+    },
+  },
+  lameArdente: {
+    label: "Lame ardente", c: "#FF7A3D",
+    // the greatsword: every fourth swing is the one that matters
+    outgoing(c, e, dmg) {
+      e.swings = (e.swings || 0) + 1;
+      if ((e.swings + 2) % 4 !== 0) return dmg;
+      e.blazing = 0.5;
+      addShake(c, 8);
+      addBurst(c, "crit", e.x, "#FF7A3D");
+      return dmg * 3;
+    },
+    tick(c, e, dt) { if (e.blazing > 0) e.blazing = Math.max(0, e.blazing - dt); },
+    state(e) { return e.blazing > 0 ? "LAME ARDENTE" : ""; },
+  },
+  orbeInfernal: {
+    label: "Orbe infernal", c: "#FF5A5A",
+    tick(c, e, dt) {
+      if (e.orbWind > 0) {
+        e.orbWind = Math.max(0, e.orbWind - dt);
+        if (e.orbWind > 0) return;
+        // it detonates where he stands: the closer you are, the worse it is
+        const dist = Math.max(0, e.x - c.heroX);
+        const near = Math.max(0, Math.min(1, 1 - dist / 220));
+        const d = Math.max(1, Math.floor(c.heroMaxHP * (0.05 + 0.25 * near) * (1 - heroDmgRed(c) / 100)));
+        c.heroHP -= d;
+        c.heroHit = 0.3;
+        addShake(c, 10);
+        addBurst(c, "crit", c.heroX, "#FF5A5A");
+        c.floats.push({ id: rid(), x: c.heroX, val: d, crit: near > 0.5, color: "#FF5A5A", born: Date.now() });
+        if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+        return;
+      }
+      e.orbCd = (e.orbCd == null ? 2 : e.orbCd) - dt;
+      if (e.orbCd <= 0) {
+        e.orbCd = 14; e.orbWind = 1.5;
+        c.projs.push({ id: rid(), x: e.x - 10, toX: e.x - 10, color: "#FF5A5A", kind: "magic", life: 1.5 });
+        addBurst(c, "hit", e.x, "#FF5A5A");
+      }
+    },
+    state(e) { return e.orbWind > 0 ? "ORBE…" : ""; },
+  },
+
+  // Bete Corrompue -- a wolf wrapped in violet flame, armoured at the shoulder,
+  // trailing shards. Boss of the familiar raid, so it turns yours.
+  corruption: {
+    label: "Corruption", c: "#B15CF6",
+    tick(c, e, dt) {
+      if (c.petCorrupt > 0) {
+        c.petCorrupt = Math.max(0, c.petCorrupt - dt);
+        if (!S.activePetId) return;
+        e._claw = (e._claw || 0) + dt;
+        if (e._claw < 1) return;
+        e._claw = 0;
+        // your own familiar, clawing at you
+        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.03));
+        c.heroHP -= d;
+        c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#B15CF6", born: Date.now() });
+        if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+        return;
+      }
+      e.corrCd = (e.corrCd == null ? 1.5 : e.corrCd) - dt;
+      if (e.corrCd <= 0) {
+        e.corrCd = 18; c.petCorrupt = 10;
+        addBurst(c, "crit", c.heroX, "#B15CF6");
+        c.floats.push({ id: rid(), x: c.heroX, val: 0, crit: false, color: "#B15CF6",
+          born: Date.now(), text: S.activePetId ? "FAMILIER CORROMPU" : "CORRUPTION" });
+      }
+    },
+    state() { return combat && combat.petCorrupt > 0 ? "CORRUPTION" : ""; },
+  },
+  bond: {
+    label: "Bond", c: "#B15CF6",
+    tick(c, e, dt) {
+      if (e.leapWind > 0) {
+        e.leapWind = Math.max(0, e.leapWind - dt);
+        if (e.leapWind > 0) return;
+        e.x = c.heroX + 34;                       // lands on top of him
+        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.18 * (1 - heroDmgRed(c) / 100)));
+        c.heroHP -= d;
+        c.heroHit = 0.3;
+        addShake(c, 10);
+        addBurst(c, "crit", e.x, "#B15CF6");
+        c.floats.push({ id: rid(), x: c.heroX, val: d, crit: true, color: "#B15CF6", born: Date.now() });
+        if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+        return;
+      }
+      e.leapCd = (e.leapCd == null ? 1.5 : e.leapCd) - dt;
+      if (e.leapCd <= 0) { e.leapCd = 13; e.leapWind = 1.2; addBurst(c, "hit", e.x, "#B15CF6"); }
+    },
+    state(e) { return e.leapWind > 0 ? "BOND…" : ""; },
+  },
+  meute: {
+    label: "Meute d'ombres", c: "#9B5CF6",
+    tick(c, e, dt) {
+      const mine = c.enemies.filter((x) => x.alive && x.minionOf === e.id);
+      e.packCd = (e.packCd == null ? 1.5 : e.packCd) - dt;
+      if (e.packCd > 0 || mine.length >= 3) return;
+      e.packCd = 16;
+      if (e.hp <= e.maxHP * 0.2) return;
+      for (let k = mine.length; k < 3; k++) {
+        // thin and fast, not another health bar: they are a burst, not a siege
+        const w = spawnMinion(c, e, "Ombre", 0.05, 0.30, "#9B5CF6", 30 + k * 26);
+        w.atkCd = 0.3;
+        c.enemies.push(w);
+      }
+      addBurst(c, "hit", e.x, "#9B5CF6");
+    },
+    state() { return ""; },
   },
 
   braise: {
@@ -3266,7 +3423,7 @@ function startRaid(raidId, useUniversal, onEnd) {
   const level = raid.level;
   const dv = D;
   const wave = spawnRaidWave(raidId, level);
-  const rawReward = raidReward(raidId, level);
+  const reward = raidReward(raidId, level);
   combat = {
     ctx: "raid", raidId, raidLevel: level, floor: level, step: 1, startAt: Date.now(),
     elite: false, boss: raidId === "minerai",
@@ -3275,10 +3432,7 @@ function startRaid(raidId, useUniversal, onEnd) {
     heroAttacking: 0, heroHit: 0, skillCds: {}, skillCdMax: {}, buffs: {}, debuffs: {}, skillFxs: [], floats: [], projs: [],
     bg: raidId === "minerai" ? "env_ice" : raidId === "or" ? "env_dragon"
       : raidId === "competence" ? "env_celestial" : "env_forest", status: "fight",
-    onEnd: (won, cc) => {
-      // whatever the Dragon bit out of the purse never arrives
-      const kept = Math.max(0, 1 - ((cc && cc.goldStolen) || 0));
-      const reward = Math.max(1, Math.floor(rawReward * kept));
+    onEnd: (won) => {
       if (won) {
         update((st) => {
           if (useUniversal) st.universalKeys -= 1; else st.raids[raidId].keys -= 1;
@@ -3348,6 +3502,16 @@ function fxVal(c, bag, key) {
 }
 /* The same reduction an ordinary blow goes through, so Rempart genuinely
    answers a boss ability instead of only answering basic attacks. */
+/* A sealed skill still counts its cooldown down; it simply cannot be spent.
+   Both cast paths ask here, so manual and automatic stay in step. */
+function skillSealed(c, sid) {
+  return !!(c && c.sealed && c.sealed[sid] && Date.now() < c.sealed[sid]);
+}
+/* The Bete Corrompue turns a familiar against its owner, so every read of the
+   pet's element goes through this instead of dv.petElem directly. */
+function petElemOf(c, dv) {
+  return c && c.petCorrupt > 0 ? null : dv.petElem;
+}
 function heroDmgRed(c) {
   return Math.min(85, (D.dmgRed || 0) + fxVal(c, "buffs", "rempart"));
 }
@@ -3453,7 +3617,7 @@ function tick() {
   }
   // Poison ticks on the whole wave for as long as the debuff lasts
   // Feu familiars burn the wave once a second
-  if (dv.petElem === "feu") {
+  if (petElemOf(c, dv) === "feu") {
     c._burnAcc = (c._burnAcc || 0) + dt;
     if (c._burnAcc >= 1) {
       c._burnAcc = 0;
@@ -3488,7 +3652,10 @@ function tick() {
   const target = alive.sort((a, b) => a.x - b.x)[0];
 
   // ---- HERO ----
-  if (target) {
+  // Stunned means stunned: no step, no swing, no skill. Cooldowns keep running,
+  // so a stun costs you the window rather than resetting your rotation.
+  c.heroStun = Math.max(0, (c.heroStun || 0) - dt);
+  if (target && !(c.heroStun > 0)) {
     const dist = target.x - c.heroX;
     const inRange = dist <= wt.range + 2;
     // Range used to be checked for melee only, so a bow with 220 of reach still
@@ -3510,7 +3677,7 @@ function tick() {
         const swings = Math.random() * 100 < (dv.doubleAtk || 0) ? 2 : 1;
         const buffDmg = 1 + fxVal(c, "buffs", "force") / 100;
         const vuln = (1 + fxVal(c, "debuffs", "vuln") / 100)
-          * (dv.petElem === "toxique" ? 1.10 : 1);
+          * (petElemOf(c, dv) === "toxique" ? 1.10 : 1);
         const swingDelay = wt.attackType === "MELEE" ? HIT_DELAY_MELEE : HIT_DELAY_RANGED;
         for (let sw = 0; sw < swings; sw++) {
           // anything that blunts the hero's swing stacks here, floored at 30%
@@ -3545,7 +3712,7 @@ function tick() {
       const def = SKILL_DEFS.find((x) => x.id === sid);
       if (!def) return;
       c.skillCds[sid] = (c.skillCds[sid] || 0) - dt;
-      if (c.skillCds[sid] <= 0 && S.autoSkills) {
+      if (c.skillCds[sid] <= 0 && S.autoSkills && !skillSealed(c, sid)) {
         c.skillCds[sid] = def.cd * (1 - (dv.skillCdCut || 0) / 100);
         c.skillCdMax[sid] = c.skillCds[sid];
         const fxKind = def.fx || "impact";
@@ -3601,7 +3768,7 @@ function tick() {
       e.atkCd -= dt;
       if (e.atkCd <= 0) {
         e.atkCd = (1.15 + Math.random() * 0.5) * (1 + fxVal(c, "debuffs", "slow") / 100)
-          * (dv.petElem === "glace" ? 1.12 : 1) * (e.frenzy ? 0.5 : 1)
+          * (petElemOf(c, dv) === "glace" ? 1.12 : 1) * (e.frenzy ? 0.5 : 1)
           * (e.flurry > 0 ? 0.34 : 1)
           * (e.stolen && e.stolen.key === "hate" ? 1 / (1 + e.stolen.value / 100) : 1);
         e.attacking = 0.2;
@@ -3695,7 +3862,7 @@ function handleCombatEnd(c) {
     const won = c.status === "won";
     const cb = c.onEnd;
     combat = null;
-    if (cb) cb(won, c);
+    if (cb) cb(won);
     return;
   }
   const won = c.status === "won";
@@ -5534,6 +5701,7 @@ function castSkill(sid) {
   if (!sid || !S.skills[sid]) return "aucune compétence";
   const def = SKILL_BY_ID[sid];
   if (!def) return "aucune compétence";
+  if (skillSealed(c, sid)) return "compétence scellée";
   if ((c.skillCds[sid] || 0) > 0.05) return "en recharge";
   const dv = D;
   const target = c.enemies.filter((e) => e.alive).sort((a, b) => a.x - b.x)[0];
@@ -5570,7 +5738,8 @@ function skillSlotsHTML() {
     const def = sid ? SKILL_DEFS.find((x) => x.id === sid) : null;
     const cat = def ? SKILL_CATS[def.cat] : null;
     // a filled slot casts; an empty one still takes you to the roster
-    sb += '<div class="slot" data-act="' + (def ? "castSkill" : "go") +
+    const sealed = def && skillSealed(combat, def.id);
+    sb += '<div class="slot' + (sealed ? " sealed" : "") + '" data-act="' + (def ? "castSkill" : "go") +
       '" data-arg="' + (def ? def.id : "competences") + '"' +
       (def ? ' data-skill="' + def.id + '"' : "") + ">" + (def
       ? '<div class="skfx" style="background:linear-gradient(' + shade(def.color, 26) + "," + shade(def.color, -34) + ')">' +
