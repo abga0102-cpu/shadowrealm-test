@@ -1271,8 +1271,10 @@ const BOSS_DEFS = [
    Demoniaque swung his fists. They state how they fight here, like the floor
    bosses and the elites do. */
 const RAID_BOSSES = {
-  minerai:    { name: "Titan des Abysses",  tier: "LEGENDAIRE", img: "raidboss_minerai" },
-  or:         { name: "Dragon Ancestral",   tier: "LEGENDAIRE", img: "raidboss_or",         ranged: true, proj: "magic" },
+  minerai:    { name: "Titan des Abysses",  tier: "LEGENDAIRE", img: "raidboss_minerai",
+    abils: ["carapace", "regenCristal", "sismique"] },
+  or:         { name: "Dragon Ancestral",   tier: "LEGENDAIRE", img: "raidboss_or",         ranged: true, proj: "magic",
+    abils: ["souffleLave", "cupidite", "ailesCendre"] },
   competence: { name: "Lord Démoniaque",    tier: "MYTHIQUE",   img: "raidboss_competence", ranged: true, proj: "magic" },
   familier:   { name: "Bête Corrompue",     tier: "EPIQUE",     img: "raidboss_familier" },
   evolution:  { name: "Titan des Abysses",  tier: "MYTHIQUE",   img: "raidboss_evolution" },
@@ -2965,6 +2967,136 @@ const ELITE_ABIL = {
     state(e) { return combat && fxVal(combat, "debuffs", "intimide") ? "INTIMIDATION" : ""; },
   },
 
+  /* ---------------- raid bosses: three mechanics each ---------------- */
+
+  // Titan des Abysses -- a mountain of dark stone veined with living blue
+  // crystal, gold-banded and rune-marked. Plated, self-repairing, and it hits
+  // the ground rather than you.
+  carapace: {
+    label: "Carapace de minerai", c: "#3FA7FF",
+    tick(c, e, dt) {
+      if (e.armor == null) e.armor = Math.floor(e.maxHP * 0.6);
+      if (e.stagger > 0) e.stagger = Math.max(0, e.stagger - dt);
+    },
+    filter(c, e, dmg) {
+      if (!(e.armor > 0)) return dmg;
+      const through = Math.max(1, Math.floor(dmg * 0.3));
+      const soaked = dmg - through;
+      e.armor -= soaked;
+      if (soaked > 0) {
+        c.floats.push({ id: rid(), x: e.x, val: soaked, crit: false, color: "#3FA7FF",
+          born: Date.now(), blocked: true });
+      }
+      // the plating comes off all at once, and it is reeling when it does
+      if (e.armor <= 0) {
+        e.armor = 0; e.stagger = 3;
+        addBurst(c, "death", e.x, "#3FA7FF");
+        addShake(c, 8);
+      }
+      return through;
+    },
+    state(e) { return e.stagger > 0 ? "BRISÉ" : e.armor > 0 ? "CARAPACE" : ""; },
+  },
+  regenCristal: {
+    label: "Régénération cristalline", c: "#8FEFF4",
+    tick(c, e, dt) {
+      e.noHit = (e.noHit || 0) + dt;
+      if (e.noHit < 2) return;               // only regrows in the quiet
+      e._rg = (e._rg || 0) + dt;
+      if (e._rg < 1) return;
+      e._rg = 0;
+      const h = Math.max(1, Math.floor(e.maxHP * 0.025));
+      e.hp = Math.min(e.maxHP, e.hp + h);
+      c.floats.push({ id: rid(), x: e.x, val: h, crit: false, color: "#8FEFF4",
+        born: Date.now(), heal: true });
+    },
+    filter(c, e, dmg) { e.noHit = 0; return dmg; },
+    state(e) { return (e.noHit || 0) >= 2 ? "RÉGÉNÈRE" : ""; },
+  },
+  sismique: {
+    label: "Onde sismique", c: "#E8B44A",
+    tick(c, e, dt) {
+      if (e.quakeWind > 0) {
+        e.quakeWind = Math.max(0, e.quakeWind - dt);
+        if (e.quakeWind > 0) return;
+        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.25 * (1 - heroDmgRed(c) / 100)));
+        c.heroHP -= d;
+        c.heroHit = 0.3;
+        c.heroX = 24;
+        addShake(c, 12);
+        addBurst(c, "crit", c.heroX, "#E8B44A");
+        c.floats.push({ id: rid(), x: c.heroX, val: d, crit: true, color: "#E8B44A", born: Date.now() });
+        if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+        return;
+      }
+      e.quakeCd = (e.quakeCd == null ? 5 : e.quakeCd) - dt;
+      if (e.quakeCd <= 0) {
+        e.quakeCd = 15; e.quakeWind = 2;
+        addBurst(c, "hit", e.x, "#E8B44A");
+        addShake(c, 4);
+      }
+    },
+    state(e) { return e.quakeWind > 0 ? "SÉISME…" : ""; },
+  },
+
+  // Dragon Ancestral -- purple and molten gold, caught mid-breath. It burns you
+  // in a sustained stream, beats you back with its wings, and being the boss of
+  // the gold raid, it takes what you came for.
+  souffleLave: {
+    label: "Souffle de lave", c: "#FF7A3D",
+    tick(c, e, dt) {
+      if (e.channel > 0) {
+        e.channel = Math.max(0, e.channel - dt);
+        e._ch = (e._ch || 0) + dt;
+        if (e._ch < 0.5) return;
+        e._ch = 0;
+        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.07 * (1 - heroDmgRed(c) / 100)));
+        c.heroHP -= d;
+        c.heroHit = 0.2;
+        c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX, color: "#FF7A3D", kind: "magic", life: 0.3 });
+        c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#FF7A3D", born: Date.now() });
+        if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+        return;
+      }
+      e.chanCd = (e.chanCd == null ? 4 : e.chanCd) - dt;
+      if (e.chanCd <= 0) {
+        e.chanCd = 16; e.channel = 3;
+        addBurst(c, "hit", e.x, "#FF7A3D");
+      }
+    },
+    state(e) { return e.channel > 0 ? "SOUFFLE" : ""; },
+  },
+  cupidite: {
+    label: "Cupidité", c: "#E8B44A",
+    // every blow it lands takes a bite out of what you carry home, up to 40%.
+    // The only counter is killing it faster, which is the point of a gold raid.
+    onLand(c) {
+      if (c.ctx !== "raid") return;
+      const before = c.goldStolen || 0;
+      c.goldStolen = Math.min(0.4, before + 0.05);
+      if (c.goldStolen === before) return;
+      c.floats.push({ id: rid(), x: c.heroX, val: 0, crit: false, color: "#E8B44A",
+        born: Date.now(), text: "OR −" + Math.round(c.goldStolen * 100) + "%" });
+    },
+    state() {
+      return combat && combat.goldStolen
+        ? "OR −" + Math.round(combat.goldStolen * 100) + "%" : "";
+    },
+  },
+  ailesCendre: {
+    label: "Ailes de cendre", c: "#CFCFCF",
+    tick(c, e, dt) {
+      e.wingCd = (e.wingCd == null ? 6 : e.wingCd) - dt;
+      if (e.wingCd > 0) return;
+      e.wingCd = 17;
+      c.heroX = 24;
+      fxAdd(c, "debuffs", { key: "cendre", value: 30, label: "Cendres", dur: 6 }, Date.now());
+      addShake(c, 7);
+      addBurst(c, "hit", c.heroX, "#CFCFCF");
+    },
+    state() { return combat && fxVal(combat, "debuffs", "cendre") ? "CENDRES" : ""; },
+  },
+
   braise: {
     label: "Braise", c: "#FF7A3D",
     tick(c, e, dt) { if (e.emberCd > 0) e.emberCd = Math.max(0, e.emberCd - dt); },
@@ -3105,7 +3237,7 @@ function spawnRaidWave(raidId, level) {
     const t = Object.assign({}, ENEMY_TYPES[1], { id: "boss", name: rb2.name,
       img: rb2.img || "boss_golem", ranged: !!rb2.ranged, proj: rb2.proj || "magic" });
     return { enemies: [makeEnemy("raid", { type: t, name: rb2.name, tier: rb2.tier,
-      raidId, raidLevel: level, x: AW - 60, boss: true })], pending: 0 };
+      abils: rb2.abils, raidId, raidLevel: level, x: AW - 60, boss: true })], pending: 0 };
   }
   const n = raidEnemyCount(raidId, level);
   const rb3 = RAID_BOSSES[raidId];
@@ -3116,7 +3248,7 @@ function spawnRaidWave(raidId, level) {
       const bt = Object.assign({}, ENEMY_TYPES[1],
         { id: "raidboss", name: rb3.name, img: rb3.img, ranged: !!rb3.ranged, proj: rb3.proj || "magic" });
       enemies.push(makeEnemy("raid", { type: bt, name: rb3.name, tier: rb3.tier,
-        raidId, raidLevel: level, x: AW - 50, boss: true }));
+        abils: rb3.abils, raidId, raidLevel: level, x: AW - 50, boss: true }));
       continue;
     }
     const t = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
@@ -3134,7 +3266,7 @@ function startRaid(raidId, useUniversal, onEnd) {
   const level = raid.level;
   const dv = D;
   const wave = spawnRaidWave(raidId, level);
-  const reward = raidReward(raidId, level);
+  const rawReward = raidReward(raidId, level);
   combat = {
     ctx: "raid", raidId, raidLevel: level, floor: level, step: 1, startAt: Date.now(),
     elite: false, boss: raidId === "minerai",
@@ -3143,7 +3275,10 @@ function startRaid(raidId, useUniversal, onEnd) {
     heroAttacking: 0, heroHit: 0, skillCds: {}, skillCdMax: {}, buffs: {}, debuffs: {}, skillFxs: [], floats: [], projs: [],
     bg: raidId === "minerai" ? "env_ice" : raidId === "or" ? "env_dragon"
       : raidId === "competence" ? "env_celestial" : "env_forest", status: "fight",
-    onEnd: (won) => {
+    onEnd: (won, cc) => {
+      // whatever the Dragon bit out of the purse never arrives
+      const kept = Math.max(0, 1 - ((cc && cc.goldStolen) || 0));
+      const reward = Math.max(1, Math.floor(rawReward * kept));
       if (won) {
         update((st) => {
           if (useUniversal) st.universalKeys -= 1; else st.raids[raidId].keys -= 1;
@@ -3378,8 +3513,10 @@ function tick() {
           * (dv.petElem === "toxique" ? 1.10 : 1);
         const swingDelay = wt.attackType === "MELEE" ? HIT_DELAY_MELEE : HIT_DELAY_RANGED;
         for (let sw = 0; sw < swings; sw++) {
-          let dmg = dv.damage * (wt.hit || 1) * styleMul * buffDmg * vuln
-            * (1 - fxVal(c, "debuffs", "intimide") / 100);
+          // anything that blunts the hero's swing stacks here, floored at 30%
+          // of his damage so no combination can read as doing nothing at all
+          const blunt = Math.min(70, fxVal(c, "debuffs", "intimide") + fxVal(c, "debuffs", "cendre"));
+          let dmg = dv.damage * (wt.hit || 1) * styleMul * buffDmg * vuln * (1 - blunt / 100);
           const crit = Math.random() * 100 < dv.critChance;
           if (crit) dmg *= dv.critMult;
           if (c.boss) dmg *= (1 + dv.bossDmg / 100);
@@ -3449,7 +3586,7 @@ function tick() {
     e.hitFlash = Math.max(0, e.hitFlash - dt);
     e.recoil = Math.max(0, (e.recoil || 0) - dt);
     e.attacking = Math.max(0, e.attacking - dt);
-    if (e.vanish > 0 || e.flying > 0) return;   // gone or airborne: it fights from its own hook
+    if (e.vanish > 0 || e.flying > 0 || e.stagger > 0) return;   // gone, airborne or reeling
     const dist = e.x - c.heroX;
     const fireRange = e.ranged ? 150 : 40;
     // e.x is clamped to heroX + fireRange, but (x + 40) - x is not exactly 40
@@ -3534,7 +3671,7 @@ function tick() {
             ranged: !!rbw.ranged, proj: rbw.proj || "magic" })
         : ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
       c.enemies = [makeEnemy("raid", { type: t, name: rbw ? rbw.name : undefined,
-        tier: rbw ? rbw.tier : undefined, boss: !!rbw,
+        tier: rbw ? rbw.tier : undefined, boss: !!rbw, abils: rbw ? rbw.abils : null,
         raidId: c.raidId, raidLevel: c.raidLevel, x: AW - 60 })];
       c.startAt = now;   // short entry beat between waves too
     } else {
@@ -3558,7 +3695,7 @@ function handleCombatEnd(c) {
     const won = c.status === "won";
     const cb = c.onEnd;
     combat = null;
-    if (cb) cb(won);
+    if (cb) cb(won, c);
     return;
   }
   const won = c.status === "won";
