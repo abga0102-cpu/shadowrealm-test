@@ -3640,6 +3640,26 @@ const RARITY_MIN_FORGE = {
 function rarityAllowed(rarity, forgeLevel) {
   return forgeLevel >= (RARITY_MIN_FORGE[rarity] || 1);
 }
+/* The gate was real in the roll but not in the rates: getRates still handed a
+   locked tier its share, capRarityForForge quietly stepped that roll down, and
+   every panel went on printing the ungated number. So the Forge promised 2.7%
+   Epique at level 8 and delivered 4.2%, and the upgrade preview listed Mythique
+   odds six levels before Mythique could exist -- a blockade you could only see,
+   never feel. Fold a locked tier's weight into the highest unlocked one here,
+   once, and let the roll and every display read the same table. */
+function gateForgeRates(rates, forgeLevel) {
+  const out = Object.assign({}, rates);
+  let top = EQUIP_RARITY_ORDER[0];
+  EQUIP_RARITY_ORDER.forEach((r) => { if (rarityAllowed(r, forgeLevel)) top = r; });
+  EQUIP_RARITY_ORDER.forEach((r) => {
+    if (rarityAllowed(r, forgeLevel)) return;
+    out[top] = (out[top] || 0) + (out[r] || 0);
+    out[r] = 0;
+  });
+  return out;
+}
+/* Kept as a guard rather than a step: with gated rates a roll can no longer
+   land on a locked tier, but nothing downstream should depend on that. */
 function capRarityForForge(rarity, forgeLevel) {
   let i = EQUIP_RARITY_ORDER.indexOf(rarity);
   while (i > 0 && !rarityAllowed(EQUIP_RARITY_ORDER[i], forgeLevel)) i -= 1;
@@ -3648,7 +3668,7 @@ function capRarityForForge(rarity, forgeLevel) {
 /* What the eight tiers mean, in one place, behind the (i). */
 function showRarityInfo() {
   const lv = S.forge.level;
-  const rates = getRates("forge", lv, S.ascension, starsOf(S, "forge"));
+  const rates = gateForgeRates(getRates("forge", lv, S.ascension, starsOf(S, "forge")), lv);
   const rows = EQUIP_RARITY_ORDER.map((r) => {
     const c = RARITY[r].c;
     const min = RARITY_MIN_FORGE[r] || 1;
@@ -3685,7 +3705,8 @@ function forgeSummon(n) {
       const cost = forgeCost(st.forge.level);
       if (st.minerai < cost) break;
       st.minerai -= cost;
-      const rates = getRates("forge", st.forge.level, st.ascension, starsOf(st, "forge"));
+      const rates = gateForgeRates(
+        getRates("forge", st.forge.level, st.ascension, starsOf(st, "forge")), st.forge.level);
       // one paid forge; the tree's "Forge gratuite" nodes may add a second
       // result at no extra cost
       const extra = Math.random() * 100 < treeSum(st, "forgeFree") ? 1 : 0;
@@ -5104,8 +5125,11 @@ function showForgeUpgrade() {
   const goldOk = S.gold >= cost;
   const busy = S.forge.upgradeEnd > Date.now();
   const cut = Math.min(FORGE_COST_CUT_CAP, treeSum(S, "forgeCost"));
-  const cur = getRates("forge", lv, S.ascension, starsOf(S, "forge"));
-  const nxt = atMax ? null : getRates("forge", lv + 1, S.ascension, starsOf(S, "forge"));
+  // gated at each level, so the preview shows a tier appearing the moment the
+  // upgrade unlocks it -- which is the whole reason the gate exists
+  const cur = gateForgeRates(getRates("forge", lv, S.ascension, starsOf(S, "forge")), lv);
+  const nxt = atMax ? null
+    : gateForgeRates(getRates("forge", lv + 1, S.ascension, starsOf(S, "forge")), lv + 1);
 
   let action, note = "";
   if (atMax) {
@@ -6685,7 +6709,8 @@ function attachArena() {
    ACTIONS (delegated click handling)
    ========================================================================= */
 function showForgeResult(res) {
-  const rates = getRates("forge", S.forge.level, S.ascension, starsOf(S, "forge"));
+  const rates = gateForgeRates(
+    getRates("forge", S.forge.level, S.ascension, starsOf(S, "forge")), S.forge.level);
   const best = res.reduce((a, b) => equipRank(b.rarity) > equipRank(a.rarity) ? b : a, res[0]);
   const bc = RARITY[best.rarity].c;
   // eight sparks around the impact point
