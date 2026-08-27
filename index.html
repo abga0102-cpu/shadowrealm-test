@@ -525,6 +525,24 @@ body{
 /* HUD shortcuts: same chip language as the currencies, sized to the menu
    button so the top-right row stays one height. The dot rides the Recolte
    button when there is something to claim. */
+/* the (i) affordance, wherever a rarity needs explaining */
+/* auto-cast switch, sized to the skill slots it sits beside */
+.autoSk{
+  flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  width:calc(36px * var(--s));height:calc(36px * var(--s));border-radius:9px;cursor:pointer;
+  border:1px solid var(--border);background:linear-gradient(180deg,#1B2942,#0D1522);
+  font-size:calc(7px * var(--s));font-weight:900;letter-spacing:.4px;color:var(--textMute);
+}
+.autoSk.on{color:var(--goldLit);border-color:var(--goldDim);box-shadow:0 0 9px #E8B44A33}
+.autoSk>i{width:calc(16px * var(--s));height:3px;border-radius:2px;background:var(--border)}
+.autoSk.on>i{background:var(--gold);box-shadow:0 0 6px var(--gold)}
+.iBtn{
+  flex:0 0 auto;width:calc(15px * var(--s));height:calc(15px * var(--s));border-radius:50%;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  font-family:var(--fd);font-size:calc(10px * var(--s));font-weight:900;line-height:1;
+  color:var(--goldLit);border:1px solid var(--goldDim);background:#0A102099;
+}
+.iBtn:hover{background:var(--goldDim);color:#101010}
 .hudBtn{
   position:relative;width:calc(26px * var(--s));height:calc(26px * var(--s));border-radius:9px;cursor:pointer;flex:0 0 auto;
   display:flex;align-items:center;justify-content:center;
@@ -2060,6 +2078,7 @@ function defaultState(name) {
     harvest: { secs: 0, minerai: 0, essence: 0, eclat: 0, gold: 0 },
     eventDay: todayStr(), eventClaims: {}, eventProgress: {},
     testDays: 0, power: 0,
+    autoSkills: true, firstSeen: Date.now(),
   };
 }
 
@@ -2117,6 +2136,8 @@ function migrate(s, name) {
   // that actually carried PA is converted, so this can never become a faucet:
   // a state written by this version has no treePoints and no tree.unlocked.
   if (typeof merged.pe !== "number") merged.pe = 0;
+  if (typeof merged.autoSkills !== "boolean") merged.autoSkills = true;
+  if (typeof merged.firstSeen !== "number") merged.firstSeen = Date.now();
   let paCarry = typeof s.treePoints === "number"
     ? (merged.treePoints || 0)
     : (legacy ? treePointsForLevel(merged.level) + (merged.treePoints || 0) : 0);
@@ -2852,12 +2873,15 @@ function tick() {
       }
     }
     // ---- SKILLS ----
+    // Cooldowns always run; whether a ready skill fires by itself is the
+    // player's call. Manual casting goes through castSkill(), which reuses this
+    // very block, so the two paths can never drift apart.
     S.skillSlots.slice(0, skillSlotCount(S)).forEach((sid) => {
       if (!sid || !S.skills[sid]) return;
       const def = SKILL_DEFS.find((x) => x.id === sid);
       if (!def) return;
       c.skillCds[sid] = (c.skillCds[sid] || 0) - dt;
-      if (c.skillCds[sid] <= 0) {
+      if (c.skillCds[sid] <= 0 && S.autoSkills) {
         c.skillCds[sid] = def.cd * (1 - (dv.skillCdCut || 0) / 100);
         c.skillCdMax[sid] = c.skillCds[sid];
         const fxKind = def.fx || "impact";
@@ -3067,6 +3091,56 @@ function allocStat(key, pts) {
   });
 }
 
+/* Mastery raised the odds of a high rarity, but nothing stopped one appearing
+   at Forge 3 -- a lucky early roll handed out a Mythique that outclassed
+   everything the next twenty levels could forge, and the climb lost its point.
+   Each tier now has a floor. A roll above what the Forge can produce steps down
+   to the best tier it can, so the odds are never wasted, they just land lower. */
+const RARITY_MIN_FORGE = {
+  COMMUN: 1, RARE: 1, EPIQUE: 6, MYTHIQUE: 14,
+  HEROIQUE: 22, ANCESTRAL: 30, LEGENDAIRE: 38, DIVIN: 46,
+};
+function rarityAllowed(rarity, forgeLevel) {
+  return forgeLevel >= (RARITY_MIN_FORGE[rarity] || 1);
+}
+function capRarityForForge(rarity, forgeLevel) {
+  let i = EQUIP_RARITY_ORDER.indexOf(rarity);
+  while (i > 0 && !rarityAllowed(EQUIP_RARITY_ORDER[i], forgeLevel)) i -= 1;
+  return EQUIP_RARITY_ORDER[i];
+}
+/* What the eight tiers mean, in one place, behind the (i). */
+function showRarityInfo() {
+  const lv = S.forge.level;
+  const rates = getRates("forge", lv, S.ascension, starsOf(S, "forge"));
+  const rows = EQUIP_RARITY_ORDER.map((r) => {
+    const c = RARITY[r].c;
+    const min = RARITY_MIN_FORGE[r] || 1;
+    const ok = rarityAllowed(r, lv);
+    const rate = ok ? (rates[r] || 0) : 0;
+    return '<div class="itemRow" style="border-left-color:' + c + ";opacity:" + (ok ? 1 : 0.45) + '">' +
+      '<div class="imini" style="width:22px;height:22px;border-color:' + c + '80;box-shadow:0 0 8px ' + c + '3d">' +
+        ic("swords", 12) + "</div>" +
+      '<div class="flex1"><div class="b small" style="color:' + c + '">' + RARITY[r].label +
+        '<span class="mute" style="font-weight:700"> ×' + RARITY_MUL[r] + " puissance</span></div>" +
+      '<div class="mute tiny b">' + (ok
+        ? "Forge " + min + "+ · " + rate.toFixed(rate < 10 ? 1 : 0) + "% par forge"
+        : "Débloqué à Forge " + min) + "</div></div>" +
+      (ok ? '<span class="pill" style="color:' + c + ";border-color:" + c + '99">' +
+        rate.toFixed(rate < 10 ? 1 : 0) + "%</span>"
+          : '<span class="pill">' + ic("lock", 9) + min + "</span>") +
+      "</div>";
+  }).join("");
+  openModal(
+    '<div class="dim tiny" style="margin-bottom:6px;line-height:1.45">La rareté fixe la puissance de base d\'un objet. ' +
+      "Chaque palier demande un niveau de Forge minimum : monter la Forge ouvre les paliers, " +
+      "monter sa Maîtrise améliore les chances à l\'intérieur de ceux déjà ouverts.</div>" +
+    rows +
+    '<div class="mute tiny center mt6">Forge niv.' + lv + " · " +
+      EQUIP_RARITY_ORDER.filter((r) => rarityAllowed(r, lv)).length + " paliers sur " +
+      EQUIP_RARITY_ORDER.length + " ouverts</div>" +
+    '<div class="mt8">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
+    "Raretés d\'équipement");
+}
 function forgeSummon(n) {
   const results = [];
   update((st) => {
@@ -3079,7 +3153,7 @@ function forgeSummon(n) {
       // result at no extra cost
       const extra = Math.random() * 100 < treeSum(st, "forgeFree") ? 1 : 0;
       for (let k = 0; k <= extra; k++) {
-        const rar = rollRarity(rates, EQUIP_RARITY_ORDER);
+        const rar = capRarityForForge(rollRarity(rates, EQUIP_RARITY_ORDER), st.forge.level);
         const item = makeItem(SLOTS[Math.floor(Math.random() * SLOTS.length)], rar, st.forge.level);
         st.inventory.push(item);
         results.push({ rarity: rar, slot: item.slot, free: k > 0 });
@@ -3482,6 +3556,12 @@ function resetGame() {
 }
 
 // TEST-ONLY: simulate one full day of time-based progress.
+/* Days the save has lived through: real time since it was created, plus every
+   day skipped with the test button. */
+function daysElapsed(s) {
+  const real = Math.floor((Date.now() - (s.firstSeen || Date.now())) / 86400000);
+  return Math.max(0, real) + (s.testDays || 0) + 1;
+}
 function warpDay() {
   S.testDays = (S.testDays || 0) + 1;
   if (S.tree.active) S.tree.activeEnd = Date.now();
@@ -4694,6 +4774,7 @@ function scrAccueil() {
       '<div class="fgRow">' +
         '<div class="imini" style="width:21px;height:21px;border-color:var(--goldDim);flex:0 0 auto">' + ic("hammer", 12) + "</div>" +
         '<span class="bb gt" style="font-size:11px;letter-spacing:.6px;flex:0 0 auto">FORGE NIV.' + S.forge.level + "</span>" +
+        '<div class="iBtn" data-act="rarityInfo" title="Raretés">i</div>' +
         starRow("forge", "var(--goldLit)") +
         '<div class="flex1"></div>' +
         '<div class="row gap3 b" style="color:var(--blueLit);font-size:11px;flex:0 0 auto">' + ic("minerai", 12) + fmt(S.minerai) + "</div>" +
@@ -4738,6 +4819,42 @@ const STAT_META = [
 function skillSlotCount(s) {
   return RULES.SKILL_SLOTS_BASE + (s.level >= RULES.SKILL_SLOT_5_LEVEL ? 1 : 0);
 }
+/* Manual cast: same effect path as the automatic one, refused when the skill is
+   on cooldown or there is nothing to hit. Returns why it failed so the UI can
+   say something useful rather than going quiet. */
+function castSkill(sid) {
+  const c = combat;
+  if (!c || c.status !== "fight") return "pas de combat";
+  if (!sid || !S.skills[sid]) return "aucune compétence";
+  const def = SKILL_BY_ID[sid];
+  if (!def) return "aucune compétence";
+  if ((c.skillCds[sid] || 0) > 0.05) return "en recharge";
+  const dv = D;
+  const target = c.enemies.filter((e) => e.alive).sort((a, b) => a.x - b.x)[0];
+  if (!target) return "aucune cible";
+  const now = Date.now();
+  c.skillCds[sid] = def.cd * (1 - (dv.skillCdCut || 0) / 100);
+  c.skillCdMax[sid] = c.skillCds[sid];
+  const fxKind = def.fx || "impact";
+  c.skillFxs.push({ id: def.id, color: def.color, fx: fxKind, life: vfxDur(fxKind), max: vfxDur(fxKind) });
+  if (c.skillFxs.length > 4) c.skillFxs.shift();
+  if (def.mult > 0) {
+    const sdmg = Math.floor(skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level)
+      * (1 + (dv.skillDmgBonus || 0) / 100));
+    const wide = def.type === "AOE" || def.type === "CHAINE" || def.type === "DEBUFF";
+    const struck = wide ? c.enemies.filter((e) => e.alive) : [target];
+    scheduleHit(c, skillHitDelay(fxKind), () => {
+      struck.forEach((e) => { if (e && e.alive) applyDamageToEnemy(c, e, sdmg, true, def.color); });
+    });
+  }
+  if (def.heal) {
+    const amt = Math.floor(c.heroMaxHP * skillHeal(def, S.skills[sid].level) / 100);
+    c.heroHP = Math.min(c.heroMaxHP, c.heroHP + amt);
+    c.floats.push({ id: rid(), x: c.heroX, val: amt, crit: false, color: "#84E891", born: now, heal: true });
+  }
+  if (def.eff) fxAdd(c, def.cat === "DEBUFF" ? "debuffs" : "buffs", skillEff(def, S.skills[sid].level), now);
+  return null;
+}
 function skillSlotsHTML() {
   let sb = "";
   const open = skillSlotCount(S);
@@ -4745,7 +4862,9 @@ function skillSlotsHTML() {
     const sid = S.skillSlots[i];
     const def = sid ? SKILL_DEFS.find((x) => x.id === sid) : null;
     const cat = def ? SKILL_CATS[def.cat] : null;
-    sb += '<div class="slot" data-act="go" data-arg="competences"' +
+    // a filled slot casts; an empty one still takes you to the roster
+    sb += '<div class="slot" data-act="' + (def ? "castSkill" : "go") +
+      '" data-arg="' + (def ? def.id : "competences") + '"' +
       (def ? ' data-skill="' + def.id + '"' : "") + ">" + (def
       ? '<div class="skfx" style="background:linear-gradient(' + shade(def.color, 26) + "," + shade(def.color, -34) + ')">' +
         ic(def.icon, 24) + "</div>" +
@@ -4758,6 +4877,9 @@ function skillSlotsHTML() {
         '<span class="lv">' + (S.skills[sid] ? S.skills[sid].level : 1) + "</span>"
       : ic("plus", 18)) + "</div>";
   }
+  sb += '<div class="autoSk ' + (S.autoSkills ? "on" : "off") + '" data-act="autoSkills" ' +
+    'title="' + (S.autoSkills ? "Compétences automatiques" : "Compétences manuelles") + '">' +
+    ic("bolt", 12) + "<span>AUTO</span><i></i></div>";
   if (open < RULES.SKILL_SLOTS_BASE + 1) {
     sb += '<div class="slot locked">' + ic("lock", 16) +
       '<span class="tiny mute b">Niv.' + RULES.SKILL_SLOT_5_LEVEL + "</span></div>";
@@ -4971,7 +5093,7 @@ function scrInventaire() {
               style: "width:auto;padding:5px 9px" }) +
         "</div>";
       })() +
-      '<div class="sect" style="margin:16px 0 9px">Objets</div>' +
+      '<div class="sect" style="margin:16px 0 9px">Objets<div class="iBtn" data-act="rarityInfo" title="Raretés">i</div></div>' +
       (sorted.length === 0 ? '<div class="notice center">Aucun objet. Forge de l\'équipement depuis l\'Accueil.</div>'
         : sorted.map((it) =>
         '<div class="itemRow" style="border-left-color:' + RARITY[it.rarity].c + '">' +
@@ -5885,6 +6007,7 @@ function scrParametres() {
           ["Puissance", fmt(S.power), "color:var(--goldLit)"],
           ["Rebirth · Asc.", S.rebirth.count + " · " + S.ascension, ""],
           ["Environnement", ENV_NAMES[combat && combat.bg] || "—", ""],
+          ["Jour", String(daysElapsed(S)), "color:var(--goldLit)"],
           ["Jours simulés", String(S.testDays || 0), ""],
         ].map((r) => '<div style="width:50%"><div class="kv" style="border:none;padding:2px 0">' +
           '<span class="dim">' + r[0] + '</span><b style="' + r[2] + '">' + r[1] + "</b></div></div>").join("") + "</div>" +
@@ -6379,6 +6502,16 @@ const ACT = {
   upgradeItem: (a) => {
     if (upgradeItem(a)) { showItemDetail(a, null); toast("Amélioré !", true); }
     else toast("Poussière insuffisante");
+  },
+  rarityInfo: () => showRarityInfo(),
+  autoSkills: () => {
+    update((s) => { s.autoSkills = !s.autoSkills; });
+    toast(S.autoSkills ? "Compétences automatiques" : "Compétences manuelles", S.autoSkills);
+    render();
+  },
+  castSkill: (a) => {
+    const why = castSkill(a);
+    if (why) toast(why);
   },
   invFilter: (a) => { invFilter = a; render(); },
   pickRecycleRarity: () => showRecyclePicker(),
