@@ -2578,7 +2578,7 @@ const ELITE_ABIL = {
   garde: {
     label: "Garde", c: "#CFE0FF",
     tick(c, e, dt) {
-      e.abilCd = (e.abilCd == null ? 7 : e.abilCd) - dt;
+      e.abilCd = (e.abilCd == null ? 1.5 : e.abilCd) - dt;
       if (e.abilCd <= 0) { e.abilCd = 11; e.guard = 5; addBurst(c, "hit", e.x, "#CFE0FF"); }
       if (e.guard > 0) e.guard = Math.max(0, e.guard - dt);
     },
@@ -2597,12 +2597,57 @@ const ELITE_ABIL = {
     filter(c, e, dmg) { return e.frenzy ? Math.floor(dmg * 1.25) : dmg; },
     state(e) { return e.frenzy ? "FURIE" : ""; },
   },
+  // spirit skulls circling his staff: they keep him standing until you cut them
+  esprits: {
+    label: "Esprits", c: "#7ED321",
+    tick(c, e, dt, now) {
+      const mine = c.enemies.filter((x) => x.alive && x.minionOf === e.id);
+      // they pour life back into him for as long as one of them lives
+      if (mine.length) {
+        e._heal = (e._heal || 0) + dt;
+        if (e._heal >= 1) {
+          e._heal = 0;
+          const h = Math.max(1, Math.floor(e.maxHP * 0.02 * mine.length));
+          e.hp = Math.min(e.maxHP, e.hp + h);
+          c.floats.push({ id: rid(), x: e.x, val: h, crit: false, color: "#7ED321", born: now, heal: true });
+        }
+      }
+      e.abilCd = (e.abilCd == null ? 1.2 : e.abilCd) - dt;
+      if (e.abilCd > 0 || mine.length >= 2) return;
+      e.abilCd = 10;
+      // summoning stops once he is nearly down, so a fight always terminates
+      if (e.hp <= e.maxHP * 0.25) return;
+      for (let k = mine.length; k < 2; k++) {
+        c.enemies.push(spawnMinion(c, e, "Esprit", 0.10, 0.35, "#7ED321", 34 + k * 30));
+      }
+      addBurst(c, "hit", e.x, "#7ED321");
+    },
+    state(e) { return "ESPRITS"; },
+  },
+  // the four void orbs in the art are targets in their own right
+  orbes: {
+    label: "Orbes", c: "#B15CF6",
+    tick(c, e, dt) {
+      if (!e._orbs) {
+        e._orbs = true;
+        for (let k = 0; k < 4; k++) c.enemies.push(spawnMinion(c, e, "Orbe", 0.06, 0, "#B15CF6", 26 + k * 24));
+      }
+    },
+    filter(c, e, dmg) {
+      const left = c.enemies.filter((x) => x.alive && x.minionOf === e.id).length;
+      return left ? Math.max(1, Math.floor(dmg * 0.4)) : dmg;
+    },
+    state(e) {
+      const left = combat ? combat.enemies.filter((x) => x.alive && x.minionOf === e.id).length : 0;
+      return left ? "ORBES " + left : "";
+    },
+  },
   // moss-covered stone shot through with blue crystal: it hardens, then returns
   // everything it swallowed on its next swing
   cristal: {
     label: "Cristallisation", c: "#3FA7FF",
     tick(c, e, dt) {
-      e.abilCd = (e.abilCd == null ? 8 : e.abilCd) - dt;
+      e.abilCd = (e.abilCd == null ? 1.8 : e.abilCd) - dt;
       if (e.abilCd <= 0) { e.abilCd = 13; e.crystal = 4; addBurst(c, "hit", e.x, "#3FA7FF"); }
       if (e.crystal > 0) e.crystal = Math.max(0, e.crystal - dt);
     },
@@ -2651,7 +2696,7 @@ const ELITE_ABIL = {
   ombre: {
     label: "Pas d'ombre", c: "#B15CF6",
     tick(c, e, dt) {
-      e.abilCd = (e.abilCd == null ? 6 : e.abilCd) - dt;
+      e.abilCd = (e.abilCd == null ? 2 : e.abilCd) - dt;
       if (e.abilCd <= 0 && !(e.vanish > 0)) {
         e.abilCd = 12; e.vanish = 1.5;
         addBurst(c, "hit", e.x, "#B15CF6");
@@ -2674,11 +2719,56 @@ const ELITE_ABIL = {
   // lava armour, flaming greatsword: every blow leaves an ember
   braise: {
     label: "Braise", c: "#FF7A3D",
+    tick(c, e, dt) { if (e.emberCd > 0) e.emberCd = Math.max(0, e.emberCd - dt); },
     onLand(c) { c.burn = Math.min(6, (c.burn || 0) + 1); },
-    state(e) { return ""; },
+    // It only stacked embers with its own swings, so at floors 15 and 60 it died
+    // first and the mechanic was never once seen. The armour is molten: striking
+    // it burns you too, which fires from the opening exchange.
+    filter(c, e, dmg, src) {
+      if (src === "weapon" && !(e.emberCd > 0)) {
+        e.emberCd = 1.5;
+        c.burn = Math.min(6, (c.burn || 0) + 1);
+        addBurst(c, "hit", c.heroX, "#FF7A3D");
+      }
+      return dmg;
+    },
+    state(e) { return e.emberCd > 0 ? "BRAISE" : ""; },
   },
 };
 function abilityOf(e) { return (e && e.abil && ELITE_ABIL[e.abil]) || null; }
+/* A minion is its parent drawn small: the Chaman's spirits look like the Chaman,
+   the Abyssal's orbs like the Abyssal, so neither needs new art. hpFrac and
+   dmgFrac are shares of the parent, and dmgFrac 0 means it never attacks.
+   `ahead` places it that far in front of its summoner: they screen it, and
+   spreading them out is the whole point -- offsets behind it all collapsed onto
+   the arena's right-hand clamp and stacked into one sprite. */
+function spawnMinion(c, owner, label, hpFrac, dmgFrac, tint, ahead) {
+  const m = makeEnemy(c.ctx === "raid" ? "raid" : "campaign", {
+    type: owner.type, name: owner.name, tier: owner.tier,
+    floor: c.floor, raidId: c.raidId, raidLevel: c.raidLevel,
+    x: Math.max(c.heroX + 58, Math.min(AW - 24, owner.x - ahead)),
+  });
+  m.hp = m.maxHP = Math.max(1, Math.floor(owner.maxHP * hpFrac));
+  m.dmg = Math.max(0, Math.floor(owner.dmg * dmgFrac));
+  m.name = label;
+  m.minionOf = owner.id;
+  m.small = true;
+  m.tint = tint;
+  m.abil = null;                 // a minion never carries the parent's ability
+  m.ranged = dmgFrac > 0 && !!owner.ranged;
+  return m;
+}
+/* Spirits and orbs are held together by their summoner: when it falls, so do
+   they. Without this a fight could stall on a minion the player cannot reach. */
+function cullMinions(c) {
+  if (!c || !c.enemies) return;
+  c.enemies.forEach((m) => {
+    if (m.minionOf && m.alive && !c.enemies.some((o) => o.id === m.minionOf && o.alive)) {
+      m.alive = false; m.hp = 0;
+      addBurst(c, "death", m.x, m.tint || "#B15CF6");
+    }
+  });
+}
 function makeEnemy(mode, opts) {
   const t = opts.type;
   const tierKey = opts.tier || (mode === "campaign" ? enemyTierFor(opts.floor) : "RARE");
@@ -2887,9 +2977,24 @@ function addShake(c, mag) {
   const now = Date.now();
   c.shake = { mag: Math.max(mag, (c.shake && c.shake.until > now) ? c.shake.mag : 0), until: now + 170 };
 }
+/* Skills outscale enemy health badly: at floor 60 an opening Taillade lands
+   269716 on an elite with 14471 health, so every elite died to a single blow and
+   not one of their mechanics ever got a turn. Raising elite health cannot fix
+   it -- measured, floor 15 still dies in 0.7s at sixteen times the health, while
+   floor 140 stretches to 70s. So instead a champion caps what one blow can take:
+   four hits minimum, which is the room its ability needs. It costs nothing in
+   fights that were already fights, because there no single hit was ever that
+   large. */
+const ELITE_HIT_CAP = 0.3, BOSS_HIT_CAP = 0.2;
+function capChampionHit(e, dmg) {
+  const cap = e.boss ? BOSS_HIT_CAP : e.elite ? ELITE_HIT_CAP : 0;
+  if (!cap || e.minionOf) return dmg;
+  return Math.min(dmg, Math.max(1, Math.floor(e.maxHP * cap)));
+}
 function applyDamageToEnemy(c, e, dmg, crit, color, src) {
   const ab = abilityOf(e);
   if (ab && ab.filter) dmg = Math.max(0, ab.filter(c, e, dmg, src || "weapon", !!crit));
+  dmg = capChampionHit(e, dmg);
   e.hp -= dmg;
   e.hitFlash = 0.28;
   e.recoil = 0.22;
@@ -3123,6 +3228,7 @@ function tick() {
 
   // hits land before the win check, so a killing blow ends the wave on its frame
   runDueHits(c, now);
+  cullMinions(c);
 
   // ---- projectiles / floats / fx ----
   c.projs = c.projs.map((p) => {
@@ -4288,7 +4394,7 @@ function drawArena() {
 
   // ---- enemies ----
   c.enemies.filter((e) => e.alive || e.hitFlash > 0).forEach((e) => {
-    const size = e.boss ? uni * 1.45 : uni;
+    const size = e.boss ? uni * 1.45 : (e.small ? uni * 0.5 : uni);
     const x = (P.en[e.id] != null ? P.en[e.id] : e.x) * scale;
     const phase = (x % 100) / 16;
     const idle = Math.sin(t * 0.0045 + phase) * 2 + Math.sin(t * 0.0019 + phase) * 1;
@@ -4297,6 +4403,7 @@ function drawArena() {
     const knock = e.hitFlash > 0 ? 7 : 0;
     const hpPct = Math.max(0, (e.hp / e.maxHP) * 100);
     html += '<div class="unit" style="' + (e.vanish > 0 ? "opacity:.22;filter:brightness(.4);" : "") +
+      (e.tint ? "filter:drop-shadow(0 0 7px " + e.tint + ") saturate(1.5);" : "") +
       "left:" + (x - size / 2) + 'px;top:' + (groundY - size) + 'px;' +
       'width:' + size + 'px;height:' + size + 'px;transform:translate(' + (lunge + knock) + 'px,' + idle + 'px);z-index:3">' +
       '<div class="ushadow" style="width:' + (size * 0.6) + 'px;left:' + (size * 0.2) + 'px;top:' + (size - 8) + 'px"></div>' +
