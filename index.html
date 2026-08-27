@@ -1262,7 +1262,8 @@ const BOSS_DEFS = [
   { id: "golem",       name: "Golem de Fer",       img: "boss_golem",       tier: "LEGENDAIRE",
     abils: ["zoneBrulante", "bouclier"] },
   // a dragon that has to walk up and bite you is not a dragon
-  { id: "dragon",      name: "Dragon des Cendres", img: "boss_dragon",      tier: "MYTHIQUE", ranged: true, proj: "magic" },
+  { id: "dragon",      name: "Dragon des Cendres", img: "boss_dragon",      tier: "MYTHIQUE", ranged: true, proj: "magic",
+    abils: ["souffle", "envol", "intimidation"] },
 ];
 /* Raid bosses — one identity per raid. */
 /* Raid bosses were spawned with a hard-coded ranged:false at every one of the
@@ -2885,6 +2886,85 @@ const ELITE_ABIL = {
     state(e) { return e.shieldWind > 0 ? "BOUCLIER…" : e.shield > 0 ? "BOUCLIER" : ""; },
   },
 
+  // Dragon des Cendres -- the last of the five. A wind-up you must answer, a
+  // phase that shuts melee out entirely, and a standing tax on your damage.
+  souffle: {
+    label: "Souffle balayant", c: "#FF7A3D",
+    tick(c, e, dt) {
+      if (e.breathWind > 0) {
+        e.breathWind = Math.max(0, e.breathWind - dt);
+        if (e.breathWind > 0) return;
+        // two seconds of warning, then 40% of the hero's maximum, less whatever
+        // he put up in the meantime -- Rempart or a heal is the answer
+        const raw = Math.floor(c.heroMaxHP * 0.4);
+        const d = Math.max(1, Math.floor(raw * (1 - heroDmgRed(c) / 100)));
+        c.heroHP -= d;
+        c.heroHit = 0.3;
+        addShake(c, 11);
+        addBurst(c, "crit", c.heroX, "#FF7A3D");
+        c.floats.push({ id: rid(), x: c.heroX, val: d, crit: true, color: "#FF7A3D", born: Date.now() });
+        if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+        return;
+      }
+      e.breathCd = (e.breathCd == null ? 4 : e.breathCd) - dt;
+      if (e.breathCd <= 0) {
+        e.breathCd = 17; e.breathWind = 2;
+        addBurst(c, "hit", e.x, "#FF7A3D");
+        addShake(c, 4);
+      }
+    },
+    state(e) { return e.breathWind > 0 ? "SOUFFLE…" : ""; },
+  },
+  envol: {
+    label: "Envol", c: "#B15CF6",
+    tick(c, e, dt) {
+      if (e.flying > 0) {
+        e.flying = Math.max(0, e.flying - dt);
+        if (e.flying === 0) { addBurst(c, "hit", e.x, "#B15CF6"); addShake(c, 5); return; }
+        e._fb = (e._fb || 0) + dt;
+        if (e._fb < 0.85) return;
+        e._fb = 0;
+        c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX, color: "#FF7A3D", kind: "magic", life: 0.35 });
+        const d = Math.max(1, Math.floor(e.dmg * 0.8 * (1 - heroDmgRed(c) / 100)));
+        scheduleHit(c, HIT_DELAY_RANGED, () => {
+          if (c.status !== "fight") return;
+          c.heroHP -= d;
+          c.heroHit = 0.22;
+          c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#FF7A3D", born: Date.now() });
+          if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+        });
+        return;
+      }
+      e.flyCd = (e.flyCd == null ? 7 : e.flyCd) - dt;
+      if (e.flyCd <= 0) {
+        e.flyCd = 21; e.flying = 4;
+        addBurst(c, "hit", e.x, "#B15CF6");
+        addShake(c, 5);
+      }
+    },
+    filter(c, e, dmg, src) {
+      if (!(e.flying > 0)) return dmg;
+      // in the air a sword swings at nothing; arrows and spells still reach him
+      if (src !== "weapon" || RANGED_IDS.indexOf(D.weapon) >= 0) return dmg;
+      c.floats.push({ id: rid(), x: e.x, val: 0, crit: false, color: "#B15CF6",
+        born: Date.now(), text: "HORS D'ATTEINTE" });
+      return 0;
+    },
+    state(e) { return e.flying > 0 ? "ENVOL" : ""; },
+  },
+  intimidation: {
+    label: "Intimidation", c: "#FF5A5A",
+    tick(c, e, dt) {
+      e.intimCd = (e.intimCd == null ? 3 : e.intimCd) - dt;
+      if (e.intimCd > 0) return;
+      e.intimCd = 18;
+      fxAdd(c, "debuffs", { key: "intimide", value: 25, label: "Intimidation", dur: 8 }, Date.now());
+      addBurst(c, "crit", c.heroX, "#FF5A5A");
+      addShake(c, 5);
+    },
+    state(e) { return combat && fxVal(combat, "debuffs", "intimide") ? "INTIMIDATION" : ""; },
+  },
+
   braise: {
     label: "Braise", c: "#FF7A3D",
     tick(c, e, dt) { if (e.emberCd > 0) e.emberCd = Math.max(0, e.emberCd - dt); },
@@ -3131,6 +3211,11 @@ function fxVal(c, bag, key) {
   const b = c && c[bag] && c[bag][key];
   return b && Date.now() < b.until ? b.value : 0;
 }
+/* The same reduction an ordinary blow goes through, so Rempart genuinely
+   answers a boss ability instead of only answering basic attacks. */
+function heroDmgRed(c) {
+  return Math.min(85, (D.dmgRed || 0) + fxVal(c, "buffs", "rempart"));
+}
 function fxList(c, bag) {
   const out = [], now = Date.now();
   const src = (c && c[bag]) || {};
@@ -3293,7 +3378,8 @@ function tick() {
           * (dv.petElem === "toxique" ? 1.10 : 1);
         const swingDelay = wt.attackType === "MELEE" ? HIT_DELAY_MELEE : HIT_DELAY_RANGED;
         for (let sw = 0; sw < swings; sw++) {
-          let dmg = dv.damage * (wt.hit || 1) * styleMul * buffDmg * vuln;
+          let dmg = dv.damage * (wt.hit || 1) * styleMul * buffDmg * vuln
+            * (1 - fxVal(c, "debuffs", "intimide") / 100);
           const crit = Math.random() * 100 < dv.critChance;
           if (crit) dmg *= dv.critMult;
           if (c.boss) dmg *= (1 + dv.bossDmg / 100);
@@ -3363,7 +3449,7 @@ function tick() {
     e.hitFlash = Math.max(0, e.hitFlash - dt);
     e.recoil = Math.max(0, (e.recoil || 0) - dt);
     e.attacking = Math.max(0, e.attacking - dt);
-    if (e.vanish > 0) return;   // gone: no approach, no swing, nothing to hit
+    if (e.vanish > 0 || e.flying > 0) return;   // gone or airborne: it fights from its own hook
     const dist = e.x - c.heroX;
     const fireRange = e.ranged ? 150 : 40;
     // e.x is clamped to heroX + fireRange, but (x + 40) - x is not exactly 40
@@ -4602,7 +4688,7 @@ function drawArena() {
     const hpPct = Math.max(0, (e.hp / e.maxHP) * 100);
     html += '<div class="unit" style="' + (e.vanish > 0 ? "opacity:.22;filter:brightness(.4);" : "") +
       (e.tint ? "filter:drop-shadow(0 0 7px " + e.tint + ") saturate(1.5);" : "") +
-      "left:" + (x - size / 2) + 'px;top:' + (groundY - size) + 'px;' +
+      "left:" + (x - size / 2) + 'px;top:' + (groundY - size - (e.flying > 0 ? 44 * vs : 0)) + 'px;' +
       'width:' + size + 'px;height:' + size + 'px;transform:translate(' + (lunge + knock) + 'px,' + idle + 'px);z-index:3">' +
       '<div class="ushadow" style="width:' + (size * 0.6) + 'px;left:' + (size * 0.2) + 'px;top:' + (size - 8) + 'px"></div>' +
       '<img src="' + (spriteFrame(e.type.img, e.attacking) || ASSETS.enemy_goblin) + '" ' +
