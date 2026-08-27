@@ -1214,6 +1214,11 @@ function enemyCount(floor, step) {
 /* `proj` decides what a ranged enemy actually throws. It used to be inferred
    from the sprite name -- anything that was not enemy_mage fired an arrow --
    so a Mage Abyssal shot arrows. */
+/* There is no fairy asset, so the Dragon's attendant borrows the smallest
+   flying sprite the game owns and is drawn at half size with a cyan glow.
+   Swap `img` here the day a real one exists. */
+const FAIRY_TYPE = { id: "fee", name: "Fée", img: "pet_oiseau_glace",
+  ranged: false, hpMul: 1, dmgMul: 0 };
 const ENEMY_TYPES = [
   { id: "goblin",   name: "Gobelin",          img: "enemy_goblin",   ranged: false, hpMul: 0.9,  dmgMul: 0.95 },
   { id: "orc",      name: "Orc",              img: "enemy_orc",      ranged: false, hpMul: 1.2,  dmgMul: 1.1 },
@@ -1282,7 +1287,7 @@ const RAID_BOSSES = {
   minerai:    { name: "Titan des Abysses",  tier: "LEGENDAIRE", img: "raidboss_minerai",
     abils: ["carapace", "regenCristal", "sismique"] },
   or:         { name: "Dragon Ancestral",   tier: "LEGENDAIRE", img: "raidboss_or",         ranged: true, proj: "magic",
-    abils: ["souffleLave", "fournaise", "ailesCendre"] },
+    abils: ["souffleLave", "fee", "ailesCendre"] },
   competence: { name: "Lord Démoniaque",    tier: "MYTHIQUE",   img: "raidboss_competence", ranged: true, proj: "magic",
     abils: ["sceau", "lameArdente", "orbeInfernal"] },
   familier:   { name: "Bête Corrompue",     tier: "EPIQUE",     img: "raidboss_familier",
@@ -3085,28 +3090,43 @@ const ELITE_ABIL = {
     },
     state(e) { return e.channel > 0 ? "SOUFFLE" : ""; },
   },
-  fournaise: {
-    label: "Fournaise", c: "#FF7A3D",
-    // It heats its own lair. Nothing happens for twelve seconds, then the air
-    // itself starts costing you, and it keeps climbing. A soft timer: the raid
-    // rewards killing it quickly without touching what you take home.
+  fee: {
+    label: "Fée gardienne", c: "#8FEFF4",
+    /* A single small attendant flies with the Dragon and keeps re-shielding it.
+       She stands in front of him, so the hero's auto-target finds her first:
+       the fight opens by chewing through her while the Dragon works on you.
+       Kill her and the shields stop for good -- that is the reward for reading
+       the fight rather than hitting the biggest health bar. */
     tick(c, e, dt) {
-      e.heat = (e.heat || 0) + dt;
-      if (e.heat < 12) return;
-      e._fn = (e._fn || 0) + dt;
-      if (e._fn < 1) return;
-      e._fn = 0;
-      const steps = Math.floor((e.heat - 12) / 8);
-      const pct = Math.min(0.05, 0.01 + 0.005 * steps);
-      const d = Math.max(1, Math.floor(c.heroMaxHP * pct));
-      c.heroHP -= d;
-      c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#FF7A3D", born: Date.now() });
-      if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+      const fay = c.enemies.find((x) => x.alive && x.minionOf === e.id);
+      if (!e._fay) {
+        e._fay = true;
+        const f = spawnMinion(c, e, "Fée", 0.15, 0, "#8FEFF4", 46, FAIRY_TYPE);
+        c.enemies.push(f);
+        return;
+      }
+      if (!fay) return;                       // she is gone; so is the warding
+      e.wardCd = (e.wardCd == null ? 1.5 : e.wardCd) - dt;
+      if (e.wardCd > 0) return;
+      e.wardCd = 5;
+      const cap = Math.floor(e.maxHP * 0.5);
+      e.ward = Math.min(cap, (e.ward || 0) + Math.floor(e.maxHP * 0.18));
+      addBurst(c, "hit", e.x, "#8FEFF4");
+      c.floats.push({ id: rid(), x: fay.x, val: 0, crit: false, color: "#8FEFF4",
+        born: Date.now(), text: "BOUCLIER" });
+    },
+    filter(c, e, dmg) {
+      if (!(e.ward > 0)) return dmg;
+      const a = Math.min(e.ward, dmg);
+      e.ward -= a;
+      c.floats.push({ id: rid(), x: e.x, val: a, crit: false, color: "#8FEFF4",
+        born: Date.now(), blocked: true });
+      if (e.ward <= 0) { e.ward = 0; addBurst(c, "death", e.x, "#8FEFF4"); }
+      return dmg - a;
     },
     state(e) {
-      if (!((e.heat || 0) >= 12)) return "";
-      const steps = Math.floor((e.heat - 12) / 8);
-      return "FOURNAISE " + Math.round(Math.min(5, 1 + 0.5 * steps) * 10) / 10 + "%";
+      if (e.ward > 0) return "BOUCLIER " + Math.round(e.ward / e.maxHP * 100) + "%";
+      return combat && combat.enemies.some((x) => x.alive && x.minionOf === e.id) ? "FÉE" : "";
     },
   },
   ailesCendre: {
