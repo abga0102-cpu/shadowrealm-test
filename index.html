@@ -383,6 +383,13 @@ body{
 .fxChip.debuff{border-color:#B15CF6;color:#E3CEFF}
 .fxChip b{font-variant-numeric:tabular-nums;opacity:.85}
 /* floating combat feedback — layered outline like the sheet */
+/* an active elite ability, called out under the name */
+.foeAbil{
+  position:absolute;top:calc(-14px * var(--s));left:-30px;right:-30px;text-align:center;
+  font-size:calc(8px * var(--s));font-weight:900;letter-spacing:.6px;white-space:nowrap;
+  pointer-events:none;text-shadow:0 1px 3px #000;
+}
+.foeAbil::before{content:"[ "}.foeAbil::after{content:" ]"}
 .foeTag{
   position:absolute;top:-25px;left:-22px;right:-22px;text-align:center;
   font-size:calc(9px * var(--s));font-weight:900;letter-spacing:.3px;white-space:nowrap;
@@ -1235,14 +1242,14 @@ function enemyTierFor(floor) {
    the back. Each elite now states how it fights, independently of whose numbers
    it borrows. */
 const ELITE_DEFS = [
-  { id: "chevalier",  name: "Chevalier Squelette", base: "skeleton", tier: "RARE",       img: "elite_chevalier",  ranged: false },
-  { id: "chaman",     name: "Chaman Gobelin",      base: "goblin",   tier: "RARE",       img: "elite_chaman",     ranged: true,  proj: "magic" },
-  { id: "gardien",    name: "Gardien de Pierre",   base: "orc",      tier: "EPIQUE",     img: "elite_gardien",    ranged: false },
-  { id: "assassin",   name: "Assassin des Ombres", base: "mage",     tier: "EPIQUE",     img: "elite_assassin",   ranged: false },
-  { id: "corrompue",  name: "Bête Corrompue",      base: "orc",      tier: "EPIQUE",     img: "elite_corrompue",  ranged: false },
-  { id: "abyssal",    name: "Mage Abyssal",        base: "mage",     tier: "LEGENDAIRE", img: "elite_abyssal",    ranged: true,  proj: "magic" },
-  { id: "guerre",     name: "Bête de Guerre",      base: "orc",      tier: "LEGENDAIRE", img: "elite_guerre",     ranged: false },
-  { id: "demoniaque", name: "Seigneur Démoniaque", base: "orc",      tier: "MYTHIQUE",   img: "elite_demoniaque", ranged: false },
+  { id: "chevalier",  name: "Chevalier Squelette", base: "skeleton", tier: "RARE",       img: "elite_chevalier",  ranged: false, ability: "garde" },
+  { id: "chaman",     name: "Chaman Gobelin",      base: "goblin",   tier: "RARE",       img: "elite_chaman",     ranged: true,  proj: "magic", ability: "esprits" },
+  { id: "gardien",    name: "Gardien de Pierre",   base: "orc",      tier: "EPIQUE",     img: "elite_gardien",    ranged: false, ability: "cristal" },
+  { id: "assassin",   name: "Assassin des Ombres", base: "mage",     tier: "EPIQUE",     img: "elite_assassin",   ranged: false, ability: "ombre" },
+  { id: "corrompue",  name: "Bête Corrompue",      base: "orc",      tier: "EPIQUE",     img: "elite_corrompue",  ranged: false, ability: "eclats" },
+  { id: "abyssal",    name: "Mage Abyssal",        base: "mage",     tier: "LEGENDAIRE", img: "elite_abyssal",    ranged: true,  proj: "magic", ability: "orbes" },
+  { id: "guerre",     name: "Bête de Guerre",      base: "orc",      tier: "LEGENDAIRE", img: "elite_guerre",     ranged: false, ability: "furie" },
+  { id: "demoniaque", name: "Seigneur Démoniaque", base: "orc",      tier: "MYTHIQUE",   img: "elite_demoniaque", ranged: false, ability: "braise" },
 ];
 /* Named floor bosses, rotating every 10 floors. */
 const BOSS_DEFS = [
@@ -2552,6 +2559,52 @@ function grantLevels(s) {
 }
 
 /* -------- enemy / wave construction -------- */
+/* ---- elite abilities ------------------------------------------------------
+   One per elite, taken from what its artwork already shows: the Chevalier has a
+   shield, the Bete de Guerre is soaked in blood, the Seigneur burns. Each hooks
+   the combat at one of four points and nowhere else, so an ability can never
+   half-apply:
+
+     tick(c, e, dt)          once a frame, for timers and thresholds
+     filter(c, e, dmg, src)  incoming damage, before it lands
+     onLand(c, e)            when this enemy lands a blow on the hero
+     state(e)                the one word shown under its name
+
+   `src` is "weapon", "skill" or "dot", so a shield can stop steel and let
+   sorcery through. Unimplemented ids simply resolve to nothing.
+   -------------------------------------------------------------------------- */
+const ELITE_ABIL = {
+  // the spiked shield in the art, raised on a cycle
+  garde: {
+    label: "Garde", c: "#CFE0FF",
+    tick(c, e, dt) {
+      e.abilCd = (e.abilCd == null ? 7 : e.abilCd) - dt;
+      if (e.abilCd <= 0) { e.abilCd = 11; e.guard = 5; addBurst(c, "hit", e.x, "#CFE0FF"); }
+      if (e.guard > 0) e.guard = Math.max(0, e.guard - dt);
+    },
+    filter(c, e, dmg, src) {
+      // steel stops on the shield; a spell goes around it
+      return (e.guard > 0 && src === "weapon") ? Math.max(1, Math.floor(dmg * 0.2)) : dmg;
+    },
+    state(e) { return e.guard > 0 ? "GARDE" : ""; },
+  },
+  // blood-soaked, twin-axed: it gets worse as it dies
+  furie: {
+    label: "Furie", c: "#FF5A5A",
+    tick(c, e) {
+      if (!e.frenzy && e.hp <= e.maxHP * 0.4) { e.frenzy = true; addShake(c, 4); }
+    },
+    filter(c, e, dmg) { return e.frenzy ? Math.floor(dmg * 1.25) : dmg; },
+    state(e) { return e.frenzy ? "FURIE" : ""; },
+  },
+  // lava armour, flaming greatsword: every blow leaves an ember
+  braise: {
+    label: "Braise", c: "#FF7A3D",
+    onLand(c) { c.burn = Math.min(6, (c.burn || 0) + 1); },
+    state(e) { return ""; },
+  },
+};
+function abilityOf(e) { return (e && e.abil && ELITE_ABIL[e.abil]) || null; }
 function makeEnemy(mode, opts) {
   const t = opts.type;
   const tierKey = opts.tier || (mode === "campaign" ? enemyTierFor(opts.floor) : "RARE");
@@ -2577,7 +2630,7 @@ function makeEnemy(mode, opts) {
   }
   preloadFrames(t.img);
   return {
-    id: rid(), type: t, x: opts.x, hp, maxHP: hp, dmg,
+    id: rid(), type: t, x: opts.x, hp, maxHP: hp, dmg, abil: opts.abil || null,
     tier: tierKey, name: opts.name || t.name,
     ranged: t.ranged, boss: !!opts.boss, elite: !!opts.elite, alive: true,
     atkCd: 0.6 + Math.random() * 1.0, hitFlash: 0, attacking: 0,
@@ -2610,7 +2663,8 @@ function spawnCampaign(s) {
       type = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
       name = type.name; tier = enemyTierFor(floor);
     }
-    enemies.push(makeEnemy("campaign", { type, name, tier, floor, elite, boss, x: AW - 46 - i * 44 }));
+    enemies.push(makeEnemy("campaign", { type, name, tier, floor, elite, boss,
+      abil: elite && eliteDef ? eliteDef.ability : null, x: AW - 46 - i * 44 }));
   }
   const bg = ENV_KEYS[Math.floor((floor - 1) / 10) % ENV_KEYS.length];
   return {
@@ -2759,7 +2813,9 @@ function addShake(c, mag) {
   const now = Date.now();
   c.shake = { mag: Math.max(mag, (c.shake && c.shake.until > now) ? c.shake.mag : 0), until: now + 170 };
 }
-function applyDamageToEnemy(c, e, dmg, crit, color) {
+function applyDamageToEnemy(c, e, dmg, crit, color, src) {
+  const ab = abilityOf(e);
+  if (ab && ab.filter) dmg = Math.max(0, ab.filter(c, e, dmg, src || "weapon"));
   e.hp -= dmg;
   e.hitFlash = 0.28;
   e.recoil = 0.22;
@@ -2808,7 +2864,18 @@ function tick() {
     if (c._burnAcc >= 1) {
       c._burnAcc = 0;
       c.enemies.filter((e) => e.alive).forEach((e) =>
-        applyDamageToEnemy(c, e, Math.max(1, Math.floor(dv.damage * 0.06)), false, "#FF7A3D"));
+        applyDamageToEnemy(c, e, Math.max(1, Math.floor(dv.damage * 0.06)), false, "#FF7A3D", "dot"));
+    }
+  }
+  // Braise: embers stack on the hero and only a heal clears them
+  if (c.burn > 0) {
+    c._burnHero = (c._burnHero || 0) + dt;
+    if (c._burnHero >= 1) {
+      c._burnHero = 0;
+      const b = Math.max(1, Math.floor(c.heroMaxHP * 0.005 * c.burn));
+      c.heroHP -= b;
+      c.floats.push({ id: rid(), x: c.heroX, val: b, crit: false, color: "#FF7A3D", born: now });
+      if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
     }
   }
   const poisonPct = fxVal(c, "debuffs", "poison");
@@ -2817,7 +2884,7 @@ function tick() {
     if (c._poisonAcc >= 1) {
       c._poisonAcc = 0;
       c.enemies.filter((e) => e.alive).forEach((e) =>
-        applyDamageToEnemy(c, e, Math.max(1, Math.floor(e.maxHP * poisonPct / 100 / 8)), false, "#7ED321"));
+        applyDamageToEnemy(c, e, Math.max(1, Math.floor(e.maxHP * poisonPct / 100 / 8)), false, "#7ED321", "dot"));
     }
   }
   c.heroAttacking = Math.max(0, c.heroAttacking - dt);
@@ -2861,7 +2928,7 @@ function tick() {
           const steal = dv.lifesteal;
           scheduleHit(c, swingDelay, () => {
             if (!target.alive) return;
-            applyDamageToEnemy(c, target, dmg, crit, col);
+            applyDamageToEnemy(c, target, dmg, crit, col, "weapon");
             if (steal > 0) c.heroHP = Math.min(c.heroMaxHP, c.heroHP + dmg * steal / 100);
           });
         }
@@ -2896,12 +2963,13 @@ function tick() {
           const wide = def.type === "AOE" || def.type === "CHAINE" || def.type === "DEBUFF";
           const struck = wide ? c.enemies.filter((e) => e.alive) : [target];
           scheduleHit(c, skillHitDelay(fxKind), () => {
-            struck.forEach((e) => { if (e && e.alive) applyDamageToEnemy(c, e, sdmg, true, def.color); });
+            struck.forEach((e) => { if (e && e.alive) applyDamageToEnemy(c, e, sdmg, true, def.color, "skill"); });
           });
         }
         if (def.heal) {
           const amt = Math.floor(c.heroMaxHP * skillHeal(def, S.skills[sid].level) / 100);
           c.heroHP = Math.min(c.heroMaxHP, c.heroHP + amt);
+          c.burn = 0;   // a heal smothers the embers
           c.floats.push({ id: rid(), x: c.heroX, val: amt, crit: false, color: "#84E891", born: now, heal: true });
         }
         if (def.eff) {
@@ -2916,6 +2984,8 @@ function tick() {
   // ---- ENEMIES ----
   c.enemies.forEach((e) => {
     if (!e.alive) return;
+    const ab = abilityOf(e);
+    if (ab && ab.tick) ab.tick(c, e, dt, now);
     e.hitFlash = Math.max(0, e.hitFlash - dt);
     e.recoil = Math.max(0, (e.recoil || 0) - dt);
     e.attacking = Math.max(0, e.attacking - dt);
@@ -2933,7 +3003,7 @@ function tick() {
       e.atkCd -= dt;
       if (e.atkCd <= 0) {
         e.atkCd = (1.15 + Math.random() * 0.5) * (1 + fxVal(c, "debuffs", "slow") / 100)
-          * (dv.petElem === "glace" ? 1.12 : 1);
+          * (dv.petElem === "glace" ? 1.12 : 1) * (e.frenzy ? 0.5 : 1);
         e.attacking = 0.2;
         // Hâte also grants a window to dodge outright
         const dodgePct = fxVal(c, "buffs", "hate") * 0.5;
@@ -2964,6 +3034,7 @@ function tick() {
           if (c.status !== "fight") return;
           c.heroHP -= dmg;
           c.heroHit = 0.22;
+          if (ab && ab.onLand) ab.onLand(c, e);
           addShake(c, crit ? 4 : 2);
           c.floats.push({ id: rid(), x: c.heroX, val: dmg, crit, color: "#FF6B6B", born: Date.now() });
           if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
@@ -4160,6 +4231,10 @@ function drawArena() {
       // every enemy is named now, because the colour is the point
       '<div class="foeTag" style="color:' + THREAT_C[threatOf(c, e)] + '">' +
         esc(e.name || e.type.name) + "</div>" +
+      (() => {
+        const ab = abilityOf(e); const st = ab && ab.state ? ab.state(e) : "";
+        return st ? '<div class="foeAbil" style="color:' + ab.c + ";border-color:" + ab.c + '">' + st + "</div>" : "";
+      })() +
       '</div>';
   });
 
@@ -4844,12 +4919,13 @@ function castSkill(sid) {
     const wide = def.type === "AOE" || def.type === "CHAINE" || def.type === "DEBUFF";
     const struck = wide ? c.enemies.filter((e) => e.alive) : [target];
     scheduleHit(c, skillHitDelay(fxKind), () => {
-      struck.forEach((e) => { if (e && e.alive) applyDamageToEnemy(c, e, sdmg, true, def.color); });
+      struck.forEach((e) => { if (e && e.alive) applyDamageToEnemy(c, e, sdmg, true, def.color, "skill"); });
     });
   }
   if (def.heal) {
     const amt = Math.floor(c.heroMaxHP * skillHeal(def, S.skills[sid].level) / 100);
     c.heroHP = Math.min(c.heroMaxHP, c.heroHP + amt);
+    c.burn = 0;
     c.floats.push({ id: rid(), x: c.heroX, val: amt, crit: false, color: "#84E891", born: now, heal: true });
   }
   if (def.eff) fxAdd(c, def.cat === "DEBUFF" ? "debuffs" : "buffs", skillEff(def, S.skills[sid].level), now);
