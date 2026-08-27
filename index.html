@@ -1257,8 +1257,10 @@ const BOSS_DEFS = [
     abils: ["tranchant", "horde"] },
   { id: "ogre",        name: "Ogre Brute",         img: "boss_ogre",        tier: "EPIQUE",
     abils: ["pietinement", "dernierSouffle"] },
-  { id: "squelette",   name: "Squelette Géant",    img: "boss_squelette",   tier: "EPIQUE" },
-  { id: "golem",       name: "Golem de Fer",       img: "boss_golem",       tier: "LEGENDAIRE" },
+  { id: "squelette",   name: "Squelette Géant",    img: "boss_squelette",   tier: "EPIQUE",
+    abils: ["absorption", "epines"] },
+  { id: "golem",       name: "Golem de Fer",       img: "boss_golem",       tier: "LEGENDAIRE",
+    abils: ["zoneBrulante", "bouclier"] },
   // a dragon that has to walk up and bite you is not a dragon
   { id: "dragon",      name: "Dragon des Cendres", img: "boss_dragon",      tier: "MYTHIQUE", ranged: true, proj: "magic" },
 ];
@@ -2794,6 +2796,95 @@ const ELITE_ABIL = {
     state(e) { return e.lastBreath ? "DERNIER SOUFFLE" : ""; },
   },
 
+  // Squelette Geant -- a dead thing that should not be able to hold magic at
+  // all, so it takes yours. Punishes casting a buff on cooldown, and punishes
+  // stacking raw damage into a body made of bone spurs.
+  absorption: {
+    label: "Absorption", c: "#B15CF6",
+    tick(c, e, dt) {
+      if (e.stealCd > 0) e.stealCd = Math.max(0, e.stealCd - dt);
+      if (e.stolen && Date.now() >= e.stolen.until) e.stolen = null;
+    },
+    filter(c, e, dmg) {
+      // your Rempart, worn by him
+      return (e.stolen && e.stolen.key === "rempart")
+        ? Math.max(1, Math.floor(dmg * (1 - e.stolen.value / 100))) : dmg;
+    },
+    outgoing(c, e, dmg) {
+      // your Force, swung at you
+      return (e.stolen && e.stolen.key === "force")
+        ? Math.floor(dmg * (1 + e.stolen.value / 100)) : dmg;
+    },
+    state(e) { return e.stolen ? "VOLÉ · " + e.stolen.label : ""; },
+  },
+  epines: {
+    label: "Peau d'épines", c: "#CFE0FF",
+    filter(c, e, dmg, src) {
+      if (dmg <= 0 || src === "dot") return dmg;
+      const back = Math.max(1, Math.floor(dmg * 0.25));
+      c.heroHP -= back;
+      c.floats.push({ id: rid(), x: c.heroX, val: back, crit: false, color: "#CFE0FF", born: Date.now() });
+      if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+      return dmg;
+    },
+    state(e) { return "ÉPINES"; },
+  },
+
+  // Golem de Fer -- it does not chase you, it makes standing near it expensive
+  // and then drags you there anyway. The two are built to combine.
+  zoneBrulante: {
+    label: "Zone brûlante", c: "#FF7A3D",
+    tick(c, e, dt) {
+      if (e.x - c.heroX > 62) { e._zone = 0; return; }
+      e._zone = (e._zone || 0) + dt;
+      if (e._zone < 1) return;
+      e._zone = 0;
+      const b = Math.max(1, Math.floor(c.heroMaxHP * 0.02));
+      c.heroHP -= b;
+      c.floats.push({ id: rid(), x: c.heroX, val: b, crit: false, color: "#FF7A3D", born: Date.now() });
+      if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+    },
+    state(e) { return combat && e.x - combat.heroX <= 62 ? "ZONE" : ""; },
+  },
+  bouclier: {
+    label: "Bouclier", c: "#8FEFF4",
+    tick(c, e, dt) {
+      if (e.shieldWind > 0) {
+        e.shieldWind = Math.max(0, e.shieldWind - dt);
+        if (e.shieldWind === 0) {
+          e.shield = e.maxHP; e.shieldT = 8;
+          addBurst(c, "crit", e.x, "#8FEFF4");
+          addShake(c, 7);
+        }
+        return;
+      }
+      if (e.shield > 0) {
+        // and it reels you in, onto the burning ground it is standing on
+        c.heroX = Math.min(e.x - 30, c.heroX + 52 * dt);
+        /* The shield has to end on its own as well as by breaking. Held open
+           until broken, it pinned the hero in the burning zone for fifty
+           seconds, and since that zone costs a share of his own maximum health,
+           no amount of gear could out-scale it -- measured, floor 140 went from
+           a 30.8s win to a loss at x1, x1.2 and x1.5 gear alike. Eight seconds
+           makes it a phase: break it early and you stop burning early. */
+        e.shieldT = Math.max(0, (e.shieldT == null ? 8 : e.shieldT) - dt);
+        if (e.shieldT === 0) { e.shield = 0; e.shieldT = null; addBurst(c, "hit", e.x, "#8FEFF4"); }
+        return;
+      }
+      e.shieldCd = (e.shieldCd == null ? 2 : e.shieldCd) - dt;
+      if (e.shieldCd <= 0) { e.shieldCd = 26; e.shieldWind = 2; addBurst(c, "hit", e.x, "#8FEFF4"); }
+    },
+    filter(c, e, dmg) {
+      if (!(e.shield > 0)) return dmg;
+      const a = Math.min(e.shield, dmg);
+      e.shield -= a;
+      c.floats.push({ id: rid(), x: e.x, val: a, crit: false, color: "#8FEFF4", born: Date.now(), blocked: true });
+      if (e.shield <= 0) { e.shield = 0; e.shieldT = null; addBurst(c, "death", e.x, "#8FEFF4"); }
+      return dmg - a;
+    },
+    state(e) { return e.shieldWind > 0 ? "BOUCLIER…" : e.shield > 0 ? "BOUCLIER" : ""; },
+  },
+
   braise: {
     label: "Braise", c: "#FF7A3D",
     tick(c, e, dt) { if (e.emberCd > 0) e.emberCd = Math.max(0, e.emberCd - dt); },
@@ -3018,6 +3109,24 @@ function fxAdd(c, bag, eff, now) {
   c[bag] = c[bag] || {};
   c[bag][eff.key] = { value: eff.value, label: eff.label, until: now + eff.dur * 1000, dur: eff.dur };
 }
+/* Buffs pass through here on their way to the hero, so something on the field
+   can take one first. Both cast paths call it, which is the point -- the
+   automatic and the manual route cannot drift apart. */
+function applyHeroEffect(c, bag, eff, now) {
+  if (bag === "buffs") {
+    const thief = c.enemies.find((e) => e.alive && !e.stolen && !(e.stealCd > 0) &&
+      (e.abils || []).indexOf("absorption") >= 0);
+    if (thief) {
+      thief.stolen = { key: eff.key, value: eff.value, label: eff.label, until: now + 8000 };
+      thief.stealCd = 14;
+      addBurst(c, "crit", thief.x, "#B15CF6");
+      c.floats.push({ id: rid(), x: thief.x, val: 0, crit: false, color: "#B15CF6",
+        born: now, text: "VOL !" });
+      return;
+    }
+  }
+  fxAdd(c, bag, eff, now);
+}
 function fxVal(c, bag, key) {
   const b = c && c[bag] && c[bag][key];
   return b && Date.now() < b.until ? b.value : 0;
@@ -3077,10 +3186,10 @@ function capChampionHit(e, dmg) {
   return Math.min(dmg, Math.max(1, Math.floor(e.maxHP * cap)));
 }
 function applyDamageToEnemy(c, e, dmg, crit, color, src) {
+  dmg = capChampionHit(e, dmg);
   abilitiesOf(e).forEach((a) => {
     if (a.filter) dmg = Math.max(0, a.filter(c, e, dmg, src || "weapon", !!crit));
   });
-  dmg = capChampionHit(e, dmg);
   e.hp -= dmg;
   e.hitFlash = 0.28;
   e.recoil = 0.22;
@@ -3239,7 +3348,7 @@ function tick() {
         }
         if (def.eff) {
           // buffs land on the hero, debuffs on the wave
-          fxAdd(c, def.cat === "DEBUFF" ? "debuffs" : "buffs", skillEff(def, S.skills[sid].level), now);
+          applyHeroEffect(c, def.cat === "DEBUFF" ? "debuffs" : "buffs", skillEff(def, S.skills[sid].level), now);
         }
       }
     });
@@ -3270,7 +3379,8 @@ function tick() {
       if (e.atkCd <= 0) {
         e.atkCd = (1.15 + Math.random() * 0.5) * (1 + fxVal(c, "debuffs", "slow") / 100)
           * (dv.petElem === "glace" ? 1.12 : 1) * (e.frenzy ? 0.5 : 1)
-          * (e.flurry > 0 ? 0.34 : 1);
+          * (e.flurry > 0 ? 0.34 : 1)
+          * (e.stolen && e.stolen.key === "hate" ? 1 / (1 + e.stolen.value / 100) : 1);
         e.attacking = 0.2;
         // Hâte also grants a window to dodge outright
         const dodgePct = fxVal(c, "buffs", "hate") * 0.5;
@@ -4520,9 +4630,9 @@ function drawArena() {
   c.floats.forEach((f) => {
     const age = (now - f.born) / 900;
     // CRITIQUE! / BLOCK! / ESQUIVE! headers over the number, per the sheet
-    const lbl = f.blocked ? "BLOCK !" : f.dodged ? "DODGE !" : f.crit ? "CRITIQUE !" : "";
-    const lblCol = f.blocked ? "#FF5A5F" : f.dodged ? "#4AA8FF" : "#FFC83D";
-    const val = f.blocked || f.dodged ? "" : (f.heal ? "+" : "-") + fmt(f.val);
+    const lbl = f.text || (f.blocked ? "BLOCK !" : f.dodged ? "DODGE !" : f.crit ? "CRITIQUE !" : "");
+    const lblCol = f.text ? f.color : f.blocked ? "#FF5A5F" : f.dodged ? "#4AA8FF" : "#FFC83D";
+    const val = f.text || f.blocked || f.dodged ? "" : (f.heal ? "+" : "-") + fmt(f.val);
     html += '<div class="float" style="left:' + (f.x * scale - 34) + 'px;top:' + (groundY - (52 + age * 46) * vs) + 'px;' +
       'width:80px;opacity:' + (1 - age) + ';transform:scale(' + (f.crit ? 1.16 : 1) + ')">' +
       (lbl ? '<span class="fLbl" style="color:' + lblCol + '">' + lbl + "</span>" : "") +
@@ -5202,7 +5312,7 @@ function castSkill(sid) {
     c.burn = 0;
     c.floats.push({ id: rid(), x: c.heroX, val: amt, crit: false, color: "#84E891", born: now, heal: true });
   }
-  if (def.eff) fxAdd(c, def.cat === "DEBUFF" ? "debuffs" : "buffs", skillEff(def, S.skills[sid].level), now);
+  if (def.eff) applyHeroEffect(c, def.cat === "DEBUFF" ? "debuffs" : "buffs", skillEff(def, S.skills[sid].level), now);
   return null;
 }
 function skillSlotsHTML() {
