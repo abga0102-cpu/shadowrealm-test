@@ -2566,7 +2566,7 @@ function grantLevels(s) {
    half-apply:
 
      tick(c, e, dt)          once a frame, for timers and thresholds
-     filter(c, e, dmg, src)  incoming damage, before it lands
+     filter(c, e, dmg, src, crit)  incoming damage, before it lands
      onLand(c, e)            when this enemy lands a blow on the hero
      state(e)                the one word shown under its name
 
@@ -2596,6 +2596,80 @@ const ELITE_ABIL = {
     },
     filter(c, e, dmg) { return e.frenzy ? Math.floor(dmg * 1.25) : dmg; },
     state(e) { return e.frenzy ? "FURIE" : ""; },
+  },
+  // moss-covered stone shot through with blue crystal: it hardens, then returns
+  // everything it swallowed on its next swing
+  cristal: {
+    label: "Cristallisation", c: "#3FA7FF",
+    tick(c, e, dt) {
+      e.abilCd = (e.abilCd == null ? 8 : e.abilCd) - dt;
+      if (e.abilCd <= 0) { e.abilCd = 13; e.crystal = 4; addBurst(c, "hit", e.x, "#3FA7FF"); }
+      if (e.crystal > 0) e.crystal = Math.max(0, e.crystal - dt);
+    },
+    filter(c, e, dmg) {
+      if (e.crystal <= 0) return dmg;
+      // swallowed, not avoided -- it comes back
+      e.stored = (e.stored || 0) + dmg;
+      c.floats.push({ id: rid(), x: e.x, val: dmg, crit: false, color: "#3FA7FF", born: Date.now(), blocked: true });
+      return 0;
+    },
+    onLand(c, e) {
+      if (!e.stored) return;
+      // capped, so a long channel into the crystal cannot one-shot the hero
+      const back = Math.min(Math.floor(c.heroMaxHP * 0.30), Math.floor(e.stored * 0.6));
+      e.stored = 0;
+      c.heroHP -= back;
+      addShake(c, 6);
+      c.floats.push({ id: rid(), x: c.heroX, val: back, crit: true, color: "#3FA7FF", born: Date.now() });
+      if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+    },
+    state(e) { return e.crystal > 0 ? "CRISTAL" : (e.stored ? "CHARGÉ" : ""); },
+  },
+  // crystal spikes erupting from its hide: crit it and they come back at you
+  eclats: {
+    label: "Éclats", c: "#B15CF6",
+    tick(c, e, dt) { if (e.shardCd > 0) e.shardCd = Math.max(0, e.shardCd - dt); },
+    filter(c, e, dmg, src, crit) {
+      if (!crit || e.shardCd > 0 || !e.alive) return dmg;
+      e.shardCd = 3;                       // so a high-crit build is not simply deleted
+      const each = Math.max(1, Math.floor(c.heroMaxHP * 0.04));
+      for (let k = 0; k < 3; k++) {
+        c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX, color: "#B15CF6", kind: "magic", life: 0.35 });
+        scheduleHit(c, 0.15 + k * 0.09, () => {
+          if (c.status !== "fight") return;
+          c.heroHP -= each;
+          c.heroHit = 0.2;
+          c.floats.push({ id: rid(), x: c.heroX, val: each, crit: false, color: "#B15CF6", born: Date.now() });
+          if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
+        });
+      }
+      return dmg;
+    },
+    state(e) { return e.shardCd > 0 ? "ÉCLATS" : ""; },
+  },
+  // hooded, mid-lunge, wrapped in shadow flame: it disappears and comes back on you
+  ombre: {
+    label: "Pas d'ombre", c: "#B15CF6",
+    tick(c, e, dt) {
+      e.abilCd = (e.abilCd == null ? 6 : e.abilCd) - dt;
+      if (e.abilCd <= 0 && !(e.vanish > 0)) {
+        e.abilCd = 12; e.vanish = 1.5;
+        addBurst(c, "hit", e.x, "#B15CF6");
+      }
+      if (e.vanish > 0) {
+        e.vanish = Math.max(0, e.vanish - dt);
+        if (e.vanish === 0) {
+          // reappears on top of the hero, whatever the range was
+          e.x = c.heroX + 40;
+          e.nextCrit = true;
+          e.atkCd = 0.15;
+          addBurst(c, "crit", e.x, "#B15CF6");
+          addShake(c, 4);
+        }
+      }
+    },
+    filter(c, e, dmg) { return e.vanish > 0 ? 0 : dmg; },
+    state(e) { return e.vanish > 0 ? "OMBRE" : (e.nextCrit ? "EMBUSCADE" : ""); },
   },
   // lava armour, flaming greatsword: every blow leaves an ember
   braise: {
@@ -2815,7 +2889,7 @@ function addShake(c, mag) {
 }
 function applyDamageToEnemy(c, e, dmg, crit, color, src) {
   const ab = abilityOf(e);
-  if (ab && ab.filter) dmg = Math.max(0, ab.filter(c, e, dmg, src || "weapon"));
+  if (ab && ab.filter) dmg = Math.max(0, ab.filter(c, e, dmg, src || "weapon", !!crit));
   e.hp -= dmg;
   e.hitFlash = 0.28;
   e.recoil = 0.22;
@@ -2989,6 +3063,7 @@ function tick() {
     e.hitFlash = Math.max(0, e.hitFlash - dt);
     e.recoil = Math.max(0, (e.recoil || 0) - dt);
     e.attacking = Math.max(0, e.attacking - dt);
+    if (e.vanish > 0) return;   // gone: no approach, no swing, nothing to hit
     const dist = e.x - c.heroX;
     const fireRange = e.ranged ? 150 : 40;
     // e.x is clamped to heroX + fireRange, but (x + 40) - x is not exactly 40
@@ -3019,7 +3094,8 @@ function tick() {
             color: "#8FEFF4", born: now, blocked: true });
         } else {
         let dmg = e.dmg;
-        const crit = Math.random() * 100 < 8;
+        const crit = e.nextCrit ? true : Math.random() * 100 < 8;
+        if (e.nextCrit) { e.nextCrit = false; dmg *= 1.5; }
         if (crit) dmg *= 1.6 * (1 - dv.critRed / 100);
         const totalRed = Math.min(85, dv.dmgRed + fxVal(c, "buffs", "rempart"));
         dmg = Math.floor(dmg * (1 - totalRed / 100) * (0.9 + Math.random() * 0.2));
@@ -4220,7 +4296,8 @@ function drawArena() {
     const lunge = (e.attacking > 0 ? -12 : 0) + (e.recoil > 0 ? e.recoil * 46 : 0);
     const knock = e.hitFlash > 0 ? 7 : 0;
     const hpPct = Math.max(0, (e.hp / e.maxHP) * 100);
-    html += '<div class="unit" style="left:' + (x - size / 2) + 'px;top:' + (groundY - size) + 'px;' +
+    html += '<div class="unit" style="' + (e.vanish > 0 ? "opacity:.22;filter:brightness(.4);" : "") +
+      "left:" + (x - size / 2) + 'px;top:' + (groundY - size) + 'px;' +
       'width:' + size + 'px;height:' + size + 'px;transform:translate(' + (lunge + knock) + 'px,' + idle + 'px);z-index:3">' +
       '<div class="ushadow" style="width:' + (size * 0.6) + 'px;left:' + (size * 0.2) + 'px;top:' + (size - 8) + 'px"></div>' +
       '<img src="' + (spriteFrame(e.type.img, e.attacking) || ASSETS.enemy_goblin) + '" ' +
