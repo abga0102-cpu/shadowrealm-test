@@ -429,6 +429,31 @@ function run(W) {
     set(function (st) { st.raids.minerai.stars = 0; });
     return bad.length ? bad.slice(0, 3).join(", ") : true;
   });
+  check("la Récolte Autonomie paie la moitié du Raid Minerai courant", function () {
+    const bad = [];
+    set(function (st) { st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 }; });
+    [[1, 0, 250], [50, 0, 495], [1, 1, 425], [30, 1, 570]].forEach(function (c) {
+      set(function (st) { st.raids.minerai.level = c[0]; st.raids.minerai.stars = c[1]; });
+      const r = W.harvestRates(H.S).minerai;
+      if (r !== c[2]) bad.push("niv" + c[0] + " ★" + c[1] + " : " + r + "/h au lieu de " + c[2]);
+      if (r !== W.raidReward("minerai", c[0]) * 0.5) bad.push("niv" + c[0] + " n'est pas la moitié");
+    });
+    set(function (st) { st.raids.minerai.level = 1; st.raids.minerai.stars = 0; });
+    return bad.length ? bad.join(", ") : true;
+  });
+  check("les autres ressources de la Récolte n'ont pas bougé", function () {
+    set(function (st) {
+      st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 }; st.floor = 40;
+    });
+    const r = W.harvestRates(H.S);
+    const bad = [];
+    if (r.essence !== W.raidReward("familier", H.S.raids.familier.level) * 0.25)
+      bad.push("Essence");
+    if (r.eclat !== W.raidReward("competence", H.S.raids.competence.level) * 0.25)
+      bad.push("Éclat");
+    if (!(r.gold > 0)) bad.push("Or");
+    return bad.length ? "part modifiée : " + bad.join(", ") : true;
+  });
   check("l'Ascension d'un raid quintuple exactement sa difficulté", function () {
     const bad = [];
     H.RAID_IDS.forEach(function (rid) {

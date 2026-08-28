@@ -2468,7 +2468,10 @@ function harvestEfficiency(s) { return Math.min(100, treeSum(s, "harvestEff")); 
 function harvestRates(s) {
   const eff = 1 + harvestEfficiency(s) / 100;
   return {
-    minerai: raidReward("minerai", s.raids.minerai.level) * 1.00 * eff,
+    // Section 7: half of what the Raid Minerai currently pays, per hour. It
+    // already read the real reward at the level the player has reached, so an
+    // Ascension is picked up on its own -- only the share changed, 1.00 -> 0.50.
+    minerai: raidReward("minerai", s.raids.minerai.level) * 0.50 * eff,
     essence: raidReward("familier", s.raids.familier.level) * 0.25 * eff,
     eclat: raidReward("competence", s.raids.competence.level) * 0.25 * eff,
     gold: goldReward(s.floor) * HARVEST_GOLD_PER_HOUR * eff * afkGainMul(s),
