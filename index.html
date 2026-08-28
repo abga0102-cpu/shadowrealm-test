@@ -532,6 +532,13 @@ body{
 /* HUD shortcuts: same chip language as the currencies, sized to the menu
    button so the top-right row stays one height. The dot rides the Recolte
    button when there is something to claim. */
+/* The filter strip: one tap target that always states what will be thrown away. */
+.fgFilter{
+  display:flex;align-items:center;gap:6px;cursor:pointer;
+  border:1px solid var(--line);border-radius:9px;padding:6px 8px;
+  background:#0D1522;color:var(--dim);
+}
+.fgFilter:active{background:#131F33}
 /* Section 13's forging beat: one bar that sweeps once, for the whole batch. */
 .forgeAnim{
   position:relative;overflow:hidden;border-radius:10px;padding:9px 10px;
@@ -901,6 +908,13 @@ const RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "LEGENDAIRE", "DIV
    between Mythique and Légendaire. Only gear ever rolls these two. */
 /* what each quarter of its health buys it */
 const MUTATION_LABEL = ["MUTATION · CÉLÉRITÉ", "MUTATION · CARAPACE", "MUTATION · REPRÉSAILLES"];
+/* The filter's default: every rarity kept. Declared beside the order it reads
+   so the two can never drift apart. */
+function forgeKeepAll() {
+  const o = {};
+  EQUIP_RARITY_ORDER.forEach((r) => { o[r] = true; });
+  return o;
+}
 const EQUIP_RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "HEROIQUE", "ANCESTRAL", "LEGENDAIRE", "DIVIN"];
 function orderFor(system) { return system === "forge" ? EQUIP_RARITY_ORDER : RARITY_ORDER; }
 function equipRank(rarity) { return EQUIP_RARITY_ORDER.indexOf(rarity); }
@@ -2280,7 +2294,9 @@ function defaultState(name) {
     equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null,
       collier: null, anneau: null, ceinture: null },
     inventory: [],
-    forge: { level: 1, progress: 0, summonCount: 0, masteryLevel: 0, masteryProgress: 0, autoForge: false, upgradeEnd: 0 },
+    forge: { level: 1, progress: 0, summonCount: 0, masteryLevel: 0, masteryProgress: 0, autoForge: false, upgradeEnd: 0,
+      // section 14: nothing is filtered out until the player says so
+      filter: false, keep: forgeKeepAll() },
     skills: {}, skillSlots: [null, null, null, null, null],
     skillMastery: { level: 0, count: 0, progress: 0 },
     pets: [], eggs: [], eggSlots: 2, activePetId: null,
@@ -2368,6 +2384,14 @@ function migrate(s, name) {
   if (Array.isArray(merged.inventory)) {
     merged.inventory.forEach((it) => { if (it && it.slot === "accessoire") it.slot = "anneau"; });
   }
+
+  /* A save from before the filter has no keep map, and one written by hand may
+     have a partial one. Anything missing is kept -- the safe direction. */
+  if (!merged.forge.keep || typeof merged.forge.keep !== "object") merged.forge.keep = forgeKeepAll();
+  EQUIP_RARITY_ORDER.forEach((r) => {
+    if (typeof merged.forge.keep[r] !== "boolean") merged.forge.keep[r] = true;
+  });
+  merged.forge.filter = !!merged.forge.filter;
 
   delete merged._raidStars;
   Object.keys(merged.raids).forEach((rid) => {
@@ -3074,7 +3098,10 @@ const ELITE_ABIL = {
   pietinement: {
     label: "Piétinement", c: "#E8B44A",
     tick(c, e, dt) {
-      e.stompCd = (e.stompCd == null ? 3.5 : e.stompCd) - dt;
+      // The first stomp lands half a second in, so the goblin is on the field
+      // before the hero has closed the distance -- the fight opens on the
+      // ogre's terms. Every stomp after that is on the usual 12 s cycle.
+      e.stompCd = (e.stompCd == null ? 0.5 : e.stompCd) - dt;
       if (e.stompCd > 0) return;
       e.stompCd = 12;
       addShake(c, 9);
@@ -4372,6 +4399,41 @@ function capRarityForForge(rarity, forgeLevel) {
   return EQUIP_RARITY_ORDER[i];
 }
 /* What the eight tiers mean, in one place, behind the (i). */
+/* Section 14's filter, one row per rarity. Tapping a row keeps or discards it;
+   discarded rarities are recycled the moment the Forge strikes them. A rarity
+   the current Forge level cannot roll is shown greyed, because turning it off
+   would change nothing today and everything the day it unlocks. */
+function showForgeFilterPicker() {
+  const lv = S.forge.level;
+  const rows = EQUIP_RARITY_ORDER.map((r) => {
+    const c = RARITY[r].c;
+    const kept = S.forge.keep[r] !== false;
+    const reachable = rarityAllowed(r, lv);
+    return '<div class="itemRow" style="border-left-color:' + c + ";opacity:" + (reachable ? 1 : 0.45) +
+      '" data-act="forgeKeep" data-arg="' + r + '">' +
+      '<div class="imini" style="width:22px;height:22px;border-color:' + c + '80">' +
+        ic(kept ? "bag" : "trash", 12) + "</div>" +
+      '<div class="flex1"><div class="b small" style="color:' + c + '">' + RARITY[r].label + "</div>" +
+      '<div class="mute tiny b">' + (kept ? "gardé · va dans l'Inventaire"
+        : "recyclé en poussière") +
+        (reachable ? "" : " · hors de portée à la Forge " + lv) + "</div></div>" +
+      '<div class="tgl ' + (kept ? "on" : "off") + '" style="pointer-events:none"><i></i></div>' +
+      "</div>";
+  }).join("");
+  openModal(
+    '<div class="mute tiny" style="line-height:1.45;margin-bottom:2px">' +
+      "Les raretés décochées sont recyclées dès la sortie de la Forge, " +
+      "pour la même poussière que l'Inventaire aurait payée.</div>" +
+    '<div class="row gap6 mt8">' +
+      btn(ic(S.forge.filter ? "check" : "cross", 13) +
+          (S.forge.filter ? "Filtre actif" : "Filtre inactif"),
+        { cls: S.forge.filter ? "purple" : "dark", small: true, act: "forgeFilterToggle" }) +
+      btn("Tout garder", { cls: "ghost", small: true, act: "forgeKeepAll" }) +
+    "</div>" +
+    '<div class="mt6">' + rows + "</div>" +
+    '<div class="mt6">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
+    "Filtre de Forge");
+}
 function showRarityInfo() {
   const lv = S.forge.level;
   const rates = gateForgeRates(getRates("forge", lv, S.ascension, starsOf(S, "forge")), lv);
@@ -4419,8 +4481,16 @@ function forgeSummon(n) {
       for (let k = 0; k <= extra; k++) {
         const rar = capRarityForForge(rollRarity(rates, EQUIP_RARITY_ORDER), st.forge.level);
         const item = makeItem(SLOTS[Math.floor(Math.random() * SLOTS.length)], rar, st.forge.level);
-        st.inventory.push(item);
-        results.push({ rarity: rar, slot: item.slot, free: k > 0 });
+        // a rarity the filter does not keep never reaches the bag
+        if (forgeKeeps(st, rar)) {
+          st.inventory.push(item);
+          results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0 });
+        } else {
+          const dust = dustValue(st, item);
+          st.poussiere += dust;
+          results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0,
+            recycled: true, dust: dust });
+        }
       }
       st.forge.summonCount += 1;
       // the gauge counts paid forges, not the free bonus results
@@ -4483,6 +4553,33 @@ function collectForgeUpgrade() {
 }
 function toggleAutoForge() { update((s) => { s.forge.autoForge = !s.forge.autoForge; }); }
 
+/* ------------------------------ filtre de Forge ------------------------------
+   Section 14. Mass forging buries the bag in Commun. The filter lets the player
+   name the rarities worth keeping; everything else is recycled the moment it is
+   struck, for the same Poussiere the Inventory would have paid.
+
+   It is off by default and every rarity starts kept, so nothing is ever
+   destroyed until the player asks for it. It applies to whatever the Forge
+   produces -- the x20, the single press, and the automatic forge alike, since
+   the point is not to have to sort afterwards. */
+function forgeFilterOn(s) { return !!s.forge.filter; }
+function forgeKeeps(s, rar) { return !forgeFilterOn(s) || s.forge.keep[rar] !== false; }
+function forgeDiscarded(s) { return EQUIP_RARITY_ORDER.filter((r) => s.forge.keep[r] === false); }
+function toggleForgeFilter() {
+  update((s) => { s.forge.filter = !s.forge.filter; });
+}
+function toggleForgeKeep(rar) {
+  update((s) => {
+    const next = s.forge.keep[rar] === false;
+    // refuse to let the filter throw away everything: one rarity must remain
+    if (!next && EQUIP_RARITY_ORDER.every((r) => r === rar || s.forge.keep[r] === false)) return;
+    s.forge.keep[rar] = next;
+  });
+}
+function setForgeKeepAll(v) {
+  update((s) => { EQUIP_RARITY_ORDER.forEach((r) => { s.forge.keep[r] = v; }); });
+}
+
 /* Section 13: a batch plays ONE animation and then produces everything at once.
    forgeAnim holds the batch that is in flight; while it is set the buttons are
    replaced by the animation and a second press is ignored, so a x20 can never
@@ -4527,11 +4624,16 @@ function unequipItem(slot) {
     s.inventory.push(it);
   });
 }
+/* What a piece is worth as Poussiere. The Inventory and the Forge filter must
+   pay the same, so the formula lives here and takes the state it reads. */
+function dustValue(s, it) {
+  return Math.floor(((equipRank(it.rarity) + 1) * 5 + it.power * 0.2)
+    * (1 + treeSum(s, "dust") / 100));
+}
 function recycleItem(id) {
   const it = S.inventory.find((x) => x.id === id);
   if (!it) return 0;
-  const dust = Math.floor(((equipRank(it.rarity) + 1) * 5 + it.power * 0.2)
-    * (1 + treeSum(S, "dust") / 100));
+  const dust = dustValue(S, it);
   update((st) => {
     st.inventory = st.inventory.filter((x) => x.id !== id);
     st.poussiere += dust;
@@ -6181,6 +6283,18 @@ function scrAccueil() {
         '<div class="tgl ' + (S.forge.autoForge ? "on" : "off") + '" data-act="autoForge">' +
           "<span>AUTO</span><i></i></div>" +
       "</div>") +
+      // section 14: what the filter is doing, and a way in
+      '<div class="fgFilter mt6" data-act="forgeFilter">' +
+        ic("trash", 12) +
+        '<span class="flex1 tiny b">' +
+          (!S.forge.filter || !forgeDiscarded(S).length
+            ? "Filtre · tout est conservé"
+            : "Filtre · " + forgeDiscarded(S).map((r) => RARITY[r].label).join(", ") +
+              " → poussière") + "</span>" +
+        '<span class="pill" style="color:' + (S.forge.filter ? "var(--purpleLit)" : "var(--dim)") +
+          ";border-color:" + (S.forge.filter ? "var(--purple)" : "var(--line)") + '">' +
+          (S.forge.filter ? "ACTIF" : "INACTIF") + "</span>" +
+      "</div>" +
     "</div></div>" +
     '<div class="navGrid">' + navBtns.map(tile).join("") + "</div>" +
     '<div class="navGrid mt6">' + sysBtns.map(tile).join("") + "</div>" +
@@ -6386,9 +6500,7 @@ function scrEquipement() {
    the item into S.equipped and pushes the replaced one back -- so this can
    never eat what the hero is wearing. It still confirms first: it is the only
    irreversible action in the game that can touch dozens of items at once. */
-function recycleValue(it) {
-  return Math.floor(((equipRank(it.rarity) + 1) * 5 + it.power * 0.2) * (1 + treeSum(S, "dust") / 100));
-}
+function recycleValue(it) { return dustValue(S, it); }
 function recycleBatch(rarity) {
   const hit = S.inventory.filter((x) => x.rarity === rarity);
   if (!hit.length) return { n: 0, dust: 0 };
@@ -7599,7 +7711,18 @@ function attachArena() {
 function showForgeResult(res) {
   const rates = gateForgeRates(
     getRates("forge", S.forge.level, S.ascension, starsOf(S, "forge")), S.forge.level);
-  const best = res.reduce((a, b) => equipRank(b.rarity) > equipRank(a.rarity) ? b : a, res[0]);
+  /* The filter can melt part of a batch, or all of it. The window headlines the
+     best piece actually kept; if nothing was kept there is no piece to show, so
+     the melt is reported on its own. */
+  const kept = res.filter((r) => !r.recycled);
+  const melted = res.filter((r) => r.recycled);
+  const dust = melted.reduce((a, r) => a + (r.dust || 0), 0);
+  if (!kept.length) {
+    toast(melted.length + " pièce" + (melted.length > 1 ? "s" : "") +
+      " recyclée" + (melted.length > 1 ? "s" : "") + " · +" + fmt(dust) + " poussière", true);
+    return;
+  }
+  const best = kept.reduce((a, b) => equipRank(b.rarity) > equipRank(a.rarity) ? b : a, kept[0]);
   const bc = RARITY[best.rarity].c;
   // eight sparks around the impact point
   const sparks = Array.from({ length: 8 }, (_, i) =>
@@ -7616,11 +7739,18 @@ function showForgeResult(res) {
     '<div class="mute tiny center b" style="letter-spacing:.5px;margin-top:2px">' +
       esc(SLOT_LABEL[best.slot] || best.slot) + " · " + fmt(best.power) + " puissance</div>" +
     // the batch fans in behind the reveal rather than all at once
-    '<div class="resGrid">' + res.map((r, i) =>
+    '<div class="resGrid">' + kept.map((r, i) =>
       '<div class="resItem rf fgCard" style="animation-delay:' + (0.5 + i * 0.06).toFixed(2) +
       "s;border-color:" + RARITY[r.rarity].c + ";--rc:" + RARITY[r.rarity].c + '">' +
       '<span style="position:relative;z-index:1">' + slotIcon(r.slot, 22, r) + "</span>" + rtag(r.rarity) + "</div>").join("") + "</div>" +
-    '<div class="dim small center" style="margin-bottom:10px">Équipement ajouté à l\'Inventaire.</div>' +
+    '<div class="dim small center" style="margin-bottom:' + (melted.length ? "4px" : "10px") +
+      '">Équipement ajouté à l\'Inventaire.</div>' +
+    (melted.length
+      ? '<div class="small center b" style="color:var(--purpleLit);margin-bottom:10px">' +
+        ic("trash", 11) + " " + melted.length + " pièce" + (melted.length > 1 ? "s" : "") +
+        " recyclée" + (melted.length > 1 ? "s" : "") + " par le filtre · +" + fmt(dust) +
+        " poussière</div>"
+      : "") +
     '<div class="mute tiny center b" style="letter-spacing:.6px">TAUX ACTUELS · FORGE NIV.' + S.forge.level + "</div>" +
     '<div class="row gap4 mt6" style="flex-wrap:wrap;justify-content:center;margin-bottom:12px">' +
       EQUIP_RARITY_ORDER.filter((r) => rates[r] >= 0.05).map((r) =>
@@ -7965,6 +8095,19 @@ const ACT = {
   },
   forgeCollect: () => { collectForgeUpgrade(); toast("Forge améliorée !", true); },
   autoForge: () => { toggleAutoForge(); toast("Auto-forge " + (S.forge.autoForge ? "activée" : "désactivée"), S.forge.autoForge); },
+  forgeFilter: () => showForgeFilterPicker(),
+  forgeFilterToggle: () => {
+    toggleForgeFilter();
+    toast("Filtre de Forge " + (S.forge.filter ? "activé" : "désactivé"), S.forge.filter);
+    showForgeFilterPicker();
+  },
+  forgeKeep: (a) => {
+    const before = S.forge.keep[a] !== false;
+    toggleForgeKeep(a);
+    if (before && S.forge.keep[a] !== false) toast("Il faut garder au moins une rareté");
+    showForgeFilterPicker();
+  },
+  forgeKeepAll: () => { setForgeKeepAll(true); showForgeFilterPicker(); },
 
   // stats
   alloc: (a, b) => { allocStat(a, b === "max" ? S.statPoints : parseInt(b, 10)); },
@@ -8183,7 +8326,7 @@ if (SMOKE) {
     MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PR_PER_FLOOR, REBIRTH_UPGRADES, RAID_IDS,
     TREE_NODES,
     get forgeAnim() { return forgeAnim; }, set forgeAnim(v) { forgeAnim = v; },
-    FORGE_ANIM_MS,
+    FORGE_ANIM_MS, EQUIP_RARITY_ORDER,
   };
 }
 

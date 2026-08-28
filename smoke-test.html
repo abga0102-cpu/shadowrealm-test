@@ -546,6 +546,85 @@ function run(W) {
     if (W.skillSummonCost(H.S) >= before.skill) bad.push("Invoquer Coût augmente le prix");
     return bad.length ? bad.join(", ") : true;
   });
+  function forgePrep(st) {
+    st.level = 40;
+    st.forge = { level: 30, progress: 0, summonCount: 0, masteryLevel: 0,
+      masteryProgress: 0, autoForge: false, upgradeEnd: 0,
+      filter: false, keep: W.forgeKeepAll() };
+    st.minerai = 999999; st.inventory = []; st.poussiere = 0;
+    st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+  }
+  check("sans filtre, la Forge ne recycle rien", function () {
+    set(forgePrep);
+    const r = W.forgeSummon(40);
+    if (r.length !== 40) return "40 forges attendues, " + r.length + " obtenues";
+    if (r.some(function (x) { return x.recycled; })) return "une pièce a été recyclée filtre éteint";
+    if (H.S.inventory.length !== 40) return "l'Inventaire contient " + H.S.inventory.length + " pièces";
+    if (H.S.poussiere !== 0) return "de la poussière a été produite : " + H.S.poussiere;
+    return true;
+  });
+  check("le filtre recycle exactement les raretés décochées", function () {
+    set(function (st) {
+      forgePrep(st);
+      st.forge.filter = true;
+      st.forge.keep.COMMUN = false; st.forge.keep.RARE = false;
+    });
+    const r = W.forgeSummon(80);
+    const jete = r.filter(function (x) { return x.recycled; });
+    const garde = r.filter(function (x) { return !x.recycled; });
+    const mauvais = jete.filter(function (x) { return x.rarity !== "COMMUN" && x.rarity !== "RARE"; });
+    if (mauvais.length) return mauvais.length + " pièce(s) recyclée(s) hors filtre : " + mauvais[0].rarity;
+    if (garde.some(function (x) { return x.rarity === "COMMUN" || x.rarity === "RARE"; }))
+      return "une rareté décochée a été gardée";
+    if (H.S.inventory.length !== garde.length)
+      return "l'Inventaire tient " + H.S.inventory.length + " pièces pour " + garde.length + " gardées";
+    if (H.S.inventory.some(function (it) { return it.rarity === "COMMUN" || it.rarity === "RARE"; }))
+      return "une rareté décochée a atteint l'Inventaire";
+    const du = jete.reduce(function (a, x) { return a + x.dust; }, 0);
+    if (H.S.poussiere !== du) return "poussière " + H.S.poussiere + " au lieu de " + du;
+    return true;
+  });
+  check("le filtre paie la poussière au tarif de l'Inventaire", function () {
+    set(function (st) {
+      forgePrep(st);
+      st.forge.filter = true; st.forge.keep.COMMUN = false;
+    });
+    const r = W.forgeSummon(60).filter(function (x) { return x.recycled; });
+    if (!r.length) return "aucun Commun forgé sur 60 essais";
+    // dustValue is what the Inventory pays; the filter must not invent its own rate
+    const bad = r.filter(function (x) {
+      return x.dust !== W.dustValue(H.S, { rarity: x.rarity, power: x.power });
+    });
+    return bad.length ? bad.length + " pièce(s) payée(s) à un autre tarif" : true;
+  });
+  check("le filtre ne peut pas tout jeter", function () {
+    set(function (st) { forgePrep(st); st.forge.filter = true; });
+    H.EQUIP_RARITY_ORDER.forEach(function (r) { W.toggleForgeKeep(r); });
+    const reste = H.EQUIP_RARITY_ORDER.filter(function (r) { return H.S.forge.keep[r] !== false; });
+    if (reste.length !== 1) return reste.length + " rareté(s) conservée(s) au lieu d'une";
+    const r = W.forgeSummon(20);
+    if (!r.length) return "la Forge ne produit plus rien";
+    return true;
+  });
+  check("une sauvegarde sans filtre garde tout", function () {
+    // a save written before section 14 has no keep map at all
+    const vieux = JSON.parse(JSON.stringify(H.S));
+    delete vieux.forge.filter; delete vieux.forge.keep;
+    vieux.forge.keep = undefined;
+    const m = W.migrate(vieux, "Héros");
+    if (m.forge.filter !== false) return "le filtre est actif après migration";
+    const manquant = H.EQUIP_RARITY_ORDER.filter(function (r) { return m.forge.keep[r] !== true; });
+    if (manquant.length) return manquant.length + " rareté(s) non conservée(s) : " + manquant.join(", ");
+    // and a half-written map is completed rather than trusted
+    const partiel = JSON.parse(JSON.stringify(H.S));
+    partiel.forge.keep = { COMMUN: false };
+    const m2 = W.migrate(partiel, "Héros");
+    if (m2.forge.keep.COMMUN !== false) return "un choix explicite a été écrasé";
+    const trous = H.EQUIP_RARITY_ORDER.filter(function (r) {
+      return r !== "COMMUN" && m2.forge.keep[r] !== true;
+    });
+    return trous.length ? "raretés manquantes non complétées : " + trous.join(", ") : true;
+  });
   check("un lot ne joue qu'une animation et ne produit rien avant la fin", function () {
     set(function (st) {
       st.level = 40;
