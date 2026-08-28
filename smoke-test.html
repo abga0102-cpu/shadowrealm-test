@@ -606,6 +606,89 @@ function run(W) {
     if (!r.length) return "la Forge ne produit plus rien";
     return true;
   });
+  group("COMPÉTENCES ET RARETÉS — sections 17 et 18");
+  function skillBench() {
+    set(function (st) {
+      st.level = 100; st.stats = { sante: 0, degats: 0, crit: 0, critred: 0 };
+      st.pets = []; st.activePetId = null; st.rebirth = { pr: 0, upgrades: {} };
+      st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+      st.stars = { pet: 0, forge: 0, skill: 0 };
+      H.SLOTS.forEach(function (slot) {
+        const it = W.makeItem(slot, "EPIQUE", 30);
+        it.affixes = [];
+        st.equipped[slot] = it;
+      });
+    });
+    const wt = H.WEAPON_TYPES[H.D.weapon];
+    return { coup: H.D.damage * wt.hit, cadence: H.D.attackSpeed * wt.speed };
+  }
+  check("une compètence au maximum reste un pic, pas un remplaçant", function () {
+    const b = skillBench();
+    const bad = [];
+    H.SKILL_DEFS.filter(function (d) { return d.mult > 0 && d.cat !== "DEBUFF"; }).forEach(function (d) {
+      // what the skill does, against what auto-attacks do during its cooldown
+      const parCoup = W.skillDamageMult(H.D.damage * W.skillMult(d), 50);
+      const pendant = b.coup * b.cadence * d.cd;
+      const ratio = parCoup / pendant;
+      if (ratio > 3.5) bad.push(d.name + " vaut " + ratio.toFixed(1) + " recharges d'attaques");
+    });
+    return bad.length ? bad.join(" | ") : true;
+  });
+  check("le niveau d'une compètence ne la multiplie plus par quatre", function () {
+    if (H.SKILL_LEVEL_GROWTH >= 0.06) return "la croissance vaut encore " + H.SKILL_LEVEL_GROWTH;
+    skillBench();
+    const d = H.SKILL_DEFS.filter(function (x) { return x.id === "execution"; })[0];
+    const n1 = W.skillDamageMult(H.D.damage * W.skillMult(d), 1);
+    const n50 = W.skillDamageMult(H.D.damage * W.skillMult(d), 50);
+    const gain = n50 / n1;
+    if (gain > 3) return "le niveau 50 vaut " + gain.toFixed(2) + "x le niveau 1";
+    if (gain < 1.5) return "monter une compètence n'apporte presque rien : " + gain.toFixed(2) + "x";
+    return true;
+  });
+  check("les rarétés hautes sont plus rares qu'avant", function () {
+    const r = W.getRates("forge", 50, 0, 0);
+    const avant = { MYTHIQUE: 13, HEROIQUE: 6.5, ANCESTRAL: 3 };
+    const bad = [];
+    Object.keys(avant).forEach(function (k) {
+      if (!(r[k] < avant[k])) bad.push(k + " à " + r[k].toFixed(2) + " %, contre " + avant[k] + " avant");
+    });
+    // and the ladder still only goes down
+    const ordre = ["EPIQUE", "MYTHIQUE", "HEROIQUE", "ANCESTRAL", "LEGENDAIRE"];
+    for (let i = 1; i < ordre.length; i++) {
+      if (r[ordre[i]] > r[ordre[i - 1]]) bad.push(ordre[i] + " est plus fréquent que " + ordre[i - 1]);
+    }
+    return bad.length ? bad.join(" | ") : true;
+  });
+  check("Légendaire et Divin n'ont pas bougé", function () {
+    // reserved for the Ascension update: neither the anchors nor the rate itself
+    const bad = [];
+    if (H.RATE_ANCHORS.forge.m50.LEGENDAIRE !== 1.5) bad.push("l'ancrage Forge Légendaire a changé");
+    if (H.RATE_ANCHORS.skill.m50.LEGENDAIRE !== 5) bad.push("l'ancrage Compétence Légendaire a changé");
+    if (H.RATE_ANCHORS.pet.m50.LEGENDAIRE !== 5) bad.push("l'ancrage Familier Légendaire a changé");
+    ["forge", "skill", "pet"].forEach(function (sys) {
+      if (H.RATE_ANCHORS[sys].m50.DIVIN !== 0) bad.push("l'ancrage " + sys + " Divin a changé");
+    });
+    const r = W.getRates("forge", 50, 0, 0);
+    if (Math.abs(r.LEGENDAIRE - 1.5) > 0.001)
+      bad.push("le taux Légendaire vaut " + r.LEGENDAIRE.toFixed(3) + " au lieu de 1.5");
+    // the Ascension rules still bite the same way
+    const ra = W.getRates("forge", 50, 1, 0);
+    if (Math.abs(ra.DIVIN - 2) > 0.001) bad.push("une Ascension ne donne plus 2 % de Divin");
+    if (!(ra.LEGENDAIRE < r.LEGENDAIRE)) bad.push("le Divin ne prend plus sur le Légendaire");
+    return bad.length ? bad.join(" | ") : true;
+  });
+  check("chaque table de rarétés somme à 100", function () {
+    const bad = [];
+    ["forge", "skill", "pet"].forEach(function (sys) {
+      const m = H.RATE_ANCHORS[sys].m50;
+      const som = Object.keys(m).reduce(function (a, k) { return a + m[k]; }, 0);
+      // it must sum to 100 on its own: the normalisation in getRates would
+      // otherwise raise Légendaire, which this update may not touch
+      if (Math.abs(som - 100) > 0.001) bad.push(sys + " somme à " + som.toFixed(2));
+    });
+    return bad.length ? bad.join(" | ") : true;
+  });
+
   group("VITESSES — section 16");
   check("les deux vitesses de base ont baissé", function () {
     if (!(H.BASE.attackSpeed < 1.0)) return "la vitesse d'attaque de base vaut encore " + H.BASE.attackSpeed;

@@ -1395,18 +1395,33 @@ const SLOT_ICON  = { arme: "sword", casque: "helm", armure: "armor", gants: "glo
 const RARITY_MUL = { COMMUN: 1, RARE: 1.8, EPIQUE: 3.2, MYTHIQUE: 5.6,
   HEROIQUE: 8.5, ANCESTRAL: 12.5, LEGENDAIRE: 18, DIVIN: 28 };
 
+/* Section 18 brings the high rarities down. The ladder above Épique used to
+   halve at each step, which at full Maîtrise handed out a Mythique every 8
+   forges and an Ancestral every 33. Each tier is now 60 % as likely as the one
+   below it instead of 50 %, which -- with the top of the ladder pinned -- pulls
+   the middle down hard: a Mythique every 14 forges, an Héroïque every 24, an
+   Ancestral every 40.
+
+   Légendaire and Divin are left exactly as they were, because their odds are
+   tied to Ascension and that is a later update's subject. Two consequences of
+   holding them fixed, both deliberate. The freed probability goes to Commun
+   rather than being spread, so the row still sums to 100 and the normalisation
+   at the end of getRates cannot quietly raise Légendaire. And the gap between
+   Ancestral and Légendaire narrows -- 40 forges against 67, where it was 33
+   against 67 -- because pinning one end of a ladder while lowering the rest
+   compresses what is next to it. */
 const RATE_ANCHORS = {
   forge: {
-    m0:  { COMMUN: 100, RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,  HEROIQUE: 0, ANCESTRAL: 0, LEGENDAIRE: 0, DIVIN: 0 },
-    m50: { COMMUN: 26,  RARE: 28, EPIQUE: 22, MYTHIQUE: 13, HEROIQUE: 6.5, ANCESTRAL: 3, LEGENDAIRE: 1.5, DIVIN: 0 },
+    m0:  { COMMUN: 100,  RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0, HEROIQUE: 0,   ANCESTRAL: 0,   LEGENDAIRE: 0,   DIVIN: 0 },
+    m50: { COMMUN: 34.8, RARE: 28, EPIQUE: 22, MYTHIQUE: 7, HEROIQUE: 4.2, ANCESTRAL: 2.5, LEGENDAIRE: 1.5, DIVIN: 0 },
   },
   skill: {
-    m0:  { COMMUN: 100, RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,  LEGENDAIRE: 0, DIVIN: 0 },
-    m50: { COMMUN: 15,  RARE: 30, EPIQUE: 27, MYTHIQUE: 23, LEGENDAIRE: 5, DIVIN: 0 },
+    m0:  { COMMUN: 100,  RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,   LEGENDAIRE: 0, DIVIN: 0 },
+    m50: { COMMUN: 29.7, RARE: 30, EPIQUE: 27, MYTHIQUE: 8.3, LEGENDAIRE: 5, DIVIN: 0 },
   },
   pet: {
-    m0:  { COMMUN: 100, RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,  LEGENDAIRE: 0, DIVIN: 0 },
-    m50: { COMMUN: 18,  RARE: 30, EPIQUE: 27, MYTHIQUE: 20, LEGENDAIRE: 5, DIVIN: 0 },
+    m0:  { COMMUN: 100,  RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,   LEGENDAIRE: 0, DIVIN: 0 },
+    m50: { COMMUN: 29.7, RARE: 30, EPIQUE: 27, MYTHIQUE: 8.3, LEGENDAIRE: 5, DIVIN: 0 },
   },
 };
 function masteryReq(level) { return Math.round(5 + level * 1.6); }
@@ -1871,8 +1886,21 @@ const SKILL_BY_ID = {};
 SKILL_DEFS.forEach((d) => { SKILL_BY_ID[d.id] = d; });
 
 function skillDupesNeeded(level) { return Math.min(12, 1 + Math.floor(level / 5)); }
+/* Section 17. Measured at character 100 with a full Épique set, comparing a
+   cast against what auto-attacks deal during that skill's own cooldown:
+
+     level 1     Taillade 0.83   Percée 1.02   Exécution 1.30   Cataclysme 1.16
+     level 50    Taillade 3.3    Percée 4.1    Exécution 5.1    Cataclysme 4.6
+
+   At level 1 the numbers are right -- a cast is worth roughly its downtime. The
+   base multipliers are therefore not the problem; the per-level growth is, and
+   it alone multiplied every skill by 3.94 while nothing else about the hero
+   moved. Halving it to 3 % puts a maxed skill at 2.47x its level-1 value, so a
+   cast lands at 2 to 3 times its cooldown in auto-attacks: a burst worth
+   pressing, not a replacement for the fight. */
+const SKILL_LEVEL_GROWTH = 0.03;
 function skillDamageMult(base, level) {
-  return base * (1 + (level - 1) * 0.06) * starMul(S, "skill");
+  return base * (1 + (level - 1) * SKILL_LEVEL_GROWTH) * starMul(S, "skill");
 }
 
 const RAIDS = {
@@ -8399,7 +8427,7 @@ if (SMOKE) {
     get forgeAnim() { return forgeAnim; }, set forgeAnim(v) { forgeAnim = v; },
     FORGE_ANIM_MS, EQUIP_RARITY_ORDER, RARITY_MUL, SINGLE_STAT_MUL,
     BASE, AFFIX_BY_KEY, AFFIX_DEFS, AFFIX_EXCEPTIONAL_PCT, WEAPON_TYPES,
-    SPEED_AFFIX_CAP,
+    SPEED_AFFIX_CAP, SKILL_LEVEL_GROWTH, RATE_ANCHORS, SKILL_RARITY_MUL,
   };
 }
 
