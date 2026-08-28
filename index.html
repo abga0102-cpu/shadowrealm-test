@@ -2287,15 +2287,7 @@ function rb(s, key) {
 function treeLv(s, id) { return (s.tree.levels && s.tree.levels[id]) || 0; }
 function hasTree(s, id) { return treeLv(s, id) >= 1; }
 /* summed value of every node feeding one effect, e.g. tsum(s,"minerai") -> 85 (%) */
-/* Section 14 names eight equipment bonuses, four on damage and four on health.
-   The game has six slots and no Collier, Anneau or Ceinture, so these apply as
-   flat percentages rather than scaling a slot that does not exist. Values are
-   exactly as written: +10% total each at 5/5. */
-const EQ_DMG = ["eq_arme", "eq_gants", "eq_collier", "eq_anneau"];
-const EQ_HP  = ["eq_casque", "eq_armure", "eq_bottes", "eq_ceinture"];
 function goldMul(s) { return 1 + treeSum(s, "goldAll") / 100; }
-function eqDmgBonus(s) { let t = 0; EQ_DMG.forEach((k) => { t += treeSum(s, k); }); return t; }
-function eqHpBonus(s)  { let t = 0; EQ_HP.forEach((k) => { t += treeSum(s, k); }); return t; }
 function treeSum(s, effect) {
   let t = 0;
   for (let i = 0; i < TREE_NODES.length; i++) {
@@ -2434,8 +2426,12 @@ function computeDerived(s) {
   Object.keys(s.equipped).forEach((slot) => {
     const it = s.equipped[slot];
     if (!it) return;
-    // Maîtrise scales the stat that slot is built around, not both
-    const m = 1 + treeSum(s, "mast_" + slot) / 100;
+    /* "Arme Bonus Degats" scales your weapon, not your total damage. It read as
+       a flat percentage while there were no slots to attach it to; now that all
+       eight exist it belongs on the piece it names. Both branches scale the one
+       stat the slot is built around, never both, and an empty slot gets nothing
+       -- the bonus is on the gear, not on you. */
+    const m = 1 + (treeSum(s, "mast_" + slot) + treeSum(s, "eq_" + slot)) / 100;
     if (MASTERY_STAT[slot] === "dmg") { equipDmg += it.damage * m; equipHP += it.hp; }
     else { equipHP += it.hp * m; equipDmg += it.damage; }
   });
@@ -2449,10 +2445,12 @@ function computeDerived(s) {
   const petDmgPct = petPct * (1 + treeSum(s, "petDmg") / 100) * (el === "normal" ? 1.10 : 1);
   const forgePct = s.forge.level * 2;
 
+  // the eight equipment families now live on their own slots, above; what stays
+  // global here is the passive base, which is not equipment
   const lifeMul = 1 + rb(s, "life") / 100 + petPct / 100 + forgePct / 200
-    + (eqHpBonus(s) + treeSum(s, "passHp")) / 100;
+    + treeSum(s, "passHp") / 100;
   const dmgMul  = 1 + rb(s, "damage") / 100 + petDmgPct / 100 + forgePct / 100
-    + (eqDmgBonus(s) + treeSum(s, "passDmg")) / 100;
+    + treeSum(s, "passDmg") / 100;
 
   // random bonuses carried by equipped gear
   const af = equippedAffixes(s);
