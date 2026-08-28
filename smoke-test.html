@@ -498,6 +498,31 @@ function run(W) {
     });
     return bad.length ? bad.join(", ") : true;
   });
+  check("Dégâts et Vie montent jusqu'à 50, les autres lignes non", function () {
+    const d = H.REBIRTH_UPGRADES.filter(function (u) { return u.key === "damage"; })[0];
+    const v = H.REBIRTH_UPGRADES.filter(function (u) { return u.key === "life"; })[0];
+    if (d.max !== 50 || v.max !== 50) return "plafond " + d.max + "/" + v.max + " au lieu de 50";
+    if (d.costs.length !== 50 || v.costs.length !== 50) return "tableau de coûts trop court";
+    if (d.perLvl !== 5 || v.perLvl !== 6) return "l'effet par niveau a changé";
+    const base = [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266];
+    for (let i = 0; i < 20; i++) {
+      if (d.costs[i] !== base[i]) return "les niveaux 1-20 ont bougé";
+    }
+    const others = H.REBIRTH_UPGRADES.filter(function (u) {
+      return u.key !== "damage" && u.key !== "life" && u.costs.length !== u.max;
+    });
+    return others.length ? "ligne incohérente : " + others[0].key : true;
+  });
+  check("on peut réellement acheter les 50 niveaux", function () {
+    set(function (st) { st.rebirth = { pr: 5e6, count: 0, upgrades: {} }; st.level = 50; });
+    let n = 0;
+    while (W.buyRebirth("damage")) n++;
+    if (H.S.rebirth.upgrades.damage !== 50) return "bloqué au niveau " + H.S.rebirth.upgrades.damage;
+    if (n !== 50) return n + " achats au lieu de 50";
+    if (W.buyRebirth("damage")) return "achat accepté au-delà de 50";
+    if (W.rb(H.S, "damage") !== 250) return "bonus " + W.rb(H.S, "damage") + "% au lieu de 250%";
+    return true;
+  });
   check("Rebirth et Ascension restent séparés", function () {
     set(function (st) {
       st.floor = 40; st.recordFloor = 40; st.level = 40;

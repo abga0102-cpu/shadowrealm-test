@@ -1890,8 +1890,27 @@ const REBIRTH_UPGRADES = [
   // that starts at 3 PR and ends at 422. The step ratio decays smoothly from
   // 2.0 to 1.17, so the early levels stay impulse-buys while the last few are
   // a deliberate saving goal, rather than a cliff at the end.
-  { key: "damage",     label: "Dégâts",         icon: "flame",   max: 20, perLvl: 5,    unit: "%",   costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266] },
-  { key: "life",       label: "Vie",            icon: "heart",   max: 20, perLvl: 6,    unit: "%",   costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266] },
+  /* Section 4C takes these two to 50. The effect per level is untouched -- 5%
+     and 6% -- so the ceilings become 250% and 300%.
+
+     The cost ladder is extended by its own rule rather than a new one. It is
+     not an exponential: its second difference climbs by 2 every couple of
+     levels, which is a polynomial, and continuing that is what "conserver le
+     systeme de progression" means here. Reading it as an exponential and
+     holding the 1.17 tail ratio would have cost 320000 PR a line instead of
+     95000, for no reason anyone chose. Levels 1-20 are byte-identical. */
+  { key: "damage",     label: "Dégâts",         icon: "flame",   max: 50, perLvl: 5,    unit: "%",   costs: [
+      10,20,32,46,64,86,112,142,178,220,
+      270,328,396,474,564,668,788,926,1084,1266,
+      1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,
+      5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,
+      12524,13498,14520,15590,16710,17880,19102,20376,21704,23086] },
+  { key: "life",       label: "Vie",            icon: "heart",   max: 50, perLvl: 6,    unit: "%",   costs: [
+      10,20,32,46,64,86,112,142,178,220,
+      270,328,396,474,564,668,788,926,1084,1266,
+      1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,
+      5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,
+      12524,13498,14520,15590,16710,17880,19102,20376,21704,23086] },
   { key: "atkspeed",   label: "Vit. Attaque",   icon: "bolt",    max: 5,  perLvl: 3,    unit: "%",   costs: [10,20,30,50,75] },
   { key: "critdmg",    label: "Dégâts Crit.",   icon: "sparkle", max: 5,  perLvl: 8,    unit: "%",   costs: [10,20,30,50,75] },
   { key: "dmgred",     label: "Réduc. Dégâts",  icon: "shield",  max: 20, perLvl: 2,    unit: "%",   costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266] },
@@ -7977,7 +7996,7 @@ if (/[?&]smoke=1(?:&|$)/.test(location.search)) {
     // the data tables are `const` too, so they are just as invisible
     SLOTS, SKILL_DEFS, SCREENS, RESOURCE_INFO, TREE_NODES, TREE_BY_ID,
     ENEMY_TYPES, ELITE_DEFS, BOSS_DEFS, RAID_BOSSES, EGG_TIMERS, AW,
-    MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PR_PER_FLOOR,
+    MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PR_PER_FLOOR, REBIRTH_UPGRADES,
   };
 }
 
