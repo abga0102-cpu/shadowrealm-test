@@ -1847,12 +1847,27 @@ function raidReward(raid, level) {
   const base = RAID_BASE[raid] || 8;
   return Math.floor(base * Math.pow(RAID_GROWTH, level - 1));
 }
+/* Section 5: a raid's first Ascension makes its level 1 exactly five times the
+   difficulty of the same raid's un-starred level 1. It applies here, on the
+   wave budget, because that is where this system already expresses "how hard is
+   this wave" -- raidEnemyHP and raidEnemyDamage then split the budget across
+   however many enemies are present, exactly as before. No individual statistic
+   is multiplied, and the per-level growth curve is untouched, so the existing
+   progression carries on from the new base.
+
+   Like the power multiplier, the second star is deliberately left undefined and
+   the value holds rather than compounding into a number nobody chose. */
+const RAID_ASCEND_DIFF_MUL = [1, 5];
+function raidDiffMul(s, raid) {
+  const st = (s && s.raids && s.raids[raid] && s.raids[raid].stars) || 0;
+  return RAID_ASCEND_DIFF_MUL[Math.min(Math.max(0, st), RAID_ASCEND_DIFF_MUL.length - 1)];
+}
 /* total HP / damage-per-second budget for the whole wave at this raid level */
 function raidWaveHP(raid, level) {
-  return RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, level) * RAID_TUNE[raid].hp;
+  return RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, level) * RAID_TUNE[raid].hp * raidDiffMul(S, raid);
 }
 function raidWaveDamage(raid, level) {
-  return RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, level) * RAID_TUNE[raid].dmg;
+  return RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, level) * RAID_TUNE[raid].dmg * raidDiffMul(S, raid);
 }
 function raidEnemyCount(raid, level) {
   if (raid === "or") return 5;
@@ -7996,7 +8011,7 @@ if (/[?&]smoke=1(?:&|$)/.test(location.search)) {
     // the data tables are `const` too, so they are just as invisible
     SLOTS, SKILL_DEFS, SCREENS, RESOURCE_INFO, TREE_NODES, TREE_BY_ID,
     ENEMY_TYPES, ELITE_DEFS, BOSS_DEFS, RAID_BOSSES, EGG_TIMERS, AW,
-    MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PR_PER_FLOOR, REBIRTH_UPGRADES,
+    MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PR_PER_FLOOR, REBIRTH_UPGRADES, RAID_IDS,
   };
 }
 

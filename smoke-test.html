@@ -404,6 +404,42 @@ function run(W) {
       poussiere: H.S.poussiere, gems: H.S.gems, gold: H.S.gold, pe: H.S.pe,
       eggSlots: H.S.eggSlots };
   }
+  check("l'Ascension d'un raid quintuple exactement sa difficulté", function () {
+    const bad = [];
+    H.RAID_IDS.forEach(function (rid) {
+      set(function (st) { st.raids[rid].stars = 0; });
+      const hp0 = W.raidWaveHP(rid, 1), dm0 = W.raidWaveDamage(rid, 1);
+      const n0 = W.raidEnemyCount(rid, 1);
+      set(function (st) { st.raids[rid].stars = 1; });
+      const hp1 = W.raidWaveHP(rid, 1), dm1 = W.raidWaveDamage(rid, 1);
+      const n1 = W.raidEnemyCount(rid, 1);
+      if (Math.abs(hp1 / hp0 - 5) > 1e-9) bad.push(rid + " PV ×" + (hp1 / hp0).toFixed(3));
+      if (Math.abs(dm1 / dm0 - 5) > 1e-9) bad.push(rid + " dégâts ×" + (dm1 / dm0).toFixed(3));
+      if (n0 !== n1) bad.push(rid + " le nombre d'ennemis a changé");
+      set(function (st) { st.raids[rid].stars = 0; });
+    });
+    return bad.length ? bad.join(", ") : true;
+  });
+  check("la progression entre niveaux de raid est inchangée par l'étoile", function () {
+    const ratios = function (st) {
+      set(function (s2) { s2.raids.minerai.stars = st; });
+      const out = [];
+      for (let l = 1; l < 12; l++) out.push(W.raidWaveHP("minerai", l + 1) / W.raidWaveHP("minerai", l));
+      return out;
+    };
+    const a = ratios(0), b = ratios(1);
+    set(function (s2) { s2.raids.minerai.stars = 0; });
+    const drift = a.filter(function (r, i) { return Math.abs(r - b[i]) > 1e-9; });
+    return drift.length ? drift.length + " niveaux dont la courbe a bougé" : true;
+  });
+  check("aucun multiplicateur de difficulté inventé au-delà de la première étoile", function () {
+    set(function (st) { st.raids.minerai.stars = 2; });
+    const two = W.raidDiffMul(H.S, "minerai");
+    set(function (st) { st.raids.minerai.stars = 1; });
+    const one = W.raidDiffMul(H.S, "minerai");
+    set(function (st) { st.raids.minerai.stars = 0; });
+    return two === one ? true : "★2 vaut ×" + two + ", ce que la spec ne définit pas";
+  });
   check("aucune Ascension n'efface une monnaie", function () {
     const bad = [];
     ["forge", "pet", "skill"].forEach(function (sys) {
