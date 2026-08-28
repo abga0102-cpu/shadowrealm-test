@@ -6544,31 +6544,46 @@ function scrArbre() {
   const alloc = RAID_IDS.filter((r) => (S.raidKeyAlloc[r] || 0) > 0)
     .map((r) => RAIDS[r].reward + " +" + S.raidKeyAlloc[r]).join(" · ");
 
+  /* One line per family that is actually invested, named exactly as the family
+     is named, so this panel and the nodes cannot say different things. */
   const bonusRows = [
-    ["minerai", "Minerais obtenus", "+"],
-    ["essence", "Essence animale", "+"],
-    ["skillPts", "Points de Compétence", "+"],
-    ["dust", "Poussière obtenue", "+"],
-    ["petDmg", "Dégâts des Familiers", "+"],
-    ["skillDmg", "Dégâts des Compétences", "+"],
-    ["raidMinerai", "Minerais du Raid Minerai", "+"],
-    ["forgeTime", "Temps de Forge", "-"],
-    ["forgeCost", "Coût amélioration Forge", "-"],
-    ["hatch_COMMUN", "Éclosion Commun", "-"],
-    ["hatch_RARE", "Éclosion Rare", "-"],
-    ["hatch_EPIQUE", "Éclosion Épique", "-"],
-    ["hatch_MYTHIQUE", "Éclosion Mythique", "-"],
-    ["hatch_LEGENDAIRE", "Éclosion Légendaire", "-"],
-    ["skillTime", "Temps de Compétence", "-"],
-    ["research", "Temps de recherche", "-"],
-    ["accel", "Efficacité Accélérateurs", "+"],
-    ["forgeFree", "Forge gratuite", "+"],
-    ["eggFree", "Œuf gratuit", "+"],
-    ["skillFree", "Double invocation", "+"]
+    ["forgeTime", "Forge · vitesse du minuteur", "+"],
+    ["forgeCost", "Forge · coût", ""],
+    ["forgeFree", "Chance de forge gratuite", "+"],
+    ["research", "Recherche technologique · vitesse", "+"],
+    ["techCost", "Nœud technologique · coût", ""],
+    ["goldAll", "Or global", "+"],
+    ["afkGain", "Récompense Autonomie", "+"],
+    ["afkTime", "Temps Récompense Autonomie", "+"],
+    ["skillDmg", "Compétence · dégâts", "+"],
+    ["passDmg", "Compétence passive · base dégâts", "+"],
+    ["passHp", "Compétence passive · base santé", "+"],
+    ["skillCost", "Compétence · coût d'invocation", ""],
+    ["petDmg", "Animal · dégâts", "+"],
+    ["petHp", "Animal · santé", "+"],
+    ["eq_arme", "Arme · dégâts", "+"],
+    ["eq_casque", "Casque · santé", "+"],
+    ["eq_gants", "Gants · dégâts", "+"],
+    ["eq_collier", "Collier · dégâts", "+"],
+    ["eq_armure", "Armure · santé", "+"],
+    ["eq_anneau", "Anneau · dégâts", "+"],
+    ["eq_bottes", "Chaussures · santé", "+"],
+    ["eq_ceinture", "Ceinture · santé", "+"],
+    ["hatch_COMMUN", "Œuf Commun · éclosion", "+"],
+    ["hatch_RARE", "Œuf Rare · éclosion", "+"],
+    ["hatch_EPIQUE", "Œuf Épique · éclosion", "+"],
+    ["hatch_MYTHIQUE", "Œuf Mythique · éclosion", "+"],
+    ["hatch_LEGENDAIRE", "Œuf Légendaire · éclosion", "+"],
+    ["eggFree", "Chance d'œuf supplémentaire", "+"],
+    ["skillFree", "Chance de compétence supplémentaire", "+"],
+    ["peRaid", "PE du Raid Évolution", "+"]
   ].map((r) => {
     const v = treeSum(S, r[0]);
-    return v <= 0 ? "" : '<div class="kv"><span class="dim">' + r[1] +
-      '</span><b style="color:var(--goldLit)">' + r[2] + v.toFixed(v % 1 ? 1 : 0) + "%</b></div>";
+    if (v === 0) return "";
+    const shown = Math.round(Math.abs(v) * 10) / 10;
+    return '<div class="kv"><span class="dim">' + r[1] +
+      '</span><b style="color:var(--goldLit)">' + (r[2] || (v < 0 ? "-" : "+")) +
+      shown + "%</b></div>";
   }).join("");
 
   const intro = "Les <b>PE</b> gagnés au <b>Raid Évolution</b> sont la <b>seule</b> ressource de l’Arbre : " +
@@ -6662,24 +6677,24 @@ const TREE_TYPES = {
   SPECIAL:     { label: "Nœuds spéciaux", c: "#FFD65E", icon: "key",  desc: "Gros bonus uniques et structurants." },
 };
 const TREE_TYPE_ORDER = ["COMBAT", "SURVIE", "VITESSE", "RESSOURCES", "FAMILIERS", "COMPETENCES", "SPECIAL"];
+/* One entry per family in the official list, so a node never falls back to a
+   default category and the colours on the graph mean something. */
 const EFFECT_TYPE = {
-  skillDmg: "COMBAT", petDmg: "COMBAT",
-  afk: "SURVIE", harvestEff: "RESSOURCES",
-  mast_arme: "COMBAT", mast_gants: "COMBAT", mast_accessoire: "COMBAT",
-  mast_casque: "SURVIE", mast_armure: "SURVIE", mast_bottes: "SURVIE",
-  research: "VITESSE", accel: "VITESSE", forgeTime: "VITESSE",
-  skillTime: "VITESSE",
-  hatch_COMMUN: "VITESSE", hatch_RARE: "VITESSE", hatch_EPIQUE: "VITESSE",
-  hatch_MYTHIQUE: "VITESSE", hatch_LEGENDAIRE: "VITESSE",
-  minerai: "RESSOURCES", essence: "RESSOURCES", skillPts: "RESSOURCES",
-  dust: "RESSOURCES", raidMinerai: "RESSOURCES", forgeCost: "RESSOURCES",
-  forgeFree: "RESSOURCES", forgeMulti: "RESSOURCES", forgeMult: "RESSOURCES",
-  eggFree: "FAMILIERS", eggSlot: "FAMILIERS",
-  skillFree: "COMPETENCES",
-  raidKey: "SPECIAL",
+  // the eight equipment bonuses split the way section 14 splits them
+  eq_arme: "COMBAT", eq_gants: "COMBAT", eq_collier: "COMBAT", eq_anneau: "COMBAT",
+  eq_casque: "SURVIE", eq_armure: "SURVIE", eq_bottes: "SURVIE", eq_ceinture: "SURVIE",
+  passDmg: "COMBAT", skillDmg: "COMPETENCES", skillFree: "COMPETENCES",
+  skillCost: "COMPETENCES", passHp: "SURVIE",
+  petDmg: "FAMILIERS", petHp: "FAMILIERS", eggFree: "FAMILIERS", eggSlot: "FAMILIERS",
+  hatch_COMMUN: "FAMILIERS", hatch_RARE: "FAMILIERS", hatch_EPIQUE: "FAMILIERS",
+  hatch_MYTHIQUE: "FAMILIERS", hatch_LEGENDAIRE: "FAMILIERS",
+  forgeTime: "VITESSE", research: "VITESSE", afkTime: "VITESSE",
+  forgeCost: "RESSOURCES", forgeFree: "RESSOURCES", techCost: "RESSOURCES",
+  goldAll: "RESSOURCES", afkGain: "RESSOURCES", peRaid: "RESSOURCES",
+  forgeMult: "SPECIAL", raidKey: "SPECIAL",
 };
 function nodeType(node) { return TREE_TYPES[EFFECT_TYPE[node.effect] || "RESSOURCES"]; }
-function isSpecialNode(node) { return EFFECT_TYPE[node.effect] === "SPECIAL"; }
+function isSpecialNode(node) { return !!node.special; }
 
 function hexPath(cx, cy, r) {
   const k = r * 0.866;
@@ -6719,13 +6734,37 @@ function treePiece(key, cx, cy, size, col, reg, extra) {
     (extra || "") + "/>";
 }
 
+/* The four paliers, drawn as bands behind the nodes so the depth is readable
+   at a glance, and the links that cross between them drawn differently so the
+   routes from one palier to the next are the thing you notice first. */
+const PALIER_BAND = [
+  { label: "PROFONDEUR I",   c: "#3FA7FF" },
+  { label: "PROFONDEUR II",  c: "#57E07A" },
+  { label: "PROFONDEUR III", c: "#B15CF6" },
+  { label: "PROFONDEUR IV",  c: "#E8B44A" },
+];
 function treeGraph(active, remain) {
-  const R = 19, W = 342;
+  const R = 19, W = 400;
   const maxRow = TREE_NODES.reduce((m, n) => Math.max(m, n.row), 0);
   const H = TREE_ROW_Y(maxRow) + R + 46;
 
-  let links = "", nodes = "", defs = "", beads = "";
+  let links = "", nodes = "", defs = "", beads = "", bands = "";
   const filters = {};
+
+  // ---- one band per palier, with its name down the side ----
+  for (let p = 1; p <= 4; p++) {
+    const rows = TREE_NODES.filter((n) => n.tier === p).map((n) => n.row);
+    if (!rows.length) continue;
+    const y0 = TREE_ROW_Y(Math.min.apply(null, rows)) - R - 16;
+    const y1 = TREE_ROW_Y(Math.max.apply(null, rows)) + R + 16;
+    const b = PALIER_BAND[p - 1];
+    bands += '<rect x="6" y="' + y0 + '" width="' + (W - 12) + '" height="' + (y1 - y0) +
+      '" rx="16" fill="' + b.c + '" opacity="0.055"/>' +
+      '<rect x="6" y="' + y0 + '" width="' + (W - 12) + '" height="' + (y1 - y0) +
+      '" rx="16" fill="none" stroke="' + b.c + '" stroke-width="1" opacity="0.30"/>' +
+      '<text x="16" y="' + (y0 + 15) + '" fill="' + b.c + '" opacity="0.85" font-size="10"' +
+      ' font-weight="800" letter-spacing="1.4">' + b.label + " · 30 NŒUDS</text>";
+  }
 
   // ---- paths take the colour of the node they lead to (reference sheet) ----
   TREE_NODES.forEach((n) => {
@@ -6737,10 +6776,20 @@ function treeGraph(active, remain) {
       const done = treeLv(S, n.id) >= 1;       // this branch already taken
       const rq2 = isSpecialNode(n) ? R + 6 : R;
       const bow = Math.min(46, 26 + Math.abs(n.x - q.x) * 0.28);
-      links += '<path d="M' + q.x + " " + (q.y + R) + "C" + q.x + " " + (q.y + R + bow) +
-        " " + n.x + " " + (n.y - rq2 - bow) + " " + n.x + " " + (n.y - rq2) + '" fill="none" stroke="' +
-        (done || lit ? ty.c : "#26344F") + '" stroke-width="' + (done ? 3 : lit ? 2.2 : 1.6) +
-        '" stroke-linecap="round" opacity="' + (done ? 0.95 : lit ? 0.6 : 0.35) + '"/>';
+      // a link that changes palier IS the passage: draw it as a road, not a twig
+      const cross = q.tier !== n.tier;
+      const pc = cross ? PALIER_BAND[n.tier - 1].c : ty.c;
+      const d = "M" + q.x + " " + (q.y + R) + "C" + q.x + " " + (q.y + R + bow) +
+        " " + n.x + " " + (n.y - rq2 - bow) + " " + n.x + " " + (n.y - rq2);
+      if (cross) {
+        links += '<path d="' + d + '" fill="none" stroke="' + pc +
+          '" stroke-width="9" stroke-linecap="round" opacity="' + (done || lit ? 0.22 : 0.10) + '"/>';
+      }
+      links += '<path d="' + d + '" fill="none" stroke="' +
+        (done || lit ? pc : cross ? "#3A4E74" : "#26344F") + '" stroke-width="' +
+        (cross ? (done ? 4.2 : lit ? 3.4 : 2.6) : (done ? 3 : lit ? 2.2 : 1.6)) +
+        '" stroke-linecap="round"' + (cross && !done && !lit ? ' stroke-dasharray="7 6"' : "") +
+        ' opacity="' + (done ? 0.95 : lit ? 0.7 : cross ? 0.5 : 0.35) + '"/>';
       if (done || lit) {
         beads += treePiece("bead", (q.x + n.x) / 2, ((q.y + R) + (n.y - rq2)) / 2,
           done ? 11 : 8, done ? ty.c : "#54709E", filters);
@@ -6810,15 +6859,15 @@ function treeGraph(active, remain) {
       "</g>";
   });
 
-  // each lane heading sits on the painted banner plate
-  const CAP_W = 78, CAP_H = 25;
-  const caps = ["FORGE", "ÉCLOSION", "COMPÉT.", "UTILITAIRE"].map((t, i) =>
-    '<image href="' + ASSETS.tree_banner + '" x="' + (TREE_LANE_X[i] - CAP_W / 2) +
-      '" y="1" width="' + CAP_W + '" height="' + CAP_H + '" preserveAspectRatio="xMidYMid meet"/>' +
-    '<text x="' + TREE_LANE_X[i] + '" y="17" text-anchor="middle" font-size="7.5" font-weight="900" ' +
-    'letter-spacing="0.8" font-family="Segoe UI,Roboto,sans-serif" fill="#F0E2BC">' + t + "</text>").join("");
+  /* The old layout gave each lane a theme -- FORGE, ECLOSION, COMPET.,
+     UTILITAIRE -- and printed it as a banner at the top. Sections 16 and 17 ask
+     for the opposite: families deliberately scattered across the width, so a
+     lane means nothing now and a heading claiming otherwise would be a lie. The
+     palier bands carry the structure instead. */
+  const caps = "";
 
   return '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" style="display:block">' +
+    bands +
     "<defs>" + defs + Object.keys(filters).map((k) => filters[k]).join("") + "</defs>" +
     caps + links + beads + nodes + "</svg>";
 }
@@ -7312,14 +7361,23 @@ const TREE_EFFECT_INFO = {
   raidKey:     "+1 clé quotidienne, à attribuer au Raid de ton choix",
 };
 /* format one level's worth of this node's effect */
+/* Cost families carry a negative `per` (-5% total means per = -1), so the old
+   unconditional sign prefix printed "--2%". A value that is already signed
+   prints itself; only the families whose number is positive but means a
+   reduction still need the minus put in front. */
 function treeEffectValue(node, level) {
   const v = node.per * level;
-  const sign = (node.effect === "research" || node.effect === "forgeTime" ||
-    node.effect === "forgeCost" || /^hatch_/.test(node.effect) || node.effect === "skillTime") ? "-" : "+";
   if (node.unit === "×") return "×" + (RULES.FORGE_BATCH_BASE + v);
-  if (node.unit === "h") return sign + v + " h";
   if (node.unit === "") return level > 0 ? "Actif" : "—";
-  return sign + (Math.round(v * 10) / 10) + node.unit;
+  const r = Math.round(v * 10) / 10;
+  /* The sign comes from the number itself and nothing else. The three cost
+     families carry a negative `per` and read as -5%; everything else is a gain
+     and reads as +. Speed families are written +20% and +50% in the list, so
+     they must show that way -- section 12 is explicit that none of these are
+     ever to be presented as a penalty, even though the engine spends them as
+     time cuts. */
+  if (node.unit === "h") return (r < 0 ? "" : "+") + r + " h";
+  return (r < 0 ? "" : "+") + r + node.unit;
 }
 
 /* Inspection popup — opens for EVERY node, bought or not, so the player can
@@ -7408,8 +7466,9 @@ function showTreeNode(id) {
           : '<div class="kv"><span class="dim">Coût</span><b class="row gap4" style="color:' +
             (afford ? "var(--goldLit)" : "var(--textMute)") + '">' +
             ic("chart", 12) + price.amount + " PE</b></div>" +
-          '<div class="kv"><span class="dim">Durée</span><b class="row gap4">' + ic("clock", 12) +
-            (dur <= 0 ? "Instantané" : fmtDur(dur)) + "</b></div>") +
+          // section 27: no invented timer on nodes that do not research
+          (dur > 0 ? '<div class="kv"><span class="dim">Durée</span><b class="row gap4">' +
+            ic("clock", 12) + fmtDur(dur) + "</b></div>" : "")) +
     "</div>" +
 
     (node.req.length
