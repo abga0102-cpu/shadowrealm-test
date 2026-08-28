@@ -606,6 +606,104 @@ function run(W) {
     if (!r.length) return "la Forge ne produit plus rien";
     return true;
   });
+  group("VITESSES — section 16");
+  check("les deux vitesses de base ont baissé", function () {
+    if (!(H.BASE.attackSpeed < 1.0)) return "la vitesse d'attaque de base vaut encore " + H.BASE.attackSpeed;
+    if (!(H.BASE.moveSpeed < 26)) return "la vitesse de déplacement de base vaut encore " + H.BASE.moveSpeed;
+    return true;
+  });
+  check("les bonus de vitesse de l'équipement plafonnent à 20", function () {
+    const bad = [];
+    ["atkspeed", "movespeed"].forEach(function (k) {
+      const def = H.AFFIX_BY_KEY[k];
+      if (def.cap !== 20) { bad.push(k + " plafonne à " + def.cap); return; }
+      // a full set of eight must land near the stated ceiling, not far past it
+      let tot = 0;
+      const N = 400;
+      for (let i = 0; i < N; i++) {
+        H.SLOTS.forEach(function (slot) {
+          W.makeItem(slot, "DIVIN", 30).affixes.forEach(function (a) {
+            if (a.key === k) tot += a.value;
+          });
+        });
+      }
+      const moy = tot / N;
+      if (moy > 24) bad.push(k + " : un set DIVIN donne " + moy.toFixed(1) + " % en moyenne");
+    });
+    return bad.length ? bad.join(" | ") : true;
+  });
+  check("l'équipement entier ne donne jamais plus de 20 %", function () {
+    const porte = function (af) {
+      set(function (st) {
+        st.level = 60; st.rebirth = { pr: 0, upgrades: {} };
+        st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+        st.pets = []; st.activePetId = null;
+        H.SLOTS.forEach(function (slot) {
+          const it = W.makeItem(slot, "EPIQUE", 30);
+          it.affixes = af(slot);
+          st.equipped[slot] = it;
+        });
+      });
+    };
+    const pres = function (a, b) { return Math.abs(a - b) < 0.001; };
+    // eight pieces at the cap is 160 % raw, and must still come out at 20 %
+    porte(function () { return [{ key: "atkspeed", value: 20 }, { key: "movespeed", value: 20 }]; });
+    if (!pres(H.D.attackSpeed, H.BASE.attackSpeed * 1.2))
+      return "vitesse d'attaque " + H.D.attackSpeed.toFixed(3) + " au lieu de " + (H.BASE.attackSpeed * 1.2).toFixed(3);
+    if (!pres(H.D.moveSpeed, H.BASE.moveSpeed * 1.2))
+      return "déplacement " + H.D.moveSpeed.toFixed(2) + " au lieu de " + (H.BASE.moveSpeed * 1.2).toFixed(2);
+    // a piece that rolled above the cap raises the ceiling to its own value
+    porte(function (slot) {
+      return slot === "bottes" ? [{ key: "atkspeed", value: 45 }] : [{ key: "atkspeed", value: 20 }];
+    });
+    if (!pres(H.D.attackSpeed, H.BASE.attackSpeed * 1.45))
+      return "une pièce exceptionnelle ne relève pas le plafond : " + H.D.attackSpeed.toFixed(3);
+    // and Rebirth is not equipment, so it is not capped
+    const avant = H.D.attackSpeed;
+    set(function (st) { st.rebirth = { pr: 0, upgrades: { atkspeed: 5 } }; });
+    if (!(H.D.attackSpeed > avant)) return "le Rebirth est plafonné avec l'équipement";
+    return true;
+  });
+  check("un jet sur deux mille dépasse le plafond, sans dépasser l'ancien", function () {
+    const bad = [];
+    ["atkspeed", "movespeed"].forEach(function (k) {
+      const def = H.AFFIX_BY_KEY[k];
+      let ex = 0, hors = 0;
+      const N = 120000;
+      for (let i = 0; i < N; i++) {
+        const v = W.rollAffixValue(def, "DIVIN");
+        if (v > def.cap) { ex++; if (v > def.exceptional) hors++; }
+      }
+      if (hors) { bad.push(k + " : " + hors + " jet(s) au-dessus de l'ancien plafond"); return; }
+      const taux = ex / N * 100;
+      // 0.05 % over 120000 draws is ~60 hits; the band is wide enough for luck
+      if (taux < 0.02 || taux > 0.10) bad.push(k + " : " + taux.toFixed(3) + " % au lieu de 0.05 %");
+    });
+    return bad.length ? bad.join(" | ") : true;
+  });
+  check("seules les vitesses ont un jet exceptionnel", function () {
+    const autres = H.AFFIX_DEFS.filter(function (d) {
+      return d.exceptional && d.key !== "atkspeed" && d.key !== "movespeed";
+    });
+    if (autres.length) return autres.map(function (d) { return d.key; }).join(", ") + " en ont un aussi";
+    // and a bonus without one can never pass its cap
+    const def = H.AFFIX_BY_KEY.critdmg;
+    for (let i = 0; i < 20000; i++) {
+      if (W.rollAffixValue(def, "DIVIN") > def.cap) return "critdmg a dépassé son plafond";
+    }
+    return true;
+  });
+  check("un bonus exceptionnel se lit comme tel", function () {
+    const def = H.AFFIX_BY_KEY.atkspeed;
+    const normal = W.affixText({ key: "atkspeed", value: 12 });
+    const exc = W.affixText({ key: "atkspeed", value: def.exceptional });
+    if (normal.indexOf("✦") !== -1) return "un bonus normal porte la marque";
+    if (exc.indexOf("✦") === -1) return "un bonus exceptionnel ne porte pas de marque";
+    if (!W.affixIsExceptional({ key: "atkspeed", value: def.exceptional })) return "affixIsExceptional dit non";
+    if (W.affixIsExceptional({ key: "atkspeed", value: def.cap })) return "une valeur au plafond passe pour exceptionnelle";
+    return true;
+  });
+
   check("chaque pièce d'équipement ne porte qu'une statistique", function () {
     set(forgePrep);
     const bad = [];

@@ -1170,7 +1170,14 @@ function skillSummonCost(s) {
   return Math.max(1, Math.round(SKILL_SUMMON_COST *
     (1 - Math.min(60, Math.abs(treeSum(s || S, "skillCost"))) / 100)));
 }
-const BASE = { hp: 100, damage: 12, attackSpeed: 1.0, moveSpeed: 26, critChance: 5, critMult: 1.5 };
+/* Section 16 brings the two speeds down. Attack speed loses 10 %: with gear
+   now capped near +20 % instead of running to +49 %, a fully equipped hero ends
+   up swinging at roughly the rate an unequipped one does today, which is where
+   the pacing was tuned. Movement loses less, 8 %, because it is already the
+   thin end of the fight -- a melee hero spends 8.5 s walking in against 0.9 s
+   for a bow, and there is no reading of "slower" that should widen that gap
+   further. Combat distance itself is section 19's subject, not this one. */
+const BASE = { hp: 100, damage: 12, attackSpeed: 0.9, moveSpeed: 24, critChance: 5, critMult: 1.5 };
 
 /* ---------------------------- levelling ------------------------------------
    A level has to feel like an event, so the curve is deliberately slow and it
@@ -2639,6 +2646,22 @@ function harvestIsEmpty(s) {
   return !g || (Math.floor(g.minerai) + Math.floor(g.essence) + Math.floor(g.eclat) + Math.floor(g.gold)) <= 0;
 }
 
+/* Section 16: everything worn together may add at most 20 % to either speed.
+   The one exception is the exceptional roll -- a bonus that came out above its
+   cap raises the ceiling to its own value, which is what makes such a piece
+   worth wearing at all. Rebirth's attack speed is not equipment and is not
+   capped here. */
+const SPEED_AFFIX_CAP = 20;
+function speedCapFor(s, key) {
+  let cap = SPEED_AFFIX_CAP;
+  Object.values(s.equipped).forEach((it) => {
+    if (!it || !it.affixes) return;
+    it.affixes.forEach((a) => {
+      if (a.key === key && affixIsExceptional(a)) cap = Math.max(cap, a.value);
+    });
+  });
+  return cap;
+}
 function computeDerived(s) {
   let equipHP = 0, equipDmg = 0;
   Object.keys(s.equipped).forEach((slot) => {
@@ -2679,9 +2702,11 @@ function computeDerived(s) {
   const critChance = Math.min(CRIT_CHANCE_CAP, BASE.critChance + s.stats.crit * STATS.CRIT.perPoint + A("crit"));
   const critMult = BASE.critMult + rb(s, "critdmg") / 100 + A("critdmg") / 100;
   const critRed = Math.min(CRIT_RED_CAP, s.stats.critred * STATS.CRITRED.perPoint);
-  const attackSpeed = BASE.attackSpeed * (1 + rb(s, "atkspeed") / 100) * (1 + A("atkspeed") / 100)
+  const atkSpeedAffix = Math.min(speedCapFor(s, "atkspeed"), A("atkspeed"));
+  const moveSpeedAffix = Math.min(speedCapFor(s, "movespeed"), A("movespeed"));
+  const attackSpeed = BASE.attackSpeed * (1 + rb(s, "atkspeed") / 100) * (1 + atkSpeedAffix / 100)
     * (el === "electrique" ? 1.08 : 1);
-  const moveSpeed = BASE.moveSpeed * (1 + A("movespeed") / 100);
+  const moveSpeed = BASE.moveSpeed * (1 + moveSpeedAffix / 100);
   const weapon = (s.equipped.arme && s.equipped.arme.weaponType) || "epee";
 
   const power = Math.floor(maxHP * 0.15 + damage * 12 + s.level * 40 + s.rebirth.pr * 25 +
@@ -2736,11 +2761,16 @@ const AFFIX_DEFS = [
   { key: "melee",     label: "Dégâts corps à corps",   icon: "sword",   cap: 60 },
   { key: "crit",      label: "Chance critique",        icon: "target",  cap: 16 },
   { key: "ranged",    label: "Dégâts à distance",      icon: "forward", cap: 20 },
-  { key: "atkspeed",  label: "Vitesse d'attaque",      icon: "bolt",    cap: 50 },
+  /* Section 16: both speed bonuses cap at 20 rather than 50 and 30. The cap is
+     per bonus, and a full set of eight lands close to the stated ceiling --
+     measured at +19.6 % on a DIVIN set for each of the two, against +49.1 % and
+     +29.4 % before. `exceptional` is the old ceiling, still reachable, but now
+     only on the rare roll below. */
+  { key: "atkspeed",  label: "Vitesse d'attaque",      icon: "bolt",    cap: 20, exceptional: 50 },
   { key: "critdmg",   label: "Dégâts critiques",       icon: "sparkle", cap: 100 },
   { key: "skilldmg",  label: "Dégâts des Compétences", icon: "eclat",   cap: 50 },
   { key: "skillcd",   label: "Recharge Compétences",   icon: "clock",   cap: 10, negative: true },
-  { key: "movespeed", label: "Vitesse de déplacement", icon: "boot",    cap: 30 },
+  { key: "movespeed", label: "Vitesse de déplacement", icon: "boot",    cap: 20, exceptional: 30 },
   { key: "double",    label: "Double attaque",         icon: "swords",  cap: 20 },
 ];
 const AFFIX_BY_KEY = {};
@@ -2763,13 +2793,27 @@ const AFFIX_TIERS = {
 function affixRound(def, v) {
   return def.cap <= 20 ? Math.round(v * 10) / 10 : Math.round(v);
 }
+/* Section 16: one roll in two thousand ignores the cap. It is the only way to
+   pass it, it applies to the two bonuses the section caps, and it reaches no
+   further than the ceiling those bonuses used to have -- so the old maximum
+   still exists, as something you find rather than something you accumulate. */
+const AFFIX_EXCEPTIONAL_PCT = 0.05;
+function affixIsExceptional(a) {
+  const def = AFFIX_BY_KEY[a.key];
+  return !!def && !!def.exceptional && a.value > def.cap;
+}
 /* roll one bonus value for a given rarity, never above the absolute cap */
 function rollAffixValue(def, rarity) {
   const t = AFFIX_TIERS[rarity] || AFFIX_TIERS.COMMUN;
   const q = Math.pow(Math.random(), t.bias);          // 0..1, skewed by rarity
   const frac = t.lo + (t.hi - t.lo) * q;
-  return Math.max(affixRound(def, def.cap * t.lo),
+  const v = Math.max(affixRound(def, def.cap * t.lo),
     Math.min(def.cap, affixRound(def, def.cap * frac)));
+  if (def.exceptional && Math.random() * 100 < AFFIX_EXCEPTIONAL_PCT) {
+    // above the cap, up to what the bonus used to be able to reach
+    return affixRound(def, def.cap + (def.exceptional - def.cap) * Math.random());
+  }
+  return v;
 }
 /* draw `count` DISTINCT bonus types, each with its own independent value */
 function rollAffixes(rarity) {
@@ -2796,7 +2840,8 @@ function affixColor(a) {
 function affixText(a) {
   const def = AFFIX_BY_KEY[a.key];
   if (!def) return "";
-  return (def.negative ? "-" : "+") + a.value + "% " + def.label;
+  return (def.negative ? "-" : "+") + a.value + "% " + def.label +
+    (affixIsExceptional(a) ? " ✦" : "");
 }
 /* every affix on equipped gear, summed by key */
 function equippedAffixes(s) {
@@ -8353,6 +8398,8 @@ if (SMOKE) {
     TREE_NODES,
     get forgeAnim() { return forgeAnim; }, set forgeAnim(v) { forgeAnim = v; },
     FORGE_ANIM_MS, EQUIP_RARITY_ORDER, RARITY_MUL, SINGLE_STAT_MUL,
+    BASE, AFFIX_BY_KEY, AFFIX_DEFS, AFFIX_EXCEPTIONAL_PCT, WEAPON_TYPES,
+    SPEED_AFFIX_CAP,
   };
 }
 
