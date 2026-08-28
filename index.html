@@ -1577,7 +1577,28 @@ const FORGE_CRAFT_COST = 10;
 const FORGE_UPG_BASE = 2600, FORGE_UPG_GROWTH = 1.0725, FORGE_UPG_TAPER = 1.003;
 /* the Forge gauge: this many successful forges fill it for a given level.
    Both the gauge AND the gold are required before an upgrade can start. */
-function forgeProgressNeed(level) { return 5 + Math.floor(level * 1.5); }
+/* Section 10: from Forge 15 the gauge asks for progressively more, sized
+   against the Minerai economy that batches 8 and 9 left behind rather than the
+   one that came before them.
+
+   Income now: a Raid Minerai pays 500 to 990 without a star, 850 to 1340 with
+   one, and the Recolte gives 250 to 670 an hour. Forging costs a flat 10, so a
+   gauge point is 10 Minerai and nothing else.
+
+   With the old gauge the whole climb from 1 to 50 cost 20700 Minerai -- about
+   21 raids, which is nothing. The ramp below takes it to 117200, roughly 119
+   raids unstarred or 88 with a star: a long goal rather than an afternoon.
+
+   It is a ramp, not a flat multiplier: 27 -> 34 pieces at level 15, 50 -> 250 at
+   30, 80 -> 800 at 50. Levels 1 to 14 are untouched, so nothing about the early
+   game moves. */
+const FORGE_GAUGE_RAMP_FROM = 15;
+const FORGE_GAUGE_RAMP_K = 0.25;
+function forgeProgressNeed(level) {
+  const base = 5 + Math.floor(level * 1.5);
+  if (level < FORGE_GAUGE_RAMP_FROM) return base;
+  return Math.round(base * (1 + FORGE_GAUGE_RAMP_K * (level - FORGE_GAUGE_RAMP_FROM + 1)));
+}
 function forgeUpgradeCost(level) {
   const n = level - 1;
   return Math.floor(FORGE_UPG_BASE * Math.pow(FORGE_UPG_GROWTH, n) * Math.pow(FORGE_UPG_TAPER, n * n));
@@ -4353,8 +4374,13 @@ function forgeSummon(n) {
       }
       st.forge.summonCount += 1;
       // the gauge counts paid forges, not the free bonus results
-      st.forge.progress = Math.min(forgeProgressNeed(st.forge.level),
-        (st.forge.progress || 0) + 1);
+      // Section 10: an upgrade in flight freezes the gauge. Forging still works
+      // and still yields equipment -- it simply stops counting towards the next
+      // level until the current one lands.
+      if (!(st.forge.upgradeEnd > Date.now())) {
+        st.forge.progress = Math.min(forgeProgressNeed(st.forge.level),
+          (st.forge.progress || 0) + 1);
+      }
     }
     st.eventProgress.forge = (st.eventProgress.forge || 0) + results.length;
   });

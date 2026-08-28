@@ -455,6 +455,43 @@ function run(W) {
     if (r.length !== 5 || H.S.minerai !== 5) return "55 Minerai n'achètent pas exactement 5 pièces";
     return true;
   });
+  check("la jauge monte à partir du niveau 15, strictement et sans palier plat", function () {
+    const anc = function (l) { return 5 + Math.floor(l * 1.5); };
+    for (let l = 1; l < 15; l++) {
+      if (W.forgeProgressNeed(l) !== anc(l)) return "le niveau " + l + " a bougé alors qu'il est avant 15";
+    }
+    if (W.forgeProgressNeed(15) <= anc(15)) return "le niveau 15 n'a pas augmenté";
+    const v = [];
+    for (let l = 1; l <= 50; l++) v.push(W.forgeProgressNeed(l));
+    for (let i = 1; i < v.length; i++) {
+      if (v[i] <= v[i - 1]) return "la courbe ne monte pas au niveau " + (i + 1);
+    }
+    if (v[49] < v[14] * 5) return "l'augmentation n'est pas sensible au niveau 50";
+    return true;
+  });
+  check("la jauge ne progresse pas pendant une amélioration", function () {
+    const prep = function () {
+      set(function (st) {
+        st.forge = { level: 20, progress: 0, summonCount: 0, masteryLevel: 0,
+          masteryProgress: 0, autoForge: false, upgradeEnd: 0 };
+        st.minerai = 99999; st.inventory = [];
+        st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+        st.ascension = 0; st.stars = { pet: 0, forge: 0, skill: 0 };
+      });
+    };
+    prep(); W.forgeSummon(5);
+    if (H.S.forge.progress !== 5) return "hors amélioration la jauge ne monte pas";
+    prep();
+    W.update(function (st) { st.forge.upgradeEnd = Date.now() + 60000; });
+    const inv = H.S.inventory.length;
+    W.forgeSummon(5);
+    if (H.S.forge.progress !== 0) return "la jauge a monté pendant l'amélioration";
+    if (H.S.inventory.length - inv !== 5) return "forger ne produit plus d'équipement pendant l'amélioration";
+    W.update(function (st) { st.forge.upgradeEnd = 0; });
+    W.forgeSummon(3);
+    if (H.S.forge.progress !== 3) return "la jauge ne repart pas après l'amélioration";
+    return true;
+  });
   check("les emplacements d'éclosion ne bloquent jamais une invocation", function () {
     set(function (st) {
       st.level = 40; st.eggs = []; st.pets = []; st.activePetId = null;
