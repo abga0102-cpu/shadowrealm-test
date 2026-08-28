@@ -1552,7 +1552,17 @@ function rollRarity(rates, order) {
   return "COMMUN";
 }
 
-function forgeCost(forgeLevel) { return Math.floor(20 * Math.pow(1.14, forgeLevel) + 10); }
+/* Section 9: forging one piece costs exactly 10 Minerai, whatever the Forge
+   level. It used to be 20 x 1.14^level + 10, which read 32 at level 1 and 14014
+   at level 50 -- the single largest Minerai sink in the game. A batch simply
+   pays ten a piece: x20 costs 200.
+
+   The parameter stays so the three call sites keep reading the same way, and so
+   the day a level is meant to matter again there is somewhere obvious to put
+   it. Note this is not the tree's "Forge Amelioration Cout", which discounts the
+   gold price of an upgrade and is untouched. */
+function forgeCost(forgeLevel) { return FORGE_CRAFT_COST; }
+const FORGE_CRAFT_COST = 10;
 /* THE gold sink, and the reason gold is worth managing at all. Tuned against
    the full income model -- floors + Raid Or + Récolte + the Rebirth gold bonus,
    for a player who plays ~2h a day and spends every Raid key, with the Raid Or

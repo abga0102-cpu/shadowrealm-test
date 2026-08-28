@@ -429,6 +429,32 @@ function run(W) {
     set(function (st) { st.raids.minerai.stars = 0; });
     return bad.length ? bad.slice(0, 3).join(", ") : true;
   });
+  group("FORGE");
+  check("forger coûte 10 Minerai par pièce, à tous les niveaux", function () {
+    const levels = [1, 5, 10, 15, 20, 30, 40, 50];
+    const bad = levels.filter(function (l) { return W.forgeCost(l) !== 10; });
+    if (bad.length) return "coût variable aux niveaux " + bad.join(", ");
+    const prep = function (niv, min) {
+      set(function (st) {
+        st.forge = { level: niv, progress: 0, summonCount: 0, masteryLevel: 0,
+          masteryProgress: 0, autoForge: false, upgradeEnd: 0 };
+        st.minerai = min; st.inventory = []; st.ascension = 0;
+        st.stars = { pet: 0, forge: 0, skill: 0 };
+        st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+      });
+    };
+    prep(1, 10000); W.forgeSummon(1);
+    if (10000 - H.S.minerai !== 10) return "une pièce coûte " + (10000 - H.S.minerai);
+    prep(30, 10000); W.forgeSummon(20);
+    const b30 = 10000 - H.S.minerai;
+    prep(50, 10000); W.forgeSummon(20);
+    const b50 = 10000 - H.S.minerai;
+    if (b30 !== 200) return "un lot de 20 coûte " + b30 + " au niveau 30";
+    if (b50 !== 200) return "un lot de 20 coûte " + b50 + " au niveau 50";
+    prep(40, 55); const r = W.forgeSummon(10);
+    if (r.length !== 5 || H.S.minerai !== 5) return "55 Minerai n'achètent pas exactement 5 pièces";
+    return true;
+  });
   check("les emplacements d'éclosion ne bloquent jamais une invocation", function () {
     set(function (st) {
       st.level = 40; st.eggs = []; st.pets = []; st.activePetId = null;
