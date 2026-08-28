@@ -351,6 +351,48 @@ function run(W) {
     return orph.length ? orph.length + " inatteignables" : true;
   });
 
+  // ---------------------------------------------------------------- ascension
+  group("ASCENSION — quatre pistes indépendantes");
+  check("les quatre pistes existent", function () {
+    const ok = !!(H.ASCENSION && W.canAscendRaid && W.doAscendRaid);
+    return ok ? true : "une piste manque";
+  });
+  check("chaque raid ascensionne seul, clés et record conservés", function () {
+    set(function (st) {
+      st.level = 60;
+      Object.keys(st.raids).forEach(function (r) {
+        st.raids[r].level = 10; st.raids[r].keys = 4; st.raids[r].record = 33; st.raids[r].stars = 0;
+      });
+      st.raids.minerai.level = H.RULES.RAID_MAX_LEVEL;
+    });
+    if (W.canAscendRaid(H.S, "or")) return "un raid à 10 peut ascensionner";
+    if (!W.canAscendRaid(H.S, "minerai")) return "un raid à 50 ne peut pas ascensionner";
+    W.doAscendRaid("minerai");
+    const m = H.S.raids.minerai;
+    if (m.level !== 1) return "le niveau n'est pas revenu à 1";
+    if (m.stars !== 1) return "l'étoile n'a pas été accordée";
+    if (m.keys !== 4 || m.record !== 33) return "clés ou record perdus";
+    const others = ["or", "competence", "familier", "evolution"];
+    const moved = others.filter(function (k) { return H.S.raids[k].level !== 10 || H.S.raids[k].stars !== 0; });
+    return moved.length ? "raids touchés à tort : " + moved.join(", ") : true;
+  });
+  check("les Maîtrises reviennent à 0 et rien d'autre n'est effacé", function () {
+    set(function (st) {
+      st.petMastery = { level: 50, count: 0, progress: 9 };
+      st.skillMastery = { level: 50, count: 0, progress: 9 };
+      st.forge.level = H.RULES.FORGE_MAX;
+      st.essence = 5000; st.eclat = 4000; st.minerai = 7000;
+    });
+    W.doAscendMastery("pet"); W.doAscendMastery("skill"); W.doAscendMastery("forge");
+    if (H.S.petMastery.level !== 0) return "Maîtrise Familier à " + H.S.petMastery.level + " au lieu de 0";
+    if (H.S.skillMastery.level !== 0) return "Maîtrise Compétence à " + H.S.skillMastery.level + " au lieu de 0";
+    if (H.S.forge.level !== 1) return "Forge à " + H.S.forge.level + " au lieu de 1";
+    if (H.S.essence !== 5000) return "Essence effacée";
+    if (H.S.eclat !== 4000) return "Éclat effacé";
+    if (H.S.minerai !== 7000) return "Minerai effacé";
+    return true;
+  });
+
   // ---------------------------------------------------------------- gear
   group("ÉQUIPEMENT — les huit pièces de la section 14");
   check("8 emplacements, chacun avec la bonne statistique", function () {

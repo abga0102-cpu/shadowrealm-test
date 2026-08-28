@@ -1404,6 +1404,32 @@ function masteryLevel(s, sys) {
 }
 function canAscend(s, sys) { return masteryLevel(s, sys) >= masteryMax(sys); }
 
+/* ---------------------------- Ascension de Raid ----------------------------
+   The fourth track. Each raid keeps its own level from 1 to 50, and section 5
+   measures the new difficulty against "le niveau 1 du meme Raid", so each raid
+   carries its own star and ascends on its own. Ascending one leaves the other
+   four exactly where they were.
+
+   What it takes: the level, and only the level. Keys are what you spend to
+   enter a raid, so they survive for the same reason Essence and Minerai do --
+   a player who ascends should be able to start climbing again immediately. The
+   record stands as well; it is history, not progress. */
+function raidStars(s, rid) { return (s.raids[rid] && s.raids[rid].stars) || 0; }
+function canAscendRaid(s, rid) {
+  const r = s.raids[rid];
+  return !!r && r.level >= RULES.RAID_MAX_LEVEL;
+}
+function doAscendRaid(rid) {
+  if (!canAscendRaid(S, rid)) return { ok: false };
+  update((st) => {
+    const r = st.raids[rid];
+    r.stars = (r.stars || 0) + 1;
+    r.level = 1;
+    // r.keys and r.record are deliberately untouched
+  });
+  return { ok: true, stars: raidStars(S, rid) };
+}
+
 /* What each Ascension costs and what it spares. The rule from the brief: every
    resource and every piece of progress the system produced is wiped, EXCEPT the
    currency used to summon or craft with it -- so the player can start rebuilding
@@ -1430,10 +1456,10 @@ function ascensionPreview(s, sys) {
   const common = { stars: st, nextStars: st + 1,
     baseNow: Math.round(Math.pow(mul, st) * 100),
     baseAfter: Math.round(Math.pow(mul, st + 1) * 100),
-    masteryFrom: masteryLevel(s, sys), masteryTo: 1 };
+    masteryFrom: masteryLevel(s, sys), masteryTo: sys === "forge" ? 1 : 0 };
   if (sys === "pet") return Object.assign(common, {
     label: "Familier",
-    reset: [["Maîtrise Familier", masteryLevel(s, "pet") + " → 1"],
+    reset: [["Maîtrise Familier", masteryLevel(s, "pet") + " → 0"],
             ["Familiers possédés", fmt(s.pets.length)],
             ["Œufs en cours", fmt(s.eggs.length)]],
     keep: [["Essence animale", fmt(s.essence)], ["Emplacements d'Œuf", fmt(s.eggSlots)]],
@@ -1448,7 +1474,7 @@ function ascensionPreview(s, sys) {
     gain: "Puissance de base des équipements ×" + mul });
   return Object.assign(common, {
     label: "Compétence",
-    reset: [["Maîtrise Compétence", masteryLevel(s, "skill") + " → 1"],
+    reset: [["Maîtrise Compétence", masteryLevel(s, "skill") + " → 0"],
             ["Compétences possédées", fmt(Object.keys(s.skills).length)],
             ["Emplacements équipés", fmt(s.skillSlots.filter(Boolean).length)]],
     keep: [["Points de Compétence", fmt(s.eclat)]],
@@ -1460,7 +1486,8 @@ function doAscendMastery(sys) {
   update((st) => {
     st.stars[sys] = starsOf(st, sys) + 1;
     if (sys === "pet") {
-      st.petMastery = { level: 1, count: 0, progress: 0 };
+      // section 1: the ladder comes back at 0/50, which is where a new save starts
+      st.petMastery = { level: 0, count: 0, progress: 0 };
       st.pets = []; st.eggs = []; st.activePetId = null;
       // essence and the egg slots bought with gems both survive
     } else if (sys === "forge") {
@@ -1471,7 +1498,7 @@ function doAscendMastery(sys) {
       st.poussiere = 0;      // it only exists because of forged gear
       // minerai survives
     } else {
-      st.skillMastery = { level: 1, count: 0, progress: 0 };
+      st.skillMastery = { level: 0, count: 0, progress: 0 };
       st.skills = {};
       st.skillSlots = st.skillSlots.map(() => null);
       // eclat survives
@@ -2133,9 +2160,9 @@ function defaultState(name) {
     /* one Ascension star count per system, never lost */
     stars: { pet: 0, forge: 0, skill: 0 },
     raids: {
-      or:         { level: 1, keys: 3, record: 0 },
-      minerai:    { level: 1, keys: 3, record: 0 },
-      competence: { level: 1, keys: 3, record: 0 },
+      or:         { level: 1, keys: 3, record: 0, stars: 0 },
+      minerai:    { level: 1, keys: 3, record: 0, stars: 0 },
+      competence: { level: 1, keys: 3, record: 0, stars: 0 },
       familier:   { level: 1, keys: 3, record: 0 },
       evolution:  { level: 1, keys: 3, record: 0 },
     },
@@ -2171,6 +2198,8 @@ function migrate(s, name) {
     stats: Object.assign({}, base.stats, s.stats || {}),
     forge: Object.assign({}, base.forge, s.forge || {}),
     raids: Object.assign({}, base.raids, s.raids || {}),
+    // every raid carries its own Ascension star now
+    _raidStars: 1,
     rebirth: Object.assign({}, base.rebirth, s.rebirth || {}),
     tree: Object.assign({}, base.tree, s.tree || {}),
     accels: Object.assign({}, base.accels, s.accels || {}),
@@ -2200,6 +2229,11 @@ function migrate(s, name) {
   if (Array.isArray(merged.inventory)) {
     merged.inventory.forEach((it) => { if (it && it.slot === "accessoire") it.slot = "anneau"; });
   }
+
+  delete merged._raidStars;
+  Object.keys(merged.raids).forEach((rid) => {
+    if (typeof merged.raids[rid].stars !== "number") merged.raids[rid].stars = 0;
+  });
 
   if (!merged.tree.levels || typeof merged.tree.levels !== "object") merged.tree.levels = {};
   /* The tree was rebuilt from 74 thematic nodes to 130 laid out as four
@@ -5601,6 +5635,32 @@ function harvestModalHTML() {
 
 /* Nothing here is reversible, so the dialog spells out every consequence and
    the confirm button is deliberately the second step, not the first. */
+function showRaidAscendModal(rid) {
+  if (!canAscendRaid(S, rid)) return;
+  const meta = RAIDS[rid], r = S.raids[rid];
+  const line = (icon, col, label, val) =>
+    '<div class="kv"><span class="dim row gap6">' + ic(icon, 11) + esc(label) + "</span>" +
+    '<b style="color:' + col + '">' + esc(val) + "</b></div>";
+  openModal(
+    '<div class="center" style="margin-bottom:10px">' +
+      '<div class="bb" style="font-size:22px;color:var(--goldLit);letter-spacing:2px">★</div>' +
+      '<div class="mute tiny b mt4">' + raidStars(S, rid) + " ★ → " + (raidStars(S, rid) + 1) + " ★</div></div>" +
+    '<div class="notice" style="border-left-color:' + meta.color + '">' +
+      esc(meta.name) + " repart au niveau 1.</div>" +
+    '<div class="sect" style="margin:12px 0 6px">Réinitialisé</div>' +
+    line("cross", "var(--redLit)", "Niveau du raid", r.level + " → 1") +
+    '<div class="sect" style="margin:12px 0 6px">Conservé</div>' +
+    line("check", "var(--greenLit)", "Clés de ce raid", String(r.keys)) +
+    line("check", "var(--greenLit)", "Record", String(r.record)) +
+    line("check", "var(--greenLit)", "Les quatre autres raids", "intacts") +
+    '<div class="notice center mt10 tiny b" style="color:var(--redLit);border-left-color:var(--red)">' +
+      "Cette action est définitive.</div>" +
+    '<div class="col gap6 mt10">' +
+      btn(ic("star", 14) + "Ascensionner " + esc(meta.name), { cls: "purple", small: true,
+        act: "ascendRaidDo", arg: rid }) +
+      btn("Annuler", { cls: "dark", small: true, act: "closeModal" }) + "</div>",
+    "Ascension · " + esc(meta.name));
+}
 function showAscendModal(sys) {
   if (!ASCENSION[sys] || !canAscend(S, sys)) return;
   const p = ascensionPreview(S, sys);
@@ -6541,7 +6601,9 @@ function scrRaid() {
     const r = S.raids[id], meta = RAIDS[id];
     const bonus = S.raidKeyBonus === id ? 1 : 0;
     const cap = RULES.RAID_KEY_CAP + bonus;
-    const detail = "Niv " + r.level + "/" + RULES.RAID_MAX_LEVEL + " · rec " + r.record +
+    const st = raidStars(S, id);
+    const detail = (st ? "★" + st + " · " : "") +
+      "Niv " + r.level + "/" + RULES.RAID_MAX_LEVEL + " · rec " + r.record +
       " · " + raidEnemyCount(id, r.level) + " ennemis · " + fmt(raidEnemyHP(id, r.level)) + " PV";
     return '<div class="raidCard" style="border-left-color:' + meta.color + '" title="' + esc(detail) +
       " · " + fmt(raidEnemyDamage(id, r.level)) + ' dégâts">' +
@@ -6556,7 +6618,13 @@ function scrRaid() {
           dis: r.keys <= 0, style: "width:auto;padding:5px 9px" }) +
         btn(ic("star", 12), { small: true, cls: "ghost", act: "startRaid", arg: id, arg2: "1",
           dis: S.universalKeys <= 0, style: "width:auto;padding:5px 8px" }) +
-      "</div></div>";
+      "</div>" +
+      // a raid at its ceiling offers its own Ascension, and only that raid's
+      (canAscendRaid(S, id)
+        ? '<div class="mt6">' + btn(ic("star", 13) + "ASCENSION ★ — niveau maximum",
+            { cls: "purple", small: true, act: "ascendRaidAsk", arg: id }) + "</div>"
+        : "") +
+      "</div>";
   }).join("");
 
   return topbar("Raids", '<span class="pill" data-act="resInfo" data-arg="key" style="cursor:pointer;color:var(--goldLit);border-color:var(--goldDim)">' + ic("key", 11) + S.universalKeys + "</span>") +
@@ -7624,6 +7692,13 @@ const ACT = {
   goModal: (a) => { closeModal(); nav(a); },
   harvest: () => showHarvestModal(),
   ascendAsk: (a) => showAscendModal(a),
+  ascendRaidAsk: (a) => showRaidAscendModal(a),
+  ascendRaidDo: (a) => {
+    const r = doAscendRaid(a);
+    closeModal();
+    if (!r.ok) { toast("Ce raid n'est pas encore au niveau " + RULES.RAID_MAX_LEVEL); return; }
+    toast("Ascension " + RAIDS[a].reward + " ★ " + r.stars, true);
+  },
   ascendDo: (a) => {
     const r = doAscendMastery(a);
     closeModal();
@@ -7880,7 +7955,7 @@ if (/[?&]smoke=1(?:&|$)/.test(location.search)) {
     // the data tables are `const` too, so they are just as invisible
     SLOTS, SKILL_DEFS, SCREENS, RESOURCE_INFO, TREE_NODES, TREE_BY_ID,
     ENEMY_TYPES, ELITE_DEFS, BOSS_DEFS, RAID_BOSSES, EGG_TIMERS, AW,
-    MASTERY_STAT,
+    MASTERY_STAT, ASCENSION, RULES,
   };
 }
 
