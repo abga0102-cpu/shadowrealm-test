@@ -769,7 +769,9 @@ const ASSETS = {
   icon_armure:                 "art/icons/armure.png",
   icon_gants:                  "art/icons/gants.png",
   icon_bottes:                 "art/icons/bottes.png",
-  icon_accessoire:             "art/icons/accessoire.png",
+  // the accessory slot became Collier / Anneau / Ceinture; its art was a ring,
+  // so the Anneau keeps it. The other two use vector glyphs for now.
+  icon_anneau:                 "art/icons/accessoire.png",
   /* held weapons, one per type, and the three projectiles */
   weapon_epee:                 "art/weapons/epee.png",
   weapon_hache:                "art/weapons/hache.png",
@@ -1333,8 +1335,12 @@ const WEAPON_TYPES = {
 };
 const WEAPON_LIST = Object.keys(WEAPON_TYPES);
 
-const SLOTS = ["arme", "casque", "armure", "gants", "bottes", "accessoire"];
-const SLOT_LABEL = { arme: "Arme", casque: "Casque", armure: "Armure", gants: "Gants", bottes: "Bottes", accessoire: "Accessoire" };
+/* Eight pieces, exactly the eight the design names. "accessoire" was one
+   generic slot doing the work of Collier, Anneau and Ceinture, which left
+   three tree families pointing at gear that did not exist. */
+const SLOTS = ["arme", "casque", "armure", "gants", "bottes", "collier", "anneau", "ceinture"];
+const SLOT_LABEL = { arme: "Arme", casque: "Casque", armure: "Armure", gants: "Gants",
+  bottes: "Chaussures", collier: "Collier", anneau: "Anneau", ceinture: "Ceinture" };
 /* An equipped weapon carries its own type, so the Arme slot has to show THAT
    weapon rather than a generic sword — a Bâton was being drawn as an épée
    everywhere in the inventory and on the equipment screen. */
@@ -1344,10 +1350,12 @@ function slotIcon(slot, size, item) {
   return a ? '<img src="' + a + '" style="width:' + size + "px;height:" + size +
     'px;object-fit:contain;vertical-align:middle;display:inline-block">' : ic(SLOT_ICON[slot] || "sword", size);
 }
-/* which stat each slot is built around -- mirrors makeItem's own split */
-const MASTERY_STAT = { arme: "dmg", gants: "dmg", accessoire: "dmg",
-  casque: "hp", armure: "hp", bottes: "hp" };
-const SLOT_ICON  = { arme: "sword", casque: "helm", armure: "armor", gants: "glove", bottes: "boot", accessoire: "ring" };
+/* Which stat each piece is built around -- section 14, verbatim. makeItem
+   reads this table rather than repeating the split. */
+const MASTERY_STAT = { arme: "dmg", gants: "dmg", collier: "dmg", anneau: "dmg",
+  casque: "hp", armure: "hp", bottes: "hp", ceinture: "hp" };
+const SLOT_ICON  = { arme: "sword", casque: "helm", armure: "armor", gants: "glove",
+  bottes: "boot", collier: "gem", anneau: "ring", ceinture: "chain" };
 const RARITY_MUL = { COMMUN: 1, RARE: 1.8, EPIQUE: 3.2, MYTHIQUE: 5.6,
   HEROIQUE: 8.5, ANCESTRAL: 12.5, LEGENDAIRE: 18, DIVIN: 28 };
 
@@ -2114,7 +2122,8 @@ function defaultState(name) {
     stats: { sante: 0, degats: 0, crit: 0, critred: 0 },
     gold: 100, gems: 0, minerai: 400, poussiere: 0, eclat: 80, essence: 60,
     floor: 1, step: 1, recordFloor: 1, checkpoint: 1, bossClears: {},
-    equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null, accessoire: null },
+    equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null,
+      collier: null, anneau: null, ceinture: null },
     inventory: [],
     forge: { level: 1, progress: 0, summonCount: 0, masteryLevel: 0, masteryProgress: 0, autoForge: false, upgradeEnd: 0 },
     skills: {}, skillSlots: [null, null, null, null, null],
@@ -2178,6 +2187,20 @@ function migrate(s, name) {
 
   // ---- tree: the old save held a flat `unlocked` id list of single-level nodes.
   // Those ids no longer exist, so refund their points rather than dropping them.
+  /* The generic "accessoire" became Collier, Anneau and Ceinture. An accessory
+     was a damage piece, and so is the Anneau, so anything held or worn in that
+     slot moves there -- its stats keep meaning what they meant. */
+  if (merged.equipped && merged.equipped.accessoire !== undefined) {
+    const acc = merged.equipped.accessoire;
+    if (acc && !merged.equipped.anneau) { acc.slot = "anneau"; merged.equipped.anneau = acc; }
+    else if (acc) { acc.slot = "anneau"; merged.inventory.push(acc); }
+    delete merged.equipped.accessoire;
+  }
+  SLOTS.forEach((k) => { if (merged.equipped[k] === undefined) merged.equipped[k] = null; });
+  if (Array.isArray(merged.inventory)) {
+    merged.inventory.forEach((it) => { if (it && it.slot === "accessoire") it.slot = "anneau"; });
+  }
+
   if (!merged.tree.levels || typeof merged.tree.levels !== "object") merged.tree.levels = {};
   /* The tree was rebuilt from 74 thematic nodes to 130 laid out as four
      paliers, so every old node id is gone. Rather than quietly voiding what a
@@ -2575,9 +2598,11 @@ function makeItem(slot, rarity, forgeLevel) {
   // Forge stars raise the power of everything it can produce
   const base = (6 + forgeLevel * 2) * starMul(S, "forge");
   const wt = slot === "arme" ? WEAPON_LIST[Math.floor(Math.random() * WEAPON_LIST.length)] : undefined;
-  const dmg = (slot === "arme" || slot === "gants" || slot === "accessoire")
+  // which stat a piece leads with comes from one table now, so a new slot
+  // cannot be added without deciding what it is for
+  const dmg = MASTERY_STAT[slot] === "dmg"
     ? Math.floor(base * mul * (0.9 + Math.random() * 0.4)) : Math.floor(base * mul * 0.3);
-  const hp = (slot === "casque" || slot === "armure" || slot === "bottes")
+  const hp = MASTERY_STAT[slot] === "hp"
     ? Math.floor(base * mul * 4 * (0.9 + Math.random() * 0.4)) : Math.floor(base * mul * 1.2);
   const name = SLOT_LABEL[slot] + " " + (RARITY_NAMES[equipRank(rarity)] || "");
   return { id: rid(), slot, rarity, weaponType: wt, damage: dmg, hp, level: 0,
@@ -6148,7 +6173,7 @@ function scrInventaire() {
         '</div><div class="bb" style="font-size:13px;color:' + r.c + '">' + fmt(r.v) + "</div></div></div>").join("") + "</div></div>" +
       '<div class="seg mt10">' + filters.map((f) =>
         '<span class="' + (invFilter === f ? "on" : "") + '" data-act="invFilter" data-arg="' + f + '">' +
-        (f === "ALL" ? "Tout" : f === "accessoire" ? "Anneau" : SLOT_LABEL[f]) + "</span>").join("") + "</div>" +
+        (f === "ALL" ? "Tout" : SLOT_LABEL[f]) + "</span>").join("") + "</div>" +
       // pick a rarity, then clear every unequipped item of it in one go
       (() => {
         const n = S.inventory.filter((x) => x.rarity === recycleRarity).length;
@@ -7399,7 +7424,9 @@ const TREE_EFFECT_INFO = {
   harvestEff:  "Quantité de ressources produites par la Récolte automatique",
   mast_arme:       "Dégâts apportés par ton Arme",
   mast_gants:      "Dégâts apportés par tes Gants",
-  mast_accessoire: "Dégâts apportés par ton Anneau",
+  mast_collier:  "Dégâts apportés par ton Collier",
+  mast_anneau:   "Dégâts apportés par ton Anneau",
+  mast_ceinture: "Santé apportée par ta Ceinture",
   mast_casque:     "Santé apportée par ton Casque",
   mast_armure:     "Santé apportée par ton Armure",
   mast_bottes:     "Santé apportée par tes Chaussures",
@@ -7855,6 +7882,7 @@ if (/[?&]smoke=1(?:&|$)/.test(location.search)) {
     // the data tables are `const` too, so they are just as invisible
     SLOTS, SKILL_DEFS, SCREENS, RESOURCE_INFO, TREE_NODES, TREE_BY_ID,
     ENEMY_TYPES, ELITE_DEFS, BOSS_DEFS, RAID_BOSSES, EGG_TIMERS, AW,
+    MASTERY_STAT,
   };
 }
 

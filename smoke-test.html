@@ -346,6 +346,52 @@ function run(W) {
     return orph.length ? orph.length + " inatteignables" : true;
   });
 
+  // ---------------------------------------------------------------- gear
+  group("ÉQUIPEMENT — les huit pièces de la section 14");
+  check("8 emplacements, chacun avec la bonne statistique", function () {
+    const SPEC = { arme: "dmg", gants: "dmg", collier: "dmg", anneau: "dmg",
+      casque: "hp", armure: "hp", bottes: "hp", ceinture: "hp" };
+    if (H.SLOTS.length !== 8) return H.SLOTS.length + " emplacements au lieu de 8";
+    const bad = H.SLOTS.filter(function (k) { return H.MASTERY_STAT[k] !== SPEC[k]; });
+    return bad.length ? "mauvaise statistique : " + bad.join(", ") : true;
+  });
+  check("la forge produit les huit pièces", function () {
+    set(function (st) {
+      st.forge = { level: 30, progress: 0, summonCount: 0, upgradeEnd: 0 };
+      st.minerai = 9e15; st.inventory = []; st.ascension = 0;
+      st.stars = { pet: 0, forge: 0, skill: 0 };
+      st.skillMastery = { level: 1, progress: 0 };
+      st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+    });
+    W.forgeSummon(400);
+    const seen = {};
+    H.S.inventory.forEach(function (i) { seen[i.slot] = 1; });
+    const miss = H.SLOTS.filter(function (k) { return !seen[k]; });
+    return miss.length ? "jamais produit : " + miss.join(", ") : true;
+  });
+  check("chaque pièce mène avec la bonne statistique", function () {
+    const bad = [];
+    H.SLOTS.forEach(function (k) {
+      const it = H.S.inventory.filter(function (i) { return i.slot === k; })[0];
+      if (!it) return;
+      const dmgLed = it.damage > it.hp / 4;
+      if ((H.MASTERY_STAT[k] === "dmg") !== dmgLed) bad.push(k);
+    });
+    return bad.length ? bad.join(", ") : true;
+  });
+  check("une sauvegarde « accessoire » migre vers l'Anneau", function () {
+    const old = { v: 1, level: 40,
+      inventory: [{ id: "a1", slot: "accessoire", rarity: "RARE", damage: 50, hp: 10, power: 100 }],
+      equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null,
+        accessoire: { id: "a2", slot: "accessoire", rarity: "EPIQUE", damage: 90, hp: 20, power: 300 } } };
+    const m = W.migrate(JSON.parse(JSON.stringify(old)));
+    if (m.equipped.accessoire !== undefined) return "l'ancien emplacement subsiste";
+    if (!m.equipped.anneau || m.equipped.anneau.power !== 300) return "la pièce portée est perdue";
+    if (!H.SLOTS.every(function (k) { return k in m.equipped; })) return "emplacements manquants";
+    const left = m.inventory.filter(function (i) { return i.slot === "accessoire"; });
+    return left.length ? left.length + " objet(s) encore en « accessoire »" : true;
+  });
+
   // ---------------------------------------------------------------- campaign
   group("CAMPAGNE");
   check("les combats se résolvent aux étages 15 / 50 / 110", function () {
