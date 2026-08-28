@@ -196,6 +196,14 @@ function run(W) {
   /* A champion is "showing" when one of its own abilities says so, or when it
      has minions on the field. Asking the ability beats keeping a hand-written
      list of internal flags in step with the game. */
+  /* Two things are being asked here, and they need different fights.
+     "Does the ability fire" must not depend on a crit roll: at floor 10 the Ogre
+     Brute can die before Piétinement's first cycle at 3.5 s and before it drops
+     to the 25 % that lights Dernier souffle, so neither signal ever shows and the
+     check fails for no reason. The visibility pass therefore thickens the
+     champion so a full cycle is guaranteed. Termination is measured separately,
+     on the champion exactly as the game spawns it. */
+  function stall(e, mul) { e.maxHP *= mul; e.hp = e.maxHP; return e; }
   function showing(e) {
     const abs = W.abilitiesOf(e) || [];
     for (let i = 0; i < abs.length; i++) {
@@ -232,15 +240,24 @@ function run(W) {
         ranged: !!d.ranged, proj: d.proj || "magic" });
       W.nav("accueil"); W.render();
       H.combat = W.spawnCampaign(H.S);
-      const e = W.makeEnemy("campaign", { type: t, name: d.name, tier: d.tier,
-        floor: 60, elite: true, abil: d.ability, x: H.AW - 46 });
+      const mk = function () {
+        return W.makeEnemy("campaign", { type: t, name: d.name, tier: d.tier,
+          floor: 60, elite: true, abil: d.ability, x: H.AW - 46 });
+      };
+      // pass A -- the ability must fire, given the time to
+      const e = stall(mk(), 8);
       H.combat.enemies = [e];
-      const r = fight(null, function () { return showing(e); });
+      const vu = fight(null, function () { return showing(e); }).seen;
+      // pass B -- and the fight must end, on the champion as the game makes it
+      H.combat = W.spawnCampaign(H.S);
+      const e2 = mk();
+      H.combat.enemies = [e2];
+      const r = fight(null, function () { return false; });
       H.combat = null;
       // what this proves is that the ability fires and the fight ends. Whether
       // the hero wins at one particular gear level is balance, not a regression.
       if (r.status === "BLOQUÉ") bad.push(d.name + " : le combat ne se termine pas");
-      else if (!r.seen) bad.push(d.name + " : capacité jamais vue");
+      else if (!vu) bad.push(d.name + " : capacité jamais vue");
     });
     return bad.length ? bad.join(" | ") : true;
   });
@@ -253,10 +270,15 @@ function run(W) {
       const b = H.combat.enemies.filter(function (x) { return x.boss; })[0];
       if (!b) { bad.push("étage " + fl + " : pas de boss"); return; }
       const name = b.name;
-      const r = fight(null, function () { return showing(b); });
+      // pass A -- the ability must fire, given the time to
+      stall(b, 8);
+      const vu = fight(null, function () { return showing(b); }).seen;
+      // pass B -- and the fight must end, on the boss as the game spawns it
+      H.combat = W.spawnCampaign(H.S);
+      const r = fight(null, function () { return false; });
       H.combat = null;
       if (r.status === "BLOQUÉ") bad.push(name + " : le combat ne se termine pas");
-      else if (!r.seen) bad.push(name + " : capacité jamais vue");
+      else if (!vu) bad.push(name + " : capacité jamais vue");
     });
     return bad.length ? bad.join(" | ") : true;
   });
@@ -523,6 +545,27 @@ function run(W) {
     if (W.treeCostCut(H.S) <= 0) bad.push("Nœud Tech Coût donne une réduction négative");
     if (W.skillSummonCost(H.S) >= before.skill) bad.push("Invoquer Coût augmente le prix");
     return bad.length ? bad.join(", ") : true;
+  });
+  check("un lot ne joue qu'une animation et ne produit rien avant la fin", function () {
+    set(function (st) {
+      st.level = 40;
+      st.forge = { level: 20, progress: 0, summonCount: 0, masteryLevel: 0,
+        masteryProgress: 0, autoForge: false, upgradeEnd: 0 };
+      st.minerai = 99999; st.inventory = [];
+      st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+    });
+    H.forgeAnim = null;
+    const inv = H.S.inventory.length, min = H.S.minerai;
+    if (!W.startForgeBatch(20)) return "le lot n'a pas démarré";
+    if (!W.forgeAnimActive()) return "aucune animation en cours";
+    if (H.forgeAnim.n !== 20) return "le lot vaut " + H.forgeAnim.n + " au lieu de 20";
+    if (H.S.inventory.length !== inv) return "des pièces sont produites avant la fin";
+    if (H.S.minerai !== min) return "du Minerai est dépensé avant la fin";
+    if (W.startForgeBatch(20) !== false) return "un second appui lance une autre animation";
+    if (H.forgeAnim.n !== 20) return "le second appui a modifié le lot en cours";
+    if (H.FORGE_ANIM_MS !== 2000) return "l'animation ne dure pas 2 s";
+    H.forgeAnim = null;   // annule : le lot en attente ne produira rien
+    return true;
   });
   check("la jauge ne progresse pas pendant une amélioration", function () {
     const prep = function () {

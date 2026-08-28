@@ -532,6 +532,18 @@ body{
 /* HUD shortcuts: same chip language as the currencies, sized to the menu
    button so the top-right row stays one height. The dot rides the Recolte
    button when there is something to claim. */
+/* Section 13's forging beat: one bar that sweeps once, for the whole batch. */
+.forgeAnim{
+  position:relative;overflow:hidden;border-radius:10px;padding:9px 10px;
+  border:1px solid var(--goldDim);background:linear-gradient(180deg,#1B2942,#0D1522);
+  color:var(--goldLit);
+}
+.forgeAnimBar{
+  position:absolute;inset:0;transform-origin:left center;
+  background:linear-gradient(90deg,#E8B44A22,#E8B44A55,#E8B44A22);
+  animation:forgeSweep 2s linear forwards;
+}
+@keyframes forgeSweep{ from{transform:scaleX(0)} to{transform:scaleX(1)} }
 /* the (i) affordance, wherever a rarity needs explaining */
 /* a skill the Lord Demoniaque has sealed: still cooling down, still unusable */
 .slot.sealed{filter:grayscale(1) brightness(.6)}
@@ -2342,6 +2354,17 @@ function migrate(s, name) {
     delete merged.equipped.accessoire;
   }
   SLOTS.forEach((k) => { if (merged.equipped[k] === undefined) merged.equipped[k] = null; });
+  /* Anything worn in a slot the game does not have is dropped. computeDerived
+     sums over every value in `equipped`, so one stray key -- a slot removed by
+     an older version, or a save edited by hand -- turns the hero's damage into
+     NaN, and a NaN hero neither hits nor dies. A wearable piece is kept, in the
+     bag; anything else goes. */
+  Object.keys(merged.equipped).forEach((k) => {
+    if (SLOTS.indexOf(k) !== -1) return;
+    const it = merged.equipped[k];
+    if (it && typeof it === "object" && SLOTS.indexOf(it.slot) !== -1) merged.inventory.push(it);
+    delete merged.equipped[k];
+  });
   if (Array.isArray(merged.inventory)) {
     merged.inventory.forEach((it) => { if (it && it.slot === "accessoire") it.slot = "anneau"; });
   }
@@ -2782,7 +2805,15 @@ function update(fn) {
 function refreshDerived() { D = computeDerived(S); }
 
 /* -------- persistence -------- */
+/* The regression harness runs the game in an iframe with ?smoke=1. It must
+   start from the same state every time and must never touch a real save, so in
+   that mode the game neither reads nor writes localStorage. Without this a run
+   inherits whatever the browser happens to hold -- and a hand-edited save could
+   make every combat check fail for reasons that have nothing to do with the
+   code being tested. */
+const SMOKE = /[?&]smoke=1(?:&|$)/.test(location.search);
 function saveNow() {
+  if (SMOKE) { dirty = false; return; }
   try {
     S.lastSeen = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(S));
@@ -2790,6 +2821,7 @@ function saveNow() {
   } catch (e) { console.warn("save failed", e); }
 }
 function loadSave() {
+  if (SMOKE) return null;
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
@@ -4451,6 +4483,32 @@ function collectForgeUpgrade() {
 }
 function toggleAutoForge() { update((s) => { s.forge.autoForge = !s.forge.autoForge; }); }
 
+/* Section 13: a batch plays ONE animation and then produces everything at once.
+   forgeAnim holds the batch that is in flight; while it is set the buttons are
+   replaced by the animation and a second press is ignored, so a x20 can never
+   become twenty animations. Nothing is rolled until it finishes -- the pieces
+   are generated together, at the end. */
+const FORGE_ANIM_MS = 2000;
+let forgeAnim = null;
+function forgeAnimActive() { return !!forgeAnim; }
+function startForgeBatch(n) {
+  if (forgeAnim) return false;
+  const count = Math.max(1, parseInt(n, 10) || 1);
+  if (S.minerai < forgeCost(S.forge.level)) { toast("Minerai insuffisant"); return false; }
+  const mine = { n: count, until: Date.now() + FORGE_ANIM_MS };
+  forgeAnim = mine;
+  scheduleRender();
+  setTimeout(() => {
+    // if this batch was cleared or replaced meanwhile, it produces nothing
+    if (forgeAnim !== mine) return;
+    forgeAnim = null;
+    const r = forgeSummon(mine.n);
+    if (r.length) showForgeResult(r); else toast("Minerai insuffisant");
+    scheduleRender();
+  }, FORGE_ANIM_MS);
+  return true;
+}
+
 function equipItem(id) {
   update((s) => {
     const it = s.inventory.find((x) => x.id === id);
@@ -6100,6 +6158,12 @@ function scrAccueil() {
       "</div>" +
       upg +
       ascendCta("forge") +
+      (forgeAnimActive()
+        ? '<div class="forgeAnim mt6"><div class="forgeAnimBar"></div>' +
+          '<div class="row gap6" style="position:relative;z-index:1;justify-content:center">' +
+          ic("hammer", 15) + '<span class="b small">Forge en cours · ' + forgeAnim.n +
+          " pièce" + (forgeAnim.n > 1 ? "s" : "") + "</span></div></div>"
+        :
       '<div class="row gap6 mt6">' +
         btn('<span class="row gap6">' + ic("hammer", 14) + "Forger</span>" +
             '<span class="row gap4">' + ic("minerai", 12) + fmt(fCost) + "</span>",
@@ -6116,7 +6180,7 @@ function scrAccueil() {
             dis: S.minerai < fCost, style: "max-width:76px" }) +
         '<div class="tgl ' + (S.forge.autoForge ? "on" : "off") + '" data-act="autoForge">' +
           "<span>AUTO</span><i></i></div>" +
-      "</div>" +
+      "</div>") +
     "</div></div>" +
     '<div class="navGrid">' + navBtns.map(tile).join("") + "</div>" +
     '<div class="navGrid mt6">' + sysBtns.map(tile).join("") + "</div>" +
@@ -7889,10 +7953,7 @@ const ACT = {
   locked: (a) => toast("Débloqué au niveau " + a),
 
   // forge
-  forge: (a) => {
-    const r = forgeSummon(parseInt(a, 10));
-    if (r.length) showForgeResult(r); else toast("Minerai insuffisant");
-  },
+  forge: (a) => { startForgeBatch(a); },
   forgeUpgradeAsk: () => showForgeUpgrade(),
   forgeUpgrade: () => {
     closeModal();
@@ -8110,7 +8171,7 @@ document.getElementById("app").addEventListener("click", (e) => {
    only function declarations land on `window`. smoke-test.html needs to read
    and drive them, so they are exposed here behind an explicit query flag. A
    normal load has no ?smoke=1 and therefore no handle at all. */
-if (/[?&]smoke=1(?:&|$)/.test(location.search)) {
+if (SMOKE) {
   window.__smoke = {
     get S() { return S; },
     get D() { return D; },          set D(v) { D = v; },
@@ -8121,6 +8182,8 @@ if (/[?&]smoke=1(?:&|$)/.test(location.search)) {
     ENEMY_TYPES, ELITE_DEFS, BOSS_DEFS, RAID_BOSSES, EGG_TIMERS, AW,
     MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PR_PER_FLOOR, REBIRTH_UPGRADES, RAID_IDS,
     TREE_NODES,
+    get forgeAnim() { return forgeAnim; }, set forgeAnim(v) { forgeAnim = v; },
+    FORGE_ANIM_MS,
   };
 }
 
