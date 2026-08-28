@@ -1949,9 +1949,9 @@ const TREE_NODES = [
   { id: "n1_23", sect: "Palier I", label: "Œuf Commun Vitesse d'éclosion I", short: "Œuf Commun I", icon: "egg", color: "#9FB0C8", tier: 1, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_03", "n1_25"], lane: 2, row: 5 },
   { id: "n1_15", sect: "Palier I", label: "Arme Bonus Dégâts I", short: "Arme I", icon: "swords", color: "#FF5A5A", tier: 1, effect: "eq_arme", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_26"], lane: 3, row: 5 },
   { id: "n1_14", sect: "Palier I", label: "Animal Bonus Santé I", short: "Animal Santé I", icon: "paw", color: "#57E07A", tier: 1, effect: "petHp", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_25"], lane: 4, row: 5 },
-  { id: "sp_forge1", sect: "Palier I", label: "Multiplicateur Forge +1", short: "Multiplicateur Forge +1", icon: "anvil", color: "#E8B44A", tier: 1, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_04"], lane: 2, row: 3, special: true },
-  { id: "sp_key1", sect: "Palier I", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 1, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_09"], lane: 2, row: 4, special: true, note: "Choix du Raid" },
-  { id: "sp_slot1", sect: "Palier I", label: "+1 Slot d'Éclosion", short: "+1 Slot d'Éclosion", icon: "egg", color: "#57E07A", tier: 1, effect: "eggSlot", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_26"], lane: 3, row: 5, special: true },
+  { id: "sp_slot1", sect: "Palier I", label: "+1 Slot d'Éclosion", short: "+1 Slot d'Éclosion", icon: "egg", color: "#57E07A", tier: 1, effect: "eggSlot", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_21"], lane: 0, row: 6, special: true },
+  { id: "sp_forge1", sect: "Palier I", label: "Multiplicateur Forge +1", short: "Multiplicateur Forge +1", icon: "anvil", color: "#E8B44A", tier: 1, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_16"], lane: 1, row: 6, special: true },
+  { id: "sp_key1", sect: "Palier I", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 1, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_15"], lane: 3, row: 6, special: true, note: "Choix du Raid" },
 
   /* ---------------- PALIER II ---------------- */
   { id: "n2_17", sect: "Palier II", label: "Gants Bonus Dégâts II", short: "Gants II", icon: "glove", color: "#FF5A5A", tier: 2, effect: "eq_gants", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n1_21"], lane: 0, row: 7 },
@@ -1984,8 +1984,8 @@ const TREE_NODES = [
   { id: "n2_02", sect: "Palier II", label: "Forge Amélioration Coût II", short: "Forge Coût II", icon: "anvil", color: "#E8B44A", tier: 2, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[1], req: ["n2_28", "n2_27"], lane: 2, row: 12 },
   { id: "n2_14", sect: "Palier II", label: "Animal Bonus Santé II", short: "Animal Santé II", icon: "paw", color: "#57E07A", tier: 2, effect: "petHp", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_29"], lane: 3, row: 12 },
   { id: "n2_24", sect: "Palier II", label: "Œuf Rare Vitesse d'éclosion II", short: "Œuf Rare II", icon: "egg", color: "#3FA7FF", tier: 2, effect: "hatch_RARE", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_27"], lane: 4, row: 12 },
-  { id: "sp_forge3", sect: "Palier II", label: "Multiplicateur Forge +3", short: "Multiplicateur Forge +3", icon: "anvil", color: "#E8B44A", tier: 2, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["sp_forge1", "n2_10"], lane: 2, row: 10, special: true },
-  { id: "sp_key2", sect: "Palier II", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 2, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["n2_21"], lane: 3, row: 11, special: true, note: "Choix du Raid" },
+  { id: "sp_forge3", sect: "Palier II", label: "Multiplicateur Forge +3", short: "Multiplicateur Forge +3", icon: "anvil", color: "#E8B44A", tier: 2, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["sp_forge1", "n2_02"], lane: 2, row: 13, special: true },
+  { id: "sp_key2", sect: "Palier II", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 2, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["n2_24"], lane: 4, row: 13, special: true, note: "Choix du Raid" },
 
   /* ---------------- PALIER III ---------------- */
   { id: "n3_14", sect: "Palier III", label: "Animal Bonus Santé III", short: "Animal Santé III", icon: "paw", color: "#57E07A", tier: 3, effect: "petHp", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n2_08"], lane: 0, row: 14 },
@@ -2018,9 +2018,9 @@ const TREE_NODES = [
   { id: "n3_18", sect: "Palier III", label: "Collier Bonus Dégâts III", short: "Collier III", icon: "amulet", color: "#FF5A5A", tier: 3, effect: "eq_collier", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_12", "n3_01"], lane: 2, row: 19 },
   { id: "n3_26", sect: "Palier III", label: "Œuf Mythique Vitesse d'éclosion III", short: "Œuf Mythique III", icon: "egg", color: "#FF4D6A", tier: 3, effect: "hatch_MYTHIQUE", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_11"], lane: 3, row: 19 },
   { id: "n3_06", sect: "Palier III", label: "Bonus Or global III", short: "Or Global III", icon: "coin", color: "#F5C542", tier: 3, effect: "goldAll", per: 1, unit: "%", max: 5, times: PAL_T[2], req: ["n3_01"], lane: 4, row: 19 },
-  { id: "sp_forge5", sect: "Palier III", label: "Multiplicateur Forge +5", short: "Multiplicateur Forge +5", icon: "anvil", color: "#E8B44A", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge3", "n3_19"], lane: 2, row: 16, special: true },
-  { id: "sp_forge10", sect: "Palier III", label: "Multiplicateur Forge +10", short: "Multiplicateur Forge +10", icon: "anvil", color: "#F5C542", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge5", "n3_27"], lane: 2, row: 18, special: true },
-  { id: "sp_key3", sect: "Palier III", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 3, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["n3_23"], lane: 1, row: 19, special: true, note: "Choix du Raid" },
+  { id: "sp_forge5", sect: "Palier III", label: "Multiplicateur Forge +5", short: "Multiplicateur Forge +5", icon: "anvil", color: "#E8B44A", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge3", "n3_10"], lane: 1, row: 20, special: true },
+  { id: "sp_forge10", sect: "Palier III", label: "Multiplicateur Forge +10", short: "Multiplicateur Forge +10", icon: "anvil", color: "#F5C542", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge5", "n3_18"], lane: 2, row: 20, special: true },
+  { id: "sp_key3", sect: "Palier III", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 3, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["n3_06"], lane: 4, row: 20, special: true, note: "Choix du Raid" },
 
   /* ---------------- PALIER IV ---------------- */
   { id: "n4_29", sect: "Palier IV", label: "Chance d'obtenir 1 Compétence supplémentaire gratuitement IV", short: "Comp. Suppl. IV", icon: "spark", color: "#8FEFF4", tier: 4, effect: "skillFree", per: 1, unit: "%", max: 5, times: PAL_T[3], req: ["n3_24"], lane: 0, row: 21 },
@@ -2053,9 +2053,10 @@ const TREE_NODES = [
   { id: "n4_11", sect: "Palier IV", label: "Compétence Passive Base Santé IV", short: "Pass. Santé IV", icon: "heart", color: "#57E07A", tier: 4, effect: "passHp", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_15", "n4_10"], lane: 2, row: 26 },
   { id: "n4_09", sect: "Palier IV", label: "Compétence Dégâts IV", short: "Comp. Dég. IV", icon: "spark", color: "#9B5CF6", tier: 4, effect: "skillDmg", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_14"], lane: 3, row: 26 },
   { id: "n4_23", sect: "Palier IV", label: "Œuf Commun Vitesse d'éclosion IV", short: "Œuf Commun IV", icon: "egg", color: "#9FB0C8", tier: 4, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n4_10"], lane: 4, row: 26 },
-  { id: "sp_slot2", sect: "Palier IV", label: "+1 Slot d'Éclosion", short: "+1 Slot d'Éclosion", icon: "egg", color: "#57E07A", tier: 4, effect: "eggSlot", per: 1, unit: "", max: 1, times: PAL_T[3], req: ["n4_04"], lane: 4, row: 23, special: true },
-  { id: "sp_key4", sect: "Palier IV", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 4, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[3], req: ["n4_07"], lane: 2, row: 24, special: true, note: "Choix du Raid" },
+  { id: "sp_key4", sect: "Palier IV", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 4, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[3], req: ["n4_11"], lane: 2, row: 27, special: true, note: "Choix du Raid" },
+  { id: "sp_slot2", sect: "Palier IV", label: "+1 Slot d'Éclosion", short: "+1 Slot d'Éclosion", icon: "egg", color: "#57E07A", tier: 4, effect: "eggSlot", per: 1, unit: "", max: 1, times: PAL_T[3], req: ["n4_23"], lane: 4, row: 27, special: true },
 ];
+
 
 const TREE_BY_ID = {};
 TREE_NODES.forEach((n) => {
@@ -6635,6 +6636,24 @@ function scrArbre() {
          '<span class="pill" style="border-color:var(--purpleLit);color:var(--purpleLit)">Disponible</span>',
          '<span class="pill" style="opacity:.55">Verrouillé</span>'].join("") + "</div></div>" +
 
+      /* the sheet's bottom bar: what the tree is made of, and where you are */
+      '<div class="card mt8" style="padding:9px 11px">' +
+        '<div class="mute tiny b" style="letter-spacing:.6px;margin-bottom:6px">RÉCAPITULATIF</div>' +
+        [["30 familles × 4 profondeurs", TREE_NODES.filter((n) => !n.special).length + " / 120 nœuds"],
+         ["Clés Raid", TREE_NODES.filter((n) => n.effect === "raidKey").length + " × +1"],
+         ["Slots d'Éclosion", TREE_NODES.filter((n) => n.effect === "eggSlot").length + " × +1"],
+         ["Multiplicateurs Forge", "+1 → +3 → +5 → +10"],
+         ["Total", TREE_NODES.length + " nœuds"]].map((r) =>
+          '<div class="kv"><span class="dim">' + r[0] + '</span><b style="color:var(--goldLit)">' +
+          r[1] + "</b></div>").join("") +
+        '<div class="divider"></div>' +
+        '<div class="row gap6" style="flex-wrap:wrap">' + PALIER_BAND.map((b, i) => {
+          const pal = TREE_NODES.filter((n) => n.tier === i + 1 && !n.special);
+          const got = pal.filter((n) => treeLv(S, n.id) >= 1).length;
+          return '<span class="pill" style="color:' + b.c + ";border-color:" + b.c + '99">' +
+            b.label.replace("PROFONDEUR ", "") + " · " + got + "/" + pal.length + "</span>";
+        }).join("") + "</div></div>" +
+
       '<div class="sect" style="margin:16px 0 9px">Bonus actifs</div>' +
       '<div class="card">' + bonusRows +
         '<div class="kv"><span class="dim">Multiplicateur de Forge</span><b style="color:var(--goldLit)">×' + forgeBatch(S) + "</b></div>" +
@@ -6820,16 +6839,16 @@ function treeGraph(active, remain) {
     const op = locked ? 0.5 : st === "wait" ? 0.82 : 1;
     const glow = !locked && (st === "maxed" || st === "busy" || clickable);
 
+    /* The reference sheet puts the bonus on the node itself, not its price, so
+       you can read the tree without opening anything. The PE cost lives in the
+       detail panel, which section 27 requires it to show regardless. */
     let sub;
     if (st === "busy") sub = fmtTime(remain);
-    else if (locked) sub = "Verrouillé";
     else if (st === "maxed") sub = "MAX";
-    else {
-      const pc = treeNextCost(S, n);
-      sub = pc.amount + " " + pc.kind;
-    }
+    else if (special) sub = "0/1";
+    else sub = treeEffectValue(n, n.max);
     const subCol = st === "maxed" ? "#84E891" : st === "busy" ? "#FBDD8C"
-      : clickable ? "#FBDD8C" : "#6A7B9C";
+      : locked ? "#6A7B9C" : "#FBDD8C";
 
     // plate carries the CATEGORY colour, ring carries the STATE colour
     const plateCol = locked ? "#33415E" : shade(ty.c, st === "maxed" ? -26 : -20);
