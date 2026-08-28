@@ -488,6 +488,42 @@ function run(W) {
     });
     return drift.length ? drift.join(", ") : true;
   });
+  check("le coût en Or monte à partir du niveau 15, progressivement", function () {
+    const anc = function (l) {
+      const n = l - 1;
+      return Math.floor(2600 * Math.pow(1.0725, n) * Math.pow(1.003, n * n));
+    };
+    for (let l = 1; l < 15; l++) {
+      if (W.forgeUpgradeCost(l) !== anc(l)) return "le niveau " + l + " a bougé avant 15";
+    }
+    const mul = function (l) { return W.forgeUpgradeCost(l) / anc(l); };
+    if (mul(15) <= 1) return "le niveau 15 n'a pas augmenté";
+    if (!(mul(49) > mul(30) && mul(30) > mul(20) && mul(20) > mul(15)))
+      return "la surcharge n'est pas progressive";
+    const v = [];
+    for (let l = 1; l < 50; l++) v.push(W.forgeUpgradeCost(l));
+    for (let i = 1; i < v.length; i++) if (v[i] <= v[i - 1]) return "la courbe recule au niveau " + (i + 1);
+    return true;
+  });
+  check("les familles « Coût » réduisent bien, jamais l'inverse", function () {
+    set(function (st) {
+      st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+      st.forge.level = 30; st.eclat = 9999;
+    });
+    const before = { forge: W.forgeUpgCostFor(H.S), tech: W.treeCostCut(H.S),
+      skill: W.skillSummonCost(H.S) };
+    set(function (st) {
+      ["forgeCost", "techCost", "skillCost"].forEach(function (e) {
+        H.TREE_NODES.filter(function (n) { return n.effect === e; })
+          .forEach(function (n) { st.tree.levels[n.id] = n.max; });
+      });
+    });
+    const bad = [];
+    if (W.forgeUpgCostFor(H.S) >= before.forge) bad.push("Forge Coût augmente le prix");
+    if (W.treeCostCut(H.S) <= 0) bad.push("Nœud Tech Coût donne une réduction négative");
+    if (W.skillSummonCost(H.S) >= before.skill) bad.push("Invoquer Coût augmente le prix");
+    return bad.length ? bad.join(", ") : true;
+  });
   check("la jauge ne progresse pas pendant une amélioration", function () {
     const prep = function () {
       set(function (st) {
