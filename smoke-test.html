@@ -1,0 +1,378 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Shadowreach — contrôle de non-régression</title>
+<!--
+  Every check here exists because something actually broke during development and
+  was caught by playing rather than by testing. Open this page from the same
+  server as the game: python -m http.server 8080, then /smoke-test.html
+-->
+<style>
+  body{margin:0;background:#070C16;color:#EDF1FA;font:14px/1.5 "Segoe UI",Roboto,sans-serif}
+  header{padding:18px 22px;border-bottom:1px solid #223css}
+  header{border-bottom:1px solid #22314C}
+  h1{margin:0;font-size:19px;letter-spacing:.5px}
+  #sum{margin-top:6px;color:#8496B8;font-size:13px}
+  #out{padding:12px 22px 40px}
+  .grp{margin:18px 0 6px;font-weight:800;letter-spacing:1.2px;font-size:11px;color:#E8B44A}
+  .r{display:flex;gap:10px;padding:3px 0;border-bottom:1px solid #131C2E}
+  .t{width:64px;flex:0 0 auto;font-weight:800;font-size:11px;letter-spacing:.6px}
+  .ok .t{color:#57E07A} .ko .t{color:#FF5A5A} .sk .t{color:#8496B8}
+  .m{flex:1;color:#C9D4E8} .ko .m{color:#FFC9C9}
+  #big{padding:14px 22px;font-weight:800;font-size:15px}
+  iframe{position:fixed;left:-9999px;width:390px;height:780px;border:0}
+</style>
+<header>
+  <h1>Shadowreach — contrôle de non-régression</h1>
+  <div id="sum">chargement du jeu…</div>
+</header>
+<div id="big"></div>
+<div id="out"></div>
+<iframe id="game" src="index.html?smoke=1"></iframe>
+
+<script>
+const out = document.getElementById("out");
+let pass = 0, fail = 0, skip = 0;
+
+function group(name) {
+  const d = document.createElement("div");
+  d.className = "grp"; d.textContent = name; out.appendChild(d);
+}
+function line(state, msg) {
+  const d = document.createElement("div");
+  d.className = "r " + state;
+  d.innerHTML = '<span class="t">' + (state === "ok" ? "OK" : state === "ko" ? "ÉCHEC" : "IGNORÉ") +
+    '</span><span class="m"></span>';
+  d.querySelector(".m").textContent = msg;
+  out.appendChild(d);
+  if (state === "ok") pass++; else if (state === "ko") fail++; else skip++;
+}
+/* A check that throws is a failure, not a crashed run. */
+function check(msg, fn) {
+  let r;
+  try { r = fn(); } catch (e) { line("ko", msg + " — exception : " + e.message); return; }
+  if (r === null || r === undefined) { line("sk", msg); return; }
+  if (r === true) { line("ok", msg); return; }
+  line("ko", msg + (typeof r === "string" ? " — " + r : ""));
+}
+
+document.getElementById("game").onload = function () {
+  const W = this.contentWindow;
+  setTimeout(function () { run(W); }, 600);
+};
+
+function run(W) {
+  const H = W.__smoke;
+  if (!H) { line("ko", "le jeu n'expose pas la poignée de test (?smoke=1)"); return finish(); }
+  const set = (fn) => { W.update(fn); H.D = W.computeDerived(H.S); };
+
+  // ---------------------------------------------------------------- screens
+  group("ÉCRANS");
+  set((st) => {
+    st.level = 100; st.floor = 120; st.step = 1; st.pe = 9e9; st.gold = 9e15;
+    st.minerai = 9e12; st.gems = 9e9; st.eclat = 9e9; st.essence = 9e9;
+    st.poussiere = 9e9; st.ascension = 3; st.stars = { pet: 5, forge: 5, skill: 5 };
+    st.skillMastery = { level: 50, progress: 0 };
+    st.forge = { level: 30, progress: 5, summonCount: 0, upgradeEnd: 0 };
+    st.skills = {}; H.SKILL_DEFS.forEach((d) => { st.skills[d.id] = { level: 30, count: 0 }; });
+    st.skillSlots = ["taillade", "force", "rempart", null, null];
+    st.inventory = [W.makeItem("arme", "EPIQUE", 30)];
+    st.pets = []; st.activePetId = null;
+    st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+    H.SLOTS.forEach((s) => { st.equipped[s] = W.makeItem(s, "RARE", 30); });
+  });
+  const screens = Object.keys(H.SCREENS);
+  screens.forEach((k) => {
+    check("écran « " + k + " » se rend", function () {
+      W.nav(k); W.render(); return true;
+    });
+  });
+
+  // ---------------------------------------------------------------- modals
+  group("FENÊTRES (aucune ne doit être tronquée)");
+  function modal(label, fn) {
+    check(label, function () {
+      W.closeModal(); fn();
+      const c = W.document.querySelector("#overlay>.card");
+      if (!c) return "ne s'ouvre pas";
+      const cut = c.scrollHeight > c.clientHeight + 1;
+      W.closeModal();
+      return cut ? "contenu tronqué (" + c.scrollHeight + " > " + c.clientHeight + ")" : true;
+    });
+  }
+  modal(Object.keys(H.RESOURCE_INFO).length + " fiches de ressource", function () {
+    Object.keys(H.RESOURCE_INFO).forEach((k) => { W.closeModal(); W.showResourceInfo(k); });
+  });
+  modal(H.SKILL_DEFS.length + " fiches de compétence", function () {
+    H.SKILL_DEFS.forEach((d) => { W.closeModal(); W.showSkillCard(d.id); });
+  });
+  check(H.TREE_NODES.length + " fiches de nœud, aucune tronquée", function () {
+    const bad = [];
+    H.TREE_NODES.forEach((n) => {
+      W.closeModal(); W.showTreeNode(n.id);
+      const c = W.document.querySelector("#overlay>.card");
+      if (!c) bad.push(n.id + " vide");
+      else if (c.scrollHeight > c.clientHeight + 1) bad.push(n.id + " tronquée");
+    });
+    W.closeModal();
+    return bad.length ? bad.slice(0, 3).join(", ") : true;
+  });
+
+  // ---------------------------------------------------------------- arena
+  group("ARÈNE — le champ de bataille doit rester visible");
+  check("le sol est dans le cadre et les combattants dessus", function () {
+    set((st) => { st.floor = 20; st.step = 1; });
+    W.nav("accueil"); W.render();
+    H.combat = W.spawnCampaign(H.S);
+    W.drawArena();
+    const el = W.document.getElementById("arena");
+    if (!el) return "pas d'arène";
+    const h = el.clientHeight || 0;
+    if (h < 80) return "arène haute de " + h + "px seulement";
+    const units = W.document.querySelectorAll("#arena .unit");
+    if (!units.length) return "aucun combattant dessiné";
+    let outside = 0;
+    units.forEach((u) => {
+      const t = parseFloat(u.style.top) || 0;
+      const sz = parseFloat(u.style.height) || 0;
+      if (t < -sz || t > h) outside++;
+    });
+    return outside ? outside + " combattant(s) hors du cadre" : true;
+  });
+  check("le décor reste derrière les combattants", function () {
+    const layer = W.document.getElementById("aLayer");
+    const decor = W.document.getElementById("aDecor");
+    if (!layer || !decor) return null;
+    const zl = parseInt(W.getComputedStyle(layer).zIndex || 0, 10);
+    const zd = parseInt(W.getComputedStyle(decor).zIndex || 0, 10);
+    return zl > zd ? true : "décor z=" + zd + " devant les unités z=" + zl;
+  });
+
+  // ---------------------------------------------------------------- enemies attack
+  group("COMBAT — chaque ennemi doit réellement frapper");
+  check("les 4 types d'ennemi attaquent, mêlée comme distance", function () {
+    const silent = [];
+    H.ENEMY_TYPES.forEach((t) => {
+      set((st) => {
+        st.floor = 20; st.step = 1; st.stats = { sante: 9e6, degats: 1, crit: 0, critred: 0 };
+        st.skills = {}; st.skillSlots = [null, null, null, null, null]; st.autoSkills = false;
+      });
+      W.nav("accueil"); W.render();
+      H.combat = W.spawnCampaign(H.S);
+      const e = W.makeEnemy("campaign", { type: t, floor: 20, x: H.AW - 46 });
+      e.hp = e.maxHP = 9e8;
+      H.combat.enemies = [e];
+      const real = W.Date.now; let now = real();
+      W.Date.now = function () { return now; };
+      H.lastTick = now;
+      let hits = 0;
+      for (let i = 0; i < 700; i++) {
+        now += 16; const a = e.attacking;
+        W.tick(); if (!H.combat) break;
+        if (a <= 0 && e.attacking > 0) hits++;
+      }
+      W.Date.now = real; H.combat = null;
+      if (!hits) silent.push(t.name);
+    });
+    return silent.length ? "n'attaque(nt) jamais : " + silent.join(", ") : true;
+  });
+
+  // ---------------------------------------------------------------- champions
+  group("ÉLITES ET BOSS — capacités visibles, combats qui se terminent");
+  function fight(build, watch, budget) {
+    const real = W.Date.now; let now = real();
+    W.Date.now = function () { return now; };
+    H.lastTick = now;
+    let seen = false, status = "BLOQUÉ", frames = 0;
+    for (let i = 0; i < (budget || 5000); i++) {
+      now += 16; frames = i;
+      W.tick();
+      if (!H.combat) { status = "nul"; break; }
+      if (watch()) seen = true;
+      if (H.combat.status !== "fight") { status = H.combat.status; break; }
+    }
+    W.Date.now = real;
+    return { seen: seen, status: status, secs: +(frames * 0.016).toFixed(1) };
+  }
+  /* A champion is "showing" when one of its own abilities says so, or when it
+     has minions on the field. Asking the ability beats keeping a hand-written
+     list of internal flags in step with the game. */
+  function showing(e) {
+    const abs = W.abilitiesOf(e) || [];
+    for (let i = 0; i < abs.length; i++) {
+      if (abs[i].state && abs[i].state(e)) return true;
+    }
+    return H.combat.enemies.some(function (z) { return z.alive && z.minionOf === e.id; });
+  }
+  function gear(fl) {
+    set((st) => {
+      st.level = Math.round(fl * 1.6); st.floor = fl; st.step = 3;
+      st.forge.level = Math.max(1, Math.min(50, Math.round(fl / 3.2) + 2));
+      // a buff has to be on the bar or the Squelette Geant has nothing to steal
+      const lv = Math.max(1, Math.floor(fl / 8) + 1);
+      st.skills = { taillade: { level: lv, count: 0 }, force: { level: lv, count: 0 },
+                    rempart: { level: lv, count: 0 } };
+      st.skillSlots = ["taillade", "force", "rempart", null, null]; st.autoSkills = true;
+      st.pets = []; st.activePetId = null; st.inventory = [];
+      st.stats = { sante: 0, degats: 0, crit: 0, critred: 0 };
+      H.SLOTS.forEach((s) => { st.equipped[s] = W.makeItem(s, "RARE", st.forge.level); });
+      let p = 0; Object.values(st.equipped).forEach((it) => { if (it) p += it.power; });
+      const k = p ? (55 * fl + 120) / p : 1;
+      Object.values(st.equipped).forEach((it) => { if (it) it.power = Math.round(it.power * k); });
+    });
+  }
+  check("les 8 élites : capacité vue et combat résolu", function () {
+    const bad = [];
+    H.ELITE_DEFS.forEach((d) => {
+      gear(60);
+      const b = W.typeById(d.base);
+      const t = Object.assign({}, b, { id: d.id, name: d.name, img: d.img,
+        ranged: !!d.ranged, proj: d.proj || "magic" });
+      W.nav("accueil"); W.render();
+      H.combat = W.spawnCampaign(H.S);
+      const e = W.makeEnemy("campaign", { type: t, name: d.name, tier: d.tier,
+        floor: 60, elite: true, abil: d.ability, x: H.AW - 46 });
+      H.combat.enemies = [e];
+      const r = fight(null, function () { return showing(e); });
+      H.combat = null;
+      if (r.status !== "won") bad.push(d.name + " : " + r.status);
+      else if (!r.seen) bad.push(d.name + " : capacité jamais vue");
+    });
+    return bad.length ? bad.join(" | ") : true;
+  });
+  check("les 5 boss d'étage : capacité vue et combat résolu", function () {
+    const bad = [];
+    [10, 20, 30, 40, 50].forEach(function (fl) {
+      gear(fl);
+      W.nav("accueil"); W.render();
+      H.combat = W.spawnCampaign(H.S);
+      const b = H.combat.enemies.filter(function (x) { return x.boss; })[0];
+      if (!b) { bad.push("étage " + fl + " : pas de boss"); return; }
+      const name = b.name;
+      const r = fight(null, function () { return showing(b); });
+      H.combat = null;
+      if (r.status !== "won") bad.push(name + " : " + r.status);
+      else if (!r.seen) bad.push(name + " : capacité jamais vue");
+    });
+    return bad.length ? bad.join(" | ") : true;
+  });
+  check("les 5 raids se terminent", function () {
+    const bad = [];
+    Object.keys(H.RAID_BOSSES).forEach(function (rid) {
+      set((st) => {
+        st.level = 300; st.floor = 200; st.forge.level = 40;
+        st.skills = { taillade: { level: 30, count: 0 } };
+        st.skillSlots = ["taillade", null, null, null, null]; st.autoSkills = true;
+        st.stats = { sante: 0, degats: 0, crit: 0, critred: 0 };
+        st.pets = []; st.activePetId = null; st.inventory = [];
+        H.SLOTS.forEach((s) => { st.equipped[s] = W.makeItem(s, "HEROIQUE", 40); });
+      });
+      const w = W.spawnRaidWave(rid, 20);
+      H.combat = { ctx: "raid", raidId: rid, raidLevel: 20, floor: 20, step: 1,
+        startAt: W.Date.now(), status: "fight", enemies: w.enemies, pending: w.pending || 0,
+        heroX: 60, heroHP: H.D.maxHP, heroMaxHP: H.D.maxHP, heroAtkCd: 0.6,
+        heroAttacking: 0, heroHit: 0, floats: [], projs: [], bursts: [], hits: [],
+        skillCds: {}, skillCdMax: {}, skillFxs: [], buffs: {}, debuffs: {}, shake: 0 };
+      const r = fight(null, function () { return true; }, 20000);
+      H.combat = null;
+      if (r.status === "BLOQUÉ") bad.push(rid + " : ne se termine pas");
+    });
+    return bad.length ? bad.join(" | ") : true;
+  });
+
+  // ---------------------------------------------------------------- tree
+  group("ARBRE — la fiche de référence fait foi");
+  check("130 nœuds : 120 normaux + 10 spéciaux", function () {
+    const n = H.TREE_NODES.length;
+    const norm = H.TREE_NODES.filter(function (x) { return !x.special; }).length;
+    return (n === 130 && norm === 120) ? true : n + " nœuds dont " + norm + " normaux";
+  });
+  check("30 familles présentes une fois par palier", function () {
+    const bad = [];
+    for (let p = 1; p <= 4; p++) {
+      const pal = H.TREE_NODES.filter(function (x) { return !x.special && x.tier === p; });
+      if (pal.length !== 30) bad.push("palier " + p + " : " + pal.length);
+      const eff = {}; pal.forEach(function (x) { eff[x.effect] = (eff[x.effect] || 0) + 1; });
+      const dup = Object.keys(eff).filter(function (k) { return eff[k] !== 1; });
+      if (dup.length) bad.push("palier " + p + " doublons : " + dup.slice(0, 2));
+    }
+    return bad.length ? bad.join(", ") : true;
+  });
+  check("valeurs conformes à la liste officielle", function () {
+    const V = { forgeTime: "+10%", forgeCost: "-5%", forgeFree: "+5%", research: "+20%",
+      techCost: "-10%", goldAll: "+5%", afkGain: "+5%", afkTime: "+50%", skillDmg: "+10%",
+      passDmg: "+10%", passHp: "+10%", skillCost: "-5%", petDmg: "+10%", petHp: "+10%",
+      eq_arme: "+10%", eq_casque: "+10%", eq_gants: "+10%", eq_collier: "+10%",
+      eq_armure: "+10%", eq_anneau: "+10%", eq_bottes: "+10%", eq_ceinture: "+10%",
+      hatch_COMMUN: "+50%", hatch_RARE: "+50%", hatch_EPIQUE: "+50%",
+      hatch_MYTHIQUE: "+50%", hatch_LEGENDAIRE: "+50%", eggFree: "+5%",
+      skillFree: "+5%", peRaid: "+10%" };
+    const bad = H.TREE_NODES.filter(function (n) {
+      return !n.special && W.treeEffectValue(n, n.max) !== V[n.effect];
+    });
+    return bad.length ? bad.length + " valeurs fausses, ex. " + bad[0].label : true;
+  });
+  check("aucun nœud n'en chevauche un autre", function () {
+    const bad = [];
+    const N = H.TREE_NODES;
+    for (let i = 0; i < N.length; i++) for (let j = i + 1; j < N.length; j++) {
+      const need = (N[i].special ? 25 : 19) + (N[j].special ? 25 : 19);
+      if (Math.hypot(N[i].x - N[j].x, N[i].y - N[j].y) < need) bad.push(N[i].id + "/" + N[j].id);
+    }
+    return bad.length ? bad.slice(0, 3).join(", ") : true;
+  });
+  check("aucune liaison ne saute ni ne remonte un palier", function () {
+    let skipn = 0, back = 0;
+    H.TREE_NODES.forEach(function (n) {
+      n.req.forEach(function (r) {
+        const q = H.TREE_BY_ID[r]; if (!q) return;
+        const d = n.tier - q.tier;
+        if (d > 1) skipn++; if (d < 0) back++;
+      });
+    });
+    return (skipn || back) ? skipn + " sauts, " + back + " retours" : true;
+  });
+  check("les 130 nœuds restent atteignables", function () {
+    const seen = {};
+    H.TREE_NODES.forEach(function (n) { if (!n.req.length) seen[n.id] = 1; });
+    let ch = true;
+    while (ch) {
+      ch = false;
+      H.TREE_NODES.forEach(function (n) {
+        if (seen[n.id] || !n.req.length) return;
+        if (n.req.every(function (r) { return seen[r]; })) { seen[n.id] = 1; ch = true; }
+      });
+    }
+    const orph = H.TREE_NODES.filter(function (n) { return !seen[n.id]; });
+    return orph.length ? orph.length + " inatteignables" : true;
+  });
+
+  // ---------------------------------------------------------------- campaign
+  group("CAMPAGNE");
+  check("les combats se résolvent aux étages 15 / 50 / 110", function () {
+    const bad = [];
+    [15, 50, 110].forEach(function (fl) {
+      gear(fl);
+      W.nav("accueil"); W.render();
+      H.combat = W.spawnCampaign(H.S);
+      const r = fight(null, function () { return true; });
+      H.combat = null;
+      if (r.status === "BLOQUÉ") bad.push("étage " + fl + " ne se termine pas");
+    });
+    return bad.length ? bad.join(", ") : true;
+  });
+
+  finish();
+}
+
+function finish() {
+  const total = pass + fail + skip;
+  document.getElementById("sum").textContent =
+    total + " contrôles · " + pass + " OK · " + fail + " échecs · " + skip + " ignorés";
+  const big = document.getElementById("big");
+  big.textContent = fail === 0
+    ? "AUCUNE RÉGRESSION — " + pass + " contrôles passés."
+    : fail + " RÉGRESSION(S) DÉTECTÉE(S) — voir ci-dessous.";
+  big.style.color = fail === 0 ? "#57E07A" : "#FF5A5A";
+  big.style.background = fail === 0 ? "#0F2418" : "#2A1016";
+}
+</script>
