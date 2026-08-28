@@ -2385,6 +2385,24 @@ function migrate(s, name) {
     merged.inventory.forEach((it) => { if (it && it.slot === "accessoire") it.slot = "anneau"; });
   }
 
+  /* Gear forged before section 15 carries both stats. It is converted the same
+     way the roll was: the lead stat absorbs the secondary at 14/11 and the
+     secondary goes to zero, so a full set keeps the value it had. Upgrade
+     levels ride along, since they are already baked into the stat. */
+  const fixStat = (it) => {
+    if (!it || !MASTERY_STAT[it.slot]) return;
+    if (MASTERY_STAT[it.slot] === "dmg") {
+      if (!it.hp) return;
+      it.damage = Math.round(it.damage * SINGLE_STAT_MUL); it.hp = 0;
+    } else {
+      if (!it.damage) return;
+      it.hp = Math.round(it.hp * SINGLE_STAT_MUL); it.damage = 0;
+    }
+    it.power = it.damage + it.hp;
+  };
+  Object.keys(merged.equipped).forEach((k) => fixStat(merged.equipped[k]));
+  if (Array.isArray(merged.inventory)) merged.inventory.forEach(fixStat);
+
   /* A save from before the filter has no keep map, and one written by hand may
      have a partial one. Anything missing is kept -- the safe direction. */
   if (!merged.forge.keep || typeof merged.forge.keep !== "object") merged.forge.keep = forgeKeepAll();
@@ -2791,6 +2809,11 @@ function equippedAffixes(s) {
 }
 
 const RARITY_NAMES = ["Rouillé", "Aiguisé", "Runique", "Spectral", "Héroïque", "Ancestral", "Céleste", "Divin"];
+/* Section 15: one stat per piece. The secondary stat a piece used to carry --
+   1.2 HP on a damage slot, 0.3 damage on an HP slot -- is folded into the lead
+   stat instead of being dropped, so a full set is worth exactly what it was.
+   Both stats work out to the same factor: 5.6/4.4 = 22.4/17.6 = 14/11. */
+const SINGLE_STAT_MUL = 14 / 11;
 function makeItem(slot, rarity, forgeLevel) {
   const mul = RARITY_MUL[rarity];
   // Forge stars raise the power of everything it can produce
@@ -2798,10 +2821,9 @@ function makeItem(slot, rarity, forgeLevel) {
   const wt = slot === "arme" ? WEAPON_LIST[Math.floor(Math.random() * WEAPON_LIST.length)] : undefined;
   // which stat a piece leads with comes from one table now, so a new slot
   // cannot be added without deciding what it is for
-  const dmg = MASTERY_STAT[slot] === "dmg"
-    ? Math.floor(base * mul * (0.9 + Math.random() * 0.4)) : Math.floor(base * mul * 0.3);
-  const hp = MASTERY_STAT[slot] === "hp"
-    ? Math.floor(base * mul * 4 * (0.9 + Math.random() * 0.4)) : Math.floor(base * mul * 1.2);
+  const roll = SINGLE_STAT_MUL * (0.9 + Math.random() * 0.4);
+  const dmg = MASTERY_STAT[slot] === "dmg" ? Math.floor(base * mul * roll) : 0;
+  const hp = MASTERY_STAT[slot] === "hp" ? Math.floor(base * mul * 4 * roll) : 0;
   const name = SLOT_LABEL[slot] + " " + (RARITY_NAMES[equipRank(rarity)] || "");
   return { id: rid(), slot, rarity, weaponType: wt, damage: dmg, hp, level: 0,
     power: dmg + hp, name: name.trim(), affixes: rollAffixes(rarity) };
@@ -6467,8 +6489,9 @@ function scrEquipement() {
       ' style="border-color:' + col + (it ? ";--rc:" + col : ";opacity:.7") + '">' +
       slotIcon(slot, 27, S.equipped[slot]) +
       '<div class="nm" style="color:' + (it ? RARITY[it.rarity].c : "var(--textMute)") + '">' + SLOT_LABEL[slot] + "</div>" +
-      (it ? '<div class="st row gap4" style="justify-content:center">' + ic("sword", 9) + fmt(it.damage) +
-          ic("heart", 9) + fmt(it.hp) + "</div>" +
+      (it ? '<div class="st row gap4" style="justify-content:center">' +
+          (MASTERY_STAT[slot] === "dmg" ? ic("sword", 9) + fmt(it.damage)
+            : ic("heart", 9) + fmt(it.hp)) + "</div>" +
         (it.level ? '<div class="st bb" style="color:var(--goldLit)">+' + it.level + "</div>" : "") +
         (it.affixes && it.affixes.length
           ? '<div class="row gap4" style="justify-content:center;margin-top:2px">' + it.affixes.map((a) =>
@@ -6599,7 +6622,9 @@ function scrInventaire() {
           '<div class="imini" style="width:32px;height:32px;border-color:' + RARITY[it.rarity].c +
           '80;box-shadow:0 0 10px ' + RARITY[it.rarity].c + '3d">' + slotIcon(it.slot, 20, it) + "</div>" +
           '<div class="flex1"><div class="b small">' + esc(it.name) + (it.level ? ' <span style="color:var(--goldLit)">+' + it.level + "</span>" : "") + "</div>" +
-          '<div class="mute tiny b row gap4">' + ic("sword", 9) + "+" + fmt(it.damage) + ic("heart", 9) + "+" + fmt(it.hp) +
+          '<div class="mute tiny b row gap4">' +
+          (MASTERY_STAT[it.slot] === "dmg" ? ic("sword", 9) + "+" + fmt(it.damage)
+            : ic("heart", 9) + "+" + fmt(it.hp)) +
           (it.weaponType ? ' <span style="opacity:.8">· ' + WEAPON_TYPES[it.weaponType].name + "</span>" : "") + "</div>" +
           (it.affixes && it.affixes.length
             ? '<div class="row gap4 mt6" style="flex-wrap:wrap">' + it.affixes.map((a) =>
@@ -7783,8 +7808,9 @@ function showItemDetail(id, slot) {
       esc(it.name) + (it.level ? ' <span style="color:var(--goldLit)">+' + it.level + "</span>" : "") + "</div>" +
       '<div class="mt6">' + rtag(it.rarity) + '<span class="pill" style="margin-left:5px">' + SLOT_LABEL[it.slot] + "</span></div></div></div>" +
     '<div class="card" style="padding:9px 11px">' +
-      st("ATTAQUE", "+" + fmt(it.damage), "#FF9C6B") +
-      st("POINTS DE VIE", "+" + fmt(it.hp), "var(--redLit)") +
+      (MASTERY_STAT[it.slot] === "dmg"
+        ? st("ATTAQUE", "+" + fmt(it.damage), "#FF9C6B")
+        : st("POINTS DE VIE", "+" + fmt(it.hp), "var(--redLit)")) +
       st("PUISSANCE", fmt(it.power), "var(--goldLit)") +
       (wt ? st("TYPE D'ARME", wt.name + " · " + (wt.attackType === "MELEE" ? "mêlée" : "distance"), "var(--blueLit)") +
         st("PORTÉE · VITESSE", wt.range + " · ×" + wt.speed, "var(--blueLit)") : "") +
@@ -8326,7 +8352,7 @@ if (SMOKE) {
     MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PR_PER_FLOOR, REBIRTH_UPGRADES, RAID_IDS,
     TREE_NODES,
     get forgeAnim() { return forgeAnim; }, set forgeAnim(v) { forgeAnim = v; },
-    FORGE_ANIM_MS, EQUIP_RARITY_ORDER,
+    FORGE_ANIM_MS, EQUIP_RARITY_ORDER, RARITY_MUL, SINGLE_STAT_MUL,
   };
 }
 

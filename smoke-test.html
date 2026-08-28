@@ -606,6 +606,73 @@ function run(W) {
     if (!r.length) return "la Forge ne produit plus rien";
     return true;
   });
+  check("chaque pièce d'équipement ne porte qu'une statistique", function () {
+    set(forgePrep);
+    const bad = [];
+    H.SLOTS.forEach(function (slot) {
+      H.EQUIP_RARITY_ORDER.forEach(function (rar) {
+        for (let i = 0; i < 40; i++) {
+          const it = W.makeItem(slot, rar, 30);
+          const lead = H.MASTERY_STAT[slot];
+          const porte = lead === "dmg" ? it.damage : it.hp;
+          const autre = lead === "dmg" ? it.hp : it.damage;
+          if (autre !== 0) { bad.push(slot + " " + rar + " porte les deux"); return; }
+          if (porte <= 0) { bad.push(slot + " " + rar + " ne porte rien"); return; }
+          if (it.power !== porte) { bad.push(slot + " : puissance " + it.power + " pour " + porte); return; }
+        }
+      });
+    });
+    return bad.length ? bad.slice(0, 3).join(" | ") : true;
+  });
+  check("un équipement complet vaut ce qu'il valait avant la section 15", function () {
+    set(function (st) { forgePrep(st); st.stars = { pet: 0, forge: 0, skill: 0 }; });
+    const fl = 30, rar = "EPIQUE", N = 3000;
+    const u = (6 + fl * 2) * H.RARITY_MUL[rar];
+    let d = 0, h = 0;
+    for (let i = 0; i < N; i++) {
+      H.SLOTS.forEach(function (slot) {
+        const it = W.makeItem(slot, rar, fl);
+        d += it.damage; h += it.hp;
+      });
+    }
+    // what a full set used to give: lead 1.1 on its four slots, plus the fixed
+    // secondary the other four carried
+    const attenduD = (4 * 1.1 + 4 * 0.3) * u;
+    const attenduH = (4 * 4.4 + 4 * 1.2) * u;
+    const ecartD = Math.abs(d / N / attenduD - 1) * 100;
+    const ecartH = Math.abs(h / N / attenduH - 1) * 100;
+    if (ecartD > 1.5) return "dégâts du set à " + ecartD.toFixed(2) + " % de l'ancien total";
+    if (ecartH > 1.5) return "PV du set à " + ecartH.toFixed(2) + " % de l'ancien total";
+    return true;
+  });
+  check("une sauvegarde à deux statistiques est convertie une seule fois", function () {
+    set(forgePrep);
+    const vieux = JSON.parse(JSON.stringify(H.S));
+    const u = (6 + 30 * 2) * H.RARITY_MUL.EPIQUE;
+    vieux.equipped = {}; vieux.inventory = [];
+    H.SLOTS.forEach(function (slot) {
+      const dmg = H.MASTERY_STAT[slot] === "dmg" ? Math.floor(u * 1.1) : Math.floor(u * 0.3);
+      const hp = H.MASTERY_STAT[slot] === "hp" ? Math.floor(u * 4.4) : Math.floor(u * 1.2);
+      vieux.equipped[slot] = { id: "x" + slot, slot: slot, rarity: "EPIQUE", damage: dmg,
+        hp: hp, level: 0, power: dmg + hp, name: "t", affixes: [] };
+    });
+    vieux.inventory.push({ id: "i1", slot: "casque", rarity: "RARE", damage: 50, hp: 400,
+      level: 3, power: 450, name: "t", affixes: [] });
+    const m = W.migrate(vieux, "Héros");
+    const pieces = Object.keys(m.equipped).map(function (k) { return m.equipped[k]; }).concat(m.inventory);
+    const mixte = pieces.filter(function (it) { return it && it.damage > 0 && it.hp > 0; });
+    if (mixte.length) return mixte.length + " pièce(s) portent encore les deux";
+    if (m.inventory[0].level !== 3) return "le niveau d'amélioration est perdu";
+    if (m.inventory[0].hp !== Math.round(400 * H.SINGLE_STAT_MUL))
+      return "conversion à " + m.inventory[0].hp + " au lieu de " + Math.round(400 * H.SINGLE_STAT_MUL);
+    if (pieces.some(function (it) { return it && it.power !== it.damage + it.hp; }))
+      return "une puissance ne suit plus sa statistique";
+    // migrating twice must not multiply twice
+    const m2 = W.migrate(JSON.parse(JSON.stringify(m)), "Héros");
+    if (m2.equipped.arme.damage !== m.equipped.arme.damage ||
+        m2.equipped.casque.hp !== m.equipped.casque.hp) return "la conversion s'applique deux fois";
+    return true;
+  });
   check("une sauvegarde sans filtre garde tout", function () {
     // a save written before section 14 has no keep map at all
     const vieux = JSON.parse(JSON.stringify(H.S));
@@ -946,7 +1013,13 @@ function run(W) {
         accessoire: { id: "a2", slot: "accessoire", rarity: "EPIQUE", damage: 90, hp: 20, power: 300 } } };
     const m = W.migrate(JSON.parse(JSON.stringify(old)));
     if (m.equipped.accessoire !== undefined) return "l'ancien emplacement subsiste";
-    if (!m.equipped.anneau || m.equipped.anneau.power !== 300) return "la pièce portée est perdue";
+    /* Identified by id, not by power: since section 15 a piece carries one stat
+       and its power follows that stat, so the 300 this fixture declared -- which
+       never matched its own 90 + 20 -- is recomputed on load. */
+    if (!m.equipped.anneau || m.equipped.anneau.id !== "a2") return "la pièce portée est perdue";
+    if (m.equipped.anneau.power !== m.equipped.anneau.damage + m.equipped.anneau.hp)
+      return "la puissance de la pièce ne suit pas sa statistique";
+    if (m.equipped.anneau.hp !== 0) return "la pièce portée garde deux statistiques";
     if (!H.SLOTS.every(function (k) { return k in m.equipped; })) return "emplacements manquants";
     const left = m.inventory.filter(function (i) { return i.slot === "accessoire"; });
     return left.length ? left.length + " objet(s) encore en « accessoire »" : true;
