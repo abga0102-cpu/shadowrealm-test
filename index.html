@@ -1126,7 +1126,9 @@ const RULES = {
   // clearing the last step of a floor gets a longer beat plus an on-screen
   // floor banner, so a post-Rebirth sprint stays readable instead of a blur
   FLOOR_CLEAR_MS: 700, FLOOR_FLASH_MS: 900,
-  REBIRTH_MIN_FLOOR_AFTER: 25,   // a rebirth may never drop you below this
+  // Kept for the screen, which still tells you where a Rebirth would land you.
+  // It is no longer a condition: section 4A gates on the current floor alone.
+  REBIRTH_MIN_FLOOR_AFTER: 25,
 };
 
 const STATS = {
@@ -4591,11 +4593,13 @@ function floorAfterRebirth(s) {
   const keepPct = rebirthKeepPct(s.rebirth.upgrades.keep || 0);
   return Math.max(1, Math.floor(s.floor * keepPct / 100));
 }
-/* Rebirth needs floor >= 25 AND must not drop you under 25 afterwards. */
+/* Section 4A: the requirement is the floor you are standing on, and it is 25.
+   There used to be a second rule on top -- a Rebirth must also leave you at 25
+   or above -- and since you keep half your floor, that pushed the real gate out
+   to 50: at floor 25 you would land at 12 and never qualify. The stated rule
+   wins. Where you land afterwards is what the Conservation upgrade is for. */
 function canRebirth() {
-  if (S.recordFloor < RULES.REBIRTH_UNLOCK_FLOOR) return false;
-  if (S.floor < RULES.REBIRTH_MIN_FLOOR_AFTER) return false;
-  return floorAfterRebirth(S) >= RULES.REBIRTH_MIN_FLOOR_AFTER;
+  return S.floor >= RULES.REBIRTH_UNLOCK_FLOOR;
 }
 function doRebirth() {
   if (!canRebirth()) return 0;
@@ -7032,27 +7036,18 @@ function scrRebirth() {
   const pr = Math.floor(prFromFloor(S.floor) * (1 + prGainBonus / 100));
   const keepPct = rebirthKeepPct(S.rebirth.upgrades.keep || 0);
   const after = floorAfterRebirth(S);
-  const minAfter = RULES.REBIRTH_MIN_FLOOR_AFTER;
-  // why is it blocked? unlock not reached, or the next rebirth would sink us
-  const notUnlocked = S.recordFloor < RULES.REBIRTH_UNLOCK_FLOOR;
-  const wouldSink = !notUnlocked && !ok;
+  // only one reason to be blocked now: you are below the floor it needs
 
   let body;
   if (ok) {
     body = '<div class="dim tiny mt4" style="line-height:1.4">Renais pour gagner <b style="color:var(--purpleLit)">' +
         pr + " PR</b> · tu conserves " + keepPct + "% de ton étage (" + S.floor + " → " + after + ").</div>" +
       '<div class="mt6">' + btn(ic("cycle", 14) + "Renaître · +" + pr + " PR", { cls: "purple", small: true, act: "doRebirth" }) + "</div>";
-  } else if (notUnlocked) {
-    body = '<div class="dim small mt6" style="line-height:1.55">Atteins l' + "’" + "étage " + RULES.REBIRTH_UNLOCK_FLOOR +
-        " pour débloquer le Rebirth.<br>Record actuel : étage " + S.recordFloor + ".</div>" +
-      '<div class="mt8">' + meter((S.recordFloor / RULES.REBIRTH_UNLOCK_FLOOR) * 100, C.purple,
-        S.recordFloor + " / " + RULES.REBIRTH_UNLOCK_FLOOR) + "</div>";
   } else {
-    body = '<div class="notice mt8" style="border-left-color:var(--red);text-align:left">' +
-        '<b style="color:var(--redLit)">Rebirth impossible : l' + "’" + "étage minimum après Rebirth est " + minAfter + ".</b><br>" +
-        "Étage actuel " + S.floor + " · un Rebirth te ramènerait à l" + "’" + "étage " + after +
-        ".<br>Remonte au-dessus de l" + "’" + "étage " + Math.ceil(minAfter * 100 / keepPct) +
-        " pour pouvoir renaître à nouveau.</div>" +
+    body = '<div class="dim small mt6" style="line-height:1.55">Atteins l' + "’" + "étage " + RULES.REBIRTH_UNLOCK_FLOOR +
+        " pour pouvoir renaître.<br>Étage actuel : " + S.floor + ".</div>" +
+      '<div class="mt8">' + meter((S.floor / RULES.REBIRTH_UNLOCK_FLOOR) * 100, C.purple,
+        S.floor + " / " + RULES.REBIRTH_UNLOCK_FLOOR) + "</div>" +
       '<div class="mt8">' + btn(ic("cycle", 15) + "Renaître", { cls: "purple", act: "doRebirth", dis: true }) + "</div>";
   }
 
@@ -7866,7 +7861,7 @@ const ACT = {
   doRebirth: () => {
     const pr = doRebirth();
     if (pr) { toast("+" + pr + " PR", true); nav("rebirth"); }
-    else toast("Rebirth impossible : étage minimum après Rebirth = " + RULES.REBIRTH_MIN_FLOOR_AFTER);
+    else toast("Rebirth impossible : étage " + RULES.REBIRTH_UNLOCK_FLOOR + " requis");
   },
   buyRebirth: (a) => { if (buyRebirth(a)) toast("Amélioration achetée", true); else toast("PR insuffisants"); },
   startTrial: () => {

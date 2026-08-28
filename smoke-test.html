@@ -457,6 +457,54 @@ function run(W) {
       ? true : "★2 vaut ×" + W.ascendPowerMul(2) + ", ce que la spec ne définit pas";
   });
 
+  // ---------------------------------------------------------------- rebirth
+  group("REBIRTH — distinct de l'Ascension");
+  check("possible à l'étage 25, impossible à 24", function () {
+    const at = function (f) {
+      set(function (st) {
+        st.floor = f; st.recordFloor = Math.max(st.recordFloor, f);
+        st.rebirth = { pr: 0, count: 0, upgrades: {} };
+      });
+      return W.canRebirth();
+    };
+    if (at(24)) return "autorisé à l'étage 24";
+    if (!at(25)) return "refusé à l'étage 25";
+    let first = null;
+    for (let f = 1; f <= 120 && first === null; f++) { if (at(f)) first = f; }
+    return first === 25 ? true : "premier étage possible : " + first;
+  });
+  check("un Rebirth à l'étage 25 accorde des PR et ne casse rien", function () {
+    set(function (st) {
+      st.floor = 25; st.recordFloor = 25; st.level = 40;
+      st.rebirth = { pr: 0, count: 0, upgrades: {} };
+    });
+    const pr = W.doRebirth();
+    if (!pr || pr <= 0) return "aucun PR accordé";
+    if (H.S.rebirth.count !== 1) return "le compteur n'a pas bougé";
+    if (H.S.floor >= 25) return "l'étage n'a pas été réinitialisé";
+    return true;
+  });
+  check("Rebirth et Ascension restent séparés", function () {
+    set(function (st) {
+      st.floor = 40; st.recordFloor = 40; st.level = 40;
+      st.rebirth = { pr: 0, count: 0, upgrades: {} };
+      st.stars = { pet: 1, forge: 1, skill: 1 };
+      st.petMastery = { level: 7, count: 0, progress: 0 };
+      st.forge.level = 9; st.essence = 300; st.minerai = 400;
+      st.pets = [{ id: "p", rarity: "RARE", level: 1,
+        species: H.PET_SPECIES[0].id, element: "feu" }];
+    });
+    W.doRebirth();
+    const bad = [];
+    if (H.S.stars.pet !== 1 || H.S.stars.forge !== 1 || H.S.stars.skill !== 1)
+      bad.push("le Rebirth a touché les étoiles d'Ascension");
+    if (H.S.petMastery.level !== 7) bad.push("le Rebirth a touché la Maîtrise");
+    if (H.S.forge.level !== 9) bad.push("le Rebirth a touché la Forge");
+    if (!H.S.pets.length) bad.push("le Rebirth a supprimé les Familiers");
+    if (H.S.essence !== 300 || H.S.minerai !== 400) bad.push("le Rebirth a touché les ressources");
+    return bad.length ? bad.join(", ") : true;
+  });
+
   // ---------------------------------------------------------------- gear
   group("ÉQUIPEMENT — les huit pièces de la section 14");
   check("8 emplacements, chacun avec la bonne statistique", function () {
