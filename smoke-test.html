@@ -376,21 +376,65 @@ function run(W) {
     const moved = others.filter(function (k) { return H.S.raids[k].level !== 10 || H.S.raids[k].stars !== 0; });
     return moved.length ? "raids touchés à tort : " + moved.join(", ") : true;
   });
-  check("les Maîtrises reviennent à 0 et rien d'autre n'est effacé", function () {
+  /* Section 2 in one place: fill the save, ascend one feature, and prove that it
+     took its own items, left every currency alone, and did not reach into the
+     other three. */
+  function loadout() {
     set(function (st) {
+      st.level = 100;
       st.petMastery = { level: 50, count: 0, progress: 9 };
       st.skillMastery = { level: 50, count: 0, progress: 9 };
-      st.forge.level = H.RULES.FORGE_MAX;
-      st.essence = 5000; st.eclat = 4000; st.minerai = 7000;
+      st.forge = { level: H.RULES.FORGE_MAX, progress: 44, summonCount: 12,
+        masteryLevel: 0, masteryProgress: 0, autoForge: true, upgradeEnd: 0 };
+      st.pets = [{ id: "p1", rarity: "RARE", level: 3,
+        species: H.PET_SPECIES[0].id, element: "feu" }];
+      st.activePetId = "p1";
+      st.eggs = [{ id: "e1", rarity: "RARE", species: H.PET_SPECIES[0].id,
+        element: "feu", hatchEnd: Date.now() + 9e6 }];
+      st.skills = { taillade: { level: 4, count: 0 }, force: { level: 2, count: 0 } };
+      st.skillSlots = ["taillade", "force", null, null, null];
+      st.inventory = [W.makeItem("arme", "RARE", 20)];
+      H.SLOTS.forEach(function (k) { st.equipped[k] = W.makeItem(k, "RARE", 20); });
+      st.essence = 5000; st.eclat = 4000; st.minerai = 7000; st.poussiere = 3000;
+      st.gems = 900; st.eggSlots = 4; st.gold = 1e6; st.pe = 250;
     });
-    W.doAscendMastery("pet"); W.doAscendMastery("skill"); W.doAscendMastery("forge");
-    if (H.S.petMastery.level !== 0) return "Maîtrise Familier à " + H.S.petMastery.level + " au lieu de 0";
-    if (H.S.skillMastery.level !== 0) return "Maîtrise Compétence à " + H.S.skillMastery.level + " au lieu de 0";
-    if (H.S.forge.level !== 1) return "Forge à " + H.S.forge.level + " au lieu de 1";
-    if (H.S.essence !== 5000) return "Essence effacée";
-    if (H.S.eclat !== 4000) return "Éclat effacé";
-    if (H.S.minerai !== 7000) return "Minerai effacé";
-    return true;
+  }
+  function purse() {
+    return { essence: H.S.essence, eclat: H.S.eclat, minerai: H.S.minerai,
+      poussiere: H.S.poussiere, gems: H.S.gems, gold: H.S.gold, pe: H.S.pe,
+      eggSlots: H.S.eggSlots };
+  }
+  check("aucune Ascension n'efface une monnaie", function () {
+    const bad = [];
+    ["forge", "pet", "skill"].forEach(function (sys) {
+      loadout();
+      const before = purse();
+      W.doAscendMastery(sys);
+      const after = purse();
+      Object.keys(before).forEach(function (k) {
+        if (before[k] !== after[k]) bad.push(sys + " a effacé " + k);
+      });
+    });
+    return bad.length ? bad.join(", ") : true;
+  });
+  check("chaque Ascension ne prend que ses propres éléments", function () {
+    const bad = [];
+    loadout(); W.doAscendMastery("forge");
+    if (H.S.inventory.length || H.SLOTS.some(function (k) { return H.S.equipped[k]; }))
+      bad.push("Forge n'a pas retiré l'équipement");
+    if (H.S.forge.level !== 1) bad.push("Forge pas au niveau 1");
+    if (!H.S.pets.length || !Object.keys(H.S.skills).length) bad.push("Forge a touché Familiers ou Compétences");
+
+    loadout(); W.doAscendMastery("pet");
+    if (H.S.pets.length || H.S.eggs.length) bad.push("Familiers non retirés");
+    if (H.S.petMastery.level !== 0) bad.push("Maîtrise Familier pas à 0");
+    if (!H.S.inventory.length || !Object.keys(H.S.skills).length) bad.push("Familiers a touché Forge ou Compétences");
+
+    loadout(); W.doAscendMastery("skill");
+    if (Object.keys(H.S.skills).length) bad.push("Compétences non retirées");
+    if (H.S.skillMastery.level !== 0) bad.push("Maîtrise Compétence pas à 0");
+    if (!H.S.pets.length || !H.S.inventory.length) bad.push("Compétences a touché Familiers ou Forge");
+    return bad.length ? bad.join(" | ") : true;
   });
 
   // ---------------------------------------------------------------- gear

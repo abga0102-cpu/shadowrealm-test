@@ -1468,9 +1468,8 @@ function ascensionPreview(s, sys) {
     label: "Forge",
     reset: [["Niveau de Forge", s.forge.level + " → 1"],
             ["Jauge d'amélioration", fmt(s.forge.progress || 0)],
-            ["Équipement (sac + porté)", fmt(s.inventory.length + SLOTS.filter((k) => s.equipped[k]).length)],
-            ["Poussière", fmt(s.poussiere)]],
-    keep: [["Minerai", fmt(s.minerai)]],
+            ["Équipement (sac + porté)", fmt(s.inventory.length + SLOTS.filter((k) => s.equipped[k]).length)]],
+    keep: [["Minerai", fmt(s.minerai)], ["Poussière", fmt(s.poussiere)]],
     gain: "Puissance de base des équipements ×" + mul });
   return Object.assign(common, {
     label: "Compétence",
@@ -1495,8 +1494,8 @@ function doAscendMastery(sys) {
       st.forge.upgradeEnd = 0; st.forge.masteryLevel = 0; st.forge.masteryProgress = 0;
       st.inventory = [];
       SLOTS.forEach((k) => { st.equipped[k] = null; });
-      st.poussiere = 0;      // it only exists because of forged gear
-      // minerai survives
+      // Minerai and Poussiere both survive: one buys the forging, the other buys
+      // the upgrading. Section 2 spares the currency, not just the one it names.
     } else {
       st.skillMastery = { level: 0, count: 0, progress: 0 };
       st.skills = {};
@@ -7955,7 +7954,7 @@ if (/[?&]smoke=1(?:&|$)/.test(location.search)) {
     // the data tables are `const` too, so they are just as invisible
     SLOTS, SKILL_DEFS, SCREENS, RESOURCE_INFO, TREE_NODES, TREE_BY_ID,
     ENEMY_TYPES, ELITE_DEFS, BOSS_DEFS, RAID_BOSSES, EGG_TIMERS, AW,
-    MASTERY_STAT, ASCENSION, RULES,
+    MASTERY_STAT, ASCENSION, RULES, PET_SPECIES,
   };
 }
 
