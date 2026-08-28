@@ -1365,9 +1365,15 @@ const WEAPON_TYPES = {
   hache:    { id: "hache",    name: "Hache",    attackType: "MELEE",  range: 48,  speed: 0.85, hit: 1.24 },
   masse:    { id: "masse",    name: "Masse",    attackType: "MELEE",  range: 46,  speed: 0.8,  hit: 1.35 },
   dague:    { id: "dague",    name: "Dague",    attackType: "MELEE",  range: 42,  speed: 1.5,  hit: 0.70 },
-  arc:      { id: "arc",      name: "Arc",      attackType: "RANGED", range: 220, speed: 1.05, hit: 0.90, projectile: "arrow" },
-  arbalete: { id: "arbalete", name: "Arbalète", attackType: "RANGED", range: 240, speed: 0.9,  hit: 1.10, projectile: "bolt" },
-  baton:    { id: "baton",    name: "Bâton",    attackType: "RANGED", range: 210, speed: 1.0,  hit: 0.95, projectile: "magic" },
+  /* Section 19. The arena is 320 wide and the hero starts at 34, so a reach of
+     210 to 240 covered everything that could ever be spawned: a bow was in
+     range before it moved, every fight, and "portée" was a number with no
+     consequence. Brought inside the arena, a ranged weapon still opens first
+     and still opens from further than any enemy can answer -- it simply has to
+     take up its position first. */
+  arc:      { id: "arc",      name: "Arc",      attackType: "RANGED", range: 130, speed: 1.05, hit: 0.90, projectile: "arrow" },
+  arbalete: { id: "arbalete", name: "Arbalète", attackType: "RANGED", range: 145, speed: 0.9,  hit: 1.10, projectile: "bolt" },
+  baton:    { id: "baton",    name: "Bâton",    attackType: "RANGED", range: 120, speed: 1.0,  hit: 0.95, projectile: "magic" },
 };
 const WEAPON_LIST = Object.keys(WEAPON_TYPES);
 
@@ -2315,6 +2321,8 @@ const EVENT_MISSIONS = [
 /* ---------------------------- state.ts ---------------------------- */
 const AW = 320;          // logical arena width
 const HERO_START = 34;
+/* How far a ranged enemy stops from the hero. Section 19; see the tick loop. */
+const ENEMY_FIRE_RANGE = 110;
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 function rid() { return Math.random().toString(36).slice(2, 9); }
@@ -4277,7 +4285,13 @@ function tick() {
     e.attacking = Math.max(0, e.attacking - dt);
     if (e.vanish > 0 || e.flying > 0 || e.stagger > 0) return;   // gone, airborne or reeling
     const dist = e.x - c.heroX;
-    const fireRange = e.ranged ? 150 : 40;
+    /* Section 19: a ranged enemy used to hold at 150, more than three times a
+       sword's reach, and the hero walks at 24 against its 34. Measured, that
+       cost a melee hero 7.6 s to land a first blow while being shot from 3.0 s
+       -- four and a half seconds of taking fire with no answer. Holding at 110
+       leaves the archer its advantage and its stand-off, without making melee a
+       spectator. */
+    const fireRange = e.ranged ? ENEMY_FIRE_RANGE : 40;
     // e.x is clamped to heroX + fireRange, but (x + 40) - x is not exactly 40
     // for every float, so dist could settle at 40.000000000000014 and keep the
     // enemy in the approach branch for ever -- walking on the spot, its attack
@@ -8428,6 +8442,7 @@ if (SMOKE) {
     FORGE_ANIM_MS, EQUIP_RARITY_ORDER, RARITY_MUL, SINGLE_STAT_MUL,
     BASE, AFFIX_BY_KEY, AFFIX_DEFS, AFFIX_EXCEPTIONAL_PCT, WEAPON_TYPES,
     SPEED_AFFIX_CAP, SKILL_LEVEL_GROWTH, RATE_ANCHORS, SKILL_RARITY_MUL,
+    HERO_START, ENEMY_FIRE_RANGE, ENEMY_SPEED,
   };
 }
 

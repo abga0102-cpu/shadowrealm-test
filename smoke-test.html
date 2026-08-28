@@ -606,6 +606,59 @@ function run(W) {
     if (!r.length) return "la Forge ne produit plus rien";
     return true;
   });
+  group("ESPACE DE COMBAT — section 19");
+  check("aucune arme ne porte plus loin que l'arène", function () {
+    // the furthest an enemy is ever spawned, measured from where the hero starts
+    const spawn = H.AW - 46 - H.HERO_START;
+    const bad = [];
+    Object.keys(H.WEAPON_TYPES).forEach(function (k) {
+      const wt = H.WEAPON_TYPES[k];
+      if (wt.range >= spawn) bad.push(wt.name + " porte à " + wt.range + " pour " + spawn + " d'écart");
+    });
+    if (H.ENEMY_FIRE_RANGE >= spawn) bad.push("un archer ennemi tire de son point d'apparition");
+    return bad.length ? bad.join(" | ") : true;
+  });
+  check("chaque arme doit s'approcher avant de frapper", function () {
+    const bad = [];
+    Object.keys(H.WEAPON_TYPES).forEach(function (arme) {
+      set(function (st) {
+        st.level = 60; st.floor = 9; st.step = 3;
+        st.stats = { sante: 0, degats: 0, crit: 0, critred: 0 };
+        st.pets = []; st.activePetId = null; st.skills = {};
+        st.skillSlots = [null, null, null, null, null]; st.autoSkills = false;
+        st.rebirth = { pr: 0, upgrades: {} };
+        st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+        H.SLOTS.forEach(function (slot) {
+          const it = W.makeItem(slot, "EPIQUE", 20); it.affixes = []; st.equipped[slot] = it;
+        });
+        st.equipped.arme.weaponType = arme;
+      });
+      H.combat = W.spawnCampaign(H.S);
+      const c = H.combat;
+      const t = H.ENEMY_TYPES.filter(function (x) { return !x.ranged; })[0];
+      const e = W.makeEnemy("campaign", { type: t, name: t.name, tier: "COMMUN", floor: 9, x: H.AW - 46 });
+      e.maxHP *= 50; e.hp = e.maxHP;
+      c.enemies = [e];
+      const depart = c.heroX;
+      const r = fight(null, function () { return c.heroAttacking > 0; });
+      const bouge = Math.abs(c.heroX - depart) > 1;
+      H.combat = null;
+      if (!r.seen) bad.push(arme + " ne frappe jamais");
+      else if (!bouge) bad.push(arme + " frappe sans avoir bougé");
+    });
+    return bad.length ? bad.join(" | ") : true;
+  });
+  check("un archer ennemi ne tient plus la mêlée à distance", function () {
+    // 110 rather than 150: still a stand-off, but within reach of a walk
+    if (H.ENEMY_FIRE_RANGE >= 150) return "l'arrêt vaut encore " + H.ENEMY_FIRE_RANGE;
+    const epee = H.WEAPON_TYPES.epee.range;
+    // the gap a melee hero has to walk while being shot
+    const marche = H.ENEMY_FIRE_RANGE - epee;
+    const secs = marche / (H.BASE.moveSpeed * 0.88);
+    if (secs > 4) return "la mêlée marche encore " + secs.toFixed(1) + " s sous le tir";
+    return true;
+  });
+
   group("COMPÉTENCES ET RARETÉS — sections 17 et 18");
   function skillBench() {
     set(function (st) {
@@ -618,8 +671,14 @@ function run(W) {
         it.affixes = [];
         st.equipped[slot] = it;
       });
+      /* Pinned to the sword. makeItem rolls a weapon type at random, and the
+         ratio measured below depends on it -- the same skill reads 3.37 with a
+         sword and 3.56 with a staff, purely because hit and speed differ. With
+         the weapon left to chance the check passed or failed on the roll. The
+         sword is the reference: hit 1.00, speed 1.00. */
+      st.equipped.arme.weaponType = "epee";
     });
-    const wt = H.WEAPON_TYPES[H.D.weapon];
+    const wt = H.WEAPON_TYPES.epee;
     return { coup: H.D.damage * wt.hit, cadence: H.D.attackSpeed * wt.speed };
   }
   check("une compètence au maximum reste un pic, pas un remplaçant", function () {
