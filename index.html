@@ -4486,6 +4486,25 @@ function equipSkill(slotIdx, skillId) {
   });
 }
 
+/* An egg is hatching when it carries a hatchEnd, and stored when it does not.
+   Section 8: the slots cap how many hatch at once and nothing else. */
+function eggIsHatching(e) { return !!e && e.hatchEnd > 0; }
+function eggsHatching(s) { return s.eggs.filter(eggIsHatching); }
+function eggsStored(s) { return s.eggs.filter((e) => !eggIsHatching(e)); }
+/* Move waiting eggs into any free slot, oldest first. The timer is set here
+   rather than at summon, so an egg that waited benefits from whatever hatch
+   speed the player has by the time it actually starts. */
+function startPendingEggs(s) {
+  let free = s.eggSlots - eggsHatching(s).length;
+  if (free <= 0) return;
+  for (let i = 0; i < s.eggs.length && free > 0; i++) {
+    const e = s.eggs[i];
+    if (eggIsHatching(e)) continue;
+    const secs = EGG_TIMERS[e.rarity] * (1 - hatchCutFor(s, e.rarity) / 100);
+    e.hatchEnd = Date.now() + secs * 1000;
+    free -= 1;
+  }
+}
 function summonEgg(n) {
   const results = [];
   update((s) => {
@@ -4495,17 +4514,16 @@ function summonEgg(n) {
     // each rarity carries its own reduction; a Rare upgrade must never touch
     // an Épique egg
     for (let i = 0; i < n; i++) {
+      // Essence is the only thing that can stop a summon now
       if (s.essence < 10) break;
-      if (s.eggs.length >= s.eggSlots) break;
       s.essence -= 10;
       const eggsToMake = Math.random() * 100 < dblChance ? 2 : 1;
       for (let e = 0; e < eggsToMake; e++) {
-        if (s.eggs.length >= s.eggSlots) break;
         const rates = getRates("pet", s.petMastery.level, s.ascension, starsOf(s, "pet"));
         const rar = rollRarity(rates);
-        const secs = EGG_TIMERS[rar] * (1 - hatchCutFor(s, rar) / 100);
+        // stored, with no timer; startPendingEggs gives it one when a slot frees
         s.eggs.push({ id: rid(), rarity: rar, species: randSpecies(), element: randElement(),
-          hatchEnd: Date.now() + secs * 1000 });
+          hatchEnd: 0 });
         results.push({ rarity: rar, free: e > 0 });
       }
       s.petMastery.count += 1; s.petMastery.progress += 1;
@@ -4514,6 +4532,7 @@ function summonEgg(n) {
         s.petMastery.progress -= mreq; s.petMastery.level += 1;
       }
     }
+    startPendingEggs(s);
   });
   return results;
 }
@@ -4528,6 +4547,8 @@ function collectEgg(id) {
     s.pets.push(pet);
     if (!s.activePetId) s.activePetId = pet.id;
     s.eventProgress.hatch = (s.eventProgress.hatch || 0) + 1;
+    // a slot just freed, so the next egg in the queue starts
+    startPendingEggs(s);
   });
 }
 /* fusion: 6 COMMUN -> 1 RARE, 6 -> 1 EPIQUE, 6 -> 1 MYTHIQUE,
@@ -4571,7 +4592,7 @@ function upgradePet(id) {
 function setActivePet(id) { update((s) => { s.activePetId = id; }); }
 function buyEggSlot() {
   if (S.level < 10 || S.eggSlots >= RULES.EGG_SLOT_MAX || S.gems < 300) return false;
-  update((st) => { st.gems -= 300; st.eggSlots += 1; });
+  update((st) => { st.gems -= 300; st.eggSlots += 1; startPendingEggs(st); });
   return true;
 }
 
@@ -4587,7 +4608,10 @@ function watchAdForKey() {
 /* apply the payload of one tree level — called on instant and on collect */
 function applyTreeLevel(st, node) {
   st.tree.levels[node.id] = (st.tree.levels[node.id] || 0) + 1;
-  if (node.effect === "eggSlot") st.eggSlots = Math.min(RULES.EGG_SLOT_MAX, st.eggSlots + 1);
+  if (node.effect === "eggSlot") {
+    st.eggSlots = Math.min(RULES.EGG_SLOT_MAX, st.eggSlots + 1);
+    startPendingEggs(st);
+  }
   // raidKey grants an unassigned daily key; the player picks the raid later
 }
 function startResearch(id) {
@@ -4641,7 +4665,7 @@ function useAccelerator(target, key) {
       st.forge.upgradeEnd = Math.max(Date.now(), st.forge.upgradeEnd - secs * 1000);
     } else {
       const egg = st.eggs.find((e) => e.id === target.id);
-      if (egg) egg.hatchEnd = Math.max(Date.now(), egg.hatchEnd - secs * 1000);
+      if (egg && eggIsHatching(egg)) egg.hatchEnd = Math.max(Date.now(), egg.hatchEnd - secs * 1000);
     }
   });
   return true;
@@ -6518,8 +6542,10 @@ function scrFamiliers() {
     '" style="cursor:pointer;color:#8FEFF4;border-color:var(--cyan)">' + ic("bolt", 10) + a.label + " ×" + S.accels[a.key] + "</span>").join("");
 
   let eggCells = "";
+  const hatching = eggsHatching(S);
+  const stored = eggsStored(S);
   for (let i = 0; i < S.eggSlots; i++) {
-    const egg = S.eggs[i];
+    const egg = hatching[i];
     const eggArt = (r) => ASSETS["egg_" + String(r).toLowerCase()];
     if (!egg) { eggCells += '<div class="eggCard mute" style="opacity:.35">' +
       (eggArt("commun") ? '<img src="' + eggArt("commun") + '" style="width:22px;height:22px;object-fit:contain;filter:grayscale(1)">' : ic("egg", 20)) +
@@ -6598,15 +6624,18 @@ function scrFamiliers() {
           "Actuel", "Niv." + (S.petMastery.level + 1)) +
         '<div class="row gap6 mt6">' +
           btn(ic("egg", 14) + "Invoquer · 10", { small: true, act: "summonEgg", arg: 1,
-            dis: S.essence < 10 || S.eggs.length >= S.eggSlots,
+            dis: S.essence < 10,
             style: "--bA:#FFA872;--bB:#DB6224;--bS:#7A310C;--bE:#FFD9C0;--bT:#2A0F03" }) +
-          btn("x" + Math.max(1, S.eggSlots - S.eggs.length), { small: true, act: "summonEgg", arg: S.eggSlots,
-            dis: S.essence < 10 || S.eggs.length >= S.eggSlots,
+          btn("x10", { small: true, act: "summonEgg", arg: 10,
+            dis: S.essence < 10,
             style: "--bA:#FFA872;--bB:#DB6224;--bS:#7A310C;--bE:#FFD9C0;--bT:#2A0F03;max-width:62px" }) +
         "</div>" +
-        (S.eggs.length >= S.eggSlots ? '<div class="mute tiny center mt6">Tous les emplacements d\'œufs sont occupés</div>' : "") +
+        // the nest being full is no longer a reason not to summon
+        (stored.length ? '<div class="mute tiny center mt6">' + stored.length +
+          " œuf" + (stored.length > 1 ? "s" : "") + " en réserve · éclosion dès qu'un emplacement se libère</div>" : "") +
       "</div>" +
-      '<div class="sect" style="margin:16px 0 9px">Œufs (' + S.eggs.length + "/" + S.eggSlots + ")</div>" +
+      '<div class="sect" style="margin:16px 0 9px">Éclosion (' + hatching.length + "/" + S.eggSlots +
+        (stored.length ? ") · " + stored.length + " en réserve" : ")") + "</div>" +
       '<div class="slotGrid">' + eggCells + "</div>" +
       (S.eggSlots < RULES.EGG_SLOT_MAX ? '<div class="mt4" style="margin-top:4px">' +
         btn("+1 Emplacement · " + ic("gem", 12) + "300" + (S.level < 10 ? " · niv. 10" : ""),

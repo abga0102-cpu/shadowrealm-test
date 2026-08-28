@@ -429,6 +429,42 @@ function run(W) {
     set(function (st) { st.raids.minerai.stars = 0; });
     return bad.length ? bad.slice(0, 3).join(", ") : true;
   });
+  check("les emplacements d'éclosion ne bloquent jamais une invocation", function () {
+    set(function (st) {
+      st.level = 40; st.eggs = []; st.pets = []; st.activePetId = null;
+      st.eggSlots = 2; st.essence = 1000;
+      st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+    });
+    W.summonEgg(12);
+    if (H.S.eggs.length < 12) return "seulement " + H.S.eggs.length + " œufs pour 12 invocations";
+    if (W.eggsHatching(H.S).length !== 2) return "éclosion simultanée non limitée aux emplacements";
+    if (W.eggsStored(H.S).length !== H.S.eggs.length - 2) return "la réserve ne contient pas le reste";
+    if (!W.eggsStored(H.S).every(function (e) { return !e.hatchEnd; }))
+      return "un œuf en réserve a déjà un minuteur";
+    if (!W.eggsHatching(H.S).every(function (e) { return e.hatchEnd > 0; }))
+      return "un œuf en éclosion n'a pas de minuteur";
+    return true;
+  });
+  check("un œuf éclos laisse la place au suivant", function () {
+    const before = W.eggsStored(H.S).length;
+    const first = W.eggsHatching(H.S)[0];
+    W.update(function (st) {
+      const e = st.eggs.filter(function (x) { return x.id === first.id; })[0];
+      e.hatchEnd = Date.now() - 1;
+    });
+    W.collectEgg(first.id);
+    if (!H.S.pets.length) return "aucun familier obtenu";
+    if (W.eggsStored(H.S).length !== before - 1) return "la réserve n'a pas diminué";
+    if (W.eggsHatching(H.S).length !== H.S.eggSlots) return "l'emplacement libéré n'a pas été repris";
+    return true;
+  });
+  check("seule l'Essence limite les invocations", function () {
+    set(function (st) { st.essence = 25; st.eggs = []; st.eggSlots = 1; });
+    W.summonEgg(10);
+    if (H.S.eggs.length !== 2) return H.S.eggs.length + " œufs pour 25 Essence au lieu de 2";
+    if (H.S.essence !== 5) return "Essence restante " + H.S.essence + " au lieu de 5";
+    return true;
+  });
   check("la Récolte Autonomie paie la moitié du Raid Minerai courant", function () {
     const bad = [];
     set(function (st) { st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 }; });
