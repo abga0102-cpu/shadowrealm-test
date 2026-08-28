@@ -2909,7 +2909,7 @@ const ELITE_ABIL = {
     label: "Peau d'épines", c: "#CFE0FF",
     filter(c, e, dmg, src) {
       if (dmg <= 0 || src === "dot") return dmg;
-      const back = Math.max(1, Math.floor(dmg * 0.25));
+      const back = Math.max(1, Math.floor(dmg * 0.05));
       c.heroHP -= back;
       c.floats.push({ id: rid(), x: c.heroX, val: back, crit: false, color: "#CFE0FF", born: Date.now() });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
@@ -3642,8 +3642,13 @@ function fxAdd(c, bag, eff, now) {
 /* Buffs pass through here on their way to the hero, so something on the field
    can take one first. Both cast paths call it, which is the point -- the
    automatic and the manual route cannot drift apart. */
+/* Absorption takes Force, Hate and Rempart and nothing else. Naming the three
+   rather than testing the bag matters: Regeneration also lands in "buffs", and
+   any future skill that both deals damage and grants a buff would otherwise be
+   swallowed whole. */
+const STEALABLE = { force: 1, hate: 1, rempart: 1 };
 function applyHeroEffect(c, bag, eff, now) {
-  if (bag === "buffs") {
+  if (bag === "buffs" && STEALABLE[eff.key]) {
     const thief = c.enemies.find((e) => e.alive && !e.stolen && !(e.stealCd > 0) &&
       (e.abils || []).indexOf("absorption") >= 0);
     if (thief) {
