@@ -1871,7 +1871,16 @@ function raidEnemyDamage(raid, level) {
 }
 /* PR per rebirth. Same shape as before, scaled up so the Rebirth upgrades
    (whose costs are unchanged) buy at a satisfying pace. */
-const PR_PER_FLOOR = 3;
+/* Section 4B: more PR per Rebirth, same formula and same factors. The formula
+   is floor x rate x (1 + Gain PR), so the rate is the only thing that moves --
+   nothing about how a Rebirth is calculated changes.
+
+   Sized against the actual economy rather than picked: the whole Rebirth tree
+   costs 12993 PR, and a Rebirth paid floor x 3. That is 174 loops from the new
+   floor-25 minimum, or 29 from floor 150. Doubling the rate halves both, and
+   makes the first Rebirth a player can now take at floor 25 worth 150 PR
+   instead of 75 -- enough to buy something the same evening. */
+const PR_PER_FLOOR = 6;
 function prFromFloor(floor) { return Math.floor(floor * PR_PER_FLOOR); }
 const REBIRTH_UPGRADES = [
   // Values roughly doubled so PR spent buys a permanent gain worth feeling.
@@ -7968,7 +7977,7 @@ if (/[?&]smoke=1(?:&|$)/.test(location.search)) {
     // the data tables are `const` too, so they are just as invisible
     SLOTS, SKILL_DEFS, SCREENS, RESOURCE_INFO, TREE_NODES, TREE_BY_ID,
     ENEMY_TYPES, ELITE_DEFS, BOSS_DEFS, RAID_BOSSES, EGG_TIMERS, AW,
-    MASTERY_STAT, ASCENSION, RULES, PET_SPECIES,
+    MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PR_PER_FLOOR,
   };
 }
 

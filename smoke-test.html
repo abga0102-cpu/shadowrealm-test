@@ -484,6 +484,20 @@ function run(W) {
     if (H.S.floor >= 25) return "l'étage n'a pas été réinitialisé";
     return true;
   });
+  check("les PR suivent toujours étage × taux × (1 + Gain PR)", function () {
+    const bad = [];
+    [[25, 0], [100, 5], [150, 3]].forEach(function (pair) {
+      const f = pair[0], prg = pair[1];
+      set(function (st) {
+        st.floor = f; st.recordFloor = Math.max(st.recordFloor, f); st.level = 40;
+        st.rebirth = { pr: 0, count: 0, upgrades: prg ? { prgain: prg } : {} };
+      });
+      const got = W.doRebirth();
+      const want = Math.floor(f * H.PR_PER_FLOOR * (1 + prg * 5 / 100));
+      if (got !== want) bad.push("étage " + f + " prgain " + prg + " : " + got + " au lieu de " + want);
+    });
+    return bad.length ? bad.join(", ") : true;
+  });
   check("Rebirth et Ascension restent séparés", function () {
     set(function (st) {
       st.floor = 40; st.recordFloor = 40; st.level = 40;
