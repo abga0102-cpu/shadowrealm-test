@@ -404,6 +404,31 @@ function run(W) {
       poussiere: H.S.poussiere, gems: H.S.gems, gold: H.S.gold, pe: H.S.pe,
       eggSlots: H.S.eggSlots };
   }
+  check("Raid Minerai suit 500 + 10 par niveau, 850 après une étoile", function () {
+    const bad = [];
+    const sans = { 1: 500, 10: 590, 20: 690, 30: 790, 40: 890, 50: 990 };
+    const avec = { 1: 850, 14: 980, 15: 990, 16: 1000, 20: 1040, 30: 1140, 40: 1240, 50: 1340 };
+    set(function (st) { st.raids.minerai.stars = 0; });
+    Object.keys(sans).forEach(function (l) {
+      const got = W.raidReward("minerai", +l);
+      if (got !== sans[l]) bad.push("niv" + l + " " + got + "≠" + sans[l]);
+    });
+    const plafond = W.raidReward("minerai", 50);
+    set(function (st) { st.raids.minerai.stars = 1; });
+    Object.keys(avec).forEach(function (l) {
+      const got = W.raidReward("minerai", +l);
+      if (got !== avec[l]) bad.push("★niv" + l + " " + got + "≠" + avec[l]);
+    });
+    if (W.raidReward("minerai", 15) !== plafond) bad.push("niv15 étoilé n'égale pas l'ancien plafond");
+    if (W.raidReward("minerai", 16) <= plafond) bad.push("niv16 ne dépasse pas l'ancien plafond");
+    for (let l = 1; l < 50; l++) {
+      if (W.raidReward("minerai", l + 1) - W.raidReward("minerai", l) !== 10) {
+        bad.push("le pas n'est pas +10 au niveau " + l); break;
+      }
+    }
+    set(function (st) { st.raids.minerai.stars = 0; });
+    return bad.length ? bad.slice(0, 3).join(", ") : true;
+  });
   check("l'Ascension d'un raid quintuple exactement sa difficulté", function () {
     const bad = [];
     H.RAID_IDS.forEach(function (rid) {

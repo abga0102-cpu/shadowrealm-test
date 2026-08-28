@@ -1838,10 +1838,22 @@ const RAID_TUNE = {
   competence: { hp: 1.00, dmg: 1.00 },
   familier:   { hp: 1.00, dmg: 1.00 },
 };
+/* Section 6 makes Raid Minerai linear: a flat base, then ten more a level. The
+   base is the only thing an Ascension changes -- 500 unstarred, 850 after the
+   first -- so level 15 with a star lands on 990, which was the unstarred
+   ceiling, and level 16 is the first to beat it. The second star is left
+   undefined and the base holds, as everywhere else in this update. */
+const RAID_MINERAI_BASE = [500, 850];
+const RAID_MINERAI_PER_LEVEL = 10;
+function raidMineraiBase(s) {
+  const st = (s && s.raids && s.raids.minerai && s.raids.minerai.stars) || 0;
+  return RAID_MINERAI_BASE[Math.min(Math.max(0, st), RAID_MINERAI_BASE.length - 1)];
+}
 function raidReward(raid, level) {
   if (raid === "evolution") return PE_REWARD_BASE + Math.floor(level * PE_REWARD_PER_LEVEL);
   // Raid Or is the primary gold source, so it scales far harder than the rest
   if (raid === "or") return Math.floor(RAID_OR_BASE * Math.pow(RAID_OR_GROWTH, level));
+  if (raid === "minerai") return raidMineraiBase(S) + RAID_MINERAI_PER_LEVEL * (level - 1);
   // Level 1 pays the base exactly, and the 1.16 per-level curve the system
   // already used carries on from there.
   const base = RAID_BASE[raid] || 8;
@@ -1979,7 +1991,8 @@ function bossFirstClearReward(floor) {
 const RAID_OR_BASE = 3000, RAID_OR_GROWTH = 1.14;
 /* Raid level 1 rewards. These also set the Récolte automatique's hourly
    rates: Minerai 100% of an entry, Essence and Compétence 25% each. */
-const RAID_BASE = { minerai: 1000, familier: 120, competence: 50 };
+/* minerai is no longer here: section 6 gives it its own linear curve. */
+const RAID_BASE = { familier: 120, competence: 50 };
 const RAID_GROWTH = 1.16;
 const mn = (a) => a.map((v) => Math.round(v * 60));
 const hr = (a) => a.map((v) => Math.round(v * 3600));
