@@ -469,6 +469,25 @@ function run(W) {
     if (v[49] < v[14] * 5) return "l'augmentation n'est pas sensible au niveau 50";
     return true;
   });
+  check("les paliers de temps d'amélioration ne se cumulent jamais", function () {
+    const want = { 5: 1, 19: 1, 20: 3, 29: 3, 30: 5, 39: 5, 40: 7, 49: 7, 50: 9 };
+    const bad = [];
+    Object.keys(want).forEach(function (l) {
+      if (W.forgeTimeTierMul(+l) !== want[l])
+        bad.push("niv" + l + " ×" + W.forgeTimeTierMul(+l) + " au lieu de ×" + want[l]);
+    });
+    if (bad.length) return bad.join(", ");
+    set(function (st) { st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 }; });
+    // le temps final doit valoir exactement le temps normal x le palier
+    const drift = [];
+    [20, 25, 30, 35, 40, 45, 50].forEach(function (l) {
+      set(function (st) { st.forge.level = l; });
+      const got = W.forgeUpgTimeFor(H.S);
+      const want2 = W.forgeUpgradeTime(l) * W.forgeTimeTierMul(l);
+      if (got !== want2) drift.push("niv" + l + " " + got + " au lieu de " + want2);
+    });
+    return drift.length ? drift.join(", ") : true;
+  });
   check("la jauge ne progresse pas pendant une amélioration", function () {
     const prep = function () {
       set(function (st) {

@@ -4394,9 +4394,17 @@ function forgeUpgCostFor(s) {
   const cut = Math.min(FORGE_COST_CUT_CAP, treeSum(s, "forgeCost"));
   return Math.max(1, Math.floor(forgeUpgradeCost(s.forge.level) * (1 - cut / 100)));
 }
+/* Section 11: past Forge 20 an upgrade takes a multiple of its normal time, by
+   tier. A single lookup, so the tiers can never stack -- level 30 is x5 flat,
+   not x3 then x5. forgeUpgradeTime is left exactly as it was: the multiplier is
+   applied to what it returns, not folded into it. */
+function forgeTimeTierMul(level) {
+  return level >= 50 ? 9 : level >= 40 ? 7 : level >= 30 ? 5 : level >= 20 ? 3 : 1;
+}
 function forgeUpgTimeFor(s) {
+  const normal = forgeUpgradeTime(s.forge.level) * forgeTimeTierMul(s.forge.level);
   // speed, like the research and hatch families: divide, do not shave
-  return Math.max(0, Math.round(forgeUpgradeTime(s.forge.level) / (1 + treeSum(s, "forgeTime") / 100)));
+  return Math.max(0, Math.round(normal / (1 + treeSum(s, "forgeTime") / 100)));
 }
 function forgeGaugeFull(s) {
   return (s.forge.progress || 0) >= forgeProgressNeed(s.forge.level);
