@@ -437,6 +437,26 @@ function run(W) {
     return bad.length ? bad.join(" | ") : true;
   });
 
+  check("la première Ascension double exactement la puissance de base", function () {
+    const bad = [];
+    set(function (st) { st.stars = { pet: 0, forge: 0, skill: 0 }; st.forge.level = 20; });
+    const f0 = (6 + 20 * 2) * W.starMul(H.S, "forge");
+    const p0 = W.petBonusAt("EPIQUE", 5, 0);
+    const s0 = W.skillDamageMult(1000, 1);
+    set(function (st) { st.stars = { pet: 1, forge: 1, skill: 1 }; st.forge.level = 20; });
+    const f1 = (6 + 20 * 2) * W.starMul(H.S, "forge");
+    const p1 = W.petBonusAt("EPIQUE", 5, 1);
+    const s1 = W.skillDamageMult(1000, 1);
+    if (f1 / f0 !== 2) bad.push("Forge ×" + (f1 / f0));
+    if (p1 / p0 !== 2) bad.push("Familier ×" + (p1 / p0));
+    if (s1 / s0 !== 2) bad.push("Compétence ×" + (s1 / s0));
+    return bad.length ? bad.join(", ") : true;
+  });
+  check("aucun multiplicateur n'est inventé au-delà de la première étoile", function () {
+    return W.ascendPowerMul(2) === W.ascendPowerMul(1)
+      ? true : "★2 vaut ×" + W.ascendPowerMul(2) + ", ce que la spec ne définit pas";
+  });
+
   // ---------------------------------------------------------------- gear
   group("ÉQUIPEMENT — les huit pièces de la section 14");
   check("8 emplacements, chacun avec la bonne statistique", function () {

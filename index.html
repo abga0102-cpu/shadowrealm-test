@@ -1388,15 +1388,25 @@ function masteryReq(level) { return Math.round(5 + level * 1.6); }
    headStart is deliberately capped: however many stars you hold, the last
    third of the rarity curve still has to be climbed. */
 const ASCENSION = {
-  pet:   { key: "pet",   label: "Familier",   statMul: 1.60, headStart: 0.22, divin: 1.2 },
-  forge: { key: "forge", label: "Forge",      statMul: 1.55, headStart: 0.22, divin: 1.0 },
-  skill: { key: "skill", label: "Compétence", statMul: 1.50, headStart: 0.22, divin: 1.1 },
+  /* statMul is no longer read for power -- section 3 sets one multiplier for all
+     three, in ASCEND_POWER_MUL. headStart and divin are still this table's. */
+  pet:   { key: "pet",   label: "Familier",   headStart: 0.22, divin: 1.2 },
+  forge: { key: "forge", label: "Forge",      headStart: 0.22, divin: 1.0 },
+  skill: { key: "skill", label: "Compétence", headStart: 0.22, divin: 1.1 },
 };
 const STAR_HEADSTART_CAP = 0.66;
 
 function starsOf(s, sys) { return (s.stars && s.stars[sys]) || 0; }
 /* permanent multiplier on that system's base values */
-function starMul(s, sys) { return Math.pow(ASCENSION[sys].statMul, starsOf(s, sys)); }
+/* What a star does to a system's base power. Section 3 sets the first at
+   exactly x2 and deliberately leaves the second undefined, so the table stops
+   there and the value holds rather than compounding into a number nobody chose.
+   Add the next entry when the brief gives one; nothing else has to change. */
+const ASCEND_POWER_MUL = [1, 2];
+function ascendPowerMul(stars) {
+  return ASCEND_POWER_MUL[Math.min(Math.max(0, stars || 0), ASCEND_POWER_MUL.length - 1)];
+}
+function starMul(s, sys) { return ascendPowerMul(starsOf(s, sys)); }
 function masteryMax(sys) { return sys === "forge" ? RULES.FORGE_MAX : RULES.MASTERY_MAX; }
 function masteryLevel(s, sys) {
   return sys === "forge" ? s.forge.level
@@ -1452,10 +1462,10 @@ function ascendCta(sys, col) {
 
 function ascensionPreview(s, sys) {
   const st = starsOf(s, sys);
-  const mul = ASCENSION[sys].statMul;
+  const mul = ascendPowerMul(st + 1) / ascendPowerMul(st);
   const common = { stars: st, nextStars: st + 1,
-    baseNow: Math.round(Math.pow(mul, st) * 100),
-    baseAfter: Math.round(Math.pow(mul, st + 1) * 100),
+    baseNow: Math.round(ascendPowerMul(st) * 100),
+    baseAfter: Math.round(ascendPowerMul(st + 1) * 100),
     masteryFrom: masteryLevel(s, sys), masteryTo: sys === "forge" ? 1 : 0 };
   if (sys === "pet") return Object.assign(common, {
     label: "Familier",
@@ -1644,7 +1654,7 @@ function petMaxLevel(rarity) { return PET_UP[rarity].max; }
 function petBonusAt(rarity, level, stars) {
   const u = PET_UP[rarity];
   const base = PET_BASE[rarity] + Math.min(level || 0, u.max) * u.per;
-  return base * Math.pow(ASCENSION.pet.statMul, stars || 0);
+  return base * ascendPowerMul(stars);
 }
 function petBonus(pet) { return pet ? petBonusAt(pet.rarity, pet.level || 0, starsOf(S, "pet")) : 0; }
 function petUpgradeCost(rarity, level) {
@@ -5672,6 +5682,15 @@ function showAscendModal(sys) {
       '</div><div class="mute tiny b mt4">' + p.stars + " ★ → " + p.nextStars + " ★</div></div>" +
     '<div class="notice" style="border-left-color:#B15CF6">' + esc(p.gain) +
       ' — base permanente ' + p.baseNow + "% → <b>" + p.baseAfter + "%</b></div>" +
+    /* Section 3 defines the first star and nothing beyond it, so the multiplier
+       holds rather than being invented. That leaves a trap: a second Ascension
+       would wipe everything and grant no extra power. Say so plainly instead of
+       letting the player find out afterwards. */
+    (p.baseAfter === p.baseNow
+      ? '<div class="notice mt6" style="border-left-color:var(--red);color:var(--redLit)">' +
+        "Aucun gain de puissance supplémentaire n'est défini au-delà de la première " +
+        "étoile. Cette Ascension réinitialiserait tout sans rien ajouter.</div>"
+      : "") +
     '<div class="sect" style="margin:12px 0 6px">Réinitialisé</div>' +
     p.reset.map((r) => line("cross", "var(--redLit)", r[0], r[1])).join("") +
     '<div class="sect" style="margin:12px 0 6px">Conservé</div>' +
@@ -7703,7 +7722,7 @@ const ACT = {
     closeModal();
     if (!r.ok) { toast("Maîtrise pas encore au maximum"); return; }
     const cfg = ASCENSION[a];
-    toast("Ascension " + cfg.label + " ★ " + r.stars + " — base ×" + cfg.statMul, true);
+    toast("Ascension " + cfg.label + " ★ " + r.stars + " — base ×" + ascendPowerMul(r.stars), true);
   },
   resInfo: (a) => showResourceInfo(a),
   statInfo: (a) => showStatInfo(a),
