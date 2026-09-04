@@ -905,6 +905,7 @@ const ASSETS = {
 /* ---------------------------- theme.ts ---------------------------- */
 const RARITY = {
   COMMUN:     { c: "#9FB0C8", label: "Commun" },
+  PEU_COMMUN: { c: "#57C785", label: "Peu commun" },
   RARE:       { c: "#3FA7FF", label: "Rare" },
   EPIQUE:     { c: "#B15CF6", label: "Épique" },
   MYTHIQUE:   { c: "#FF7A3D", label: "Mythique" },
@@ -913,8 +914,9 @@ const RARITY = {
   LEGENDAIRE: { c: "#F5C542", label: "Légendaire" },
   DIVIN:      { c: "#FF4D8D", label: "Divin" },
 };
-/* Core ladder — still used by SKILLS and FAMILIARS. */
+/* Core ladder — used by Skills. Familiars use their own ladder below. */
 const RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "LEGENDAIRE", "DIVIN"];
+const PET_RARITY_ORDER = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "LEGENDAIRE", "DIVIN"];
 /* EQUIPMENT has its own, longer ladder with Héroïque and Ancestral inserted
    between Mythique and Légendaire. Only gear ever rolls these two. */
 /* what each quarter of its health buys it */
@@ -927,7 +929,7 @@ function forgeKeepAll() {
   return o;
 }
 const EQUIP_RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "HEROIQUE", "ANCESTRAL", "LEGENDAIRE", "DIVIN"];
-function orderFor(system) { return system === "forge" ? EQUIP_RARITY_ORDER : RARITY_ORDER; }
+function orderFor(system) { return system === "forge" ? EQUIP_RARITY_ORDER : system === "pet" ? PET_RARITY_ORDER : RARITY_ORDER; }
 function equipRank(rarity) { return EQUIP_RARITY_ORDER.indexOf(rarity); }
 const C = {
   gold: "#E8B44A", purple: "#9B5CF6", red: "#E5484D", green: "#3FB950",
@@ -1453,8 +1455,8 @@ const RATE_ANCHORS = {
     m50: { COMMUN: 29.7, RARE: 30, EPIQUE: 27, MYTHIQUE: 8.3, LEGENDAIRE: 5, DIVIN: 0 },
   },
   pet: {
-    m0:  { COMMUN: 100,  RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,   LEGENDAIRE: 0, DIVIN: 0 },
-    m50: { COMMUN: 29.7, RARE: 30, EPIQUE: 27, MYTHIQUE: 8.3, LEGENDAIRE: 5, DIVIN: 0 },
+    m0:  { COMMUN: 100, PEU_COMMUN: 0, RARE: 0, EPIQUE: 0, MYTHIQUE: 0, LEGENDAIRE: 0, DIVIN: 0 },
+    m50: { COMMUN: 27, PEU_COMMUN: 29, RARE: 25, EPIQUE: 14, MYTHIQUE: 5, LEGENDAIRE: 0, DIVIN: 0 },
   },
 };
 function masteryReq(level) { return Math.round(5 + level * 1.6); }
@@ -1556,7 +1558,8 @@ function ascensionPreview(s, sys) {
     reset: [["Maîtrise Familier", masteryLevel(s, "pet") + " → 0"],
             ["Familiers possédés", fmt(s.pets.length)],
             ["Œufs en cours", fmt(s.eggs.length)]],
-    keep: [["Essence animale", fmt(s.essence)], ["Emplacements d'Œuf", fmt(s.eggSlots)]],
+    keep: [["Essence animale", fmt(s.essence)], ["Pommes", fmt(s.apples || 0)],
+           ["Emplacements d'Œuf", fmt(s.eggSlots)]],
     gain: "Statistiques de base des Familiers ×" + mul });
   if (sys === "forge") return Object.assign(common, {
     label: "Forge",
@@ -1598,6 +1601,18 @@ function doAscendMastery(sys) {
   });
   return { ok: true, stars: starsOf(S, sys) };
 }
+function petLegendaryChance(mastery, stars) {
+  if ((stars || 0) < 1) return 0;
+  const pts = [[0,0],[10,0.10],[20,0.50],[30,1.25],[40,2.50],[45,3.50],[50,5.00]];
+  const m = Math.max(0, Math.min(50, mastery || 0));
+  for (let i = 1; i < pts.length; i++) {
+    if (m <= pts[i][0]) {
+      const a=pts[i-1], b=pts[i], t=(m-a[0])/(b[0]-a[0]);
+      return a[1] + (b[1]-a[1])*t;
+    }
+  }
+  return 5;
+}
 function getRates(system, mastery, ascension, stars) {
   const a = RATE_ANCHORS[system];
   const order = orderFor(system);
@@ -1610,7 +1625,7 @@ function getRates(system, mastery, ascension, stars) {
   const boost = cfg ? Math.min(STAR_HEADSTART_CAP, st * cfg.headStart) : 0;
   const climb = Math.max(0, Math.min(1, mastery / masteryMax(system)));
   const t = boost + (1 - boost) * climb;
-  const EASE = { COMMUN: 1, RARE: 0.7, EPIQUE: 1.15, MYTHIQUE: 1.55,
+  const EASE = { COMMUN: 1, PEU_COMMUN: 0.82, RARE: 0.7, EPIQUE: 1.15, MYTHIQUE: 1.55,
     HEROIQUE: 1.9, ANCESTRAL: 2.3, LEGENDAIRE: 2.6, DIVIN: 1 };
   const out = {};
   order.forEach((r) => { out[r] = a.m0[r] + (a.m50[r] - a.m0[r]) * Math.pow(t, EASE[r]); });
@@ -1621,8 +1636,20 @@ function getRates(system, mastery, ascension, stars) {
     out.MYTHIQUE = Math.max(0, out.MYTHIQUE - divin * 0.6);
     out.LEGENDAIRE = Math.max(0, (out.LEGENDAIRE || 0) - divin * 0.4);
   }
-  const sum = order.reduce((s, r) => s + out[r], 0) || 1;
-  order.forEach((r) => { out[r] = (out[r] / sum) * 100; });
+  if (system === "pet") {
+    // Direct Legendary familiars are locked before the first Familiar Ascension.
+    // After ★, mastery progressively unlocks them up to exactly 5% at 50/50.
+    const target = petLegendaryChance(mastery, st);
+    out.LEGENDAIRE = 0;
+    const pool = ["COMMUN","PEU_COMMUN","RARE","EPIQUE","MYTHIQUE"];
+    const poolSum = pool.reduce((n,r) => n + (out[r] || 0), 0) || 1;
+    const div = Math.max(0, out.DIVIN || 0);
+    const available = Math.max(0, 100 - div - target);
+    pool.forEach((r) => { out[r] = (out[r] || 0) / poolSum * available; });
+    out.LEGENDAIRE = target;
+  }
+  const sum = order.reduce((s, r) => s + (out[r] || 0), 0) || 1;
+  order.forEach((r) => { out[r] = ((out[r] || 0) / sum) * 100; });
   return out;
 }
 function rollRarity(rates, order) {
@@ -1670,17 +1697,15 @@ function hatchSpeedFor(s, rarity) { return 1 + treeSum(s, "hatch_" + rarity) / 1
 function hatchCutFor(s, rarity) {
   return Math.round((1 - 1 / hatchSpeedFor(s, rarity)) * 1000) / 10;
 }
-const EGG_TIMERS = { COMMUN: 10 * 60, RARE: 30 * 60, EPIQUE: 90 * 60, MYTHIQUE: 5 * 3600, LEGENDAIRE: 18 * 3600, DIVIN: 48 * 3600 };
+const EGG_TIMERS = { COMMUN: 10 * 60, PEU_COMMUN: 30 * 60, RARE: 90 * 60, EPIQUE: 4 * 3600, MYTHIQUE: 10 * 3600, LEGENDAIRE: 24 * 3600, DIVIN: 72 * 3600 };
 
 /* ---------------------------- familiars -----------------------------------
    Every balance number for pets lives here so the curve can be retuned in one
    place. A pet grants the SAME percentage to damage and to HP.
 
    PET_BASE is the power a pet has the moment it reaches that rarity.
-   PET_UP is the internal upgrade track available inside that rarity.
-
-   INVARIANT (asserted by petBalanceOk below): a fully-upgraded pet must stay
-   strictly under the BASE of the next rarity, so fusing is always an upgrade.
+   PET_UP is the existing internal upgrade track available inside each rarity.
+   Its caps remain rarity-specific: there is no universal familiar level 50.
    -------------------------------------------------------------------------- */
 /* Species is flavour + icon; ELEMENT carries a light combat effect on top of
    the rarity bonus, so two pets of the same rarity can still play differently. */
@@ -1714,23 +1739,27 @@ function petArt(p) {
       || ASSETS.pet_dragonnet_normal;
 }
 
-const PET_BASE = { COMMUN: 3, RARE: 18, EPIQUE: 108, MYTHIQUE: 648, LEGENDAIRE: 2200, DIVIN: 6408 };
-/* Per-level gains are deliberately small: a fully upgraded pet reaches only
-   ~40% of the way to the NEXT rarity's base, so rarity always matters far more
-   than level. Épique 15/15 stays well under a fresh Mythique, and so on. */
+const PET_BASE = { COMMUN: 3, PEU_COMMUN: 9, RARE: 18, EPIQUE: 108, MYTHIQUE: 648, LEGENDAIRE: 2200, DIVIN: 6408 };
+/* Existing caps and per-level power gains are preserved. Peu commun is simply
+   inserted between Commun and Rare and follows the same 10-level track as
+   Commun. Upgrade PRICES are deliberately absent here: at an equal level every
+   rarity pays the same number of Apples. */
 const PET_UP = {
-  COMMUN:     { max: 10, per: 0.6,  cost: 10,    growth: 1.16 },
-  RARE:       { max: 12, per: 3.0,  cost: 40,    growth: 1.17 },
-  EPIQUE:     { max: 15, per: 14.4, cost: 160,   growth: 1.18 },
-  MYTHIQUE:   { max: 18, per: 34.5, cost: 700,   growth: 1.19 },
-  LEGENDAIRE: { max: 20, per: 84,   cost: 3000,  growth: 1.20 },
-  DIVIN:      { max: 25, per: 150,  cost: 12000, growth: 1.21 },
+  COMMUN:     { max: 10, per: 0.6 },
+  PEU_COMMUN: { max: 10, per: 0.6 },
+  RARE:       { max: 12, per: 3.0 },
+  EPIQUE:     { max: 15, per: 14.4 },
+  MYTHIQUE:   { max: 18, per: 34.5 },
+  LEGENDAIRE: { max: 20, per: 84 },
+  DIVIN:      { max: 25, per: 150 },
 };
-/* a maxed pet may not exceed this share of the gap to the next rarity's base */
-const PET_MAX_GAP_SHARE = 0.45;
-/* how many identical pets fuse into one of the next rarity — deliberately
-   uneven (6/6/6/4/3) to match the 3 -> 18 -> 108 -> 648 -> 2200 -> 6408 curve */
-const PET_FUSE_NEED = { COMMUN: 6, RARE: 6, EPIQUE: 6, MYTHIQUE: 4, LEGENDAIRE: 3 };
+/* Every rarity uses this same Apple curve. The first levels are inexpensive,
+   then the price rises progressively; higher rarities only cost more in total
+   when their existing level cap is higher. */
+const PET_UPGRADE_BASE = 2;
+const PET_UPGRADE_GROWTH = 1.29;
+/* How many identical familiars fuse into the next rarity. */
+const PET_FUSE_NEED = { COMMUN: 6, PEU_COMMUN: 6, RARE: 7, EPIQUE: 8, MYTHIQUE: 9, LEGENDAIRE: 10 };
 
 function petMaxLevel(rarity) { return PET_UP[rarity].max; }
 function petBonusAt(rarity, level, stars) {
@@ -1740,18 +1769,17 @@ function petBonusAt(rarity, level, stars) {
 }
 function petBonus(pet) { return pet ? petBonusAt(pet.rarity, pet.level || 0, starsOf(S, "pet")) : 0; }
 function petUpgradeCost(rarity, level) {
-  const u = PET_UP[rarity];
-  return Math.round(u.cost * Math.pow(u.growth, level || 0));
+  if (!PET_UP[rarity]) return 0;
+  return Math.max(1, Math.round(PET_UPGRADE_BASE * Math.pow(PET_UPGRADE_GROWTH, level || 0)));
 }
 function petFuseNeed(rarity) { return PET_FUSE_NEED[rarity] || 0; }
-/* guard rail: a maxed rarity must stay CLEARLY under the next rarity's base,
-   not merely below it — rarity has to outweigh levelling by a wide margin */
-function petBalanceOk() {
-  for (let i = 0; i < RARITY_ORDER.length - 1; i++) {
-    const r = RARITY_ORDER[i], nx = RARITY_ORDER[i + 1];
-    const maxed = petBonusAt(r, petMaxLevel(r));
-    const ceiling = PET_BASE[r] + (PET_BASE[nx] - PET_BASE[r]) * PET_MAX_GAP_SHARE;
-    if (maxed >= PET_BASE[nx] || maxed > ceiling) return false;
+/* Fusion preserves the core familiar's level. At every transferable level the
+   destination rarity must therefore be stronger than the source rarity. */
+function petFusionBalanceOk() {
+  for (let i = 0; i < PET_RARITY_ORDER.length - 1; i++) {
+    const r = PET_RARITY_ORDER[i], nx = PET_RARITY_ORDER[i + 1];
+    const level = Math.min(petMaxLevel(r), petMaxLevel(nx));
+    if (petBonusAt(nx, level) <= petBonusAt(r, level)) return false;
   }
   return true;
 }
@@ -2041,6 +2069,8 @@ const REBIRTH_UPGRADES = [
   { key: "gold",       label: "Or",             icon: "gold",    max: 50, perLvl: 4,    unit: "%", costDiv: 1,
     // Prix REELS affichés/payés. Total exact des 50 niveaux : 135 000 PR.
     costs: [100,150,200,250,300,350,400,500,550,600,700,800,850,950,1050,1150,1250,1350,1450,1600,1700,1800,1950,2100,2200,2350,2500,2650,2800,2950,3100,3250,3450,3600,3750,3950,4150,4300,4500,4700,4900,5100,5300,5500,5750,5950,6150,6400,6650,7000] },
+  { key: "apples",     label: "Gain Pommes",     icon: "paw",     max: 20, perLvl: 5, unit: "%", costDiv: 1,
+    costs: [200,300,400,500,650,800,950,1100,1300,1500,1700,1900,2100,2300,2500,2800,3100,3400,3700,3800] },
   { key: "prgain",     label: "Gain PR",        icon: "chart",   max: 5,  perLvl: 8,    unit: "%",   costs: [50,100,175,275,400] },
   { key: "keep",       label: "Conservation",   icon: "cycle",   max: 5,  perLvl: 2,    unit: "%",   costs: [100,200,350,550,800] },
   { key: "fastback",   label: "Retour Rapide",  icon: "forward", max: 5,  perLvl: 8,    unit: "%",   costs: [75,150,275,450,700] },
@@ -2081,6 +2111,11 @@ function bossFirstClearReward(floor) {
   const key = tier >= 16 ? "a60" : tier >= 10 ? "a30" : tier >= 6 ? "a15" : tier >= 3 ? "a5" : "a1";
   const qty = Math.min(5, 1 + Math.floor((tier - 1) / 4));  // 1..5 of them
   return { key, qty };
+}
+function appleFirstClearReward(floor, boss, s) {
+  const band = Math.floor(Math.max(0, floor) / 25);
+  const base = boss ? 25 + band * 5 : 8 + band * 2;
+  return Math.floor(base * (1 + rb(s, "apples") / 100));
 }
 /* The primary gold faucet: one Raid Or run should be worth a solid stretch of
    floors. 1.17 over 50 levels was 2566x, which outran every cost curve the
@@ -2314,7 +2349,7 @@ function defaultState(name) {
     version: SAVE_VERSION, playerName: name,
     level: 1, exp: 0, statPoints: 0,
     stats: { sante: 0, degats: 0, crit: 0, critred: 0 },
-    gold: 100, gems: 0, minerai: 400, poussiere: 0, eclat: 80, essence: 60,
+    gold: 100, gems: 0, minerai: 400, poussiere: 0, eclat: 80, essence: 60, apples: 0,
     floor: 1, step: 1, recordFloor: 1, checkpoint: 1, bossClears: {},
     equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null,
       collier: null, anneau: null, ceinture: null },
@@ -2337,7 +2372,7 @@ function defaultState(name) {
     },
     pe: 0,
     universalKeys: 3, adKeysToday: 0, lastKeyReset: todayStr(),
-    bossRewardsClaimed: {},
+    bossRewardsClaimed: {}, eliteAppleClaimed: {}, bossAppleClaimed: {},
     tree: { levels: {}, active: null, activeLevel: 0, activeEnd: 0 },
     raidKeyAlloc: { or: 0, minerai: 0, competence: 0, familier: 0 },
     rebirth: { pr: 0, upgrades: {}, count: 0 },
@@ -2499,6 +2534,18 @@ function migrate(s, name) {
   if (!merged.bossRewardsClaimed || typeof merged.bossRewardsClaimed !== "object") {
     // older saves only had bossClears — treat those as already rewarded
     merged.bossRewardsClaimed = Object.assign({}, merged.bossClears || {});
+  }
+  if (typeof merged.apples !== "number") merged.apples = 0;
+  if (!s.eliteAppleClaimed || typeof s.eliteAppleClaimed !== "object") {
+    // Old saves predate Apples: floors already passed are treated as claimed.
+    merged.eliteAppleClaimed = {};
+    for (let f = RULES.ELITE_EVERY; f <= (merged.recordFloor || 1); f += RULES.ELITE_EVERY) {
+      if (isElite(f)) merged.eliteAppleClaimed[String(f)] = true;
+    }
+  }
+  if (!s.bossAppleClaimed || typeof s.bossAppleClaimed !== "object") {
+    // Existing boss clears predate Apples: do not retroactively pay or create a Rebirth farm.
+    merged.bossAppleClaimed = Object.assign({}, merged.bossClears || {});
   }
   merged.equipped = merged.equipped || {};
   // gear made before affixes existed simply has none; never retro-roll it
@@ -4390,11 +4437,25 @@ function handleCombatEnd(c) {
     grantLevels(s);
     if (won) {
       // a floor clears every half minute, so only the milestones get a toast
-      if (c.elite && !c.boss) notable = { msg: "Élite vaincue · étage " + c.floor, icon: "swords" };
+      if (c.elite && !c.boss) {
+        const ek = String(c.floor);
+        if (!s.eliteAppleClaimed[ek]) {
+          s.eliteAppleClaimed[ek] = true;
+          const apples = appleFirstClearReward(c.floor, false, s);
+          s.apples = (s.apples || 0) + apples;
+          notable = { msg: "Élite vaincue · +" + apples + " 🍎", icon: "swords" };
+        } else notable = { msg: "Élite vaincue · étage " + c.floor, icon: "swords" };
+      }
       if (s.floor + 1 > s.recordFloor) notable = { msg: "Nouveau record · étage " + (s.floor + 1), icon: "trophy" };
       if (c.boss) {
         const bk = String(c.floor);
         s.bossClears[bk] = true;
+        if (!s.bossAppleClaimed[bk]) {
+          s.bossAppleClaimed[bk] = true;
+          const apples = appleFirstClearReward(c.floor, true, s);
+          s.apples = (s.apples || 0) + apples;
+          notable = { msg: "Boss vaincu · +" + apples + " 🍎", icon: "trophy" };
+        }
         // the accelerator is tied to the FIRST clear and never repeats
         if (!s.bossRewardsClaimed[bk]) {
           s.bossRewardsClaimed[bk] = true;
@@ -4784,23 +4845,21 @@ function equipSkill(slotIdx, skillId) {
 }
 
 /* An egg is hatching when it carries a hatchEnd, and stored when it does not.
-   Section 8: the slots cap how many hatch at once and nothing else. */
+   Hatch slots limit simultaneous timers only. Stored eggs never start by themselves. */
 function eggIsHatching(e) { return !!e && e.hatchEnd > 0; }
 function eggsHatching(s) { return s.eggs.filter(eggIsHatching); }
 function eggsStored(s) { return s.eggs.filter((e) => !eggIsHatching(e)); }
-/* Move waiting eggs into any free slot, oldest first. The timer is set here
-   rather than at summon, so an egg that waited benefits from whatever hatch
-   speed the player has by the time it actually starts. */
-function startPendingEggs(s) {
-  let free = s.eggSlots - eggsHatching(s).length;
-  if (free <= 0) return;
-  for (let i = 0; i < s.eggs.length && free > 0; i++) {
-    const e = s.eggs[i];
-    if (eggIsHatching(e)) continue;
-    const secs = EGG_TIMERS[e.rarity] * (1 - hatchCutFor(s, e.rarity) / 100);
+function startEgg(id) {
+  let ok = false;
+  update((s) => {
+    if (eggsHatching(s).length >= s.eggSlots) return;
+    const e = s.eggs.find((x) => x.id === id);
+    if (!e || eggIsHatching(e)) return;
+    const secs = EGG_TIMERS[e.rarity] / hatchSpeedFor(s, e.rarity);
     e.hatchEnd = Date.now() + secs * 1000;
-    free -= 1;
-  }
+    ok = true;
+  });
+  return ok;
 }
 function summonEgg(n) {
   const results = [];
@@ -4817,8 +4876,8 @@ function summonEgg(n) {
       const eggsToMake = Math.random() * 100 < dblChance ? 2 : 1;
       for (let e = 0; e < eggsToMake; e++) {
         const rates = getRates("pet", s.petMastery.level, s.ascension, starsOf(s, "pet"));
-        const rar = rollRarity(rates);
-        // stored, with no timer; startPendingEggs gives it one when a slot frees
+        const rar = rollRarity(rates, PET_RARITY_ORDER);
+        // every summoned egg enters unlimited storage; the player chooses when to hatch it
         s.eggs.push({ id: rid(), rarity: rar, species: randSpecies(), element: randElement(),
           hatchEnd: 0 });
         results.push({ rarity: rar, free: e > 0 });
@@ -4829,7 +4888,6 @@ function summonEgg(n) {
         s.petMastery.progress -= mreq; s.petMastery.level += 1;
       }
     }
-    startPendingEggs(s);
   });
   return results;
 }
@@ -4840,48 +4898,52 @@ function collectEgg(id) {
     s.eggs = s.eggs.filter((e) => e.id !== id);
     const pet = { id: rid(), rarity: egg.rarity, level: 0,
       species: egg.species || randSpecies(), element: egg.element || randElement(),
-      name: ("Familier " + (RARITY_MUL[egg.rarity] > 3 ? "Élite" : "")).trim() };
+      name: ("Familier " + (PET_RARITY_ORDER.indexOf(egg.rarity) >= 3 ? "Élite" : "")).trim() };
     s.pets.push(pet);
     if (!s.activePetId) s.activePetId = pet.id;
     s.eventProgress.hatch = (s.eventProgress.hatch || 0) + 1;
-    // a slot just freed, so the next egg in the queue starts
-    startPendingEggs(s);
+    // slot is now free; stored eggs remain waiting for a manual choice
   });
 }
-/* fusion: 6 COMMUN -> 1 RARE, 6 -> 1 EPIQUE, 6 -> 1 MYTHIQUE,
-   4 MYTHIQUE -> 1 LEGENDAIRE, 3 LEGENDAIRE -> 1 DIVIN. Instant, no timer.
-   Consumes the LEAST upgraded duplicates so the player keeps their investment. */
+/* Fusion is instant. The most advanced familiar is the core: its level,
+   species and element survive. Only the required extra copies are consumed,
+   starting with the least upgraded, so Apple investment is never discarded. */
 function fusePets(rarity) {
-  const idx = RARITY_ORDER.indexOf(rarity);
+  const idx = PET_RARITY_ORDER.indexOf(rarity);
   const need = petFuseNeed(rarity);
-  if (!need || idx < 0 || idx >= RARITY_ORDER.length - 1) return false;
+  if (!need || idx < 0 || idx >= PET_RARITY_ORDER.length - 1) return false;
   if (S.pets.filter((p) => p.rarity === rarity).length < need) return false;
   update((st) => {
     const pool = st.pets.filter((p) => p.rarity === rarity)
-      .sort((a, b) => (a.level || 0) - (b.level || 0));
-    const eaten = pool.slice(0, need).map((p) => p.id);
+      .sort((a, b) => (b.level || 0) - (a.level || 0));
+    const core = pool[0];
+    const extras = pool.slice(1).sort((a, b) => (a.level || 0) - (b.level || 0)).slice(0, need - 1);
+    const consumed = [core].concat(extras);
+    const eaten = consumed.map((p) => p.id);
     st.pets = st.pets.filter((p) => eaten.indexOf(p.id) < 0);
-    const np = { id: rid(), rarity: RARITY_ORDER[idx + 1], level: 0,
-      species: (pool[0] && pool[0].species) || randSpecies(), element: randElement(),
-      name: "Familier Fusionné" };
+    const nextRarity = PET_RARITY_ORDER[idx + 1];
+    const np = { id: rid(), rarity: nextRarity,
+      level: Math.min(core.level || 0, petMaxLevel(nextRarity)),
+      species: core.species || randSpecies(), element: core.element || randElement(),
+      name: core.name || "Familier Fusionné" };
     st.pets.push(np);
     if (eaten.indexOf(st.activePetId || "") >= 0) st.activePetId = np.id;
     st.eventProgress.hatch = (st.eventProgress.hatch || 0) + 1;
   });
   return true;
 }
-/* internal upgrade inside a rarity, paid in Essence */
+/* internal upgrade inside a rarity, paid in Apples */
 function upgradePet(id) {
   const pet = S.pets.find((p) => p.id === id);
   if (!pet) return false;
   const lv = pet.level || 0;
   if (lv >= petMaxLevel(pet.rarity)) return false;
   const cost = petUpgradeCost(pet.rarity, lv);
-  if (S.essence < cost) return false;
+  if ((S.apples || 0) < cost) return false;
   update((st) => {
     const p = st.pets.find((x) => x.id === id);
     if (!p) return;
-    st.essence -= cost;
+    st.apples -= cost;
     p.level = (p.level || 0) + 1;
   });
   return true;
@@ -4889,7 +4951,7 @@ function upgradePet(id) {
 function setActivePet(id) { update((s) => { s.activePetId = id; }); }
 function buyEggSlot() {
   if (S.level < 10 || S.eggSlots >= RULES.EGG_SLOT_MAX || S.gems < 300) return false;
-  update((st) => { st.gems -= 300; st.eggSlots += 1; startPendingEggs(st); });
+  update((st) => { st.gems -= 300; st.eggSlots += 1; });
   return true;
 }
 
@@ -4907,7 +4969,6 @@ function applyTreeLevel(st, node) {
   st.tree.levels[node.id] = (st.tree.levels[node.id] || 0) + 1;
   if (node.effect === "eggSlot") {
     st.eggSlots = Math.min(RULES.EGG_SLOT_MAX, st.eggSlots + 1);
-    startPendingEggs(st);
   }
   // raidKey grants an unassigned daily key; the player picks the raid later
 }
@@ -5861,8 +5922,11 @@ const RESOURCE_INFO = {
     desc: "Sert à invoquer des Compétences. Une invocation coûte " + skillSummonCost(S) + " points.",
     from: ["Raid Compétence", "Récolte automatique — 25 % d'une entrée par heure"] },
   essence:   { icon: "essence", c: "#FFC29B", label: "Essence animale", get: (s) => s.essence,
-    desc: "Améliore le niveau de tes Familiers.",
+    desc: "Sert uniquement à invoquer des œufs de Familier.",
     from: ["Raid Familier", "Récolte automatique — 25 % d'une entrée par heure"] },
+  apples:    { icon: "paw", c: "#8ED05A", label: "Pommes", get: (s) => s.apples || 0,
+    desc: "Sert à améliorer le niveau des Familiers. Une récompense de première victoire uniquement.",
+    from: ["Première victoire contre un Élite", "Première victoire contre un Boss", "Bonus Rebirth Gain Pommes"] },
   pa:        { icon: "pa", c: "#FFD65E", label: "Points de Statistique", get: (s) => s.statPoints,
     desc: "S'attribuent librement entre Santé, Dégâts, Chance critique et Réduction critique.",
     from: ["Montée de niveau — +" + RULES.STAT_POINTS_PER_LEVEL + " par niveau"] },
@@ -6867,7 +6931,7 @@ function scrFamiliers() {
   S.pets.forEach((p) => { byRar[p.rarity] = (byRar[p.rarity] || []).concat([p]); });
 
   const ORANGE = "#FF7A3D";
-  return topbar("Familiers", '<span class="pill" data-act="resInfo" data-arg="essence" style="cursor:pointer;color:#FFC29B;border-color:' + ORANGE + '">' + ic("essence", 11) + fmt(S.essence) + "</span>") +
+  return topbar("Familiers", '<div class="row gap4"><span class="pill" data-act="resInfo" data-arg="essence" style="cursor:pointer;color:#FFC29B;border-color:' + ORANGE + '">' + ic("essence", 11) + fmt(S.essence) + '</span><span class="pill" data-act="resInfo" data-arg="apples" style="cursor:pointer;color:#A9E06F;border-color:#6FA83C">🍎 ' + fmt(S.apples || 0) + "</span></div>") +
     '<div class="pad mt6">' +
       (() => {
         const p = S.pets.find((x) => x.id === S.activePetId);
@@ -6906,8 +6970,8 @@ function scrFamiliers() {
               '<div class="mute tiny mt6">Fusionne pour atteindre la rareté suivante</div></div>'
             : '<div class="between"><div class="mute tiny b">PROCHAIN NIVEAU</div>' +
               '<div class="b tiny" style="color:var(--greenLit)">+' + fmt(Math.round(pct)) + "% → +" + fmt(Math.round(nextPct)) + "%</div></div>" +
-              '<div class="mt6">' + btn(ic("essence", 13) + "Améliorer · " + fmt(cost),
-                { small: true, act: "upgradePet", arg: p.id, dis: S.essence < cost,
+              '<div class="mt6">' + btn("🍎 Améliorer · " + fmt(cost),
+                { small: true, act: "upgradePet", arg: p.id, dis: (S.apples || 0) < cost,
                   style: "--bA:#FFA872;--bB:#DB6224;--bS:#7A310C;--bE:#FFD9C0;--bT:#2A0F03" }) + "</div>") +
         "</div>";
       })() +
@@ -6918,7 +6982,7 @@ function scrFamiliers() {
         '<div class="mt6">' + meter((S.petMastery.progress / mreq) * 100, ORANGE, S.petMastery.progress + " / " + mreq) + "</div>" +
         ascendCta("pet") +
         ratesTable(rates, S.petMastery.level < RULES.MASTERY_MAX ? getRates("pet", S.petMastery.level + 1, S.ascension, starsOf(S, "pet")) : null,
-          "Actuel", "Niv." + (S.petMastery.level + 1)) +
+          "Actuel", "Niv." + (S.petMastery.level + 1), PET_RARITY_ORDER) +
         '<div class="row gap6 mt6">' +
           btn(ic("egg", 14) + "Invoquer · 10", { small: true, act: "summonEgg", arg: 1,
             dis: S.essence < 10,
@@ -6929,8 +6993,16 @@ function scrFamiliers() {
         "</div>" +
         // the nest being full is no longer a reason not to summon
         (stored.length ? '<div class="mute tiny center mt6">' + stored.length +
-          " œuf" + (stored.length > 1 ? "s" : "") + " en réserve · éclosion dès qu'un emplacement se libère</div>" : "") +
+          " œuf" + (stored.length > 1 ? "s" : "") + " en stock · choisis manuellement lequel faire éclore</div>" : "") +
       "</div>" +
+      '<div class="sect" style="margin:16px 0 9px">Œufs en stock (' + stored.length + ")</div>" +
+      (stored.length ? '<div class="card">' + PET_RARITY_ORDER.filter((r) => stored.some((e) => e.rarity === r)).map((r) => {
+        const list = stored.filter((e) => e.rarity === r); const e = list[0];
+        const full = hatching.length >= S.eggSlots;
+        return '<div class="between" style="padding:7px 0;border-bottom:1px solid #ffffff0c"><div class="row gap6">' + rtag(r) +
+          '<b class="small">×' + list.length + '</b><span class="mute tiny">' + fmtTime(EGG_TIMERS[r] / hatchSpeedFor(S,r)) + '</span></div>' +
+          btn("Éclore", { small:true, cls:"green", act:"startEgg", arg:e.id, dis:full, style:"padding:5px 9px;font-size:10.5px" }) + '</div>';
+      }).join("") + '</div>' : '<div class="mute tiny center">Aucun œuf en stock.</div>') +
       '<div class="sect" style="margin:16px 0 9px">Éclosion (' + hatching.length + "/" + S.eggSlots +
         (stored.length ? ") · " + stored.length + " en réserve" : ")") + "</div>" +
       '<div class="slotGrid">' + eggCells + "</div>" +
@@ -6940,15 +7012,15 @@ function scrFamiliers() {
             dis: S.level < 10 || S.gems < 300, style: "padding:4px 9px;font-size:10.5px" }) + "</div>" : "") +
       '<div class="sect" style="margin:16px 0 9px">Collection (' + S.pets.length + ")</div>" +
       '<div class="mute tiny" style="margin-bottom:2px;line-height:1.35">Fusion : ' +
-        RARITY_ORDER.slice(0, -1).map((r) => petFuseNeed(r) + " " + RARITY[r].label).join(" → ") +
-        " → " + RARITY[RARITY_ORDER[RARITY_ORDER.length - 1]].label +
-        ". Les doublons les moins améliorés partent en premier.</div>" +
+        PET_RARITY_ORDER.slice(0, -1).map((r, i) => petFuseNeed(r) + " " + RARITY[r].label +
+          " → 1 " + RARITY[PET_RARITY_ORDER[i + 1]].label).join(" · ") +
+        ". Le Familier le plus avancé conserve son niveau, son espèce et son élément.</div>" +
       (S.pets.length === 0 ? '<div class="mute tiny center" style="padding:6px 0">Aucun familier. Fais éclore un œuf.</div>'
-        : RARITY_ORDER.filter((r) => byRar[r]).map((r) => {
+        : PET_RARITY_ORDER.filter((r) => byRar[r]).map((r) => {
         const list = byRar[r];
         const rc = RARITY[r].c;
         const need = petFuseNeed(r);
-        const isTop = RARITY_ORDER.indexOf(r) >= RARITY_ORDER.length - 1;
+        const isTop = PET_RARITY_ORDER.indexOf(r) >= PET_RARITY_ORDER.length - 1;
         const canFuse = need > 0 && list.length >= need;
         const best = list.slice().sort((a, b) => (b.level || 0) - (a.level || 0))[0];
         const activeHere = list.some((p) => p.id === S.activePetId);
@@ -8224,17 +8296,18 @@ const ACT = {
   // pets
   summonEgg: (a) => {
     const r = summonEgg(parseInt(a, 10));
-    if (!r.length) toast(S.eggs.length >= S.eggSlots ? "Emplacements d'œufs pleins" : "Essence insuffisante");
-    else toast(r.length + " œuf" + (r.length > 1 ? "s" : "") + " en incubation", true);
+    if (!r.length) toast("Essence insuffisante");
+    else toast(r.length + " œuf" + (r.length > 1 ? "s" : "") + " ajouté" + (r.length > 1 ? "s" : "") + " au stock", true);
   },
+  startEgg: (a) => { if (startEgg(a)) toast("Œuf placé en éclosion", true); else toast("Aucun emplacement libre"); },
   collectEgg: (a) => { collectEgg(a); toast("Familier obtenu !", true); },
   fuse: (a) => {
     if (fusePets(a)) toast("Fusion réussie !", true);
-    else toast(petFuseNeed(a) + " " + RARITY[a].label + " identiques requis");
+    else toast(petFuseNeed(a) + " Familiers de rareté " + RARITY[a].label + " requis");
   },
   setPet: (a) => { setActivePet(a); toast("Familier actif", true); },
   upgradePet: (a) => {
-    if (upgradePet(a)) toast("Familier ameliore !", true); else toast("Essence insuffisante");
+    if (upgradePet(a)) toast("Familier amélioré !", true); else toast("Pommes insuffisantes");
   },
   raidKeyAdd: (a) => {
     if (assignRaidKey(a, 1)) toast("Cle quotidienne attribuee a " + RAIDS[a].name, true);
@@ -8384,7 +8457,7 @@ if (SMOKE) {
     MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PR_PER_FLOOR, REBIRTH_UPGRADES, RAID_IDS,
     TREE_NODES,
     get forgeAnim() { return forgeAnim; }, set forgeAnim(v) { forgeAnim = v; },
-    FORGE_ANIM_MS, EQUIP_RARITY_ORDER, RARITY_MUL, SINGLE_STAT_MUL,
+    FORGE_ANIM_MS, EQUIP_RARITY_ORDER, PET_RARITY_ORDER, RARITY_MUL, SINGLE_STAT_MUL,
     BASE, AFFIX_BY_KEY, AFFIX_DEFS, AFFIX_EXCEPTIONAL_PCT, WEAPON_TYPES,
     SPEED_AFFIX_CAP, SKILL_LEVEL_GROWTH, RATE_ANCHORS, SKILL_RARITY_MUL,
     HERO_START, ENEMY_FIRE_RANGE, ENEMY_SPEED,
