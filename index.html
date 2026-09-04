@@ -343,12 +343,23 @@ body{
 }
 .slot.locked{cursor:default;filter:saturate(.3) brightness(.75)}
 .slot.locked .tiny{margin-top:2px}
-/* Home is a fixed column: everything below the arena has a natural height and
-   the arena takes whatever is left, so the screen never scrolls and the fight
-   is as large as the device allows. */
-#screen.fixed{overflow:hidden;display:flex;flex-direction:column}
-#screen.fixed #arenaSlot{flex:1 1 auto;min-height:calc(190px * var(--s));display:flex}
-#screen.fixed #arena{height:auto;flex:1 1 auto}
+/* Keep the combat stage visually consistent across mobile browsers.
+   Previously the arena simply consumed the vertical space left by the browser.
+   Safari's address/tool bars therefore made the same phone render a much
+   shorter arena than an installed/full-screen view. The arena is now sized
+   primarily from viewport WIDTH, which stays stable when browser chrome opens
+   or closes. On unusually short screens the page may scroll a little rather
+   than crushing the fight area. */
+#screen.fixed{overflow-x:hidden;overflow-y:auto;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch}
+#screen.fixed #arenaSlot{
+  flex:0 0 auto;
+  width:100%;
+  height:clamp(250px,76vw,330px);
+  min-height:250px;
+  max-height:330px;
+  display:flex;
+}
+#screen.fixed #arena{height:100%;flex:0 0 100%}
 #screen.fixed>*:not(#arenaSlot){flex:0 0 auto}
 /* forge panel: three tight rows instead of six stacked blocks */
 .fgRow{display:flex;align-items:center;gap:6px}
