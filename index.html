@@ -1170,14 +1170,9 @@ function skillSummonCost(s) {
   return Math.max(1, Math.round(SKILL_SUMMON_COST *
     (1 - Math.min(60, Math.abs(treeSum(s || S, "skillCost"))) / 100)));
 }
-/* Section 16 brings the two speeds down. Attack speed loses 10 %: with gear
-   now capped near +20 % instead of running to +49 %, a fully equipped hero ends
-   up swinging at roughly the rate an unequipped one does today, which is where
-   the pacing was tuned. Movement loses less, 8 %, because it is already the
-   thin end of the fight -- a melee hero spends 8.5 s walking in against 0.9 s
-   for a bow, and there is no reading of "slower" that should widen that gap
-   further. Combat distance itself is section 19's subject, not this one. */
-const BASE = { hp: 100, damage: 12, attackSpeed: 0.9, moveSpeed: 24, critChance: 5, critMult: 1.5 };
+/* Combat pacing: slower movement gives melee/ranged encounters a clearer
+   approach phase without changing damage, range or attack speed. */
+const BASE = { hp: 100, damage: 12, attackSpeed: 0.9, moveSpeed: 16, critChance: 5, critMult: 1.5 };
 
 /* ---------------------------- levelling ------------------------------------
    A level has to feel like an event, so the curve is deliberately slow and it
@@ -1258,7 +1253,7 @@ function goldReward(floor) {
 /* cut to roughly a third, and flattened, so deep floors cannot outrun the
    curve above. AFK EXP is derived from this, so it scales down with it. */
 function expReward(floor)  { return Math.floor(4.5 * Math.pow(floor, 1.05) + 4); }
-const ENEMY_SPEED = 34;
+const ENEMY_SPEED = 22;
 
 function isCheckpoint(f) { return f % RULES.CHECKPOINT_EVERY === 0; }
 function isElite(f) { return f % RULES.ELITE_EVERY === 0 && f % RULES.BOSS_EVERY !== 0; }
@@ -5120,7 +5115,9 @@ const RANGED_IDS = ["arc", "arbalete", "baton"];
 /* width-to-height of each sprite, so none of them stretch */
 const WEAPON_ASPECT = { epee: 0.543, hache: 0.359, masse: 0.258, dague: 0.301, arc: 0.219, arbalete: 0.664, baton: 0.93 };
 const WEAPON_SILVER = "#d6dae4";
-const ARENA_H = 286, CHAR = 78;   // sprite unit; scaled to the arena at draw time
+/* Fighters are deliberately smaller in the same arena: this increases the
+   perceived meeting distance and leaves more room to read projectiles/VFX. */
+const ARENA_H = 286, CHAR = 64;   // sprite unit; scaled to the arena at draw time
 
 const P = { hero: HERO_START, en: {} };   // smoothed positions
 let arenaEl = null, arenaNodes = null, arenaT = 0;
