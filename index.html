@@ -1794,23 +1794,23 @@ function skillEff(def, level) {
 }
 const SKILL_DEFS = [
   /* ---- ATTAQUE : single target ---- */
-  { id: "taillade",    name: "Taillade",         cat: "ATTAQUE", type: "MONO",   rarity: "COMMUN",     cd: 3,  mult: 2.4, color: "#FF9C6B", icon: "blade",     fx: "impact",
+  { id: "taillade",    name: "Taillade",         cat: "ATTAQUE", type: "MONO",   rarity: "COMMUN",     cd: 3,  mult: 1.6, color: "#FF9C6B", icon: "blade",     fx: "impact",
     desc: "Un coup rapide et sans fioriture. Peu de dégâts, mais il revient sans arrêt." },
-  { id: "frappe",      name: "Frappe Sombre",    cat: "ATTAQUE", type: "MONO",   rarity: "RARE",       cd: 4,  mult: 3.2, color: "#F0883E", icon: "slash",     fx: "impact",
+  { id: "frappe",      name: "Frappe Sombre",    cat: "ATTAQUE", type: "MONO",   rarity: "RARE",       cd: 4,  mult: 2.0, color: "#F0883E", icon: "slash",     fx: "impact",
     desc: "Une frappe unique chargée d'ombre. Bon compromis entre dégâts et recharge." },
-  { id: "percee",      name: "Percée",           cat: "ATTAQUE", type: "MONO",   rarity: "EPIQUE",     cd: 6,  mult: 4.6, color: "#FF6B4A", icon: "pierce",    fx: "pierce",
+  { id: "percee",      name: "Percée",           cat: "ATTAQUE", type: "MONO",   rarity: "EPIQUE",     cd: 6,  mult: 2.6, color: "#FF6B4A", icon: "pierce",    fx: "pierce",
     desc: "Un estoc qui traverse l'armure. Lourds dégâts sur une seule cible." },
-  { id: "execution",   name: "Exécution",        cat: "ATTAQUE", type: "MONO",   rarity: "LEGENDAIRE", cd: 11, mult: 7.5, color: "#E5484D", icon: "execute",   fx: "impact",
+  { id: "execution",   name: "Exécution",        cat: "ATTAQUE", type: "MONO",   rarity: "LEGENDAIRE", cd: 11, mult: 4.0, color: "#E5484D", icon: "execute",   fx: "impact",
     desc: "Le coup de grâce. Les plus gros dégâts mono-cible du jeu, au prix d'une longue recharge." },
 
   /* ---- AOE : every enemy ---- */
-  { id: "chaine",      name: "Chaîne Foudre",    cat: "AOE",     type: "CHAINE", rarity: "COMMUN",     cd: 5,  mult: 2.0, color: "#3FCFD6", icon: "chain",     fx: "bolt",
+  { id: "chaine",      name: "Chaîne Foudre",    cat: "AOE",     type: "CHAINE", rarity: "COMMUN",     cd: 5,  mult: 1.2, color: "#3FCFD6", icon: "chain",     fx: "bolt",
     desc: "Un arc électrique qui rebondit d'un ennemi à l'autre et touche toute la vague." },
-  { id: "vortex",      name: "Vortex Arcanique", cat: "AOE",     type: "AOE",    rarity: "RARE",       cd: 6,  mult: 2.4, color: "#9B5CF6", icon: "spiral",    fx: "vortex",
+  { id: "vortex",      name: "Vortex Arcanique", cat: "AOE",     type: "AOE",    rarity: "RARE",       cd: 6,  mult: 1.4, color: "#9B5CF6", icon: "spiral",    fx: "vortex",
     desc: "Une spirale d'énergie qui aspire et broie tous les ennemis présents." },
-  { id: "onde",        name: "Onde de Choc",     cat: "AOE",     type: "AOE",    rarity: "EPIQUE",     cd: 7,  mult: 2.8, color: "#4A90D9", icon: "wave",      fx: "wave",
+  { id: "onde",        name: "Onde de Choc",     cat: "AOE",     type: "AOE",    rarity: "EPIQUE",     cd: 7,  mult: 1.6, color: "#4A90D9", icon: "wave",      fx: "wave",
     desc: "Une déflagration circulaire qui balaie tout ce qui entoure le héros." },
-  { id: "meteore",     name: "Météore",          cat: "AOE",     type: "AOE",    rarity: "MYTHIQUE",   cd: 9,  mult: 4.0, color: "#FF7A3D", icon: "meteor",    fx: "meteor",
+  { id: "meteore",     name: "Météore",          cat: "AOE",     type: "AOE",    rarity: "MYTHIQUE",   cd: 9,  mult: 2.2, color: "#FF7A3D", icon: "meteor",    fx: "meteor",
     desc: "Un bloc incandescent s'écrase sur l'arène. La zone la plus dévastatrice hors Ultime." },
 
   /* ---- BUFF : timed, on the hero ---- */
@@ -1825,10 +1825,10 @@ const SKILL_DEFS = [
     eff: { key: "hate",    stat: "haste",    value: 30, dur: 6, label: "Hâte" } },
 
   /* ---- DEBUFF : timed, on the enemies ---- */
-  { id: "poison",      name: "Poison",           cat: "DEBUFF",  type: "DEBUFF", rarity: "COMMUN",     cd: 8,  mult: 0.5, color: "#7ED321", icon: "poison",    fx: "poison",
+  { id: "poison",      name: "Poison",           cat: "DEBUFF",  type: "DEBUFF", rarity: "COMMUN",     cd: 8,  mult: 0.3, color: "#7ED321", icon: "poison",    fx: "poison",
     desc: "Empoisonne la vague : des dégâts continus qui s'ajoutent à tout le reste.",
     eff: { key: "poison",  stat: "poison",   value: 22, dur: 8, label: "Poison" } },
-  { id: "malediction", name: "Malédiction",      cat: "DEBUFF",  type: "DEBUFF", rarity: "EPIQUE",     cd: 8,  mult: 1.2, color: "#B15CF6", icon: "skull",     fx: "curse",
+  { id: "malediction", name: "Malédiction",      cat: "DEBUFF",  type: "DEBUFF", rarity: "EPIQUE",     cd: 8,  mult: 0.6, color: "#B15CF6", icon: "skull",     fx: "curse",
     desc: "Marque les ennemis : ils encaissent davantage de dégâts de toutes tes sources.",
     eff: { key: "vuln",    stat: "vuln",     value: 30, dur: 6, label: "Vulnérable" } },
   { id: "lenteur",     name: "Lenteur",          cat: "DEBUFF",  type: "DEBUFF", rarity: "MYTHIQUE",   cd: 9,  mult: 0,   color: "#8B6BD6", icon: "slow",      fx: "curse",
@@ -1845,7 +1845,7 @@ const SKILL_DEFS = [
     eff: { key: "regen",   stat: "regen",    value: 3, dur: 8, label: "Régén." } },
 
   /* ---- ULTIME : the Ascension prize ---- */
-  { id: "cataclysme",  name: "Cataclysme",       cat: "ULTIME",  type: "AOE",    rarity: "DIVIN",      cd: 22, mult: 11,  color: "#F5C542", icon: "cataclysm", fx: "cataclysm",
+  { id: "cataclysme",  name: "Cataclysme",       cat: "ULTIME",  type: "AOE",    rarity: "DIVIN",      cd: 22, mult: 5.5, color: "#F5C542", icon: "cataclysm", fx: "cataclysm",
     desc: "L'arène entière s'embrase. Les dégâts les plus dévastateurs du jeu, sur tous les ennemis à la fois." },
 ];
 /* an active effect knows its eff.key, so it can find its way back to the icon
