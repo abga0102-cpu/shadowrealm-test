@@ -1220,19 +1220,40 @@ function enemyDamage(floor) {
   const anchor = 1.8 * Math.pow(FLOOR_KNEE, 1.10) + 2;
   return Math.floor(anchor * Math.pow(1.055, floor - FLOOR_KNEE));
 }
-/* Floors are the SECONDARY income -- roughly a fifth to a quarter of the gold
-   a player earns, next to the Raid Or's half and the Récolte's sixth. The flat
-   0.62 exponent left them at 0-8% of income from the mid game on, so climbing
-   paid nothing and only the Raid mattered. They now use the same shape as
-   enemyHP: a mild curve up to a knee, then a 1.04 compound, so a deeper floor
-   is genuinely worth more without ever rivalling the Raid Or.
-
-   The Récolte automatique derives its gold from this function, so its per-hour
-   constant below is what keeps it a complement rather than a replacement. */
+/* Campaign Gold economy. Floors 1-25 keep the original early curve.
+   After floor 25, growth slows progressively at floors 300, 500 and 750.
+   Elite floors pay +20%; Boss floors +40%. The Rebirth Gold bonus applies
+   only when campaign Gold is awarded, not inside this base reward function. */
 const GOLD_KNEE = 25;
+/* Gold progression is intentionally tiered at deep floors so the economy keeps
+   growing without an endless exponential explosion. The value is continuous
+   across every knee: no tier resets the reward. Elite floors pay +20% and Boss
+   floors +40% for every campaign enemy on that floor. */
 function goldReward(floor) {
-  const base = 0.8 * Math.pow(Math.min(floor, GOLD_KNEE), 0.72) + 3;
-  return Math.floor(floor <= GOLD_KNEE ? base : base * Math.pow(1.04, floor - GOLD_KNEE));
+  const early = 0.8 * Math.pow(Math.min(floor, GOLD_KNEE), 0.72) + 3;
+  if (floor <= GOLD_KNEE) return Math.floor(early);
+
+  const at25 = 0.8 * Math.pow(GOLD_KNEE, 0.72) + 3;
+  let value;
+  if (floor <= 300) {
+    value = at25 * Math.pow(1.02, floor - 25);
+  } else {
+    const at300 = at25 * Math.pow(1.02, 300 - 25);
+    if (floor <= 500) {
+      value = at300 * Math.pow(1.006, floor - 300);
+    } else {
+      const at500 = at300 * Math.pow(1.006, 500 - 300);
+      if (floor <= 750) {
+        value = at500 * Math.pow(1.001, floor - 500);
+      } else {
+        const at750 = at500 * Math.pow(1.001, 750 - 500);
+        value = at750 * Math.pow(1.0005, floor - 750);
+      }
+    }
+  }
+  if (isBoss(floor)) value *= 1.40;
+  else if (isElite(floor)) value *= 1.20;
+  return Math.floor(value);
 }
 /* cut to roughly a third, and flattened, so deep floors cannot outrun the
    curve above. AFK EXP is derived from this, so it scales down with it. */
@@ -1617,38 +1638,13 @@ function rollRarity(rates, order) {
    gold price of an upgrade and is untouched. */
 function forgeCost(forgeLevel) { return FORGE_CRAFT_COST; }
 const FORGE_CRAFT_COST = 10;
-/* THE gold sink, and the reason gold is worth managing at all. Tuned against
-   the full income model -- floors + Raid Or + Récolte + the Rebirth gold bonus,
-   for a player who plays ~2h a day and spends every Raid key, with the Raid Or
-   level derived from the floor whose wave HP it matches rather than assumed.
-   One upgrade should cost ~0.3 days of income at Forge 10, 1.1 at 20, 2.3 at
-   30, 4.5 at 40 and 4.9 at 50.
-
-   A plain exponential cannot hold that shape. Income is nearly flat while the
-   Raid Or is stuck at level 1 (floors 1-30), then compounds hard once floors
-   and Raid levels start feeding each other, so the cost has to ACCELERATE:
-   TAPER^(n*n) takes per-level growth from 7% at Forge 1 to 44% at Forge 50. */
-const FORGE_UPG_BASE = 2600, FORGE_UPG_GROWTH = 1.0725, FORGE_UPG_TAPER = 1.003;
-/* Section 12: from Forge 15 an upgrade costs progressively far more Gold. The
-   base curve is untouched -- the surcharge is a separate factor on top of it.
-
-   Sized against the real economy rather than picked. The base curve is already
-   the steepest thing in the game: 2600 at level 1, 12460 at 15, 245798 at 30,
-   74369261 at 49, and 99.97% of the 259 million total already sits past level
-   15. Raid Or pays 2100698 at its own level 50, so the climb costs about 124
-   such raids today.
-
-   A surcharge of 6% a level from 15 takes it to roughly 363 -- nearly three
-   times the climb, still financeable, and it accelerates rather than stepping:
-   x1.06 at level 15, x1.96 at 30, x3.10 at 49. A flat multiplier is exactly
-   what section 12 rules out. */
-const FORGE_GOLD_RAMP_FROM = 15;
-const FORGE_GOLD_RAMP_K = 0.06;
+/* Exact Forge Gold ladder. Levels 1 -> 50 cost 15,000,000 Gold in total.
+   The early levels stay cheap, then the curve rises smoothly so long upgrade
+   timers double as time to farm the next payment. */
+const FORGE_UPGRADE_GOLD_COSTS = [3350,3800,4350,4950,5650,6450,7400,8400,9600,10950,12500,14250,16250,18550,21150,24100,27500,31350,35750,40800,46550,53100,60550,69050,78750,89850,102500,116900,133300,152050,173450,197850,225650,257400,293600,334850,381950,435650,496900,566800,646500,737400,841100,959350,1094250,1248100,1423600,1623800,1852100];
 function forgeUpgradeCost(level) {
-  const n = level - 1;
-  const base = FORGE_UPG_BASE * Math.pow(FORGE_UPG_GROWTH, n) * Math.pow(FORGE_UPG_TAPER, n * n);
-  if (level < FORGE_GOLD_RAMP_FROM) return Math.floor(base);
-  return Math.floor(base * (1 + FORGE_GOLD_RAMP_K * (level - FORGE_GOLD_RAMP_FROM + 1)));
+  const i = Math.max(0, Math.min(FORGE_UPGRADE_GOLD_COSTS.length - 1, level - 1));
+  return FORGE_UPGRADE_GOLD_COSTS[i];
 }
 const FORGE_UPGRADE_TIMES = { 1: 0, 2: 0, 3: 0, 4: 300, 5: 600, 6: 900, 7: 1200, 8: 1800, 9: 3000, 10: 3600 };
 function forgeUpgradeTime(level) {
@@ -1943,7 +1939,7 @@ function raidMineraiBase(s) {
 function raidReward(raid, level) {
   if (raid === "evolution") return PE_REWARD_BASE + Math.floor(level * PE_REWARD_PER_LEVEL);
   // Raid Or is the primary gold source, so it scales far harder than the rest
-  if (raid === "or") return Math.floor(RAID_OR_BASE * Math.pow(RAID_OR_GROWTH, level));
+  if (raid === "or") return Math.floor(RAID_OR_BASE * Math.pow(RAID_OR_GROWTH, level - 1));
   if (raid === "minerai") return raidMineraiBase(S) + RAID_MINERAI_PER_LEVEL * (level - 1);
   // Level 1 pays the base exactly, and the 1.16 per-level curve the system
   // already used carries on from there.
@@ -2036,14 +2032,19 @@ const REBIRTH_UPGRADES = [
   { key: "lifesteal",  label: "Vol de Vie",     icon: "droplet", max: 5,  perLvl: 1,    unit: "%",   costs: [10,20,32,46,64] },
   { key: "bossdmg",    label: "Dégâts Boss",    icon: "skull",   max: 20, perLvl: 8,    unit: "%",   costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266] },
   { key: "exp",        label: "EXP",            icon: "cap",     max: 10, perLvl: 5,    unit: "%",   costs: [10,20,30,50,75,110,160,230,320,450] },
-  { key: "gold",       label: "Or",             icon: "gold",    max: 10, perLvl: 8,    unit: "%",   costs: [10,20,30,50,75,110,160,230,320,450] },
+  { key: "gold",       label: "Or",             icon: "gold",    max: 50, perLvl: 4,    unit: "%", costDiv: 1,
+    // Prix REELS affichés/payés. Total exact des 50 niveaux : 135 000 PR.
+    costs: [100,150,200,250,300,350,400,500,550,600,700,800,850,950,1050,1150,1250,1350,1450,1600,1700,1800,1950,2100,2200,2350,2500,2650,2800,2950,3100,3250,3450,3600,3750,3950,4150,4300,4500,4700,4900,5100,5300,5500,5750,5950,6150,6400,6650,7000] },
   { key: "prgain",     label: "Gain PR",        icon: "chart",   max: 5,  perLvl: 8,    unit: "%",   costs: [50,100,175,275,400] },
   { key: "keep",       label: "Conservation",   icon: "cycle",   max: 5,  perLvl: 2,    unit: "%",   costs: [100,200,350,550,800] },
   { key: "fastback",   label: "Retour Rapide",  icon: "forward", max: 5,  perLvl: 8,    unit: "%",   costs: [75,150,275,450,700] },
 ];
 function rebirthKeepPct(keepLevel) { return 50 + keepLevel; }
 const REBIRTH_COST_DIV = 3;
-function rebirthUpgCost(costs, lvl) { return Math.max(1, Math.round(costs[lvl] / REBIRTH_COST_DIV)); }
+function rebirthUpgCost(def, lvl) {
+  const div = def.costDiv || REBIRTH_COST_DIV;
+  return Math.max(1, Math.round(def.costs[lvl] / div));
+}
 
 /* ---------------------------- personal tree -------------------------------
    One continuous DAG of MULTI-LEVEL nodes. A node counts as "activated" for
@@ -2079,7 +2080,7 @@ function bossFirstClearReward(floor) {
    floors. 1.17 over 50 levels was 2566x, which outran every cost curve the
    Forge could carry and pushed the Raid to 100% of late income. 1.14 is 758x --
    still the dominant source, but floors and the Récolte keep a visible share. */
-const RAID_OR_BASE = 3000, RAID_OR_GROWTH = 1.14;
+const RAID_OR_BASE = 2000, RAID_OR_GROWTH = 1.057;
 /* Raid level 1 rewards. These also set the Récolte automatique's hourly
    rates: Minerai 100% of an entry, Essence and Compétence 25% each. */
 /* minerai is no longer here: section 6 gives it its own linear curve. */
@@ -2606,15 +2607,11 @@ function harvestRates(s) {
     minerai: raidReward("minerai", s.raids.minerai.level) * 0.50 * eff,
     essence: raidReward("familier", s.raids.familier.level) * 0.25 * eff,
     eclat: raidReward("competence", s.raids.competence.level) * 0.25 * eff,
-    gold: goldReward(s.floor) * HARVEST_GOLD_PER_HOUR * eff * afkGainMul(s),
+    gold: raidReward("or", s.raids.or.level) * 0.25 * eff * afkGainMul(s),
   };
 }
-/* Gold is floor-driven rather than raid-driven. 720/h meant the Récolte paid
-   as if the player killed 720 enemies an hour, against ~400 for someone
-   actually playing -- so idling out-earned playing, and the Récolte was 57% of
-   early income. At 60/h an hour of Récolte is worth about a quarter of an hour
-   of active play, which is what makes it a complement. */
-const HARVEST_GOLD_PER_HOUR = 60;
+/* Gold Autonomy pays 25% of the player's current Raid Or reward per hour.
+   It spends no key and never receives the Rebirth Gold bonus. */
 
 function harvestAdvance(s, seconds) {
   const h = s.harvest;
@@ -3934,7 +3931,7 @@ function startRaid(raidId, useUniversal, onEnd) {
           st.raids[raidId].level = Math.min(RULES.RAID_MAX_LEVEL, level + 1);
           st.raids[raidId].record = Math.max(st.raids[raidId].record, level);
           // tree bonuses land here, where the resource is actually granted
-          if (raidId === "or") st.gold += Math.floor(reward * (1 + dv.goldBonus / 100) * goldMul(st));
+          if (raidId === "or") st.gold += Math.floor(reward * goldMul(st));
           else if (raidId === "minerai") st.minerai += Math.floor(reward *
             (1 + (treeSum(st, "minerai") + treeSum(st, "raidMinerai")) / 100));
           else if (raidId === "competence") st.eclat += Math.floor(reward * (1 + treeSum(st, "skillPts") / 100));
@@ -4998,7 +4995,7 @@ function buyRebirth(key) {
   const def = REBIRTH_UPGRADES.find((u) => u.key === key);
   const lvl = S.rebirth.upgrades[key] || 0;
   if (lvl >= def.max) return false;
-  const cost = rebirthUpgCost(def.costs, lvl);
+  const cost = rebirthUpgCost(def, lvl);
   if (S.rebirth.pr < cost) return false;
   update((st) => { st.rebirth.pr -= cost; st.rebirth.upgrades[key] = lvl + 1; });
   return true;
@@ -5848,7 +5845,7 @@ const RESOURCE_INFO = {
     from: ["Boutique", "Paliers d'Ascension", "Événements"] },
   minerai:   { icon: "minerai", c: "#4A90D9", label: "Minerai", get: (s) => s.minerai,
     desc: "Sert à forger de l'équipement.",
-    from: ["Raid Minerai", "Récolte automatique — 100 % d'une entrée par heure"] },
+    from: ["Raid Minerai", "Récolte automatique"] },
   poussiere: { icon: "poussiere", c: "#B15CF6", label: "Poussière", get: (s) => s.poussiere,
     desc: "Améliore le niveau d'un équipement déjà obtenu, sans toucher à ses bonus de stats.",
     from: ["Recyclage d'équipement"] },
@@ -7444,7 +7441,7 @@ function scrRebirth() {
       REBIRTH_UPGRADES.map((u) => {
         const lvl = S.rebirth.upgrades[u.key] || 0;
         const maxed = lvl >= u.max;
-        const cost = maxed ? 0 : rebirthUpgCost(u.costs, lvl);
+        const cost = maxed ? 0 : rebirthUpgCost(u, lvl);
         const uc = maxed ? C.green : C.purple;
         // the level pill already says X / Y, so the duplicate progress bar goes
         return '<div class="itemRow" style="border-left-color:' + uc + ';gap:5px;padding:3px 6px">' +
