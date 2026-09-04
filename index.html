@@ -1147,7 +1147,7 @@ const ENV_NAMES = {
 function bgFor(key) { return SCENES[key] || ASSETS[key] || SCENES.env_forest; }
 
 /* ---------------------------- config.ts ---------------------------- */
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 
 const RULES = {
   STEPS_PER_FLOOR: 3, CHECKPOINT_EVERY: 5, ELITE_EVERY: 5, BOSS_EVERY: 10,
@@ -1474,9 +1474,9 @@ function masteryReq(level) { return Math.round(5 + level * 1.6); }
    headStart is deliberately capped: however many stars you hold, the last
    third of the rarity curve still has to be climbed. */
 const ASCENSION = {
-  /* statMul is no longer read for power -- section 3 sets one multiplier for all
-     three, in ASCEND_POWER_MUL. headStart and divin are still this table's. */
-  pet:   { key: "pet",   label: "Familier",   headStart: 0.22, divin: 1.2 },
+  /* Familiar stars control their own x1/x2/x3/x4 power and Legendary curve.
+     They never unlock Divine: only the character's global Ascension does. */
+  pet:   { key: "pet",   label: "Familier",   headStart: 0.22 },
   forge: { key: "forge", label: "Forge",      headStart: 0.22, divin: 1.0 },
   skill: { key: "skill", label: "Compétence", headStart: 0.22, divin: 1.1 },
 };
@@ -1484,21 +1484,25 @@ const STAR_HEADSTART_CAP = 0.66;
 
 function starsOf(s, sys) { return (s.stars && s.stars[sys]) || 0; }
 /* permanent multiplier on that system's base values */
-/* What a star does to a system's base power. Section 3 sets the first at
-   exactly x2 and deliberately leaves the second undefined, so the table stops
-   there and the value holds rather than compounding into a number nobody chose.
-   Add the next entry when the brief gives one; nothing else has to change. */
+/* Forge and Skill retain their original defined first star. Familiars have a
+   complete three-star ladder: 0★ x1, 1★ x2, 2★ x3, 3★ x4. */
 const ASCEND_POWER_MUL = [1, 2];
-function ascendPowerMul(stars) {
-  return ASCEND_POWER_MUL[Math.min(Math.max(0, stars || 0), ASCEND_POWER_MUL.length - 1)];
+const PET_ASCEND_POWER_MUL = [1, 2, 3, 4];
+const PET_ASCEND_MAX_STARS = 3;
+function ascendPowerMul(stars, sys) {
+  const table = sys === "pet" ? PET_ASCEND_POWER_MUL : ASCEND_POWER_MUL;
+  return table[Math.min(Math.max(0, stars || 0), table.length - 1)];
 }
-function starMul(s, sys) { return ascendPowerMul(starsOf(s, sys)); }
+function starMul(s, sys) { return ascendPowerMul(starsOf(s, sys), sys); }
 function masteryMax(sys) { return sys === "forge" ? RULES.FORGE_MAX : RULES.MASTERY_MAX; }
 function masteryLevel(s, sys) {
   return sys === "forge" ? s.forge.level
     : sys === "pet" ? s.petMastery.level : s.skillMastery.level;
 }
-function canAscend(s, sys) { return masteryLevel(s, sys) >= masteryMax(sys); }
+function canAscend(s, sys) {
+  return masteryLevel(s, sys) >= masteryMax(sys) &&
+    (sys !== "pet" || starsOf(s, "pet") < PET_ASCEND_MAX_STARS);
+}
 
 /* ---------------------------- Ascension de Raid ----------------------------
    The fourth track. Each raid keeps its own level from 1 to 50, and section 5
@@ -1541,6 +1545,10 @@ function starRow(sys, col) {
   return '<div class="row gap2" style="line-height:1">' + shown + "</div>";
 }
 function ascendCta(sys, col) {
+  if (sys === "pet" && starsOf(S, "pet") >= PET_ASCEND_MAX_STARS) {
+    return '<div class="mt6 center"><span class="pill" style="color:var(--goldLit);border-color:var(--goldDim)">' +
+      ic("star", 12) + "Ascension Familier maximale · ★★★</span></div>";
+  }
   if (!canAscend(S, sys)) return "";
   return '<div class="mt6">' + btn(ic("star", 14) + "ASCENSION ★ — maîtrise au maximum",
     { cls: "purple", small: true, act: "ascendAsk", arg: sys }) + "</div>";
@@ -1548,17 +1556,18 @@ function ascendCta(sys, col) {
 
 function ascensionPreview(s, sys) {
   const st = starsOf(s, sys);
-  const mul = ascendPowerMul(st + 1) / ascendPowerMul(st);
+  const mul = ascendPowerMul(st + 1, sys) / ascendPowerMul(st, sys);
   const common = { stars: st, nextStars: st + 1,
-    baseNow: Math.round(ascendPowerMul(st) * 100),
-    baseAfter: Math.round(ascendPowerMul(st + 1) * 100),
+    baseNow: Math.round(ascendPowerMul(st, sys) * 100),
+    baseAfter: Math.round(ascendPowerMul(st + 1, sys) * 100),
     masteryFrom: masteryLevel(s, sys), masteryTo: sys === "forge" ? 1 : 0 };
   if (sys === "pet") return Object.assign(common, {
     label: "Familier",
     reset: [["Maîtrise Familier", masteryLevel(s, "pet") + " → 0"],
             ["Familiers possédés", fmt(s.pets.length)],
             ["Œufs en cours", fmt(s.eggs.length)]],
-    keep: [["Essence animale", fmt(s.essence)], ["Pommes", fmt(s.apples || 0)],
+    keep: [["Essence animale", fmt(s.essence)],
+           ["Pommes après remboursement", fmt((s.apples || 0) + petAppleInvestmentTotal(s))],
            ["Emplacements d'Œuf", fmt(s.eggSlots)]],
     gain: "Statistiques de base des Familiers ×" + mul });
   if (sys === "forge") return Object.assign(common, {
@@ -1578,13 +1587,16 @@ function ascensionPreview(s, sys) {
 
 function doAscendMastery(sys) {
   if (!canAscend(S, sys)) return { ok: false, reason: "notMax" };
+  let appleRefund = 0;
   update((st) => {
     st.stars[sys] = starsOf(st, sys) + 1;
     if (sys === "pet") {
+      appleRefund = petAppleInvestmentTotal(st);
+      st.apples = (st.apples || 0) + appleRefund;
       // section 1: the ladder comes back at 0/50, which is where a new save starts
       st.petMastery = { level: 0, count: 0, progress: 0 };
       st.pets = []; st.eggs = []; st.activePetId = null;
-      // essence and the egg slots bought with gems both survive
+      // Essence, every slot source and every Apple ever invested all survive.
     } else if (sys === "forge") {
       st.forge.level = 1; st.forge.summonCount = 0;
       st.forge.upgradeEnd = 0; st.forge.masteryLevel = 0; st.forge.masteryProgress = 0;
@@ -1599,7 +1611,7 @@ function doAscendMastery(sys) {
       // eclat survives
     }
   });
-  return { ok: true, stars: starsOf(S, sys) };
+  return { ok: true, stars: starsOf(S, sys), appleRefund };
 }
 function petLegendaryChance(mastery, stars) {
   if ((stars || 0) < 1) return 0;
@@ -1629,7 +1641,10 @@ function getRates(system, mastery, ascension, stars) {
     HEROIQUE: 1.9, ANCESTRAL: 2.3, LEGENDAIRE: 2.6, DIVIN: 1 };
   const out = {};
   order.forEach((r) => { out[r] = a.m0[r] + (a.m50[r] - a.m0[r]) * Math.pow(t, EASE[r]); });
-  const divinPush = (ascension || 0) * 2 + st * ((ASCENSION[system] || {}).divin || 0);
+  // Familiar Ascension unlocks Legendary, never Divine. Divine Familiars only
+  // enter the table after the character completes its own global Ascension.
+  const divinPush = (ascension || 0) * 2 +
+    (system === "pet" ? 0 : st * ((ASCENSION[system] || {}).divin || 0));
   if (divinPush > 0) {
     const divin = Math.min(9, divinPush * t);
     out.DIVIN = divin;
@@ -1765,12 +1780,26 @@ function petMaxLevel(rarity) { return PET_UP[rarity].max; }
 function petBonusAt(rarity, level, stars) {
   const u = PET_UP[rarity];
   const base = PET_BASE[rarity] + Math.min(level || 0, u.max) * u.per;
-  return base * ascendPowerMul(stars);
+  return base * ascendPowerMul(stars, "pet");
 }
 function petBonus(pet) { return pet ? petBonusAt(pet.rarity, pet.level || 0, starsOf(S, "pet")) : 0; }
 function petUpgradeCost(rarity, level) {
   if (!PET_UP[rarity]) return 0;
   return Math.max(1, Math.round(PET_UPGRADE_BASE * Math.pow(PET_UPGRADE_GROWTH, level || 0)));
+}
+function petAppleInvestmentAtLevel(rarity, level) {
+  let total = 0;
+  const max = PET_UP[rarity] ? Math.min(Math.max(0, level || 0), petMaxLevel(rarity)) : 0;
+  for (let lv = 0; lv < max; lv++) total += petUpgradeCost(rarity, lv);
+  return total;
+}
+function petAppleInvestment(pet) {
+  return pet && Number.isFinite(pet.applesInvested)
+    ? Math.max(0, Math.floor(pet.applesInvested))
+    : pet ? petAppleInvestmentAtLevel(pet.rarity, pet.level || 0) : 0;
+}
+function petAppleInvestmentTotal(s) {
+  return (s.pets || []).reduce((total, pet) => total + petAppleInvestment(pet), 0);
 }
 function petFuseNeed(rarity) { return PET_FUSE_NEED[rarity] || 0; }
 /* Fusion preserves the core familiar's level. At every transferable level the
@@ -2112,10 +2141,15 @@ function bossFirstClearReward(floor) {
   const qty = Math.min(5, 1 + Math.floor((tier - 1) / 4));  // 1..5 of them
   return { key, qty };
 }
-function appleFirstClearReward(floor, boss, s) {
-  const band = Math.floor(Math.max(0, floor) / 25);
-  const base = boss ? 25 + band * 5 : 8 + band * 2;
-  return Math.floor(base * (1 + rb(s, "apples") / 100));
+/* Apples have one source: the first clear of each Mega-Boss. One reward every
+   ten floors replaces the old Elite + Boss pair without turning Rebirth or a
+   replay into a farming loop. Rebirth's Gain Pommes only scales that first
+   clear; at 20/20 it doubles the amount. */
+function megaAppleBaseReward(floor) {
+  return 33 + 7 * Math.floor(Math.max(0, floor) / 25);
+}
+function megaAppleFirstClearReward(floor, s) {
+  return Math.floor(megaAppleBaseReward(floor) * (1 + rb(s, "apples") / 100));
 }
 /* The primary gold faucet: one Raid Or run should be worth a solid stretch of
    floors. 1.17 over 50 levels was 2566x, which outran every cost curve the
@@ -2190,6 +2224,7 @@ const TREE_NODES = [
   { id: "n1_03", sect: "Palier I", label: "Chance de forger gratuitement I", short: "Forge Grat. I", icon: "hammer", color: "#F5C542", tier: 1, effect: "forgeFree", per: 1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_02"], lane: 4, row: 5 },
   { id: "sp_slot1", sect: "Palier I", label: "+1 Slot d'Éclosion", short: "+1 Slot Éclosion", icon: "egg", color: "#57E07A", tier: 1, effect: "eggSlot", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_21"], lane: 0, row: 6, special: true },
   { id: "sp_forge1", sect: "Palier I", label: "Multiplicateur Forge +1", short: "Multi. Forge +1", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_14"], lane: 1, row: 6, special: true },
+  { id: "n1_pc", sect: "Palier I", label: "Œuf Peu commun Vitesse d'éclosion I", short: "Œuf Peu com. I", icon: "egg", color: "#57E07A", tier: 1, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_23"], lane: 2, row: 6 },
   { id: "sp_key1", sect: "Palier I", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 1, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_27"], lane: 3, row: 6, special: true, note: "Choix du Raid" },
 
   /* ---------------- PALIER II ---------------- */
@@ -2224,6 +2259,7 @@ const TREE_NODES = [
   { id: "n2_23", sect: "Palier II", label: "Œuf Commun Vitesse d'éclosion II", short: "Œuf Commun II", icon: "egg", color: "#9FB0C8", tier: 2, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_30"], lane: 3, row: 12 },
   { id: "n2_17", sect: "Palier II", label: "Gants Bonus Dégâts II", short: "Gants II", icon: "glove", color: "#FF5A5A", tier: 2, effect: "eq_gants", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_20", "n2_14"], lane: 4, row: 12 },
   { id: "sp_forge3", sect: "Palier II", label: "Multiplicateur Forge +3", short: "Multi. Forge +3", icon: "hammer", color: "#E8B44A", tier: 2, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["sp_forge1", "n2_18"], lane: 2, row: 13, special: true },
+  { id: "n2_pc", sect: "Palier II", label: "Œuf Peu commun Vitesse d'éclosion II", short: "Œuf Peu com. II", icon: "egg", color: "#57E07A", tier: 2, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n1_pc", "n2_23"], lane: 3, row: 13 },
   { id: "sp_key2", sect: "Palier II", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 2, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["n2_17"], lane: 4, row: 13, special: true, note: "Choix du Raid" },
 
   /* ---------------- PALIER III ---------------- */
@@ -2259,6 +2295,7 @@ const TREE_NODES = [
   { id: "n3_08", sect: "Palier III", label: "Temps Récompense Autonomie III", short: "Tps Auton. III", icon: "cycle", color: "#8FC4FF", tier: 3, effect: "afkTime", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_11", "n3_29"], lane: 4, row: 19 },
   { id: "sp_forge5", sect: "Palier III", label: "Multiplicateur Forge +5", short: "Multi. Forge +5", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge3", "n3_15"], lane: 1, row: 20, special: true },
   { id: "sp_forge10", sect: "Palier III", label: "Multiplicateur Forge +10", short: "Multi. Forge +10", icon: "hammer", color: "#F5C542", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge5", "n3_10"], lane: 2, row: 20, special: true },
+  { id: "n3_pc", sect: "Palier III", label: "Œuf Peu commun Vitesse d'éclosion III", short: "Œuf Peu com. III", icon: "egg", color: "#57E07A", tier: 3, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n2_pc", "n3_23"], lane: 3, row: 20 },
   { id: "sp_key3", sect: "Palier III", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 3, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["n3_08"], lane: 4, row: 20, special: true, note: "Choix du Raid" },
 
   /* ---------------- PALIER IV ---------------- */
@@ -2292,6 +2329,7 @@ const TREE_NODES = [
   { id: "n4_11", sect: "Palier IV", label: "Compétence Passive Base Santé IV", short: "Pass. Santé IV", icon: "heart", color: "#57E07A", tier: 4, effect: "passHp", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_18", "n4_10", "n4_21"], lane: 2, row: 26 },
   { id: "n4_24", sect: "Palier IV", label: "Œuf Rare Vitesse d'éclosion IV", short: "Œuf Rare IV", icon: "egg", color: "#3FA7FF", tier: 4, effect: "hatch_RARE", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n4_10"], lane: 3, row: 26 },
   { id: "n4_28", sect: "Palier IV", label: "Chance d'obtenir 1 Œuf supplémentaire gratuitement IV", short: "Œuf Suppl. IV", icon: "egg", color: "#8FEFF4", tier: 4, effect: "eggFree", per: 1, unit: "%", max: 5, times: PAL_T[3], req: ["n4_29", "n4_08"], lane: 4, row: 26 },
+  { id: "n4_pc", sect: "Palier IV", label: "Œuf Peu commun Vitesse d'éclosion IV", short: "Œuf Peu com. IV", icon: "egg", color: "#57E07A", tier: 4, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n3_pc", "n4_23"], lane: 1, row: 27 },
   { id: "sp_key4", sect: "Palier IV", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 4, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[3], req: ["n4_11"], lane: 2, row: 27, special: true, note: "Choix du Raid" },
   { id: "sp_slot2", sect: "Palier IV", label: "+1 Slot d'Éclosion", short: "+1 Slot Éclosion", icon: "egg", color: "#57E07A", tier: 4, effect: "eggSlot", per: 1, unit: "", max: 1, times: PAL_T[3], req: ["n4_28"], lane: 4, row: 27, special: true },
 ];
@@ -2350,7 +2388,7 @@ function defaultState(name) {
     level: 1, exp: 0, statPoints: 0,
     stats: { sante: 0, degats: 0, crit: 0, critred: 0 },
     gold: 100, gems: 0, minerai: 400, poussiere: 0, eclat: 80, essence: 60, apples: 0,
-    floor: 1, step: 1, recordFloor: 1, checkpoint: 1, bossClears: {},
+    floor: 1, step: 1, recordFloor: 1, checkpoint: 1, bossClears: {}, megaBossClears: {},
     equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null,
       collier: null, anneau: null, ceinture: null },
     inventory: [],
@@ -2359,7 +2397,7 @@ function defaultState(name) {
       filter: false, keep: forgeKeepAll() },
     skills: {}, skillSlots: [null, null, null, null, null],
     skillMastery: { level: 0, count: 0, progress: 0 },
-    pets: [], eggs: [], eggSlots: 2, activePetId: null,
+    pets: [], eggs: [], eggSlots: 2, eggSlotGemBought: false, eggSlotModelV2: true, activePetId: null,
     petMastery: { level: 0, count: 0, progress: 0 },
     /* one Ascension star count per system, never lost */
     stars: { pet: 0, forge: 0, skill: 0 },
@@ -2372,7 +2410,7 @@ function defaultState(name) {
     },
     pe: 0,
     universalKeys: 3, adKeysToday: 0, lastKeyReset: todayStr(),
-    bossRewardsClaimed: {}, eliteAppleClaimed: {}, bossAppleClaimed: {},
+    bossRewardsClaimed: {},
     tree: { levels: {}, active: null, activeLevel: 0, activeEnd: 0 },
     raidKeyAlloc: { or: 0, minerai: 0, competence: 0, familier: 0 },
     rebirth: { pr: 0, upgrades: {}, count: 0 },
@@ -2477,6 +2515,7 @@ function migrate(s, name) {
   });
 
   if (!merged.tree.levels || typeof merged.tree.levels !== "object") merged.tree.levels = {};
+  merged.stars.pet = Math.min(PET_ASCEND_MAX_STARS, Math.max(0, merged.stars.pet || 0));
   /* The tree was rebuilt from 74 thematic nodes to 130 laid out as four
      paliers, so every old node id is gone. Rather than quietly voiding what a
      player spent, refund it exactly: the old tiers are kept here purely so the
@@ -2536,17 +2575,17 @@ function migrate(s, name) {
     merged.bossRewardsClaimed = Object.assign({}, merged.bossClears || {});
   }
   if (typeof merged.apples !== "number") merged.apples = 0;
-  if (!s.eliteAppleClaimed || typeof s.eliteAppleClaimed !== "object") {
-    // Old saves predate Apples: floors already passed are treated as claimed.
-    merged.eliteAppleClaimed = {};
-    for (let f = RULES.ELITE_EVERY; f <= (merged.recordFloor || 1); f += RULES.ELITE_EVERY) {
-      if (isElite(f)) merged.eliteAppleClaimed[String(f)] = true;
-    }
-  }
-  if (!s.bossAppleClaimed || typeof s.bossAppleClaimed !== "object") {
-    // Existing boss clears predate Apples: do not retroactively pay or create a Rebirth farm.
-    merged.bossAppleClaimed = Object.assign({}, merged.bossClears || {});
-  }
+  /* A v1 save may already have received Apples from campaign Bosses. Mirror
+     those exact claims into Mega-Boss clears so the update cannot pay twice.
+     Older saves without an Apple claim map have never received them and may
+     earn them normally in the new activity. */
+  if (s.megaBossClears && typeof s.megaBossClears === "object") {
+    merged.megaBossClears = Object.assign({}, s.megaBossClears);
+  } else if (s.bossAppleClaimed && typeof s.bossAppleClaimed === "object") {
+    merged.megaBossClears = Object.assign({}, s.bossAppleClaimed);
+  } else merged.megaBossClears = {};
+  delete merged.eliteAppleClaimed;
+  delete merged.bossAppleClaimed;
   merged.equipped = merged.equipped || {};
   // gear made before affixes existed simply has none; never retro-roll it
   Object.keys(merged.equipped).forEach((k) => {
@@ -2557,9 +2596,33 @@ function migrate(s, name) {
     merged.raidKeyAlloc[s.raidKeyBonus] = (merged.raidKeyAlloc[s.raidKeyBonus] || 0) + 1;
     delete merged.raidKeyBonus;
   }
-  // ---- pets gained an internal upgrade level
-  merged.pets = (merged.pets || []).map((p) =>
-    Object.assign({ level: 0, species: randSpecies(), element: randElement() }, p));
+  /* Exactly five hatching slots exist: 2 base, one unique 300-Gem purchase,
+     and the two tree nodes. Old saves could repeat the Gem purchase; keep one,
+     refund every impossible extra purchase, then rebuild the count by source. */
+  const treeEggSlots = ["sp_slot1", "sp_slot2"].reduce((n, id) =>
+    n + (merged.tree.levels[id] >= 1 ? 1 : 0), 0);
+  const oldEggSlots = Math.min(RULES.EGG_SLOT_MAX,
+    Math.max(2, Number.isFinite(s.eggSlots) ? Math.floor(s.eggSlots) : 2));
+  if (s.eggSlotModelV2) {
+    merged.eggSlotGemBought = !!s.eggSlotGemBought;
+  } else {
+    const paidSlots = Math.max(0, oldEggSlots - 2 - treeEggSlots);
+    merged.eggSlotGemBought = paidSlots > 0;
+    if (paidSlots > 1) merged.gems += (paidSlots - 1) * 300;
+  }
+  merged.eggSlots = Math.min(RULES.EGG_SLOT_MAX,
+    2 + treeEggSlots + (merged.eggSlotGemBought ? 1 : 0));
+  merged.eggSlotModelV2 = true;
+
+  // Pets from before investment tracking reconstruct the exact cost of their levels.
+  merged.pets = (merged.pets || []).map((p) => {
+    const q = Object.assign({ level: 0, species: randSpecies(), element: randElement() }, p);
+    q.level = Math.min(Math.max(0, q.level || 0), petMaxLevel(q.rarity));
+    q.applesInvested = Number.isFinite(p.applesInvested)
+      ? Math.max(0, Math.floor(p.applesInvested))
+      : petAppleInvestmentAtLevel(q.rarity, q.level);
+    return q;
+  });
   merged.eggs = (merged.eggs || []).map((e) =>
     Object.assign({ species: randSpecies(), element: randElement() }, e));
   return merged;
@@ -3870,7 +3933,9 @@ function makeEnemy(mode, opts) {
     // difficulty adapts to the player's gear (bounded)
     // "Retour Rapide": ground already cleared once is softer, so climbing back
     // after a Rebirth is quick. This is the only thing that reads `fastback`.
-    if (opts.floor < S.recordFloor) hp = Math.floor(hp * (1 - Math.min(60, rb(S, "fastback")) / 100));
+    if (!opts.noFastback && opts.floor < S.recordFloor) {
+      hp = Math.floor(hp * (1 - Math.min(60, rb(S, "fastback")) / 100));
+    }
     let gear = 0;
     Object.values(S.equipped).forEach((it) => { if (it) gear += it.power; });
     const expected = 55 * opts.floor + 120;
@@ -3960,6 +4025,66 @@ function spawnRaidWave(raidId, level) {
 }
 
 function startCampaign() { combat = spawnCampaign(S); }
+
+function megaBossFloors(s) {
+  return Object.keys((s && s.bossClears) || {}).filter((k) => s.bossClears[k])
+    .map((k) => parseInt(k, 10)).filter((f) => Number.isFinite(f) && isBoss(f))
+    .sort((a, b) => a - b);
+}
+function nextMegaBossFloor(s) {
+  const claimed = (s && s.megaBossClears) || {};
+  return megaBossFloors(s).find((f) => !claimed[String(f)]) || null;
+}
+/* Build from the exact campaign Boss path, then multiply its two combat power
+   axes. noFastback is deliberate: a Mega-Boss is a fresh challenge even when
+   its normal counterpart sits below the current campaign record. */
+function makeMegaBossEnemy(floor) {
+  const def = bossFor(floor);
+  const type = Object.assign({}, ENEMY_TYPES[1], { id: "mega_" + def.id,
+    name: "Méga-" + def.name, img: def.img, ranged: !!def.ranged,
+    proj: def.proj || "magic" });
+  const enemy = makeEnemy("campaign", { type, name: type.name, tier: def.tier,
+    floor, boss: true, abils: def.abils, noFastback: true, x: AW - 60 });
+  enemy.hp = enemy.maxHP = Math.max(1, Math.floor(enemy.maxHP * 10));
+  enemy.dmg = Math.max(1, Math.floor(enemy.dmg * 10));
+  enemy.mega = true;
+  return enemy;
+}
+
+function startMegaBoss(floor, onEnd) {
+  floor = parseInt(floor, 10);
+  const key = String(floor);
+  const claimed = !!(S.megaBossClears && S.megaBossClears[key]);
+  if (!Number.isFinite(floor) || !isBoss(floor) || !S.bossClears[key] ||
+      (!claimed && floor !== nextMegaBossFloor(S))) return false;
+  flushRewards();
+  const enemy = makeMegaBossEnemy(floor);
+  const dv = D;
+  combat = {
+    ctx: "mega", megaFloor: floor, floor, step: 1, startAt: Date.now(),
+    elite: false, boss: true, enemies: [enemy], pending: 0,
+    heroX: HERO_START, heroHP: dv.maxHP, heroMaxHP: dv.maxHP, heroAtkCd: 0.6,
+    heroAttacking: 0, heroHit: 0, skillCds: {}, skillCdMax: {}, buffs: {}, debuffs: {},
+    skillFxs: [], floats: [], projs: [],
+    bg: ENV_KEYS[Math.floor((floor - 1) / 10) % ENV_KEYS.length], status: "fight",
+    onEnd: (won) => {
+      let result = { floor, won, firstClear: false, apples: 0 };
+      if (won) {
+        update((st) => {
+          st.megaBossClears = st.megaBossClears || {};
+          if (!st.megaBossClears[key]) {
+            const apples = megaAppleFirstClearReward(floor, st);
+            st.megaBossClears[key] = true;
+            st.apples = (st.apples || 0) + apples;
+            result = { floor, won: true, firstClear: true, apples };
+          }
+        });
+      }
+      if (onEnd) onEnd(won, result);
+    },
+  };
+  return true;
+}
 
 function startRaid(raidId, useUniversal, onEnd) {
   const raid = S.raids[raidId];
@@ -4421,7 +4546,7 @@ let treeRefund = 0;      // PE handed back when the tree was rebuilt
 let bossReward = null;   // surfaced by the UI right after a first Boss clear
 let notable = null;      // milestone worth a toast, drained on the next render
 function handleCombatEnd(c) {
-  if (c.ctx === "raid") {
+  if (c.ctx === "raid" || c.ctx === "mega") {
     const won = c.status === "won";
     const cb = c.onEnd;
     combat = null;
@@ -4438,24 +4563,13 @@ function handleCombatEnd(c) {
     if (won) {
       // a floor clears every half minute, so only the milestones get a toast
       if (c.elite && !c.boss) {
-        const ek = String(c.floor);
-        if (!s.eliteAppleClaimed[ek]) {
-          s.eliteAppleClaimed[ek] = true;
-          const apples = appleFirstClearReward(c.floor, false, s);
-          s.apples = (s.apples || 0) + apples;
-          notable = { msg: "Élite vaincue · +" + apples + " 🍎", icon: "swords" };
-        } else notable = { msg: "Élite vaincue · étage " + c.floor, icon: "swords" };
+        notable = { msg: "Élite vaincue · étage " + c.floor, icon: "swords" };
       }
       if (s.floor + 1 > s.recordFloor) notable = { msg: "Nouveau record · étage " + (s.floor + 1), icon: "trophy" };
       if (c.boss) {
         const bk = String(c.floor);
         s.bossClears[bk] = true;
-        if (!s.bossAppleClaimed[bk]) {
-          s.bossAppleClaimed[bk] = true;
-          const apples = appleFirstClearReward(c.floor, true, s);
-          s.apples = (s.apples || 0) + apples;
-          notable = { msg: "Boss vaincu · +" + apples + " 🍎", icon: "trophy" };
-        }
+        notable = { msg: "Boss vaincu · Méga-Boss " + c.floor + " débloqué", icon: "trophy" };
         // the accelerator is tied to the FIRST clear and never repeats
         if (!s.bossRewardsClaimed[bk]) {
           s.bossRewardsClaimed[bk] = true;
@@ -4894,9 +5008,9 @@ function summonEgg(n) {
 function collectEgg(id) {
   update((s) => {
     const egg = s.eggs.find((e) => e.id === id);
-    if (!egg || Date.now() < egg.hatchEnd) return;
+    if (!egg || !eggIsHatching(egg) || Date.now() < egg.hatchEnd) return;
     s.eggs = s.eggs.filter((e) => e.id !== id);
-    const pet = { id: rid(), rarity: egg.rarity, level: 0,
+    const pet = { id: rid(), rarity: egg.rarity, level: 0, applesInvested: 0,
       species: egg.species || randSpecies(), element: egg.element || randElement(),
       name: ("Familier " + (PET_RARITY_ORDER.indexOf(egg.rarity) >= 3 ? "Élite" : "")).trim() };
     s.pets.push(pet);
@@ -4911,26 +5025,32 @@ function collectEgg(id) {
 function fusePets(rarity) {
   const idx = PET_RARITY_ORDER.indexOf(rarity);
   const need = petFuseNeed(rarity);
-  if (!need || idx < 0 || idx >= PET_RARITY_ORDER.length - 1) return false;
-  if (S.pets.filter((p) => p.rarity === rarity).length < need) return false;
+  if (!need || idx < 0 || idx >= PET_RARITY_ORDER.length - 1) return { ok: false, refund: 0 };
+  if (S.pets.filter((p) => p.rarity === rarity).length < need) return { ok: false, refund: 0 };
+  let appleRefund = 0;
   update((st) => {
     const pool = st.pets.filter((p) => p.rarity === rarity)
-      .sort((a, b) => (b.level || 0) - (a.level || 0));
+      .sort((a, b) => (b.level || 0) - (a.level || 0) ||
+        petAppleInvestment(b) - petAppleInvestment(a));
     const core = pool[0];
-    const extras = pool.slice(1).sort((a, b) => (a.level || 0) - (b.level || 0)).slice(0, need - 1);
+    const extras = pool.slice(1).sort((a, b) => petAppleInvestment(a) - petAppleInvestment(b) ||
+      (a.level || 0) - (b.level || 0)).slice(0, need - 1);
     const consumed = [core].concat(extras);
     const eaten = consumed.map((p) => p.id);
+    appleRefund = extras.reduce((sum, p) => sum + petAppleInvestment(p), 0);
+    st.apples = (st.apples || 0) + appleRefund;
     st.pets = st.pets.filter((p) => eaten.indexOf(p.id) < 0);
     const nextRarity = PET_RARITY_ORDER[idx + 1];
     const np = { id: rid(), rarity: nextRarity,
       level: Math.min(core.level || 0, petMaxLevel(nextRarity)),
+      applesInvested: petAppleInvestment(core),
       species: core.species || randSpecies(), element: core.element || randElement(),
       name: core.name || "Familier Fusionné" };
     st.pets.push(np);
     if (eaten.indexOf(st.activePetId || "") >= 0) st.activePetId = np.id;
     st.eventProgress.hatch = (st.eventProgress.hatch || 0) + 1;
   });
-  return true;
+  return { ok: true, refund: appleRefund };
 }
 /* internal upgrade inside a rarity, paid in Apples */
 function upgradePet(id) {
@@ -4943,15 +5063,21 @@ function upgradePet(id) {
   update((st) => {
     const p = st.pets.find((x) => x.id === id);
     if (!p) return;
+    const invested = petAppleInvestment(p);
     st.apples -= cost;
     p.level = (p.level || 0) + 1;
+    p.applesInvested = invested + cost;
   });
   return true;
 }
 function setActivePet(id) { update((s) => { s.activePetId = id; }); }
 function buyEggSlot() {
-  if (S.level < 10 || S.eggSlots >= RULES.EGG_SLOT_MAX || S.gems < 300) return false;
-  update((st) => { st.gems -= 300; st.eggSlots += 1; });
+  if (S.level < 10 || S.eggSlotGemBought || S.eggSlots >= RULES.EGG_SLOT_MAX || S.gems < 300) return false;
+  update((st) => {
+    st.gems -= 300;
+    st.eggSlotGemBought = true;
+    st.eggSlots = Math.min(RULES.EGG_SLOT_MAX, st.eggSlots + 1);
+  });
   return true;
 }
 
@@ -5133,7 +5259,8 @@ function daysElapsed(s) {
 function warpDay() {
   S.testDays = (S.testDays || 0) + 1;
   if (S.tree.active) S.tree.activeEnd = Date.now();
-  S.eggs = S.eggs.map((e) => Object.assign({}, e, { hatchEnd: Date.now() }));
+  S.eggs = S.eggs.map((e) => eggIsHatching(e)
+    ? Object.assign({}, e, { hatchEnd: Date.now() }) : e);
   if (S.forge.upgradeEnd) S.forge.upgradeEnd = Date.now();
   S.lastKeyReset = ""; S.eventDay = "";
   applyDailyReset(S);
@@ -5612,10 +5739,11 @@ function drawArena() {
 
   // ---- header: title, floor-block track, status pills (sheet §4) ----
   const label = c.ctx === "campaign" ? "Étage " + fmtInt(c.floor)
+    : c.ctx === "mega" ? "Méga-Boss · Étage " + fmtInt(c.floor)
     : c.raidId ? RAIDS[c.raidId].name : "Épreuve d'Ascension";
   if (arenaNodes.label.textContent !== label) arenaNodes.label.textContent = label;
 
-  const track = c.ctx === "campaign" ? floorTrack(c.floor) : "";
+  const track = c.ctx === "campaign" || c.ctx === "mega" ? floorTrack(c.floor) : "";
   if (lastTrack !== track) { arenaNodes.track.innerHTML = track; lastTrack = track; }
 
   const alive = c.enemies.filter((e) => e.alive).length;
@@ -5626,6 +5754,9 @@ function drawArena() {
       '<span class="fPill">Ennemis ' + (total - alive) + "/" + total + "</span>" +
       (c.boss ? '<span class="fPill boss">' + ic("skull", 10) + "BOSS</span>"
         : c.elite ? '<span class="fPill elite">' + ic("crown", 10) + "ÉLITE</span>" : "");
+  } else if (c.ctx === "mega") {
+    sub = '<span class="fPill boss">' + ic("skull", 10) + "MÉGA-BOSS ×10</span>" +
+      '<span class="fPill">Étage ' + fmtInt(c.floor) + "</span>";
   } else if (c.raidId) {
     sub = '<span class="fPill">Niveau ' + c.raidLevel + "</span>" +
       (c.raidId === "or" ? '<span class="fPill">Vague ' + (5 - c.pending) + "/5</span>"
@@ -5821,6 +5952,7 @@ function rafLoop() { drawArena(); updateCombatHud(); requestAnimationFrame(rafLo
 let route = "accueil";
 let renderQueued = false;
 let raidResult = null;      // { raidId, won, reward } pending modal
+let megaResult = null;      // first-clear state and Apple reward
 let trialRunning = false;
 const TABS = [
   { id: "accueil",     label: "Accueil",     icon: "castle" },
@@ -5830,7 +5962,7 @@ const TABS = [
   { id: "parametres",  label: "Réglages",    icon: "gear" },
 ];
 const TAB_IDS = TABS.map((t) => t.id);
-const TIMER_SCREENS = ["accueil", "arbre", "familiers", "raid", "competences"];
+const TIMER_SCREENS = ["accueil", "arbre", "familiers", "raid", "mega", "competences"];
 function isTimerScreen() { return TIMER_SCREENS.includes(route); }
 
 function nav(to) {
@@ -5926,7 +6058,8 @@ const RESOURCE_INFO = {
     from: ["Raid Familier", "Récolte automatique — 25 % d'une entrée par heure"] },
   apples:    { icon: "paw", c: "#8ED05A", label: "Pommes", get: (s) => s.apples || 0,
     desc: "Sert à améliorer le niveau des Familiers. Une récompense de première victoire uniquement.",
-    from: ["Première victoire contre un Élite", "Première victoire contre un Boss", "Bonus Rebirth Gain Pommes"] },
+    from: ["Première victoire contre chaque Méga-Boss", "Bonus Rebirth Gain Pommes",
+      "Remboursement des doublons fusionnés et de l’Ascension Familier"] },
   pa:        { icon: "pa", c: "#FFD65E", label: "Points de Statistique", get: (s) => s.statPoints,
     desc: "S'attribuent librement entre Santé, Dégâts, Chance critique et Réduction critique.",
     from: ["Montée de niveau — +" + RULES.STAT_POINTS_PER_LEVEL + " par niveau"] },
@@ -6335,7 +6468,10 @@ function scrAccueil() {
     { label: "Boutique", icon: "shop", color: "#3B7FC4", go: "boutique" },
   ];
   const sysBtns = [
-    { label: "Familiers", icon: "paw", color: "#C4711E", go: "familiers", badge: S.eggs.some((e) => e.hatchEnd <= Date.now()) },
+    { label: "Familiers", icon: "paw", color: "#C4711E", go: "familiers",
+      badge: S.eggs.some((e) => eggIsHatching(e) && e.hatchEnd <= Date.now()) },
+    { label: "Méga Raid", icon: "skull", color: "#8E2237", go: "mega",
+      badge: nextMegaBossFloor(S) !== null },
     { label: "Ascension", icon: "star", color: "#B0862C", go: "ascension", badge: S.ascensionAvailable },
     { label: "Rebirth", icon: "cycle", color: "#6B3AC4", go: "rebirth", badge: canRebirth() },
     { label: "Événement", icon: "gift", color: "#C22127", go: "evenement", badge: true },
@@ -7006,15 +7142,18 @@ function scrFamiliers() {
       '<div class="sect" style="margin:16px 0 9px">Éclosion (' + hatching.length + "/" + S.eggSlots +
         (stored.length ? ") · " + stored.length + " en réserve" : ")") + "</div>" +
       '<div class="slotGrid">' + eggCells + "</div>" +
-      (S.eggSlots < RULES.EGG_SLOT_MAX ? '<div class="mt4" style="margin-top:4px">' +
+      (!S.eggSlotGemBought && S.eggSlots < RULES.EGG_SLOT_MAX ? '<div class="mt4" style="margin-top:4px">' +
         btn("+1 Emplacement · " + ic("gem", 12) + "300" + (S.level < 10 ? " · niv. 10" : ""),
           { cls: "purple", small: true, act: "buyEggSlot",
             dis: S.level < 10 || S.gems < 300, style: "padding:4px 9px;font-size:10.5px" }) + "</div>" : "") +
+      (S.eggSlotGemBought && S.eggSlots < RULES.EGG_SLOT_MAX
+        ? '<div class="mute tiny center mt6">Emplacement Gemmes acheté · les suivants se débloquent dans l’Arbre.</div>' : "") +
       '<div class="sect" style="margin:16px 0 9px">Collection (' + S.pets.length + ")</div>" +
       '<div class="mute tiny" style="margin-bottom:2px;line-height:1.35">Fusion : ' +
         PET_RARITY_ORDER.slice(0, -1).map((r, i) => petFuseNeed(r) + " " + RARITY[r].label +
           " → 1 " + RARITY[PET_RARITY_ORDER[i + 1]].label).join(" · ") +
-        ". Le Familier le plus avancé conserve son niveau, son espèce et son élément.</div>" +
+        ". Le Familier le plus avancé conserve son niveau, son espèce, son élément et ses Pommes investies ; " +
+        "celles des doublons consommés sont remboursées.</div>" +
       (S.pets.length === 0 ? '<div class="mute tiny center" style="padding:6px 0">Aucun familier. Fais éclore un œuf.</div>'
         : PET_RARITY_ORDER.filter((r) => byRar[r]).map((r) => {
         const list = byRar[r];
@@ -7123,6 +7262,85 @@ function scrRaid() {
     '<div style="height:2px"></div></div>';
 }
 
+/* ---------------- MÉGA RAID ---------------- */
+function scrMegaRaid() {
+  const running = combat && combat.ctx === "mega";
+  if (running) {
+    const def = bossFor(combat.floor);
+    const already = !!S.megaBossClears[String(combat.floor)];
+    return topbar("Méga Raid", '<span class="pill" style="color:#A9E06F;border-color:#6FA83C">🍎 ' +
+      fmt(S.apples || 0) + "</span>") + '<div id="arenaSlot"></div>' + combatBarHTML() +
+      '<div class="pad mt6"><div class="card frame center" style="border-left-color:#E5484D">' +
+        '<div class="row gap8" style="justify-content:center">' + ic("skull", 22) +
+          '<span class="bb gt" style="font-size:14px;letter-spacing:1.2px">MÉGA-BOSS EN COURS</span></div>' +
+        '<div class="mute small mt6">Méga-' + esc(def.name) + " · étage " + fmtInt(combat.floor) +
+          ' · <b style="color:var(--redLit)">puissance globale ×10</b></div>' +
+        '<div class="tiny b mt6" style="color:#A9E06F">' +
+          (already ? "Boss déjà vaincu · replay : 0 Pomme"
+            : "Première victoire : +" + fmt(megaAppleFirstClearReward(combat.floor, S)) + " 🍎") + "</div>" +
+        '<div class="mt10">' + btn("Abandonner", { cls: "dark", small: true, act: "abortMega" }) +
+          "</div></div></div>";
+  }
+
+  const floors = megaBossFloors(S);
+  const cleared = floors.filter((f) => S.megaBossClears[String(f)]);
+  const next = nextMegaBossFloor(S);
+  const appleBoost = rb(S, "apples");
+  let challenge;
+  if (!floors.length) {
+    challenge = '<div class="card frame center" style="border-left-color:#E5484D">' + ic("lock", 30) +
+      '<div class="bb gt mt6" style="font-size:14px">PREMIER MÉGA-BOSS VERROUILLÉ</div>' +
+      '<div class="mute small mt6">Vaincs d’abord le Boss normal de l’étage 10.</div></div>';
+  } else if (next !== null) {
+    const def = bossFor(next);
+    const preview = makeMegaBossEnemy(next);
+    const reward = megaAppleFirstClearReward(next, S);
+    challenge = '<div class="card frame" style="border-left-color:#E5484D">' +
+      '<div class="between"><div class="row gap9">' +
+        '<div class="imini" style="width:38px;height:38px;border-color:#E5484D;background:#E5484D1f">' + ic("skull", 22) + "</div>" +
+        '<div><div class="bb" style="color:var(--redLit);font-size:14px">Méga-' + esc(def.name) + "</div>" +
+        '<div class="mute tiny b">Étage ' + fmtInt(next) + " · prochain défi</div></div></div>" +
+        '<span class="pill" style="color:#A9E06F;border-color:#6FA83C">+' + fmt(reward) + " 🍎</span></div>" +
+      '<div class="row gap6 mt8" style="flex-wrap:wrap">' +
+        '<span class="pill">' + ic("heart", 10) + fmt(preview.maxHP) + " PV</span>" +
+        '<span class="pill">' + ic("flame", 10) + fmt(preview.dmg) + " dégâts</span>" +
+        '<span class="pill" style="color:var(--redLit);border-color:#E5484D">×10 global</span></div>' +
+      '<div class="notice mt8 tiny">Accessible après la victoire contre son Boss normal. Aucune clé requise ; ' +
+        "seule cette première victoire donne des Pommes.</div>" +
+      '<div class="mt8">' + btn(ic("skull", 14) + "Affronter", { cls: "red", act: "startMega", arg: next }) +
+        "</div></div>";
+  } else {
+    const nextNormal = (floors[floors.length - 1] || 0) + RULES.BOSS_EVERY;
+    challenge = '<div class="card frame center" style="border-left-color:#3FB950">' + ic("trophy", 30) +
+      '<div class="bb gt mt6" style="font-size:14px">TOUS LES MÉGA-BOSS DISPONIBLES SONT VAINCUS</div>' +
+      '<div class="mute small mt6">Vaincs le Boss normal de l’étage ' + fmtInt(nextNormal) +
+        " pour débloquer le suivant.</div></div>";
+  }
+
+  const history = cleared.slice().reverse().slice(0, 5).map((floor) => {
+    const def = bossFor(floor);
+    return '<div class="card mt6" style="padding:6px 8px"><div class="between"><div>' +
+      '<div class="b small">Méga-' + esc(def.name) + " · étage " + fmtInt(floor) + "</div>" +
+      '<div class="mute tiny">Première récompense récupérée · replay : 0 Pomme</div></div>' +
+      btn("Rejouer", { small: true, cls: "ghost", act: "startMega", arg: floor,
+        style: "width:auto;padding:5px 9px" }) + "</div></div>";
+  }).join("");
+
+  return topbar("Méga Raid", '<span class="pill" data-act="resInfo" data-arg="apples" ' +
+    'style="cursor:pointer;color:#A9E06F;border-color:#6FA83C">🍎 ' + fmt(S.apples || 0) + "</span>") +
+    '<div class="pad mt6">' +
+      '<div class="card"><div class="between"><div><div class="bb small">Progression Méga Raid</div>' +
+        '<div class="mute tiny b">' + cleared.length + "/" + floors.length + " premières victoires</div></div>" +
+        '<span class="pill" style="color:#A9E06F;border-color:#6FA83C">Gain Pommes +' + appleBoost + "%</span></div>" +
+        '<div class="mt8">' + meter(floors.length ? cleared.length / floors.length * 100 : 0, C.red,
+          cleared.length + " / " + floors.length) + "</div>" +
+        '<div class="mute tiny mt6">Récompense par première victoire : 33 + 7 tous les 25 étages. ' +
+          "Le Rebirth peut la doubler à 20/20. Les replays ne donnent jamais de Pomme.</div></div>" +
+      '<div class="sect">Prochain défi</div>' + challenge +
+      (history ? '<div class="sect">Méga-Boss vaincus</div>' + history : "") +
+    '<div style="height:2px"></div></div>';
+}
+
 /* ---------------- ARBRE ---------------- */
 function scrArbre() {
   const now = Date.now();
@@ -7167,6 +7385,7 @@ function scrArbre() {
     ["eq_bottes", "Chaussures · santé", "+"],
     ["eq_ceinture", "Ceinture · santé", "+"],
     ["hatch_COMMUN", "Œuf Commun · éclosion", "+"],
+    ["hatch_PEU_COMMUN", "Œuf Peu commun · éclosion", "+"],
     ["hatch_RARE", "Œuf Rare · éclosion", "+"],
     ["hatch_EPIQUE", "Œuf Épique · éclosion", "+"],
     ["hatch_MYTHIQUE", "Œuf Mythique · éclosion", "+"],
@@ -7235,7 +7454,7 @@ function scrArbre() {
       /* the sheet's bottom bar: what the tree is made of, and where you are */
       '<div class="card mt8" style="padding:9px 11px">' +
         '<div class="mute tiny b" style="letter-spacing:.6px;margin-bottom:6px">RÉCAPITULATIF</div>' +
-        [["30 familles × 4 profondeurs", TREE_NODES.filter((n) => !n.special).length + " / 120 nœuds"],
+        [["31 familles × 4 profondeurs", TREE_NODES.filter((n) => !n.special).length + " / 124 nœuds"],
          ["Clés Raid", TREE_NODES.filter((n) => n.effect === "raidKey").length + " × +1"],
          ["Slots d'Éclosion", TREE_NODES.filter((n) => n.effect === "eggSlot").length + " × +1"],
          ["Multiplicateurs Forge", "+1 → +3 → +5 → +10"],
@@ -7301,7 +7520,7 @@ const EFFECT_TYPE = {
   passDmg: "COMBAT", skillDmg: "COMPETENCES", skillFree: "COMPETENCES",
   skillCost: "COMPETENCES", passHp: "SURVIE",
   petDmg: "FAMILIERS", petHp: "FAMILIERS", eggFree: "FAMILIERS", eggSlot: "FAMILIERS",
-  hatch_COMMUN: "FAMILIERS", hatch_RARE: "FAMILIERS", hatch_EPIQUE: "FAMILIERS",
+  hatch_COMMUN: "FAMILIERS", hatch_PEU_COMMUN: "FAMILIERS", hatch_RARE: "FAMILIERS", hatch_EPIQUE: "FAMILIERS",
   hatch_MYTHIQUE: "FAMILIERS", hatch_LEGENDAIRE: "FAMILIERS",
   forgeTime: "VITESSE", research: "VITESSE", afkTime: "VITESSE",
   forgeCost: "RESSOURCES", forgeFree: "RESSOURCES", techCost: "RESSOURCES",
@@ -7605,9 +7824,13 @@ function scrBoutique() {
         "</div></div>").join("") +
       '<div class="card mt6" style="padding:5px 8px"><div class="between"><div class="row gap10">' + medal("egg", C.gold) +
         '<div><div class="b small">+1 Slot d\'Œuf</div><div class="mute tiny">' +
-        (S.level < 10 ? "Niveau 10 requis" : S.eggSlots + "/" + RULES.EGG_SLOT_MAX) + "</div></div></div>" +
-        btn(ic("gem", 12) + "300", { small: true, cls: "purple", act: "buyEggSlot",
-          dis: S.level < 10 || S.eggSlots >= RULES.EGG_SLOT_MAX || S.gems < 300, style: "width:auto;padding:5px 10px" }) +
+        (S.eggSlotGemBought ? "Achat unique effectué · " + S.eggSlots + "/" + RULES.EGG_SLOT_MAX
+          : S.level < 10 ? "Niveau 10 requis" : S.eggSlots + "/" + RULES.EGG_SLOT_MAX) + "</div></div></div>" +
+        (S.eggSlotGemBought
+          ? '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">Acheté</span>'
+          : btn(ic("gem", 12) + "300", { small: true, cls: "purple", act: "buyEggSlot",
+              dis: S.level < 10 || S.eggSlots >= RULES.EGG_SLOT_MAX || S.gems < 300,
+              style: "width:auto;padding:5px 10px" })) +
       "</div></div>" +
       '<div class="mute tiny center mt8" style="font-style:italic">F2P : tout reste accessible avec le temps ; les achats ne font qu\'accélérer.</div>' +
     '<div style="height:2px"></div></div>';
@@ -7743,7 +7966,7 @@ function scrParametres() {
 const SCREENS = {
   accueil: scrAccueil, personnage: scrPersonnage, equipement: scrEquipement,
   inventaire: scrInventaire, competences: scrCompetences, familiers: scrFamiliers,
-  raid: scrRaid, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
+  raid: scrRaid, mega: scrMegaRaid, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
   boutique: scrBoutique, evenement: scrEvenement, classement: scrClassement,
   parametres: scrParametres,
   chat: () => scrServerOnly("Chat", [["GET /api/chat?channel=world", "messages monde"],
@@ -7964,6 +8187,7 @@ const TREE_EFFECT_INFO = {
   forgeMulti:  "Augmente le nombre de forges lancées en une fois",
   forgeMult:   "Pousse le multiplicateur de Forge au-delà de ×5, jusqu’à ×10",
   hatch_COMMUN: "Réduit le temps d'éclosion des Œufs Communs uniquement",
+  hatch_PEU_COMMUN: "Réduit le temps d'éclosion des Œufs Peu communs uniquement",
   hatch_RARE: "Réduit le temps d'éclosion des Œufs Rares uniquement",
   hatch_EPIQUE: "Réduit le temps d'éclosion des Œufs Épiques uniquement",
   hatch_MYTHIQUE: "Réduit le temps d'éclosion des Œufs Mythiques uniquement",
@@ -8168,6 +8392,22 @@ function showRaidResult(r) {
     r.won ? "Raid terminé" : "Raid échoué");
 }
 
+function showMegaResult(r) {
+  const def = bossFor(r.floor);
+  const won = !!r.won;
+  openModal('<div class="center">' + ic(won ? "trophy" : "skull", 40) + "</div>" +
+    '<div class="modalT mt6" style="color:' + (won ? "var(--goldLit)" : "var(--redLit)") + '">' +
+      (won ? "VICTOIRE" : "DÉFAITE") + "</div>" +
+    '<div class="dim small center" style="margin-bottom:12px;line-height:1.6">Méga-' + esc(def.name) +
+      " · étage " + fmtInt(r.floor) + "<br>" +
+      (won && r.firstClear
+        ? 'Première victoire : <b style="color:#A9E06F">+' + fmt(r.apples) + " 🍎</b><br>Récompense enregistrée définitivement."
+        : won ? "Méga-Boss déjà vaincu : <b>0 Pomme</b>."
+        : "Aucune clé ni récompense perdue. Renforce-toi et réessaie.") + "</div>" +
+    btn("Continuer", { cls: won ? "green" : "ghost", act: "closeMega" }),
+    won ? "Méga-Boss vaincu" : "Méga Raid échoué");
+}
+
 function askReset() {
   openModal('<div class="center">' + ic("trash", 34) + "</div>" +
     '<div class="dim small center mt6" style="margin-bottom:14px;line-height:1.55">Toute la progression locale sera effacée : ' +
@@ -8191,9 +8431,14 @@ const ACT = {
   ascendDo: (a) => {
     const r = doAscendMastery(a);
     closeModal();
-    if (!r.ok) { toast("Maîtrise pas encore au maximum"); return; }
+    if (!r.ok) {
+      toast(a === "pet" && starsOf(S, "pet") >= PET_ASCEND_MAX_STARS
+        ? "Ascension Familier déjà au maximum" : "Maîtrise pas encore au maximum");
+      return;
+    }
     const cfg = ASCENSION[a];
-    toast("Ascension " + cfg.label + " ★ " + r.stars + " — base ×" + ascendPowerMul(r.stars), true);
+    toast("Ascension " + cfg.label + " ★ " + r.stars + " — base ×" + ascendPowerMul(r.stars, a) +
+      (r.appleRefund ? " · +" + fmt(r.appleRefund) + " 🍎 remboursées" : ""), true);
   },
   resInfo: (a) => showResourceInfo(a),
   statInfo: (a) => showStatInfo(a),
@@ -8302,7 +8547,8 @@ const ACT = {
   startEgg: (a) => { if (startEgg(a)) toast("Œuf placé en éclosion", true); else toast("Aucun emplacement libre"); },
   collectEgg: (a) => { collectEgg(a); toast("Familier obtenu !", true); },
   fuse: (a) => {
-    if (fusePets(a)) toast("Fusion réussie !", true);
+    const r = fusePets(a);
+    if (r.ok) toast("Fusion réussie !" + (r.refund ? " · +" + fmt(r.refund) + " 🍎 remboursées" : ""), true);
     else toast(petFuseNeed(a) + " Familiers de rareté " + RARITY[a].label + " requis");
   },
   setPet: (a) => { setActivePet(a); toast("Familier actif", true); },
@@ -8328,6 +8574,19 @@ const ACT = {
   abortRaid: () => { combat = null; startCampaign(); nav("accueil"); toast("Raid abandonné"); },
   closeRaid: () => { closeModal(); raidResult = null; startCampaign(); nav("raid"); },
   adKey: () => { if (watchAdForKey()) toast("+1 clé universelle", true); else toast("Plafond atteint"); },
+
+  // mega raid
+  startMega: (a) => {
+    const ok = startMegaBoss(a, (won, result) => {
+      megaResult = result;
+      showMegaResult(result);
+      scheduleRender();
+    });
+    if (!ok) toast("Méga-Boss non disponible");
+    else nav("mega");
+  },
+  abortMega: () => { combat = null; startCampaign(); nav("mega"); toast("Méga Raid abandonné"); },
+  closeMega: () => { closeModal(); megaResult = null; startCampaign(); nav("mega"); },
 
   // tree
   treeNode: (a) => showTreeNode(a),
@@ -8454,7 +8713,9 @@ if (SMOKE) {
     // the data tables are `const` too, so they are just as invisible
     SLOTS, SKILL_DEFS, SCREENS, RESOURCE_INFO, TREE_NODES, TREE_BY_ID,
     ENEMY_TYPES, ELITE_DEFS, BOSS_DEFS, RAID_BOSSES, EGG_TIMERS, AW,
-    MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PR_PER_FLOOR, REBIRTH_UPGRADES, RAID_IDS,
+    MASTERY_STAT, ASCENSION, RULES, PET_SPECIES, PET_UP, PR_PER_FLOOR, REBIRTH_UPGRADES, RAID_IDS,
+    megaBossFloors, nextMegaBossFloor, megaAppleBaseReward, megaAppleFirstClearReward,
+    makeMegaBossEnemy, startMegaBoss, petAppleInvestmentAtLevel, petAppleInvestmentTotal,
     TREE_NODES,
     get forgeAnim() { return forgeAnim; }, set forgeAnim(v) { forgeAnim = v; },
     FORGE_ANIM_MS, EQUIP_RARITY_ORDER, PET_RARITY_ORDER, RARITY_MUL, SINGLE_STAT_MUL,
