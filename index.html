@@ -569,6 +569,19 @@ body{
 .forgeSpark{position:absolute;left:50%;bottom:25px;width:5px;height:5px;border-radius:50%;background:#FFD76A;box-shadow:-25px -4px 0 #FF9B42,24px -8px 0 #FFE69B,-15px -22px 0 #FFD76A,18px -27px 0 #FF9B42;animation:sparkPop .48s ease-out infinite}
 @keyframes hammerHit{0%{transform:rotate(-42deg) translateY(-5px)}55%,72%{transform:rotate(8deg) translateY(3px)}100%{transform:rotate(-42deg) translateY(-5px)}}
 @keyframes sparkPop{0%,48%{opacity:0;transform:scale(.3)}58%{opacity:1;transform:scale(1.25)}100%{opacity:0;transform:scale(2) translateY(-7px)}}
+/* AUTO keeps the Forge visually alive for as long as the switch is enabled. */
+.forgeAnim.autoLoop .forgeAnimBar{animation:forgeSweep 1.5s linear infinite;animation-delay:var(--forgeSweepDelay,0ms)}
+.forgeAnim.autoLoop .forgeHammerHit{animation-delay:var(--forgeHammerDelay,0ms)}
+.forgeAnim.autoLoop .forgeSpark{animation-delay:var(--forgeHammerDelay,0ms)}
+.forgeAnim.autoLoop{box-shadow:0 0 16px #E8B44A22 inset}
+/* Guided tutorial: pulse the real control and point to it instead of relying on text alone. */
+.tutorialTarget{position:relative;z-index:71!important;outline:2px solid #79B9FF!important;box-shadow:0 0 0 5px #4A90D933,0 0 22px #4A90D988!important;animation:tutorialPulse 1.05s ease-in-out infinite alternate}
+@keyframes tutorialPulse{from{filter:brightness(1)}to{filter:brightness(1.24)}}
+#tutorialGuide{position:fixed;z-index:72;pointer-events:none;width:0;height:0}
+#tutorialGuide .arrow{position:absolute;width:34px;height:34px;border-right:5px solid #93C6FF;border-bottom:5px solid #93C6FF;filter:drop-shadow(0 0 5px #4A90D9);animation:tutorialArrow .72s ease-in-out infinite alternate}
+#tutorialGuide .arrow.down{animation-name:tutorialArrowDown}
+@keyframes tutorialArrow{from{transform:translateY(-4px) rotate(45deg)}to{transform:translateY(5px) rotate(45deg)}}
+@keyframes tutorialArrowDown{from{transform:translateY(4px) rotate(225deg)}to{transform:translateY(-5px) rotate(225deg)}}
 /* the (i) affordance, wherever a rarity needs explaining */
 /* a skill the Lord Demoniaque has sealed: still cooling down, still unusable */
 .slot.sealed{filter:grayscale(1) brightness(.6)}
@@ -6643,6 +6656,12 @@ function scrAccueil() {
   const upgRemain = upgrading ? (S.forge.upgradeEnd - Date.now()) / 1000 : 0;
   const upgDone = S.forge.upgradeEnd > 0 && !upgrading;
   const pet = S.pets.find((p) => p.id === S.activePetId);
+  // Keep AUTO's visual phase continuous even though the home screen re-renders.
+  // Negative delays resume the CSS animations at the real elapsed phase instead
+  // of visibly restarting them after every game render.
+  const forgeNow = Date.now();
+  const forgeSweepDelay = -(forgeNow % 1500);
+  const forgeHammerDelay = -(forgeNow % 480);
 
   // skill bar
   let sb = skillSlotsHTML();
@@ -6743,12 +6762,14 @@ function scrAccueil() {
       "</div>" +
       upg +
       ascendCta("forge") +
-      (forgeAnimActive()
-        ? '<div class="forgeAnim mt6"><div class="forgeAnimBar"></div>' +
+      ((forgeAnimActive() || S.forge.autoForge)
+        ? '<div class="forgeAnim mt6' + (S.forge.autoForge ? ' autoLoop' : '') + '"' +
+          (S.forge.autoForge ? ' style="--forgeSweepDelay:' + forgeSweepDelay + 'ms;--forgeHammerDelay:' + forgeHammerDelay + 'ms"' : '') + '><div class="forgeAnimBar"></div>' +
           '<div class="forgeScene" style="position:relative;z-index:1"><div class="forgeAnvil"></div><div class="forgeHammerHit">'+ic("hammer",42)+'</div><div class="forgeSpark"></div></div>'+
           '<div class="row gap6" style="position:relative;z-index:1;justify-content:center">' +
-          '<span class="b small">Forge en cours · ' + forgeAnim.n +
-          " pièce" + (forgeAnim.n > 1 ? "s" : "") + "</span></div></div>"
+          '<span class="b small">' + (S.forge.autoForge ? "Auto-Forge en cours" : ("Forge en cours · " + forgeAnim.n + " pièce" + (forgeAnim.n > 1 ? "s" : ""))) + '</span>' +
+          (S.forge.autoForge ? '<div class="tgl on" data-act="autoForge" style="margin-left:8px;pointer-events:auto"><span>AUTO</span><i></i></div>' : '') +
+          '</div></div>' 
         :
       '<div class="row gap6 mt6">' +
         btn('<span class="row gap6">' + ic("hammer", 14) + "Forger</span>" +
@@ -8420,28 +8441,99 @@ function checkTimerNotifications() {
 }
 
 let tutorialCurrentKey = null;
+let tutorialGuideTarget = null;
+
+/* Guided tutorial flows. Grouped systems deliberately use two visual steps:
+   first the parent hub on Combat, then the exact sub-feature inside that hub. */
+const TUTORIAL_FLOWS = {
+  competence: { parent: "developpement", parentLabel: "Développement", child: "competences", childLabel: "Compétences" },
+  familier:   { parent: "developpement", parentLabel: "Développement", child: "familiers", childLabel: "Familiers" },
+  tree:       { parent: "developpement", parentLabel: "Développement", child: "arbre", childLabel: "Arbre personnel" },
+  raid:       { parent: "defis", parentLabel: "Défis", child: "raid", childLabel: "Raids" },
+  megaBoss:   { parent: "defis", parentLabel: "Défis", child: "mega", childLabel: "Méga-Boss" },
+  rebirth:    { parent: "progression", parentLabel: "Progression", child: "rebirth", childLabel: "Rebirth" }
+};
+
+function tutorialGuideInfo(key) {
+  const flow = TUTORIAL_FLOWS[key];
+  if (flow) {
+    if (route === flow.parent) {
+      return { selector: '[data-act="go"][data-arg="' + flow.child + '"]', next: flow.child, label: "Ouvrir " + flow.childLabel };
+    }
+    if (route === flow.child) return { selector: null, next: null, label: "Compris" };
+    return { selector: '[data-act="go"][data-arg="' + flow.parent + '"]', next: flow.parent, label: "Ouvrir " + flow.parentLabel };
+  }
+  const direct = {
+    combat: { selector: '#arenaSlot', next: null, label: "Compris" },
+    equipement: { selector: '[data-act="go"][data-arg="equipement"]', next: "equipement", label: "Ouvrir Équipement" },
+    forge: { selector: '[data-act="forge"][data-arg="1"]', next: null, label: "Compris" }
+  };
+  return direct[key] || { selector: null, next: null, label: "Compris" };
+}
+function clearTutorialGuide() {
+  if (tutorialGuideTarget) tutorialGuideTarget.classList.remove('tutorialTarget');
+  tutorialGuideTarget = null;
+  const g = document.getElementById('tutorialGuide');
+  if (g) g.remove();
+}
+function updateTutorialGuide() {
+  clearTutorialGuide();
+  if (!tutorialCurrentKey || !document.getElementById('tutorialCard')) return;
+  const info = tutorialGuideInfo(tutorialCurrentKey);
+  const cardBtn = document.querySelector('#tutorialCard [data-act="tutorialNext"]');
+  if (cardBtn) cardBtn.textContent = info.label || "Compris";
+  if (!info.selector) return;
+  const target = document.querySelector(info.selector);
+  if (!target) return;
+  tutorialGuideTarget = target;
+  target.classList.add('tutorialTarget');
+  const r = target.getBoundingClientRect();
+  const g = document.createElement('div');
+  g.id = 'tutorialGuide';
+  const above = r.top > 65;
+  g.style.left = (r.left + r.width / 2 - 17) + 'px';
+  g.style.top = (above ? r.top - 48 : r.bottom + 12) + 'px';
+  g.innerHTML = '<div class="arrow' + (above ? '' : ' down') + '"></div>';
+  document.body.appendChild(g);
+}
 function checkTutorial() {
   if (!S.tutorial || document.getElementById("tutorialCard")) return;
+  // Start a new guided lesson from Combat so the first arrow always has a real
+  // parent control to point at. Once started, the card follows the player into
+  // the hub and then points at the exact child feature.
+  if (route !== "accueil") return;
   const seen = S.tutorial.seen || (S.tutorial.seen = {});
   let key = null, title = null, sub = null;
   if (!seen.combat) { key="combat"; title="Combat automatique"; sub="Bats les ennemis pour monter les étages et gagner Or + EXP."; }
-  else if (!seen.equipement && (S.inventory.length || SLOTS.some((k)=>S.equipped[k]))) { key="equipement"; title="Équipement"; sub="Équipe tes meilleures pièces depuis Personnage pour augmenter ta puissance."; }
-  else if (!seen.competence && Object.keys(S.skills || {}).length) { key="competence"; title="Compétences"; sub="Tu disposes de 3 emplacements actifs. Équipe tes compétences et choisis le lancement automatique ou manuel."; }
-  else if (!seen.familier && ((S.pets||[]).length || (S.eggs||[]).length)) { key="familier"; title="Familiers"; sub="Tes œufs sont stockés individuellement avec leur vraie rareté. Choisis ceux que tu veux faire éclore."; }
+  else if (!seen.equipement && (S.inventory.length || SLOTS.some((k)=>S.equipped[k]))) { key="equipement"; title="Équipement"; sub="Ouvre Équipement et équipe tes meilleures pièces pour augmenter ta puissance."; }
+  else if (!seen.competence && Object.keys(S.skills || {}).length) { key="competence"; title="Compétences"; sub="Suis les flèches : ouvre Développement, puis Compétences. Tu disposes de 3 emplacements actifs."; }
+  else if (!seen.familier && ((S.pets||[]).length || (S.eggs||[]).length)) { key="familier"; title="Familiers"; sub="Suis les flèches : ouvre Développement, puis Familiers. Tes œufs sont stockés individuellement avec leur vraie rareté."; }
   else if (!seen.forge && S.minerai >= FORGE_CRAFT_COST) { key="forge"; title="Forge"; sub="Le Minerai fabrique l'équipement. L'Or améliore le niveau de Forge."; }
-  else if (!seen.raid && S.level >= RULES.RAID_UNLOCK_LEVEL) { key="raid"; title="Raids"; sub="Utilise tes clés pour obtenir des ressources spécialisées et faire monter chaque Raid."; }
-  else if (!seen.rebirth && S.floor >= RULES.REBIRTH_UNLOCK_FLOOR) { key="rebirth"; title="Rebirth"; sub="Renaître donne des PR permanents et ouvre les bonus de Rebirth."; }
-  else if (!seen.megaBoss && megaRaidUnlocked(S)) { key="megaBoss"; title="Méga Boss"; sub="Le Boss normal 50 a déverrouillé les Méga Boss. Méga 1 reprend le Boss 10 avec PV ×10 et dégâts ×10, Méga 2 reprend le Boss 20, puis ainsi de suite."; }
-  else if (!seen.tree && (S.pe||0) > 0) { key="tree"; title="Arbre personnel"; sub="Les PE du Raid Évolution débloquent et améliorent les nœuds de l'Arbre."; }
+  else if (!seen.raid && S.level >= RULES.RAID_UNLOCK_LEVEL) { key="raid"; title="Raids"; sub="Suis les flèches : ouvre Défis, puis Raids pour utiliser tes clés et obtenir des ressources spécialisées."; }
+  else if (!seen.rebirth && S.floor >= RULES.REBIRTH_UNLOCK_FLOOR) { key="rebirth"; title="Rebirth"; sub="Suis les flèches : ouvre Progression, puis Rebirth pour voir tes PR permanents et les conséquences de la renaissance."; }
+  else if (!seen.megaBoss && megaRaidUnlocked(S)) { key="megaBoss"; title="Méga Boss"; sub="Suis les flèches : ouvre Défis, puis Méga-Boss. Chaque Méga reprend un ancien Boss avec une puissance fortement augmentée."; }
+  else if (!seen.tree && (S.pe||0) > 0) { key="tree"; title="Arbre personnel"; sub="Suis les flèches : ouvre Développement, puis Arbre personnel. Les PE du Raid Évolution servent à améliorer ses nœuds."; }
   if (!key) return;
   tutorialCurrentKey = key;
   const el = document.createElement("div");
   el.id = "tutorialCard";
   el.innerHTML = '<div class="tt">TUTORIEL · ' + esc(title) + '</div><div class="ts">' + esc(sub) +
-    '</div><div class="td"><button class="btn sm green" data-act="tutorialOk">Compris</button></div>';
+    '</div><div class="td"><button class="btn sm green" data-act="tutorialNext">Continuer</button></div>';
   document.getElementById("app").appendChild(el);
+  requestAnimationFrame(updateTutorialGuide);
+}
+function tutorialNext() {
+  if (!tutorialCurrentKey) return;
+  const info = tutorialGuideInfo(tutorialCurrentKey);
+  if (info.next) {
+    nav(info.next);
+    requestAnimationFrame(updateTutorialGuide);
+    return;
+  }
+  dismissTutorial();
 }
 function dismissTutorial() {
+  clearTutorialGuide();
   if (tutorialCurrentKey) {
     S.tutorial.seen[tutorialCurrentKey] = true;
     tutorialCurrentKey = null;
@@ -8479,6 +8571,7 @@ function render() {
   sc.innerHTML = fn();
   attachArena();
   sc.scrollTop = keep;
+  if (tutorialCurrentKey) requestAnimationFrame(updateTutorialGuide);
 }
 
 function attachArena() {
@@ -8865,6 +8958,7 @@ function askReset() {
 
 const ACT = {
   tutorialOk: () => dismissTutorial(),
+  tutorialNext: () => tutorialNext(),
   researchFinished: (a) => showResearchFinished(a),
   eggFinished: (a) => { nav("familier"); setTimeout(() => showEggFinished(a), 30); },
   collectEggPopup: (a) => { collectEgg(a); closeModal(); rewardPop("Œuf éclos", "Nouveau familier obtenu.", false); scheduleRender(); },
