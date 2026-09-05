@@ -1179,7 +1179,7 @@ const RULES = {
   SKILL_SLOTS_BASE: 3, SKILL_SLOT_5_LEVEL: 100,
   RAID_UNLOCK_LEVEL: 5, CHAT_UNLOCK_LEVEL: 3, MAX_ENEMIES: 3,
   FORGE_MAX: 50, SKILL_MAX_LEVEL: 50, MASTERY_MAX: 50, EGG_SLOT_MAX: 5,
-  RAID_MAX_LEVEL: 50, RAID_FREE_KEYS: 3, RAID_KEY_CAP: 6,
+  RAID_MAX_LEVEL: 50, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6,
   UNIVERSAL_KEY_DAILY: 3, UNIVERSAL_KEY_CAP: 6, AFK_BASE_HOURS: 8,
   WAR_POINTS_PER_PR: 30,
   FORGE_BATCH_BASE: 1, FORGE_BATCH_MAX: 10,
@@ -2018,23 +2018,23 @@ const RAID_TUNE = {
   familier:   { hp: 1.00, dmg: 1.00 },
 };
 /* Section 6 makes Raid Minerai linear: a flat base, then ten more a level. The
-   base is the only thing an Ascension changes -- 500 unstarred, 850 after the
+   base is the only thing an Ascension changes -- 750 unstarred, 1275 after the
    first -- so level 15 with a star lands on 990, which was the unstarred
    ceiling, and level 16 is the first to beat it. The second star is left
    undefined and the base holds, as everywhere else in this update. */
-const RAID_MINERAI_BASE = [500, 850];
-const RAID_MINERAI_PER_LEVEL = 10;
+const RAID_MINERAI_BASE = [750, 1275];
+const RAID_MINERAI_PER_LEVEL = 15;
 function raidMineraiBase(s) {
   const st = (s && s.raids && s.raids.minerai && s.raids.minerai.stars) || 0;
   return RAID_MINERAI_BASE[Math.min(Math.max(0, st), RAID_MINERAI_BASE.length - 1)];
 }
 function raidReward(raid, level) {
   // Mise à jour 10 : progression lisible et linéaire pour les trois ressources demandées.
-  // Évolution : 10 au niveau 1, puis +3 par niveau.
-  if (raid === "evolution") return 10 + 3 * Math.max(0, level - 1);
-  // Éclats (Raid Compétence) et Essence (Raid Familier) : 50 au niveau 1, puis +5 par niveau.
-  if (raid === "competence") return 50 + 5 * Math.max(0, level - 1);
-  if (raid === "familier") return 50 + 5 * Math.max(0, level - 1);
+  // Évolution : 15 au niveau 1, puis +4 par niveau.
+  if (raid === "evolution") return 15 + 4 * Math.max(0, level - 1);
+  // Éclats (Raid Compétence) et Essence (Raid Familier) : 75 au niveau 1, puis +7 par niveau.
+  if (raid === "competence") return 75 + 7 * Math.max(0, level - 1);
+  if (raid === "familier") return 75 + 7 * Math.max(0, level - 1);
   // Raid Or conserve sa courbe dédiée.
   if (raid === "or") return Math.floor(RAID_OR_BASE * Math.pow(RAID_OR_GROWTH, level - 1));
   if (raid === "minerai") return raidMineraiBase(S) + RAID_MINERAI_PER_LEVEL * (level - 1);
@@ -2204,7 +2204,7 @@ function megaAppleFirstClearReward(floor, s) {
    floors. 1.17 over 50 levels was 2566x, which outran every cost curve the
    Forge could carry and pushed the Raid to 100% of late income. 1.14 is 758x --
    still the dominant source, but floors and the Récolte keep a visible share. */
-const RAID_OR_BASE = 2000, RAID_OR_GROWTH = 1.057;
+const RAID_OR_BASE = 3000, RAID_OR_GROWTH = 1.057;
 /* Raid level 1 rewards. These also set the Récolte automatique's hourly
    rates: Minerai 100% of an entry, Essence and Compétence 25% each. */
 /* minerai is no longer here: section 6 gives it its own linear curve. */
@@ -2451,11 +2451,11 @@ function defaultState(name) {
     /* one Ascension star count per system, never lost */
     stars: { pet: 0, forge: 0, skill: 0 },
     raids: {
-      or:         { level: 1, keys: 3, record: 0, stars: 0 },
-      minerai:    { level: 1, keys: 3, record: 0, stars: 0 },
-      competence: { level: 1, keys: 3, record: 0, stars: 0 },
-      familier:   { level: 1, keys: 3, record: 0 },
-      evolution:  { level: 1, keys: 3, record: 0 },
+      or:         { level: 1, keys: 2, record: 0, stars: 0 },
+      minerai:    { level: 1, keys: 2, record: 0, stars: 0 },
+      competence: { level: 1, keys: 2, record: 0, stars: 0 },
+      familier:   { level: 1, keys: 2, record: 0 },
+      evolution:  { level: 1, keys: 2, record: 0 },
     },
     pe: 0,
     universalKeys: 3, adKeysToday: 0, lastKeyReset: todayStr(),
@@ -4921,7 +4921,32 @@ function collectForgeUpgrade() {
     s.forge.level += 1; s.forge.upgradeEnd = 0;
   });
 }
-function toggleAutoForge() { update((s) => { s.forge.autoForge = !s.forge.autoForge; }); }
+/* Auto-Forge has its own persistent scheduler. It is deliberately independent
+   from the result/filter logic: finding or keeping a wanted item must NEVER
+   stop the loop. The scheduler keeps polling even when Minerai is temporarily
+   insufficient, so passive/claimed Minerai can make it resume automatically. */
+let autoForgeTimer = null;
+function scheduleAutoForge(delay) {
+  if (autoForgeTimer !== null) return;
+  autoForgeTimer = setTimeout(() => {
+    autoForgeTimer = null;
+    if (!S.forge.autoForge) return;
+    try {
+      if (S.minerai >= forgeCost(S.forge.level)) forgeSummon(1);
+    } catch (err) {
+      console.error("auto-forge tick failed", err);
+    } finally {
+      // Re-arm unconditionally while AUTO is enabled. A good drop, a filter
+      // match, a modal or a temporary lack of Minerai cannot cancel AUTO.
+      if (S.forge.autoForge) scheduleAutoForge(1500);
+    }
+  }, Math.max(0, delay == null ? 1500 : delay));
+}
+function toggleAutoForge() {
+  update((s) => { s.forge.autoForge = !s.forge.autoForge; });
+  if (S.forge.autoForge) scheduleAutoForge(0);
+  else if (autoForgeTimer !== null) { clearTimeout(autoForgeTimer); autoForgeTimer = null; }
+}
 
 /* ------------------------------ filtre de Forge ------------------------------
    Section 14. Mass forging buries the bag in Commun. The filter lets the player
@@ -5444,9 +5469,9 @@ function boot() {
     if (dt > 0 && harvestAdvance(S, dt) > 0) dirty = true;
     if (isHarvestOpen()) refreshHarvestModal();
   }, 1000);
-  setInterval(() => {   // auto-forge loop (1.5s, as in the app)
-    if (S.forge.autoForge && S.minerai >= forgeCost(S.forge.level)) forgeSummon(1);
-  }, 1500);
+  // Persistent Auto-Forge scheduler. It never stops because a wanted/rare item
+  // was found; only the player switching AUTO off cancels it.
+  if (S.forge.autoForge) scheduleAutoForge(0);
   setInterval(() => { if (isTimerScreen()) scheduleRender(); }, 1000); // live countdowns
   window.addEventListener("beforeunload", saveNow);
   document.addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
