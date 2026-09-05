@@ -1158,7 +1158,7 @@ const ENV_NAMES = {
 function bgFor(key) { return SCENES[key] || ASSETS[key] || SCENES.env_forest; }
 
 /* ---------------------------- config.ts ---------------------------- */
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 
 const RULES = {
   STEPS_PER_FLOOR: 3, CHECKPOINT_EVERY: 5, ELITE_EVERY: 5, BOSS_EVERY: 10,
@@ -2453,7 +2453,7 @@ function defaultState(name) {
     harvest: { secs: 0, minerai: 0, essence: 0, eclat: 0, gold: 0 },
     eventDay: todayStr(), eventClaims: {}, eventProgress: {},
     testDays: 0, power: 0,
-    autoSkills: true, firstSeen: Date.now(), tutorial: { seen: {} },
+    autoSkills: true, firstSeen: Date.now(), tutorial: { version: 2, seen: {} },
   };
 }
 
@@ -2607,8 +2607,13 @@ function migrate(s, name) {
   }
   if (!merged.megaFloorRewardsClaimed || typeof merged.megaFloorRewardsClaimed !== "object")
     merged.megaFloorRewardsClaimed = {};
-  if (!merged.tutorial || typeof merged.tutorial !== "object") merged.tutorial = { seen: {} };
+  if (!merged.tutorial || typeof merged.tutorial !== "object") merged.tutorial = { version: 0, seen: {} };
   if (!merged.tutorial.seen || typeof merged.tutorial.seen !== "object") merged.tutorial.seen = {};
+  // Tutoriel v2 : il doit être présenté même aux sauvegardes créées avant cette mise à jour.
+  if ((merged.tutorial.version || 0) < 2) {
+    merged.tutorial.version = 2;
+    merged.tutorial.seen = {};
+  }
   // L'ancien Retour Rapide est retiré du jeu. On conserve les PR déjà dépensés
   // sans tenter de les recalculer automatiquement, pour ne pas inventer un remboursement.
   if (merged.rebirth && merged.rebirth.upgrades) delete merged.rebirth.upgrades.fastback;
@@ -3969,11 +3974,6 @@ function makeEnemy(mode, opts) {
     hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * tier.mul);
     dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * tier.mul);
     // difficulty adapts to the player's gear (bounded)
-    // "Retour Rapide": ground already cleared once is softer, so climbing back
-    // after a Rebirth is quick. This is the only thing that reads `fastback`.
-    if (!opts.noFastback && opts.floor < S.recordFloor) {
-      hp = Math.floor(hp * (1 - Math.min(60, rb(S, "fastback")) / 100));
-    }
     let gear = 0;
     Object.values(S.equipped).forEach((it) => { if (it) gear += it.power; });
     const expected = 55 * opts.floor + 120;
@@ -4618,7 +4618,7 @@ function handleCombatEnd(c) {
         const bk = String(c.floor);
         s.bossClears[bk] = true;
         notable = c.floor === 50
-          ? { msg: "Boss 50 vaincu · MÉGA RAID débloqué !", icon: "crown" }
+          ? { msg: "Boss 50 vaincu · MÉGA BOSS débloqué !", icon: "crown" }
           : { msg: "Boss vaincu · étage " + c.floor, icon: "trophy" };
         // the accelerator is tied to the FIRST clear and never repeats
         if (!s.bossRewardsClaimed[bk]) {
@@ -7331,7 +7331,7 @@ function scrRaid() {
     '<div style="height:2px"></div></div>';
 }
 
-/* ---------------- MÉGA RAID ---------------- */
+/* ---------------- MÉGA BOSS ---------------- */
 function scrMegaRaid() {
   const running = combat && combat.ctx === "mega";
   if (running) {
@@ -7359,7 +7359,7 @@ function scrMegaRaid() {
   let challenge;
   if (!floors.length) {
     challenge = '<div class="card frame center" style="border-left-color:#E5484D">' + ic("lock", 30) +
-      '<div class="bb gt mt6" style="font-size:14px">MÉGA RAID VERROUILLÉ</div>' +
+      '<div class="bb gt mt6" style="font-size:14px">MÉGA BOSS VERROUILLÉ</div>' +
       '<div class="mute small mt6">Atteins l’étage normal 50 et vaincs son Boss pour déverrouiller le Méga Boss.</div></div>';
   } else if (next !== null) {
     const def = bossFor(next);
@@ -8132,6 +8132,7 @@ function checkTutorial() {
   else if (!seen.forge && S.minerai >= FORGE_CRAFT_COST) { key="forge"; title="Forge"; sub="Le Minerai fabrique l'équipement. L'Or améliore le niveau de Forge."; }
   else if (!seen.raid && S.level >= RULES.RAID_UNLOCK_LEVEL) { key="raid"; title="Raids"; sub="Utilise tes clés pour obtenir des ressources spécialisées et faire monter chaque Raid."; }
   else if (!seen.rebirth && S.floor >= RULES.REBIRTH_UNLOCK_FLOOR) { key="rebirth"; title="Rebirth"; sub="Renaître donne des PR permanents et ouvre les bonus de Rebirth."; }
+  else if (!seen.megaBoss && megaRaidUnlocked(S)) { key="megaBoss"; title="Méga Boss"; sub="Le Boss normal 50 a déverrouillé les Méga Boss. Méga 1 reprend le Boss 10 avec PV ×10 et dégâts ×10, Méga 2 reprend le Boss 20, puis ainsi de suite."; }
   else if (!seen.tree && (S.pe||0) > 0) { key="tree"; title="Arbre personnel"; sub="Les PE du Raid Évolution débloquent et améliorent les nœuds de l'Arbre."; }
   if (!key) return;
   tutorialCurrentKey = key;
