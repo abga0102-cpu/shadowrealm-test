@@ -538,10 +538,36 @@ body{
 .homeMore>summary::-webkit-details-marker{display:none}
 .homeMore>summary .dot{position:static;width:6px;height:6px;margin-left:2px}
 .homeMore[open]>summary{color:var(--text);border-bottom:1px solid #263958}
-.homeMore .homeNavSecondary{padding:3px 4px 4px;margin-top:0!important;gap:3px}
+.homeMore .homeNavSecondary{padding:7px 7px 8px;margin-top:0!important;gap:6px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.homeMore .homeNavSecondary .navBtn{min-height:46px;padding:6px 8px;justify-content:flex-start;gap:8px}
+.homeMore .homeNavSecondary .navInner{width:34px;max-width:34px;flex-basis:34px}
+.homeMore .homeNavSecondary .navLbl{font-size:calc(10.2px * var(--s));white-space:normal;text-align:left;line-height:1.15}
+.homeMore .homeNavSecondary .navBtn:last-child:nth-child(odd){grid-column:1/-1;justify-content:center}
 .homeForge .fgRow.mt6{margin-top:4px}
 .homeForge .btn{min-height:28px}
 .homeForge .tgl{min-height:28px}
+/* En Auto-Forge, l'animation devient une bande compacte. L'animation manuelle
+   garde l'enclume complète, mais le mode permanent ne repousse plus les menus. */
+.forgeAnim.compactAuto{padding:6px 8px;min-height:38px;display:flex;align-items:center;gap:8px}
+.forgeAnim.compactAuto .forgeAnimBar{opacity:.65}
+.forgeAutoIcon{position:relative;z-index:1;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#E8B44A18;border:1px solid #E8B44A66;flex:0 0 28px}
+.forgeAutoIcon svg{animation:hammerHit .65s ease-in-out infinite;transform-origin:50% 75%}
+.forgeAutoText{position:relative;z-index:1;min-width:0;flex:1;line-height:1.05}
+.forgeAutoText .tiny{display:block;margin-top:2px}
+/* Quand une pièce est testée, ce tableau reste devant le joueur même s'il
+   parcourt le bas de l'inventaire. */
+.equipTestDock{position:fixed;z-index:45;left:50%;transform:translateX(-50%);bottom:calc(58px * var(--s));width:min(calc(100% - 18px),calc(422px * var(--s)));padding:8px 9px;border-radius:12px;background:linear-gradient(180deg,#13233aee,#0b1424f2);border:1px solid #78B7FF99;box-shadow:0 8px 26px #000b,0 0 18px #4A90D933;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);max-height:46vh;overflow:auto}
+.equipTestDock .dockStats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-top:6px}
+.equipTestDock .dockStat{min-width:0;text-align:left;padding:5px 6px;border-radius:7px;background:#ffffff08;border:1px solid #ffffff0c}
+.equipTestDock .dockStat .v{font-size:10.5px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.equipTestDock .dockStat .n{font-size:8px;color:var(--textMute);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}
+.equipDockMore{margin-top:5px;border-top:1px solid #ffffff12}
+.equipDockMore>summary{cursor:pointer;list-style:none;text-align:center;padding:5px 3px 1px;color:#78B7FF;font-size:9px;font-weight:900}
+.equipDockMore>summary::-webkit-details-marker{display:none}
+.equipDockMore>summary::after{content:"  ▾"}
+.equipDockMore[open]>summary::after{content:"  ▴"}
+.equipPreviewSpacer{height:165px;transition:height .12s ease}
+.equipAffixes{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}.equipAffixes .tag{font-size:8px;padding:2px 4px;line-height:1.15}
 .equipStatsMore{margin-top:4px;border-top:1px solid var(--borderSoft)}
 .equipStatsMore>summary{cursor:pointer;list-style:none;text-align:center;padding:6px 4px 2px;color:#78B7FF;font-size:10px;font-weight:900}
 .equipStatsMore>summary::-webkit-details-marker{display:none}
@@ -4449,6 +4475,18 @@ function applyDamageToEnemy(c, e, dmg, crit, color, src) {
      centralisé ici afin de renforcer arme, compétences, Poison et brûlure sans
      risque d’oubli selon la source. */
   const damageSrc = src || "weapon";
+  if (e.arenaProfile) {
+    const ap=e.arenaProfile;
+    if(damageSrc==="weapon" && Math.random()*100<(ap.blockChance||0)){
+      c.floats.push({id:rid(),x:e.x,val:0,crit:false,color:"#8FEFF4",born:Date.now(),blocked:true});return;
+    }
+    if(damageSrc==="weapon" && crit && (D.critMult||1)>1){
+      const eff=1+Math.max(0,(D.critMult||1)-1)*(1-Math.min(80,ap.critRed||0)/100);
+      dmg=dmg/Math.max(1,D.critMult||1)*eff;
+    }
+    const extraRed=(e._arenaRempart&&Date.now()<e._arenaRempart.until)?e._arenaRempart.value:0;
+    dmg*=1-Math.min(85,Math.max(0,(ap.dmgRed||0)+extraRed))/100;
+  }
   if (damageSrc !== "weapon") dmg *= 1 + fxVal(c, "debuffs", "vuln") / 100;
   if (petElemOf(c, D) === "toxique") dmg *= 1.10;
   dmg = capChampionHit(e, dmg);
@@ -4473,6 +4511,45 @@ function applyDamageToEnemy(c, e, dmg, crit, color, src) {
   }
 }
 
+function resolveArenaBotBasicHit(c,e,dv,abs,delayExtra=0) {
+  if(!e||!e.arenaProfile||c.status!=="fight") return;
+  const ap=e.arenaProfile,now=Date.now();
+  const dodgePct=fxVal(c,"buffs","hate")*0.5;
+  if(Math.random()*100<dodgePct){
+    c.floats.push({id:rid(),x:c.heroX,val:0,crit:false,color:"#8FC4FF",born:now,dodged:true});
+    return;
+  }
+  if(Math.random()*100<(dv.blockChance||0)){
+    c.heroHit=0.1;
+    c.floats.push({id:rid(),x:c.heroX,val:0,crit:false,color:"#8FEFF4",born:now,blocked:true});
+    return;
+  }
+  let dmg=ap.damage*(ap.hit||1)*(1+Math.max(0,ap.styleBonus||0)/100);
+  if(e._arenaForce&&now<e._arenaForce.until)dmg*=1+e._arenaForce.value/100;
+  if(ap.petElem==="toxique")dmg*=1.10;
+  if(c._arenaHeroVuln&&now<c._arenaHeroVuln.until)dmg*=1+c._arenaHeroVuln.value/100;
+  abs.forEach((a)=>{if(a.outgoing)dmg=a.outgoing(c,e,dmg);});
+  let crit=e.nextCrit?true:Math.random()*100<(ap.critChance||0);
+  if(e.nextCrit){e.nextCrit=false;dmg*=1.5;}
+  if(crit)dmg*=1+Math.max(0,(ap.critMult||1)-1)*(1-dv.critRed/100);
+  const totalRed=Math.min(85,dv.dmgRed+fxVal(c,"buffs","rempart"));
+  dmg=Math.max(1,Math.floor(dmg*(1-totalRed/100)*(0.9+Math.random()*0.2)));
+  if(e.ranged){
+    const pk=e.type.proj||"arrow";
+    c.projs.push({id:rid(),x:e.x-10,toX:c.heroX,color:pk==="magic"?"#B15CF6":"#CFCFCF",kind:pk,life:0.35});
+  }
+  scheduleHit(c,(e.ranged?HIT_DELAY_RANGED:HIT_DELAY_MELEE)+delayExtra,()=>{
+    if(c.status!=="fight")return;
+    c.heroHP-=dmg;
+    if(ap.lifesteal>0)e.hp=Math.min(e.maxHP,e.hp+dmg*ap.lifesteal/100);
+    c.heroHit=0.22;
+    abs.forEach((a)=>{if(a.onLand)a.onLand(c,e);});
+    addShake(c,crit?4:2);
+    c.floats.push({id:rid(),x:c.heroX,val:dmg,crit,color:"#FF6B6B",born:Date.now()});
+    if(c.heroHP<=0){c.heroHP=0;c.status="lost";}
+  });
+}
+
 /* -------- main simulation tick (33ms, as in the app) -------- */
 let lastTick = Date.now();
 function tick() {
@@ -4495,6 +4572,22 @@ function tick() {
   const regenPct = dv.regen + fxVal(c, "buffs", "regen");
   if (regenPct > 0 && c.heroHP < c.heroMaxHP) {
     c.heroHP = Math.min(c.heroMaxHP, c.heroHP + regenPct / 100 * c.heroMaxHP * dt);
+  }
+  if(c.ctx==="arenaLive"){
+    const ae=c.enemies.find(e=>e.alive&&e.arenaProfile);
+    if(ae){
+      const ap=ae.arenaProfile,nowA=Date.now();
+      const regBuff=(ae._arenaRegen&&nowA<ae._arenaRegen.until)?ae._arenaRegen.value:0;
+      const reg=(ap.regen||0)+regBuff;if(reg>0)ae.hp=Math.min(ae.maxHP,ae.hp+ae.maxHP*(reg/100)*dt);
+      if(ap.petElem==="feu"){c._arenaBotBurn=(c._arenaBotBurn||0)+dt;if(c._arenaBotBurn>=1){c._arenaBotBurn=0;let bd=ap.damage*.06*(ap.petElem==="toxique"?1.10:1);bd*=1-heroDmgRed(c)/100;c.heroHP-=Math.max(1,Math.floor(bd));if(c.heroHP<=0){c.heroHP=0;c.status="lost";}}}
+      const poison=(c._arenaHeroPoison&&nowA<c._arenaHeroPoison.until)?c._arenaHeroPoison.value:0;
+      if(poison>0){c._arenaPoisonTick=(c._arenaPoisonTick||0)+dt;if(c._arenaPoisonTick>=1){c._arenaPoisonTick=0;let pd=c.heroMaxHP*(poison/100)/8*(ap.petElem==="toxique"?1.10:1);pd*=1-heroDmgRed(c)/100;c.heroHP-=Math.max(1,Math.floor(pd));if(c.heroHP<=0){c.heroHP=0;c.status="lost";}}}
+      (ap.skills||[]).forEach((entry,i)=>{const def=entry.def||entry;if(!def)return;const key='b'+i;if(c.botSkillCds[key]==null)c.botSkillCds[key]=.8+i*.55;c.botSkillCds[key]-=dt;if(c.botSkillCds[key]>0)return;const lv=entry.level||1,stars=entry.stars||0,cd=Math.max(1,def.cd*(1-Math.min(80,ap.skillCd||0)/100));c.botSkillCds[key]=cd;
+        if(def.mult){const mult=skillMult(def)*(1+(lv-1)*SKILL_LEVEL_GROWTH)*ascendPowerMul(stars,'skill');let sd=ap.damage*mult*(1+(ap.skillDmg||0)/100);sd*=1-heroDmgRed(c)/100;if(ap.petElem==='toxique')sd*=1.10;const vuln=(c._arenaHeroVuln&&nowA<c._arenaHeroVuln.until)?c._arenaHeroVuln.value:0;sd*=1+vuln/100;c.heroHP-=Math.max(1,Math.floor(sd));c.floats.push({id:rid(),x:c.heroX,val:Math.floor(sd),crit:false,color:def.color||'#C79BFF',born:nowA,text:def.name});if(c.heroHP<=0){c.heroHP=0;c.status='lost';}}
+        if(def.heal){const h=ae.maxHP*skillHeal(def,lv)/100;ae.hp=Math.min(ae.maxHP,ae.hp+h);}
+        if(def.eff){const ef=skillEff(def,lv),until=nowA+ef.dur*1000;if(ef.stat==='dmg')ae._arenaForce={value:ef.value,until};else if(ef.stat==='dmgRed')ae._arenaRempart={value:ef.value,until};else if(ef.stat==='haste')ae._arenaHaste={value:ef.value,until};else if(ef.stat==='regen')ae._arenaRegen={value:ef.value,until};else if(ef.stat==='slow')c._arenaHeroSlow={value:ef.value,until};else if(ef.stat==='vuln')c._arenaHeroVuln={value:ef.value,until};else if(ef.stat==='poison')c._arenaHeroPoison={value:ef.value,until};}
+      });
+    }
   }
   // Poison ticks on the whole wave for as long as the debuff lasts
   // Feu familiars burn the wave once a second
@@ -4548,7 +4641,8 @@ function tick() {
       c.heroAtkCd -= dt;
       if (c.heroAtkCd <= 0) {
         c.heroAtkCd = (1 / (dv.attackSpeed * wt.speed * (1 + fxVal(c, "buffs", "hate") / 100)))
-          * (0.88 + Math.random() * 0.24);
+          * (0.88 + Math.random() * 0.24) * (target.arenaProfile && target.arenaProfile.petElem === "glace" ? 1.12 : 1)
+          * (c._arenaHeroSlow && Date.now()<c._arenaHeroSlow.until ? 1+c._arenaHeroSlow.value/100 : 1);
         c.heroAttacking = 0.2;
         // weapon-type affixes only apply to the matching attack type
         const styleMul = wt.attackType === "MELEE"
@@ -4653,12 +4747,20 @@ function tick() {
     } else {
       e.atkCd -= dt;
       if (e.atkCd <= 0) {
-        e.atkCd = (1.15 + Math.random() * 0.5) * (1 + fxVal(c, "debuffs", "slow") / 100)
+        e.atkCd = (e.arenaProfile ? (1/Math.max(.1,e.arenaProfile.attackSpeed||1))*(.88+Math.random()*.24)/(e._arenaHaste&&Date.now()<e._arenaHaste.until?1+e._arenaHaste.value/100:1) : (1.15 + Math.random() * 0.5)) * (1 + fxVal(c, "debuffs", "slow") / 100)
           * (petElemOf(c, dv) === "glace" ? 1.12 : 1) * (e.frenzy ? 0.5 : 1)
           * (e.flurry > 0 ? 0.34 : 1)
           * (e.stolen && e.stolen.key === "hate" ? 1 / (1 + e.stolen.value / 100) : 1)
           * ((e.mutations || 0) >= 1 ? 0.7 : 1);
         e.attacking = 0.2;
+        // Arena rivals use true hit events. Double attaque therefore creates
+        // a second swing instead of doubling one damage packet.
+        if(e.arenaProfile){
+          const hits=Math.random()*100<(e.arenaProfile.doubleAtk||0)?2:1;
+          resolveArenaBotBasicHit(c,e,dv,abs,0);
+          if(hits===2)resolveArenaBotBasicHit(c,e,dv,abs,0.09);
+          return;
+        }
         // Hâte also grants a window to dodge outright
         const dodgePct = fxVal(c, "buffs", "hate") * 0.5;
         if (Math.random() * 100 < dodgePct) {
@@ -4676,7 +4778,7 @@ function tick() {
         abs.forEach((a) => { if (a.outgoing) dmg = a.outgoing(c, e, dmg); });
         const crit = e.nextCrit ? true : Math.random() * 100 < 8;
         if (e.nextCrit) { e.nextCrit = false; dmg *= 1.5; }
-        if (crit) dmg *= 1.6 * (1 - dv.critRed / 100);
+        if (crit) dmg*=1.6*(1-dv.critRed/100);
         const totalRed = Math.min(85, dv.dmgRed + fxVal(c, "buffs", "rempart"));
         dmg = Math.floor(dmg * (1 - totalRed / 100) * (0.9 + Math.random() * 0.2));
         if (e.ranged) {
@@ -4764,6 +4866,11 @@ function takePaidFloorRewards(floor) {
 }
 
 function handleCombatEnd(c) {
+  if (c.ctx === "arenaLive") {
+    const won=c.status==="won",cb=c.onEnd;
+    if(cb)cb(won);
+    return;
+  }
   if (c.ctx === "raid" || c.ctx === "mega") {
     const won = c.status === "won";
     const cb = c.onEnd;
@@ -6047,6 +6154,7 @@ function drawArena() {
   // ---- header: title, floor-block track, status pills (sheet §4) ----
   const label = c.ctx === "campaign" ? "Étage " + fmtInt(c.floor)
     : c.ctx === "mega" ? "Méga " + megaLevelForFloor(c.floor) + " · Boss normal " + fmtInt(c.floor) + " ×10"
+    : c.ctx === "arenaLive" ? "Arène · Duel réel"
     : c.raidId ? RAIDS[c.raidId].name : "Épreuve d'Ascension";
   if (arenaNodes.label.textContent !== label) arenaNodes.label.textContent = label;
 
@@ -6064,6 +6172,9 @@ function drawArena() {
   } else if (c.ctx === "mega") {
     sub = '<span class="fPill boss">' + ic("skull", 10) + "MÉGA-BOSS ×10</span>" +
       '<span class="fPill">Étage ' + fmtInt(c.floor) + "</span>";
+  } else if (c.ctx === "arenaLive") {
+    const ae=c.enemies.find(e=>e.arenaProfile),ap=ae&&ae.arenaProfile;
+    sub='<span class="fPill">'+ic("swords",10)+'TEMPS RÉEL</span>'+(ap?'<span class="fPill">'+esc(ARENA_BUILDS[ap.kind]?.label||"Bot")+' · '+fmt(ap.power||arenaProfilePower(ap))+' P</span>':'');
   } else if (c.raidId) {
     sub = '<span class="fPill">Niveau ' + c.raidLevel + "</span>" +
       (c.raidId === "or" ? '<span class="fPill">Vague ' + (5 - c.pending) + "/5</span>"
@@ -6922,13 +7033,11 @@ function scrAccueil() {
       upg +
       ascendCta("forge") +
       ((forgeAnimActive() || S.forge.autoForge)
-        ? '<div class="forgeAnim mt6' + (S.forge.autoForge ? ' autoLoop' : '') + '"' +
-          (S.forge.autoForge ? ' style="--forgeSweepDelay:' + forgeSweepDelay + 'ms;--forgeHammerDelay:' + forgeHammerDelay + 'ms"' : '') + '><div class="forgeAnimBar"></div>' +
-          '<div class="forgeScene" style="position:relative;z-index:1"><div class="forgeAnvil"></div><div class="forgeHammerHit">'+ic("hammer",42)+'</div><div class="forgeSpark"></div></div>'+
-          '<div class="row gap6" style="position:relative;z-index:1;justify-content:center">' +
-          '<span class="b small">' + (S.forge.autoForge ? "Auto-Forge en cours" : ("Forge en cours · " + forgeAnim.n + " pièce" + (forgeAnim.n > 1 ? "s" : ""))) + '</span>' +
-          (S.forge.autoForge ? '<div class="tgl on" data-act="autoForge" style="margin-left:8px;pointer-events:auto"><span>AUTO</span><i></i></div>' : '') +
-          '</div></div>' 
+        ? (S.forge.autoForge
+          ? '<div class="forgeAnim autoLoop compactAuto mt6" style="--forgeSweepDelay:' + forgeSweepDelay + 'ms;--forgeHammerDelay:' + forgeHammerDelay + 'ms"><div class="forgeAnimBar"></div>' +
+            '<div class="forgeAutoIcon">'+ic("hammer",18)+'</div><div class="forgeAutoText"><span class="b small">Auto-Forge active</span><span class="tiny mute">Forge en continu · inventaire mis à jour automatiquement</span></div>' +
+            '<div class="tgl on" data-act="autoForge" style="position:relative;z-index:2;pointer-events:auto"><span>AUTO</span><i></i></div></div>'
+          : '<div class="forgeAnim mt6"><div class="forgeAnimBar"></div><div class="forgeScene" style="position:relative;z-index:1"><div class="forgeAnvil"></div><div class="forgeHammerHit">'+ic("hammer",42)+'</div><div class="forgeSpark"></div></div><div class="row gap6" style="position:relative;z-index:1;justify-content:center"><span class="b small">Forge en cours · ' + forgeAnim.n + ' pièce' + (forgeAnim.n > 1 ? 's' : '') + '</span></div></div>')
         :
       '<div class="row gap6 mt6">' +
         btn('<span class="row gap6">' + ic("hammer", 14) + "Forger</span>" +
@@ -7064,61 +7173,7 @@ function combatBarHTML() {
     '<div id="fxbar"></div>';
 }
 
-function scrPersonnage() {
-  // every derived stat opens its own explanation
-  const cell = (l, v, c, key) => '<div class="col" style="width:25%;padding:6px 2px' +
-    (key ? ';cursor:pointer' : '') + '"' + (key ? ' data-act="statInfo" data-arg="' + key + '"' : '') +
-    '><div class="mute tiny b" style="letter-spacing:.3px;text-transform:uppercase">' + l +
-    '</div><div class="bb" style="font-size:13.5px;color:' + c + ';text-shadow:0 0 10px ' + c + '4d">' + v + "</div></div>";
-  let eqDmg = 0, eqHp = 0;
-  Object.values(S.equipped).forEach((it) => { if (it) { eqDmg += it.damage; eqHp += it.hp; } });
-  const pet = S.pets.find((p) => p.id === S.activePetId);
-  const petPct = petBonus(pet) * (1 + treeSum(S, "petHp") / 100);
-  const skills = S.skillSlots.slice(0, skillSlotCount(S)).filter(Boolean);
-  const src = (icon, color, label, val) =>
-    '<div class="row gap10" style="padding:7px 0;border-bottom:1px solid var(--borderSoft)">' +
-    '<div class="imini" style="width:30px;height:30px;background:linear-gradient(180deg,' + color + '33,' + color +
-    '0f);border-color:' + color + '80;box-shadow:0 0 9px ' + color + '33">' + ic(icon, 17) + "</div>" +
-    '<div class="flex1"><div class="b small">' + label + '</div><div class="mute tiny b">' + val + "</div></div></div>";
-
-  return topbar("Personnage", '<span class="pill" data-act="resInfo" data-arg="pa" style="cursor:pointer;color:var(--goldLit);border-color:var(--goldDim)">' + ic("pa", 11) + S.statPoints + " pts</span>") +
-    '<div class="pad mt6">' +
-    '<div class="card frame"><div class="bb gt" style="font-size:13px;letter-spacing:1.2px;margin-bottom:4px">STATISTIQUES DE COMBAT</div>' +
-      '<div class="row" style="flex-wrap:wrap">' +
-        cell("PV Max", fmt(D.maxHP), "#E5484D", "maxhp") + cell("Dégâts", fmt(D.damage), "#F0883E", "damage") +
-        cell("Vit. Attaque", D.attackSpeed.toFixed(2), "#F5C542", "atkspeed") + cell("Vit. Déplac.", fmt(D.moveSpeed), "#3FCFD6", "movespeed") +
-        cell("Crit.", D.critChance.toFixed(1) + "%", "#F5C542", "crit") + cell("Dégâts Crit.", "x" + D.critMult.toFixed(2), "#FF5AA0", "critmult") +
-        cell("Réduc. Crit.", D.critRed.toFixed(1) + "%", "#4A90D9", "critred") + cell("Réduc. Dégâts", D.dmgRed.toFixed(1) + "%", "#4A90D9", "dmgred") +
-        cell("Régén.", D.regen.toFixed(2) + "%/s", "#3FB950", "regen") + cell("Vol de Vie", D.lifesteal.toFixed(2) + "%", "#3FA7FF", "lifesteal") +
-        cell("Dégâts Boss", "+" + D.bossDmg.toFixed(0) + "%", "#E5484D", "bossdmg") + cell("Arme", WEAPON_TYPES[D.weapon].name, "#EDE9F5", "weapon") +
-      "</div></div>" +
-    fold("powerSources", "Sources de puissance", '<div class="card">' +
-      src("shield", "#5A7099", "Équipement", "+" + fmt(eqDmg) + " Dégâts · +" + fmt(eqHp) + " PV") +
-      src("paw", "#FF7A3D", pet ? "Familier " + RARITY[pet.rarity].label : "Familier", petPct ? "+" + petPct + "% Dégâts &amp; PV" : "Aucun actif") +
-      src("hammer", C.gold, "Forge Niv." + S.forge.level, "+" + (S.forge.level * 2) + "% Dégâts · +" + S.forge.level + "% PV") +
-      src("cycle", C.purple, "Rebirth (" + S.rebirth.count + ")", "+" + ((S.rebirth.upgrades.damage || 0) * 2) + "% Dégâts · +" + ((S.rebirth.upgrades.life || 0) * 2.5) + "% Vie") +
-      src("sparkle", "#B15CF6", "Compétences actives", skills.length ? skills.map((id) => {
-        const def = SKILL_DEFS.find((x) => x.id === id);
-        return def.mult > 0 ? def.name + " ~" + fmt(Math.floor(skillDamageMult(D.damage * skillMult(def), S.skills[id].level)
-          * (1 + (D.skillDmgBonus || 0) / 100))) : def.name;
-      }).join(" · ") : "Aucune") +
-      src("star", "#FF4D8D", "Ascension " + S.ascension, S.ascension ? "Taux Divin débloqués" : "Non ascensionné") +
-    "</div>") +
-    '<div class="sect">Points de Statistiques (' + S.statPoints + ")</div>" +
-    '<div class="duo">' +
-    STAT_META.map((s) =>
-      '<div class="card" style="padding:7px 8px"><div class="between"><div class="row gap6">' +
-        '<div class="imini" style="width:26px;height:26px;background:linear-gradient(180deg,' + s.color + '33,' + s.color +
-        '0f);border-color:' + s.color + '80;box-shadow:0 0 10px ' + s.color + '3d">' + ic(s.icon, 15) + "</div>" +
-        '<div><div class="b" style="font-size:10.5px">' + s.label + '</div><div class="mute" style="font-size:9px">' + s.desc + "</div></div></div>" +
-        '<b style="font-size:15px;color:' + s.color + ';text-shadow:0 0 12px ' + s.color + '66">' + S.stats[s.key] + "</b></div>" +
-        '<div class="row gap4 mt6">' +
-          btn("+1", { small: true, act: "alloc", arg: s.key, arg2: 1, dis: S.statPoints < 1, style: "padding:3px 0;font-size:10px;background:" + s.color + ";color:#fff" }) +
-          btn("+5", { small: true, act: "alloc", arg: s.key, arg2: 5, dis: S.statPoints < 5, style: "padding:3px 0;font-size:10px;background:" + s.color + ";color:#fff" }) +
-          btn("Max", { small: true, act: "alloc", arg: s.key, arg2: "max", dis: S.statPoints < 1, style: "padding:3px 0;font-size:10px;background:" + s.color + ";color:#fff" }) +
-        "</div></div>").join("") + "</div>" +
-    '<div style="height:2px"></div></div>';
-}
+/* Ancien écran Personnage supprimé : les routes Personnage/Inventaire utilisent désormais l’écran Équipement unifié. */
 
 /* ---------------- ÉQUIPEMENT / INVENTAIRE ---------------- */
 
@@ -7294,6 +7349,31 @@ function scrEquipement() {
   const sorted = list.slice().sort((a,b)=>(equipRank(b.rarity)-equipRank(a.rarity)) || (b.power-a.power));
   const filters=["ALL"].concat(SLOTS);
   const previewDelta = hasPreview ? Math.round(previewPower - S.power) : 0;
+  const dockStat = (label,cur,next) => '<div class="dockStat"><div class="n">'+label+'</div><div class="v" style="color:#78B7FF">'+cur+' → '+next+'</div></div>';
+  // Surface the most meaningful changes first instead of merely the first four
+  // fields. Relative change makes differently-scaled stats comparable.
+  const statImportance = (x) => {
+    const key=x[4];
+    if(key==='weapon') return String(x[1])===String(x[2])?0:0.35;
+    const raw={
+      maxhp:[D.maxHP,d2.maxHP],damage:[D.damage,d2.damage],atkspeed:[D.attackSpeed,d2.attackSpeed],crit:[D.critChance,d2.critChance],
+      critmult:[D.critMult,d2.critMult],dmgred:[D.dmgRed,d2.dmgRed],lifesteal:[D.lifesteal,d2.lifesteal],doubleatk:[D.doubleAtk,d2.doubleAtk],
+      movespeed:[D.moveSpeed,d2.moveSpeed],critred:[D.critRed,d2.critRed],regen:[D.regen,d2.regen],bossdmg:[D.bossDmg,d2.bossDmg],
+      block:[D.blockChance,d2.blockChance],melee:[D.meleeDmg,d2.meleeDmg],ranged:[D.rangedDmg,d2.rangedDmg],skilldmg:[D.skillDmgBonus,d2.skillDmgBonus],skillcd:[D.skillCdCut,d2.skillCdCut]
+    }[key];
+    if(!raw) return 0;
+    const a=Number(raw[0])||0,b=Number(raw[1])||0,delta=Math.abs(b-a);
+    const pctKeys=['crit','dmgred','lifesteal','doubleatk','critred','regen','bossdmg','block','melee','ranged','skilldmg','skillcd'];
+    const base=pctKeys.includes(key)?Math.max(10,Math.abs(a)):Math.max(1,Math.abs(a));
+    return delta/base;
+  };
+  const changedStats = stats.filter((x)=>String(x[1])!==String(x[2])).sort((a,b)=>statImportance(b)-statImportance(a));
+  const dockPrimary = changedStats.slice(0,4);
+  const dockExtra = changedStats.slice(4);
+  const testDock = hasPreview ? '<div class="equipTestDock"><div class="between"><div><div class="tiny bb" style="color:#78B7FF">TEST EN DIRECT · '+previewItems.length+' PIÈCE'+(previewItems.length>1?'S':'')+'</div><div class="row gap6"><b>'+fmt(S.power)+'</b><span style="color:var(--textMute)">→</span><b style="color:'+(previewDelta>=0?'#63E889':'#FF6B72')+'">'+fmt(previewPower)+' ('+(previewDelta>=0?'+':'')+fmt(previewDelta)+')</b></div></div><div class="row gap4">'+btn("Annuler",{small:true,cls:"ghost",act:"clearEquipPreview"})+btn("Équiper",{small:true,cls:"green",act:"equipPreviewSet"})+'</div></div>'+
+    (dockPrimary.length?'<div class="dockStats">'+dockPrimary.map((x)=>dockStat(x[0],x[1],x[2])).join('')+'</div>':'<div class="mute tiny center mt6">Aucune statistique affichée ne change.</div>')+
+    (dockExtra.length?'<details class="equipDockMore"><summary>Détails · '+dockExtra.length+' autre'+(dockExtra.length>1?'s':'')+' changement'+(dockExtra.length>1?'s':'')+'</summary><div class="dockStats">'+dockExtra.map((x)=>dockStat(x[0],x[1],x[2])).join('')+'</div></details>':'')+
+    '</div>' : '';
 
   return topbar("Équipement", '<span class="pill">'+S.inventory.length+' objets</span>') + '<div class="pad mt6">' +
     '<div class="card frame"><div class="between"><div><div class="mute tiny b">PUISSANCE TOTALE</div><div class="bb gt" style="font-size:22px">'+fmt(S.power)+'</div></div>' +
@@ -7304,8 +7384,8 @@ function scrEquipement() {
     (hasPreview ? '<div class="notice mt8"><div class="between"><span><b style="color:#78B7FF">Mode test :</b> '+previewItems.length+' pièce'+(previewItems.length>1?'s':'')+'</span><span class="row gap4">'+btn("Annuler",{small:true,cls:"ghost",act:"clearEquipPreview"})+btn("Équiper le set",{small:true,cls:"green",act:"equipPreviewSet"})+'</span></div><div class="mute tiny mt4">Tu peux tester une pièce par emplacement avant de valider tout le set.</div></div>' : '') +
     '<div class="sect" style="margin:14px 0 8px">Points de statistiques ('+S.statPoints+')</div><div class="duo">'+STAT_META.map((m)=>'<div class="card" style="padding:7px 8px"><div class="between"><div class="b small" style="color:'+m.color+'">'+m.label+'</div><b>'+S.stats[m.key]+'</b></div><div class="row gap4 mt6">'+btn("+1",{small:true,act:"alloc",arg:m.key,arg2:1,dis:S.statPoints<1})+btn("+5",{small:true,act:"alloc",arg:m.key,arg2:5,dis:S.statPoints<5})+btn("Max",{small:true,act:"alloc",arg:m.key,arg2:"max",dis:S.statPoints<1})+'</div></div>').join('')+'</div>' +
     '<div class="sect" style="margin:16px 0 8px">Inventaire</div><div class="seg">'+filters.map((f)=>'<span class="'+(invFilter===f?'on':'')+'" data-act="invFilter" data-arg="'+f+'">'+(f==='ALL'?'Tout':SLOT_LABEL[f])+'</span>').join('')+'</div>' +
-    (sorted.length===0 ? '<div class="notice center mt8">Aucun objet disponible.</div>' : sorted.map((it)=>'<div class="itemRow" style="border-left-color:'+RARITY[it.rarity].c+'"><div class="imini" style="width:32px;height:32px;border-color:'+RARITY[it.rarity].c+'80">'+slotIcon(it.slot,20,it)+'</div><div class="flex1"><div class="b small">'+esc(it.name)+(it.level?' <span style="color:var(--goldLit)">+'+it.level+'</span>':'')+'</div><div class="mute tiny">'+(MASTERY_STAT[it.slot]==='dmg'?ic('sword',9)+'+'+fmt(it.damage):ic('heart',9)+'+'+fmt(it.hp))+'</div></div>'+rtag(it.rarity)+'<div class="col gap4">'+btn(previewBySlot[it.slot]&&previewBySlot[it.slot].id===it.id?"Testé":"Tester",{small:true,cls:"blue",act:"previewEquip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn("Équiper",{small:true,cls:"green",act:"equip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn(ic("cycle",10)+recycleValue(it),{small:true,cls:"dark",act:"recycle",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+'</div></div>').join('')) +
-    '<div style="height:8px"></div></div>';
+    (sorted.length===0 ? '<div class="notice center mt8">Aucun objet disponible.</div>' : sorted.map((it)=>'<div class="itemRow" style="border-left-color:'+RARITY[it.rarity].c+'"><div class="imini" style="width:32px;height:32px;border-color:'+RARITY[it.rarity].c+'80">'+slotIcon(it.slot,20,it)+'</div><div class="flex1"><div class="b small">'+esc(it.name)+(it.level?' <span style="color:var(--goldLit)">+'+it.level+'</span>':'')+'</div><div class="mute tiny">'+(MASTERY_STAT[it.slot]==='dmg'?ic('sword',9)+'+'+fmt(it.damage):ic('heart',9)+'+'+fmt(it.hp))+(it.weaponType?' · '+esc(WEAPON_TYPES[it.weaponType]?.name||it.weaponType):'')+'</div>'+(it.affixes&&it.affixes.length?'<div class="equipAffixes">'+it.affixes.slice(0,3).map((a)=>'<span class="tag" style="color:'+affixColor(a)+';border-color:'+affixColor(a)+'66">'+affixText(a)+'</span>').join('')+'</div>':'')+'</div>'+rtag(it.rarity)+'<div class="col gap4">'+btn(previewBySlot[it.slot]&&previewBySlot[it.slot].id===it.id?"Testé":"Tester",{small:true,cls:"blue",act:"previewEquip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn("Équiper",{small:true,cls:"green",act:"equip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn(ic("cycle",10)+recycleValue(it),{small:true,cls:"dark",act:"recycle",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+'</div></div>').join('')) +
+    (hasPreview ? '<div class="equipPreviewSpacer"></div>' : '<div style="height:8px"></div>') + '</div>' + testDock;
 }
 
 /* ---------------- COMPÉTENCES ---------------- */
@@ -8645,6 +8725,28 @@ function arenaBatch(player, progression, ratio, build, n){
   arenaSimCfg.progression=prev.progression;arenaSimCfg.ratio=prev.ratio;arenaSimCfg.build=prev.build;
   return {n,wins,losses,draws,winRate:wins/n*100,avgTime:totalT/n,avgHp:totalHp/n,avgBotPower:Math.round(totalPower/n)};
 }
+let arenaLiveResult = null;
+let arenaLiveBot = null;
+function arenaLiveBuildKey(){
+  if(arenaSimCfg.build!=="random") return arenaSimCfg.build;
+  const ks=["equilibre","dps","tank","crit","sustain","skills"];return ks[Math.floor(Math.random()*ks.length)];
+}
+function startArenaLiveFight(){
+  if(arenaMatrixRun)return false;
+  refreshDerived();
+  const kind=arenaLiveBuildKey(),bot=arenaBotProfile(kind),wt=WEAPON_TYPES[bot.weapon]||WEAPON_TYPES.epee;
+  const type={id:"arena_rival",name:"Rival",img:"hero",ranged:wt.attackType==="RANGED",proj:wt.projectile||"arrow"};
+  const e=makeEnemy("campaign",{type,name:"Rival · "+(ARENA_BUILDS[kind]?.label||kind),tier:"COMMUN",floor:Math.max(1,S.floor),x:AW-52});
+  e.hp=e.maxHP=Math.max(1,Math.floor(bot.maxHP));e.dmg=Math.max(1,Math.floor(bot.damage));e.boss=false;e.elite=false;e.ranged=type.ranged;e.arenaProfile=bot;e.arenaBotWeapon=bot.weapon;e.tint="#8FEFF4";
+  arenaLiveBot=bot;arenaLiveResult=null;
+  combat={ctx:"arenaLive",floor:S.floor,step:1,startAt:Date.now(),elite:false,boss:false,enemies:[e],pending:0,heroX:HERO_START,heroHP:D.maxHP,heroMaxHP:D.maxHP,heroAtkCd:.6,heroAttacking:0,heroHit:0,skillCds:{},skillCdMax:{},botSkillCds:{},buffs:{},debuffs:{},skillFxs:[],floats:[],projs:[],bg:"env_celestial",status:"fight",onEnd:(won)=>{
+    arenaLiveResult={won,bot:arenaLiveBot,heroHp:combat?combat.heroHP:0};arenaLiveBot=null;startCampaign();scheduleRender();
+  }};
+  render();return true;
+}
+function abortArenaLive(){
+  if(combat&&combat.ctx==="arenaLive")combat=null;arenaLiveBot=null;startCampaign();render();
+}
 function runArenaSimulation(){refreshDerived();const player=arenaPlayerProfile(),n=Math.max(1,Math.min(1000,parseInt(arenaSimCfg.count,10)||100));let wins=0,losses=0,draws=0,totalT=0,totalHp=0,totalPower=0;const kinds={};for(let i=0;i<n;i++){const bot=arenaBotProfile(arenaSimCfg.build);kinds[bot.kind]=(kinds[bot.kind]||0)+1;totalPower+=bot.power;const r=arenaDuel(player,bot);totalT+=r.time;totalHp+=r.hpPct;if(r.won)wins++;else if(r.lost)losses++;else draws++;}arenaSimResult={n,wins,losses,draws,winRate:wins/n*100,avgTime:totalT/n,avgHp:totalHp/n,avgBotPower:Math.round(totalPower/n),kinds,playerPower:arenaProfilePower(player)};render();}
 function arenaMatrixAcc(){return{n:0,wins:0,losses:0,draws:0,totalT:0,totalHp:0,totalPower:0};}
 function arenaMatrixAdd(acc,r,oppPower){acc.n++;acc.totalT+=r.time;acc.totalHp+=r.hpPct;acc.totalPower+=oppPower||0;if(r.won)acc.wins++;else if(r.lost)acc.losses++;else acc.draws++;}
@@ -8711,6 +8813,10 @@ function arenaMatrixStep(){
 }
 function cancelArenaMatrix(){if(arenaMatrixRun){arenaMatrixRun.cancelled=true;arenaMatrixProgress={...arenaMatrixProgress,label:'Annulation…'};}}
 function scrArenaSim(){
+  if(combat&&combat.ctx==="arenaLive"){
+    const ae=combat.enemies.find(e=>e.arenaProfile),ap=ae&&ae.arenaProfile;
+    return topbar("Arène",'<span class="pill" style="color:#57E07A;border-color:#3FB950">COMBAT RÉEL</span>')+'<div id="arenaSlot"></div>'+combatBarHTML()+'<div class="pad mt6"><div class="card"><div class="between"><div><div class="b">'+esc(ae?ae.name:"Rival")+'</div><div class="dim tiny mt2">'+(ap?esc((ARENA_BUILDS[ap.kind]?.label||ap.kind)+' · '+ap.source+' · '+fmt(ap.power||arenaProfilePower(ap))+' puissance'):'Adversaire de test')+'</div></div><button class="btn dark" data-act="arenaLiveAbort">Abandonner</button></div></div></div>';
+  }
   const prog=ARENA_PROGRESSION[arenaSimCfg.progression]||ARENA_PROGRESSION.j7;
   const builds=["equilibre","dps","tank","crit","sustain","skills"];
   const seg=(items,act,current)=>'<div class="seg" style="flex-wrap:wrap">'+items.map(x=>'<span class="'+(String(current)===String(x[0])?'on':'')+'" data-act="'+act+'" data-arg="'+x[0]+'">'+x[1]+'</span>').join('')+'</div>';
@@ -8722,7 +8828,7 @@ function scrArenaSim(){
     const versusRows=builds.map(a=>'<tr><td style="padding:6px;white-space:nowrap"><b>'+ARENA_BUILDS[a].label+'</b></td>'+builds.map(d=>cell(m.versus[a][d])).join('')+'</tr>').join('');
     matrix='<div class="card mt8"><div class="b">Analyse complète · '+fmt(m.total)+' combats</div><div class="dim tiny mt4">Calcul asynchrone par lots · aucun impact sur ta sauvegarde.</div><div class="sect mt12">Ton héros · 100 % Puissance</div><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Build bot</th><th style="padding:6px">Tes victoires</th></tr>'+equalRows+'</table></div><div class="sect mt12">Progression naturelle détaillée</div><div style="overflow:auto"><table style="min-width:650px;width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Profil</th>'+builds.map(k=>'<th style="padding:6px">'+ARENA_BUILDS[k].label+'</th>').join('')+'</tr>'+naturalRows+'</table></div><div class="sect mt12">Matrice 6×6 · archétypes</div><div class="dim tiny mt2">Ligne = attaquant · colonne = défenseur · tous normalisés au même benchmark de Puissance ('+fmt(m.playerPower)+').</div><div style="overflow:auto" class="mt6"><table style="min-width:650px;width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Att. ↓ / Déf. →</th>'+builds.map(k=>'<th style="padding:6px">'+ARENA_BUILDS[k].label+'</th>').join('')+'</tr>'+versusRows+'</table></div><div class="dim tiny mt8">Lecture : ~50 % indique un matchup proche. Une ligne très souvent au-dessus de 55 % signale un archétype potentiellement dominant ; une colonne très souvent sous 45 % signale un défenseur particulièrement difficile à battre.</div></div>';}
   const natural=arenaSimCfg.ratio==="natural",busy=!!arenaMatrixRun;
-  return topbar("Arène",'<span class="pill" style="color:#8FEFF4;border-color:#3F8FA0">SIMULATION V3.5</span>')+'<div class="pad"><div class="card" style="border-color:#3F8FA055"><div class="b">Laboratoire PvP</div><div class="dim small mt4" style="line-height:1.45">Les bots utilisent une progression synthétique indépendante : Forge, raretés, affixes, Rebirth, Arbre, familiers et niveaux de Compétences. J1/J7/J30/J90 restent des hypothèses tant que nous n’avons pas de télémétrie réelle.</div></div><div class="sect mt12">Progression simulée</div>'+seg(Object.entries(ARENA_PROGRESSION).map(([k,v])=>[k,v.label]),'arenaProg',arenaSimCfg.progression)+'<div class="dim tiny mt4">'+prog.label+' · Forge '+prog.forge+' · familier '+RARITY[prog.petRarity].label+' niv.'+prog.petLevel+' · compétences niv.~'+prog.skillLevel+' · '+prog.crafts+' tirages/slot.</div><div class="sect mt12">Matchmaking de test</div>'+seg([['natural','Naturel'],[50,'50%'],[75,'75%'],[100,'100%'],[125,'125%'],[150,'150%'],[200,'200%']],'arenaRatio',arenaSimCfg.ratio)+'<div class="dim tiny mt4">'+(natural?'Naturel : aucune normalisation sur ta Puissance. Le bot conserve la puissance produite par sa progression J1/J7/J30/J90.':'Pourcentage : la population est normalisée vers ta Puissance afin d’isoler l’efficacité des builds à puissance comparable.')+'</div><div class="sect mt12">Type de build</div>'+seg(Object.entries(ARENA_BUILDS).map(([k,v])=>[k,v.label]),'arenaBuild',arenaSimCfg.build)+'<div class="sect mt12">Nombre de combats</div>'+seg([[1,'1'],[100,'100'],[1000,'1 000']],'arenaCount',arenaSimCfg.count)+'<button class="btn green mt12" style="width:100%" data-act="arenaRun" '+(busy?'disabled':'')+'>Simuler '+fmt(arenaSimCfg.count)+' combat'+(arenaSimCfg.count>1?'s':'')+'</button><button class="btn mt8" style="width:100%" data-act="arenaMatrix" '+(busy?'disabled':'')+'>Analyser le méta · 30 000 combats</button>'+progress+result+matrix+'<div class="card mt8"><div class="dim tiny" style="line-height:1.5"><b style="color:var(--text)">V3.5 :</b> la grande analyse s’exécute désormais par petits lots pour préserver la fluidité mobile. Elle inclut une vraie matrice 6×6 entre archétypes, plus le détail J1/J7/J30/J90.</div></div></div>';
+  return topbar("Arène",'<span class="pill" style="color:#8FEFF4;border-color:#3F8FA0">ARÈNE V4</span>')+'<div class="pad"><div class="card" style="border-color:#3F8FA055"><div class="b">Laboratoire PvP</div><div class="dim small mt4" style="line-height:1.45">Les bots utilisent une progression synthétique indépendante : Forge, raretés, affixes, Rebirth, Arbre, familiers et niveaux de Compétences. J1/J7/J30/J90 restent des hypothèses tant que nous n’avons pas de télémétrie réelle.</div></div><div class="sect mt12">Progression simulée</div>'+seg(Object.entries(ARENA_PROGRESSION).map(([k,v])=>[k,v.label]),'arenaProg',arenaSimCfg.progression)+'<div class="dim tiny mt4">'+prog.label+' · Forge '+prog.forge+' · familier '+RARITY[prog.petRarity].label+' niv.'+prog.petLevel+' · compétences niv.~'+prog.skillLevel+' · '+prog.crafts+' tirages/slot.</div><div class="sect mt12">Matchmaking de test</div>'+seg([['natural','Naturel'],[50,'50%'],[75,'75%'],[100,'100%'],[125,'125%'],[150,'150%'],[200,'200%']],'arenaRatio',arenaSimCfg.ratio)+'<div class="dim tiny mt4">'+(natural?'Naturel : aucune normalisation sur ta Puissance. Le bot conserve la puissance produite par sa progression J1/J7/J30/J90.':'Pourcentage : la population est normalisée vers ta Puissance afin d’isoler l’efficacité des builds à puissance comparable.')+'</div><div class="sect mt12">Type de build</div>'+seg(Object.entries(ARENA_BUILDS).map(([k,v])=>[k,v.label]),'arenaBuild',arenaSimCfg.build)+'<div class="sect mt12">Nombre de combats</div>'+seg([[1,'1'],[100,'100'],[1000,'1 000']],'arenaCount',arenaSimCfg.count)+(arenaLiveResult?'<div class="card mt8" style="border-color:'+(arenaLiveResult.won?'#3FB950':'#E5484D')+'66"><div class="b" style="color:'+(arenaLiveResult.won?'#57E07A':'#FF6B72')+'">'+(arenaLiveResult.won?'Victoire en duel':'Défaite en duel')+'</div><div class="dim tiny mt2">Dernier combat réel contre '+esc(arenaLiveResult.bot?.name||'un bot')+'. Aucun gain ni perte.</div></div>':'')+'<button class="btn green mt12" style="width:100%" data-act="arenaLiveStart" '+(busy?'disabled':'')+'>'+ic('swords',14)+' Lancer un combat réel</button><button class="btn blue mt8" style="width:100%" data-act="arenaRun" '+(busy?'disabled':'')+'>Simuler '+fmt(arenaSimCfg.count)+' combat'+(arenaSimCfg.count>1?'s':'')+'</button><button class="btn mt8" style="width:100%" data-act="arenaMatrix" '+(busy?'disabled':'')+'>Analyser le méta · 30 000 combats</button>'+progress+result+matrix+'<div class="card mt8"><div class="dim tiny" style="line-height:1.5"><b style="color:var(--text)">V4 :</b> le duel temps réel utilise le moteur de combat visible ; la grande analyse s’exécute désormais par petits lots pour préserver la fluidité mobile. Elle inclut une vraie matrice 6×6 entre archétypes, plus le détail J1/J7/J30/J90.</div></div></div>';
 }
 
 function scrHub(title, entries) {
@@ -8737,7 +8843,7 @@ function scrDeveloppement(){ return scrHub("Développement", [
   {label:"Arbre personnel",icon:"tree",go:"arbre",desc:"Bonus permanents et recherches."}
 ]); }
 function scrDefis(){ return scrHub("Défis", [
-  {label:"Arène",icon:"swords",go:"arena",desc:"Simule des combats PvP contre une population de bots sans récompense."},
+  {label:"Arène",icon:"swords",go:"arena",desc:"Affronte des bots en temps réel ou analyse des milliers de combats sans récompense."},
   {label:"Raids",icon:"flame",go:"raid",desc:"Raids spécialisés et ressources ciblées."},
   {label:"Méga-Boss",icon:"skull",go:"mega",desc:"Combats majeurs et récompenses de progression."},
   {label:"Sanctuaire",icon:"flame",go:"sanctuaire",desc:"Fusion de ressources et recettes découvertes."}
@@ -9034,6 +9140,13 @@ function checkLevelUp() {
   }
 }
 
+function syncEquipPreviewSpacer() {
+  const dock=document.querySelector('.equipTestDock'),spacer=document.querySelector('.equipPreviewSpacer');
+  if(!dock||!spacer) return;
+  const h=Math.ceil(dock.getBoundingClientRect().height);
+  spacer.style.height=Math.max(90,h+72)+'px';
+}
+
 function render() {
   renderHUD();
   renderTabs();
@@ -9046,10 +9159,11 @@ function render() {
   const sc = document.getElementById("screen");
   const keep = sc.scrollTop;
   const fn = SCREENS[route] || scrAccueil;
-  sc.className = route === "accueil" ? "fixed" : "";
+  sc.className = (route === "accueil" || (route === "arena" && combat && combat.ctx === "arenaLive")) ? "fixed" : "";
   sc.innerHTML = fn();
   attachArena();
   sc.scrollTop = keep;
+  requestAnimationFrame(syncEquipPreviewSpacer);
   if (tutorialCurrentKey) requestAnimationFrame(updateTutorialGuide);
 }
 
@@ -9611,6 +9725,8 @@ const ACT = {
   arenaRatio: (a) => { arenaSimCfg.ratio=(a==="natural"?"natural":Math.max(50,Math.min(200,parseInt(a,10)||100))); arenaSimResult=null; render(); },
   arenaBuild: (a) => { if (ARENA_BUILDS[a]) { arenaSimCfg.build=a; arenaSimResult=null; render(); } },
   arenaCount: (a) => { arenaSimCfg.count=Math.max(1,Math.min(1000,parseInt(a,10)||100)); arenaSimResult=null; render(); },
+  arenaLiveStart: () => { if(!startArenaLiveFight()) toast("Analyse en cours"); },
+  arenaLiveAbort: () => abortArenaLive(),
   arenaRun: () => runArenaSimulation(),
   arenaMatrix: () => runArenaMatrix(),
   arenaMatrixCancel: () => cancelArenaMatrix(),
