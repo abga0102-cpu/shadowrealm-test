@@ -657,6 +657,17 @@ body{
   animation:slideIn .2s ease-out;max-width:360px;margin:0 auto;
 }
 @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+#rewardFeed{position:absolute;right:10px;top:76px;z-index:68;width:min(250px,72%);display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.rewardPop{padding:8px 10px;border:1px solid #43587D;border-radius:10px;background:linear-gradient(180deg,#182741f2,#0b1323f2);box-shadow:0 5px 18px #0009;animation:slideIn .18s ease-out}
+.rewardPop.boss{border-color:#E8B44A;box-shadow:0 5px 18px #0009,0 0 16px #E8B44A33}
+.rewardPop .rpT{font-weight:900;font-size:11.5px;color:var(--goldLit)}
+.rewardPop .rpS{font-size:10.5px;color:var(--textDim);margin-top:2px;line-height:1.3}
+#tutorialCard{position:absolute;left:10px;right:10px;bottom:86px;z-index:69;max-width:350px;margin:auto;padding:10px 11px;border-radius:11px;border:1px solid #4A90D9;background:linear-gradient(180deg,#172b48f7,#0b1528f7);box-shadow:0 8px 24px #000a,0 0 18px #4A90D922}
+#tutorialCard .tt{font-size:12px;font-weight:900;color:#93C6FF}
+#tutorialCard .ts{font-size:11px;color:var(--text);line-height:1.4;margin-top:4px}
+#tutorialCard .td{display:flex;justify-content:flex-end;margin-top:7px}
+#tutorialCard button{width:auto;padding:5px 10px;font-size:10.5px}
+
 /* Forge reveal. Pure CSS keyframes rather than JS timers: nothing to clear if
    the modal is closed mid-animation, and the stagger on the result cards is a
    single calc() instead of a chain of setTimeouts. Auto-forge never opens this
@@ -1152,7 +1163,7 @@ const SAVE_VERSION = 3;
 const RULES = {
   STEPS_PER_FLOOR: 3, CHECKPOINT_EVERY: 5, ELITE_EVERY: 5, BOSS_EVERY: 10,
   MAX_LEVEL: 100, STAT_POINTS_PER_LEVEL: 5, REBIRTH_UNLOCK_FLOOR: 25,
-  SKILL_SLOTS_BASE: 4, SKILL_SLOT_5_LEVEL: 100,
+  SKILL_SLOTS_BASE: 3, SKILL_SLOT_5_LEVEL: 100,
   RAID_UNLOCK_LEVEL: 5, CHAT_UNLOCK_LEVEL: 3, MAX_ENEMIES: 3,
   FORGE_MAX: 50, SKILL_MAX_LEVEL: 50, MASTERY_MAX: 50, EGG_SLOT_MAX: 5,
   RAID_MAX_LEVEL: 50, RAID_FREE_KEYS: 3, RAID_KEY_CAP: 6,
@@ -6629,7 +6640,7 @@ const STAT_META = [
 /* How many slots the player has actually earned. The fifth was advertised on a
    locked tile but nothing ever granted it -- reaching level 100 now does. */
 function skillSlotCount(s) {
-  return RULES.SKILL_SLOTS_BASE + (s.level >= RULES.SKILL_SLOT_5_LEVEL ? 1 : 0);
+  return RULES.SKILL_SLOTS_BASE;
 }
 /* Manual cast: same effect path as the automatic one, refused when the skill is
    on cooldown or there is nothing to hit. Returns why it failed so the UI can
@@ -6696,10 +6707,6 @@ function skillSlotsHTML() {
   sb += '<div class="autoSk ' + (S.autoSkills ? "on" : "off") + '" data-act="autoSkills" ' +
     'title="' + (S.autoSkills ? "Compétences automatiques" : "Compétences manuelles") + '">' +
     ic("bolt", 12) + "<span>AUTO</span><i></i></div>";
-  if (open < RULES.SKILL_SLOTS_BASE + 1) {
-    sb += '<div class="slot locked">' + ic("lock", 16) +
-      '<span class="tiny mute b">Niv.' + RULES.SKILL_SLOT_5_LEVEL + "</span></div>";
-  }
   return sb;
 }
 /* compact combat strip: what you are fighting with, plus the skill cooldowns */
@@ -7039,10 +7046,6 @@ function scrCompetences() {
         ic(def.icon, 24) + '</div><span class="lv">' + S.skills[sid].level + "</span>"
       : ic("plus", 18)) + "</div>";
   }
-  if (openSlots < RULES.SKILL_SLOTS_BASE + 1) {
-    slots += '<div class="slot locked">' + ic("lock", 16) +
-      '<span class="tiny mute b">Niv.' + RULES.SKILL_SLOT_5_LEVEL + "</span></div>";
-  }
 
   return topbar("Compétences", '<span class="pill" data-act="resInfo" data-arg="eclat" style="cursor:pointer;color:#C79BFF;border-color:#9B5CF6">' + ic("eclat", 11) + fmt(S.eclat) + "</span>") +
     '<div class="pad mt6">' +
@@ -7192,12 +7195,18 @@ function scrFamiliers() {
           " œuf" + (stored.length > 1 ? "s" : "") + " en stock · choisis manuellement lequel faire éclore</div>" : "") +
       "</div>" +
       '<div class="sect" style="margin:16px 0 9px">Œufs en stock (' + stored.length + ")</div>" +
-      (stored.length ? '<div class="card">' + PET_RARITY_ORDER.filter((r) => stored.some((e) => e.rarity === r)).map((r) => {
-        const list = stored.filter((e) => e.rarity === r); const e = list[0];
+      (stored.length ? '<div class="slotGrid">' + stored.map((e) => {
         const full = hatching.length >= S.eggSlots;
-        return '<div class="between" style="padding:7px 0;border-bottom:1px solid #ffffff0c"><div class="row gap6">' + rtag(r) +
-          '<b class="small">×' + list.length + '</b><span class="mute tiny">' + fmtTime(EGG_TIMERS[r] / hatchSpeedFor(S,r)) + '</span></div>' +
-          btn("Éclore", { small:true, cls:"green", act:"startEgg", arg:e.id, dis:full, style:"padding:5px 9px;font-size:10.5px" }) + '</div>';
+        const r = e.rarity;
+        const art = ASSETS["egg_" + String(r).toLowerCase()];
+        return '<div class="eggCard rf" style="border-color:' + RARITY[r].c + ';--rc:' + RARITY[r].c + '">' +
+          '<div style="position:relative;z-index:1">' +
+            (art ? '<img src="' + art + '" style="width:34px;height:34px;object-fit:contain;display:block;margin:0 auto;filter:drop-shadow(0 2px 5px #000a)">' : ic("egg", 28)) +
+          '</div>' + rtag(r) +
+          '<div class="tiny b mt4" style="color:' + petElement(e).c + '">' + ic(petElement(e).icon, 9) + petElement(e).label + '</div>' +
+          '<div class="mute tiny mt4">' + fmtTime(EGG_TIMERS[r] / hatchSpeedFor(S,r)) + '</div>' +
+          '<div class="mt6">' + btn("Éclore", { small:true, cls:"green", act:"startEgg", arg:e.id, dis:full, style:"padding:5px 9px;font-size:10.5px" }) + '</div>' +
+        '</div>';
       }).join("") + '</div>' : '<div class="mute tiny center">Aucun œuf en stock.</div>') +
       '<div class="sect" style="margin:16px 0 9px">Éclosion (' + hatching.length + "/" + S.eggSlots +
         (stored.length ? ") · " + stored.length + " en réserve" : ")") + "</div>" +
@@ -8077,39 +8086,70 @@ function checkNotable() {
   const n = notable; notable = null;
   toast(n.msg, true, null, n.icon);
 }
+function rewardPop(title, sub, boss) {
+  let feed = document.getElementById("rewardFeed");
+  if (!feed) {
+    feed = document.createElement("div");
+    feed.id = "rewardFeed";
+    document.getElementById("app").appendChild(feed);
+  }
+  const el = document.createElement("div");
+  el.className = "rewardPop" + (boss ? " boss" : "");
+  el.innerHTML = '<div class="rpT">' + esc(title) + '</div>' + (sub ? '<div class="rpS">' + esc(sub) + '</div>' : "");
+  feed.prepend(el);
+  while (feed.children.length > 3) feed.lastElementChild.remove();
+  setTimeout(() => { if (el && el.parentNode) el.remove(); }, boss ? 4200 : 3000);
+}
 function checkBossReward() {
   if (!bossReward) return;
   const r = bossReward; bossReward = null;
   const def = ACCEL_DEFS.find((a) => a.key === r.key);
-  toast("Boss " + r.floor + " · +" + r.qty + " Accélérateur " + (def ? def.label : ""), true, null, "trophy");
+  rewardPop("★ Récompense de Boss " + r.floor,
+    "+" + r.qty + " Accélérateur " + (def ? def.label : ""), true);
 }
 function checkRewardNotice() {
   if (!rewardNotice) return;
   const r = rewardNotice; rewardNotice = null;
   if (r.gold <= 0 && r.exp <= 0) return;
-  toast((r.boss ? "Boss · " : "") + "+" + fmt(r.gold) + " Or · +" + fmt(r.exp) + " EXP", true, null, r.boss ? "trophy" : "gift");
+  rewardPop(r.boss ? "★ Boss vaincu" : "Récompenses obtenues",
+    "+" + fmt(r.gold) + " Or · +" + fmt(r.exp) + " EXP", !!r.boss);
 }
 function checkSkipNotice() {
   if (!skipNotice) return;
   const r = skipNotice; skipNotice = null;
-  toast("Saut d'étage ! Étage " + r.floor + " passé", true,
-    "+" + fmt(r.gold) + " Or · +" + fmt(r.exp) + " EXP conservés", "forward");
+  rewardPop("Saut d'étage · Étage " + r.floor,
+    "+" + fmt(r.gold) + " Or · +" + fmt(r.exp) + " EXP conservés", false);
 }
+let tutorialCurrentKey = null;
 function checkTutorial() {
-  if (!S.tutorial) return;
+  if (!S.tutorial || document.getElementById("tutorialCard")) return;
   const seen = S.tutorial.seen || (S.tutorial.seen = {});
-  let key = null, msg = null, sub = null, icon = "book";
-  if (!seen.combat) { key="combat"; msg="Tutoriel · Combat automatique"; sub="Bats les ennemis pour monter les étages et gagner Or + EXP."; icon="swords"; }
-  else if (!seen.equipement && (S.inventory.length || SLOTS.some((k)=>S.equipped[k]))) { key="equipement"; msg="Tutoriel · Équipement"; sub="Équipe tes meilleures pièces depuis Personnage pour augmenter ta puissance."; icon="sword"; }
-  else if (!seen.competence && Object.keys(S.skills || {}).length) { key="competence"; msg="Tutoriel · Compétences"; sub="Équipe tes compétences et active le lancement automatique si tu le souhaites."; icon="sparkle"; }
-  else if (!seen.familier && ((S.pets||[]).length || (S.eggs||[]).length)) { key="familier"; msg="Tutoriel · Familiers"; sub="Fais éclore les œufs, améliore puis fusionne tes familiers."; icon="paw"; }
-  else if (!seen.forge && S.minerai >= FORGE_CRAFT_COST) { key="forge"; msg="Tutoriel · Forge"; sub="Le Minerai fabrique l'équipement. L'Or améliore le niveau de Forge."; icon="hammer"; }
-  else if (!seen.raid && S.level >= RULES.RAID_UNLOCK_LEVEL) { key="raid"; msg="Tutoriel · Raids"; sub="Utilise tes clés pour obtenir des ressources spécialisées et faire monter chaque Raid."; icon="skull"; }
-  else if (!seen.rebirth && S.floor >= RULES.REBIRTH_UNLOCK_FLOOR) { key="rebirth"; msg="Tutoriel · Rebirth"; sub="Renaître donne des PR permanents. Tu conserves une partie de ton étage."; icon="cycle"; }
-  else if (!seen.tree && (S.pe||0) > 0) { key="tree"; msg="Tutoriel · Arbre personnel"; sub="Les PE du Raid Évolution débloquent et améliorent les nœuds de l'Arbre."; icon="book"; }
+  let key = null, title = null, sub = null;
+  if (!seen.combat) { key="combat"; title="Combat automatique"; sub="Bats les ennemis pour monter les étages et gagner Or + EXP."; }
+  else if (!seen.equipement && (S.inventory.length || SLOTS.some((k)=>S.equipped[k]))) { key="equipement"; title="Équipement"; sub="Équipe tes meilleures pièces depuis Personnage pour augmenter ta puissance."; }
+  else if (!seen.competence && Object.keys(S.skills || {}).length) { key="competence"; title="Compétences"; sub="Tu disposes de 3 emplacements actifs. Équipe tes compétences et choisis le lancement automatique ou manuel."; }
+  else if (!seen.familier && ((S.pets||[]).length || (S.eggs||[]).length)) { key="familier"; title="Familiers"; sub="Tes œufs sont stockés individuellement avec leur vraie rareté. Choisis ceux que tu veux faire éclore."; }
+  else if (!seen.forge && S.minerai >= FORGE_CRAFT_COST) { key="forge"; title="Forge"; sub="Le Minerai fabrique l'équipement. L'Or améliore le niveau de Forge."; }
+  else if (!seen.raid && S.level >= RULES.RAID_UNLOCK_LEVEL) { key="raid"; title="Raids"; sub="Utilise tes clés pour obtenir des ressources spécialisées et faire monter chaque Raid."; }
+  else if (!seen.rebirth && S.floor >= RULES.REBIRTH_UNLOCK_FLOOR) { key="rebirth"; title="Rebirth"; sub="Renaître donne des PR permanents et ouvre les bonus de Rebirth."; }
+  else if (!seen.tree && (S.pe||0) > 0) { key="tree"; title="Arbre personnel"; sub="Les PE du Raid Évolution débloquent et améliorent les nœuds de l'Arbre."; }
   if (!key) return;
-  seen[key] = true; saveNow();
-  setTimeout(() => toast(msg, true, sub, icon), 40);
+  tutorialCurrentKey = key;
+  const el = document.createElement("div");
+  el.id = "tutorialCard";
+  el.innerHTML = '<div class="tt">TUTORIEL · ' + esc(title) + '</div><div class="ts">' + esc(sub) +
+    '</div><div class="td"><button class="btn sm green" data-act="tutorialOk">Compris</button></div>';
+  document.getElementById("app").appendChild(el);
+}
+function dismissTutorial() {
+  if (tutorialCurrentKey) {
+    S.tutorial.seen[tutorialCurrentKey] = true;
+    tutorialCurrentKey = null;
+    saveNow();
+  }
+  const el = document.getElementById("tutorialCard");
+  if (el) el.remove();
+  setTimeout(checkTutorial, 120);
 }
 
 function checkLevelUp() {
@@ -8514,6 +8554,7 @@ function askReset() {
 }
 
 const ACT = {
+  tutorialOk: () => dismissTutorial(),
   go: (a) => nav(a),
   goModal: (a) => { closeModal(); nav(a); },
   harvest: () => showHarvestModal(),
