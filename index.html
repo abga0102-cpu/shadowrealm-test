@@ -684,6 +684,10 @@ body{
 .rewardPop.boss{border-color:#E8B44A;box-shadow:0 5px 18px #0009,0 0 16px #E8B44A33}
 .rewardPop .rpT{font-weight:900;font-size:11.5px;color:var(--goldLit)}
 .rewardPop .rpS{font-size:10.5px;color:var(--textDim);margin-top:2px;line-height:1.3}
+.powerDelta{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:9999;pointer-events:none;min-width:150px;text-align:center;padding:12px 18px;border-radius:14px;background:#08111eea;border:1px solid #425576;box-shadow:0 12px 34px #000b,0 0 24px currentColor;animation:powerDeltaPop 1.9s ease-out forwards;font-weight:1000;font-size:25px;letter-spacing:.3px;text-shadow:0 2px 0 #000}
+.powerDelta.up{color:#63E889;border-color:#3FB950aa}.powerDelta.down{color:#FF6B72;border-color:#E5484Daa}
+.powerDelta small{display:block;font-size:9.5px;letter-spacing:1px;margin-bottom:3px;color:#d8deea;text-transform:uppercase}
+@keyframes powerDeltaPop{0%{opacity:0;transform:translate(-50%,-42%) scale(.8)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}30%{transform:translate(-50%,-50%) scale(1)}78%{opacity:1}100%{opacity:0;transform:translate(-50%,-66%) scale(.96)}}
 #tutorialCard{position:absolute;left:10px;right:10px;bottom:86px;z-index:69;max-width:350px;margin:auto;padding:10px 11px;border-radius:11px;border:1px solid #4A90D9;background:linear-gradient(180deg,#172b48f7,#0b1528f7);box-shadow:0 8px 24px #000a,0 0 18px #4A90D922}
 #tutorialCard .tt{font-size:12px;font-weight:900;color:#93C6FF}
 #tutorialCard .ts{font-size:11px;color:var(--text);line-height:1.4;margin-top:4px}
@@ -2928,8 +2932,25 @@ function computeDerived(s) {
   const moveSpeed = BASE.moveSpeed * (1 + moveSpeedAffix / 100);
   const weapon = (s.equipped.arme && s.equipped.arme.weaponType) || "epee";
 
-  const power = Math.floor(maxHP * 0.15 + damage * 12 + s.level * 40 + s.rebirth.pr * 25 +
-    (s.forge.level + s.forge.masteryLevel) * 30 + s.ascension * 5000);
+  /* Puissance = estimation du build réellement porté. Les systèmes de progression
+     comptent via les statistiques de combat qu’ils produisent, pas comme bonus arbitraire. */
+  const weaponDef = WEAPONS[weapon] || WEAPONS.epee;
+  const weaponBonus = weaponDef.attackType === "MELEE" ? A("melee") : A("ranged");
+  const critFactor = 1 + (critChance / 100) * Math.max(0, critMult - 1);
+  const doubleFactor = 1 + Math.min(100, A("double")) / 100;
+  const skillFactor = 1 + ((treeSum(s, "skillDmg") + A("skilldmg")) / 100) * 0.25;
+  const cooldownFactor = 1 + (Math.min(80, A("skillcd")) / 100) * 0.25;
+  const offense = damage * attackSpeed * weaponDef.speed * weaponDef.hit *
+    critFactor * doubleFactor * (1 + weaponBonus / 100) * skillFactor * cooldownFactor;
+  const dmgRedNow = Math.min(85, rb(s, "dmgred"));
+  const blockNow = Math.min(75, A("block"));
+  const lifeStealNow = Math.max(0, rb(s, "lifesteal") + A("lifesteal"));
+  const regenNow = Math.max(0, rb(s, "regen"));
+  const mitigation = 1 / Math.max(0.15, 1 - dmgRedNow / 100);
+  const blockFactor = 1 + blockNow / 200;
+  const sustainFactor = 1 + Math.min(50, lifeStealNow) / 200 + Math.min(50, regenNow) / 250;
+  const effectiveHP = maxHP * mitigation * blockFactor * sustainFactor;
+  const power = Math.floor(Math.sqrt(Math.max(1, offense) * Math.max(1, effectiveHP)) * 1.5);
 
   return {
     maxHP, damage, attackSpeed, moveSpeed, critChance, critMult, critRed,
@@ -2937,7 +2958,7 @@ function computeDerived(s) {
     lifesteal: rb(s, "lifesteal") + A("lifesteal"),
     bossDmg: rb(s, "bossdmg"),
     // affix-only combat stats
-    blockChance: Math.min(75, A("block")),
+    blockChance: blockNow,
     doubleAtk: Math.min(100, A("double")),
     meleeDmg: A("melee"), rangedDmg: A("ranged"),
     skillCdCut: Math.min(80, A("skillcd")),
@@ -3115,9 +3136,12 @@ let offlineRecap = null;
 
 /* -------- state mutation -------- */
 function update(fn) {
+  const beforePower = Number(S.power || computePower(S) || 0);
   fn(S);
   S.power = computePower(S);
   D = computeDerived(S);
+  const delta = Math.round(S.power - beforePower);
+  if (delta) queuePowerDelta(delta);
   dirty = true;
   scheduleRender();
 }
@@ -4034,12 +4058,7 @@ function makeEnemy(mode, opts) {
     const mulD = opts.boss ? 1.8 : opts.elite ? 1.4 : 1;
     hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * tier.mul);
     dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * tier.mul);
-    // difficulty adapts to the player's gear (bounded)
-    let gear = 0;
-    Object.values(S.equipped).forEach((it) => { if (it) gear += it.power; });
-    const expected = 55 * opts.floor + 120;
-    const gf = Math.max(0.85, Math.min(1.45, 1 + (gear / expected - 1) * 0.32));
-    hp = Math.floor(hp * gf); dmg = Math.floor(dmg * gf);
+    // Campaign difficulty is fixed by floor and enemy identity, never by player gear.
   } else {
     hp = Math.floor(raidEnemyHP(opts.raidId, opts.raidLevel) * t.hpMul);
     dmg = Math.floor(raidEnemyDamage(opts.raidId, opts.raidLevel) * t.dmgMul);
@@ -6197,17 +6216,17 @@ let raidResult = null;      // { raidId, won, reward } pending modal
 let megaResult = null;      // first-clear state and Apple reward
 let trialRunning = false;
 const TABS = [
-  { id: "accueil",     label: "Accueil",     icon: "castle" },
-  { id: "equipement",  label: "Équipement",  icon: "swords" },
-  { id: "competences", label: "Compétences", icon: "book" },
-  { id: "inventaire",  label: "Inventaire",  icon: "bag" },
-  { id: "parametres",  label: "Réglages",    icon: "gear" },
+  { id: "accueil",       label: "Accueil",       icon: "castle" },
+  { id: "equipement",    label: "Équipement",    icon: "swords" },
+  { id: "developpement", label: "Développement", icon: "tree" },
+  { id: "parametres",    label: "Réglages",      icon: "gear" },
 ];
 const TAB_IDS = TABS.map((t) => t.id);
 const TIMER_SCREENS = ["accueil", "arbre", "familiers", "raid", "mega", "competences"];
 function isTimerScreen() { return TIMER_SCREENS.includes(route); }
 
 function nav(to) {
+  if (to === "inventaire" || to === "personnage") to = "equipement";
   route = to;
   const sc = document.getElementById("screen");
   if (sc) sc.scrollTop = 0;
@@ -6339,6 +6358,18 @@ const STAT_INFO = {
     desc: "Part des dégâts infligés qui te sont rendus en PV.", from: ["Rebirth", "Bonus d'équipement"] },
   bossdmg:    { label: "Dégâts Boss", c: "#E5484D", icon: "skull", get: () => "+" + D.bossDmg.toFixed(0) + "%",
     desc: "Dégâts supplémentaires contre les Boss et les Élites.", from: ["Rebirth"] },
+  block:      { label: "Chance de blocage", c: "#72A7E8", icon: "shield", get: () => D.blockChance.toFixed(1) + "%",
+    desc: "Chance de bloquer une attaque ennemie.", from: ["Bonus d'équipement"] },
+  doubleatk:  { label: "Double attaque", c: "#F5C542", icon: "swords", get: () => D.doubleAtk.toFixed(1) + "%",
+    desc: "Chance qu'une attaque de base frappe une seconde fois.", from: ["Bonus d'équipement"] },
+  melee:      { label: "Dégâts mêlée", c: "#F0883E", icon: "sword", get: () => "+" + D.meleeDmg.toFixed(1) + "%",
+    desc: "Bonus de dégâts quand ton arme est utilisée au corps à corps.", from: ["Bonus d'équipement"] },
+  ranged:     { label: "Dégâts distance", c: "#8FEFF4", icon: "forward", get: () => "+" + D.rangedDmg.toFixed(1) + "%",
+    desc: "Bonus de dégâts pour les attaques à distance.", from: ["Bonus d'équipement"] },
+  skilldmg:   { label: "Dégâts des Compétences", c: "#C79BFF", icon: "eclat", get: () => "+" + D.skillDmgBonus.toFixed(1) + "%",
+    desc: "Augmente les dégâts infligés par tes compétences actives.", from: ["Arbre personnel", "Bonus d'équipement"] },
+  skillcd:    { label: "Recharge Compétences", c: "#B15CF6", icon: "clock", get: () => "-" + D.skillCdCut.toFixed(1) + "%",
+    desc: "Réduit le temps de recharge de tes compétences actives.", from: ["Bonus d'équipement"] },
   weapon:     { label: "Arme", c: "#EDE9F5", icon: "sword", get: () => WEAPON_TYPES[D.weapon].name,
     desc: "Type d'arme équipée. Il détermine la portée, la cadence et le style d'attaque.",
     from: ["Arme équipée — chaque type a sa portée et sa vitesse"] },
@@ -6370,6 +6401,21 @@ function showStatInfo(key) {
 
 /* ---------------- toast + modal ---------------- */
 let toastTimer = null;
+let powerDeltaPending = 0, powerDeltaTimer = null;
+function queuePowerDelta(delta) {
+  if (!Number.isFinite(delta) || !delta) return;
+  powerDeltaPending += Math.round(delta);
+  clearTimeout(powerDeltaTimer);
+  powerDeltaTimer = setTimeout(() => {
+    const value = powerDeltaPending; powerDeltaPending = 0;
+    const old = document.getElementById("powerDelta"); if (old) old.remove();
+    const el = document.createElement("div");
+    el.id = "powerDelta"; el.className = "powerDelta " + (value > 0 ? "up" : "down");
+    el.innerHTML = '<small>Puissance</small>' + (value > 0 ? "+" : "") + fmt(value);
+    document.body.appendChild(el);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 1950);
+  }, 90);
+}
 function toast(msg, ok, sub, icon) {
   const old = document.getElementById("toast");
   if (old) old.remove();
@@ -6601,7 +6647,7 @@ function renderHUD() {
       '<div class="avatar"><img src="' + ASSETS.hero + '"></div>' +
       '<div class="flex1" style="margin-left:8px">' +
         '<div class="row gap6"><span class="pname flex1">' + esc(S.playerName) + "</span>" +
-          '<span class="power">' + ic("swords", 11) + fmt(D.maxHP * 0.15 + D.damage * 12) + "</span>" +
+          '<span class="power">' + ic("swords", 11) + fmt(S.power) + "</span>" +
           (S.statPoints > 0 ? '<span class="dot" style="position:static"></span>' : "") + "</div>" +
         '<div class="pbar mt6">' +
           '<span class="cap" style="background:linear-gradient(180deg,#B884FF,#7A34DC);' +
@@ -6634,9 +6680,9 @@ function renderTabs() {
   const active = TAB_IDS.includes(route) ? route : null;
   el.innerHTML = TABS.map((t) => {
     let badge = false;
-    if (t.id === "competences") badge = S.eclat >= 10;
-    if (t.id === "inventaire") badge = S.inventory.length > 0;
-    if (t.id === "accueil") badge = S.statPoints > 0;
+    if (t.id === "developpement") badge = S.eclat >= 10 || (!S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n)));
+    if (t.id === "equipement") badge = S.inventory.length > 0 || S.statPoints > 0;
+    if (t.id === "accueil") badge = false;
     return '<div class="tab' + (active === t.id ? " on" : "") + '" data-act="go" data-arg="' + t.id + '">' +
       ic(t.icon, 21) + "<span>" + t.label + "</span>" +
       (badge ? '<div class="dot"></div>' : "") + "</div>";
@@ -6710,7 +6756,7 @@ function scrAccueil() {
   // Navigation regroupée : Forge reste visible sur l'écran Combat; les systèmes
   // secondaires sont réunis dans des hubs cohérents au lieu de multiplier les fenêtres.
   const navBtns = [
-    { label: "Personnage", icon: "hero", color: "#5A7099", go: "personnage", badge: S.statPoints > 0 },
+    { label: "Équipement", icon: "swords", color: "#5A7099", go: "equipement", badge: S.statPoints > 0 || S.inventory.length > 0 },
     { label: "Développement", icon: "tree", color: "#2F8A45", go: "developpement",
       badge: !S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n)) },
     { label: "Défis", icon: "flame", color: "#C22127", go: "defis",
@@ -6992,7 +7038,7 @@ function scrEquipement() {
         '<div class="b small row gap4" style="color:var(--redLit)">' + ic("heart", 12) + "+" + fmt(totHp) + "</div></div></div></div>" +
       '<div class="sect" style="margin:16px 0 9px">Emplacements</div>' +
       '<div class="slotGrid">' + cells + "</div>" +
-      '<div class="notice mt14">La difficulté des ennemis s\'adapte à ta puissance d\'équipement (facteur borné 0.85×–1.45×). ' +
+      '<div class="notice mt14">La difficulté dépend de l’étage et du type d’ennemi. Ton équipement ne renforce jamais les ennemis. ' +
       "Monte le niveau de la Forge pour de meilleurs taux de rareté.</div>" +
       '<div class="mt10">' + btn(ic("bag", 15) + "Ouvrir l'Inventaire (" + S.inventory.length + ")", { cls: "ghost", act: "go", arg: "inventaire" }) + "</div>" +
     '<div style="height:2px"></div></div>';
@@ -7052,6 +7098,7 @@ function askRecycleBatch() {
 }
 /* ---------------- INVENTAIRE ---------------- */
 let invFilter = "ALL";
+let equipPreviewSet = {};
 let skillFilter = "ALL";
 let recycleRarity = "COMMUN";
 function scrInventaire() {
@@ -7117,6 +7164,70 @@ function scrInventaire() {
               { small: true, cls: "dark", act: "recycle", arg: it.id, style: "padding:5px 8px;font-size:10.5px" }) +
           "</div></div>").join("")) +
     '<div style="height:2px"></div></div>';
+}
+
+
+/* ---------------- ÉQUIPEMENT UNIFIÉ ---------------- */
+function scrEquipement() {
+  const previewItems = Object.values(equipPreviewSet).map((id) => S.inventory.find((x) => x.id === id)).filter(Boolean);
+  const previewBySlot = {};
+  previewItems.forEach((it) => { previewBySlot[it.slot] = it; });
+  const hasPreview = previewItems.length > 0;
+  let previewState = null, PD = null, previewPower = S.power;
+  if (hasPreview) {
+    const eq = Object.assign({}, S.equipped);
+    previewItems.forEach((it) => { eq[it.slot] = it; });
+    previewState = Object.assign({}, S, { equipped: eq });
+    PD = computeDerived(previewState);
+    previewPower = computePower(previewState);
+  }
+  const cells = SLOTS.map((slot) => {
+    const it = S.equipped[slot], prev = previewBySlot[slot], shown = prev || it;
+    const col = shown ? RARITY[shown.rarity].c : "var(--border)";
+    return '<div class="eqSlot' + (shown ? " rf" : "") + '" data-act="itemDetail" data-arg="' + (shown ? shown.id : "") + '" data-arg2="' + slot + '" style="border-color:' + col + (shown ? ';--rc:' + col : ';opacity:.7') + (prev ? ';box-shadow:0 0 0 2px #78B7FF,0 0 18px #78B7FF66' : '') + '">' +
+      slotIcon(slot, 27, shown) + '<div class="nm" style="color:' + (shown ? RARITY[shown.rarity].c : 'var(--textMute)') + '">' + SLOT_LABEL[slot] + '</div>' +
+      (shown ? '<div class="st row gap4" style="justify-content:center">' + (MASTERY_STAT[slot] === "dmg" ? ic("sword",9)+fmt(shown.damage) : ic("heart",9)+fmt(shown.hp)) + '</div>' +
+       (prev ? '<div class="st bb" style="color:#78B7FF">TEST</div>' : (shown.level ? '<div class="st bb" style="color:var(--goldLit)">+'+shown.level+'</div>' : '')) : '<div class="st">vide</div>') + '</div>';
+  }).join('');
+
+  const statCell = (label, cur, next, color, key) => {
+    const changed = next != null && String(next) !== String(cur);
+    return '<div class="col" style="width:25%;padding:6px 2px;cursor:pointer" data-act="statInfo" data-arg="'+key+'">' +
+      '<div class="mute tiny b" style="letter-spacing:.3px;text-transform:uppercase">'+label+'</div>' +
+      '<div class="bb" style="font-size:13.5px;color:'+color+'">'+cur+'</div>' +
+      (changed ? '<div class="tiny bb" style="color:#78B7FF">→ '+next+'</div>' : '') + '</div>';
+  };
+  const d2 = PD || D;
+  const stats = [
+    ["PV Max",fmt(D.maxHP),fmt(d2.maxHP),"#E5484D","maxhp"],["Dégâts",fmt(D.damage),fmt(d2.damage),"#F0883E","damage"],
+    ["Vit. Attaque",D.attackSpeed.toFixed(2),d2.attackSpeed.toFixed(2),"#F5C542","atkspeed"],["Vit. Déplac.",fmt(D.moveSpeed),fmt(d2.moveSpeed),"#3FCFD6","movespeed"],
+    ["Crit.",D.critChance.toFixed(1)+"%",d2.critChance.toFixed(1)+"%","#F5C542","crit"],["Dégâts Crit.","x"+D.critMult.toFixed(2),"x"+d2.critMult.toFixed(2),"#FF5AA0","critmult"],
+    ["Réduc. Crit.",D.critRed.toFixed(1)+"%",d2.critRed.toFixed(1)+"%","#4A90D9","critred"],["Réduc. Dégâts",D.dmgRed.toFixed(1)+"%",d2.dmgRed.toFixed(1)+"%","#4A90D9","dmgred"],
+    ["Régén.",D.regen.toFixed(2)+"%/s",d2.regen.toFixed(2)+"%/s","#3FB950","regen"],["Vol de Vie",D.lifesteal.toFixed(2)+"%",d2.lifesteal.toFixed(2)+"%","#3FA7FF","lifesteal"],
+    ["Dégâts Boss","+"+D.bossDmg.toFixed(0)+"%","+"+d2.bossDmg.toFixed(0)+"%","#E5484D","bossdmg"],
+    ["Blocage",D.blockChance.toFixed(1)+"%",d2.blockChance.toFixed(1)+"%","#72A7E8","block"],
+    ["Double attaque",D.doubleAtk.toFixed(1)+"%",d2.doubleAtk.toFixed(1)+"%","#F5C542","doubleatk"],
+    ["Dégâts mêlée","+"+D.meleeDmg.toFixed(1)+"%","+"+d2.meleeDmg.toFixed(1)+"%","#F0883E","melee"],
+    ["Dégâts distance","+"+D.rangedDmg.toFixed(1)+"%","+"+d2.rangedDmg.toFixed(1)+"%","#8FEFF4","ranged"],
+    ["Dégâts compétences","+"+D.skillDmgBonus.toFixed(1)+"%","+"+d2.skillDmgBonus.toFixed(1)+"%","#C79BFF","skilldmg"],
+    ["Recharge compétences","-"+D.skillCdCut.toFixed(1)+"%","-"+d2.skillCdCut.toFixed(1)+"%","#B15CF6","skillcd"],
+    ["Arme",WEAPON_TYPES[D.weapon].name,WEAPON_TYPES[d2.weapon].name,"#EDE9F5","weapon"]
+  ];
+  const list = invFilter === "ALL" ? S.inventory : S.inventory.filter((i)=>i.slot===invFilter);
+  const sorted = list.slice().sort((a,b)=>(equipRank(b.rarity)-equipRank(a.rarity)) || (b.power-a.power));
+  const filters=["ALL"].concat(SLOTS);
+  const previewDelta = hasPreview ? Math.round(previewPower - S.power) : 0;
+
+  return topbar("Équipement", '<span class="pill">'+S.inventory.length+' objets</span>') + '<div class="pad mt6">' +
+    '<div class="card frame"><div class="between"><div><div class="mute tiny b">PUISSANCE TOTALE</div><div class="bb gt" style="font-size:22px">'+fmt(S.power)+'</div></div>' +
+    (hasPreview ? '<div class="col" style="align-items:flex-end"><div class="mute tiny b">APRÈS TEST</div><div class="bb" style="font-size:20px;color:'+(previewDelta>=0?'#63E889':'#FF6B72')+'">'+fmt(previewPower)+' ('+(previewDelta>=0?'+':'')+fmt(previewDelta)+')</div></div>' : '') + '</div></div>' +
+    '<div class="sect" style="margin:14px 0 8px">Équipement porté</div><div class="slotGrid">'+cells+'</div>' +
+    (hasPreview ? '<div class="notice mt8"><div class="between"><span><b style="color:#78B7FF">Mode test :</b> '+previewItems.length+' pièce'+(previewItems.length>1?'s':'')+'</span><span class="row gap4">'+btn("Annuler",{small:true,cls:"ghost",act:"clearEquipPreview"})+btn("Équiper le set",{small:true,cls:"green",act:"equipPreviewSet"})+'</span></div><div class="mute tiny mt4">Tu peux tester une pièce par emplacement avant de valider tout le set.</div></div>' : '') +
+    '<div class="sect" style="margin:14px 0 8px">Statistiques de combat</div><div class="card frame"><div class="row" style="flex-wrap:wrap">'+stats.map(x=>statCell(...x)).join('')+'</div></div>' +
+    '<div class="sect" style="margin:14px 0 8px">Points de statistiques ('+S.statPoints+')</div><div class="duo">'+STAT_META.map((m)=>'<div class="card" style="padding:7px 8px"><div class="between"><div class="b small" style="color:'+m.color+'">'+m.label+'</div><b>'+S.stats[m.key]+'</b></div><div class="row gap4 mt6">'+btn("+1",{small:true,act:"alloc",arg:m.key,arg2:1,dis:S.statPoints<1})+btn("+5",{small:true,act:"alloc",arg:m.key,arg2:5,dis:S.statPoints<5})+btn("Max",{small:true,act:"alloc",arg:m.key,arg2:"max",dis:S.statPoints<1})+'</div></div>').join('')+'</div>' +
+    '<div class="sect" style="margin:16px 0 8px">Inventaire</div><div class="seg">'+filters.map((f)=>'<span class="'+(invFilter===f?'on':'')+'" data-act="invFilter" data-arg="'+f+'">'+(f==='ALL'?'Tout':SLOT_LABEL[f])+'</span>').join('')+'</div>' +
+    (sorted.length===0 ? '<div class="notice center mt8">Aucun objet disponible.</div>' : sorted.map((it)=>'<div class="itemRow" style="border-left-color:'+RARITY[it.rarity].c+'"><div class="imini" style="width:32px;height:32px;border-color:'+RARITY[it.rarity].c+'80">'+slotIcon(it.slot,20,it)+'</div><div class="flex1"><div class="b small">'+esc(it.name)+(it.level?' <span style="color:var(--goldLit)">+'+it.level+'</span>':'')+'</div><div class="mute tiny">'+(MASTERY_STAT[it.slot]==='dmg'?ic('sword',9)+'+'+fmt(it.damage):ic('heart',9)+'+'+fmt(it.hp))+'</div></div>'+rtag(it.rarity)+'<div class="col gap4">'+btn(previewBySlot[it.slot]&&previewBySlot[it.slot].id===it.id?"Testé":"Tester",{small:true,cls:"blue",act:"previewEquip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn("Équiper",{small:true,cls:"green",act:"equip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn(ic("cycle",10)+recycleValue(it),{small:true,cls:"dark",act:"recycle",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+'</div></div>').join('')) +
+    '<div style="height:8px"></div></div>';
 }
 
 /* ---------------- COMPÉTENCES ---------------- */
@@ -8274,8 +8385,8 @@ function scrProgression(){ return scrHub("Progression", [
    RENDER
    ========================================================================= */
 const SCREENS = {
-  accueil: scrAccueil, personnage: scrPersonnage, equipement: scrEquipement,
-  inventaire: scrInventaire, competences: scrCompetences, familiers: scrFamiliers,
+  accueil: scrAccueil, personnage: scrEquipement, equipement: scrEquipement,
+  inventaire: scrEquipement, competences: scrCompetences, familiers: scrFamiliers,
   raid: scrRaid, mega: scrMegaRaid, sanctuaire: scrSanctuaire, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
   boutique: scrBoutique, evenement: scrEvenement, classement: scrClassement,
   developpement: scrDeveloppement, defis: scrDefis, progression: scrProgression,
@@ -8465,7 +8576,9 @@ function tutorialGuideInfo(key) {
   }
   const direct = {
     combat: { selector: '#arenaSlot', next: null, label: "Compris" },
-    equipement: { selector: '[data-act="go"][data-arg="equipement"]', next: "equipement", label: "Ouvrir Équipement" },
+    equipement: route === "equipement"
+      ? { selector: null, next: null, label: "Compris" }
+      : { selector: '[data-act="go"][data-arg="equipement"]', next: "equipement", label: "Ouvrir Équipement" },
     forge: { selector: '[data-act="forge"][data-arg="1"]', next: null, label: "Compris" }
   };
   return direct[key] || { selector: null, next: null, label: "Compris" };
@@ -8505,7 +8618,7 @@ function checkTutorial() {
   const seen = S.tutorial.seen || (S.tutorial.seen = {});
   let key = null, title = null, sub = null;
   if (!seen.combat) { key="combat"; title="Combat automatique"; sub="Bats les ennemis pour monter les étages et gagner Or + EXP."; }
-  else if (!seen.equipement && (S.inventory.length || SLOTS.some((k)=>S.equipped[k]))) { key="equipement"; title="Équipement"; sub="Ouvre Équipement et équipe tes meilleures pièces pour augmenter ta puissance."; }
+  else if (!seen.equipement && (S.inventory.length || SLOTS.some((k)=>S.equipped[k]))) { key="equipement"; title="Équipement"; sub="Ouvre Équipement : inventaire, pièces portées et statistiques sont réunis au même endroit. Utilise Tester pour comparer avant d’équiper."; }
   else if (!seen.competence && Object.keys(S.skills || {}).length) { key="competence"; title="Compétences"; sub="Suis les flèches : ouvre Développement, puis Compétences. Tu disposes de 3 emplacements actifs."; }
   else if (!seen.familier && ((S.pets||[]).length || (S.eggs||[]).length)) { key="familier"; title="Familiers"; sub="Suis les flèches : ouvre Développement, puis Familiers. Tes œufs sont stockés individuellement avec leur vraie rareté."; }
   else if (!seen.forge && S.minerai >= FORGE_CRAFT_COST) { key="forge"; title="Forge"; sub="Le Minerai fabrique l'équipement. L'Or améliore le niveau de Forge."; }
@@ -8644,7 +8757,7 @@ function showItemDetail(id, slot) {
   if (!it) {
     openModal('<div class="center" style="margin-bottom:8px">' + slotIcon(slot, 34) + "</div>" +
       '<div class="dim small center" style="margin-bottom:12px">Emplacement vide. Forge de l\'équipement puis équipe-le depuis l\'Inventaire.</div>' +
-      btn("Aller à l'Inventaire", { cls: "blue", act: "goModal", arg: "inventaire" }) +
+      btn("Ouvrir Équipement", { cls: "blue", act: "goModal", arg: "equipement" }) +
       '<div class="mt6">' + btn("Fermer", { cls: "ghost", act: "closeModal" }) + "</div>",
       SLOT_LABEL[slot]);
     return;
@@ -9036,7 +9149,16 @@ const ACT = {
 
   // items
   itemDetail: (a, b) => showItemDetail(a, b),
-  equip: (a) => { equipItem(a); closeModal(); toast("Équipé", true); },
+  previewEquip: (a) => {
+    const it = S.inventory.find((x) => x.id === a); if (!it) return;
+    equipPreviewSet[it.slot] = it.id; render();
+  },
+  clearEquipPreview: () => { equipPreviewSet = {}; render(); },
+  equipPreviewSet: () => {
+    const ids = Object.values(equipPreviewSet); equipPreviewSet = {};
+    ids.forEach((id) => equipItem(id)); closeModal(); toast(ids.length > 1 ? "Set équipé" : "Équipé", true);
+  },
+  equip: (a) => { equipPreviewSet = {}; equipItem(a); closeModal(); toast("Équipé", true); },
   unequip: (a) => { unequipItem(a); closeModal(); toast("Déséquipé"); },
   recycle: (a) => { const d = recycleItem(a); toast(d ? "+" + d + " poussière" : "Objet introuvable", !!d); },
   upgradeItem: (a) => {
