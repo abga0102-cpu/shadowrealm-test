@@ -658,7 +658,9 @@ body{
 }
 @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 #rewardFeed{position:absolute;right:10px;top:76px;z-index:68;width:min(250px,72%);display:flex;flex-direction:column;gap:6px;pointer-events:none}
-.rewardPop{padding:8px 10px;border:1px solid #43587D;border-radius:10px;background:linear-gradient(180deg,#182741f2,#0b1323f2);box-shadow:0 5px 18px #0009;animation:slideIn .18s ease-out}
+.rewardPop{padding:8px 10px;border:1px solid #43587D;border-radius:10px;background:linear-gradient(180deg,#182741f2,#0b1323f2);box-shadow:0 5px 18px #0009;animation:slideIn .18s ease-out;pointer-events:auto}
+.rewardPop.clickable{cursor:pointer;border-color:#4A90D9}
+.rewardPop.clickable::after{content:"Appuyer pour voir";display:block;margin-top:4px;font-size:9px;color:#78B7FF;font-weight:800}
 .rewardPop.boss{border-color:#E8B44A;box-shadow:0 5px 18px #0009,0 0 16px #E8B44A33}
 .rewardPop .rpT{font-weight:900;font-size:11.5px;color:var(--goldLit)}
 .rewardPop .rpS{font-size:10.5px;color:var(--textDim);margin-top:2px;line-height:1.3}
@@ -4590,6 +4592,8 @@ let bossReward = null;   // surfaced by the UI right after a first Boss clear
 let notable = null;      // milestone worth a toast, drained on the next render
 let rewardNotice = null;  // récompenses de combat, affichées sans interrompre le jeu
 let skipNotice = null;    // détail d’un étage sauté
+let timerNoticeSeen = { tree: null, eggs: {} }; // évite de répéter les notifications de fin
+
 function handleCombatEnd(c) {
   if (c.ctx === "raid" || c.ctx === "mega") {
     const won = c.status === "won";
@@ -5357,6 +5361,8 @@ function boot() {
 
   setInterval(tick, 33);
   setInterval(flushRewards, 500);
+  setInterval(checkTimerNotifications, 500); // fins d’éclosion et de recherche
+
   setInterval(() => { if (dirty) saveNow(); }, 8000);
   // the Récolte automatique never stops just because the player is connected
   let harvestClock = Date.now();
@@ -8086,7 +8092,7 @@ function checkNotable() {
   const n = notable; notable = null;
   toast(n.msg, true, null, n.icon);
 }
-function rewardPop(title, sub, boss) {
+function rewardPop(title, sub, boss, action, arg, ttl) {
   let feed = document.getElementById("rewardFeed");
   if (!feed) {
     feed = document.createElement("div");
@@ -8094,11 +8100,18 @@ function rewardPop(title, sub, boss) {
     document.getElementById("app").appendChild(feed);
   }
   const el = document.createElement("div");
-  el.className = "rewardPop" + (boss ? " boss" : "");
+  el.className = "rewardPop" + (boss ? " boss" : "") + (action ? " clickable" : "");
   el.innerHTML = '<div class="rpT">' + esc(title) + '</div>' + (sub ? '<div class="rpS">' + esc(sub) + '</div>' : "");
+  if (action) {
+    el.addEventListener("click", () => {
+      const fn = ACT[action];
+      if (fn) fn(arg);
+      if (el.parentNode) el.remove();
+    });
+  }
   feed.prepend(el);
-  while (feed.children.length > 3) feed.lastElementChild.remove();
-  setTimeout(() => { if (el && el.parentNode) el.remove(); }, boss ? 4200 : 3000);
+  while (feed.children.length > 5) feed.lastElementChild.remove();
+  setTimeout(() => { if (el && el.parentNode) el.remove(); }, ttl || (boss ? 5200 : 3800));
 }
 function checkBossReward() {
   if (!bossReward) return;
@@ -8110,9 +8123,9 @@ function checkBossReward() {
 function checkRewardNotice() {
   if (!rewardNotice) return;
   const r = rewardNotice; rewardNotice = null;
-  if (r.gold <= 0 && r.exp <= 0) return;
-  rewardPop(r.boss ? "★ Boss vaincu" : "Récompenses obtenues",
-    "+" + fmt(r.gold) + " Or · +" + fmt(r.exp) + " EXP", !!r.boss);
+  // Chaque ressource gagnée a sa propre information.
+  if (r.gold > 0) rewardPop((r.boss ? "★ " : "") + "Or obtenu", "+" + fmt(r.gold) + " Or", !!r.boss);
+  if (r.exp > 0) rewardPop((r.boss ? "★ " : "") + "EXP obtenue", "+" + fmt(r.exp) + " EXP", !!r.boss);
 }
 function checkSkipNotice() {
   if (!skipNotice) return;
@@ -8120,6 +8133,79 @@ function checkSkipNotice() {
   rewardPop("Saut d'étage · Étage " + r.floor,
     "+" + fmt(r.gold) + " Or · +" + fmt(r.exp) + " EXP conservés", false);
 }
+function showEggFinished(id) {
+  const e = S.eggs.find((x) => x.id === id);
+  if (!e || !eggIsHatching(e) || e.hatchEnd > Date.now()) return;
+  const el = petElement(e);
+  openModal(
+    '<div class="center">' + (ASSETS["egg_" + String(e.rarity).toLowerCase()]
+      ? '<img src="' + ASSETS["egg_" + String(e.rarity).toLowerCase()] + '" style="width:72px;height:72px;object-fit:contain">'
+      : ic("egg", 54)) + '</div>' +
+    '<div class="center mt6">' + rtag(e.rarity) + '</div>' +
+    '<div class="card mt10" style="padding:9px 11px">' +
+      '<div class="kv"><span class="dim">Rareté</span><b>' + esc(e.rarity) + '</b></div>' +
+      '<div class="kv"><span class="dim">Espèce</span><b>' + esc(e.species || "Familier") + '</b></div>' +
+      '<div class="kv"><span class="dim">Élément</span><b style="color:' + el.c + '">' + esc(el.label) + '</b></div>' +
+    '</div>' +
+    '<div class="col gap6 mt10">' +
+      btn("Faire éclore", { cls:"green", act:"collectEggPopup", arg:id }) +
+      btn("Plus tard", { cls:"dark", act:"closeModal" }) +
+    '</div>',
+    "Œuf prêt");
+}
+function showResearchFinished(id) {
+  const node = TREE_BY_ID[id];
+  if (!node) return;
+  const lv = S.tree.active === id ? (S.tree.activeLevel || treeLv(S, id) + 1) : treeLv(S, id);
+  const current = Math.max(0, lv - 1);
+  openModal(
+    '<div class="center">' + ic(node.icon, 38) + '</div>' +
+    '<div class="bb center mt6" style="color:' + node.color + '">' + esc(node.label) + '</div>' +
+    '<div class="notice mt10">La recherche est terminée. L’amélioration est prête à être récupérée.</div>' +
+    '<div class="card mt10" style="padding:9px 11px">' +
+      '<div class="kv"><span class="dim">Niveau terminé</span><b>' + lv + ' / ' + node.max + '</b></div>' +
+      '<div class="kv"><span class="dim">Avant</span><b>' + treeEffectValue(node, current) + '</b></div>' +
+      '<div class="kv"><span class="dim">Après</span><b style="color:var(--greenLit)">' + treeEffectValue(node, lv) + '</b></div>' +
+      '<div class="kv"><span class="dim">Effet</span><b>' + esc(TREE_EFFECT_INFO[node.effect] || node.label) + '</b></div>' +
+    '</div>' +
+    '<div class="col gap6 mt10">' +
+      btn("Récupérer l’amélioration", { cls:"green", act:"collectResearchPopup" }) +
+      btn("Voir dans l’Arbre", { cls:"dark", act:"goTreeFromNotice", arg:id }) +
+    '</div>',
+    "Recherche terminée");
+}
+function checkTimerNotifications() {
+  const now = Date.now();
+
+  // Recherche de l'Arbre : notification cliquable -> popup complet au centre.
+  if (S.tree.active && S.tree.activeEnd > 0 && S.tree.activeEnd <= now) {
+    const id = S.tree.active;
+    if (timerNoticeSeen.tree !== id) {
+      timerNoticeSeen.tree = id;
+      const node = TREE_BY_ID[id];
+      rewardPop("Recherche terminée", node ? node.label : "Amélioration de l’Arbre prête",
+        false, "researchFinished", id, 9000);
+    }
+  } else if (!S.tree.active) {
+    timerNoticeSeen.tree = null;
+  }
+
+  // Chaque œuf terminé reçoit sa propre notification.
+  const alive = {};
+  S.eggs.forEach((e) => {
+    if (!eggIsHatching(e)) return;
+    alive[e.id] = true;
+    if (e.hatchEnd <= now && !timerNoticeSeen.eggs[e.id]) {
+      timerNoticeSeen.eggs[e.id] = true;
+      rewardPop("Œuf prêt à éclore", e.rarity + " · " + (e.species || "Familier"),
+        false, "eggFinished", e.id, 9000);
+    }
+  });
+  Object.keys(timerNoticeSeen.eggs).forEach((id) => {
+    if (!alive[id]) delete timerNoticeSeen.eggs[id];
+  });
+}
+
 let tutorialCurrentKey = null;
 function checkTutorial() {
   if (!S.tutorial || document.getElementById("tutorialCard")) return;
@@ -8556,6 +8642,11 @@ function askReset() {
 
 const ACT = {
   tutorialOk: () => dismissTutorial(),
+  researchFinished: (a) => showResearchFinished(a),
+  eggFinished: (a) => { nav("familier"); setTimeout(() => showEggFinished(a), 30); },
+  collectEggPopup: (a) => { collectEgg(a); closeModal(); rewardPop("Œuf éclos", "Nouveau familier obtenu.", false); scheduleRender(); },
+  collectResearchPopup: () => { collectResearch(); closeModal(); rewardPop("Amélioration récupérée", "Le bonus de l’Arbre est maintenant actif.", false); scheduleRender(); },
+  goTreeFromNotice: (a) => { closeModal(); nav("arbre"); setTimeout(() => showTreeNode(a), 40); },
   go: (a) => nav(a),
   goModal: (a) => { closeModal(); nav(a); },
   harvest: () => showHarvestModal(),
