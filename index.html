@@ -1264,10 +1264,13 @@ function enemyHP(floor) {
   const mid = anchor * Math.pow(FLOOR_G1, FLOOR_KNEE2 - FLOOR_KNEE);
   return Math.floor(mid * Math.pow(FLOOR_G2, floor - FLOOR_KNEE2));
 }
+const FLOOR_DMG_G1 = 1.055, FLOOR_DMG_G2 = 1.035;
 function enemyDamage(floor) {
   if (floor <= FLOOR_KNEE) return Math.floor(1.8 * Math.pow(floor, 1.10) + 2);
   const anchor = 1.8 * Math.pow(FLOOR_KNEE, 1.10) + 2;
-  return Math.floor(anchor * Math.pow(1.055, floor - FLOOR_KNEE));
+  if (floor <= FLOOR_KNEE2) return Math.floor(anchor * Math.pow(FLOOR_DMG_G1, floor - FLOOR_KNEE));
+  const mid = anchor * Math.pow(FLOOR_DMG_G1, FLOOR_KNEE2 - FLOOR_KNEE);
+  return Math.floor(mid * Math.pow(FLOOR_DMG_G2, floor - FLOOR_KNEE2));
 }
 /* Campaign Gold economy. Floors 1-25 keep the original early curve.
    After floor 25, growth slows progressively at floors 300, 500 and 750.
