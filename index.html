@@ -562,6 +562,13 @@ body{
   animation:forgeSweep 2s linear forwards;
 }
 @keyframes forgeSweep{ from{transform:scaleX(0)} to{transform:scaleX(1)} }
+.forgeScene{height:82px;position:relative;display:flex;align-items:flex-end;justify-content:center;margin:-2px 0 3px}
+.forgeAnvil{width:74px;height:23px;border-radius:5px 5px 10px 10px;background:linear-gradient(#9BA8B9,#435064);border:2px solid #C9D4E3;box-shadow:0 7px 0 -2px #222C3A,0 10px 18px #0009;position:relative}
+.forgeAnvil:before{content:"";position:absolute;left:-22px;top:-8px;width:116px;height:15px;border-radius:5px 12px 4px 4px;background:linear-gradient(#D5DFEA,#66758A);border:2px solid #DCE5EF}
+.forgeHammerHit{position:absolute;left:50%;top:1px;margin-left:3px;transform-origin:8px 54px;animation:hammerHit .48s ease-in-out infinite;filter:drop-shadow(0 4px 4px #000b)}
+.forgeSpark{position:absolute;left:50%;bottom:25px;width:5px;height:5px;border-radius:50%;background:#FFD76A;box-shadow:-25px -4px 0 #FF9B42,24px -8px 0 #FFE69B,-15px -22px 0 #FFD76A,18px -27px 0 #FF9B42;animation:sparkPop .48s ease-out infinite}
+@keyframes hammerHit{0%{transform:rotate(-42deg) translateY(-5px)}55%,72%{transform:rotate(8deg) translateY(3px)}100%{transform:rotate(-42deg) translateY(-5px)}}
+@keyframes sparkPop{0%,48%{opacity:0;transform:scale(.3)}58%{opacity:1;transform:scale(1.25)}100%{opacity:0;transform:scale(2) translateY(-7px)}}
 /* the (i) affordance, wherever a rarity needs explaining */
 /* a skill the Lord Demoniaque has sealed: still cooling down, still unusable */
 .slot.sealed{filter:grayscale(1) brightness(.6)}
@@ -922,10 +929,14 @@ const RARITY = {
   RARE:       { c: "#3FA7FF", label: "Rare" },
   EPIQUE:     { c: "#B15CF6", label: "Épique" },
   MYTHIQUE:   { c: "#FF7A3D", label: "Mythique" },
+  /* HEROIQUE / ANCESTRAL restent lisibles uniquement pour migrer les anciennes sauvegardes. */
   HEROIQUE:   { c: "#FF4D6A", label: "Héroïque" },
   ANCESTRAL:  { c: "#3FE0C0", label: "Ancestral" },
+  ARTEFACT:   { c: "#43C98B", label: "Artefact" },
   LEGENDAIRE: { c: "#F5C542", label: "Légendaire" },
-  DIVIN:      { c: "#FF4D8D", label: "Divin" },
+  INFERNAL:   { c: "#E5484D", label: "Infernal" },
+  IMMORTEL:   { c: "#D96CFF", label: "Immortel" },
+  DIVIN:      { c: "#FFB52E", label: "Divin" },
 };
 /* Core ladder — used by Skills. Familiars use their own ladder below. */
 const RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "LEGENDAIRE", "DIVIN"];
@@ -941,7 +952,7 @@ function forgeKeepAll() {
   EQUIP_RARITY_ORDER.forEach((r) => { o[r] = true; });
   return o;
 }
-const EQUIP_RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "HEROIQUE", "ANCESTRAL", "LEGENDAIRE", "DIVIN"];
+const EQUIP_RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "ARTEFACT", "LEGENDAIRE", "INFERNAL", "IMMORTEL", "DIVIN"];
 function orderFor(system) { return system === "forge" ? EQUIP_RARITY_ORDER : system === "pet" ? PET_RARITY_ORDER : RARITY_ORDER; }
 function equipRank(rarity) { return EQUIP_RARITY_ORDER.indexOf(rarity); }
 const C = {
@@ -1171,7 +1182,7 @@ const RULES = {
   RAID_MAX_LEVEL: 50, RAID_FREE_KEYS: 3, RAID_KEY_CAP: 6,
   UNIVERSAL_KEY_DAILY: 3, UNIVERSAL_KEY_CAP: 6, AFK_BASE_HOURS: 8,
   WAR_POINTS_PER_PR: 30,
-  FORGE_BATCH_BASE: 5, FORGE_BATCH_MAX: 10,
+  FORGE_BATCH_BASE: 1, FORGE_BATCH_MAX: 10,
   // a fight is never resolved instantly, however overpowered the player is:
   // ENTRY = enemy walks in before anyone swings, HOLD = victory/defeat beat.
   FIGHT_ENTRY_MS: 420, FIGHT_HOLD_MS: 820,
@@ -1440,8 +1451,12 @@ const MASTERY_STAT = { arme: "dmg", gants: "dmg", collier: "dmg", anneau: "dmg",
   casque: "hp", armure: "hp", bottes: "hp", ceinture: "hp" };
 const SLOT_ICON  = { arme: "sword", casque: "helm", armure: "armor", gants: "glove",
   bottes: "boot", collier: "gem", anneau: "ring", ceinture: "chain" };
-const RARITY_MUL = { COMMUN: 1, RARE: 1.8, EPIQUE: 3.2, MYTHIQUE: 5.6,
-  HEROIQUE: 8.5, ANCESTRAL: 12.5, LEGENDAIRE: 18, DIVIN: 28 };
+/* La rareté porte surtout la STAT DE BASE. Les bonus secondaires restent fortement
+   chevauchants afin qu'un excellent Mythique puisse battre les bonus d'un Infernal
+   médiocre, tout en laissant l'Infernal très tentant grâce à sa base. */
+const RARITY_MUL = { COMMUN: 1, RARE: 1.45, EPIQUE: 1.95, MYTHIQUE: 2.60,
+  ARTEFACT: 3.45, LEGENDAIRE: 4.55, INFERNAL: 6.00, IMMORTEL: 7.90, DIVIN: 10.40,
+  /* legacy */ HEROIQUE: 3.45, ANCESTRAL: 6.00 };
 
 /* Section 18 brings the high rarities down. The ladder above Épique used to
    halve at each step, which at full Maîtrise handed out a Mythique every 8
@@ -1460,8 +1475,8 @@ const RARITY_MUL = { COMMUN: 1, RARE: 1.8, EPIQUE: 3.2, MYTHIQUE: 5.6,
    compresses what is next to it. */
 const RATE_ANCHORS = {
   forge: {
-    m0:  { COMMUN: 100,  RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0, HEROIQUE: 0,   ANCESTRAL: 0,   LEGENDAIRE: 0,   DIVIN: 0 },
-    m50: { COMMUN: 34.8, RARE: 28, EPIQUE: 22, MYTHIQUE: 7, HEROIQUE: 4.2, ANCESTRAL: 2.5, LEGENDAIRE: 1.5, DIVIN: 0 },
+    m0:  { COMMUN: 100, RARE: 0, EPIQUE: 0, MYTHIQUE: 0, ARTEFACT: 0, LEGENDAIRE: 0, INFERNAL: 0, IMMORTEL: 0, DIVIN: 0 },
+    m50: { COMMUN: 35.0, RARE: 28, EPIQUE: 21, MYTHIQUE: 8, ARTEFACT: 4, LEGENDAIRE: 2.2, INFERNAL: 1.1, IMMORTEL: 0.7, DIVIN: 0 },
   },
   skill: {
     m0:  { COMMUN: 100,  RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,   LEGENDAIRE: 0, DIVIN: 0 },
@@ -1651,7 +1666,8 @@ function getRates(system, mastery, ascension, stars) {
   const climb = Math.max(0, Math.min(1, mastery / masteryMax(system)));
   const t = boost + (1 - boost) * climb;
   const EASE = { COMMUN: 1, PEU_COMMUN: 0.82, RARE: 0.7, EPIQUE: 1.15, MYTHIQUE: 1.55,
-    HEROIQUE: 1.9, ANCESTRAL: 2.3, LEGENDAIRE: 2.6, DIVIN: 1 };
+    ARTEFACT: 1.85, LEGENDAIRE: 2.15, INFERNAL: 2.45, IMMORTEL: 2.75, DIVIN: 1,
+    HEROIQUE: 1.85, ANCESTRAL: 2.45 };
   const out = {};
   order.forEach((r) => { out[r] = a.m0[r] + (a.m50[r] - a.m0[r]) * Math.pow(t, EASE[r]); });
   // Familiar Ascension unlocks Legendary, never Divine. Divine Familiars only
@@ -2256,7 +2272,7 @@ const TREE_NODES = [
   { id: "n1_27", sect: "Palier I", label: "Œuf Légendaire Vitesse d'éclosion I", short: "Œuf Légend. I", icon: "egg", color: "#F5C542", tier: 1, effect: "hatch_LEGENDAIRE", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_11", "n1_25", "n1_26", "n1_14"], lane: 3, row: 5 },
   { id: "n1_03", sect: "Palier I", label: "Chance de forger gratuitement I", short: "Forge Grat. I", icon: "hammer", color: "#F5C542", tier: 1, effect: "forgeFree", per: 1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_02"], lane: 4, row: 5 },
   { id: "sp_slot1", sect: "Palier I", label: "+1 Slot d'Éclosion", short: "+1 Slot Éclosion", icon: "egg", color: "#57E07A", tier: 1, effect: "eggSlot", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_21"], lane: 0, row: 6, special: true },
-  { id: "sp_forge1", sect: "Palier I", label: "Multiplicateur Forge +1", short: "Multi. Forge +1", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_14"], lane: 1, row: 6, special: true },
+  { id: "sp_forge1", sect: "Palier I", label: "Forge multiple ×2", short: "Forge ×2", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_14"], lane: 1, row: 6, special: true },
   { id: "n1_pc", sect: "Palier I", label: "Œuf Peu commun Vitesse d'éclosion I", short: "Œuf Peu com. I", icon: "egg", color: "#57E07A", tier: 1, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_23"], lane: 2, row: 6 },
   { id: "sp_key1", sect: "Palier I", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 1, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_27"], lane: 3, row: 6, special: true, note: "Choix du Raid" },
 
@@ -2291,7 +2307,7 @@ const TREE_NODES = [
   { id: "n2_18", sect: "Palier II", label: "Collier Bonus Dégâts II", short: "Collier II", icon: "gem", color: "#FF5A5A", tier: 2, effect: "eq_collier", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_24"], lane: 2, row: 12 },
   { id: "n2_23", sect: "Palier II", label: "Œuf Commun Vitesse d'éclosion II", short: "Œuf Commun II", icon: "egg", color: "#9FB0C8", tier: 2, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_30"], lane: 3, row: 12 },
   { id: "n2_17", sect: "Palier II", label: "Gants Bonus Dégâts II", short: "Gants II", icon: "glove", color: "#FF5A5A", tier: 2, effect: "eq_gants", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_20", "n2_14"], lane: 4, row: 12 },
-  { id: "sp_forge3", sect: "Palier II", label: "Multiplicateur Forge +3", short: "Multi. Forge +3", icon: "hammer", color: "#E8B44A", tier: 2, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["sp_forge1", "n2_18"], lane: 2, row: 13, special: true },
+  { id: "sp_forge3", sect: "Palier II", label: "Forge multiple ×4", short: "Forge ×4", icon: "hammer", color: "#E8B44A", tier: 2, effect: "forgeMult", per: 2, unit: "", max: 1, times: PAL_T[1], req: ["sp_forge1", "n2_18"], lane: 2, row: 13, special: true },
   { id: "n2_pc", sect: "Palier II", label: "Œuf Peu commun Vitesse d'éclosion II", short: "Œuf Peu com. II", icon: "egg", color: "#57E07A", tier: 2, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n1_pc", "n2_23"], lane: 3, row: 13 },
   { id: "sp_key2", sect: "Palier II", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 2, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["n2_17"], lane: 4, row: 13, special: true, note: "Choix du Raid" },
 
@@ -2326,8 +2342,8 @@ const TREE_NODES = [
   { id: "n3_10", sect: "Palier III", label: "Compétence Passive Base Dégâts III", short: "Pass. Dég. III", icon: "swords", color: "#9B5CF6", tier: 3, effect: "passDmg", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_18"], lane: 2, row: 19 },
   { id: "n3_13", sect: "Palier III", label: "Animal Bonus Dégâts III", short: "Animal Dég. III", icon: "paw", color: "#FF7A3D", tier: 3, effect: "petDmg", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_18", "n3_26"], lane: 3, row: 19 },
   { id: "n3_08", sect: "Palier III", label: "Temps Récompense Autonomie III", short: "Tps Auton. III", icon: "cycle", color: "#8FC4FF", tier: 3, effect: "afkTime", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_11", "n3_29"], lane: 4, row: 19 },
-  { id: "sp_forge5", sect: "Palier III", label: "Multiplicateur Forge +5", short: "Multi. Forge +5", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge3", "n3_15"], lane: 1, row: 20, special: true },
-  { id: "sp_forge10", sect: "Palier III", label: "Multiplicateur Forge +10", short: "Multi. Forge +10", icon: "hammer", color: "#F5C542", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge5", "n3_10"], lane: 2, row: 20, special: true },
+  { id: "sp_forge5", sect: "Palier III", label: "Forge multiple ×5", short: "Forge ×5", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge3", "n3_15"], lane: 1, row: 20, special: true },
+  { id: "sp_forge10", sect: "Palier III", label: "Forge multiple ×10", short: "Forge ×10", icon: "hammer", color: "#F5C542", tier: 3, effect: "forgeMult", per: 5, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge5", "n3_10"], lane: 2, row: 20, special: true },
   { id: "n3_pc", sect: "Palier III", label: "Œuf Peu commun Vitesse d'éclosion III", short: "Œuf Peu com. III", icon: "egg", color: "#57E07A", tier: 3, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n2_pc", "n3_23"], lane: 3, row: 20 },
   { id: "sp_key3", sect: "Palier III", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 3, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["n3_08"], lane: 4, row: 20, special: true, note: "Choix du Raid" },
 
@@ -2444,7 +2460,7 @@ function defaultState(name) {
     pe: 0,
     universalKeys: 3, adKeysToday: 0, lastKeyReset: todayStr(),
     bossRewardsClaimed: {}, megaFloorRewardsClaimed: {},
-    sanctuary: { slotA: null, slotB: null, discovered: {}, fusions: 0 },
+    sanctuary: { slotA: null, slotB: null, discovered: {}, fusions: 0, stabilitySeals: 0 },
     tree: { levels: {}, active: null, activeLevel: 0, activeEnd: 0 },
     raidKeyAlloc: { or: 0, minerai: 0, competence: 0, familier: 0 },
     rebirth: { pr: 0, upgrades: {}, count: 0 },
@@ -2517,6 +2533,15 @@ function migrate(s, name) {
   if (Array.isArray(merged.inventory)) {
     merged.inventory.forEach((it) => { if (it && it.slot === "accessoire") it.slot = "anneau"; });
   }
+  /* Nouvelle échelle d'équipement : les deux anciens paliers sont convertis sans
+     supprimer les objets ni leurs bonus. */
+  const migrateGearRarity = (it) => {
+    if (!it) return;
+    if (it.rarity === "HEROIQUE") it.rarity = "ARTEFACT";
+    if (it.rarity === "ANCESTRAL") it.rarity = "INFERNAL";
+  };
+  Object.keys(merged.equipped).forEach((k) => migrateGearRarity(merged.equipped[k]));
+  if (Array.isArray(merged.inventory)) merged.inventory.forEach(migrateGearRarity);
 
   /* Gear forged before section 15 carries both stats. It is converted the same
      way the roll was: the lead stat absorbs the secondary at 14/11 and the
@@ -2639,6 +2664,16 @@ function migrate(s, name) {
     if (merged.equipped[k] && !merged.equipped[k].affixes) merged.equipped[k].affixes = [];
   });
   (merged.inventory || []).forEach((it) => { if (it && !it.affixes) it.affixes = []; });
+  /* Migration Poussière additive : ne jamais rétro-nerfer un objet déjà amélioré. */
+  const anchorGear = (it) => {
+    if (!it) return;
+    if (it.baseDamage == null) it.baseDamage = it.damage || 0;
+    if (it.baseHp == null) it.baseHp = it.hp || 0;
+    if (it.upgradeBaseLevel == null) it.upgradeBaseLevel = it.level || 0;
+    if (it.originalPower == null) it.originalPower = (it.baseDamage || 0) + (it.baseHp || 0);
+  };
+  Object.keys(merged.equipped).forEach((k) => anchorGear(merged.equipped[k]));
+  (merged.inventory || []).forEach(anchorGear);
   if (s.raidKeyBonus) {   // legacy single-raid key bonus -> allocation table
     merged.raidKeyAlloc[s.raidKeyBonus] = (merged.raidKeyAlloc[s.raidKeyBonus] || 0) + 1;
     delete merged.raidKeyBonus;
@@ -2947,20 +2982,21 @@ const AFFIX_DEFS = [
 const AFFIX_BY_KEY = {};
 AFFIX_DEFS.forEach((a) => { AFFIX_BY_KEY[a.key] = a; });
 
-/* How many bonuses a rarity grants, and the slice of each cap it may roll.
-   `lo`/`hi` are fractions of the cap; `bias` > 1 skews rolls toward the low
-   end, < 1 toward the high end. Only MYTHIQUE and above can reach hi = 1,
-   so Rare and Épique can never produce a maxed value. */
+/* Nombre de bonus par rareté + probabilité d’entrer dans la zone de roll élevé.
+   `high` n’est PAS une chance d’atteindre le maximum : il choisit seulement
+   entre la zone normale et la zone haute, puis la valeur est encore tirée au hasard. */
 const AFFIX_TIERS = {
-  COMMUN:     { count: 0, lo: 0,    hi: 0,    bias: 1 },
-  RARE:       { count: 1, lo: 0.10, hi: 0.45, bias: 1.60 },
-  EPIQUE:     { count: 2, lo: 0.15, hi: 0.62, bias: 1.40 },
-  MYTHIQUE:   { count: 2, lo: 0.22, hi: 1.00, bias: 1.35 },
-  HEROIQUE:   { count: 2, lo: 0.30, hi: 1.00, bias: 1.20 },
-  ANCESTRAL:  { count: 2, lo: 0.38, hi: 1.00, bias: 1.05 },
-  LEGENDAIRE: { count: 2, lo: 0.46, hi: 1.00, bias: 0.92 },
-  DIVIN:      { count: 2, lo: 0.55, hi: 1.00, bias: 0.78 },
-};
+  COMMUN:     { count: 0, high: 0.00 },
+  RARE:       { count: 1, high: 0.06 },
+  EPIQUE:     { count: 2, high: 0.10 },
+  MYTHIQUE:   { count: 2, high: 0.15 },
+  ARTEFACT:   { count: 2, high: 0.20 },
+  LEGENDAIRE: { count: 2, high: 0.26 },
+  INFERNAL:   { count: 2, high: 0.31 },
+  IMMORTEL:   { count: 2, high: 0.35 },
+  DIVIN:      { count: 2, high: 0.40 },
+  /* legacy */ HEROIQUE: { count: 2, high: 0.20 }, ANCESTRAL: { count: 2, high: 0.31 },
+}
 function affixRound(def, v) {
   return def.cap <= 20 ? Math.round(v * 10) / 10 : Math.round(v);
 }
@@ -2976,9 +3012,16 @@ function affixIsExceptional(a) {
 /* roll one bonus value for a given rarity, never above the absolute cap */
 function rollAffixValue(def, rarity) {
   const t = AFFIX_TIERS[rarity] || AFFIX_TIERS.COMMUN;
-  const q = Math.pow(Math.random(), t.bias);          // 0..1, skewed by rarity
-  const frac = t.lo + (t.hi - t.lo) * q;
-  const v = Math.max(affixRound(def, def.cap * t.lo),
+  /* La rareté augmente la CHANCE d'entrer dans une zone haute, pas le cap.
+     Normal : 10-70 % du cap. Haut : 65-100 %, avec chevauchement volontaire.
+     Même un Divin peut donc sortir moyen; le maximum reste un roll rare. */
+  const high = Math.random() < (t.high || 0);
+  const lo = high ? 0.65 : 0.10;
+  const hi = high ? 1.00 : 0.70;
+  const bias = high ? 1.35 : 1.45;
+  const q = Math.pow(Math.random(), bias);
+  const frac = lo + (hi - lo) * q;
+  const v = Math.max(affixRound(def, def.cap * lo),
     Math.min(def.cap, affixRound(def, def.cap * frac)));
   if (def.exceptional && Math.random() * 100 < AFFIX_EXCEPTIONAL_PCT) {
     // above the cap, up to what the bonus used to be able to reach
@@ -3024,7 +3067,7 @@ function equippedAffixes(s) {
   return t;
 }
 
-const RARITY_NAMES = ["Rouillé", "Aiguisé", "Runique", "Spectral", "Héroïque", "Ancestral", "Céleste", "Divin"];
+const RARITY_NAMES = ["Rouillé", "Aiguisé", "Runique", "Spectral", "Artefact", "Légendaire", "Infernal", "Immortel", "Divin"];
 /* Section 15: one stat per piece. The secondary stat a piece used to carry --
    1.2 HP on a damage slot, 0.3 damage on an HP slot -- is folded into the lead
    stat instead of being dropped, so a full set is worth exactly what it was.
@@ -3042,6 +3085,7 @@ function makeItem(slot, rarity, forgeLevel) {
   const hp = MASTERY_STAT[slot] === "hp" ? Math.floor(base * mul * 4 * roll) : 0;
   const name = SLOT_LABEL[slot] + " " + (RARITY_NAMES[equipRank(rarity)] || "");
   return { id: rid(), slot, rarity, weaponType: wt, damage: dmg, hp, level: 0,
+    baseDamage: dmg, baseHp: hp, upgradeBaseLevel: 0, originalPower: dmg + hp,
     power: dmg + hp, name: name.trim(), affixes: rollAffixes(rarity) };
 }
 /* =========================================================================
@@ -4707,7 +4751,7 @@ function allocStat(key, pts) {
    to the best tier it can, so the odds are never wasted, they just land lower. */
 const RARITY_MIN_FORGE = {
   COMMUN: 1, RARE: 1, EPIQUE: 6, MYTHIQUE: 14,
-  HEROIQUE: 22, ANCESTRAL: 30, LEGENDAIRE: 38, DIVIN: 46,
+  ARTEFACT: 22, LEGENDAIRE: 30, INFERNAL: 37, IMMORTEL: 43, DIVIN: 48,
 };
 function rarityAllowed(rarity, forgeLevel) {
   return forgeLevel >= (RARITY_MIN_FORGE[rarity] || 1);
@@ -4953,7 +4997,11 @@ function unequipItem(slot) {
 /* What a piece is worth as Poussiere. The Inventory and the Forge filter must
    pay the same, so the formula lives here and takes the state it reads. */
 function dustValue(s, it) {
-  return Math.floor(((equipRank(it.rarity) + 1) * 5 + it.power * 0.2)
+  /* Le recyclage se base sur la puissance originale, jamais sur la puissance
+     gonflée par les améliorations Poussière : aucune boucle de remboursement. */
+  const original = Math.max(0, it.originalPower != null ? it.originalPower :
+    ((it.baseDamage || 0) + (it.baseHp || 0)) || it.power || 0);
+  return Math.floor(((equipRank(it.rarity) + 1) * 5 + original * 0.2)
     * (1 + treeSum(s, "dust") / 100));
 }
 function recycleItem(id) {
@@ -4966,23 +5014,44 @@ function recycleItem(id) {
   });
   return dust;
 }
-function itemUpgradeCost(it) { return 20 + it.level * 15; }
+function itemUpgradeCost(it) { return Math.round(20 + it.level * 12); }
+/* Jusqu'à +99, l'amélioration est garantie. À partir de +100, -5 points de
+   réussite tous les 10 niveaux, avec un plancher de 35 %. Les Sceaux de
+   stabilité ajoutent +5 points chacun. Un échec ne détruit ni l'objet ni son
+   niveau : seule la Poussière (et les Sceaux choisis) est consommée. */
+function itemUpgradeChance(it) {
+  if ((it.level || 0) < 100) return 100;
+  return Math.max(35, 95 - Math.floor(((it.level || 0) - 100) / 10) * 5);
+}
+const itemSealPlan = {};
+function itemSealCount(id) { return Math.max(0, itemSealPlan[id] || 0); }
 function upgradeItem(id) {
-  let ok = false;
+  let result = { ok:false, reason:"missing", chance:0 };
   update((s) => {
     let it = Object.values(s.equipped).find((x) => x && x.id === id) || s.inventory.find((x) => x.id === id);
     if (!it) return;
     const cost = itemUpgradeCost(it);
-    if (s.poussiere < cost) return;
+    if (s.poussiere < cost) { result.reason="dust"; return; }
+    const baseChance=itemUpgradeChance(it);
+    const want=Math.min(itemSealCount(id), Math.ceil((100-baseChance)/5));
+    const seals=Math.min(want, (s.sanctuary && s.sanctuary.stabilitySeals) || 0);
+    const chance=Math.min(100, baseChance + seals*5);
     s.poussiere -= cost;
+    if (seals) s.sanctuary.stabilitySeals -= seals;
+    itemSealPlan[id]=0;
+    result={ok:true, success:Math.random()*100 < chance, chance:chance, seals:seals};
+    if (!result.success) return;
     it.level += 1;
-    // main stats only — it.affixes is deliberately left untouched
-    it.damage = Math.floor(it.damage * 1.1);
-    it.hp = Math.floor(it.hp * 1.1);
+    /* Poussière additive : +0,35 % de la stat de référence par niveau réussi.
+       Les anciennes pièces gardent leur puissance acquise : leur valeur au moment
+       de la migration devient l'ancre des améliorations futures. */
+    const anchorLevel = it.upgradeBaseLevel || 0;
+    const steps = Math.max(0, it.level - anchorLevel);
+    if (it.baseDamage) it.damage = Math.floor(it.baseDamage * (1 + steps * 0.0035));
+    if (it.baseHp) it.hp = Math.floor(it.baseHp * (1 + steps * 0.0035));
     it.power = it.damage + it.hp;
-    ok = true;
   });
-  return ok;
+  return result;
 }
 
 function summonSkill(n) {
@@ -6042,6 +6111,7 @@ const SANCT_RECIPES = [
   { id:"r3", a:"poussiere", aq:150, b:"minerai", bq:250, out:"a15", qty:1, name:"Sablier ancien", secret:false },
   { id:"r4", a:"eclat", aq:50, b:"essence", bq:50, out:"a30", qty:1, name:"Résonance parfaite", secret:true },
   { id:"r5", a:"poussiere", aq:500, b:"essence", bq:100, out:"a60", qty:1, name:"Cœur du temps", secret:true },
+  { id:"r6", a:"minerai", aq:300, b:"eclat", bq:30, out:"seal", qty:1, name:"Sceau de stabilité", secret:false },
 ];
 function sanctuaryUnlocked(st) {
   return !!(st && st.megaBossClears && Object.keys(st.megaBossClears).some((k) => st.megaBossClears[k]));
@@ -6063,7 +6133,8 @@ function sanctFuse() {
   }
   update((st)=>{
     for(const k of Object.keys(SANCT_ING)) { const need=sanctNeedFor(r,k); if(need) st[k]-=need; }
-    st.accels[r.out]=(st.accels[r.out]||0)+r.qty;
+    if (r.out === "seal") st.sanctuary.stabilitySeals=(st.sanctuary.stabilitySeals||0)+r.qty;
+    else st.accels[r.out]=(st.accels[r.out]||0)+r.qty;
     st.sanctuary.discovered[r.id]=true; st.sanctuary.fusions=(st.sanctuary.fusions||0)+1;
     st.sanctuary.slotA=null; st.sanctuary.slotB=null;
   });
@@ -6592,23 +6663,20 @@ function scrAccueil() {
       "</div>";
   }
   const fCost = forgeCost(S.forge.level);
-  // two plain rows of five, the way they started
+  // Navigation regroupée : Forge reste visible sur l'écran Combat; les systèmes
+  // secondaires sont réunis dans des hubs cohérents au lieu de multiplier les fenêtres.
   const navBtns = [
     { label: "Personnage", icon: "hero", color: "#5A7099", go: "personnage", badge: S.statPoints > 0 },
-    { label: "Raid", icon: "flame", color: "#C22127", go: "raid", badge: RAID_IDS.some((r) => S.raids[r].keys > 0), lock: S.level < RULES.RAID_UNLOCK_LEVEL ? RULES.RAID_UNLOCK_LEVEL : 0 },
-    { label: "Arbre", icon: "tree", color: "#2F8A45", go: "arbre", badge: !S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n)) },
+    { label: "Développement", icon: "tree", color: "#2F8A45", go: "developpement",
+      badge: !S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n)) },
+    { label: "Défis", icon: "flame", color: "#C22127", go: "defis",
+      badge: RAID_IDS.some((r) => S.raids[r].keys > 0) || nextMegaBossFloor(S) !== null },
     { label: "Clan", icon: "banner", color: "#B0862C", go: "clan", lock: S.level < 10 ? 10 : 0 },
     { label: "Boutique", icon: "shop", color: "#3B7FC4", go: "boutique" },
   ];
   const sysBtns = [
-    { label: "Familiers", icon: "paw", color: "#C4711E", go: "familiers",
-      badge: S.eggs.some((e) => eggIsHatching(e) && e.hatchEnd <= Date.now()) },
-    { label: "Méga Boss", icon: "skull", color: "#8E2237", go: "mega",
-      badge: nextMegaBossFloor(S) !== null },
-    { label: "Sanctuaire", icon: "flame", color: "#7A34DC", go: "sanctuaire",
-      badge: sanctuaryUnlocked(S) && Object.keys(S.sanctuary.discovered || {}).length === 0 },
-    { label: "Ascension", icon: "star", color: "#B0862C", go: "ascension", badge: S.ascensionAvailable },
-    { label: "Rebirth", icon: "cycle", color: "#6B3AC4", go: "rebirth", badge: canRebirth() },
+    { label: "Progression", icon: "cycle", color: "#6B3AC4", go: "progression",
+      badge: canRebirth() || S.ascensionAvailable },
     { label: "Événement", icon: "gift", color: "#C22127", go: "evenement", badge: true },
     { label: "Classement", icon: "trophy", color: "#5A7099", go: "classement" },
   ];
@@ -6652,8 +6720,9 @@ function scrAccueil() {
       ascendCta("forge") +
       (forgeAnimActive()
         ? '<div class="forgeAnim mt6"><div class="forgeAnimBar"></div>' +
+          '<div class="forgeScene" style="position:relative;z-index:1"><div class="forgeAnvil"></div><div class="forgeHammerHit">'+ic("hammer",42)+'</div><div class="forgeSpark"></div></div>'+
           '<div class="row gap6" style="position:relative;z-index:1;justify-content:center">' +
-          ic("hammer", 15) + '<span class="b small">Forge en cours · ' + forgeAnim.n +
+          '<span class="b small">Forge en cours · ' + forgeAnim.n +
           " pièce" + (forgeAnim.n > 1 ? "s" : "") + "</span></div></div>"
         :
       '<div class="row gap6 mt6">' +
@@ -6663,13 +6732,13 @@ function scrAccueil() {
             style: "justify-content:space-between" }) +
         // a batch stops early when the Minerai runs out, so the total is marked
         // when you cannot cover the whole lot rather than promising all of it
-        btn('<span class="col" style="align-items:center;line-height:1.1">' +
+        (forgeBatch(S) > 1 ? btn('<span class="col" style="align-items:center;line-height:1.1">' +
             "<span>x" + forgeBatch(S) + "</span>" +
             '<span class="row gap2" style="font-size:9px;opacity:' +
               (S.minerai >= fCost * forgeBatch(S) ? ".8" : ".95;color:#FFC7A0") + '">' +
               ic("minerai", 9) + fmt(fCost * forgeBatch(S)) + "</span></span>",
           { cls: "blue", small: true, act: "forge", arg: forgeBatch(S),
-            dis: S.minerai < fCost, style: "max-width:76px" }) +
+            dis: S.minerai < fCost, style: "max-width:76px" }) : "") +
         '<div class="tgl ' + (S.forge.autoForge ? "on" : "off") + '" data-act="autoForge">' +
           "<span>AUTO</span><i></i></div>" +
       "</div>") +
@@ -7497,16 +7566,16 @@ function scrSanctuaire() {
   const recipe=sanctRecipeFor(st.slotA,st.slotB);
   const preview=recipe ? '<div class="notice mt8 tiny"><b style="color:var(--goldLit)">'+esc(recipe.name)+'</b> · coût : '+
       Object.keys(SANCT_ING).filter(k=>sanctNeedFor(recipe,k)).map(k=>sanctNeedFor(recipe,k)+' '+SANCT_ING[k].label).join(' + ')+
-      ' → <b>'+recipe.qty+'× Accél. '+esc((ACCEL_DEFS.find(a=>a.key===recipe.out)||{}).label||recipe.out)+'</b></div>'
+      ' → <b>'+(recipe.out==='seal' ? recipe.qty+'× Sceau de stabilité' : recipe.qty+'× Accél. '+esc((ACCEL_DEFS.find(a=>a.key===recipe.out)||{}).label||recipe.out))+'</b></div>'
     : (st.slotA&&st.slotB?'<div class="notice mt8 tiny">Combinaison inconnue. Tu peux tenter la Fusion sans perdre de ressource si aucune recette ne correspond.</div>':'');
   const known=SANCT_RECIPES.map((r)=>{
     const d=!!st.discovered[r.id];
     if(!d && r.secret) return '<div class="card mt6" style="padding:7px 9px"><div class="b small">❓ Recette secrète</div><div class="mute tiny">Découvre la bonne combinaison.</div></div>';
     return '<div class="card mt6" style="padding:7px 9px"><div class="between"><div><div class="b small">'+(d?'✓ ':'')+esc(r.name)+'</div><div class="mute tiny">'+
       (d ? r.aq+' '+SANCT_ING[r.a].label+' + '+r.bq+' '+SANCT_ING[r.b].label : 'Recette non découverte')+'</div></div><span class="pill">'+
-      (d ? r.qty+'× '+esc((ACCEL_DEFS.find(a=>a.key===r.out)||{}).label||r.out) : '???')+'</span></div></div>';
+      (d ? (r.out==='seal' ? r.qty+'× Sceau de stabilité' : r.qty+'× '+esc((ACCEL_DEFS.find(a=>a.key===r.out)||{}).label||r.out)) : '???')+'</span></div></div>';
   }).join('');
-  return topbar("Sanctuaire",'<span class="pill" style="color:var(--goldLit);border-color:var(--goldDim)">⏱️ '+fmtTime(accelTotal*60)+'</span>')+
+  return topbar("Sanctuaire",'<span class="pill" style="color:var(--goldLit);border-color:var(--goldDim)">⏱️ '+fmtTime(accelTotal*60)+'</span><span class="pill">🛡️ '+fmt(st.stabilitySeals||0)+'</span>')+
     '<div class="pad mt6"><div class="card frame"><div class="between"><div><div class="bb gt">CERCLE DE FUSION</div><div class="mute tiny b">Fusion instantanée · aucun timer</div></div><span class="pill">'+fmt(st.fusions||0)+' fusions</span></div>'+
     '<div class="row gap8 mt10">'+slot(st.slotA,'a')+'<div class="bb gt">＋</div>'+slot(st.slotB,'b')+'</div>'+preview+
     '<div class="mt8">'+btn(ic("flame",14)+' FUSIONNER',{cls:recipe?'purple':'dark',act:'sanctFuse',dis:!(st.slotA&&st.slotB)})+'</div></div>'+
@@ -8134,6 +8203,27 @@ function scrParametres() {
     '<div style="height:2px"></div></div>';
 }
 
+function scrHub(title, entries) {
+  const cards = entries.map((e) => '<div class="card mt8" data-act="go" data-arg="'+e.go+'" style="cursor:pointer">' +
+    '<div class="row gap10"><div class="imini">'+ic(e.icon,18)+'</div><div class="flex1"><div class="b">'+e.label+'</div>' +
+    '<div class="dim tiny mt2">'+e.desc+'</div></div>'+ic("chevron",12)+'</div></div>').join("");
+  return topbar(title, "") + '<div class="pad">'+cards+'</div>';
+}
+function scrDeveloppement(){ return scrHub("Développement", [
+  {label:"Compétences",icon:"book",go:"competences",desc:"Invocation, équipement et amélioration des compétences."},
+  {label:"Familiers",icon:"paw",go:"familiers",desc:"Œufs, éclosion et progression des familiers."},
+  {label:"Arbre personnel",icon:"tree",go:"arbre",desc:"Bonus permanents et recherches."}
+]); }
+function scrDefis(){ return scrHub("Défis", [
+  {label:"Raids",icon:"flame",go:"raid",desc:"Raids spécialisés et ressources ciblées."},
+  {label:"Méga-Boss",icon:"skull",go:"mega",desc:"Combats majeurs et récompenses de progression."},
+  {label:"Sanctuaire",icon:"flame",go:"sanctuaire",desc:"Fusion de ressources et recettes découvertes."}
+]); }
+function scrProgression(){ return scrHub("Progression", [
+  {label:"Rebirth",icon:"cycle",go:"rebirth",desc:"Réinitialisation stratégique contre des PR permanents."},
+  {label:"Ascension",icon:"star",go:"ascension",desc:"Progression de haut niveau et étoiles d'Ascension."}
+]); }
+
 /* =========================================================================
    RENDER
    ========================================================================= */
@@ -8142,6 +8232,7 @@ const SCREENS = {
   inventaire: scrInventaire, competences: scrCompetences, familiers: scrFamiliers,
   raid: scrRaid, mega: scrMegaRaid, sanctuaire: scrSanctuaire, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
   boutique: scrBoutique, evenement: scrEvenement, classement: scrClassement,
+  developpement: scrDeveloppement, defis: scrDefis, progression: scrProgression,
   parametres: scrParametres,
   chat: () => scrServerOnly("Chat", [["GET /api/chat?channel=world", "messages monde"],
     ["GET /api/chat?channel=clan", "messages du clan"], ["POST /api/chat", "envoyer"],
@@ -8455,8 +8546,8 @@ function showItemDetail(id, slot) {
       '<div class="mt6">' + rtag(it.rarity) + '<span class="pill" style="margin-left:5px">' + SLOT_LABEL[it.slot] + "</span></div></div></div>" +
     '<div class="card" style="padding:9px 11px">' +
       (MASTERY_STAT[it.slot] === "dmg"
-        ? st("ATTAQUE", "+" + fmt(it.damage), "#FF9C6B")
-        : st("POINTS DE VIE", "+" + fmt(it.hp), "var(--redLit)")) +
+        ? st("ATTAQUE DE BASE", "+" + fmt(it.damage), "#FF9C6B")
+        : st("SANTÉ DE BASE", "+" + fmt(it.hp), "var(--redLit)")) +
       st("PUISSANCE", fmt(it.power), "var(--goldLit)") +
       (wt ? st("TYPE D'ARME", wt.name + " · " + (wt.attackType === "MELEE" ? "mêlée" : "distance"), "var(--blueLit)") +
         st("PORTÉE · VITESSE", wt.range + " · ×" + wt.speed, "var(--blueLit)") : "") +
@@ -8476,6 +8567,16 @@ function showItemDetail(id, slot) {
         }).join("") +
         '<div class="mute tiny mt6">Ces bonus sont fixés à la création et ne changent jamais avec la Poussière.</div>'
       : "") +
+    '<div class="orn"><i></i><b></b><i></i></div>' +
+    (itemUpgradeChance(it)<100 ? (function(){
+      const base=itemUpgradeChance(it), planned=itemSealCount(it.id), owned=(S.sanctuary&&S.sanctuary.stabilitySeals)||0;
+      const used=Math.min(planned,owned,Math.ceil((100-base)/5)), chance=Math.min(100,base+used*5);
+      return '<div class="card" style="padding:8px 9px;border-color:#9B5CF666"><div class="between"><div><div class="b small">CHANCE DE RÉUSSITE</div><div class="mute tiny">À partir de +100 · échec = niveau conservé</div></div><b style="color:'+(chance>=90?'#57C785':chance>=70?'#F5C542':'#FF7A3D')+'">'+chance+'%</b></div>'+meter(chance,'#9B5CF6')+
+        '<div class="between mt6"><span class="tiny b">🛡️ Sceaux de stabilité · '+owned+'</span><div class="row gap4">'+
+        btn('−',{cls:'dark',small:true,act:'itemSealMinus',arg:it.id,dis:used<=0,style:'width:34px'})+
+        '<span class="pill">'+used+' utilisé'+(used>1?'s':'')+' · +'+(used*5)+'%</span>'+ 
+        btn('+',{cls:'purple',small:true,act:'itemSealPlus',arg:it.id,dis:used>=owned||chance>=100,style:'width:34px'})+'</div></div></div>';
+    })() : '<div class="notice tiny"><b>Réussite garantie à 100 %</b> jusqu’au niveau +100.</div>') +
     '<div class="orn"><i></i><b></b><i></i></div>' +
     '<div class="row between" style="font-size:10.5px;font-weight:800">' +
       '<span class="mute">COÛT D\'AMÉLIORATION</span>' +
@@ -8820,8 +8921,18 @@ const ACT = {
   unequip: (a) => { unequipItem(a); closeModal(); toast("Déséquipé"); },
   recycle: (a) => { const d = recycleItem(a); toast(d ? "+" + d + " poussière" : "Objet introuvable", !!d); },
   upgradeItem: (a) => {
-    if (upgradeItem(a)) { showItemDetail(a, null); toast("Amélioré !", true); }
-    else toast("Poussière insuffisante");
+    const r=upgradeItem(a);
+    if (!r.ok) { toast(r.reason==="dust" ? "Poussière insuffisante" : "Objet introuvable"); return; }
+    showItemDetail(a, null);
+    toast(r.success ? "Amélioration réussie !" : "Échec · objet conservé", r.success);
+  },
+  itemSealMinus: (a) => { itemSealPlan[a]=Math.max(0,itemSealCount(a)-1); showItemDetail(a,null); },
+  itemSealPlus: (a) => {
+    const it=Object.values(S.equipped).find(x=>x&&x.id===a)||S.inventory.find(x=>x.id===a);
+    if(!it)return;
+    const maxNeed=Math.ceil((100-itemUpgradeChance(it))/5);
+    const owned=(S.sanctuary&&S.sanctuary.stabilitySeals)||0;
+    itemSealPlan[a]=Math.min(maxNeed,owned,itemSealCount(a)+1); showItemDetail(a,null);
   },
   rarityInfo: () => showRarityInfo(),
   autoSkills: () => {
