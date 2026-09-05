@@ -2444,6 +2444,7 @@ function defaultState(name) {
     pe: 0,
     universalKeys: 3, adKeysToday: 0, lastKeyReset: todayStr(),
     bossRewardsClaimed: {}, megaFloorRewardsClaimed: {},
+    sanctuary: { slotA: null, slotB: null, discovered: {}, fusions: 0 },
     tree: { levels: {}, active: null, activeLevel: 0, activeEnd: 0 },
     raidKeyAlloc: { or: 0, minerai: 0, competence: 0, familier: 0 },
     rebirth: { pr: 0, upgrades: {}, count: 0 },
@@ -2477,6 +2478,7 @@ function migrate(s, name) {
     _raidStars: 1,
     rebirth: Object.assign({}, base.rebirth, s.rebirth || {}),
     tree: Object.assign({}, base.tree, s.tree || {}),
+    sanctuary: Object.assign({}, base.sanctuary, s.sanctuary || {}),
     accels: Object.assign({}, base.accels, s.accels || {}),
     equipped: Object.assign({}, base.equipped, s.equipped || {}),
     raidKeyAlloc: Object.assign({}, base.raidKeyAlloc, s.raidKeyAlloc || {}),
@@ -6023,6 +6025,60 @@ function updateCombatHud() {
   });
 }
 function rafLoop() { drawArena(); updateCombatHud(); requestAnimationFrame(rafLoop); }
+
+/* ---------------- SANCTUAIRE / FUSION ----------------
+   Horizontal conversion system. No timer: a valid recipe resolves instantly.
+   The Sanctuaire opens after the first Mega-Boss clear. Recipes use existing
+   resources so this system does not create a second economy by itself. */
+const SANCT_ING = {
+  minerai:   { label: "Minerai", icon: "hammer", unit: "Minerai" },
+  poussiere: { label: "Poussière", icon: "bag", unit: "Poussière" },
+  eclat:     { label: "Éclats", icon: "book", unit: "Éclats" },
+  essence:   { label: "Essence", icon: "flame", unit: "Essence" },
+};
+const SANCT_RECIPES = [
+  { id:"r1", a:"minerai", aq:100, b:"minerai", bq:100, out:"a1", qty:1, name:"Étincelle temporelle", secret:false },
+  { id:"r2", a:"eclat", aq:20, b:"essence", bq:20, out:"a5", qty:1, name:"Convergence mystique", secret:false },
+  { id:"r3", a:"poussiere", aq:150, b:"minerai", bq:250, out:"a15", qty:1, name:"Sablier ancien", secret:false },
+  { id:"r4", a:"eclat", aq:50, b:"essence", bq:50, out:"a30", qty:1, name:"Résonance parfaite", secret:true },
+  { id:"r5", a:"poussiere", aq:500, b:"essence", bq:100, out:"a60", qty:1, name:"Cœur du temps", secret:true },
+];
+function sanctuaryUnlocked(st) {
+  return !!(st && st.megaBossClears && Object.keys(st.megaBossClears).some((k) => st.megaBossClears[k]));
+}
+function sanctRecipeFor(a,b) {
+  return SANCT_RECIPES.find((r) => (r.a===a && r.b===b) || (r.a===b && r.b===a)) || null;
+}
+function sanctNeedFor(r,key) {
+  let n=0; if(r.a===key)n+=r.aq; if(r.b===key)n+=r.bq; return n;
+}
+function sanctFuse() {
+  if (!sanctuaryUnlocked(S)) return {ok:false,msg:"Sanctuaire verrouillé"};
+  const a=S.sanctuary.slotA, b=S.sanctuary.slotB;
+  if(!a || !b) return {ok:false,msg:"Place deux ressources dans le cercle"};
+  const r=sanctRecipeFor(a,b);
+  if(!r) return {ok:false,msg:"Aucune réaction… Cette combinaison ne forme rien."};
+  for(const k of Object.keys(SANCT_ING)) {
+    const need=sanctNeedFor(r,k); if(need && (S[k]||0)<need) return {ok:false,msg:"Ressources insuffisantes"};
+  }
+  update((st)=>{
+    for(const k of Object.keys(SANCT_ING)) { const need=sanctNeedFor(r,k); if(need) st[k]-=need; }
+    st.accels[r.out]=(st.accels[r.out]||0)+r.qty;
+    st.sanctuary.discovered[r.id]=true; st.sanctuary.fusions=(st.sanctuary.fusions||0)+1;
+    st.sanctuary.slotA=null; st.sanctuary.slotB=null;
+  });
+  return {ok:true,recipe:r};
+}
+function sanctSetSlot(key) {
+  if(!SANCT_ING[key]) return;
+  update((st)=>{
+    if(!st.sanctuary.slotA) st.sanctuary.slotA=key;
+    else if(!st.sanctuary.slotB) st.sanctuary.slotB=key;
+    else { st.sanctuary.slotA=st.sanctuary.slotB; st.sanctuary.slotB=key; }
+  });
+}
+function sanctClearSlot(which){ update((st)=>{ if(which==='a') st.sanctuary.slotA=null; else st.sanctuary.slotB=null; }); }
+
 /* =========================================================================
    UI — port of the app/ screens (expo-router) to a plain-DOM router
    ========================================================================= */
@@ -6549,6 +6605,8 @@ function scrAccueil() {
       badge: S.eggs.some((e) => eggIsHatching(e) && e.hatchEnd <= Date.now()) },
     { label: "Méga Boss", icon: "skull", color: "#8E2237", go: "mega",
       badge: nextMegaBossFloor(S) !== null },
+    { label: "Sanctuaire", icon: "flame", color: "#7A34DC", go: "sanctuaire",
+      badge: sanctuaryUnlocked(S) && Object.keys(S.sanctuary.discovered || {}).length === 0 },
     { label: "Ascension", icon: "star", color: "#B0862C", go: "ascension", badge: S.ascensionAvailable },
     { label: "Rebirth", icon: "cycle", color: "#6B3AC4", go: "rebirth", badge: canRebirth() },
     { label: "Événement", icon: "gift", color: "#C22127", go: "evenement", badge: true },
@@ -7418,6 +7476,45 @@ function scrMegaRaid() {
     '<div style="height:2px"></div></div>';
 }
 
+
+/* ---------------- SANCTUAIRE ---------------- */
+function scrSanctuaire() {
+  const unlocked=sanctuaryUnlocked(S);
+  const st=S.sanctuary || {slotA:null,slotB:null,discovered:{},fusions:0};
+  const accelTotal=ACCEL_DEFS.reduce((n,a)=>n+(S.accels[a.key]||0)*a.mins,0);
+  const resPills='<div class="row gap4" style="flex-wrap:wrap">'+
+    '<span class="pill">⛏️ '+fmt(S.minerai)+'</span><span class="pill">✨ '+fmt(S.eclat)+'</span>'+
+    '<span class="pill">🔥 '+fmt(S.essence)+'</span><span class="pill">🌫️ '+fmt(S.poussiere)+'</span></div>';
+  if(!unlocked) return topbar("Sanctuaire",resPills)+
+    '<div class="pad mt8"><div class="card frame center" style="padding:18px 12px;border-left-color:#9B5CF6">'+ic("lock",36)+
+    '<div class="bb gt mt8" style="font-size:16px">SANCTUAIRE SCELLÉ</div>'+
+    '<div class="dim small mt8" style="line-height:1.55">Vaincs ton premier Méga-Boss pour réveiller le Sanctuaire.<br>La Fusion transforme des ressources existantes en accélérateurs, sans timer.</div></div></div>';
+  const slot=(key,which)=> key ? '<div class="card center" data-act="sanctClear" data-arg="'+which+'" style="flex:1;min-height:86px;cursor:pointer;border-color:#9B5CF6">'+
+      '<div style="font-size:25px">'+(key==='minerai'?'⛏️':key==='eclat'?'✨':key==='essence'?'🔥':'🌫️')+'</div><div class="b small mt6">'+SANCT_ING[key].label+'</div><div class="mute tiny">Toucher pour retirer</div></div>'
+    : '<div class="card center" style="flex:1;min-height:86px;border-style:dashed"><div style="font-size:26px;opacity:.45">＋</div><div class="mute tiny mt6">Emplacement '+(which==='a'?'I':'II')+'</div></div>';
+  const ingredients=Object.keys(SANCT_ING).map((k)=>'<div class="card" data-act="sanctAdd" data-arg="'+k+'" style="cursor:pointer;padding:8px;flex:1;min-width:46%"><div class="between"><div><div class="b small">'+
+    (k==='minerai'?'⛏️':k==='eclat'?'✨':k==='essence'?'🔥':'🌫️')+' '+SANCT_ING[k].label+'</div><div class="mute tiny">Stock : '+fmt(S[k]||0)+'</div></div>'+ic("plus",15)+'</div></div>').join('');
+  const recipe=sanctRecipeFor(st.slotA,st.slotB);
+  const preview=recipe ? '<div class="notice mt8 tiny"><b style="color:var(--goldLit)">'+esc(recipe.name)+'</b> · coût : '+
+      Object.keys(SANCT_ING).filter(k=>sanctNeedFor(recipe,k)).map(k=>sanctNeedFor(recipe,k)+' '+SANCT_ING[k].label).join(' + ')+
+      ' → <b>'+recipe.qty+'× Accél. '+esc((ACCEL_DEFS.find(a=>a.key===recipe.out)||{}).label||recipe.out)+'</b></div>'
+    : (st.slotA&&st.slotB?'<div class="notice mt8 tiny">Combinaison inconnue. Tu peux tenter la Fusion sans perdre de ressource si aucune recette ne correspond.</div>':'');
+  const known=SANCT_RECIPES.map((r)=>{
+    const d=!!st.discovered[r.id];
+    if(!d && r.secret) return '<div class="card mt6" style="padding:7px 9px"><div class="b small">❓ Recette secrète</div><div class="mute tiny">Découvre la bonne combinaison.</div></div>';
+    return '<div class="card mt6" style="padding:7px 9px"><div class="between"><div><div class="b small">'+(d?'✓ ':'')+esc(r.name)+'</div><div class="mute tiny">'+
+      (d ? r.aq+' '+SANCT_ING[r.a].label+' + '+r.bq+' '+SANCT_ING[r.b].label : 'Recette non découverte')+'</div></div><span class="pill">'+
+      (d ? r.qty+'× '+esc((ACCEL_DEFS.find(a=>a.key===r.out)||{}).label||r.out) : '???')+'</span></div></div>';
+  }).join('');
+  return topbar("Sanctuaire",'<span class="pill" style="color:var(--goldLit);border-color:var(--goldDim)">⏱️ '+fmtTime(accelTotal*60)+'</span>')+
+    '<div class="pad mt6"><div class="card frame"><div class="between"><div><div class="bb gt">CERCLE DE FUSION</div><div class="mute tiny b">Fusion instantanée · aucun timer</div></div><span class="pill">'+fmt(st.fusions||0)+' fusions</span></div>'+
+    '<div class="row gap8 mt10">'+slot(st.slotA,'a')+'<div class="bb gt">＋</div>'+slot(st.slotB,'b')+'</div>'+preview+
+    '<div class="mt8">'+btn(ic("flame",14)+' FUSIONNER',{cls:recipe?'purple':'dark',act:'sanctFuse',dis:!(st.slotA&&st.slotB)})+'</div></div>'+
+    '<div class="sect">Ressources</div><div class="row gap6" style="flex-wrap:wrap">'+ingredients+'</div>'+
+    '<div class="sect">Livre de Fusion</div>'+known+
+    '<div class="notice mt8 tiny">Les recettes découvertes restent inscrites dans le Livre. Une combinaison invalide ne consomme rien pendant cette version de test.</div></div>';
+}
+
 /* ---------------- ARBRE ---------------- */
 function scrArbre() {
   const now = Date.now();
@@ -8043,7 +8140,7 @@ function scrParametres() {
 const SCREENS = {
   accueil: scrAccueil, personnage: scrPersonnage, equipement: scrEquipement,
   inventaire: scrInventaire, competences: scrCompetences, familiers: scrFamiliers,
-  raid: scrRaid, mega: scrMegaRaid, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
+  raid: scrRaid, mega: scrMegaRaid, sanctuaire: scrSanctuaire, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
   boutique: scrBoutique, evenement: scrEvenement, classement: scrClassement,
   parametres: scrParametres,
   chat: () => scrServerOnly("Chat", [["GET /api/chat?channel=world", "messages monde"],
@@ -8625,7 +8722,7 @@ function showMegaResult(r) {
         ? 'Première victoire : <b style="color:#A9E06F">+' + fmt(r.apples) + " 🍎</b>" +
           (r.accel ? '<br><b style="color:var(--goldLit)">+' + fmt(r.accel.qty) + " Accélérateur " +
             esc((ACCEL_DEFS.find((a) => a.key === r.accel.key) || {}).label || r.accel.key) + "</b> (×2 Boss normal)" : "") +
-          "<br>Récompense enregistrée définitivement."
+          "<br>Récompense enregistrée définitivement." + (Object.keys(S.megaBossClears || {}).length === 1 ? "<br><b style=\"color:var(--purpleLit)\">🏛️ Sanctuaire débloqué !</b>" : "")
         : won ? "Méga-Boss déjà vaincu : <b>0 Pomme</b>."
         : "Aucune clé ni récompense perdue. Renforce-toi et réessaie.") + "</div>" +
     btn("Continuer", { cls: won ? "green" : "ghost", act: "closeMega" }),
@@ -8817,6 +8914,15 @@ const ACT = {
   },
   abortMega: () => { combat = null; startCampaign(); nav("mega"); toast("Méga Boss abandonné"); },
   closeMega: () => { closeModal(); megaResult = null; startCampaign(); nav("mega"); },
+
+  // sanctuaire
+  sanctAdd: (a) => { sanctSetSlot(a); render(); },
+  sanctClear: (a) => { sanctClearSlot(a); render(); },
+  sanctFuse: () => {
+    const r=sanctFuse();
+    if(!r.ok) toast(r.msg);
+    else { toast("Fusion réussie · "+r.recipe.name, true); render(); }
+  },
 
   // tree
   treeNode: (a) => showTreeNode(a),
