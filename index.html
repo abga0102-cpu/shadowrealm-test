@@ -4443,6 +4443,14 @@ function capChampionHit(e, dmg) {
   return Math.min(dmg, Math.max(1, Math.floor(e.maxHP * cap)));
 }
 function applyDamageToEnemy(c, e, dmg, crit, color, src) {
+  /* Malédiction et le Familier Toxique annoncent tous deux un bonus valable sur
+     toutes les sources. Les coups d’arme appliquent déjà Vulnérabilité dans leur
+     calcul de swing ; compétences et DoT la reçoivent ici. Toxique, lui, est
+     centralisé ici afin de renforcer arme, compétences, Poison et brûlure sans
+     risque d’oubli selon la source. */
+  const damageSrc = src || "weapon";
+  if (damageSrc !== "weapon") dmg *= 1 + fxVal(c, "debuffs", "vuln") / 100;
+  if (petElemOf(c, D) === "toxique") dmg *= 1.10;
   dmg = capChampionHit(e, dmg);
   abilitiesOf(e).forEach((a) => {
     if (a.filter) dmg = Math.max(0, a.filter(c, e, dmg, src || "weapon", !!crit));
@@ -4549,8 +4557,7 @@ function tick() {
         // "Double attaque": the swing may immediately land a second time
         const swings = Math.random() * 100 < (dv.doubleAtk || 0) ? 2 : 1;
         const buffDmg = 1 + fxVal(c, "buffs", "force") / 100;
-        const vuln = (1 + fxVal(c, "debuffs", "vuln") / 100)
-          * (petElemOf(c, dv) === "toxique" ? 1.10 : 1);
+        const vuln = 1 + fxVal(c, "debuffs", "vuln") / 100;
         const swingDelay = wt.attackType === "MELEE" ? HIT_DELAY_MELEE : HIT_DELAY_RANGED;
         for (let sw = 0; sw < swings; sw++) {
           // anything that blunts the hero's swing stacks here, floored at 30%
@@ -6310,6 +6317,15 @@ let renderQueued = false;
 let raidResult = null;      // { raidId, won, reward } pending modal
 let megaResult = null;      // first-clear state and Apple reward
 let trialRunning = false;
+
+/* Arena de simulation: laboratoire PvP local, sans récompenses ni données serveur.
+   La population est synthétique tant que la télémétrie de vrais joueurs n'existe pas. */
+let arenaSimCfg = { progression: "j7", ratio: "natural", build: "random", count: 100 };
+let arenaSimResult = null;
+let arenaMatrixResult = null;
+let arenaMatrixProgress = null;
+let arenaMatrixRun = null;
+
 const TABS = [
   { id: "accueil",       label: "Accueil",       icon: "castle" },
   { id: "equipement",    label: "Équipement",    icon: "swords" },
@@ -7077,7 +7093,7 @@ function scrPersonnage() {
     fold("powerSources", "Sources de puissance", '<div class="card">' +
       src("shield", "#5A7099", "Équipement", "+" + fmt(eqDmg) + " Dégâts · +" + fmt(eqHp) + " PV") +
       src("paw", "#FF7A3D", pet ? "Familier " + RARITY[pet.rarity].label : "Familier", petPct ? "+" + petPct + "% Dégâts &amp; PV" : "Aucun actif") +
-      src("hammer", C.gold, "Forge Niv." + S.forge.level, "+" + (S.forge.level * 2) + "% Dégâts &amp; PV") +
+      src("hammer", C.gold, "Forge Niv." + S.forge.level, "+" + (S.forge.level * 2) + "% Dégâts · +" + S.forge.level + "% PV") +
       src("cycle", C.purple, "Rebirth (" + S.rebirth.count + ")", "+" + ((S.rebirth.upgrades.damage || 0) * 2) + "% Dégâts · +" + ((S.rebirth.upgrades.life || 0) * 2.5) + "% Vie") +
       src("sparkle", "#B15CF6", "Compétences actives", skills.length ? skills.map((id) => {
         const def = SKILL_DEFS.find((x) => x.id === id);
@@ -8420,6 +8436,293 @@ function scrParametres() {
     '<div style="height:2px"></div></div>';
 }
 
+
+const ARENA_PROGRESSION = {
+  /* Ces profils restent des hypothèses de rythme tant qu'aucune télémétrie réelle
+     n'existe. La V3 leur donne cependant une progression interne cohérente avec
+     les systèmes du jeu : Forge, Rebirth, Arbre, Familiers et niveaux de Compétences. */
+  j1:  { label:"J1",  forge:6,  crafts:5,  petRarity:"COMMUN",   petLevel:4,  petStars:0,
+         skillRarity:0, skillLevel:2, skillStars:0, statPts:12, spread:.14,
+         rebirth:{}, tree:{passDmg:0,passHp:0,skillDmg:0,petDmg:0,petHp:0}, globalAscension:0, forgeStars:0 },
+  j7:  { label:"J7",  forge:18, crafts:12, petRarity:"RARE",     petLevel:7,  petStars:0,
+         skillRarity:1, skillLevel:6, skillStars:0, statPts:35, spread:.11,
+         rebirth:{damage:2,life:2,atkspeed:1,critdmg:1,dmgred:1},
+         tree:{passDmg:4,passHp:4,skillDmg:4,petDmg:4,petHp:4}, globalAscension:0, forgeStars:0 },
+  j30: { label:"J30", forge:35, crafts:28, petRarity:"EPIQUE",   petLevel:10, petStars:0,
+         skillRarity:2, skillLevel:16, skillStars:0, statPts:85, spread:.09,
+         rebirth:{damage:7,life:7,atkspeed:3,critdmg:3,dmgred:5,regen:2,lifesteal:2},
+         tree:{passDmg:12,passHp:12,skillDmg:12,petDmg:10,petHp:10}, globalAscension:0, forgeStars:0 },
+  j90: { label:"J90", forge:50, crafts:60, petRarity:"MYTHIQUE", petLevel:14, petStars:1,
+         skillRarity:3, skillLevel:30, skillStars:0, statPts:170,spread:.07,
+         rebirth:{damage:15,life:15,atkspeed:5,critdmg:5,dmgred:10,regen:4,lifesteal:4},
+         tree:{passDmg:24,passHp:24,skillDmg:24,petDmg:20,petHp:20}, globalAscension:1, forgeStars:0 },
+};
+const ARENA_BUILDS = {
+  random:{label:"Aléatoire"}, equilibre:{label:"Équilibré"}, dps:{label:"DPS"},
+  tank:{label:"Tank"}, crit:{label:"Critique"}, sustain:{label:"Vol de vie"}, skills:{label:"Compétences"}
+};
+const ARENA_SKILL_RANK={COMMUN:0,RARE:1,EPIQUE:2,MYTHIQUE:3,LEGENDAIRE:4,DIVIN:5};
+function arenaRbValue(prog,key){
+  const def=REBIRTH_UPGRADES.find(u=>u.key===key);return def?((prog.rebirth&&prog.rebirth[key])||0)*def.perLvl:0;
+}
+function arenaPlayerProfile() {
+  const wt=WEAPON_TYPES[D.weapon]||WEAPON_TYPES.epee;
+  const active=S.skillSlots.slice(0,skillSlotCount(S)).map(id=>SKILL_BY_ID[id]&&S.skills[id]?{def:SKILL_BY_ID[id],level:S.skills[id].level||1,stars:starsOf(S,"skill")}:null)
+    .filter(Boolean);
+  return {name:S.playerName||"Héros",maxHP:Math.max(1,D.maxHP),damage:Math.max(1,D.damage),
+    attackSpeed:Math.max(.1,D.attackSpeed*(wt.speed||1)),hit:wt.hit||1,critChance:Math.max(0,D.critChance||0),
+    critMult:Math.max(1,D.critMult||1.5),critRed:Math.max(0,D.critRed||0),dmgRed:Math.min(85,Math.max(0,D.dmgRed||0)),
+    blockChance:Math.min(75,Math.max(0,D.blockChance||0)),doubleAtk:Math.min(100,Math.max(0,D.doubleAtk||0)),
+    lifesteal:Math.max(0,D.lifesteal||0),regen:Math.max(0,D.regen||0),
+    styleBonus:wt.attackType==="MELEE"?(D.meleeDmg||0):(D.rangedDmg||0),skillDmg:D.skillDmgBonus||0,skillCd:D.skillCdCut||0,
+    skills:active,petElem:D.petElem||null,source:"joueur"};
+}
+function arenaProfilePower(p) {
+  const crit=1+(p.critChance/100)*Math.max(0,p.critMult-1), dbl=1+Math.min(100,p.doubleAtk)/100;
+  const style=1+Math.max(0,p.styleBonus)/100, skill=1+(Math.max(0,p.skillDmg)/100)*.25+(Math.max(0,p.skillCd)/100)*.25;
+  const offense=p.damage*p.attackSpeed*(p.hit||1)*crit*dbl*style*skill;
+  const mitigation=1/Math.max(.15,1-Math.min(85,p.dmgRed)/100), block=1+Math.min(75,p.blockChance)/200;
+  const sustain=1+Math.min(50,p.lifesteal)/200+Math.min(50,p.regen)/250;
+  return Math.max(1,Math.floor(Math.sqrt(Math.max(1,offense)*Math.max(1,p.maxHP*mitigation*block*sustain))*1.5));
+}
+function arenaRollRarity(forge,ascension){
+  const rates=gateForgeRates(getRates("forge",forge,ascension||0,0),forge); return rollRarity(rates,EQUIP_RARITY_ORDER);
+}
+function arenaItem(slot,rar,forge,forgeStars){
+  const mul=RARITY_MUL[rar]||1,base=(6+forge*2)*ascendPowerMul(forgeStars||0,"forge"),roll=SINGLE_STAT_MUL*(.9+Math.random()*.4);
+  return {slot,rarity:rar,weaponType:slot==="arme"?WEAPON_LIST[Math.floor(Math.random()*WEAPON_LIST.length)]:null,
+    damage:MASTERY_STAT[slot]==="dmg"?Math.floor(base*mul*roll):0,hp:MASTERY_STAT[slot]==="hp"?Math.floor(base*mul*4*roll):0,affixes:rollAffixes(rar)};
+}
+/* Sélectionne l'équipement selon sa contribution de build complète, et non plus
+   uniquement Dégâts*12 + PV*.15. Les affixes et le type d'arme peuvent donc
+   réellement faire gagner une pièce pourtant un peu plus faible en stat brute. */
+function arenaItemScore(it){
+  const af={};(it.affixes||[]).forEach(a=>af[a.key]=(af[a.key]||0)+a.value);const A=k=>af[k]||0;
+  const wt=WEAPON_TYPES[it.weaponType]||WEAPON_TYPES.epee;
+  const p={maxHP:Math.max(1,BASE.hp+it.hp),damage:Math.max(1,BASE.damage+it.damage),
+    attackSpeed:BASE.attackSpeed*(1+Math.min(20,A("atkspeed"))/100)*(wt.speed||1),hit:wt.hit||1,
+    critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+A("crit")),critMult:BASE.critMult+A("critdmg")/100,critRed:0,
+    dmgRed:0,blockChance:Math.min(75,A("block")),doubleAtk:Math.min(100,A("double")),lifesteal:Math.max(0,A("lifesteal")),regen:0,
+    styleBonus:wt.attackType==="MELEE"?A("melee"):A("ranged"),skillDmg:A("skilldmg"),skillCd:Math.min(80,A("skillcd"))};
+  p.maxHP=Math.floor(p.maxHP*(1+A("hp")/100));p.damage=Math.floor(p.damage*(1+A("dmg")/100));return arenaProfilePower(p);
+}
+function arenaSyntheticGear(prog){
+  const out={};
+  SLOTS.forEach(slot=>{let best=null,bp=-1;for(let i=0;i<prog.crafts;i++){
+    const it=arenaItem(slot,arenaRollRarity(prog.forge,prog.globalAscension),prog.forge,prog.forgeStars),p=arenaItemScore(it);
+    if(p>bp){best=it;bp=p;}
+  }out[slot]=best;});
+  return out;
+}
+function arenaSyntheticSkills(prog,kind){
+  let pool=SKILL_DEFS.filter(d=>(ARENA_SKILL_RANK[d.rarity]||0)<=prog.skillRarity && (d.rarity!=="DIVIN"||prog.globalAscension>0));
+  if(kind==="skills") pool=pool.filter(d=>d.cat==="ATTAQUE"||d.cat==="AOE"||d.cat==="BUFF"||d.cat==="SOIN"||d.cat==="DEBUFF");
+  const score=d=>kind==="tank"?(d.cat==="SOIN"||d.id==="rempart"||d.id==="lenteur"?5:1):kind==="skills"?(d.mult||0)*2+1/Math.max(1,d.cd):kind==="dps"||kind==="crit"?(d.mult||0)*2:1;
+  return pool.slice().sort((a,b)=>score(b)-score(a)+(.4-Math.random()*.8)).slice(0,RULES.SKILL_SLOTS_BASE)
+    .map(def=>({def,level:Math.max(1,Math.round(prog.skillLevel*(.85+Math.random()*.3))),stars:prog.skillStars||0}));
+}
+function arenaSyntheticBase(prog,kind){
+  const gear=arenaSyntheticGear(prog);let hp=BASE.hp,dmg=BASE.damage,af={};let weapon="epee";
+  Object.values(gear).forEach(it=>{hp+=it.hp;dmg+=it.damage;if(it.slot==="arme")weapon=it.weaponType||weapon;(it.affixes||[]).forEach(a=>af[a.key]=(af[a.key]||0)+a.value);});
+  const A=k=>af[k]||0, pts=prog.statPts;
+  let hpPts=.42,dmgPts=.42,critPts=.16;if(kind==="tank"){hpPts=.68;dmgPts=.25;critPts=.07}else if(kind==="dps"||kind==="crit"||kind==="skills"){hpPts=.27;dmgPts=.55;critPts=.18}
+  hp+=pts*hpPts*STATS.SANTE.perPoint;dmg+=pts*dmgPts*STATS.DEGATS.perPoint;
+  const tree=prog.tree||{};
+  const petBase=petBonusAt(prog.petRarity,Math.min(prog.petLevel,petMaxLevel(prog.petRarity)),prog.petStars||0);
+  const petHpPct=petBase*(1+(tree.petHp||0)/100), elem=PET_ELEMENTS[Math.floor(Math.random()*PET_ELEMENTS.length)].id;
+  const petDmgPct=petHpPct*(1+(tree.petDmg||0)/100)*(elem==="normal"?1.10:1);
+  const forgePct=prog.forge*2;
+  hp*=(1+arenaRbValue(prog,"life")/100+petHpPct/100+forgePct/200+(tree.passHp||0)/100);
+  dmg*=(1+arenaRbValue(prog,"damage")/100+petDmgPct/100+forgePct/100+(tree.passDmg||0)/100);
+  const wt=WEAPON_TYPES[weapon]||WEAPON_TYPES.epee;
+  let p={name:"Bot",maxHP:Math.max(1,Math.floor(hp*(1+A("hp")/100))),damage:Math.max(1,Math.floor(dmg*(1+A("dmg")/100))),
+    attackSpeed:BASE.attackSpeed*(1+arenaRbValue(prog,"atkspeed")/100)*(1+Math.min(20,A("atkspeed"))/100)*(elem==="electrique"?1.08:1)*(wt.speed||1),hit:wt.hit||1,
+    critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+pts*critPts*STATS.CRIT.perPoint+A("crit")),critMult:BASE.critMult+arenaRbValue(prog,"critdmg")/100+A("critdmg")/100,critRed:0,
+    dmgRed:Math.min(85,arenaRbValue(prog,"dmgred")),blockChance:Math.min(75,A("block")),doubleAtk:Math.min(100,A("double")),
+    lifesteal:Math.max(0,arenaRbValue(prog,"lifesteal")+A("lifesteal")),regen:Math.max(0,arenaRbValue(prog,"regen")),
+    styleBonus:wt.attackType==="MELEE"?A("melee"):A("ranged"),skillDmg:(tree.skillDmg||0)+A("skilldmg"),skillCd:Math.min(80,A("skillcd")),
+    skills:arenaSyntheticSkills(prog,kind),petElem:elem,gear,source:prog.label};
+  if(kind==="dps"){p.damage*=1.12;p.maxHP*=.92} if(kind==="tank"){p.maxHP*=1.18;p.damage*=.92;p.dmgRed=Math.min(85,p.dmgRed+8);p.blockChance=Math.min(75,p.blockChance+6)}
+  if(kind==="crit"){p.critChance=Math.min(CRIT_CHANCE_CAP,p.critChance+10);p.critMult+=.25;p.maxHP*=.94}
+  if(kind==="sustain"){p.lifesteal+=10;p.regen+=2;p.maxHP*=1.04} if(kind==="skills"){p.skillDmg+=18;p.skillCd=Math.min(80,p.skillCd+6)}
+  return p;
+}
+function arenaBotProfile(kind){
+  const prog=ARENA_PROGRESSION[arenaSimCfg.progression]||ARENA_PROGRESSION.j7;
+  if(kind==="random"){const pool=["equilibre","dps","tank","crit","sustain","skills"];kind=pool[Math.floor(Math.random()*pool.length)];}
+  const p=arenaSyntheticBase(prog,kind),natural=arenaSimCfg.ratio==="natural";
+  if(natural){const organic=1+(Math.random()*2-1)*prog.spread;p.maxHP=Math.max(1,Math.floor(p.maxHP*organic));p.damage=Math.max(1,Math.floor(p.damage*organic));}
+  else {const target=Math.max(1,(S.power||arenaProfilePower(arenaPlayerProfile()))*(Number(arenaSimCfg.ratio)/100)*(1+(Math.random()*2-1)*prog.spread));
+    const now=arenaProfilePower(p),k=Math.max(.2,Math.min(5,target/Math.max(1,now)));p.maxHP=Math.max(1,Math.floor(p.maxHP*k));p.damage=Math.max(1,Math.floor(p.damage*k));}
+  p.power=arenaProfilePower(p);p.kind=kind;p.name="Bot "+ARENA_BUILDS[kind].label+" · "+prog.label;return p;
+}
+function arenaExpectedBasicDps(att, def){
+  const critChance=Math.min(100,Math.max(0,att.critChance||0))/100;
+  const critExtra=Math.max(0,(att.critMult||1)-1)*(1-Math.min(80,Math.max(0,def.critRed||0))/100);
+  const critMul=1+critChance*critExtra;
+  const doubleMul=1+Math.min(100,Math.max(0,att.doubleAtk||0))/100;
+  const blockMul=1-Math.min(75,Math.max(0,def.blockChance||0))/100;
+  const mitigation=1-Math.min(85,Math.max(0,def.dmgRed||0))/100;
+  const tox=att.petElem==="toxique"?1.10:1;
+  return Math.max(0,(att.damage||1)*(att.hit||1)*Math.max(.1,att.attackSpeed||1)*
+    (1+Math.max(0,att.styleBonus||0)/100)*critMul*doubleMul*blockMul*mitigation*tox);
+}
+function arenaSkillPressure(p){
+  /* V3.2: les effets continus restent moyennés pour garder 1 000 simulations
+     instantanées, mais les soins immédiats redeviennent de vrais événements.
+     Poison reste dépendant des PV de la cible et Vulnérabilité est appliquée à
+     toutes les sources offensives comme l’annonce Malédiction. */
+  let skillDps=0,heal=0,red=0,haste=0,slow=0,force=0,vuln=0,poison=0;
+  const instantHeals=[];
+  (p.skills||[]).forEach(entry=>{const d=entry.def||entry,lv=entry.level||1,stars=entry.stars||0;
+    const cd=Math.max(1,d.cd*(1-Math.min(80,p.skillCd)/100));
+    if(d.mult){const mult=skillMult(d)*(1+(lv-1)*SKILL_LEVEL_GROWTH)*ascendPowerMul(stars,"skill");skillDps+=p.damage*mult*(1+p.skillDmg/100)/cd;}
+    if(d.heal)instantHeals.push({amount:p.maxHP*(skillHeal(d,lv)/100),cd});
+    if(d.eff){const e=skillEff(d,lv),uptime=Math.min(1,e.dur/cd);
+      if(e.stat==="dmg")force+=e.value*uptime;
+      if(e.stat==="dmgRed")red+=e.value*uptime;
+      if(e.stat==="haste")haste+=e.value*uptime;
+      if(e.stat==="regen")heal+=p.maxHP*(e.value/100)*uptime;
+      if(e.stat==="poison")poison+=e.value*uptime;
+      if(e.stat==="vuln")vuln+=e.value*uptime;
+      if(e.stat==="slow")slow+=e.value*uptime;
+    }}
+  );
+  return {skillDps,heal,instantHeals,red:Math.min(85,red),haste:Math.min(80,haste),slow:Math.min(80,slow),
+    force:Math.max(0,force),vuln:Math.max(0,vuln),poison:Math.max(0,poison)};
+}
+function arenaStrike(att,def){
+  if(Math.random()*100<def.blockChance)return{dmg:0,heal:0};
+  let dmg=att.damage*(att.hit||1)*(1+Math.max(0,att.styleBonus)/100);
+  if(Math.random()*100<att.critChance)dmg*=1+Math.max(0,att.critMult-1)*(1-Math.min(80,def.critRed)/100);
+  dmg*=1-Math.min(85,def.dmgRed)/100;dmg*=.90+Math.random()*.20;if(Math.random()*100<att.doubleAtk)dmg*=2;dmg=Math.max(1,dmg);
+  return{dmg,heal:dmg*Math.max(0,att.lifesteal)/100};
+}
+function arenaDuel(player,bot){
+  let ah=player.maxHP,bh=bot.maxHP,t=0,an=Math.random()*.25,bn=Math.random()*.25;const aps=arenaSkillPressure(player),bps=arenaSkillPressure(bot);
+  const aHeals=(aps.instantHeals||[]).map(h=>({amount:h.amount,cd:h.cd,next:0}));
+  const bHeals=(bps.instantHeals||[]).map(h=>({amount:h.amount,cd:h.cd,next:0}));
+  const nextHeal=(arr)=>arr.length?Math.min(...arr.map(h=>h.next)):Infinity;
+  const fireHeals=(arr,isPlayer)=>{arr.forEach(h=>{if(h.next<=t+1e-9){if(isPlayer)ah=Math.min(player.maxHP,ah+h.amount);else bh=Math.min(bot.maxHP,bh+h.amount);h.next+=h.cd;}});};
+  /* Glace suit la règle du moteur principal : +12% sur l'intervalle d'attaque
+     adverse. Lenteur et Hâte gardent leur uptime moyen pour cette simulation rapide. */
+  const aSlow=(bot.petElem==="glace"?12:0)+bps.slow,bSlow=(player.petElem==="glace"?12:0)+aps.slow;
+  const aInt=(1/Math.max(.1,player.attackSpeed*(1+aps.haste/100)))*(1+aSlow/100),bInt=(1/Math.max(.1,bot.attackSpeed*(1+bps.haste/100)))*(1+bSlow/100);
+  const aDef={...bot,dmgRed:Math.min(85,bot.dmgRed+bps.red)},bDef={...player,dmgRed:Math.min(85,player.dmgRed+aps.red)};
+  while(ah>0&&bh>0&&t<60){const nt=Math.min(an,bn,nextHeal(aHeals),nextHeal(bHeals),60),dt=Math.max(0,nt-t);t=nt;if(dt>0){
+    /* Base regen + Régénération restent continus et plafonnés aux PV max. */
+    ah=Math.min(player.maxHP,ah+player.maxHP*(Math.max(0,player.regen)/100)*dt+aps.heal*dt);
+    bh=Math.min(bot.maxHP,bh+bot.maxHP*(Math.max(0,bot.regen)/100)*dt+bps.heal*dt);
+
+    const aMit=1-Math.min(85,aDef.dmgRed)/100,bMit=1-Math.min(85,bDef.dmgRed)/100;
+    const aVuln=1+aps.vuln/100,bVuln=1+bps.vuln/100;
+    const aTox=player.petElem==="toxique"?1.10:1,bTox=bot.petElem==="toxique"?1.10:1;
+    /* V3.3 : Malédiction et Toxique amplifient toutes les sources offensives,
+       y compris compétences, brûlure et poison. */
+    const aSkill=aps.skillDps*aMit*aVuln*aTox,bSkill=bps.skillDps*bMit*bVuln*bTox;
+    const aFire=(player.petElem==="feu"?player.damage*.06*aMit:0)*aVuln*aTox;
+    const bFire=(bot.petElem==="feu"?bot.damage*.06*bMit:0)*bVuln*bTox;
+    const aPoison=bot.maxHP*(aps.poison/100)/8*aVuln*aTox,bPoison=player.maxHP*(bps.poison/100)/8*bVuln*bTox;
+    bh-=(aSkill+aFire+aPoison)*dt;ah-=(bSkill+bFire+bPoison)*dt;
+  }
+  if(ah<=0||bh<=0)break;
+  /* Soin/Bénédiction : cast immédiat, même s'il est gaspillé à PV pleins, puis
+     nouvelle disponibilité après leur vrai cooldown. */
+  if(nextHeal(aHeals)<=t+1e-9)fireHeals(aHeals,true);
+  if(nextHeal(bHeals)<=t+1e-9)fireHeals(bHeals,false);
+  if(an<=bn&&an<=t+1e-9&&an<=60){const r=arenaStrike({...player,damage:player.damage*(1+aps.force/100)},aDef);bh-=r.dmg*(1+aps.vuln/100)*(player.petElem==="toxique"?1.10:1);ah=Math.min(player.maxHP,ah+r.heal);an+=aInt*(.88+Math.random()*.24);}if(bh<=0)break;
+  if(bn<=an&&bn<=t+1e-9&&bn<=60){const r=arenaStrike({...bot,damage:bot.damage*(1+bps.force/100)},bDef);ah-=r.dmg*(1+bps.vuln/100)*(bot.petElem==="toxique"?1.10:1);bh=Math.min(bot.maxHP,bh+r.heal);bn+=bInt*(.88+Math.random()*.24);}
+  }
+  const won=ah>0&&bh<=0,lost=bh>0&&ah<=0;return{won,lost,draw:!won&&!lost,time:t,hpPct:Math.max(0,ah)/player.maxHP*100};
+}
+function arenaBatch(player, progression, ratio, build, n){
+  const prev={progression:arenaSimCfg.progression,ratio:arenaSimCfg.ratio,build:arenaSimCfg.build};
+  arenaSimCfg.progression=progression;arenaSimCfg.ratio=ratio;arenaSimCfg.build=build;
+  let wins=0,losses=0,draws=0,totalT=0,totalHp=0,totalPower=0;
+  for(let i=0;i<n;i++){const bot=arenaBotProfile(build);totalPower+=bot.power;const r=arenaDuel(player,bot);totalT+=r.time;totalHp+=r.hpPct;if(r.won)wins++;else if(r.lost)losses++;else draws++;}
+  arenaSimCfg.progression=prev.progression;arenaSimCfg.ratio=prev.ratio;arenaSimCfg.build=prev.build;
+  return {n,wins,losses,draws,winRate:wins/n*100,avgTime:totalT/n,avgHp:totalHp/n,avgBotPower:Math.round(totalPower/n)};
+}
+function runArenaSimulation(){refreshDerived();const player=arenaPlayerProfile(),n=Math.max(1,Math.min(1000,parseInt(arenaSimCfg.count,10)||100));let wins=0,losses=0,draws=0,totalT=0,totalHp=0,totalPower=0;const kinds={};for(let i=0;i<n;i++){const bot=arenaBotProfile(arenaSimCfg.build);kinds[bot.kind]=(kinds[bot.kind]||0)+1;totalPower+=bot.power;const r=arenaDuel(player,bot);totalT+=r.time;totalHp+=r.hpPct;if(r.won)wins++;else if(r.lost)losses++;else draws++;}arenaSimResult={n,wins,losses,draws,winRate:wins/n*100,avgTime:totalT/n,avgHp:totalHp/n,avgBotPower:Math.round(totalPower/n),kinds,playerPower:arenaProfilePower(player)};render();}
+function arenaMatrixAcc(){return{n:0,wins:0,losses:0,draws:0,totalT:0,totalHp:0,totalPower:0};}
+function arenaMatrixAdd(acc,r,oppPower){acc.n++;acc.totalT+=r.time;acc.totalHp+=r.hpPct;acc.totalPower+=oppPower||0;if(r.won)acc.wins++;else if(r.lost)acc.losses++;else acc.draws++;}
+function arenaMatrixFinish(acc){const n=Math.max(1,acc.n);return{n:acc.n,wins:acc.wins,losses:acc.losses,draws:acc.draws,winRate:acc.wins/n*100,avgTime:acc.totalT/n,avgHp:acc.totalHp/n,avgBotPower:Math.round(acc.totalPower/n)};}
+function arenaNormalizeProfile(p,target){
+  const now=Math.max(1,arenaProfilePower(p)),k=Math.max(.2,Math.min(5,target/now));
+  p.maxHP=Math.max(1,Math.floor(p.maxHP*k));p.damage=Math.max(1,Math.floor(p.damage*k));p.power=arenaProfilePower(p);return p;
+}
+function arenaSyntheticMatchProfile(pg,kind,target){
+  const prog=ARENA_PROGRESSION[pg]||ARENA_PROGRESSION.j7,p=arenaSyntheticBase(prog,kind);
+  arenaNormalizeProfile(p,target);p.kind=kind;p.name=(ARENA_BUILDS[kind]?.label||kind)+' · '+prog.label;return p;
+}
+function arenaBotFor(pg,ratio,kind){
+  const prev={progression:arenaSimCfg.progression,ratio:arenaSimCfg.ratio,build:arenaSimCfg.build};
+  arenaSimCfg.progression=pg;arenaSimCfg.ratio=ratio;arenaSimCfg.build=kind;
+  const bot=arenaBotProfile(kind);
+  arenaSimCfg.progression=prev.progression;arenaSimCfg.ratio=prev.ratio;arenaSimCfg.build=prev.build;
+  return bot;
+}
+function runArenaMatrix(){
+  if(arenaMatrixRun)return;
+  refreshDerived();
+  const player=arenaPlayerProfile(),playerPower=arenaProfilePower(player),builds=["equilibre","dps","tank","crit","sustain","skills"],pg=arenaSimCfg.progression;
+  const equal={},natural={},versus={};builds.forEach(k=>equal[k]=arenaMatrixAcc());
+  Object.keys(ARENA_PROGRESSION).forEach(k=>{natural[k]={};builds.forEach(b=>natural[k][b]=arenaMatrixAcc());});
+  builds.forEach(a=>{versus[a]={};builds.forEach(d=>versus[a][d]=arenaMatrixAcc());});
+  const tasks=[];
+  builds.forEach(k=>tasks.push({type:'equal',build:k,count:500,acc:equal[k]}));
+  Object.keys(ARENA_PROGRESSION).forEach(pgx=>builds.forEach(k=>tasks.push({type:'natural',pg:pgx,build:k,count:375,acc:natural[pgx][k]})));
+  builds.forEach(a=>builds.forEach(d=>tasks.push({type:'versus',att:a,def:d,count:500,acc:versus[a][d]})));
+  arenaMatrixRun={player,playerPower,builds,progression:pg,equal,natural,versus,tasks,taskIndex:0,taskDone:0,done:0,total:30000,cancelled:false,lastPaint:0};
+  arenaMatrixProgress={done:0,total:30000,pct:0,label:'Préparation de la matrice…'};arenaMatrixResult=null;render();
+  setTimeout(arenaMatrixStep,0);
+}
+function arenaMatrixStep(){
+  const run=arenaMatrixRun;if(!run)return;
+  if(run.cancelled){arenaMatrixRun=null;arenaMatrixProgress=null;render();return;}
+  const started=performance.now();let processed=0;
+  while(run.taskIndex<run.tasks.length && processed<150 && performance.now()-started<14){
+    const t=run.tasks[run.taskIndex];let r,oppPower=0;
+    if(t.type==='equal'){
+      const bot=arenaBotFor(run.progression,100,t.build);r=arenaDuel(run.player,bot);oppPower=bot.power;
+    }else if(t.type==='natural'){
+      const bot=arenaBotFor(t.pg,'natural',t.build);r=arenaDuel(run.player,bot);oppPower=bot.power;
+    }else{
+      const att=arenaSyntheticMatchProfile(run.progression,t.att,run.playerPower),def=arenaSyntheticMatchProfile(run.progression,t.def,run.playerPower);
+      r=arenaDuel(att,def);oppPower=def.power;
+    }
+    arenaMatrixAdd(t.acc,r,oppPower);t.count--;run.done++;run.taskDone++;processed++;
+    if(t.count<=0){run.taskIndex++;run.taskDone=0;}
+  }
+  const pct=Math.min(100,run.done/run.total*100),task=run.tasks[run.taskIndex];
+  let label='Finalisation…';if(task){if(task.type==='versus')label=(ARENA_BUILDS[task.att]?.label||task.att)+' vs '+(ARENA_BUILDS[task.def]?.label||task.def);else if(task.type==='natural')label=(ARENA_PROGRESSION[task.pg]?.label||task.pg)+' · '+(ARENA_BUILDS[task.build]?.label||task.build);else label='100 % · '+(ARENA_BUILDS[task.build]?.label||task.build);}
+  arenaMatrixProgress={done:run.done,total:run.total,pct,label};
+  if(run.taskIndex>=run.tasks.length){
+    const finEqual={},finNatural={},finVersus={};run.builds.forEach(k=>finEqual[k]=arenaMatrixFinish(run.equal[k]));
+    Object.keys(ARENA_PROGRESSION).forEach(pgx=>{finNatural[pgx]={};run.builds.forEach(k=>finNatural[pgx][k]=arenaMatrixFinish(run.natural[pgx][k]));});
+    run.builds.forEach(a=>{finVersus[a]={};run.builds.forEach(d=>finVersus[a][d]=arenaMatrixFinish(run.versus[a][d]));});
+    arenaMatrixResult={equalN:500,naturalN:375,versusN:500,total:run.total,equal:finEqual,natural:finNatural,versus:finVersus,playerPower:run.playerPower,progression:run.progression};
+    arenaMatrixRun=null;arenaMatrixProgress=null;render();return;
+  }
+  if(run.done-run.lastPaint>=750){run.lastPaint=run.done;render();}
+  setTimeout(arenaMatrixStep,0);
+}
+function cancelArenaMatrix(){if(arenaMatrixRun){arenaMatrixRun.cancelled=true;arenaMatrixProgress={...arenaMatrixProgress,label:'Annulation…'};}}
+function scrArenaSim(){
+  const prog=ARENA_PROGRESSION[arenaSimCfg.progression]||ARENA_PROGRESSION.j7;
+  const builds=["equilibre","dps","tank","crit","sustain","skills"];
+  const seg=(items,act,current)=>'<div class="seg" style="flex-wrap:wrap">'+items.map(x=>'<span class="'+(String(current)===String(x[0])?'on':'')+'" data-act="'+act+'" data-arg="'+x[0]+'">'+x[1]+'</span>').join('')+'</div>';
+  let result='';if(arenaSimResult){const r=arenaSimResult,wr=r.winRate,col=wr>=55?'#57E07A':wr>=45?'#F5C542':'#FF6B6B',mix=Object.entries(r.kinds).map(([k,n])=>(ARENA_BUILDS[k]?.label||k)+' '+n).join(' · ');result='<div class="card mt8" style="border-color:'+col+'66"><div class="between"><div><div class="dim tiny">RÉSULTAT · '+r.n+' COMBATS</div><div class="big b" style="color:'+col+'">'+wr.toFixed(1)+'% victoires</div></div><div class="right"><div class="b">'+r.wins+' V</div><div class="dim tiny">'+r.losses+' D · '+r.draws+' N</div></div></div><div class="duo mt8"><div class="kv"><span>Combat moyen</span><b>'+r.avgTime.toFixed(1)+' s</b></div><div class="kv"><span>PV restants</span><b>'+r.avgHp.toFixed(1)+'%</b></div><div class="kv"><span>Puissance héros</span><b>'+fmt(r.playerPower)+'</b></div><div class="kv"><span>Puissance bots</span><b>'+fmt(r.avgBotPower)+'</b></div></div><div class="dim tiny mt8">Population : '+esc(mix)+'</div></div>';}
+  let progress='';if(arenaMatrixProgress){const q=arenaMatrixProgress;progress='<div class="card mt8" style="border-color:#3F8FA077"><div class="between"><div><div class="b">Analyse en cours</div><div class="dim tiny mt2">'+esc(q.label)+'</div></div><b>'+q.pct.toFixed(0)+'%</b></div><div style="height:8px;background:#ffffff12;border-radius:999px;overflow:hidden;margin-top:10px"><div style="height:100%;width:'+q.pct.toFixed(2)+'%;background:#8FEFF4"></div></div><div class="between mt6"><span class="dim tiny">'+fmt(q.done)+' / '+fmt(q.total)+' combats</span><span class="dim tiny">Calcul par petits lots pour éviter de bloquer le mobile</span></div><button class="btn mt8" style="width:100%" data-act="arenaMatrixCancel">Annuler l’analyse</button></div>';}
+  let matrix='';if(arenaMatrixResult){const m=arenaMatrixResult;const ccol=v=>v>=55?'#57E07A':v>=45?'#F5C542':'#FF6B6B';const cell=r=>'<td style="padding:6px;text-align:center;color:'+ccol(r.winRate)+'"><b>'+r.winRate.toFixed(0)+'%</b></td>';
+    const equalRows=builds.map(k=>'<tr><td style="padding:6px"><b>'+ARENA_BUILDS[k].label+'</b></td>'+cell(m.equal[k])+'</tr>').join('');
+    const naturalRows=Object.keys(ARENA_PROGRESSION).map(pgx=>'<tr><td style="padding:6px;white-space:nowrap"><b>'+ARENA_PROGRESSION[pgx].label+'</b></td>'+builds.map(k=>cell(m.natural[pgx][k])).join('')+'</tr>').join('');
+    const versusRows=builds.map(a=>'<tr><td style="padding:6px;white-space:nowrap"><b>'+ARENA_BUILDS[a].label+'</b></td>'+builds.map(d=>cell(m.versus[a][d])).join('')+'</tr>').join('');
+    matrix='<div class="card mt8"><div class="b">Analyse complète · '+fmt(m.total)+' combats</div><div class="dim tiny mt4">Calcul asynchrone par lots · aucun impact sur ta sauvegarde.</div><div class="sect mt12">Ton héros · 100 % Puissance</div><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Build bot</th><th style="padding:6px">Tes victoires</th></tr>'+equalRows+'</table></div><div class="sect mt12">Progression naturelle détaillée</div><div style="overflow:auto"><table style="min-width:650px;width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Profil</th>'+builds.map(k=>'<th style="padding:6px">'+ARENA_BUILDS[k].label+'</th>').join('')+'</tr>'+naturalRows+'</table></div><div class="sect mt12">Matrice 6×6 · archétypes</div><div class="dim tiny mt2">Ligne = attaquant · colonne = défenseur · tous normalisés au même benchmark de Puissance ('+fmt(m.playerPower)+').</div><div style="overflow:auto" class="mt6"><table style="min-width:650px;width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Att. ↓ / Déf. →</th>'+builds.map(k=>'<th style="padding:6px">'+ARENA_BUILDS[k].label+'</th>').join('')+'</tr>'+versusRows+'</table></div><div class="dim tiny mt8">Lecture : ~50 % indique un matchup proche. Une ligne très souvent au-dessus de 55 % signale un archétype potentiellement dominant ; une colonne très souvent sous 45 % signale un défenseur particulièrement difficile à battre.</div></div>';}
+  const natural=arenaSimCfg.ratio==="natural",busy=!!arenaMatrixRun;
+  return topbar("Arène",'<span class="pill" style="color:#8FEFF4;border-color:#3F8FA0">SIMULATION V3.5</span>')+'<div class="pad"><div class="card" style="border-color:#3F8FA055"><div class="b">Laboratoire PvP</div><div class="dim small mt4" style="line-height:1.45">Les bots utilisent une progression synthétique indépendante : Forge, raretés, affixes, Rebirth, Arbre, familiers et niveaux de Compétences. J1/J7/J30/J90 restent des hypothèses tant que nous n’avons pas de télémétrie réelle.</div></div><div class="sect mt12">Progression simulée</div>'+seg(Object.entries(ARENA_PROGRESSION).map(([k,v])=>[k,v.label]),'arenaProg',arenaSimCfg.progression)+'<div class="dim tiny mt4">'+prog.label+' · Forge '+prog.forge+' · familier '+RARITY[prog.petRarity].label+' niv.'+prog.petLevel+' · compétences niv.~'+prog.skillLevel+' · '+prog.crafts+' tirages/slot.</div><div class="sect mt12">Matchmaking de test</div>'+seg([['natural','Naturel'],[50,'50%'],[75,'75%'],[100,'100%'],[125,'125%'],[150,'150%'],[200,'200%']],'arenaRatio',arenaSimCfg.ratio)+'<div class="dim tiny mt4">'+(natural?'Naturel : aucune normalisation sur ta Puissance. Le bot conserve la puissance produite par sa progression J1/J7/J30/J90.':'Pourcentage : la population est normalisée vers ta Puissance afin d’isoler l’efficacité des builds à puissance comparable.')+'</div><div class="sect mt12">Type de build</div>'+seg(Object.entries(ARENA_BUILDS).map(([k,v])=>[k,v.label]),'arenaBuild',arenaSimCfg.build)+'<div class="sect mt12">Nombre de combats</div>'+seg([[1,'1'],[100,'100'],[1000,'1 000']],'arenaCount',arenaSimCfg.count)+'<button class="btn green mt12" style="width:100%" data-act="arenaRun" '+(busy?'disabled':'')+'>Simuler '+fmt(arenaSimCfg.count)+' combat'+(arenaSimCfg.count>1?'s':'')+'</button><button class="btn mt8" style="width:100%" data-act="arenaMatrix" '+(busy?'disabled':'')+'>Analyser le méta · 30 000 combats</button>'+progress+result+matrix+'<div class="card mt8"><div class="dim tiny" style="line-height:1.5"><b style="color:var(--text)">V3.5 :</b> la grande analyse s’exécute désormais par petits lots pour préserver la fluidité mobile. Elle inclut une vraie matrice 6×6 entre archétypes, plus le détail J1/J7/J30/J90.</div></div></div>';
+}
+
 function scrHub(title, entries) {
   const cards = entries.map((e) => '<div class="card mt8" data-act="go" data-arg="'+e.go+'" style="cursor:pointer">' +
     '<div class="row gap10"><div class="imini">'+ic(e.icon,18)+'</div><div class="flex1"><div class="b">'+e.label+'</div>' +
@@ -8432,6 +8735,7 @@ function scrDeveloppement(){ return scrHub("Développement", [
   {label:"Arbre personnel",icon:"tree",go:"arbre",desc:"Bonus permanents et recherches."}
 ]); }
 function scrDefis(){ return scrHub("Défis", [
+  {label:"Arène",icon:"swords",go:"arena",desc:"Simule des combats PvP contre une population de bots sans récompense."},
   {label:"Raids",icon:"flame",go:"raid",desc:"Raids spécialisés et ressources ciblées."},
   {label:"Méga-Boss",icon:"skull",go:"mega",desc:"Combats majeurs et récompenses de progression."},
   {label:"Sanctuaire",icon:"flame",go:"sanctuaire",desc:"Fusion de ressources et recettes découvertes."}
@@ -8447,7 +8751,7 @@ function scrProgression(){ return scrHub("Progression", [
 const SCREENS = {
   accueil: scrAccueil, personnage: scrEquipement, equipement: scrEquipement,
   inventaire: scrEquipement, competences: scrCompetences, familiers: scrFamiliers,
-  raid: scrRaid, mega: scrMegaRaid, sanctuaire: scrSanctuaire, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
+  raid: scrRaid, mega: scrMegaRaid, sanctuaire: scrSanctuaire, arena: scrArenaSim, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
   boutique: scrBoutique, evenement: scrEvenement, classement: scrClassement,
   developpement: scrDeveloppement, defis: scrDefis, progression: scrProgression,
   parametres: scrParametres,
@@ -9299,6 +9603,15 @@ const ACT = {
     else toast("Aucune cle disponible");
   },
   buyEggSlot: () => { if (buyEggSlot()) toast("Emplacement ajouté !", true); else toast("Conditions non remplies"); },
+
+  // arène de simulation
+  arenaProg: (a) => { if (ARENA_PROGRESSION[a]) { arenaSimCfg.progression=a; arenaSimResult=null; render(); } },
+  arenaRatio: (a) => { arenaSimCfg.ratio=(a==="natural"?"natural":Math.max(50,Math.min(200,parseInt(a,10)||100))); arenaSimResult=null; render(); },
+  arenaBuild: (a) => { if (ARENA_BUILDS[a]) { arenaSimCfg.build=a; arenaSimResult=null; render(); } },
+  arenaCount: (a) => { arenaSimCfg.count=Math.max(1,Math.min(1000,parseInt(a,10)||100)); arenaSimResult=null; render(); },
+  arenaRun: () => runArenaSimulation(),
+  arenaMatrix: () => runArenaMatrix(),
+  arenaMatrixCancel: () => cancelArenaMatrix(),
 
   // raids
   startRaid: (a, b) => {
