@@ -6313,6 +6313,8 @@ function sanctClearSlot(which){ update((st)=>{ if(which==='a') st.sanctuary.slot
    UI — port of the app/ screens (expo-router) to a plain-DOM router
    ========================================================================= */
 let route = "accueil";
+// Preserve the compact Home "Plus" drawer across the 1s live HUD re-render.
+let homeMoreOpen = false;
 let renderQueued = false;
 let raidResult = null;      // { raidId, won, reward } pending modal
 let megaResult = null;      // first-clear state and Apple reward
@@ -6959,7 +6961,7 @@ function scrAccueil() {
       "</div>" +
     "</div></div>" +
     '<div class="navGrid homeNavPrimary">' + navBtns.map(tile).join("") + "</div>" +
-    '<details class="homeMore mt4"><summary>' + ic("menu", 12) + 'Plus' +
+    '<details class="homeMore mt4" data-home-more="1"' + (homeMoreOpen ? ' open' : '') + '><summary>' + ic("menu", 12) + 'Plus' +
       (sysBtns.some((b) => b.badge && !b.lock) ? '<span class="dot"></span>' : '') +
       '</summary><div class="navGrid homeNavSecondary mt4">' + sysBtns.map(tile).join("") + "</div></details>" +
     '<div style="height:4px"></div>';
@@ -9750,6 +9752,13 @@ const ACT = {
     inp.click();
   },
 };
+
+// Native <details> state would otherwise be lost whenever the Home screen is
+// rebuilt for its live timers/HUD. Keep that UI-only state outside the DOM.
+document.getElementById("app").addEventListener("toggle", (e) => {
+  const d = e.target;
+  if (d && d.matches && d.matches('details[data-home-more="1"]')) homeMoreOpen = d.open;
+}, true);
 
 document.getElementById("app").addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]");
