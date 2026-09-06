@@ -1,4 +1,4 @@
-name: Apply boss normalization v16
+name: Apply dragon flight balance v17
 on:
   push:
     paths:
@@ -10,53 +10,62 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Normalize campaign boss scaling
+      - name: Soften melee penalty during Dragon flight
         run: |
           python <<'PY'
           from pathlib import Path
           p = Path('game-2.js')
           s = p.read_text()
-          if 'function campaignBossStatMul(floor)' not in s:
-              anchor = 'function makeEnemy(mode, opts) {\n'
-              if anchor not in s:
-                  raise SystemExit('makeEnemy anchor missing')
-              target = '\n'.join([
-                  'function campaignBossStatMul(floor) {',
-                  '  // La rareté du Boss reste visuelle et thématique, mais ne provoque plus de',
-                  '  // saut brutal de statistiques. Boss 10 à 100 suivent une échelle régulière.',
-                  '  const bossNo = Math.max(1, Math.min(10, Math.floor((Number(floor) || 10) / RULES.BOSS_EVERY)));',
-                  '  return 1 + 0.06 * (bossNo - 1);',
-                  '}',
-                  ''
-              ])
-              s = s.replace(anchor, target + '\n' + anchor, 1)
-          old = '    hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * tier.mul);\n    dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * tier.mul);'
-          new = '    const statMul = opts.boss ? campaignBossStatMul(opts.floor) : tier.mul;\n    hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * statMul);\n    dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * statMul);'
+          old = '''      // in the air a sword swings at nothing; arrows and spells still reach him
+      if (src !== "weapon" || RANGED_IDS.indexOf(D.weapon) >= 0) return dmg;
+      c.floats.push({ id: rid(), x: e.x, val: 0, crit: false, color: "#B15CF6",
+        born: Date.now(), text: "HORS D'ATTEINTE" });
+      return 0;'''
+          new = '''      // Ranged weapons and skills keep full damage. Melee can still clip the Dragon
+      // during Envol, but at only 30%, so the phase remains a meaningful disadvantage
+      // without turning a melee build completely off for four seconds.
+      if (src !== "weapon" || RANGED_IDS.indexOf(D.weapon) >= 0) return dmg;
+      const glancing = Math.max(1, Math.floor(dmg * 0.30));
+      c.floats.push({ id: rid(), x: e.x, val: glancing, crit: false, color: "#B15CF6",
+        born: Date.now(), text: "ENVOL · 30%" });
+      return glancing;'''
           if new not in s:
               if old not in s:
-                  raise SystemExit('campaign stat multiplier anchor missing')
+                  raise SystemExit('Dragon Envol anchor missing')
               s = s.replace(old, new, 1)
-          if '|| "2026.09.06.16";' not in s:
-              if '|| "2026.09.06.14";' not in s:
-                  raise SystemExit('APP_BUILD fallback anchor missing')
-              s = s.replace('|| "2026.09.06.14";', '|| "2026.09.06.16";', 1)
+          if '|| "2026.09.06.17";' not in s:
+              if '|| "2026.09.06.16";' not in s:
+                  raise SystemExit('APP_BUILD fallback .16 missing')
+              s = s.replace('|| "2026.09.06.16";', '|| "2026.09.06.17";', 1)
           p.write_text(s)
+
           p = Path('index.html')
           s = p.read_text()
-          if '2026.09.06.16' not in s:
-              if '2026.09.06.15' not in s:
-                  raise SystemExit('build .15 anchor missing')
-              s = s.replace('2026.09.06.15', '2026.09.06.16')
+          if '2026.09.06.17' not in s:
+              if '2026.09.06.16' not in s:
+                  raise SystemExit('build .16 anchor missing')
+              s = s.replace('2026.09.06.16', '2026.09.06.17')
           p.write_text(s)
           PY
-      - name: Syntax and balance checks
+      - name: Syntax and regression checks
         run: |
           node --check game-1.js
           node --check game-2.js
           node --check game-3.js
           node --check game-4.js
           node --check game-5.js
-          python -c "vals=[1+0.06*(i-1) for i in range(1,11)]; assert all(vals[i]>vals[i-1] for i in range(1,len(vals))); assert abs(vals[0]-1)<1e-9 and abs(vals[-1]-1.54)<1e-9; print(vals)"
+          python <<'PY'
+          from pathlib import Path
+          s=Path('game-2.js').read_text()
+          assert 'Math.floor(dmg * 0.30)' in s
+          assert 'ENVOL · 30%' in s
+          assert 'return glancing;' in s
+          assert 'function campaignBossStatMul(floor)' in s
+          assert '|| "2026.09.06.17";' in s
+          h=Path('index.html').read_text()
+          assert '2026.09.06.17' in h
+          print('Dragon Envol melee damage = 30%; boss normalization preserved')
+          PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
@@ -66,5 +75,5 @@ jobs:
             exit 0
           fi
           git add game-2.js index.html
-          git commit -m 'Boss Normalisés' -m 'Normalise la difficulté des Boss de campagne pour supprimer les bonds liés à leur rareté. Les Boss 10 à 100 utilisent désormais un multiplicateur statistique régulier de x1,00 à x1,54, tandis que leur rareté, identité et mécaniques restent inchangées. Le traitement spécifique du Boss 40 est conservé. Cela réduit le mur du Boss 50 et empêche le Boss 60 de retomber artificiellement en difficulté. Build 2026.09.06.16.'
+          git commit -m 'Envol Dragon' -m 'Réduit la pénalité de mêlée pendant l’Envol du Dragon des Cendres. Les attaques d’arme de mêlée infligent désormais 30 % de leurs dégâts au lieu de 0 %, tandis que les armes à distance et les compétences restent inchangées. La durée de l’Envol, le Souffle, l’Intimidation et la normalisation des Boss restent identiques. Build 2026.09.06.17.'
           git push
