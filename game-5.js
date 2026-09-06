@@ -1903,6 +1903,27 @@ if (SMOKE) {
   };
 }
 
+// SCROLL_PRESERVE_V24
+// Conserve la position de #screen pendant les rafraichissements live.
+const renderBaseV24=render;
+render=function(){
+  const screen=document.getElementById("screen");
+  const beforeRoute=typeof route!=="undefined"?route:null;
+  const beforeTop=screen?screen.scrollTop:0;
+  const beforeMax=screen?Math.max(0,screen.scrollHeight-screen.clientHeight):0;
+  const wasNearBottom=screen?beforeMax-beforeTop<=24:false;
+  const out=renderBaseV24.apply(this,arguments);
+  const restore=function(){
+    const sc=document.getElementById("screen");
+    if(!sc||beforeRoute!==(typeof route!=="undefined"?route:null))return;
+    const max=Math.max(0,sc.scrollHeight-sc.clientHeight);
+    sc.scrollTop=wasNearBottom?max:Math.min(beforeTop,max);
+  };
+  restore();
+  requestAnimationFrame(restore);
+  return out;
+};
+
 /* ---------------- go ---------------- */
 boot();
 // the hero is in every fight, so his frames are worth having up front
