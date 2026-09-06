@@ -1,5 +1,5 @@
-# trigger-v31-2
-name: Economy refund v31
+# trigger-v32-1
+name: Gold economy v32
 on:
   push:
     paths:
@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply economy refund
-        run: python .github/economy_refund_v31.py
+      - name: Apply gold economy rebalance
+        run: python .github/gold_economy_v32.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -25,24 +25,28 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g4=Path('game-4.js').read_text(); idx=Path('index.html').read_text()
-          assert '250*Math.max(1,level)*Math.max(1,level)' in g4
-          assert '2500*Math.max(1,level)*Math.max(1,level)' not in g4
-          assert 'ECONOMY_REFUND_V31' in g1 and 'sanctuaryMergeRefundV31' in g1
-          for x in ['refund.minerai += 200','refund.eclat += 20; refund.essence += 20','refund.poussiere += 150; refund.minerai += 250','refund.eclat += 50; refund.essence += 50','refund.poussiere += 500; refund.essence += 100']:
-              assert x in g1
-          assert 'autonomyGoldRebaseV31' in g1
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          assert 'Total exact des 50 niveaux : 35 000 PR' in g1
+          assert 'costs: [25,40,50,65,80,90,105,130,145,155' in g1
+          assert '1815]' in g1
+          assert g1.count('effect: "afkGain", per: 1.25') == 4
+          assert 'Prospection d’Or I' in g1 and 'Prospection d’Or IV' in g1
+          assert 'GOLD_ECONOMY_REBASE_V32' in g1
+          assert 'rebirthGoldCostRebaseV32' in g1 and 'refundPR' in g1
+          assert 'autonomyGoldRebaseV32' in g1
           assert 'harvestRates(merged).gold * secs / 3600' in g1
           assert 'gold: raidReward("or", s.raids.or.level) * 0.25' in g1
+          assert '250*Math.max(1,level)*Math.max(1,level)' in g4
           assert 'SANCT_MERGE_ORDER' in g4 and 'SANCT_BOARD_SIZE = 16' in g4
-          assert '2026.09.06.31' in g2 and '2026.09.06.31' in idx
-          print('v31 economy checks passed')
+          assert 'SCROLL_PRESERVE_V24' in g5 and 'DECISION_HIERARCHY_V29' in g5
+          assert '2026.09.06.32' in g2 and '2026.09.06.32' in idx
+          print('v32 gold economy checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
-          git add game-1.js game-2.js game-4.js index.html
-          git commit -m 'Économie Merge Rééquilibrée' -m 'Réduit de 90 % le prix d’achat des couleurs du Sanctuaire sans changer le système Or -> couleurs -> merge manuel. Rembourse une fois les ressources historiques dont la dépense est prouvée par les recettes découvertes de l’ancien Sanctuaire. Revalorise aussi la réserve d’Or d’Autonomie encore non réclamée au taux actuel de 25 % du Raid Or par heure. Aucun effacement de sauvegarde. Build 2026.09.06.31.'
+          git add game-1.js game-2.js index.html
+          git commit -m 'Or Rebirth Rééquilibré' -m 'Réduit le coût total de l’amélioration Or du Rebirth de 135 000 à 35 000 PR tout en conservant 50 niveaux et +4 % par niveau. Rembourse automatiquement la différence de PR déjà dépensée selon le niveau acheté. Clarifie la branche Autonomie dédiée à l’Or en Prospection d’Or et porte son bonus maximal à +25 %, sans modifier l’efficacité générale qui continue d’augmenter toutes les ressources. Recalcule la réserve d’Or autonome encore non réclamée avec les nouveaux bonus. Le taux de base reste 25 % du Raid Or par heure et le Sanctuaire conserve son prix réduit. Aucun effacement de sauvegarde. Build 2026.09.06.32.'
           git push
