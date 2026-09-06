@@ -1,5 +1,5 @@
-# trigger-v23-2
-name: Clean decision hierarchy v23
+# trigger-v24-1
+name: Fix combat scroll v24
 on:
   push:
     paths:
@@ -11,77 +11,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Consolidate decision hierarchy
+      - name: Preserve scroll during live rerenders
         run: |
           python <<'PY'
           from pathlib import Path
-
           ui=Path('game-5.js'); s=ui.read_text()
-          v21=s.find('// HICK_ACTION_HIERARCHY_V21')
-          v22=s.find('// DECISION_HIERARCHY_V22')
-          if v21 < 0 or v22 < 0 or v22 <= v21:
-              raise SystemExit('V21/V22 hierarchy anchors missing or out of order')
-          block='\n'.join([
-              '',
-              '// DECISION_HIERARCHY_V23',
-              '// Une seule hiérarchie contextuelle : aucun empilement V21/V22, aucune fonction cachée.',
-              'const DECISION_SECONDARY_V23=/aperçu|apercu|détail|detail|info|fermer|annuler|retour/i;',
-              'function decisionTextV23(el){return ((el&&(el.getAttribute("aria-label")||el.getAttribute("title")||el.textContent))||"").replace(/\\s+/g," ").trim();}',
-              'function decisionActV23(el){return ((el&&el.getAttribute("data-act"))||"").toLowerCase();}',
-              'function decisionVisibleV23(el){if(!el||el.disabled||el.getAttribute("aria-disabled")==="true")return false;const r=el.getBoundingClientRect(),cs=getComputedStyle(el);return r.width>0&&r.height>0&&cs.display!=="none"&&cs.visibility!=="hidden";}',
-              'function decisionGroupV23(el){return el.closest(".modal,.popup,.panel,.card,.screen,.page,.view,section,main")||el.parentElement||document.body;}',
-              'function decisionScoreV23(el){',
-              '  const text=decisionTextV23(el),act=decisionActV23(el),st=(typeof S!=="undefined"&&S)||{};',
-              '  let score=0;',
-              '  if(el.getAttribute("data-primary")==="true")score+=1200;',
-              '  if(/confirmer|valider|réclamer|reclamer/.test(text))score+=900;',
-              '  if(typeof combat!=="undefined"&&combat&&combat.status==="lost"&&/réessayer|reessayer|rejouer/.test(text))score+=1000;',
-              '  if(st.pendingBossFloor&&/boss|réessayer|reessayer/.test(text+" "+act))score+=980;',
-              '  if(st.forge&&st.forge.upgradeEnd&&st.forge.upgradeEnd<=Date.now()&&/forge|forger|améliorer|ameliorer|récupérer|recuperer/.test(text+" "+act))score+=820;',
-              '  if(Array.isArray(st.eggs)&&st.eggs.some(function(e){return e&&((e.end&&e.end<=Date.now())||(e.hatchEnd&&e.hatchEnd<=Date.now())||(e.ready===true));})&&/œuf|oeuf|éclore|eclore|ouvrir/.test(text+" "+act))score+=820;',
-              '  if(/raid/.test(act)&&/lancer|combat|entrer|raid/.test(text+" "+act))score+=760;',
-              '  if(/recherche|research/.test(act)&&/rechercher|lancer|améliorer|ameliorer/.test(text+" "+act))score+=720;',
-              '  if(/continuer|combattre|combat|prochain étage|prochain etage/.test(text))score+=650;',
-              '  if(/invoquer|forger|améliorer|ameliorer|équiper|equiper/.test(text))score+=520;',
-              '  if(DECISION_SECONDARY_V23.test(text))score-=700;',
-              '  return score;',
-              '}',
-              'function refreshDecisionHierarchyV23(){',
-              '  document.querySelectorAll("[data-primary-action=true],[data-secondary-action=true]").forEach(function(el){el.removeAttribute("data-primary-action");el.removeAttribute("data-secondary-action");});',
-              '  const groups=new Map();',
-              '  document.querySelectorAll("[data-act],button").forEach(function(el){if(!decisionVisibleV23(el))return;const g=decisionGroupV23(el);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(el);});',
-              '  groups.forEach(function(actions){if(actions.length<2)return;let best=null,bestScore=-Infinity;actions.forEach(function(el){const score=decisionScoreV23(el);if(score>bestScore){best=el;bestScore=score;}});if(best&&bestScore>0)best.setAttribute("data-primary-action","true");actions.forEach(function(el){if(el!==best&&(DECISION_SECONDARY_V23.test(decisionTextV23(el))||(actions.length>=5&&decisionScoreV23(el)<=0)))el.setAttribute("data-secondary-action","true");});});',
-              '}',
-              'let decisionRefreshQueuedV23=false;',
-              'function queueDecisionHierarchyV23(){if(decisionRefreshQueuedV23)return;decisionRefreshQueuedV23=true;requestAnimationFrame(function(){decisionRefreshQueuedV23=false;refreshDecisionHierarchyV23();});}',
-              'function startDecisionHierarchyV23(){refreshDecisionHierarchyV23();new MutationObserver(queueDecisionHierarchyV23).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["disabled","aria-disabled","class","style"]});}',
-              'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startDecisionHierarchyV23,{once:true});else startDecisionHierarchyV23();',
-              ''
-          ])
-          ui.write_text(s[:v21].rstrip()+block)
+          marker='// SCROLL_PRESERVE_V24'
+          if marker not in s:
+              anchor='/* ---------------- go ---------------- */'
+              if anchor not in s: raise SystemExit('go anchor missing')
+              block=r'''
+// SCROLL_PRESERVE_V24
+// Les rafraîchissements de combat peuvent reconstruire #screen. On mémorise
+// sa position tant que la route ne change pas, afin de ne jamais remonter
+// automatiquement le joueur en haut de la page pendant une action live.
+const renderBaseV24=render;
+render=function(){
+  const screen=document.getElementById("screen");
+  const beforeRoute=typeof route!=="undefined"?route:null;
+  const beforeTop=screen?screen.scrollTop:0;
+  const beforeMax=screen?Math.max(0,screen.scrollHeight-screen.clientHeight):0;
+  const wasNearBottom=screen?beforeMax-beforeTop<=24:false;
+  const out=renderBaseV24.apply(this,arguments);
+  const restore=function(){
+    const sc=document.getElementById("screen");
+    if(!sc||beforeRoute!==(typeof route!=="undefined"?route:null))return;
+    const max=Math.max(0,sc.scrollHeight-sc.clientHeight);
+    sc.scrollTop=wasNearBottom?max:Math.min(beforeTop,max);
+  };
+  restore();
+  requestAnimationFrame(restore);
+  return out;
+};
 
-          css=Path('style.css'); c=css.read_text()
-          mark=c.find('/* HICK_ACTION_HIERARCHY_V21')
-          if mark < 0: raise SystemExit('CSS V21 hierarchy anchor missing')
-          canonical='\n'.join([
-              '',
-              '/* DECISION_HIERARCHY_V23 */',
-              ':root { --primary-action-ring: rgba(127,212,255,.34); }',
-              '[data-primary-action="true"] { position:relative; z-index:1; font-weight:800; transform:translateZ(0); box-shadow:0 0 0 2px var(--primary-action-ring),0 8px 22px rgba(0,0,0,.22); }',
-              '[data-secondary-action="true"] { opacity:.82; }',
-              '[data-secondary-action="true"]:hover,[data-secondary-action="true"]:focus-visible { opacity:1; }',
-              '@media (prefers-reduced-motion:no-preference) { [data-primary-action="true"] { transition:filter .15s ease,box-shadow .15s ease; } }',
-              ''
-          ])
-          css.write_text(c[:mark].rstrip()+canonical)
+'''
+              s=s.replace(anchor,block+anchor,1)
+          ui.write_text(s)
 
           eng=Path('game-2.js'); e=eng.read_text()
-          if '|| "2026.09.06.22";' not in e: raise SystemExit('APP_BUILD .22 anchor missing')
-          eng.write_text(e.replace('|| "2026.09.06.22";', '|| "2026.09.06.23";', 1))
+          if '|| "2026.09.06.23";' not in e: raise SystemExit('APP_BUILD .23 anchor missing')
+          eng.write_text(e.replace('|| "2026.09.06.23";', '|| "2026.09.06.24";', 1))
 
           idx=Path('index.html'); h=idx.read_text()
-          if h.count('2026.09.06.22') != 7: raise SystemExit('Unexpected index build reference count')
-          idx.write_text(h.replace('2026.09.06.22','2026.09.06.23'))
+          if h.count('2026.09.06.23') != 7: raise SystemExit('Unexpected index build reference count')
+          idx.write_text(h.replace('2026.09.06.23','2026.09.06.24'))
           PY
       - name: Syntax and regression checks
         run: |
@@ -92,24 +65,21 @@ jobs:
           node --check game-5.js
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); ui=Path('game-5.js').read_text(); css=Path('style.css').read_text(); idx=Path('index.html').read_text()
-          assert ui.count('DECISION_HIERARCHY_V23') == 1
-          assert 'HICK_ACTION_HIERARCHY_V21' not in ui and 'DECISION_HIERARCHY_V22' not in ui
-          assert 'decisionScoreV23' in ui and 'pendingBossFloor' in ui and 'upgradeEnd' in ui
-          assert css.count('DECISION_HIERARCHY_V23') == 1 and 'HICK_ACTION_HIERARCHY_V21' not in css
-          assert '|| "2026.09.06.23";' in g2
-          assert idx.count('2026.09.06.23') == 7
-          assert 'ACCESSIBILITY_SIMPLICITY_V20' in css and 'ACCESSIBILITY_KEYBOARD_V20' in ui
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); ui=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          assert ui.count('SCROLL_PRESERVE_V24') == 1
+          assert 'const renderBaseV24=render;' in ui
+          assert 'wasNearBottom' in ui and 'requestAnimationFrame(restore)' in ui
+          assert 'DECISION_HIERARCHY_V23' in ui
+          assert '|| "2026.09.06.24";' in g2
+          assert idx.count('2026.09.06.24') == 7
           assert 'function raidIntroDifficultyMul' in g1
-          assert 'if (level <= 1) return 0.65;' in g1 and 'if (level === 2) return 0.80;' in g1
-          assert 'const firstBossMul = opts.boss && opts.floor === 10 && !opts.noFastback ? 0.80 : 1;' in g2
-          print('v23 hierarchy cleanup checks passed')
+          print('v24 scroll preservation checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
-          git add game-5.js style.css game-2.js index.html
-          git commit -m 'Hiérarchie Nettoyée' -m 'Fusionne les anciennes couches V21/V22 en une seule hiérarchie décisionnelle V23, supprime le CSS dupliqué et conserve les priorités contextuelles existantes. Aucun changement d’économie, de progression, de sauvegarde ou d’équilibrage. Build 2026.09.06.23.'
+          git add game-5.js game-2.js index.html
+          git commit -m 'Scroll Stable' -m 'Conserve la position de défilement pendant les rafraîchissements live du combat. Le joueur reste exactement à sa position, ou collé en bas s’il y était déjà, tant qu’il ne change pas d’écran. Aucun changement d’économie, de progression, de sauvegarde ou d’équilibrage. Build 2026.09.06.24.'
           git push
