@@ -12,6 +12,47 @@ function scrAccueil() {
   const upgrading = S.forge.upgradeEnd > Date.now();
   const upgRemain = upgrading ? (S.forge.upgradeEnd - Date.now()) / 1000 : 0;
   const upgDone = S.forge.upgradeEnd > 0 && !upgrading;
+
+  // Une recommandation réelle, calculée à partir de l'état du joueur.
+  // Elle reste actionnable même lorsque la fonctionnalité se trouve sur un autre écran.
+  const readyEggCount = (S.eggs || []).filter((e) => eggIsHatching(e) && e.hatchEnd <= Date.now()).length;
+  const readyResearch = !!(S.tree && S.tree.active && S.tree.activeEnd <= Date.now());
+  const readyRaid = RAID_IDS.find((id) => S.raids[id] && S.raids[id].keys > 0);
+  const affordableTree = !S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n));
+  let recommended;
+  if (canRetryBoss) {
+    recommended = { icon: "skull", title: "Affronter le Boss " + pendingBoss,
+      sub: "Le Boss bloque le prochain étage.", cls: "red", act: "bossRetry" };
+  } else if (upgDone) {
+    recommended = { icon: "hammer", title: "Récupérer la Forge",
+      sub: "L’amélioration est terminée.", cls: "green", act: "forgeCollect" };
+  } else if (readyEggCount > 0) {
+    recommended = { icon: "egg", title: "Récupérer " + readyEggCount + " œuf" + (readyEggCount > 1 ? "s" : ""),
+      sub: "Une éclosion terminée t’attend.", cls: "green", act: "go", arg: "familiers" };
+  } else if (readyResearch) {
+    recommended = { icon: "tree", title: "Récupérer la recherche",
+      sub: "Le bonus de l’Arbre est prêt.", cls: "green", act: "go", arg: "arbre" };
+  } else if (readyRaid) {
+    recommended = { icon: "flame", title: "Utiliser une clé de Raid",
+      sub: RAIDS[readyRaid].reward + " est disponible.", cls: "red", act: "go", arg: "defis" };
+  } else if (!S.forge.autoForge && S.minerai >= forgeCost(S.forge.level)) {
+    recommended = { icon: "hammer", title: "Forger une pièce",
+      sub: "Tu as assez de minerai.", cls: "blue", act: "forge", arg: 1 };
+  } else if (affordableTree) {
+    recommended = { icon: "tree", title: "Développer un bonus",
+      sub: "Une amélioration de l’Arbre est disponible.", cls: "green", act: "go", arg: "developpement" };
+  } else {
+    recommended = { icon: "swords", title: "Vérifier l’équipement",
+      sub: "Optimise ton héros pendant sa progression.", cls: "blue", act: "go", arg: "equipement" };
+  }
+  const recommendedCard = '<div class="pad recommendedWrap"><div class="card recommendedActionCard">' +
+    '<div class="recommendedKicker">' + ic("bolt", 11) + ' ACTION RECOMMANDÉE</div>' +
+    '<div class="between gap8 mt4"><div class="flex1"><div class="bb recommendedTitle">' +
+    esc(recommended.title) + '</div><div class="mute tiny mt3">' + esc(recommended.sub) + '</div></div>' +
+    btn(ic(recommended.icon, 14) + ' OUVRIR', { cls: recommended.cls, small: true, act: recommended.act,
+      arg: recommended.arg, primary: true, style: "width:auto;min-width:92px;flex:0 0 auto" }) +
+    '</div></div></div>';
+
   const pet = S.pets.find((p) => p.id === S.activePetId);
   // Keep AUTO's visual phase continuous even though the home screen re-renders.
   // Negative delays resume the CSS animations at the real elapsed phase instead
@@ -99,7 +140,7 @@ function scrAccueil() {
   const wArt = ASSETS["weapon_" + D.weapon];
   const wRar = S.equipped.arme ? RARITY[S.equipped.arme.rarity] : null;
   const wCol = wRar ? wRar.c : "#d6dae4";
-  return (canRetryBoss ? '<div class="pad mt4">' + btn(ic("skull",14) + ' BOSS',{cls:'red',act:'bossRetry',style:'font-weight:900;letter-spacing:1.2px'}) + '<div class="mute tiny center mt3">Boss étage ' + fmtInt(pendingBoss) + ' · retente quand tu te sens prêt</div></div>' : '') + '<div id="arenaSlot"></div>' +
+  return recommendedCard + '<div id="arenaSlot"></div>' +
     '<div id="skillbar">' +
       '<div class="slot" data-act="go" data-arg="equipement" title="' + esc(wtHome.name) +
         '" style="border-color:' + wCol + '66">' +
@@ -1042,7 +1083,7 @@ function scrSanctuaire() {
   }).join('');
 
   const recommendCard = recommendation
-    ? '<div class="card lit mt8" style="padding:9px 10px;border-left:3px solid '+(sanctRecipeAffordableUI(recommendation)?'#3FB950':'#9B5CF6')+'"><div class="between gap8"><div class="flex1"><div class="tiny b" style="color:#8FEFF4">ACTION RECOMMANDÉE</div><div class="b small mt3">'+esc(recommendation.name)+'</div><div class="mute tiny mt3">'+(sanctRecipeAffordableUI(recommendation)?'Tu as déjà toutes les ressources nécessaires.':'Recette connue, mais il te manque encore des ressources.')+'</div></div>'+btn('Préparer',{small:true,cls:sanctRecipeAffordableUI(recommendation)?'green':'purple',act:'sanctPrepare',arg:recommendation.id,style:'width:auto'})+'</div></div>'
+    ? '<div class="card lit mt8" style="padding:9px 10px;border-left:3px solid '+(sanctRecipeAffordableUI(recommendation)?'#3FB950':'#9B5CF6')+'"><div class="between gap8"><div class="flex1"><div class="tiny b" style="color:#8FEFF4">ACTION RECOMMANDÉE</div><div class="b small mt3">'+esc(recommendation.name)+'</div><div class="mute tiny mt3">'+(sanctRecipeAffordableUI(recommendation)?'Tu as déjà toutes les ressources nécessaires.':'Recette connue, mais il te manque encore des ressources.')+'</div></div>'+btn('Préparer',{small:true,cls:sanctRecipeAffordableUI(recommendation)?'green':'purple',act:'sanctPrepare',arg:recommendation.id,primary:true,style:'width:auto'})+'</div></div>'
     : '<div class="notice mt8 tiny"><b>Première découverte</b> · Choisis deux ressources différentes ou identiques et expérimente. Une combinaison invalide ne consomme rien.</div>';
 
   return topbar("Sanctuaire",'<span class="pill" style="color:var(--goldLit);border-color:var(--goldDim)">⏱️ '+fmtTime(accelTotal*60)+'</span><span class="pill">🛡️ '+fmt(st.stabilitySeals||0)+'</span>')+
