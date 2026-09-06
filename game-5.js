@@ -1516,6 +1516,22 @@ function askReset() {
     btn("Tout effacer", { cls: "red", act: "doReset" }) + "</div>", "Réinitialiser ?");
 }
 
+// SANCTUARY_DRAG_MERGE_V34
+function sanctMergeDrop(from,to){
+  const st=sanctMergeState(); from=Number(from); to=Number(to);
+  if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=st.mergeBoard.length||to>=st.mergeBoard.length||from===to) return false;
+  const src=st.mergeBoard[from], dst=st.mergeBoard[to];
+  if(!src) return false;
+  if(!dst){ st.mergeBoard[to]=src; st.mergeBoard[from]=null; st.mergeSelected=-1; dirty=true; render(); return true; }
+  if(dst!==src){ toast("Deux couleurs identiques sont nécessaires"); return false; }
+  const nx=sanctMergeNext(src);
+  if(!nx){ toast("Divin est la rareté maximale"); return false; }
+  st.mergeBoard[from]=null; st.mergeBoard[to]=nx; st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
+  sanctMergeDiscover(st,nx); dirty=true;
+  if(navigator.vibrate) try{navigator.vibrate(20);}catch(_e){}
+  toast(SANCT_MERGE_NAME[src]+" + "+SANCT_MERGE_NAME[src]+" → "+SANCT_MERGE_NAME[nx],true); render(); return true;
+}
+
 const ACT = {
   tutorialOk: () => dismissTutorial(),
   tutorialNext: () => tutorialNext(),
@@ -1772,13 +1788,14 @@ const ACT = {
     if(!r||!sanctMergeRecipeKnown(st,r)) return;
     st.mergeFocusRecipe=a; dirty=true; render();
   },
-  sanctMergeBuy: () => {
+  sanctMergeBuy: (a) => {
     const st=sanctMergeState(), empty=st.mergeBoard.findIndex((x)=>!x);
     if(empty<0) return toast("Plateau plein · fusionne ou fabrique d’abord");
-    const lv=st.supplierLevel, price=sanctSupplierPrice(lv);
+    const lv=st.supplierLevel, unlocked=sanctSupplierUnlocked(lv);
+    const chosen=unlocked.includes(a)?a:sanctSupplierTier(lv), price=sanctSupplierPrice(lv,chosen);
     if(S.gold<price) return toast("Pas assez d’Or");
-    S.gold-=price; st.mergeBoard[empty]=sanctSupplierTier(lv);
-    if(lv<SANCT_SUPPLIER_MAX){
+    S.gold-=price; st.mergeBoard[empty]=chosen;
+    if(lv<SANCT_SUPPLIER_MAX && chosen===sanctSupplierTier(lv)){
       st.supplierProgress++;
       const need=sanctSupplierNeed(lv);
       if(st.supplierProgress>=need){ st.supplierLevel=lv+1; st.supplierProgress=0; toast("Approvisionnement niveau "+st.supplierLevel,true); }
@@ -1916,6 +1933,33 @@ const ACT = {
     inp.click();
   },
 };
+
+// Drag tactile/souris du Sanctuaire.
+(function initSanctuaryDragV34(){
+  const app=document.getElementById("app"); if(!app)return;
+  let d=null;
+  const clearTarget=()=>{if(d&&d.target)d.target.classList.remove("sanctDropTarget","sanctMergeTarget","sanctRejectTarget");};
+  const cleanup=()=>{if(!d)return;clearTarget();if(d.source)d.source.classList.remove("sanctDragging");if(d.ghost&&d.ghost.parentNode)d.ghost.remove();d=null;};
+  app.addEventListener("pointerdown",(e)=>{
+    const piece=e.target.closest&&e.target.closest(".sanctMergePiece[data-sanct-slot]"); if(!piece)return;
+    d={id:e.pointerId,from:Number(piece.dataset.sanctSlot),rarity:piece.dataset.sanctRarity,source:piece,startX:e.clientX,startY:e.clientY,dragging:false,ghost:null,target:null};
+    try{piece.setPointerCapture(e.pointerId);}catch(_e){}
+  },true);
+  app.addEventListener("pointermove",(e)=>{
+    if(!d||e.pointerId!==d.id)return;
+    if(!d.dragging&&Math.hypot(e.clientX-d.startX,e.clientY-d.startY)<7)return;
+    if(!d.dragging){d.dragging=true;d.source.classList.add("sanctDragging");d.ghost=d.source.cloneNode(true);d.ghost.classList.add("sanctDragGhost");d.ghost.removeAttribute("data-sanct-slot");document.body.appendChild(d.ghost);}
+    e.preventDefault(); d.ghost.style.left=e.clientX+"px"; d.ghost.style.top=e.clientY+"px"; clearTarget();
+    const under=document.elementFromPoint(e.clientX,e.clientY), target=under&&under.closest?under.closest("[data-sanct-slot]"):null;
+    if(!target||Number(target.dataset.sanctSlot)===d.from){d.target=null;return;}
+    d.target=target; target.classList.add("sanctDropTarget");
+    const tr=target.dataset.sanctRarity||"";
+    target.classList.add(!tr||tr===d.rarity?"sanctMergeTarget":"sanctRejectTarget");
+  },{capture:true,passive:false});
+  const end=(e)=>{if(!d||e.pointerId!==d.id)return;if(d.dragging){e.preventDefault();const to=d.target?Number(d.target.dataset.sanctSlot):-1;if(to>=0)sanctMergeDrop(d.from,to);}cleanup();};
+  app.addEventListener("pointerup",end,{capture:true,passive:false});
+  app.addEventListener("pointercancel",cleanup,true);
+})();
 
 // Native <details> state would otherwise be lost whenever the Home screen is
 // rebuilt for its live timers/HUD. Keep that UI-only state outside the DOM.

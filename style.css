@@ -893,3 +893,15 @@ button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; fil
   background:#0A1423;color:#AAB8CC;font-size:20px;line-height:1;cursor:pointer;
 }
 .recommendedClose:hover,.recommendedClose:focus-visible{color:#fff;border-color:#8FA9C9;background:#14243A}
+
+/* SANCTUARY_DRAG_MERGE_V34 */
+.sanctSupplierShop{display:grid;grid-template-columns:1fr;gap:6px}
+.sanctSupplierItem{display:flex;align-items:center;gap:8px;padding:6px 7px;border:1px solid var(--border);border-radius:10px;background:#0b1322aa}
+.sanctMergeCell{transition:transform .12s,border-color .12s,box-shadow .12s,opacity .12s}
+.sanctMergePiece{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.sanctMergePiece:active{cursor:grabbing}
+.sanctMergePiece.sanctDragging{opacity:.28;transform:scale(.94)}
+.sanctMergeCell.sanctDropTarget{outline:2px solid #8FC4FF;outline-offset:1px}
+.sanctMergeCell.sanctMergeTarget{transform:scale(1.05);box-shadow:0 0 0 2px #84E891,0 0 18px #3FB95088!important}
+.sanctMergeCell.sanctRejectTarget{box-shadow:0 0 0 2px #FF868A,0 0 14px #E5484D66!important}
+.sanctDragGhost{position:fixed!important;z-index:10000!important;width:72px!important;height:72px!important;pointer-events:none!important;transform:translate(-50%,-50%) scale(1.08)!important;opacity:.92!important;box-shadow:0 8px 28px #000c!important}

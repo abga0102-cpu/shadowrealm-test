@@ -1115,7 +1115,16 @@ function sanctSupplierTier(level) {
   if(level>=5) return "PEU_COMMUN";
   return "COMMUN";
 }
-function sanctSupplierPrice(level) { return 250*Math.max(1,level)*Math.max(1,level); }
+const SANCT_SUPPLIER_UNLOCK = {COMMUN:1,PEU_COMMUN:5,RARE:9,EPIQUE:13};
+function sanctSupplierUnlocked(level) {
+  return ["COMMUN","PEU_COMMUN","RARE","EPIQUE"].filter((r)=>level>=SANCT_SUPPLIER_UNLOCK[r]);
+}
+function sanctSupplierPrice(level,rarity) {
+  const r=rarity||sanctSupplierTier(level), unlock=SANCT_SUPPLIER_UNLOCK[r]||1;
+  const base=250*unlock*unlock;
+  const discount=Math.min(0.30,Math.max(0,Math.max(1,level)-unlock)*0.03);
+  return Math.max(25,Math.round((base*(1-discount))/25)*25);
+}
 function sanctSupplierNeed(level) { return 5+Math.floor((Math.max(1,level)-1)/2); }
 function sanctMergeNext(r) { const i=SANCT_MERGE_ORDER.indexOf(r); return i>=0&&i<SANCT_MERGE_ORDER.length-1?SANCT_MERGE_ORDER[i+1]:null; }
 function sanctMergeCount(st,r) { return st.mergeBoard.reduce((n,x)=>n+(x===r?1:0),0); }
@@ -1153,7 +1162,7 @@ function scrSanctuaire() {
     '<div class="pad mt8"><div class="card frame center" style="padding:18px 12px;border-left-color:#9B5CF6">'+ic("lock",36)+
     '<div class="bb gt mt8" style="font-size:16px">SANCTUAIRE SCELLÉ</div><div class="dim small mt8" style="line-height:1.55">Vaincs ton premier Méga-Boss pour réveiller le Sanctuaire.<br>Tu pourras ensuite acheter des couleurs avec de l’Or et les fusionner manuellement.</div></div></div>';
 
-  const lvl=st.supplierLevel, tier=sanctSupplierTier(lvl), price=sanctSupplierPrice(lvl), need=sanctSupplierNeed(lvl);
+  const lvl=st.supplierLevel, tier=sanctSupplierTier(lvl), price=sanctSupplierPrice(lvl,tier), need=sanctSupplierNeed(lvl), unlockedColors=sanctSupplierUnlocked(lvl);
   const maxed=lvl>=SANCT_SUPPLIER_MAX;
   const boardFull=st.mergeBoard.every(Boolean);
   const pair=sanctMergePair(st);
@@ -1162,12 +1171,12 @@ function scrSanctuaire() {
   let rec;
   if(readyRecipes.length) rec={title:"Fabriquer "+readyRecipes[0].name,sub:sanctMergeRecipeOutput(readyRecipes[0]),act:"sanctRecipeCraft",arg:readyRecipes[0].id,cls:"green"};
   else if(pair) rec={title:"Fusion disponible",sub:"Deux couleurs "+SANCT_MERGE_NAME[pair[2]]+" peuvent être fusionnées manuellement.",act:"sanctSelectPair",arg:"",cls:"purple"};
-  else rec={title:"Acheter une couleur "+SANCT_MERGE_NAME[tier],sub:fmt(price)+" Or · prix fixe au niveau "+lvl,act:"sanctMergeBuy",arg:"",cls:"blue"};
+  else rec={title:"Acheter une couleur "+SANCT_MERGE_NAME[tier],sub:fmt(price)+" Or · meilleure couleur disponible",act:"sanctMergeBuy",arg:tier,cls:"blue"};
 
   const board=st.mergeBoard.map((r,i)=>{
-    if(!r) return '<div class="card center" style="height:72px;padding:7px;border-style:dashed;opacity:.55"><div style="font-size:18px">＋</div><div class="mute" style="font-size:8px">VIDE</div></div>';
-    const selected=st.mergeSelected===i, c=SANCT_MERGE_COLOR[r];
-    return '<div class="card center" data-act="sanctMergeTile" data-arg="'+i+'" style="height:72px;padding:7px;cursor:pointer;border-color:'+(selected?'#FFFFFF':c)+';box-shadow:'+(selected?'0 0 0 2px '+c+',0 0 14px '+c+'88':'none')+'">'+sanctMergeOrb(r,'')+'<div class="b" style="font-size:8.5px;color:'+c+';margin-top:4px">'+SANCT_MERGE_NAME[r].toUpperCase()+'</div></div>';
+    if(!r) return '<div class="card center sanctMergeCell sanctMergeEmpty" data-sanct-slot="'+i+'" style="height:72px;padding:7px;border-style:dashed;opacity:.55"><div style="font-size:18px">＋</div><div class="mute" style="font-size:8px">VIDE</div></div>';
+    const c=SANCT_MERGE_COLOR[r];
+    return '<div class="card center sanctMergeCell sanctMergePiece" data-sanct-slot="'+i+'" data-sanct-rarity="'+r+'" style="height:72px;padding:7px;border-color:'+c+'">'+sanctMergeOrb(r,'')+'<div class="b" style="font-size:8.5px;color:'+c+';margin-top:4px">'+SANCT_MERGE_NAME[r].toUpperCase()+'</div></div>';
   }).join('');
 
   const recipes=SANCT_MERGE_RECIPES.map((r)=>{
@@ -1185,11 +1194,13 @@ function scrSanctuaire() {
   return topbar("Sanctuaire",'<span class="pill" style="color:var(--goldLit);border-color:var(--goldDim)">🪙 '+fmt(S.gold)+'</span><span class="pill">🛡️ '+fmt(st.stabilitySeals||0)+'</span>')+
     '<div class="pad mt6">'+
     '<div class="card recommendedActionCard"><div class="recommendedKicker">'+ic("bolt",11)+' ACTION RECOMMANDÉE</div><div class="between gap8 mt4"><div class="flex1"><div class="bb recommendedTitle">'+esc(rec.title)+'</div><div class="mute tiny mt3">'+esc(rec.sub)+'</div></div>'+btn('OUVRIR',{small:true,cls:rec.cls,act:rec.act,arg:rec.arg,primary:true,style:'width:auto;min-width:90px'})+'</div></div>'+
-    '<div class="card frame mt8"><div class="between"><div><div class="tiny b" style="color:#8FEFF4">APPROVISIONNEMENT</div><div class="bb gt mt3">Niveau '+lvl+' / '+SANCT_SUPPLIER_MAX+'</div></div>'+sanctMergeOrb(tier,'')+'</div><div class="between mt8"><div><div class="b small">Couleur achetée : <span style="color:'+SANCT_MERGE_COLOR[tier]+'">'+SANCT_MERGE_NAME[tier]+'</span></div><div class="mute tiny">Chaque achat coûte exactement '+fmt(price)+' Or à ce niveau.</div></div>'+btn('Acheter',{small:true,cls:'blue',act:'sanctMergeBuy',dis:boardFull||S.gold<price,primary:!pair&&!readyRecipes.length,style:'width:auto'})+'</div>'+
-      (maxed?'<div class="mt8"><span class="pill" style="color:var(--goldLit);border-color:var(--goldDim)">NIVEAU MAX · Épique acheté directement</span></div>':'<div class="between tiny b mt8"><span class="mute">JAUGE · '+st.supplierProgress+' / '+need+'</span><span style="color:var(--goldLit)">Niv.'+(lvl+1)+'</span></div>'+bar(st.supplierProgress/need*100,'#E8B44A',6))+
+    '<div class="card frame mt8"><div class="between"><div><div class="tiny b" style="color:#8FEFF4">APPROVISIONNEMENT</div><div class="bb gt mt3">Niveau '+lvl+' / '+SANCT_SUPPLIER_MAX+'</div></div>'+sanctMergeOrb(tier,'')+'</div>'+
+    '<div class="mute tiny mt6">Toute couleur débloquée reste disponible. Les niveaux intermédiaires réduisent progressivement leur prix.</div>'+
+    '<div class="sanctSupplierShop mt8">'+unlockedColors.map((r)=>{ const p=sanctSupplierPrice(lvl,r), best=r===tier; return '<div class="sanctSupplierItem" style="border-color:'+SANCT_MERGE_COLOR[r]+'66">'+sanctMergeOrb(r,'')+'<div class="flex1"><div class="b tiny" style="color:'+SANCT_MERGE_COLOR[r]+'">'+SANCT_MERGE_NAME[r]+'</div><div class="mute" style="font-size:8px">'+fmt(p)+' Or'+(best&&!maxed?' · jauge':'')+'</div></div>'+btn('Acheter',{small:true,cls:best?'blue':'ghost',act:'sanctMergeBuy',arg:r,dis:boardFull||S.gold<p,primary:best&&!pair&&!readyRecipes.length,style:'width:auto;padding:5px 8px;font-size:9.5px'})+'</div>'; }).join('')+'</div>'+
+      (maxed?'<div class="mt8"><span class="pill" style="color:var(--goldLit);border-color:var(--goldDim)">NIVEAU MAX · Commun à Épique disponibles</span></div>':'<div class="between tiny b mt8"><span class="mute">JAUGE · '+st.supplierProgress+' / '+need+' · achats '+SANCT_MERGE_NAME[tier]+'</span><span style="color:var(--goldLit)">Niv.'+(lvl+1)+'</span></div>'+bar(st.supplierProgress/need*100,'#E8B44A',6))+
     '</div>'+
     '<div class="sect">Plateau de Merge <span class="mute tiny">· '+st.mergeBoard.filter(Boolean).length+'/'+SANCT_BOARD_SIZE+'</span></div>'+
-    '<div class="notice tiny"><b>Fusion manuelle :</b> touche une couleur, puis une deuxième couleur identique. Deux pièces identiques deviennent la rareté supérieure. Les pièces Divines sont au sommet de la chaîne.</div>'+
+    '<div class="notice tiny"><b>Fusion par glisser-déposer :</b> fais glisser une pièce sur une pièce identique pour les fusionner. Glisse-la sur une case vide pour la déplacer. Une pièce différente refuse la fusion.</div>'+
     '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px">'+board+'</div>'+
     '<div class="row gap6 mt8">'+btn('Ranger le plateau',{small:true,cls:'ghost',act:'sanctMergePack'})+(st.mergeSelected>=0?btn('Annuler sélection',{small:true,cls:'dark',act:'sanctMergeCancel'}):'')+'</div>'+
     (counts?'<div class="row gap4 mt8" style="flex-wrap:wrap">'+counts+'</div>':'')+
