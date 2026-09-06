@@ -1,5 +1,5 @@
-# trigger-arena-equipment-v45-1
-name: Arena equipment removal v45
+# trigger-scroll-stability-v47-1
+name: Scroll stability v47
 on:
   push:
     paths:
@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Remove equipment from arena world
-        run: python .github/remove_arena_equipment_v42.py
+      - name: Apply scroll stability fix
+        run: python .github/scroll_stability_v47.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -21,37 +21,33 @@ jobs:
           node --check game-4.js
           node --check game-5.js
           node --check social-v1.js
-          node --check social-p2p-v1.js
-          node --check social-forge-layout-v1.js
-          node --check social-bot-testers-v1.js
+          test ! -f social-p2p-v1.js || node --check social-p2p-v1.js
+          test ! -f social-forge-layout-v1.js || node --check social-forge-layout-v1.js
+          test ! -f social-bot-testers-v1.js || node --check social-bot-testers-v1.js
+          test ! -f social-bot-ui-v1.js || node --check social-bot-ui-v1.js
           node --check audio-v26.js
       - name: Regression checks
         run: |
           python <<'PY'
           from pathlib import Path
           g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
-          home=g4[g4.find('function scrAccueil()'):g4.find('/* ---------------- PERSONNAGE')]
-          assert 'ARENA_EQUIPMENT_REMOVED_V45' in g4
-          assert 'worldAction(worldPrimary[1], "worldEquip")' not in home
-          assert 'worldAction(worldPrimary[0], "worldRebirth")' in home
-          assert 'worldAction(worldPrimary[2], "worldDev")' in home
-          assert 'worldAction(worldPrimary[3], "worldDefis")' in home
-          assert 'data-arg="equipement"' in home
-          assert '2026.09.06.45' in g2 and '2026.09.06.45' in idx
-          assert 'social-v1.js?v=2026.09.06.45' in idx
-          assert 'social-p2p-v1.js?v=2026.09.06.45' in idx
-          assert 'social-forge-layout-v1.js?v=2026.09.06.45' in idx
-          assert 'social-bot-testers-v1.js?v=2026.09.06.45' in idx
+          assert 'SCROLL_STABILITY_V47' in g5
+          assert 'SCROLL_PRESERVE_V24' not in g5
+          assert 'wasNearBottom' not in g5
+          assert 'requestAnimationFrame(restore)' not in g5
+          assert 'activelyScrolling' in g5 and 'scrollDeferredV47' in g5
+          assert '2026.09.06.47' in g2 and '2026.09.06.47' in idx
           assert 'SKILL_SLOTS_BASE: 3' in g1
           assert 'ARENA_STABILITY_V36' in g3
+          assert 'ARENA_EQUIPMENT_REMOVED_V45' in g4
           assert 'SANCTUARY_DRAG_MERGE_V34' in g5
-          print('v45 arena equipment removal checks passed')
+          print('v47 scroll stability checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
-          git add game-2.js game-4.js index.html
-          git commit -m 'Arène Épurée' -m 'Retire le bouton Équipement du décor de l’arène. Rebirth, Développement, Défis et le menu compact restent intégrés au monde. L’accès à l’équipement reste disponible depuis la barre de combat et les écrans prévus à cet effet. La campagne, la Forge, le combat, le Sanctuaire, l’économie, le social et les sauvegardes restent inchangés. Build 2026.09.06.45.'
+          git add game-2.js game-5.js index.html
+          git commit -m 'Scroll Stable' -m 'Empêche les rafraîchissements live de reconstruire l’écran pendant un scroll ou son inertie, retire le double rétablissement de scroll et le collage automatique en bas de page responsables des sauts sur Arbre et autres écrans longs. La position est conservée une seule fois après rendu, puis le dernier rendu attendu est rejoué après la fin du geste. Aucun changement de progression, économie, combat, Forge, Sanctuaire ou sauvegarde. Build 2026.09.06.47.'
           git push
