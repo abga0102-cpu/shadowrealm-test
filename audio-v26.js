@@ -19,20 +19,22 @@
   setInterval(poll,50);
 })();
 
-/* PE economy rebase v5: Raid Evolution = 100 PE at level 1, then +3/level.
-   Existing saves receive the exact +90 PE delta for every provable victory,
-   once, using the same conservative history proof as the previous rebase. */
+/* PE economy rebase v6: Raid Evolution = 50 PE at level 1, then +3/level.
+   Old saves that never received v5 get the intended +40 PE per provable win.
+   Saves that already received the temporary +90 v5 credit are corrected by
+   removing at most the +50-per-win excess still present in their PE wallet.
+   We never create negative PE or undo tree purchases already made. */
 (() => {
   if (typeof raidReward !== "function") return;
   const previousRaidReward = raidReward;
   raidReward = function raidRewardRebalanced(raid, level) {
-    if (raid === "evolution") return 100 + 3 * Math.max(0, level - 1);
+    if (raid === "evolution") return 50 + 3 * Math.max(0, level - 1);
     return previousRaidReward(raid, level);
   };
   if (typeof S !== "object" || !S || typeof update !== "function") return;
-  if (Object.prototype.hasOwnProperty.call(S, "economyRebaseV5")) return;
+  if (Object.prototype.hasOwnProperty.call(S, "economyRebaseV6")) return;
   update((st) => {
-    if (Object.prototype.hasOwnProperty.call(st, "economyRebaseV5")) return;
+    if (Object.prototype.hasOwnProperty.call(st, "economyRebaseV6")) return;
     const r = (st.raids && st.raids.evolution) || {};
     const maxLevel = (typeof RULES === "object" && RULES && Number(RULES.RAID_MAX_LEVEL)) || 50;
     const stars = Math.max(0, Number(r.stars) || 0);
@@ -41,10 +43,20 @@
     const provenWins = stars > 0
       ? stars * maxLevel + Math.max(0, level - 1)
       : Math.max(Math.max(0, level - 1), record);
-    const bonusPerWin = 90;
-    const peCredited = provenWins * bonusPerWin;
-    st.pe = Math.max(0, Number(st.pe) || 0) + peCredited;
-    st.economyRebaseV5 = true;
-    st.economyRebaseNoticeV5 = { evolutionWins: provenWins, peCredited, bonusPerWin };
+    let peDelta = 0;
+    let excessRemoved = 0;
+    if (Object.prototype.hasOwnProperty.call(st, "economyRebaseV5")) {
+      const creditedV5 = Math.max(0, Number(st.economyRebaseNoticeV5 && st.economyRebaseNoticeV5.peCredited) || (provenWins * 90));
+      const targetCredit = provenWins * 40;
+      const excess = Math.max(0, creditedV5 - targetCredit);
+      excessRemoved = Math.min(Math.max(0, Number(st.pe) || 0), excess);
+      st.pe = Math.max(0, Number(st.pe) || 0) - excessRemoved;
+      peDelta = -excessRemoved;
+    } else {
+      peDelta = provenWins * 40;
+      st.pe = Math.max(0, Number(st.pe) || 0) + peDelta;
+    }
+    st.economyRebaseV6 = true;
+    st.economyRebaseNoticeV6 = { evolutionWins: provenWins, peDelta, excessRemoved, bonusPerWin: 40 };
   });
 })();
