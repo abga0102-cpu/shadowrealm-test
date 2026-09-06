@@ -1417,8 +1417,8 @@ const REBIRTH_UPGRADES = [
   { key: "bossdmg",    label: "Dégâts Boss",    icon: "skull",   max: 20, perLvl: 8,    unit: "%",   costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266] },
   { key: "exp",        label: "EXP",            icon: "cap",     max: 10, perLvl: 5,    unit: "%",   costs: [10,20,30,50,75,110,160,230,320,450] },
   { key: "gold",       label: "Or",             icon: "gold",    max: 50, perLvl: 4,    unit: "%", costDiv: 1,
-    // Prix REELS affichés/payés. Total exact des 50 niveaux : 135 000 PR.
-    costs: [100,150,200,250,300,350,400,500,550,600,700,800,850,950,1050,1150,1250,1350,1450,1600,1700,1800,1950,2100,2200,2350,2500,2650,2800,2950,3100,3250,3450,3600,3750,3950,4150,4300,4500,4700,4900,5100,5300,5500,5750,5950,6150,6400,6650,7000] },
+    // Prix REELS affichés/payés. Total exact des 50 niveaux : 35 000 PR.
+    costs: [25,40,50,65,80,90,105,130,145,155,180,205,220,245,270,300,325,350,375,415,440,465,505,545,570,610,650,685,725,765,805,845,895,935,970,1025,1075,1115,1165,1220,1270,1320,1375,1425,1490,1545,1595,1660,1725,1815] },
   { key: "apples",     label: "Gain Pommes",     icon: "paw",     max: 20, perLvl: 5, unit: "%", costDiv: 1,
     costs: [200,300,400,500,650,800,950,1100,1300,1500,1700,1900,2100,2300,2500,2800,3100,3400,3700,3800] },
   { key: "prgain",     label: "Gain PR",        icon: "chart",   max: 50, perLvl: 8,    unit: "%", costDiv: 1,
@@ -1556,7 +1556,7 @@ const TREE_NODES = [
   { id: "n1_02", sect: "Palier I", label: "Forge Amélioration Coût I", short: "Forge Coût I", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_12", "n1_06", "n1_18"], lane: 3, row: 4 },
   { id: "n1_25", sect: "Palier I", label: "Œuf Épique Vitesse d'éclosion I", short: "Œuf Épique I", icon: "egg", color: "#B15CF6", tier: 1, effect: "hatch_EPIQUE", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_11", "n1_15", "n1_17"], lane: 4, row: 4 },
   { id: "n1_21", sect: "Palier I", label: "Chaussures Bonus Santé I", short: "Chaussures I", icon: "boot", color: "#57E07A", tier: 1, effect: "eq_bottes", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_26"], lane: 0, row: 5 },
-  { id: "n1_07", sect: "Palier I", label: "Récompense Autonomie I", short: "Autonomie I", icon: "moon", color: "#8FC4FF", tier: 1, effect: "afkGain", per: 1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_08", "n1_26"], lane: 1, row: 5 },
+  { id: "n1_07", sect: "Palier I", label: "Prospection d’Or I", short: "Or Auton. I", icon: "gold", color: "#F5C542", tier: 1, effect: "afkGain", per: 1.25, unit: "%", max: 5, times: PAL_T[0], req: ["n1_08", "n1_26"], lane: 1, row: 5 },
   { id: "n1_20", sect: "Palier I", label: "Anneau Bonus Dégâts I", short: "Anneau I", icon: "ring", color: "#FF5A5A", tier: 1, effect: "eq_anneau", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_25"], lane: 2, row: 5 },
   { id: "n1_27", sect: "Palier I", label: "Œuf Légendaire Vitesse d'éclosion I", short: "Œuf Légend. I", icon: "egg", color: "#F5C542", tier: 1, effect: "hatch_LEGENDAIRE", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_11", "n1_25", "n1_26", "n1_14"], lane: 3, row: 5 },
   { id: "n1_03", sect: "Palier I", label: "Chance de forger gratuitement I", short: "Forge Grat. I", icon: "hammer", color: "#F5C542", tier: 1, effect: "forgeFree", per: 1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_02"], lane: 4, row: 5 },
@@ -1580,7 +1580,7 @@ const TREE_NODES = [
   { id: "n2_19", sect: "Palier II", label: "Armure Bonus Santé II", short: "Armure II", icon: "armor", color: "#57E07A", tier: 2, effect: "eq_armure", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_21"], lane: 1, row: 9 },
   { id: "n2_13", sect: "Palier II", label: "Animal Bonus Dégâts II", short: "Animal Dég. II", icon: "paw", color: "#FF7A3D", tier: 2, effect: "petDmg", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_08", "n2_15"], lane: 2, row: 9 },
   { id: "n2_04", sect: "Palier II", label: "Recherche Technologique Vitesse du minuteur II", short: "Rech. Vit. II", icon: "clock", color: "#3FCFD6", tier: 2, effect: "research", per: 4, unit: "%", max: 5, times: PAL_T[1], req: ["n2_08"], lane: 3, row: 9 },
-  { id: "n2_07", sect: "Palier II", label: "Récompense Autonomie II", short: "Autonomie II", icon: "moon", color: "#8FC4FF", tier: 2, effect: "afkGain", per: 1, unit: "%", max: 5, times: PAL_T[1], req: ["n2_08"], lane: 4, row: 9 },
+  { id: "n2_07", sect: "Palier II", label: "Prospection d’Or II", short: "Or Auton. II", icon: "gold", color: "#F5C542", tier: 2, effect: "afkGain", per: 1.25, unit: "%", max: 5, times: PAL_T[1], req: ["n2_08"], lane: 4, row: 9 },
   { id: "n2_25", sect: "Palier II", label: "Œuf Épique Vitesse d'éclosion II", short: "Œuf Épique II", icon: "egg", color: "#B15CF6", tier: 2, effect: "hatch_EPIQUE", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_21", "n2_13", "n2_19"], lane: 0, row: 10 },
   { id: "n2_12", sect: "Palier II", label: "Compétence Invoquer Coût II", short: "Invoq. Coût II", icon: "sparkle", color: "#B15CF6", tier: 2, effect: "skillCost", per: -1, unit: "%", max: 5, times: PAL_T[1], req: ["n2_28", "n2_02"], lane: 1, row: 10 },
   { id: "n2_22", sect: "Palier II", label: "Ceinture Bonus Santé II", short: "Ceinture II", icon: "chain", color: "#57E07A", tier: 2, effect: "eq_ceinture", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_28", "n2_10"], lane: 2, row: 10 },
@@ -1613,7 +1613,7 @@ const TREE_NODES = [
   { id: "n3_01", sect: "Palier III", label: "Forge Amélioration Vitesse du minuteur III", short: "Forge Vit. III", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeTime", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_21"], lane: 4, row: 15 },
   { id: "n3_22", sect: "Palier III", label: "Ceinture Bonus Santé III", short: "Ceinture III", icon: "chain", color: "#57E07A", tier: 3, effect: "eq_ceinture", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_06", "n3_14"], lane: 0, row: 16 },
   { id: "n3_23", sect: "Palier III", label: "Œuf Commun Vitesse d'éclosion III", short: "Œuf Commun III", icon: "egg", color: "#9FB0C8", tier: 3, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_24"], lane: 1, row: 16 },
-  { id: "n3_07", sect: "Palier III", label: "Récompense Autonomie III", short: "Autonomie III", icon: "moon", color: "#8FC4FF", tier: 3, effect: "afkGain", per: 1, unit: "%", max: 5, times: PAL_T[2], req: ["n3_21", "n3_24"], lane: 2, row: 16 },
+  { id: "n3_07", sect: "Palier III", label: "Prospection d’Or III", short: "Or Auton. III", icon: "gold", color: "#F5C542", tier: 3, effect: "afkGain", per: 1.25, unit: "%", max: 5, times: PAL_T[2], req: ["n3_21", "n3_24"], lane: 2, row: 16 },
   { id: "n3_02", sect: "Palier III", label: "Forge Amélioration Coût III", short: "Forge Coût III", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[2], req: ["n3_19", "n3_12", "n3_01"], lane: 3, row: 16 },
   { id: "n3_20", sect: "Palier III", label: "Anneau Bonus Dégâts III", short: "Anneau III", icon: "ring", color: "#FF5A5A", tier: 3, effect: "eq_anneau", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_24"], lane: 4, row: 16 },
   { id: "n3_17", sect: "Palier III", label: "Gants Bonus Dégâts III", short: "Gants III", icon: "glove", color: "#FF5A5A", tier: 3, effect: "eq_gants", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_23"], lane: 0, row: 17 },
@@ -1652,7 +1652,7 @@ const TREE_NODES = [
   { id: "n4_30", sect: "Palier IV", label: "PE obtenus dans le Raid Évolution IV", short: "PE Raid IV", icon: "gem", color: "#3FB950", tier: 4, effect: "peRaid", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_25"], lane: 2, row: 23 },
   { id: "n4_09", sect: "Palier IV", label: "Compétence Dégâts IV", short: "Comp. Dég. IV", icon: "sparkle", color: "#9B5CF6", tier: 4, effect: "skillDmg", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_14"], lane: 3, row: 23 },
   { id: "n4_22", sect: "Palier IV", label: "Ceinture Bonus Santé IV", short: "Ceinture IV", icon: "chain", color: "#57E07A", tier: 4, effect: "eq_ceinture", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_25", "n4_12", "n4_14"], lane: 4, row: 23 },
-  { id: "n4_07", sect: "Palier IV", label: "Récompense Autonomie IV", short: "Autonomie IV", icon: "moon", color: "#8FC4FF", tier: 4, effect: "afkGain", per: 1, unit: "%", max: 5, times: PAL_T[3], req: ["n4_04"], lane: 0, row: 24 },
+  { id: "n4_07", sect: "Palier IV", label: "Prospection d’Or IV", short: "Or Auton. IV", icon: "gold", color: "#F5C542", tier: 4, effect: "afkGain", per: 1.25, unit: "%", max: 5, times: PAL_T[3], req: ["n4_04"], lane: 0, row: 24 },
   { id: "n4_23", sect: "Palier IV", label: "Œuf Commun Vitesse d'éclosion IV", short: "Œuf Commun IV", icon: "egg", color: "#9FB0C8", tier: 4, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n4_12", "n4_19"], lane: 1, row: 24 },
   { id: "n4_27", sect: "Palier IV", label: "Œuf Légendaire Vitesse d'éclosion IV", short: "Œuf Légend. IV", icon: "egg", color: "#F5C542", tier: 4, effect: "hatch_LEGENDAIRE", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n4_25", "n4_22"], lane: 2, row: 24 },
   { id: "n4_03", sect: "Palier IV", label: "Chance de forger gratuitement IV", short: "Forge Grat. IV", icon: "hammer", color: "#F5C542", tier: 4, effect: "forgeFree", per: 1, unit: "%", max: 5, times: PAL_T[3], req: ["n4_04"], lane: 3, row: 24 },
@@ -2286,6 +2286,35 @@ function migrate(s, name) {
       merged.autonomyGoldRebaseNoticeV31 = { before, after: Math.max(before, due), added: Math.max(0, due - before) };
     }
     merged.autonomyGoldRebaseV31 = true;
+  }
+  // GOLD_ECONOMY_REBASE_V32
+  // Le coût Rebirth Or passe de 135 000 à 35 000 PR au total. Un joueur qui a
+  // déjà acheté des niveaux récupère exactement la différence entre l'ancienne
+  // et la nouvelle courbe, sans modifier son niveau d'amélioration.
+  if (!Object.prototype.hasOwnProperty.call(s, "rebirthGoldCostRebaseV32")) {
+    const oldGoldCostsV32 = [100,150,200,250,300,350,400,500,550,600,700,800,850,950,1050,1150,1250,1350,1450,1600,1700,1800,1950,2100,2200,2350,2500,2650,2800,2950,3100,3250,3450,3600,3750,3950,4150,4300,4500,4700,4900,5100,5300,5500,5750,5950,6150,6400,6650,7000];
+    const newGoldCostsV32 = [25,40,50,65,80,90,105,130,145,155,180,205,220,245,270,300,325,350,375,415,440,465,505,545,570,610,650,685,725,765,805,845,895,935,970,1025,1075,1115,1165,1220,1270,1320,1375,1425,1490,1545,1595,1660,1725,1815];
+    const lv = Math.max(0, Math.min(50, Number((merged.rebirth.upgrades || {}).gold) || 0));
+    const oldSpent = oldGoldCostsV32.slice(0, lv).reduce((a,b)=>a+b, 0);
+    const newSpent = newGoldCostsV32.slice(0, lv).reduce((a,b)=>a+b, 0);
+    const refundPR = Math.max(0, oldSpent - newSpent);
+    merged.rebirth.pr = Math.max(0, Number(merged.rebirth.pr) || 0) + refundPR;
+    merged.rebirthGoldCostRebaseV32 = true;
+    merged.rebirthGoldCostRebaseNoticeV32 = { level: lv, oldSpent, newSpent, refundPR };
+  }
+
+  // La Prospection d'Or autonome vaut maintenant jusqu'à +25 % au total.
+  // On revalorise uniquement la réserve encore présente : les gains déjà encaissés
+  // n'ont pas d'historique fiable et ne sont donc jamais inventés.
+  if (!Object.prototype.hasOwnProperty.call(s, "autonomyGoldRebaseV32")) {
+    if (merged.harvest && Number(merged.harvest.secs) > 0) {
+      const secs = Math.max(0, Number(merged.harvest.secs) || 0);
+      const due = harvestRates(merged).gold * secs / 3600;
+      const before = Math.max(0, Number(merged.harvest.gold) || 0);
+      if (due > before) merged.harvest.gold = due;
+      merged.autonomyGoldRebaseNoticeV32 = { before, after: Math.max(before, due), added: Math.max(0, due - before) };
+    }
+    merged.autonomyGoldRebaseV32 = true;
   }
   return merged;
 }
