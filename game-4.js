@@ -39,7 +39,7 @@ function scrAccueil() {
       act: target === "accueil" ? "focusGoal" : "go", arg: target === "accueil" ? undefined : target };
   }
   const recommendedCard = tutorialPending ? "" :
-    '<div class="pad recommendedWrap"><div class="card recommendedActionCard" data-decision-scope="recommendation">' +
+    '<div class="pad recommendedWrap"><div class="card recommendedActionCard">' +
     '<div class="recommendedKicker">' + ic("bolt", 11) + ' ACTION RECOMMANDÉE</div>' +
     '<div class="between gap8 mt4"><div class="flex1"><div class="bb recommendedTitle">' +
     esc(recommended.title) + '</div><div class="mute tiny mt3">' + esc(recommended.sub) + '</div></div>' +
