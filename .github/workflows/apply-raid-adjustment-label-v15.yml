@@ -1,5 +1,5 @@
-# trigger-v30-6
-name: Sanctuary merge v30
+# trigger-v31-1
+name: Economy refund v31
 on:
   push:
     paths:
@@ -11,10 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Align build anchor
-        run: sed -i 's/2026.09.06.28/2026.09.06.29/' game-2.js
-      - name: Apply sanctuary merge patch
-        run: python .github/sanctuaire_merge_v30.py
+      - name: Apply economy refund
+        run: python .github/economy_refund_v31.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -27,32 +25,32 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text()
-          assert 'SANCT_MERGE_ORDER' in g4
-          assert 'SANCT_BOARD_SIZE = 16' in g4
-          assert 'function sanctSupplierPrice(level)' in g4
-          assert '2500*Math.max(1,level)*Math.max(1,level)' in g4
-          assert 'function sanctMergeState()' in g4
-          assert 'Fusion manuelle' in g4
-          assert 'ACTION RECOMMANDÉE' in g4
-          assert 'Livre de Fusion' in g4
-          assert 'sanctMergeBuy:' in g5
-          assert 'sanctMergeTile:' in g5
-          assert 'sanctRecipeCraft:' in g5
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          assert '250*Math.max(1,level)*Math.max(1,level)' in g4
+          assert '2500*Math.max(1,level)*Math.max(1,level)' not in g4
+          assert 'ECONOMY_REFUND_V31' in g1
+          assert 'sanctuaryMergeRefundV31' in g1
+          assert 'refund.minerai += 200' in g1
+          assert 'refund.eclat += 20; refund.essence += 20' in g1
+          assert 'refund.poussiere += 150; refund.minerai += 250' in g1
+          assert 'refund.eclat += 50; refund.essence += 50' in g1
+          assert 'refund.poussiere += 500; refund.essence += 100' in g1
+          assert 'autonomyGoldRebaseV31' in g1
+          assert 'harvestRates(merged).gold * secs / 3600' in g1
+          assert 'gold: raidReward("or", s.raids.or.level) * 0.25' in g1
+          assert 'SANCT_MERGE_ORDER' in g4 and 'SANCT_BOARD_SIZE = 16' in g4
           assert 'S.gold-=price' in g5
-          assert 'st.mergeBoard[sel]=null; st.mergeBoard[i]=nx' in g5
-          sanct=g5[g5.index('  // sanctuaire'):g5.index('\n  // tree',g5.index('  // sanctuaire'))]
-          assert 'S.minerai-=' not in sanct and 'S.eclat-=' not in sanct and 'S.essence-=' not in sanct and 'S.poussiere-=' not in sanct
           assert 'const hop = 0;' in g3
           assert 'SCROLL_PRESERVE_V24' in g5
           assert 'DECISION_HIERARCHY_V29' in g5
-          print('v30 sanctuary merge checks passed')
+          assert '2026.09.06.31' in g2 and '2026.09.06.31' in idx
+          print('v31 economy checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
-          git add game-2.js game-4.js game-5.js index.html
-          git commit -m 'Sanctuaire Merge' -m 'Transforme complètement le Sanctuaire en mini-jeu de merge manuel. L’Or achète une couleur de base au prix fixe du niveau d’approvisionnement, chaque achat remplit sa jauge, et deux couleurs identiques fusionnent manuellement vers la rareté suivante sur un plateau de 16 cases. Les anciennes ressources Minerai, Éclat, Essence et Poussière ne sont plus consommées par le Sanctuaire. Le Livre de Fusion, les recettes secrètes, l’action recommandée, les Sceaux de stabilité et les accélérateurs sont conservés et adaptés au nouveau système. Aucun effacement de sauvegarde. Build 2026.09.06.30.'
+          git add game-1.js game-2.js game-4.js index.html
+          git commit -m 'Économie Merge Rééquilibrée' -m 'Réduit de 90 % le prix d’achat des couleurs du Sanctuaire sans changer le système Or -> couleurs -> merge manuel. Rembourse une fois les ressources historiques dont la dépense est prouvée par les recettes découvertes de l’ancien Sanctuaire. Revalorise aussi la réserve d’Or d’Autonomie encore non réclamée au taux actuel de 25 % du Raid Or par heure. Aucun effacement de sauvegarde. Build 2026.09.06.31.'
           git push
