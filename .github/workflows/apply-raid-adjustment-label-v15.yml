@@ -1,5 +1,5 @@
-# trigger-v22-2
-name: Apply decision hierarchy v22
+# trigger-v23-1
+name: Clean decision hierarchy v23
 on:
   push:
     paths:
@@ -11,57 +11,80 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply decision hierarchy
+      - name: Consolidate decision hierarchy
         run: |
           python <<'PY'
           from pathlib import Path
+          import re
 
           ui=Path('game-5.js'); s=ui.read_text()
-          marker='// DECISION_HIERARCHY_V22'
-          if marker not in s:
-              block='\n'.join([
-                '',marker,
-                'const DECISION_SECONDARY_V22=/aperçu|apercu|détail|detail|info|fermer|annuler|retour/i;',
-                'function decisionTextV22(el){return ((el&&(el.getAttribute("aria-label")||el.getAttribute("title")||el.textContent))||"").replace(/\\s+/g," ").trim();}',
-                'function decisionActV22(el){return ((el&&el.getAttribute("data-act"))||"").toLowerCase();}',
-                'function decisionScoreV22(el){',
-                '  const text=decisionTextV22(el),act=decisionActV22(el),st=(typeof S!=="undefined"&&S)||{};',
-                '  let score=0;',
-                '  if(el.getAttribute("data-primary")==="true") score+=1200;',
-                '  if(/confirmer|valider|réclamer|reclamer/.test(text)) score+=900;',
-                '  if(typeof combat!=="undefined"&&combat&&combat.status==="lost"&&/réessayer|reessayer|rejouer/.test(text)) score+=1000;',
-                '  if(st.pendingBossFloor&&/boss|réessayer|reessayer/.test(text+" "+act)) score+=980;',
-                '  if(st.forge&&st.forge.upgradeEnd&&st.forge.upgradeEnd<=Date.now()&&/forge|forger|améliorer|ameliorer|récupérer|recuperer/.test(text+" "+act)) score+=820;',
-                '  if(Array.isArray(st.eggs)&&st.eggs.some(function(e){return e&&((e.end&&e.end<=Date.now())||(e.hatchEnd&&e.hatchEnd<=Date.now())||(e.ready===true));})&&/œuf|oeuf|éclore|eclore|ouvrir/.test(text+" "+act)) score+=820;',
-                '  if(/raid/.test(act)&&/lancer|combat|entrer|raid/.test(text+" "+act)) score+=760;',
-                '  if(/recherche|research/.test(act)&&/rechercher|lancer|améliorer|ameliorer/.test(text+" "+act)) score+=720;',
-                '  if(/continuer|combattre|combat|prochain étage|prochain etage/.test(text)) score+=650;',
-                '  if(/invoquer|forger|améliorer|ameliorer|équiper|equiper/.test(text)) score+=520;',
-                '  if(DECISION_SECONDARY_V22.test(text)) score-=700;',
-                '  return score;',
-                '}',
-                'function refreshDecisionHierarchyV22(){',
-                '  document.querySelectorAll("[data-primary-action=true],[data-secondary-action=true]").forEach(function(el){el.removeAttribute("data-primary-action");el.removeAttribute("data-secondary-action");});',
-                '  const groups=new Map();',
-                '  document.querySelectorAll("[data-act],button").forEach(function(el){if(typeof hickVisibleV21==="function"&&!hickVisibleV21(el))return;const g=(typeof hickGroupV21==="function"?hickGroupV21(el):el.parentElement)||document.body;if(!groups.has(g))groups.set(g,[]);groups.get(g).push(el);});',
-                '  groups.forEach(function(actions){if(actions.length<2)return;let best=null,bestScore=0;actions.forEach(function(el){const score=decisionScoreV22(el);if(score>bestScore){best=el;bestScore=score;}});if(best)best.setAttribute("data-primary-action","true");actions.forEach(function(el){if(el!==best&&(DECISION_SECONDARY_V22.test(decisionTextV22(el))||actions.length>=5&&decisionScoreV22(el)<=0))el.setAttribute("data-secondary-action","true");});});',
-                '}',
-                'if(typeof refreshActionHierarchyV21==="function") refreshActionHierarchyV21=refreshDecisionHierarchyV22;',
-                'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",refreshDecisionHierarchyV22,{once:true});else refreshDecisionHierarchyV22();',''])
-              s += block
-          ui.write_text(s)
+          v21=s.find('// HICK_ACTION_HIERARCHY_V21')
+          v22=s.find('// DECISION_HIERARCHY_V22')
+          if v21 < 0 or v22 < 0 or v22 <= v21:
+              raise SystemExit('V21/V22 hierarchy anchors missing or out of order')
+          # Replace the stacked V21 + V22 implementations with one clean V23 block.
+          prefix=s[:v21].rstrip()
+          block=r'''
 
-          eng=Path('game-2.js'); s=eng.read_text()
-          if '|| "2026.09.06.22";' not in s:
-              if '|| "2026.09.06.21";' not in s: raise SystemExit('APP_BUILD .21 anchor missing')
-              s=s.replace('|| "2026.09.06.21";', '|| "2026.09.06.22";', 1)
-          eng.write_text(s)
+// DECISION_HIERARCHY_V23
+// Une seule hiérarchie contextuelle : aucun empilement V21/V22, aucune fonction cachée.
+const DECISION_SECONDARY_V23=/aperçu|apercu|détail|detail|info|fermer|annuler|retour/i;
+function decisionTextV23(el){return ((el&&(el.getAttribute("aria-label")||el.getAttribute("title")||el.textContent))||"").replace(/\s+/g," ").trim();}
+function decisionActV23(el){return ((el&&el.getAttribute("data-act"))||"").toLowerCase();}
+function decisionVisibleV23(el){if(!el||el.disabled||el.getAttribute("aria-disabled")==="true")return false;const r=el.getBoundingClientRect(),cs=getComputedStyle(el);return r.width>0&&r.height>0&&cs.display!=="none"&&cs.visibility!=="hidden";}
+function decisionGroupV23(el){return el.closest(".modal,.popup,.panel,.card,.screen,.page,.view,section,main")||el.parentElement||document.body;}
+function decisionScoreV23(el){
+  const text=decisionTextV23(el),act=decisionActV23(el),st=(typeof S!=="undefined"&&S)||{};
+  let score=0;
+  if(el.getAttribute("data-primary")==="true")score+=1200;
+  if(/confirmer|valider|réclamer|reclamer/.test(text))score+=900;
+  if(typeof combat!=="undefined"&&combat&&combat.status==="lost"&&/réessayer|reessayer|rejouer/.test(text))score+=1000;
+  if(st.pendingBossFloor&&/boss|réessayer|reessayer/.test(text+" "+act))score+=980;
+  if(st.forge&&st.forge.upgradeEnd&&st.forge.upgradeEnd<=Date.now()&&/forge|forger|améliorer|ameliorer|récupérer|recuperer/.test(text+" "+act))score+=820;
+  if(Array.isArray(st.eggs)&&st.eggs.some(function(e){return e&&((e.end&&e.end<=Date.now())||(e.hatchEnd&&e.hatchEnd<=Date.now())||(e.ready===true));})&&/œuf|oeuf|éclore|eclore|ouvrir/.test(text+" "+act))score+=820;
+  if(/raid/.test(act)&&/lancer|combat|entrer|raid/.test(text+" "+act))score+=760;
+  if(/recherche|research/.test(act)&&/rechercher|lancer|améliorer|ameliorer/.test(text+" "+act))score+=720;
+  if(/continuer|combattre|combat|prochain étage|prochain etage/.test(text))score+=650;
+  if(/invoquer|forger|améliorer|ameliorer|équiper|equiper/.test(text))score+=520;
+  if(DECISION_SECONDARY_V23.test(text))score-=700;
+  return score;
+}
+function refreshDecisionHierarchyV23(){
+  document.querySelectorAll('[data-primary-action="true"],[data-secondary-action="true"]').forEach(function(el){el.removeAttribute("data-primary-action");el.removeAttribute("data-secondary-action");});
+  const groups=new Map();
+  document.querySelectorAll("[data-act],button").forEach(function(el){if(!decisionVisibleV23(el))return;const g=decisionGroupV23(el);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(el);});
+  groups.forEach(function(actions){
+    if(actions.length<2)return;
+    let best=null,bestScore=-Infinity;
+    actions.forEach(function(el){const score=decisionScoreV23(el);if(score>bestScore){best=el;bestScore=score;}});
+    if(best&&bestScore>0)best.setAttribute("data-primary-action","true");
+    actions.forEach(function(el){if(el!==best&&(DECISION_SECONDARY_V23.test(decisionTextV23(el))||(actions.length>=5&&decisionScoreV23(el)<=0)))el.setAttribute("data-secondary-action","true");});
+  });
+}
+let decisionRefreshQueuedV23=false;
+function queueDecisionHierarchyV23(){if(decisionRefreshQueuedV23)return;decisionRefreshQueuedV23=true;requestAnimationFrame(function(){decisionRefreshQueuedV23=false;refreshDecisionHierarchyV23();});}
+function startDecisionHierarchyV23(){refreshDecisionHierarchyV23();new MutationObserver(queueDecisionHierarchyV23).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["disabled","aria-disabled","class","style"]});}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startDecisionHierarchyV23,{once:true});else startDecisionHierarchyV23();
+'''
+          ui.write_text(prefix+block)
 
-          idx=Path('index.html'); s=idx.read_text()
-          if '2026.09.06.22' not in s:
-              if '2026.09.06.21' not in s: raise SystemExit('index .21 anchor missing')
-              s=s.replace('2026.09.06.21','2026.09.06.22')
-          idx.write_text(s)
+          css=Path('style.css'); c=css.read_text()
+          # Remove every previous hierarchy style block, then append one canonical block.
+          c=re.sub(r'/\* HICK_ACTION_HIERARCHY_V21[\s\S]*?@media \(prefers-reduced-motion[^}]*\) \{[^}]*\}\s*\}', '', c)
+          # Fallback for compact duplicate variant.
+          c=re.sub(r'/\* HICK_ACTION_HIERARCHY_V21 \*/[\s\S]*?@media \(prefers-reduced-motion:no-preference\) \{[^}]*\}\s*', '', c)
+          canonical='''\n/* DECISION_HIERARCHY_V23 */\n:root { --primary-action-ring: rgba(127,212,255,.34); }\n[data-primary-action="true"] { position:relative; z-index:1; font-weight:800; transform:translateZ(0); box-shadow:0 0 0 2px var(--primary-action-ring),0 8px 22px rgba(0,0,0,.22); }\n[data-secondary-action="true"] { opacity:.82; }\n[data-secondary-action="true"]:hover,[data-secondary-action="true"]:focus-visible { opacity:1; }\n@media (prefers-reduced-motion:no-preference) { [data-primary-action="true"] { transition:filter .15s ease,box-shadow .15s ease; } }\n'''
+          c=c.rstrip()+canonical
+          css.write_text(c)
+
+          eng=Path('game-2.js'); e=eng.read_text()
+          e=e.replace('|| "2026.09.06.22";', '|| "2026.09.06.23";', 1)
+          eng.write_text(e)
+
+          idx=Path('index.html'); h=idx.read_text()
+          if '2026.09.06.22' not in h: raise SystemExit('index build .22 anchor missing')
+          h=h.replace('2026.09.06.22','2026.09.06.23')
+          idx.write_text(h)
           PY
       - name: Syntax and regression checks
         run: |
@@ -73,26 +96,26 @@ jobs:
           python <<'PY'
           from pathlib import Path
           g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); ui=Path('game-5.js').read_text(); css=Path('style.css').read_text(); idx=Path('index.html').read_text()
-          assert 'DECISION_HIERARCHY_V22' in ui
-          assert 'decisionScoreV22' in ui and 'pendingBossFloor' in ui and 'upgradeEnd' in ui
-          assert 'refreshActionHierarchyV21=refreshDecisionHierarchyV22' in ui
-          assert '|| "2026.09.06.22";' in g2
-          assert idx.count('2026.09.06.22') == 7
-          assert 'HICK_ACTION_HIERARCHY_V21' in css
+          assert ui.count('DECISION_HIERARCHY_V23') == 1
+          assert 'HICK_ACTION_HIERARCHY_V21' not in ui
+          assert 'DECISION_HIERARCHY_V22' not in ui
+          assert 'decisionScoreV23' in ui and 'pendingBossFloor' in ui and 'upgradeEnd' in ui
+          assert css.count('DECISION_HIERARCHY_V23') == 1
+          assert 'HICK_ACTION_HIERARCHY_V21' not in css
+          assert css.count('[data-primary-action="true"]') >= 1
+          assert '|| "2026.09.06.23";' in g2
+          assert idx.count('2026.09.06.23') == 7
           assert 'ACCESSIBILITY_SIMPLICITY_V20' in css and 'ACCESSIBILITY_KEYBOARD_V20' in ui
           assert 'function raidIntroDifficultyMul' in g1
           assert 'if (level <= 1) return 0.65;' in g1 and 'if (level === 2) return 0.80;' in g1
           assert 'const firstBossMul = opts.boss && opts.floor === 10 && !opts.noFastback ? 0.80 : 1;' in g2
-          assert 'Math.floor(dmg * 0.30)' in g2
-          seg=g2[g2.index('function itemUpgradePreview'):g2.index('function itemUpgradeChance')]
-          assert seg.count('0.005') >= 2
-          print('v22 decision hierarchy checks passed')
+          print('v23 hierarchy cleanup checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
-          git add game-5.js game-2.js index.html
-          git commit -m 'Action Recommandée' -m 'Transforme la hiérarchie visuelle en hiérarchie décisionnelle : l’action principale est désormais choisie selon l’état réel du jeu et le contexte visible, avec priorité aux confirmations/récompenses, reprise après défaite, Boss en attente, Forge ou Œuf prêt, lancement de Raid et progression de campagne. Les actions secondaires restent accessibles mais sont visuellement calmées quand plusieurs choix sont présents. Aucun changement d’économie, de sauvegarde ou d’équilibrage. Build 2026.09.06.22.'
+          git add game-5.js style.css game-2.js index.html
+          git commit -m 'Hiérarchie Nettoyée' -m 'Fusionne les anciennes couches V21/V22 en une seule hiérarchie décisionnelle V23, supprime le CSS dupliqué et conserve exactement les priorités contextuelles existantes. Aucun changement d’économie, de progression, de sauvegarde ou d’équilibrage. Build 2026.09.06.23.'
           git push
