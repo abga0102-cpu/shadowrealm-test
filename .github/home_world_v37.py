@@ -66,7 +66,6 @@ if 'CAMPAIGN_WORLD_NAV_V37' not in css:
 .worldMenuPanel .navInner{height:44px}
 .worldMenuPanel .navLbl{font-size:8px;line-height:1.05}
 .homeCompactEnd{height:3px}
-/* Les anciennes grilles n'occupent plus la campagne. */
 .homeNavPrimary,.homeMore{display:none!important}
 @media(max-height:700px){
   .worldAction,.worldMenu>summary{transform:scale(.9);transform-origin:top left}
@@ -80,9 +79,10 @@ for old,new in [(BUILD_OLD,BUILD_NEW)]:
     g2=g2.replace(old,new)
     idx=idx.replace(old,new)
 
+home=g4[g4.find('function scrAccueil()'):g4.find('/* ---------------- PERSONNAGE')]
 assert 'CAMPAIGN_WORLD_NAV_V37' in g4
-assert 'worldRebirth' in g4 and 'data-arg="rebirth"' in g4
-assert 'progressionGoalHTML(S) +' not in g4[g4.find('function scrAccueil()'):g4.find('/* ---------------- PERSONNAGE')]
+assert 'worldRebirth' in g4 and 'go:"rebirth"' in g4
+assert 'progressionGoalHTML(S) +' not in home
 assert 'CAMPAIGN_WORLD_NAV_V37' in css
 assert BUILD_NEW in g2 and BUILD_NEW in idx
 
