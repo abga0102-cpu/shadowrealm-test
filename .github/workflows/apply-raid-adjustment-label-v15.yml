@@ -1,5 +1,5 @@
-# trigger-chat-arena-overlay-v48-2
-name: Chat arena overlay v48
+# trigger-chat-compact-v50-1
+name: Chat compact arena v50
 on:
   push:
     paths:
@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply chat arena overlay
-        run: python .github/chat_arena_overlay_v48.py
+      - name: Apply compact arena chat
+        run: python .github/chat_compact_v50.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -31,19 +31,19 @@ jobs:
           python <<'PY'
           from pathlib import Path
           g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); social=Path('social-v1.js').read_text(); idx=Path('index.html').read_text()
-          assert 'CHAT_ARENA_OVERLAY_V48' in social
-          assert 'function dockSocialUI()' in social
-          assert 'background:rgba(7,11,19,.66)' in social
-          assert 'backdrop-filter:blur(3px)' in social
-          assert 'Math.min(286,ar.height-margin*2)' in social
-          assert 'dockObserver' in social
-          assert '2026.09.06.48' in g2 and '2026.09.06.48' in idx
-          assert 'social-v1.js?v=2026.09.06.48' in idx
+          assert 'CHAT_COMPACT_OVERLAY_V50' in social
+          assert 'background:rgba(7,11,19,.36)' in social
+          assert 'ar.width*.72' in social
+          assert 'Math.min(268,ar.height-margin*2)' in social
+          assert 'desired=ar.right-ap.left-b.offsetWidth*.46' in social
+          assert 'app.clientWidth-20' in social
+          assert '2026.09.06.50' in g2 and '2026.09.06.50' in idx
+          assert 'social-v1.js?v=2026.09.06.50' in idx
           assert 'SCROLL_STABILITY_V47' in g5
           assert 'ARENA_STABILITY_V36' in g3
           assert 'ARENA_EQUIPMENT_REMOVED_V45' in g4
           assert 'SKILL_SLOTS_BASE: 3' in g1
-          print('v48 chat arena overlay checks passed')
+          print('v50 compact chat checks passed')
           PY
       - name: Commit update
         run: |
@@ -51,5 +51,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
           git add social-v1.js game-2.js index.html
-          git commit -m 'Chat Arène Transparent' -m 'Place le bouton Chat au bord de l’arène sur la Campagne et transforme le chat ouvert en panneau translucide limité à la hauteur de l’arène. Le combat reste visible derrière et la Forge n’est plus recouverte. Le panneau se recale après les rerenders et les changements d’orientation. Les systèmes de combat, progression, économie, Sanctuaire, Forge et sauvegardes restent inchangés. Build 2026.09.06.48.'
+          git commit -m 'Chat Combat Compact' -m 'Rend le chat nettement plus discret pendant la Campagne : panneau ancré sur le côté droit de l’arène, largeur réduite à environ 72 %, fond à 36 % d’opacité sans flou et hauteur limitée à la zone de combat. Le bouton est accroché au bord extérieur de l’arène. Hors Campagne, le chat reste compact au lieu de devenir presque plein écran. La Forge, le combat, la progression, le Sanctuaire, l’économie et les sauvegardes restent inchangés. Build 2026.09.06.50.'
           git push
