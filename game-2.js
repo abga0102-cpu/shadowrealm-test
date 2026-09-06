@@ -4,7 +4,7 @@
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.6";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.7";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -1000,8 +1000,8 @@ function makeEnemy(mode, opts) {
 
 function spawnCampaign(s) {
   const floor = s.floor, step = s.step;
-  const elite = isElite(floor) && step === 3;
-  const boss = isBoss(floor) && step === 3;
+  const boss = isBoss(floor);
+  const elite = !boss && isElite(floor) && step === 3;
   const count = (boss || elite) ? 1 : enemyCount(floor, step);
   const dv = computeDerived(s);
   const enemies = [];
@@ -1067,6 +1067,13 @@ function spawnRaidWave(raidId, level) {
 }
 
 function startCampaign() { combat = spawnCampaign(S); }
+function retryPendingBoss() {
+  const floor = Number(S.pendingBossFloor || 0);
+  if (!floor || floor !== S.floor + 1 || !isBoss(floor) || (S.bossClears && S.bossClears[String(floor)])) return false;
+  update((s) => { s.floor = floor; s.step = 1; });
+  combat = spawnCampaign(S);
+  return true;
+}
 
 function megaBossFloors(s) {
   if (!megaRaidUnlocked(s)) return [];
@@ -1761,7 +1768,9 @@ function handleCombatEnd(c) {
         s.eventProgress.hard = (s.eventProgress.hard || 0) + 1;
       }
       s.eventProgress.floors = (s.eventProgress.floors || 0) + 1;
-      if (s.step < RULES.STEPS_PER_FLOOR) s.step += 1;
+      if (c.boss) {
+        s.pendingBossFloor = 0; s.step = 1; s.floor += 1;
+      } else if (s.step < RULES.STEPS_PER_FLOOR) s.step += 1;
       else {
         const clearedFloor = s.floor;
         s.step = 1;
@@ -1791,7 +1800,8 @@ function handleCombatEnd(c) {
       if (isCheckpoint(s.floor)) s.checkpoint = Math.max(s.checkpoint, s.floor);
     } else {
       const cp = Math.max(s.checkpoint, 1);
-      s.floor = Math.max(cp, s.floor - 1);
+      if (c.boss) { s.pendingBossFloor = s.floor; s.floor = Math.max(cp, s.floor - 1); }
+      else s.floor = Math.max(cp, s.floor - 1);
       s.step = 1;
     }
   });

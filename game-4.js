@@ -4,6 +4,8 @@
 
 /* ---------------- ACCUEIL ---------------- */
 function scrAccueil() {
+  const pendingBoss = Number(S.pendingBossFloor || 0);
+  const canRetryBoss = pendingBoss === S.floor + 1 && isBoss(pendingBoss) && !(S.bossClears && S.bossClears[String(pendingBoss)]);
   const atMax = S.forge.level >= RULES.FORGE_MAX;
   const upgCost = forgeUpgCostFor(S);
   const upgTime = forgeUpgTimeFor(S);
@@ -97,7 +99,7 @@ function scrAccueil() {
   const wArt = ASSETS["weapon_" + D.weapon];
   const wRar = S.equipped.arme ? RARITY[S.equipped.arme.rarity] : null;
   const wCol = wRar ? wRar.c : "#d6dae4";
-  return '<div id="arenaSlot"></div>' +
+  return (canRetryBoss ? '<div class="pad mt4">' + btn(ic("skull",14) + ' BOSS',{cls:'red',act:'bossRetry',style:'font-weight:900;letter-spacing:1.2px'}) + '<div class="mute tiny center mt3">Boss étage ' + fmtInt(pendingBoss) + ' · retente quand tu te sens prêt</div></div>' : '') + '<div id="arenaSlot"></div>' +
     '<div id="skillbar">' +
       '<div class="slot" data-act="go" data-arg="equipement" title="' + esc(wtHome.name) +
         '" style="border-color:' + wCol + '66">' +

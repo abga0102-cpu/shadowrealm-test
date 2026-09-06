@@ -1718,6 +1718,7 @@ const ACT = {
     if (!ok) toast("Aucune clé disponible");
     else { nav("raid"); }
   },
+  bossRetry: () => { if (retryPendingBoss()) { nav("accueil"); toast("Boss relancé", true); } else toast("Boss non disponible"); },
   abortRaid: () => { combat = null; startCampaign(); nav("accueil"); toast("Raid abandonné"); },
   closeRaid: () => { closeModal(); raidResult = null; startCampaign(); nav("raid"); },
   adKey: () => { if (watchAdForKey()) toast("+1 clé universelle", true); else toast("Plafond atteint"); },
