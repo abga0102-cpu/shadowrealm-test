@@ -1,5 +1,5 @@
-# trigger-audit-v40-1
-name: Global audit v40
+# trigger-global-fix-v41-1
+name: Global bugfix v41
 on:
   push:
     paths:
@@ -7,10 +7,12 @@ on:
 permissions:
   contents: write
 jobs:
-  audit:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Apply global bugfixes
+        run: python .github/global_bugfix_v41.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -18,6 +20,34 @@ jobs:
           node --check game-3.js
           node --check game-4.js
           node --check game-5.js
+          node --check social-v1.js
           node --check audio-v26.js
-      - name: Global static audit
-        run: python .github/global_audit_v40.py
+      - name: Regression checks
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); social=Path('social-v1.js').read_text(); idx=Path('index.html').read_text()
+          assert 'GLOBAL_BUGFIX_V41' in g5
+          assert 'nav("familier")' not in g5 and 'nav("familiers")' in g5
+          sys=g4[g4.find('const sysBtns'):g4.find('const tile')]
+          assert 'go: "evenement"' in sys and 'badge: true' not in sys
+          assert 'function push(msg,broadcast=true,relay=broadcast)' in social
+          assert 'if(relay)remoteSend(msg);' in social
+          assert 'push(m,true,false)' in social
+          assert 'CHAT_UNLOCK_LEVEL' in social
+          assert '2026.09.06.41' in g2 and '2026.09.06.41' in idx
+          assert 'social-v1.js?v=2026.09.06.41' in idx
+          assert 'SKILL_SLOTS_BASE: 3' in g1
+          assert 'ARENA_STABILITY_V36' in g3
+          assert 'CAMPAIGN_WORLD_NAV_V37' in g4
+          assert 'SANCTUARY_DRAG_MERGE_V34' in g5
+          print('v41 regression checks passed')
+          PY
+      - name: Commit update
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet; then echo 'Already applied'; exit 0; fi
+          git add game-2.js game-4.js game-5.js social-v1.js index.html
+          git commit -m 'Correctifs Globaux' -m 'Corrige la navigation de notification d’œuf vers Familiers, supprime le badge Événement permanent au profit d’un badge réellement réclamable, empêche les messages reçus du chat social d’être renvoyés au serveur, garde les bots de test hors du transport distant, rétablit le déblocage du chat au niveau 3 et synchronise le build/cache. Les systèmes de combat, Forge, Sanctuaire, économie, Rebirth et sauvegardes restent inchangés. Build 2026.09.06.41.'
+          git push
