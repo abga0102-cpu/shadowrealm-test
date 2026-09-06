@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="shadowreach-build" content="2026.09.06.2">
+<meta name="shadowreach-build" content="2026.09.06.3">
 <title>Shadowreach</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%23141F35%22%2F%3E%3Cpath%20d%3D%22M16%204l2.6%205.4L24%2012l-5.4%202.6L16%2020l-2.6-5.4L8%2012l5.4-2.6z%22%20fill%3D%22%23E8B44A%22%2F%3E%3Cpath%20d%3D%22M15%2019h2v8h-2z%22%20fill%3D%22%23C8912E%22%2F%3E%3Cpath%20d%3D%22M12%2025h8v2h-8z%22%20fill%3D%22%23C8912E%22%2F%3E%3C%2Fsvg%3E">
 <style>
@@ -1080,6 +1080,11 @@ function fmt(n) {
     s = (n < 10 ? n.toFixed(2) : n < 100 ? n.toFixed(1) : String(Math.floor(n))) + units[i];
   }
   return neg ? "-" + s : s;
+}
+function fmtEquipStat(v) {
+  const n = Number(v) || 0;
+  if (Number.isInteger(n)) return fmt(n);
+  return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function fmtTime(secs) {
   secs = Math.max(0, Math.floor(secs));
@@ -3477,7 +3482,7 @@ function makeItem(slot, rarity, forgeLevel) {
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.2";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.3";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -5595,6 +5600,22 @@ function recycleItem(id) {
   return dust;
 }
 function itemUpgradeCost(it) { return Math.round(20 + it.level * 12); }
+function itemUpgradePreview(it) {
+  if (!it) return { label:"Stat", current:0, next:0, gain:0 };
+  const anchorLevel = it.upgradeBaseLevel || 0;
+  const steps = Math.max(0, (it.level || 0) + 1 - anchorLevel);
+  let current, next, label;
+  if (it.baseDamage) {
+    current = Number(it.damage || 0);
+    next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.0035) * 100) / 100;
+    label = "ATQ";
+  } else {
+    current = Number(it.hp || 0);
+    next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.0035) * 100) / 100;
+    label = "PV";
+  }
+  return { label, current, next, gain: Math.round((next - current) * 100) / 100 };
+}
 /* Jusqu'à +99, l'amélioration est garantie. À partir de +100, -5 points de
    réussite tous les 10 niveaux, avec un plancher de 35 %. Les Sceaux de
    stabilité ajoutent +5 points chacun. Un échec ne détruit ni l'objet ni son
@@ -7624,8 +7645,8 @@ function scrInventaire() {
           '80;box-shadow:0 0 10px ' + RARITY[it.rarity].c + '3d">' + slotIcon(it.slot, 20, it) + "</div>" +
           '<div class="flex1"><div class="b small">' + esc(it.name) + (it.level ? ' <span style="color:var(--goldLit)">+' + it.level + "</span>" : "") + "</div>" +
           '<div class="mute tiny b row gap4">' +
-          (MASTERY_STAT[it.slot] === "dmg" ? ic("sword", 9) + "+" + fmt(it.damage)
-            : ic("heart", 9) + "+" + fmt(it.hp)) +
+          (MASTERY_STAT[it.slot] === "dmg" ? ic("sword", 9) + "+" + fmtEquipStat(it.damage)
+            : ic("heart", 9) + "+" + fmtEquipStat(it.hp)) +
           (it.weaponType ? ' <span style="opacity:.8">· ' + WEAPON_TYPES[it.weaponType].name + "</span>" : "") + "</div>" +
           (it.affixes && it.affixes.length
             ? '<div class="row gap4 mt6" style="flex-wrap:wrap">' + it.affixes.map((a) =>
@@ -7661,7 +7682,7 @@ function scrEquipement() {
     const col = shown ? RARITY[shown.rarity].c : "var(--border)";
     return '<div class="eqSlot' + (shown ? " rf" : "") + '" data-act="itemDetail" data-arg="' + (shown ? shown.id : "") + '" data-arg2="' + slot + '" style="border-color:' + col + (shown ? ';--rc:' + col : ';opacity:.7') + (prev ? ';box-shadow:0 0 0 2px #78B7FF,0 0 18px #78B7FF66' : '') + '">' +
       slotIcon(slot, 27, shown) + '<div class="nm" style="color:' + (shown ? RARITY[shown.rarity].c : 'var(--textMute)') + '">' + SLOT_LABEL[slot] + '</div>' +
-      (shown ? '<div class="st row gap4" style="justify-content:center">' + (MASTERY_STAT[slot] === "dmg" ? ic("sword",9)+fmt(shown.damage) : ic("heart",9)+fmt(shown.hp)) + '</div>' +
+      (shown ? '<div class="st row gap4" style="justify-content:center">' + (MASTERY_STAT[slot] === "dmg" ? ic("sword",9)+fmtEquipStat(shown.damage) : ic("heart",9)+fmtEquipStat(shown.hp)) + '</div>' +
        (prev ? '<div class="st bb" style="color:#78B7FF">TEST</div>' : (shown.level ? '<div class="st bb" style="color:var(--goldLit)">+'+shown.level+'</div>' : '')) : '<div class="st">vide</div>') + '</div>';
   }).join('');
 
@@ -7726,7 +7747,7 @@ function scrEquipement() {
     (hasPreview ? '<div class="notice mt8"><div class="between"><span><b style="color:#78B7FF">Mode test :</b> '+previewItems.length+' pièce'+(previewItems.length>1?'s':'')+'</span><span class="row gap4">'+btn("Annuler",{small:true,cls:"ghost",act:"clearEquipPreview"})+btn("Équiper le set",{small:true,cls:"green",act:"equipPreviewSet"})+'</span></div><div class="mute tiny mt4">Tu peux tester une pièce par emplacement avant de valider tout le set.</div></div>' : '') +
     '<div class="sect" style="margin:14px 0 8px">Points de statistiques ('+S.statPoints+')</div><div class="duo">'+STAT_META.map((m)=>'<div class="card" style="padding:7px 8px"><div class="between"><div class="b small" style="color:'+m.color+'">'+m.label+'</div><b>'+S.stats[m.key]+'</b></div><div class="row gap4 mt6">'+btn("+1",{small:true,act:"alloc",arg:m.key,arg2:1,dis:S.statPoints<1})+btn("+5",{small:true,act:"alloc",arg:m.key,arg2:5,dis:S.statPoints<5})+btn("Max",{small:true,act:"alloc",arg:m.key,arg2:"max",dis:S.statPoints<1})+'</div></div>').join('')+'</div>' +
     '<div class="sect" style="margin:16px 0 8px">Inventaire</div><div class="seg">'+filters.map((f)=>'<span class="'+(invFilter===f?'on':'')+'" data-act="invFilter" data-arg="'+f+'">'+(f==='ALL'?'Tout':SLOT_LABEL[f])+'</span>').join('')+'</div>' +
-    (sorted.length===0 ? '<div class="notice center mt8">Aucun objet disponible.</div>' : sorted.map((it)=>'<div class="itemRow" style="border-left-color:'+RARITY[it.rarity].c+'"><div class="imini" style="width:32px;height:32px;border-color:'+RARITY[it.rarity].c+'80">'+slotIcon(it.slot,20,it)+'</div><div class="flex1"><div class="b small">'+esc(it.name)+(it.level?' <span style="color:var(--goldLit)">+'+it.level+'</span>':'')+'</div><div class="mute tiny">'+(MASTERY_STAT[it.slot]==='dmg'?ic('sword',9)+'+'+fmt(it.damage):ic('heart',9)+'+'+fmt(it.hp))+(it.weaponType?' · '+esc(WEAPON_TYPES[it.weaponType]?.name||it.weaponType):'')+'</div>'+(it.affixes&&it.affixes.length?'<div class="equipAffixes">'+it.affixes.slice(0,3).map((a)=>'<span class="tag" style="color:'+affixColor(a)+';border-color:'+affixColor(a)+'66">'+affixText(a)+'</span>').join('')+'</div>':'')+'</div>'+rtag(it.rarity)+'<div class="col gap4">'+btn(previewBySlot[it.slot]&&previewBySlot[it.slot].id===it.id?"Testé":"Tester",{small:true,cls:"blue",act:"previewEquip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn("Équiper",{small:true,cls:"green",act:"equip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn(ic("cycle",10)+recycleValue(it),{small:true,cls:"dark",act:"recycle",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+'</div></div>').join('')) +
+    (sorted.length===0 ? '<div class="notice center mt8">Aucun objet disponible.</div>' : sorted.map((it)=>'<div class="itemRow" style="border-left-color:'+RARITY[it.rarity].c+'"><div class="imini" style="width:32px;height:32px;border-color:'+RARITY[it.rarity].c+'80">'+slotIcon(it.slot,20,it)+'</div><div class="flex1"><div class="b small">'+esc(it.name)+(it.level?' <span style="color:var(--goldLit)">+'+it.level+'</span>':'')+'</div><div class="mute tiny">'+(MASTERY_STAT[it.slot]==='dmg'?ic('sword',9)+'+'+fmtEquipStat(it.damage):ic('heart',9)+'+'+fmtEquipStat(it.hp))+(it.weaponType?' · '+esc(WEAPON_TYPES[it.weaponType]?.name||it.weaponType):'')+'</div>'+(it.affixes&&it.affixes.length?'<div class="equipAffixes">'+it.affixes.slice(0,3).map((a)=>'<span class="tag" style="color:'+affixColor(a)+';border-color:'+affixColor(a)+'66">'+affixText(a)+'</span>').join('')+'</div>':'')+'</div>'+rtag(it.rarity)+'<div class="col gap4">'+btn(previewBySlot[it.slot]&&previewBySlot[it.slot].id===it.id?"Testé":"Tester",{small:true,cls:"blue",act:"previewEquip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn("Équiper",{small:true,cls:"green",act:"equip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn(ic("cycle",10)+recycleValue(it),{small:true,cls:"dark",act:"recycle",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+'</div></div>').join('')) +
     (hasPreview ? '<div class="equipPreviewSpacer"></div>' : '<div style="height:8px"></div>') + '</div>' + testDock;
 }
 
@@ -9599,7 +9620,8 @@ function showItemDetail(id, slot) {
   // stat line, styled like the sheet's item tooltip (§11)
   const st = (label, val, col) => '<div class="kv"><span class="dim" style="letter-spacing:.4px">' + label +
     '</span><b style="color:' + (col || "var(--text)") + '">' + val + "</b></div>";
-  const equipStat = (v) => { const n=Number(v)||0; return Number.isInteger(n) ? fmt(n) : n.toLocaleString("fr-FR", {minimumFractionDigits:2, maximumFractionDigits:2}); };
+  const equipStat = fmtEquipStat;
+  const upgradePreview = itemUpgradePreview(it);
   openModal('<div class="row gap10" style="margin-bottom:10px">' +
       '<div class="imini rf" style="width:46px;height:46px;border-color:' + rc + ";--rc:" + rc + '">' +
       '<span style="position:relative;z-index:1">' + slotIcon(it.slot, 27, it) + "</span></div>" +
@@ -9639,6 +9661,11 @@ function showItemDetail(id, slot) {
         '<span class="pill">'+used+' utilisé'+(used>1?'s':'')+' · +'+(used*5)+'%</span>'+ 
         btn('+',{cls:'purple',small:true,act:'itemSealPlus',arg:it.id,dis:used>=owned||chance>=100,style:'width:34px'})+'</div></div></div>';
     })() : '<div class="notice tiny"><b>Réussite garantie à 100 %</b> jusqu’au niveau +100.</div>') +
+    '<div class="orn"><i></i><b></b><i></i></div>' +
+    '<div class="card" style="padding:8px 9px;border-color:#3FA7FF66">' +
+      '<div class="between"><div><div class="mute tiny b">PROCHAINE AMÉLIORATION</div><div class="b small mt4">' + upgradePreview.label + ' · ' + equipStat(upgradePreview.current) + ' → <span style="color:#78B7FF">' + equipStat(upgradePreview.next) + '</span></div></div>' +
+      '<span class="pill" style="color:var(--greenLit);border-color:#3FB95066">+' + equipStat(upgradePreview.gain) + '</span></div>' +
+    '</div>' +
     '<div class="orn"><i></i><b></b><i></i></div>' +
     '<div class="row between" style="font-size:10.5px;font-weight:800">' +
       '<span class="mute">COÛT D\'AMÉLIORATION</span>' +
