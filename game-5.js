@@ -2005,24 +2005,67 @@ if (SMOKE) {
   };
 }
 
-// SCROLL_PRESERVE_V24
-// Conserve la position de #screen pendant les rafraichissements live.
-const renderBaseV24=render;
-render=function(){
-  const screen=document.getElementById("screen");
-  const beforeRoute=typeof route!=="undefined"?route:null;
-  const beforeTop=screen?screen.scrollTop:0;
-  const beforeMax=screen?Math.max(0,screen.scrollHeight-screen.clientHeight):0;
-  const wasNearBottom=screen?beforeMax-beforeTop<=24:false;
-  const out=renderBaseV24.apply(this,arguments);
-  const restore=function(){
-    const sc=document.getElementById("screen");
-    if(!sc||beforeRoute!==(typeof route!=="undefined"?route:null))return;
-    const max=Math.max(0,sc.scrollHeight-sc.clientHeight);
-    sc.scrollTop=wasNearBottom?max:Math.min(beforeTop,max);
+// SCROLL_STABILITY_V47
+// Un rafraîchissement du DOM pendant un geste de scroll iOS peut casser l'inertie
+// et ramener visuellement la page en arrière. On ne reconstruit donc plus l'écran
+// pendant que #screen est réellement en mouvement. Le dernier rendu demandé est
+// rejoué juste après la fin du scroll. Quand un rendu a lieu, une seule restauration
+// synchrone de scrollTop est faite : plus de second restore en requestAnimationFrame
+// et plus de "collage" automatique au bas de page qui entraient en conflit avec le doigt.
+const renderBaseV47 = render;
+let scrollRenderTimerV47 = 0;
+let scrollLastMoveV47 = -1e9;
+let scrollDeferredV47 = false;
+let scrollBypassV47 = false;
+
+(function initScrollStabilityV47(){
+  const sc = document.getElementById("screen");
+  if (!sc) return;
+  const mark = function(){
+    scrollLastMoveV47 = (typeof performance !== "undefined" ? performance.now() : Date.now());
+    if (scrollDeferredV47) {
+      clearTimeout(scrollRenderTimerV47);
+      scrollRenderTimerV47 = setTimeout(function(){
+        scrollRenderTimerV47 = 0;
+        if (!scrollDeferredV47) return;
+        scrollDeferredV47 = false;
+        scrollBypassV47 = true;
+        try { render(); } finally { scrollBypassV47 = false; }
+      }, 180);
+    }
   };
-  restore();
-  requestAnimationFrame(restore);
+  sc.addEventListener("scroll", mark, {passive:true});
+  sc.addEventListener("touchmove", mark, {passive:true});
+  sc.addEventListener("wheel", mark, {passive:true});
+})();
+
+render = function(){
+  const screen = document.getElementById("screen");
+  const beforeRoute = typeof route !== "undefined" ? route : null;
+  const now = (typeof performance !== "undefined" ? performance.now() : Date.now());
+  const activelyScrolling = !scrollBypassV47 && screen && (now - scrollLastMoveV47 < 150);
+
+  // Important: ne jamais remplacer les enfants du conteneur pendant l'inertie.
+  if (activelyScrolling) {
+    scrollDeferredV47 = true;
+    clearTimeout(scrollRenderTimerV47);
+    scrollRenderTimerV47 = setTimeout(function(){
+      scrollRenderTimerV47 = 0;
+      if (!scrollDeferredV47) return;
+      scrollDeferredV47 = false;
+      scrollBypassV47 = true;
+      try { render(); } finally { scrollBypassV47 = false; }
+    }, 180);
+    return;
+  }
+
+  const beforeTop = screen ? screen.scrollTop : 0;
+  const out = renderBaseV47.apply(this, arguments);
+  const sc = document.getElementById("screen");
+  if (sc && beforeRoute === (typeof route !== "undefined" ? route : null)) {
+    const max = Math.max(0, sc.scrollHeight - sc.clientHeight);
+    sc.scrollTop = Math.min(beforeTop, max);
+  }
   return out;
 };
 
