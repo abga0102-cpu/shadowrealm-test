@@ -4,7 +4,7 @@
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.16";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.17";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -530,11 +530,14 @@ const ELITE_ABIL = {
     },
     filter(c, e, dmg, src) {
       if (!(e.flying > 0)) return dmg;
-      // in the air a sword swings at nothing; arrows and spells still reach him
+      // Ranged weapons and skills keep full damage. Melee can still clip the Dragon
+      // during Envol, but at only 30%, so the phase remains a meaningful disadvantage
+      // without turning a melee build completely off for four seconds.
       if (src !== "weapon" || RANGED_IDS.indexOf(D.weapon) >= 0) return dmg;
-      c.floats.push({ id: rid(), x: e.x, val: 0, crit: false, color: "#B15CF6",
-        born: Date.now(), text: "HORS D'ATTEINTE" });
-      return 0;
+      const glancing = Math.max(1, Math.floor(dmg * 0.30));
+      c.floats.push({ id: rid(), x: e.x, val: glancing, crit: false, color: "#B15CF6",
+        born: Date.now(), text: "ENVOL · 30%" });
+      return glancing;
     },
     state(e) { return e.flying > 0 ? "ENVOL" : ""; },
   },
