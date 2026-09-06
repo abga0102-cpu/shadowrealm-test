@@ -1282,7 +1282,7 @@ const RULES = {
   SKILL_SLOTS_BASE: 3, SKILL_SLOT_5_LEVEL: 100,
   RAID_UNLOCK_LEVEL: 5, CHAT_UNLOCK_LEVEL: 3, MAX_ENEMIES: 3,
   FORGE_MAX: 50, SKILL_MAX_LEVEL: 50, MASTERY_MAX: 50, EGG_SLOT_MAX: 5,
-  RAID_MAX_LEVEL: 50, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6,
+  RAID_MAX_LEVEL: 50, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6, RAID_ASCEND_MAX_STARS: 1,
   UNIVERSAL_KEY_DAILY: 3, UNIVERSAL_KEY_CAP: 6, AFK_BASE_HOURS: 8,
   WAR_POINTS_PER_PR: 30,
   FORGE_BATCH_BASE: 1, FORGE_BATCH_MAX: 10,
@@ -1304,8 +1304,9 @@ const STATS = {
   CRITRED: { key: "critred", label: "Réduc. Crit",     perPoint: 0.3, icon: "shield" },
 };
 const CRIT_CHANCE_CAP = 60, CRIT_RED_CAP = 80;
-const SKILL_SUMMON_COST = 5;   // a Raid Compétence entry (50) = 10 summons
-/* "Compétence Invoquer Coût" shaves this, down to a floor of 1. */
+const SKILL_SUMMON_COST = 25;  // base cost per Compétence invocation; Tree reductions apply afterwards
+const PET_SUMMON_COST = 25;    // fixed cost per Familier egg invocation
+/* "Compétence Invoquer Coût" reduces the 25-Éclat base price. The tree is capped at 60%, so the absolute floor is 10 Éclats. */
 function skillSummonCost(s) {
   return Math.max(1, Math.round(SKILL_SUMMON_COST *
     (1 - Math.min(60, Math.abs(treeSum(s || S, "skillCost"))) / 100)));
@@ -1594,6 +1595,19 @@ const RATE_ANCHORS = {
   },
 };
 function masteryReq(level) { return Math.round(5 + level * 1.6); }
+/* Total paid summons needed to climb a fresh mastery ladder from 0 to max.
+   `skillMastery.count` / `petMastery.count` reset on Ascension, so lifetime
+   summon reconstruction must include completed ladders represented by stars. */
+function masteryPaidToMax() {
+  let total = 0;
+  for (let level = 0; level < RULES.MASTERY_MAX; level++) total += masteryReq(level);
+  return total;
+}
+function reconstructedPaidSummons(s, sys) {
+  const cur = sys === "pet" ? s.petMastery : s.skillMastery;
+  return Math.max(0, Number(cur && cur.count) || 0) +
+    Math.max(0, starsOf(s, sys)) * masteryPaidToMax();
+}
 
 /* ---------------------------- Ascension de Maîtrise ------------------------
    Each of the three systems runs its own Maîtrise ladder. Topping it out lets
@@ -1634,8 +1648,9 @@ function masteryLevel(s, sys) {
     : sys === "pet" ? s.petMastery.level : s.skillMastery.level;
 }
 function canAscend(s, sys) {
-  return masteryLevel(s, sys) >= masteryMax(sys) &&
-    (sys !== "pet" || starsOf(s, "pet") < PET_ASCEND_MAX_STARS);
+  const stars = starsOf(s, sys);
+  const belowStarCap = sys === "pet" ? stars < PET_ASCEND_MAX_STARS : stars < (ASCEND_POWER_MUL.length - 1);
+  return masteryLevel(s, sys) >= masteryMax(sys) && belowStarCap;
 }
 
 /* ---------------------------- Ascension de Raid ----------------------------
@@ -1651,10 +1666,10 @@ function canAscend(s, sys) {
 function raidStars(s, rid) { return (s.raids[rid] && s.raids[rid].stars) || 0; }
 function canAscendRaid(s, rid) {
   const r = s.raids[rid];
-  return !!r && r.level >= RULES.RAID_MAX_LEVEL;
+  return !!r && r.level >= RULES.RAID_MAX_LEVEL && raidStars(s, rid) < RULES.RAID_ASCEND_MAX_STARS;
 }
 function doAscendRaid(rid) {
-  if (!canAscendRaid(S, rid)) return { ok: false };
+  if (!canAscendRaid(S, rid)) return { ok: false, maxed: raidStars(S, rid) >= RULES.RAID_ASCEND_MAX_STARS };
   update((st) => {
     const r = st.raids[rid];
     r.stars = (r.stars || 0) + 1;
@@ -2136,11 +2151,15 @@ function raidMineraiBase(s) {
 }
 function raidReward(raid, level) {
   // Mise à jour 10 : progression lisible et linéaire pour les trois ressources demandées.
-  // Évolution : 15 au niveau 1, puis +4 par niveau.
-  if (raid === "evolution") return 15 + 4 * Math.max(0, level - 1);
-  // Éclats (Raid Compétence) et Essence (Raid Familier) : 75 au niveau 1, puis +7 par niveau.
-  if (raid === "competence") return 75 + 7 * Math.max(0, level - 1);
-  if (raid === "familier") return 75 + 7 * Math.max(0, level - 1);
+  // Évolution : 10 au niveau 1, puis +3 par niveau.
+  if (raid === "evolution") return 10 + 3 * Math.max(0, level - 1);
+  // Raid Compétence : 75 Éclats au niveau 1, puis +5 par niveau.
+  // Une première victoire finance exactement 3 invocations de base à 25.
+  if (raid === "competence") return 75 + 5 * Math.max(0, level - 1);
+  // Raid Familier : 75 Essences au niveau 1, puis +5 par niveau.
+  // Une première victoire finance exactement 3 invocations de base à 25,
+  // sans donner d'Essence au départ.
+  if (raid === "familier") return 75 + 5 * Math.max(0, level - 1);
   // Raid Or conserve sa courbe dédiée.
   if (raid === "or") return Math.floor(RAID_OR_BASE * Math.pow(RAID_OR_GROWTH, level - 1));
   if (raid === "minerai") return raidMineraiBase(S) + RAID_MINERAI_PER_LEVEL * (level - 1);
@@ -2677,7 +2696,7 @@ function defaultState(name) {
     version: SAVE_VERSION, playerName: name,
     level: 1, exp: 0, statPoints: 0,
     stats: { sante: 0, degats: 0, crit: 0, critred: 0 },
-    gold: 100, gems: 0, minerai: 400, poussiere: 0, eclat: 80, essence: 60, apples: 0,
+    gold: 100, gems: 0, minerai: 400, poussiere: 0, eclat: 0, essence: 0, apples: 0,
     floor: 1, step: 1, recordFloor: 1, checkpoint: 1, bossClears: {}, megaBossClears: {},
     equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null,
       collier: null, anneau: null, ceinture: null },
@@ -2695,8 +2714,8 @@ function defaultState(name) {
       or:         { level: 1, keys: 2, record: 0, stars: 0 },
       minerai:    { level: 1, keys: 2, record: 0, stars: 0 },
       competence: { level: 1, keys: 2, record: 0, stars: 0 },
-      familier:   { level: 1, keys: 2, record: 0 },
-      evolution:  { level: 1, keys: 2, record: 0 },
+      familier:   { level: 1, keys: 2, record: 0, stars: 0 },
+      evolution:  { level: 1, keys: 2, record: 0, stars: 0 },
     },
     pe: 0,
     universalKeys: 3, adKeysToday: 0, lastKeyReset: todayStr(),
@@ -2711,6 +2730,9 @@ function defaultState(name) {
     /* Récolte automatique: a live reserve, not an offline bonus. Amounts are
        kept as floats so fractional per-hour rates never round away. */
     harvest: { secs: 0, minerai: 0, essence: 0, eclat: 0, gold: 0 },
+    economyDebt: { eclat: 0, essence: 0 },
+    economyRebaseV2: true,
+    economyRebaseV3: true,
     eventDay: todayStr(), eventClaims: {}, eventProgress: {},
     testDays: 0, power: 0,
     autoSkills: true, firstSeen: Date.now(), tutorial: { version: 3, seen: {} },
@@ -2746,6 +2768,7 @@ function migrate(s, name) {
       return a;
     })(),
     harvest: Object.assign({}, base.harvest, s.harvest || {}),
+    economyDebt: Object.assign({}, base.economyDebt, s.economyDebt || {}),
     stars: Object.assign({}, base.stars, s.stars || {}),
   });
 
@@ -2878,6 +2901,68 @@ function migrate(s, name) {
   }
   if (!merged.megaFloorRewardsClaimed || typeof merged.megaFloorRewardsClaimed !== "object")
     merged.megaFloorRewardsClaimed = {};
+
+  /* Économie V2 : réaligne aussi les sauvegardes déjà jouées sur les nouvelles règles
+     sans demander une réinitialisation. L'ancien départ donnait 80 Éclats et 60 Essences,
+     les invocations coûtaient 5 Éclats / 10 Essences. On retire donc l'avantage historique
+     et on refacture les invocations payantes enregistrées par les deux maîtrises.
+     Si le solde ne suffit pas, le reliquat devient une dette de rééquilibrage : les prochains
+     gains de la ressource la remboursent avant de créditer le portefeuille. Cela préserve
+     les objets déjà tirés, dont l'historique exact (doublons, œufs éclos/fusions, tirages
+     gratuits) n'est pas reconstructible de façon fiable à partir d'une ancienne sauvegarde. */
+  if (!Object.prototype.hasOwnProperty.call(s, "economyRebaseV2")) {
+    if (!merged.economyDebt || typeof merged.economyDebt !== "object") merged.economyDebt = { eclat: 0, essence: 0 };
+    const cut = Math.min(60, Math.abs(treeSum(merged, "skillCost"))) / 100;
+    const oldSkillCost = Math.max(1, Math.round(5 * (1 - cut)));
+    const newSkillCost = Math.max(1, Math.round(25 * (1 - cut)));
+    const skillPaid = Math.max(0, Number(merged.skillMastery && merged.skillMastery.count) || 0);
+    const petPaid = Math.max(0, Number(merged.petMastery && merged.petMastery.count) || 0);
+    const charges = {
+      eclat: 80 + skillPaid * Math.max(0, newSkillCost - oldSkillCost),
+      essence: 60 + petPaid * 15,
+    };
+    ["eclat", "essence"].forEach((key) => {
+      const have = Math.max(0, Number(merged[key]) || 0);
+      const pay = Math.min(have, charges[key]);
+      merged[key] = have - pay;
+      merged.economyDebt[key] = Math.max(0, (Number(merged.economyDebt[key]) || 0) + charges[key] - pay);
+    });
+    merged.economyRebaseV2 = true;
+    merged.economyRebaseNoticeV2 = {
+      skillPaid, petPaid, eclatDebt: merged.economyDebt.eclat || 0, essenceDebt: merged.economyDebt.essence || 0
+    };
+  }
+
+  /* Économie V3 : V2 utilisait seulement `mastery.count`. Or ce compteur est
+     remis à zéro à chaque Ascension de Maîtrise. Une sauvegarde ayant déjà
+     Ascensionné avait donc payé trop peu de rattrapage. Les étoiles prouvent
+     qu'un ladder complet a été parcouru ; on refacture uniquement ces ladders
+     oubliés, sans toucher une seconde fois aux ressources de départ ni aux
+     invocations du ladder courant déjà traitées par V2. */
+  if (!Object.prototype.hasOwnProperty.call(s, "economyRebaseV3")) {
+    if (!merged.economyDebt || typeof merged.economyDebt !== "object") merged.economyDebt = { eclat: 0, essence: 0 };
+    const completedPerStar = masteryPaidToMax();
+    const cut = Math.min(60, Math.abs(treeSum(merged, "skillCost"))) / 100;
+    const oldSkillCost = Math.max(1, Math.round(5 * (1 - cut)));
+    const newSkillCost = Math.max(1, Math.round(25 * (1 - cut)));
+    const skillAscPaid = Math.max(0, starsOf(merged, "skill")) * completedPerStar;
+    const petAscPaid = Math.max(0, starsOf(merged, "pet")) * completedPerStar;
+    const charges = {
+      eclat: skillAscPaid * Math.max(0, newSkillCost - oldSkillCost),
+      essence: petAscPaid * 15,
+    };
+    ["eclat", "essence"].forEach((key) => {
+      const have = Math.max(0, Number(merged[key]) || 0);
+      const pay = Math.min(have, charges[key]);
+      merged[key] = have - pay;
+      merged.economyDebt[key] = Math.max(0, (Number(merged.economyDebt[key]) || 0) + charges[key] - pay);
+    });
+    merged.economyRebaseV3 = true;
+    merged.economyRebaseNoticeV3 = {
+      skillAscPaid, petAscPaid, eclatDebt: merged.economyDebt.eclat || 0, essenceDebt: merged.economyDebt.essence || 0
+    };
+  }
+
   if (!merged.tutorial || typeof merged.tutorial !== "object") merged.tutorial = { version: 0, seen: {} };
   if (!merged.tutorial.seen || typeof merged.tutorial.seen !== "object") merged.tutorial.seen = {};
   // Tutoriel v3 : le parcours guidé avec flèches/surbrillance doit être rejouable
@@ -3085,6 +3170,21 @@ function harvestAdvance(s, seconds) {
   h.secs += dt;
   return dt;
 }
+/* A played save can carry a one-time economic rebalancing debt after costs
+   change. New gains repay that debt first, so the player reaches the same net
+   resource position without deleting irreversible summon outcomes. */
+function creditRebalancedResource(s, key, amount) {
+  amount = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!amount) return { credited: 0, repaid: 0 };
+  if (!s.economyDebt || typeof s.economyDebt !== "object") s.economyDebt = { eclat: 0, essence: 0 };
+  const debt = Math.max(0, Number(s.economyDebt[key]) || 0);
+  const repaid = Math.min(debt, amount);
+  s.economyDebt[key] = debt - repaid;
+  const credited = amount - repaid;
+  s[key] = Math.max(0, Number(s[key]) || 0) + credited;
+  return { credited, repaid };
+}
+
 /* whole numbers are paid out, the sub-unit remainder stays in the reserve so
    a 12.5/h rate never loses its halves across repeated claims */
 function harvestClaim(s) {
@@ -3092,8 +3192,10 @@ function harvestClaim(s) {
   const got = { minerai: Math.floor(h.minerai), essence: Math.floor(h.essence),
     eclat: Math.floor(h.eclat), gold: Math.floor(h.gold), secs: Math.floor(h.secs) };
   s.minerai += got.minerai; h.minerai -= got.minerai;
-  s.essence += got.essence; h.essence -= got.essence;
-  s.eclat += got.eclat;     h.eclat -= got.eclat;
+  const essencePay = creditRebalancedResource(s, "essence", got.essence); h.essence -= got.essence;
+  const eclatPay = creditRebalancedResource(s, "eclat", got.eclat);       h.eclat -= got.eclat;
+  got.essence = essencePay.credited; got.eclat = eclatPay.credited;
+  got.essenceRepaid = essencePay.repaid; got.eclatRepaid = eclatPay.repaid;
   s.gold += got.gold;       h.gold -= got.gold;
   h.secs = 0;
   return got;
@@ -4473,24 +4575,37 @@ function startRaid(raidId, useUniversal, onEnd) {
     bg: raidId === "minerai" ? "env_ice" : raidId === "or" ? "env_dragon"
       : raidId === "competence" ? "env_celestial" : "env_forest", status: "fight",
     onEnd: (won) => {
+      let payout = { gross: reward, credited: reward, repaid: 0 };
       if (won) {
         update((st) => {
           if (useUniversal) st.universalKeys -= 1; else st.raids[raidId].keys -= 1;
           st.raids[raidId].level = Math.min(RULES.RAID_MAX_LEVEL, level + 1);
           st.raids[raidId].record = Math.max(st.raids[raidId].record, level);
-          // tree bonuses land here, where the resource is actually granted
-          if (raidId === "or") st.gold += Math.floor(reward * goldMul(st));
-          else if (raidId === "minerai") st.minerai += Math.floor(reward *
-            (1 + (treeSum(st, "minerai") + treeSum(st, "raidMinerai")) / 100));
-          else if (raidId === "competence") st.eclat += Math.floor(reward * (1 + treeSum(st, "skillPts") / 100));
-          else if (raidId === "evolution") st.pe += Math.floor(reward * (1 + treeSum(st, "peRaid") / 100));
-          else st.essence += Math.floor(reward * (1 + treeSum(st, "essence") / 100));
+          // Tree bonuses land here, where the resource is actually granted.
+          if (raidId === "or") {
+            const amount = Math.floor(reward * goldMul(st));
+            st.gold += amount; payout = { gross: amount, credited: amount, repaid: 0 };
+          } else if (raidId === "minerai") {
+            const amount = Math.floor(reward * (1 + (treeSum(st, "minerai") + treeSum(st, "raidMinerai")) / 100));
+            st.minerai += amount; payout = { gross: amount, credited: amount, repaid: 0 };
+          } else if (raidId === "competence") {
+            const amount = Math.floor(reward * (1 + treeSum(st, "skillPts") / 100));
+            const pay = creditRebalancedResource(st, "eclat", amount);
+            payout = { gross: amount, credited: pay.credited, repaid: pay.repaid };
+          } else if (raidId === "evolution") {
+            const amount = Math.floor(reward * (1 + treeSum(st, "peRaid") / 100));
+            st.pe += amount; payout = { gross: amount, credited: amount, repaid: 0 };
+          } else {
+            const amount = Math.floor(reward * (1 + treeSum(st, "essence") / 100));
+            const pay = creditRebalancedResource(st, "essence", amount);
+            payout = { gross: amount, credited: pay.credited, repaid: pay.repaid };
+          }
         });
       } else {
         // Défaite/abandon : aucune clé n'est consommée.
         // La clé n'est débitée qu'après une victoire, pour éviter une double punition.
       }
-      onEnd(won, reward);
+      onEnd(won, payout);
     },
   };
   return true;
@@ -5485,11 +5600,25 @@ function summonSkill(n) {
       for (let r = 0; r < rolls; r++) {
         const rates = getRates("skill", s.skillMastery.level, s.ascension, starsOf(s, "skill"));
         let rar = rollRarity(rates);
-        // a tier can legitimately be empty of skills; step down rather than fail
-        let ri = RARITY_ORDER.indexOf(rar);
-        while (ri > 0 && !(SKILLS_BY_RARITY[rar] || []).length) { ri -= 1; rar = RARITY_ORDER[ri]; }
-        const pool = SKILLS_BY_RARITY[rar] || SKILL_DEFS;
-        const def = pool[Math.floor(Math.random() * pool.length)];
+        // Starter protection: the player now starts with 0 Éclat and must first earn
+        // them in Raid Compétence. Its level-1 reward (75) finances exactly three
+        // paid summons at the 25-Éclat base price. While Maîtrise is still 0,
+        // those first summons prioritise missing Common skills until the player
+        // owns three different skills. This prevents a duplicate roll from
+        // blocking the 3 active slots/tutorial without giving free starter currency.
+        const ownedIds = new Set(Object.keys(s.skills || {}));
+        const starterMissing = (SKILLS_BY_RARITY.COMMUN || []).filter((d) => !ownedIds.has(d.id));
+        let def = null;
+        if (ownedIds.size < 3 && s.skillMastery.level === 0 && starterMissing.length) {
+          rar = "COMMUN";
+          def = starterMissing[Math.floor(Math.random() * starterMissing.length)];
+        } else {
+          // a tier can legitimately be empty of skills; step down rather than fail
+          let ri = RARITY_ORDER.indexOf(rar);
+          while (ri > 0 && !(SKILLS_BY_RARITY[rar] || []).length) { ri -= 1; rar = RARITY_ORDER[ri]; }
+          const pool = SKILLS_BY_RARITY[rar] || SKILL_DEFS;
+          def = pool[Math.floor(Math.random() * pool.length)];
+        }
         const existing = s.skills[def.id];
         if (existing) {
           const need = skillDupesNeeded(existing.level);
@@ -5548,8 +5677,8 @@ function summonEgg(n) {
     // an Épique egg
     for (let i = 0; i < n; i++) {
       // Essence is the only thing that can stop a summon now
-      if (s.essence < 10) break;
-      s.essence -= 10;
+      if (s.essence < PET_SUMMON_COST) break;
+      s.essence -= PET_SUMMON_COST;
       const eggsToMake = Math.random() * 100 < dblChance ? 2 : 1;
       for (let e = 0; e < eggsToMake; e++) {
         const rates = getRates("pet", s.petMastery.level, s.ascension, starsOf(s, "pet"));
@@ -6688,10 +6817,10 @@ const RESOURCE_INFO = {
     desc: "Améliore le niveau d'un équipement déjà obtenu, sans toucher à ses bonus de stats.",
     from: ["Recyclage d'équipement"] },
   eclat:     { icon: "eclat", c: "#C79BFF", label: "Points de Compétence", get: (s) => s.eclat,
-    desc: "Sert à invoquer des Compétences. Une invocation coûte " + skillSummonCost(S) + " points.",
+    desc: "Sert à invoquer des Compétences. Une invocation coûte " + skillSummonCost(S) + " points." + ((S.economyDebt && S.economyDebt.eclat) ? " Rééquilibrage en cours : les prochains Éclats remboursent d’abord " + fmt(S.economyDebt.eclat) + " Éclats historiques." : ""),
     from: ["Raid Compétence", "Récolte automatique — 25 % d'une entrée par heure"] },
   essence:   { icon: "essence", c: "#FFC29B", label: "Essence animale", get: (s) => s.essence,
-    desc: "Sert uniquement à invoquer des œufs de Familier.",
+    desc: "Sert à invoquer des œufs de Familier. Une invocation coûte " + PET_SUMMON_COST + " Essence." + ((S.economyDebt && S.economyDebt.essence) ? " Rééquilibrage en cours : les prochaines Essences remboursent d’abord " + fmt(S.economyDebt.essence) + " Essences historiques." : ""),
     from: ["Raid Familier", "Récolte automatique — 25 % d'une entrée par heure"] },
   apples:    { icon: "paw", c: "#8ED05A", label: "Pommes", get: (s) => s.apples || 0,
     desc: "Sert à améliorer le niveau des Familiers. Une récompense de première victoire uniquement.",
@@ -7056,7 +7185,7 @@ function renderTabs() {
   const active = TAB_IDS.includes(route) ? route : null;
   el.innerHTML = TABS.map((t) => {
     let badge = false;
-    if (t.id === "developpement") badge = S.eclat >= 10 || (!S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n)));
+    if (t.id === "developpement") badge = S.eclat >= skillSummonCost(S) || (!S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n)));
     if (t.id === "equipement") badge = S.inventory.length > 0 || S.statPoints > 0;
     if (t.id === "accueil") badge = false;
     return '<div class="tab' + (active === t.id ? " on" : "") + '" data-act="go" data-arg="' + t.id + '">' +
@@ -7784,11 +7913,11 @@ function scrFamiliers() {
         ratesTable(rates, S.petMastery.level < RULES.MASTERY_MAX ? getRates("pet", S.petMastery.level + 1, S.ascension, starsOf(S, "pet")) : null,
           "Actuel", "Niv." + (S.petMastery.level + 1), PET_RARITY_ORDER) +
         '<div class="row gap6 mt6">' +
-          btn(ic("egg", 14) + "Invoquer · 10", { small: true, act: "summonEgg", arg: 1,
-            dis: S.essence < 10,
+          btn(ic("egg", 14) + "Invoquer · " + PET_SUMMON_COST, { small: true, act: "summonEgg", arg: 1,
+            dis: S.essence < PET_SUMMON_COST,
             style: "--bA:#FFA872;--bB:#DB6224;--bS:#7A310C;--bE:#FFD9C0;--bT:#2A0F03" }) +
-          btn("x10", { small: true, act: "summonEgg", arg: 10,
-            dis: S.essence < 10,
+          btn("x10 · " + (PET_SUMMON_COST * 10), { small: true, act: "summonEgg", arg: 10,
+            dis: S.essence < PET_SUMMON_COST * 10,
             style: "--bA:#FFA872;--bB:#DB6224;--bS:#7A310C;--bE:#FFD9C0;--bT:#2A0F03;max-width:62px" }) +
         "</div>" +
         // the nest being full is no longer a reason not to summon
@@ -7911,7 +8040,9 @@ function scrRaid() {
       (canAscendRaid(S, id)
         ? '<div class="mt6">' + btn(ic("star", 13) + "ASCENSION ★ — niveau maximum",
             { cls: "purple", small: true, act: "ascendRaidAsk", arg: id }) + "</div>"
-        : "") +
+        : (st >= RULES.RAID_ASCEND_MAX_STARS && r.level >= RULES.RAID_MAX_LEVEL
+          ? '<div class="mt6"><div class="notice center tiny b" style="padding:6px;color:var(--goldLit)">★ Ascension maximale atteinte</div></div>'
+          : "")) +
       "</div>";
   }).join("");
 
@@ -9668,13 +9799,19 @@ function showSkillSlotPicker(idx) {
 function showRaidResult(r) {
   const meta = RAIDS[r.raidId];
   const col = r.won ? C.gold : C.red;
+  const pay = (r.reward && typeof r.reward === "object") ? r.reward : { gross: Number(r.reward) || 0, credited: Number(r.reward) || 0, repaid: 0 };
+  const rewardLine = pay.repaid > 0
+    ? 'Récompense produite : <b style="color:' + meta.color + '">+' + fmt(pay.gross) + " " + meta.reward + '</b><br>' +
+      '<span style="color:var(--goldLit)">' + fmt(pay.repaid) + ' utilisé' + (pay.repaid > 1 ? 's' : '') +
+      ' pour le rééquilibrage historique</span><br>' +
+      (pay.credited > 0 ? 'Crédité : <b style="color:' + meta.color + '">+' + fmt(pay.credited) + " " + meta.reward + '</b><br>' : '')
+    : 'Récompense : <b style="color:' + meta.color + '">+' + fmt(pay.credited) + " " + meta.reward + '</b><br>';
   openModal('<div class="center">' + ic(r.won ? "trophy" : "skull", 40) + "</div>" +
     '<div class="modalT mt6" style="color:' + (r.won ? "var(--goldLit)" : "var(--redLit)") +
       ';text-shadow:0 2px 0 #000,0 0 18px ' + col + '80">' + (r.won ? "VICTOIRE" : "DÉFAITE") + "</div>" +
     '<div class="dim small center" style="margin-bottom:12px;line-height:1.55">' + meta.name + " · niveau " + r.level + "<br>" +
-    (r.won ? 'Récompense : <b style="color:' + meta.color + '">+' + fmt(r.reward) + " " + meta.reward +
-      "</b><br>Niveau de raid suivant débloqué."
-      : "La clé est consommée. Renforce ton personnage et réessaie.") + "</div>" +
+    (r.won ? rewardLine + "Niveau de raid suivant débloqué."
+      : "Aucune clé consommée. Renforce ton personnage et réessaie.") + "</div>" +
     btn("Continuer", { cls: r.won ? "green" : "ghost", act: "closeRaid" }),
     r.won ? "Raid terminé" : "Raid échoué");
 }
@@ -9732,7 +9869,11 @@ const ACT = {
   ascendRaidDo: (a) => {
     const r = doAscendRaid(a);
     closeModal();
-    if (!r.ok) { toast("Ce raid n'est pas encore au niveau " + RULES.RAID_MAX_LEVEL); return; }
+    if (!r.ok) {
+      toast(r.maxed ? "Ascension Raid déjà au maximum (★" + RULES.RAID_ASCEND_MAX_STARS + ")"
+        : "Ce raid n'est pas encore au niveau " + RULES.RAID_MAX_LEVEL);
+      return;
+    }
     toast("Ascension " + RAIDS[a].reward + " ★ " + r.stars, true);
   },
   ascendDo: (a) => {
