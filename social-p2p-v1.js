@@ -1,5 +1,7 @@
-/* SHADOWREACH SOCIAL P2P V2
-   Cross-device tester transport. Preserves social channels and narrow payloads. */
+/* SHADOWREACH SOCIAL P2P V3
+   Cross-device tester transport. Preserves social channels and narrow payloads.
+   V3 removes the global MutationObserver: combat rendering must never trigger
+   chat status work on every DOM mutation. */
 (() => {
   "use strict";
   const STORE="shadowreach.social.v1.messages",MAX=160,APP_ID="shadowreach-testers-social-2026-v1",ROOM_ID="shadowreach-testers-global-v1",CDN="https://esm.run/trystero@0.25.4";
@@ -18,11 +20,11 @@
   function syncKnown(){const list=read();list.forEach(m=>{if(m&&m.id)seen.add(m.id)});return list}
   function broadcastNewLocal(){const list=read(),snap=list.map(m=>m&&m.id).join("|");if(snap===lastSnapshot)return;lastSnapshot=snap;for(const m of list){if(!m||!m.id||seen.has(m.id))continue;seen.add(m.id);if(!m.bot)sendEnvelope({kind:"message",message:m})}}
   function patchStatus(){const root=document.getElementById("srSocial");if(!root)return;const status=root.querySelector(".head .status");if(!status)return;status.textContent=ready?"Temps réel P2P · "+peerCount+" joueur"+(peerCount!==1?"s":"")+" connecté"+(peerCount!==1?"s":""):"Connexion au chat…"}
-  function installStatusObserver(){const obs=new MutationObserver(()=>patchStatus()),app=document.getElementById("app");if(app)obs.observe(app,{childList:true,subtree:true});setInterval(patchStatus,1500)}
   async function boot(){
-    syncKnown();lastSnapshot=read().map(m=>m&&m.id).join("|");installStatusObserver();
+    syncKnown();lastSnapshot=read().map(m=>m&&m.id).join("|");
+    setInterval(patchStatus,1500);
     try{const mod=await import(CDN);room=mod.joinRoom({appId:APP_ID},ROOM_ID);action=room.makeAction("shadowreach-social-message-v2");action.onMessage=payload=>{if(!payload||typeof payload!=="object")return;if(payload.kind==="message")ingest(payload.message);else if(payload.kind==="history"&&Array.isArray(payload.messages))payload.messages.slice(-60).forEach(ingest)};room.onPeerJoin=peerId=>{peerCount++;ready=true;patchStatus();const history=read().filter(m=>m&&!m.bot).slice(-60);sendEnvelope({kind:"history",messages:history},{target:peerId})};room.onPeerLeave=()=>{peerCount=Math.max(0,peerCount-1);patchStatus()};ready=true;patchStatus()}
     catch(err){ready=false;console.warn("Shadowreach P2P social unavailable; local chat remains active.",err);patchStatus()}
   }
-  setInterval(broadcastNewLocal,350);window.addEventListener("storage",e=>{if(!e||e.key===STORE)broadcastNewLocal()});window.addEventListener("beforeunload",()=>{try{if(room)room.leave()}catch(_){}});boot();
+  setInterval(broadcastNewLocal,500);window.addEventListener("storage",e=>{if(!e||e.key===STORE)broadcastNewLocal()});window.addEventListener("beforeunload",()=>{try{if(room)room.leave()}catch(_){}});boot();
 })();
