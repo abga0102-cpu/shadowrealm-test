@@ -970,6 +970,7 @@ function refreshHarvestModal() {
   if (!ov) return;
   const body = ov.querySelector(".mbody");
   if (body) body.innerHTML = harvestModalHTML();
+  if (typeof queueDecisionHierarchyV30 === "function") queueDecisionHierarchyV30();
 }
 function closeModal() {
   const ov = document.getElementById("overlay");
