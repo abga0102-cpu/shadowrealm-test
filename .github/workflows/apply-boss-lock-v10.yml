@@ -1,66 +1,9 @@
-name: Apply boss lock v10
+name: Legacy boss lock v10
 on:
-  push:
-    paths:
-      - '.github/workflows/apply-boss-lock-v10.yml'
-permissions:
-  contents: write
+  workflow_dispatch:
 jobs:
-  patch:
+  archived:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Apply build 2026.09.06.10
-        shell: python
-        run: |
-          from pathlib import Path
-          p=Path('game-2.js'); s=p.read_text()
-          s=s.replace('const mulD = opts.boss ? 1.7 : opts.elite ? 1.4 : 1;', 'const mulD = opts.boss ? (opts.floor === 40 ? 1.7 : 1.8) : opts.elite ? 1.4 : 1;')
-          s=s.replace('function startCampaign() { combat = spawnCampaign(S); }', '''function startCampaign() {
-            // A failed Boss is a voluntary retry gate: the player farms the previous floor
-            // until pressing BOSS. Never auto-enter the pending Boss.
-            const pending = Number(S.pendingBossFloor || 0);
-            if (pending && S.floor >= pending) update((st) => { st.floor = Math.max(1, pending - 1); st.step = 1; });
-            combat = spawnCampaign(S);
-          }''')
-          old='''        const clearedFloor = s.floor;
-        s.step = 1;
-        s.floor += 1;
-        // Saut d'étage'''
-          new='''        const clearedFloor = s.floor;
-        s.step = 1;
-        // Boss verrouillé après une défaite : farmer cet étage ne relance jamais le Boss.
-        // Seul retryPendingBoss(), déclenché par le bouton BOSS, peut y retourner.
-        const pendingBoss = Number(s.pendingBossFloor || 0);
-        if (!(pendingBoss && pendingBoss === s.floor + 1)) s.floor += 1;
-        // Saut d'étage'''
-          if old not in s: raise SystemExit('campaign progression anchor missing')
-          s=s.replace(old,new)
-          s=s.replace('const nextFloor = s.floor;\n        const weakFight', 'const nextFloor = s.floor;\n        const weakFight')
-          # Prevent floor skip from firing while held below a pending Boss.
-          s=s.replace('if (weakFight && skipPct > 0 && !isElite(nextFloor)', 'if (!(pendingBoss && pendingBoss === s.floor + 1) && weakFight && skipPct > 0 && !isElite(nextFloor)')
-          s=s.replace('|| "2026.09.06.9";', '|| "2026.09.06.10";', 1)
-          p.write_text(s)
-
-          p=Path('game-4.js'); s=p.read_text()
-          old="(recycleSelectMode ? '<div class=\"row gap6 mt6\">'+btn('Tout sélectionner'+(invFilter==='ALL'?'':' · '+SLOT_LABEL[invFilter]),{small:true,cls:'ghost',act:'selectVisibleRecycle',dis:!sorted.length})+btn(ic('trash',11)+' Recycler '+recycleSelectedIds.size,{small:true,cls:'red',act:'askRecycleSelected',dis:!recycleSelectedIds.size})+'</div>' : '') +"
-          new="(recycleSelectMode ? '<div class=\"row gap6 mt6\">'+btn('Tout sélectionner'+(invFilter==='ALL'?'':' · '+SLOT_LABEL[invFilter]),{small:true,cls:'ghost',act:'selectVisibleRecycle',dis:!sorted.length})+btn(ic('trash',11)+' Recycler '+recycleSelectedIds.size+' · +'+fmt(selectedRecycleItems().reduce((a,x)=>a+recycleValue(x),0))+' Poussière',{small:true,cls:'red',act:'askRecycleSelected',dis:!recycleSelectedIds.size})+'</div>' : '') +"
-          if old not in s: raise SystemExit('recycle feedback anchor missing')
-          s=s.replace(old,new)
-          p.write_text(s)
-
-          p=Path('index.html'); s=p.read_text().replace('2026.09.06.9','2026.09.06.10'); p.write_text(s)
-      - name: Syntax check
-        run: |
-          node --check game-1.js
-          node --check game-2.js
-          node --check game-3.js
-          node --check game-4.js
-          node --check game-5.js
-      - name: Commit update
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add game-2.js game-4.js index.html
-          git commit -m "Boss Lock" -m "Après une défaite contre un Boss, le joueur reste sur l’étage précédent et peut le farmer sans relancer automatiquement le Boss. Seul le bouton BOSS permet une revanche. La réduction de dégâts est limitée au Boss 40 et le recyclage manuel affiche désormais la Poussière totale sélectionnée. Build 2026.09.06.10."
-          git push
+      - name: Archived migration
+        run: echo "Cette migration est déjà intégrée au jeu actuel."
