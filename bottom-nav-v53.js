@@ -1,27 +1,78 @@
-// BOTTOM_NAV_ICONS_V53
-// Icônes vectorielles sobres pour la navigation principale. Aucun nouvel asset image.
+// BOTTOM_NAV_FANTASY_V59
+// Navigation fantasy illustrée inspirée du style validé par l'utilisateur.
 (function(){
   const ICONS={
-    'accueil':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.2 12 4l8.5 7.2v8.3a1.5 1.5 0 0 1-1.5 1.5h-4.5v-6h-5v6H5a1.5 1.5 0 0 1-1.5-1.5Z"/><path d="m2.5 12 9.5-8 9.5 8"/></svg>',
-    'équipement':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.2 5.2 4.6-2 2 2-2 4.6-8.9 8.9-4.6 1 1-4.6Z"/><path d="m12.5 6.9 4.6 4.6M4 4l5 5M3 3l3.5 1L4 6.5Z"/></svg>',
-    'developpement':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9M12 13c-4.2 0-7-2.5-7-6 4.2 0 7 2.1 7 6ZM12 10c.2-4 2.7-6.5 7-6.5.1 4-2.3 6.5-7 6.5Z"/><path d="M8 21h8"/></svg>',
-    'développement':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9M12 13c-4.2 0-7-2.5-7-6 4.2 0 7 2.1 7 6ZM12 10c.2-4 2.7-6.5 7-6.5.1 4-2.3 6.5-7 6.5Z"/><path d="M8 21h8"/></svg>',
-    'réglages':'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.2 13.5a7.7 7.7 0 0 0 0-3l2-1.5-2-3.4-2.5 1a8.2 8.2 0 0 0-2.6-1.5L13.8 2h-3.9l-.4 3.1A8.2 8.2 0 0 0 7 6.6l-2.5-1-2 3.4 2 1.5a7.7 7.7 0 0 0 0 3l-2 1.5 2 3.4 2.5-1a8.2 8.2 0 0 0 2.6 1.5l.4 3.1h3.9l.4-3.1a8.2 8.2 0 0 0 2.6-1.5l2.5 1 2-3.4Z"/></svg>'
+    accueil:`<svg class="fantasyNavSvg" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="homeGold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFF1A8"/><stop offset=".42" stop-color="#E8B44A"/><stop offset="1" stop-color="#8A5718"/></linearGradient>
+        <linearGradient id="homeBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3FA7FF"/><stop offset="1" stop-color="#173A63"/></linearGradient>
+        <radialGradient id="homeGlow"><stop stop-color="#FFF5B8" stop-opacity=".95"/><stop offset=".55" stop-color="#FFC93D" stop-opacity=".45"/><stop offset="1" stop-color="#FFC93D" stop-opacity="0"/></radialGradient>
+      </defs>
+      <ellipse cx="32" cy="53" rx="24" ry="8" fill="url(#homeGlow)"/>
+      <path d="M10 48V25l7-3v-8l8 3 7-10 7 10 8-3v8l7 3v23Z" fill="#26344F" stroke="url(#homeGold)" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M18 47V29h8v18M38 47V29h8v18" fill="url(#homeBlue)" stroke="#E8B44A" stroke-width="1.7"/>
+      <path d="M25 48V31c0-5 3-9 7-9s7 4 7 9v17Z" fill="url(#homeGold)" stroke="#FFF0B0" stroke-width="1.2"/>
+      <path d="M14 24h8M42 24h8M29 17h6" stroke="#FFF0B0" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="32" cy="35" r="6" fill="#FFF5B8" opacity=".28"/>
+    </svg>`,
+    equipement:`<svg class="fantasyNavSvg" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="eqSteel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F3F6FA"/><stop offset=".48" stop-color="#A9B7C9"/><stop offset="1" stop-color="#4B5E7B"/></linearGradient>
+        <linearGradient id="eqGold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFE18A"/><stop offset="1" stop-color="#9B6019"/></linearGradient>
+        <linearGradient id="eqBlue" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#2767B3"/><stop offset="1" stop-color="#10294D"/></linearGradient>
+      </defs>
+      <path d="M35 10 52 16v16c0 11-7 18-17 23-10-5-17-12-17-23V16Z" fill="url(#eqBlue)" stroke="url(#eqGold)" stroke-width="3"/>
+      <path d="M35 16 45 20v12c0 7-4 12-10 16-6-4-10-9-10-16V20Z" fill="#1B2E4D" stroke="#6CA8E8" stroke-width="1.4"/>
+      <path d="M13 48 45 16l5-6 4 4-6 5-31 33Z" fill="url(#eqSteel)" stroke="#27364F" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="m12 44 9 9M18 48l-5 5" stroke="url(#eqGold)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M35 24 39 30 46 31 41 36 42 43 35 40 29 43 30 36 25 31 32 30Z" fill="url(#eqGold)" opacity=".95"/>
+    </svg>`,
+    developpement:`<svg class="fantasyNavSvg" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="treeWood" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#E1A653"/><stop offset=".55" stop-color="#9A5C22"/><stop offset="1" stop-color="#4E2B16"/></linearGradient>
+        <linearGradient id="treeLeaf" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#47D5FF"/><stop offset=".55" stop-color="#176FD0"/><stop offset="1" stop-color="#244A9B"/></linearGradient>
+        <radialGradient id="treeAura"><stop stop-color="#3FA7FF" stop-opacity=".5"/><stop offset="1" stop-color="#3FA7FF" stop-opacity="0"/></radialGradient>
+      </defs>
+      <ellipse cx="32" cy="51" rx="25" ry="8" fill="url(#treeAura)"/>
+      <path d="M32 52c-2-8 1-15-1-22-2-6-8-8-12-12 7 2 11 5 14 9 2-8 7-13 12-17-3 7-6 11-7 18 4-4 8-6 13-8-5 5-10 9-12 15-2 6 2 11 5 17H20c5-4 9-8 12-14" fill="none" stroke="url(#treeWood)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M16 19 21 10l7 7-6 7ZM33 13l5-10 6 9-6 6ZM45 21l9-5-1 10-7 3ZM14 31l8-4 2 9-8 2ZM40 34l8-5 3 8-8 4Z" fill="url(#treeLeaf)" stroke="#7BE2FF" stroke-width="1.2"/>
+      <path d="M14 53c10 3 26 3 36 0" fill="none" stroke="#3FA7FF" stroke-width="1.7" opacity=".8"/>
+    </svg>`,
+    reglages:`<svg class="fantasyNavSvg" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="gearMetal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#E7D2AE"/><stop offset=".3" stop-color="#A88A63"/><stop offset=".62" stop-color="#65738A"/><stop offset="1" stop-color="#303B50"/></linearGradient>
+        <linearGradient id="gearBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#74E9FF"/><stop offset=".5" stop-color="#2296FF"/><stop offset="1" stop-color="#2449A7"/></linearGradient>
+      </defs>
+      <path d="M27 6h10l2 7 6 3 7-3 5 8-5 6v7l5 6-5 8-7-3-6 3-2 8H27l-2-8-6-3-7 3-5-8 5-6v-7l-5-6 5-8 7 3 6-3Z" fill="url(#gearMetal)" stroke="#C7A76B" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="32" cy="31" r="15" fill="#18263D" stroke="#D1B278" stroke-width="2"/>
+      <path d="m32 17 11 14-11 14-11-14Z" fill="url(#gearBlue)" stroke="#9CEBFF" stroke-width="1.5"/>
+      <path d="M32 18v26M21 31h22" stroke="#D9F8FF" stroke-width="1" opacity=".55"/>
+    </svg>`
   };
+  const aliases={accueil:'accueil','équipement':'equipement','equipement':'equipement','développement':'developpement','developpement':'developpement','réglages':'reglages','reglages':'reglages'};
   function normalize(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ')}
   function apply(){
     const root=document.getElementById('tabs'); if(!root)return;
     root.querySelectorAll('button,.tab,[data-act]').forEach(el=>{
-      const key=normalize(el.textContent);
-      const name=Object.keys(ICONS).find(k=>key===k||key.endsWith(k));
-      if(!name||el.dataset.navIconV53)return;
-      el.dataset.navIconV53='1'; el.classList.add('navIconV53');
-      const old=el.querySelector('svg,img'); if(old) old.outerHTML=ICONS[name];
-      else el.insertAdjacentHTML('afterbegin',ICONS[name]);
+      const text=normalize(el.textContent);
+      const alias=Object.keys(aliases).find(k=>text===k||text.endsWith(k));
+      if(!alias)return;
+      const key=aliases[alias];
+      el.classList.add('fantasyNavV59');
+      el.dataset.navIconV59='1';
+      const old=el.querySelector('svg,img');
+      if(old) old.outerHTML=ICONS[key]; else el.insertAdjacentHTML('afterbegin',ICONS[key]);
     });
   }
   const css=document.createElement('style');
-  css.textContent='#tabs .navIconV53 svg{width:27px;height:27px;display:block;margin:0 auto 4px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 3px #0008)}#tabs .navIconV53[aria-current="page"] svg,#tabs .navIconV53.on svg,#tabs .navIconV53.active svg{stroke-width:2.15;filter:drop-shadow(0 0 6px currentColor)}';
+  css.textContent=`
+    #tabs .fantasyNavV59{position:relative;overflow:visible}
+    #tabs .fantasyNavV59 .fantasyNavSvg{width:38px;height:38px;display:block;margin:0 auto 2px;overflow:visible;filter:drop-shadow(0 3px 4px #000b);transition:transform .15s ease,filter .15s ease,opacity .15s ease}
+    #tabs .fantasyNavV59:not(.on):not(.active):not([aria-current="page"]) .fantasyNavSvg{opacity:.72;filter:saturate(.72) brightness(.78) drop-shadow(0 2px 3px #000b)}
+    #tabs .fantasyNavV59.on .fantasyNavSvg,#tabs .fantasyNavV59.active .fantasyNavSvg,#tabs .fantasyNavV59[aria-current="page"] .fantasyNavSvg{transform:translateY(-2px) scale(1.08);opacity:1;filter:drop-shadow(0 0 8px #E8B44A99) drop-shadow(0 3px 4px #000b)}
+    #tabs .fantasyNavV59.on::before,#tabs .fantasyNavV59.active::before,#tabs .fantasyNavV59[aria-current="page"]::before{content:"";position:absolute;left:26%;right:26%;top:-2px;height:3px;border-radius:999px;background:linear-gradient(90deg,transparent,#FBDD8C 25%,#E8B44A 75%,transparent);box-shadow:0 0 9px #E8B44A}
+    @media(max-width:360px){#tabs .fantasyNavV59 .fantasyNavSvg{width:34px;height:34px}}
+  `;
   document.head.appendChild(css);
   new MutationObserver(apply).observe(document.getElementById('tabs')||document.body,{childList:true,subtree:true});
   apply();
