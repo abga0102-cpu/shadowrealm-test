@@ -33,3 +33,4 @@ jobs:
           git add game-2.js index.html
           git commit -m "Vagues Élite" -m "Réduit les étages Élite à 2 vagues : une première vague normale puis l’Élite en deuxième vague. Les étages normaux restent à 3 vagues et les étages Boss restent des combats uniques. Build 2026.09.06.12."
           git push
+# trigger: v12
