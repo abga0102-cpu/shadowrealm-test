@@ -4,7 +4,7 @@
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.9";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.10";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -979,7 +979,7 @@ function makeEnemy(mode, opts) {
   let hp, dmg;
   if (mode === "campaign") {
     const mulH = opts.boss ? (opts.floor === 40 ? 5.1 : 6) : opts.elite ? 2.3 : 1;
-    const mulD = opts.boss ? 1.7 : opts.elite ? 1.4 : 1;
+    const mulD = opts.boss ? (opts.floor === 40 ? 1.7 : 1.8) : opts.elite ? 1.4 : 1;
     hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * tier.mul);
     dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * tier.mul);
     // Campaign difficulty is fixed by floor and enemy identity, never by player gear.
@@ -1066,7 +1066,11 @@ function spawnRaidWave(raidId, level) {
   return { enemies, pending: 0 };
 }
 
-function startCampaign() { combat = spawnCampaign(S); }
+function startCampaign() {
+  const pending = Number(S.pendingBossFloor || 0);
+  if (pending && S.floor >= pending) update((st) => { st.floor = Math.max(1, pending - 1); st.step = 1; });
+  combat = spawnCampaign(S);
+}
 function retryPendingBoss() {
   const floor = Number(S.pendingBossFloor || 0);
   if (!floor || floor !== S.floor + 1 || !isBoss(floor) || (S.bossClears && S.bossClears[String(floor)])) return false;
@@ -1774,14 +1778,15 @@ function handleCombatEnd(c) {
       else {
         const clearedFloor = s.floor;
         s.step = 1;
-        s.floor += 1;
+        const pendingBoss = Number(s.pendingBossFloor || 0);
+        if (!(pendingBoss && pendingBoss === s.floor + 1)) s.floor += 1;
         // Saut d'étage : uniquement après un étage dont tous les ennemis étaient verts,
         // et jamais si l'étage à sauter est un Élite, un Boss ou un Méga Étage.
         const nextFloor = s.floor;
         const weakFight = !c.boss && !c.elite && c.enemies.length > 0 &&
           c.enemies.every((e) => threatOf(c, e) === "easy");
         const skipPct = rb(s, "floorSkip");
-        if (weakFight && skipPct > 0 && !isElite(nextFloor) && !isBoss(nextFloor) && !isMegaFloor(nextFloor) &&
+        if (!(pendingBoss && pendingBoss === s.floor + 1) && weakFight && skipPct > 0 && !isElite(nextFloor) && !isBoss(nextFloor) && !isMegaFloor(nextFloor) &&
             Math.random() * 100 < skipPct) {
           let kills = 0;
           for (let stp = 1; stp <= RULES.STEPS_PER_FLOOR; stp++) kills += enemyCount(nextFloor, stp);
