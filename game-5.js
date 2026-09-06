@@ -1955,3 +1955,56 @@ function startAccessibilityEnhancements(){
 }
 if(document.readyState === "loading") document.addEventListener("DOMContentLoaded",startAccessibilityEnhancements,{once:true});
 else startAccessibilityEnhancements();
+
+// HICK_ACTION_HIERARCHY_V21
+// Hiérarchie contextuelle non destructive : on ne cache aucune fonction.
+// Chaque groupe visible d'actions reçoit au maximum une action dominante.
+const HICK_PRIMARY_HINTS_V21 = [
+  /continuer|combattre|combat|boss|réessayer|reessayer|lancer|invoquer|améliorer|ameliorer|rechercher|réclamer|reclamer|équiper|equiper|forger|valider|confirmer/i
+];
+const HICK_SECONDARY_HINTS_V21 = /aperçu|apercu|détail|detail|info|fermer|annuler|retour/i;
+function hickActionTextV21(el) {
+  return ((el && (el.getAttribute("aria-label") || el.getAttribute("title") || el.textContent)) || "").replace(/\s+/g," ").trim();
+}
+function hickVisibleV21(el) {
+  if (!el || el.disabled || el.getAttribute("aria-disabled") === "true") return false;
+  const r=el.getBoundingClientRect();
+  const cs=getComputedStyle(el);
+  return r.width>0 && r.height>0 && cs.display!=="none" && cs.visibility!=="hidden";
+}
+function hickGroupV21(el) {
+  return el.closest(".modal,.popup,.panel,.card,.screen,.page,.view,section,main") || el.parentElement || document.body;
+}
+function refreshActionHierarchyV21() {
+  document.querySelectorAll('[data-primary-action="true"],[data-secondary-action="true"]').forEach(function(el){
+    el.removeAttribute("data-primary-action"); el.removeAttribute("data-secondary-action");
+  });
+  const groups=new Map();
+  document.querySelectorAll("[data-act],button").forEach(function(el){
+    if (!hickVisibleV21(el)) return;
+    const g=hickGroupV21(el);
+    if (!groups.has(g)) groups.set(g,[]);
+    groups.get(g).push(el);
+  });
+  groups.forEach(function(actions){
+    if (actions.length < 2) return;
+    let primary=actions.find(function(el){ return el.getAttribute("data-primary") === "true"; });
+    if (!primary) primary=actions.find(function(el){ return HICK_PRIMARY_HINTS_V21.some(function(rx){ return rx.test(hickActionTextV21(el)); }); });
+    if (primary) primary.setAttribute("data-primary-action","true");
+    actions.forEach(function(el){
+      if (el !== primary && HICK_SECONDARY_HINTS_V21.test(hickActionTextV21(el))) el.setAttribute("data-secondary-action","true");
+    });
+  });
+}
+let hickRefreshQueuedV21=false;
+function queueActionHierarchyV21(){
+  if(hickRefreshQueuedV21) return;
+  hickRefreshQueuedV21=true;
+  requestAnimationFrame(function(){ hickRefreshQueuedV21=false; refreshActionHierarchyV21(); });
+}
+function startActionHierarchyV21(){
+  refreshActionHierarchyV21();
+  new MutationObserver(queueActionHierarchyV21).observe(document.body,{childList:true,subtree:true});
+}
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded",startActionHierarchyV21,{once:true});
+else startActionHierarchyV21();
