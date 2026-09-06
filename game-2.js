@@ -4,7 +4,7 @@
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.17";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.18";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -2162,11 +2162,11 @@ function itemUpgradePreview(it) {
   let current, next, label;
   if (it.baseDamage) {
     current = Number(it.damage || 0);
-    next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.0035) * 100) / 100;
+    next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.00375) * 100) / 100;
     label = "ATQ";
   } else {
     current = Number(it.hp || 0);
-    next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.0035) * 100) / 100;
+    next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.00375) * 100) / 100;
     label = "PV";
   }
   return { label, current, next, gain: Math.round((next - current) * 100) / 100 };

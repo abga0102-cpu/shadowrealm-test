@@ -1202,6 +1202,10 @@ function showItemDetail(id, slot) {
     '</span><b style="color:' + (col || "var(--text)") + '">' + val + "</b></div>";
   const equipStat = fmtEquipStat;
   const upgradePreview = itemUpgradePreview(it);
+  const isWeaponStat = !!it.baseDamage;
+  const basePrimary = Number(isWeaponStat ? (it.baseDamage || it.damage || 0) : (it.baseHp || it.hp || 0));
+  const currentPrimary = Number(isWeaponStat ? (it.damage || 0) : (it.hp || 0));
+  const addedPrimary = Math.max(0, currentPrimary - basePrimary);
   openModal('<div class="row gap10" style="margin-bottom:10px">' +
       '<div class="imini rf" style="width:46px;height:46px;border-color:' + rc + ";--rc:" + rc + '">' +
       '<span style="position:relative;z-index:1">' + slotIcon(it.slot, 27, it) + "</span></div>" +
@@ -1210,12 +1214,12 @@ function showItemDetail(id, slot) {
       '<div class="mt6">' + rtag(it.rarity) + '<span class="pill" style="margin-left:5px">' + SLOT_LABEL[it.slot] + "</span></div></div></div>" +
     '<div class="card" style="padding:9px 11px">' +
       (MASTERY_STAT[it.slot] === "dmg"
-        ? st("ATTAQUE DE BASE", "+" + equipStat(it.damage), "#FF9C6B")
-        : st("SANTÉ DE BASE", "+" + equipStat(it.hp), "var(--redLit)")) +
-      st("PUISSANCE", equipStat(it.power), "var(--goldLit)") +
+        ? st("ATTAQUE DE BASE", "+" + equipStat(basePrimary), "#FF9C6B")
+        : st("SANTÉ DE BASE", "+" + equipStat(basePrimary), "var(--redLit)")) +
+      st(it.baseDamage ? "BONUS D'ATTAQUE" : "BONUS DE SANTÉ", "+" + equipStat(addedPrimary), "var(--greenLit)") +
+      st("PUISSANCE TOTALE", equipStat(it.power), "var(--goldLit)") +
       (wt ? st("TYPE D'ARME", wt.name + " · " + (wt.attackType === "MELEE" ? "mêlée" : "distance"), "var(--blueLit)") +
         st("PORTÉE · VITESSE", wt.range + " · ×" + wt.speed, "var(--blueLit)") : "") +
-      st("NIVEAU D'AMÉLIORATION", "+" + it.level, "var(--goldLit)") +
     "</div>" +
     (it.affixes && it.affixes.length
       ? '<div class="orn"><i></i><b></b><i></i></div>' +
