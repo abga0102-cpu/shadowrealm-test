@@ -883,3 +883,13 @@ button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; fil
 @media (prefers-reduced-motion:no-preference){
   [data-primary-action="true"]{transition:filter .15s ease,box-shadow .15s ease,opacity .15s ease}
 }
+
+
+/* CONTEXTUAL_RECOMMENDATIONS_V33 */
+.recommendedActionCard{padding-right:42px;box-shadow:0 5px 15px rgba(0,0,0,.24),inset 0 0 14px rgba(127,212,255,.05)}
+.recommendedClose{
+  position:absolute;right:6px;top:6px;z-index:6;width:30px;height:30px;min-height:30px!important;
+  display:flex;align-items:center;justify-content:center;border:1px solid #536985;border-radius:8px;
+  background:#0A1423;color:#AAB8CC;font-size:20px;line-height:1;cursor:pointer;
+}
+.recommendedClose:hover,.recommendedClose:focus-visible{color:#fff;border-color:#8FA9C9;background:#14243A}
