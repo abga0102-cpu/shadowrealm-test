@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="shadowreach-build" content="2026.09.06.1">
+<meta name="shadowreach-build" content="2026.09.06.2">
 <title>Shadowreach</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%23141F35%22%2F%3E%3Cpath%20d%3D%22M16%204l2.6%205.4L24%2012l-5.4%202.6L16%2020l-2.6-5.4L8%2012l5.4-2.6z%22%20fill%3D%22%23E8B44A%22%2F%3E%3Cpath%20d%3D%22M15%2019h2v8h-2z%22%20fill%3D%22%23C8912E%22%2F%3E%3Cpath%20d%3D%22M12%2025h8v2h-8z%22%20fill%3D%22%23C8912E%22%2F%3E%3C%2Fsvg%3E">
 <style>
@@ -5619,6 +5619,8 @@ function upgradeItem(id) {
     s.poussiere -= cost;
     if (seals) s.sanctuary.stabilitySeals -= seals;
     itemSealPlan[id]=0;
+    const beforeDamage = Number(it.damage || 0);
+    const beforeHp = Number(it.hp || 0);
     result={ok:true, success:Math.random()*100 < chance, chance:chance, seals:seals};
     if (!result.success) return;
     it.level += 1;
@@ -5627,9 +5629,11 @@ function upgradeItem(id) {
        de la migration devient l'ancre des améliorations futures. */
     const anchorLevel = it.upgradeBaseLevel || 0;
     const steps = Math.max(0, it.level - anchorLevel);
-    if (it.baseDamage) it.damage = Math.floor(it.baseDamage * (1 + steps * 0.0035));
-    if (it.baseHp) it.hp = Math.floor(it.baseHp * (1 + steps * 0.0035));
-    it.power = it.damage + it.hp;
+    if (it.baseDamage) it.damage = Math.round(it.baseDamage * (1 + steps * 0.0035) * 100) / 100;
+    if (it.baseHp) it.hp = Math.round(it.baseHp * (1 + steps * 0.0035) * 100) / 100;
+    it.power = Math.round((it.damage + it.hp) * 100) / 100;
+    result.statGain = Math.round(((it.damage - beforeDamage) + (it.hp - beforeHp)) * 100) / 100;
+    result.statLabel = it.baseDamage ? "ATQ" : "PV";
   });
   return result;
 }
@@ -9595,6 +9599,7 @@ function showItemDetail(id, slot) {
   // stat line, styled like the sheet's item tooltip (§11)
   const st = (label, val, col) => '<div class="kv"><span class="dim" style="letter-spacing:.4px">' + label +
     '</span><b style="color:' + (col || "var(--text)") + '">' + val + "</b></div>";
+  const equipStat = (v) => { const n=Number(v)||0; return Number.isInteger(n) ? fmt(n) : n.toLocaleString("fr-FR", {minimumFractionDigits:2, maximumFractionDigits:2}); };
   openModal('<div class="row gap10" style="margin-bottom:10px">' +
       '<div class="imini rf" style="width:46px;height:46px;border-color:' + rc + ";--rc:" + rc + '">' +
       '<span style="position:relative;z-index:1">' + slotIcon(it.slot, 27, it) + "</span></div>" +
@@ -9603,9 +9608,9 @@ function showItemDetail(id, slot) {
       '<div class="mt6">' + rtag(it.rarity) + '<span class="pill" style="margin-left:5px">' + SLOT_LABEL[it.slot] + "</span></div></div></div>" +
     '<div class="card" style="padding:9px 11px">' +
       (MASTERY_STAT[it.slot] === "dmg"
-        ? st("ATTAQUE DE BASE", "+" + fmt(it.damage), "#FF9C6B")
-        : st("SANTÉ DE BASE", "+" + fmt(it.hp), "var(--redLit)")) +
-      st("PUISSANCE", fmt(it.power), "var(--goldLit)") +
+        ? st("ATTAQUE DE BASE", "+" + equipStat(it.damage), "#FF9C6B")
+        : st("SANTÉ DE BASE", "+" + equipStat(it.hp), "var(--redLit)")) +
+      st("PUISSANCE", equipStat(it.power), "var(--goldLit)") +
       (wt ? st("TYPE D'ARME", wt.name + " · " + (wt.attackType === "MELEE" ? "mêlée" : "distance"), "var(--blueLit)") +
         st("PORTÉE · VITESSE", wt.range + " · ×" + wt.speed, "var(--blueLit)") : "") +
       st("NIVEAU D'AMÉLIORATION", "+" + it.level, "var(--goldLit)") +
@@ -10011,7 +10016,7 @@ const ACT = {
     const r=upgradeItem(a);
     if (!r.ok) { toast(r.reason==="dust" ? "Poussière insuffisante" : "Objet introuvable"); return; }
     showItemDetail(a, null);
-    toast(r.success ? "Amélioration réussie !" : "Échec · objet conservé", r.success);
+    toast(r.success ? "Amélioration réussie · " + (r.statLabel || "Stat") + " +" + (r.statGain || 0).toLocaleString("fr-FR", {minimumFractionDigits:2, maximumFractionDigits:2}) : "Échec · objet conservé", r.success);
   },
   itemSealMinus: (a) => { itemSealPlan[a]=Math.max(0,itemSealCount(a)-1); showItemDetail(a,null); },
   itemSealPlus: (a) => {
