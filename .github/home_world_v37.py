@@ -1,7 +1,7 @@
 from pathlib import Path
+import re
 
-BUILD_OLD='2026.09.06.36'
-BUILD_NEW='2026.09.06.37'
+BUILD_NEW='2026.09.06.39'
 
 g4p=Path('game-4.js'); cssp=Path('style.css'); g2p=Path('game-2.js'); idxp=Path('index.html')
 g4=g4p.read_text(); css=cssp.read_text(); g2=g2p.read_text(); idx=idxp.read_text()
@@ -75,9 +75,9 @@ if 'CAMPAIGN_WORLD_NAV_V37' not in css:
 }
 '''
 
-for old,new in [(BUILD_OLD,BUILD_NEW)]:
-    g2=g2.replace(old,new)
-    idx=idx.replace(old,new)
+# Always advance the visible build without depending on concurrent prior build tags.
+g2=re.sub(r'const APP_BUILD = (.*?\|\| )"2026\.09\.06\.\d+";', lambda m: 'const APP_BUILD = '+m.group(1)+'"'+BUILD_NEW+'";', g2, count=1)
+idx=re.sub(r'2026\.09\.06\.\d+', BUILD_NEW, idx)
 
 home=g4[g4.find('function scrAccueil()'):g4.find('/* ---------------- PERSONNAGE')]
 assert 'CAMPAIGN_WORLD_NAV_V37' in g4
@@ -87,4 +87,4 @@ assert 'CAMPAIGN_WORLD_NAV_V37' in css
 assert BUILD_NEW in g2 and BUILD_NEW in idx
 
 g4p.write_text(g4); cssp.write_text(css); g2p.write_text(g2); idxp.write_text(idx)
-print('Campaign world navigation v37 applied')
+print('Campaign world navigation v39 applied')
