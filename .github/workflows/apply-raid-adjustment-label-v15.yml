@@ -1,4 +1,4 @@
-# trigger-v22-1
+# trigger-v22-2
 name: Apply decision hierarchy v22
 on:
   push:
