@@ -1,3 +1,4 @@
+// CHAT_ARENA_OVERLAY_V48
 /* SHADOWREACH SOCIAL V2
    Forge Master-inspired social UX: Monde / Clan / Annonces, compact feed,
    clickable player identity, PvP challenge and share cards. */
@@ -54,19 +55,42 @@
   function fmtTime(ts){try{return new Date(ts).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}catch(_){return""}}
   function injectStyle(){
     const s=document.createElement("style");s.textContent=`
-#srChatBtn{position:absolute;right:12px;bottom:74px;z-index:70;width:52px;height:52px;border-radius:50%;border:2px solid #0A1020;background:linear-gradient(#5FB4F5,#1E72C8);color:white;font-weight:900;box-shadow:0 4px 0 #0A1020,0 8px 18px #0008;cursor:pointer}#srChatBtn b{position:absolute;right:-3px;top:-5px;min-width:19px;height:19px;border-radius:10px;background:#E5484D;color:#fff;font:800 11px/19px system-ui;padding:0 5px}
-#srSocial{position:absolute;inset:0;z-index:120;background:#070B13f5;display:flex;flex-direction:column;color:#EDF1FA;font-family:var(--fu,system-ui)}#srSocial .head{padding:10px 12px 8px;border-bottom:1px solid #2E4269;background:#101A2C;display:flex;align-items:center;gap:8px}#srSocial .head .grow{flex:1}.srClose{border:0;background:#243553;color:#fff;border-radius:9px;padding:7px 10px;font-weight:900}.srStatus{font-size:9px;color:#93A4C4;margin-top:2px}
-.srTabs{display:flex;background:#0B111F;border-bottom:1px solid #2E4269;padding:6px 7px 0;gap:4px}.srTab{flex:1;text-align:center;padding:8px 3px;border-radius:9px 9px 0 0;color:#7F91B2;font-weight:900;font-size:11px;cursor:pointer;border:1px solid transparent;border-bottom:0}.srTab.on{background:#17243B;color:#FBDD8C;border-color:#2E4269}
-.srMessages{flex:1;overflow:auto;padding:8px 10px 84px}.srMsg{padding:7px 8px;margin:0 0 5px;border-bottom:1px solid #1E2C49}.srMsg.combat{margin:7px 0;border:1px solid #8A6522;border-radius:10px;background:linear-gradient(180deg,#251d0e,#17130c);padding:9px}.srMsg.announcement{margin:7px 0;border:1px solid #4A6494;border-radius:10px;background:#111d31;padding:9px}.srName{font-weight:900;color:#93C6FF;cursor:pointer;font-size:12px}.srBot,.srBadge{font-size:8px;color:#FBDD8C;margin-left:5px;border:1px solid #8A6522;border-radius:5px;padding:1px 4px}.srText{font-size:12px;margin-top:2px;line-height:1.35}.srMeta{font-size:8px;color:#6A7B9C;margin-left:5px}.srCombatTitle{font-weight:900;color:#FBDD8C;font-size:12px}.srCombatVs{font-size:11px;margin-top:4px}.srCompose{position:absolute;left:0;right:0;bottom:0;padding:8px;background:#101A2C;border-top:1px solid #2E4269;display:flex;gap:6px}.srCompose input{flex:1;min-width:0;border:1px solid #2E4269;background:#080D18;color:white;border-radius:9px;padding:9px;font-size:13px}.srCompose button,.srAction{border:0;border-radius:9px;background:#1E72C8;color:white;padding:8px 10px;font-weight:900}.srCompose.readonly{display:block;text-align:center;color:#7F91B2;font-size:10px;padding:12px}.srProfile{position:absolute;left:14px;right:14px;top:18%;z-index:3;background:#141F35;border:1px solid #4A6494;border-radius:14px;padding:14px;box-shadow:0 15px 50px #000}.srGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.srStat{background:#0B111F;border:1px solid #26344F;border-radius:9px;padding:8px;font-size:11px}.srShare{margin:7px 10px 0;padding:8px;border:1px solid #8A6522;border-radius:9px;background:#231b0c;color:#FBDD8C;font-size:10px;cursor:pointer;text-align:center}
+#srChatBtn{position:absolute;z-index:95;width:44px;height:44px;border-radius:50%;border:2px solid #0A1020;background:linear-gradient(#5FB4F5,#1E72C8);color:white;font-weight:900;box-shadow:0 3px 0 #0A1020,0 6px 14px #0007;cursor:pointer;transition:left .16s ease,top .16s ease}#srChatBtn b{position:absolute;right:-3px;top:-5px;min-width:19px;height:19px;border-radius:10px;background:#E5484D;color:#fff;font:800 11px/19px system-ui;padding:0 5px}
+#srSocial{position:absolute;z-index:120;display:flex;flex-direction:column;color:#EDF1FA;font-family:var(--fu,system-ui);background:rgba(7,11,19,.66);border:1px solid rgba(74,100,148,.72);border-radius:14px;box-shadow:0 10px 30px #0007;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);overflow:hidden}#srSocial .head{padding:8px 10px 6px;border-bottom:1px solid rgba(46,66,105,.72);background:rgba(16,26,44,.62);display:flex;align-items:center;gap:8px}#srSocial .head .grow{flex:1}.srClose{border:0;background:#243553;color:#fff;border-radius:9px;padding:7px 10px;font-weight:900}.srStatus{font-size:9px;color:#93A4C4;margin-top:2px}
+.srTabs{display:flex;background:rgba(11,17,31,.54);border-bottom:1px solid rgba(46,66,105,.68);padding:4px 6px 0;gap:4px}.srTab{flex:1;text-align:center;padding:8px 3px;border-radius:9px 9px 0 0;color:#7F91B2;font-weight:900;font-size:11px;cursor:pointer;border:1px solid transparent;border-bottom:0}.srTab.on{background:rgba(23,36,59,.78);color:#FBDD8C;border-color:#2E4269}
+.srMessages{flex:1;overflow:auto;padding:6px 8px 58px;overscroll-behavior:contain}.srMsg{padding:6px 7px;margin:0 0 4px;border-bottom:1px solid rgba(30,44,73,.65);background:rgba(8,13,24,.24);border-radius:7px}.srMsg.combat{margin:7px 0;border:1px solid #8A6522;border-radius:10px;background:linear-gradient(180deg,#251d0e,#17130c);padding:9px}.srMsg.announcement{margin:7px 0;border:1px solid #4A6494;border-radius:10px;background:#111d31;padding:9px}.srName{font-weight:900;color:#93C6FF;cursor:pointer;font-size:12px}.srBot,.srBadge{font-size:8px;color:#FBDD8C;margin-left:5px;border:1px solid #8A6522;border-radius:5px;padding:1px 4px}.srText{font-size:12px;margin-top:2px;line-height:1.35}.srMeta{font-size:8px;color:#6A7B9C;margin-left:5px}.srCombatTitle{font-weight:900;color:#FBDD8C;font-size:12px}.srCombatVs{font-size:11px;margin-top:4px}.srCompose{position:absolute;left:0;right:0;bottom:0;padding:6px;background:rgba(16,26,44,.68);border-top:1px solid rgba(46,66,105,.72);display:flex;gap:5px}.srCompose input{flex:1;min-width:0;border:1px solid #2E4269;background:#080D18;color:white;border-radius:9px;padding:9px;font-size:13px}.srCompose button,.srAction{border:0;border-radius:9px;background:#1E72C8;color:white;padding:8px 10px;font-weight:900}.srCompose.readonly{display:block;text-align:center;color:#7F91B2;font-size:10px;padding:12px}.srProfile{position:absolute;left:14px;right:14px;top:18%;z-index:3;background:#141F35;border:1px solid #4A6494;border-radius:14px;padding:14px;box-shadow:0 15px 50px #000}.srGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.srStat{background:#0B111F;border:1px solid #26344F;border-radius:9px;padding:8px;font-size:11px}.srShare{margin:7px 10px 0;padding:8px;border:1px solid #8A6522;border-radius:9px;background:#231b0c;color:#FBDD8C;font-size:10px;cursor:pointer;text-align:center}
 `;
     document.head.appendChild(s);
   }
   function paintButton(){const b=document.getElementById("srChatBtn");if(!b)return;b.innerHTML="💬"+(unread?"<b>"+Math.min(99,unread)+"</b>":"");}
+  function dockSocialUI(){
+    const app=document.getElementById("app"), arena=document.querySelector(".campaignWorld");
+    const b=document.getElementById("srChatBtn"), root=document.getElementById("srSocial");
+    if(!app)return;
+    const ar=arena?arena.getBoundingClientRect():null, ap=app.getBoundingClientRect();
+    if(b){
+      if(ar){
+        const left=Math.max(6,Math.min(app.clientWidth-b.offsetWidth-6,ar.right-ap.left-b.offsetWidth+4));
+        const top=Math.max(8,ar.top-ap.top+12);
+        b.style.left=left+"px";b.style.top=top+"px";b.style.right="auto";b.style.bottom="auto";
+      }else{b.style.left="auto";b.style.top="66px";b.style.right="10px";b.style.bottom="auto";}
+    }
+    if(root){
+      if(ar){
+        const margin=7, left=Math.max(margin,ar.left-ap.left+margin), top=Math.max(margin,ar.top-ap.top+margin);
+        const width=Math.max(240,Math.min(app.clientWidth-left-margin,ar.width-margin*2));
+        const height=Math.max(210,Math.min(286,ar.height-margin*2));
+        root.style.left=left+"px";root.style.top=top+"px";root.style.right="auto";root.style.bottom="auto";root.style.width=width+"px";root.style.height=height+"px";
+      }else{
+        root.style.left="10px";root.style.right="10px";root.style.top="72px";root.style.bottom="72px";root.style.width="auto";root.style.height="auto";
+      }
+    }
+  }
   function mountButton(){
     const existing=document.getElementById("srChatBtn"); let unlocked=true;
     try{unlocked=typeof RULES==="undefined"||typeof S==="undefined"||Number(S.level||1)>=Number(RULES.CHAT_UNLOCK_LEVEL||3)}catch(_){unlocked=true}
     if(!unlocked){if(existing)existing.remove();return;} if(existing){paintButton();return;}
-    const b=document.createElement("button");b.id="srChatBtn";b.type="button";b.setAttribute("aria-label","Ouvrir le chat");b.onclick=()=>{open=true;unread=0;paintButton();render();};document.getElementById("app").appendChild(b);paintButton();
+    const b=document.createElement("button");b.id="srChatBtn";b.type="button";b.setAttribute("aria-label","Ouvrir le chat");b.onclick=()=>{open=true;unread=0;paintButton();render();};document.getElementById("app").appendChild(b);paintButton();dockSocialUI();
   }
   function profileHTML(p){if(!p)return"";return `<div class="srProfile"><div style="display:flex;justify-content:space-between;gap:8px"><div><div style="font-weight:900;font-size:18px">${esc(p.name)}</div><div class="srStatus">${p.bot?"BOT DE TEST":"JOUEUR"}</div></div><button class="srClose" data-sr="profileClose">✕</button></div><div class="srGrid"><div class="srStat">Niveau<br><b>${p.level||1}</b></div><div class="srStat">Puissance<br><b>${Math.round(p.power||1).toLocaleString()}</b></div><div class="srStat">Record étage<br><b>${p.floor||1}</b></div><div class="srStat">Forge<br><b>${p.forge||1}</b></div></div>${p.name!==myProfile().name?'<button class="srAction" style="width:100%" data-sr="challenge">⚔️ Défier</button>':''}</div>`}
   function messageHTML(m){
@@ -81,6 +105,7 @@
     const composer=activeTab==="announcements"?'<div class="srCompose readonly">Canal réservé aux annonces du jeu et du clan.</div>':'<div class="srCompose"><input id="srInput" maxlength="220" placeholder="Message '+tabs[activeTab]+'…"><button data-sr="send">Envoyer</button></div>';
     root.innerHTML=`<div class="head"><div class="grow"><div style="font-weight:900">Chat</div><div class="srStatus status">${status}</div></div><button class="srClose" data-sr="close">✕</button></div><div class="srTabs">${Object.keys(tabs).map(k=>`<div class="srTab ${activeTab===k?'on':''}" data-sr="tab" data-tab="${k}">${tabs[k]}</div>`).join("")}</div>${lastArenaResult&&activeTab!=="announcements"?'<div class="srShare" data-sr="shareLast">⚔️ Partager le dernier duel dans '+tabs[activeTab]+'</div>':''}<div class="srMessages">${msgs.map(messageHTML).join("")||'<div class="srStatus" style="text-align:center;margin-top:24px">Aucun message dans ce canal.</div>'}</div>${composer}${profileHTML(profileOpen)}`;
     const list=root.querySelector('.srMessages');if(list)list.scrollTop=list.scrollHeight;
+    dockSocialUI();
   }
   function findProfileByMessage(id){const m=read().find(x=>x&&x.id===id);return m&&m.profile?m.profile:null}
   function startChallenge(p){
@@ -105,4 +130,11 @@
   setInterval(()=>mountButton(),1000);setInterval(()=>{remotePull();if(now()-lastBotAt>60000+Math.random()*120000&&Math.random()<.28)botSpeak();},15000);
   setInterval(()=>{if(!pendingChallenge)return;try{if(typeof arenaLiveResult!=="undefined"&&arenaLiveResult&&arenaLiveResult!==pendingChallenge.before){lastArenaResult={...arenaLiveResult,target:pendingChallenge.target};pendingChallenge=null;try{toast("Combat terminé · partage disponible dans le chat",true)}catch(_){ }}}catch(_){ }},800);
   seed();injectStyle();mountButton();remotePull();
+
+  // CHAT_ARENA_OVERLAY_V48 docking: follow the Campaign arena without covering Forge.
+  window.addEventListener("resize",dockSocialUI,{passive:true});
+  window.addEventListener("orientationchange",()=>setTimeout(dockSocialUI,120),{passive:true});
+  const dockObserver=new MutationObserver(()=>requestAnimationFrame(()=>{mountButton();dockSocialUI();}));
+  const dockTarget=document.getElementById("screen")||document.getElementById("app");
+  if(dockTarget)dockObserver.observe(dockTarget,{childList:true,subtree:false});
 })();
