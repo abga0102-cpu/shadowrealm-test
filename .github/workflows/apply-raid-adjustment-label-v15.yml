@@ -1,5 +1,5 @@
-# trigger-v32-3
-name: Gold economy v32
+# trigger-v34-1
+name: Sanctuary drag merge v34
 on:
   push:
     paths:
@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply gold economy rebalance
-        run: python .github/gold_economy_v32.py
+      - name: Apply sanctuary drag merge
+        run: python .github/sanctuary_drag_v34.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -25,27 +25,26 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g4=Path('game-4.js').read_text(); idx=Path('index.html').read_text()
-          assert 'Total exact des 50 niveaux : 35 000 PR' in g1
-          assert 'costs: [25,40,50,65,80,90,105,130,145,155' in g1
-          assert '1815]' in g1
-          assert g1.count('effect: "afkGain", per: 1.25') == 4
-          assert 'Prospection d’Or I' in g1 and 'Prospection d’Or IV' in g1
-          assert 'GOLD_ECONOMY_REBASE_V32' in g1
-          assert 'rebirthGoldCostRebaseV32' in g1 and 'refundPR' in g1
-          assert 'autonomyGoldRebaseV32' in g1
-          assert 'harvestRates(merged).gold * secs / 3600' in g1
-          assert 'gold: raidReward("or", s.raids.or.level) * 0.25' in g1
-          assert '250*Math.max(1,level)*Math.max(1,level)' in g4
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); css=Path('style.css').read_text(); idx=Path('index.html').read_text()
+          assert 'SANCT_SUPPLIER_UNLOCK' in g4 and 'sanctSupplierUnlocked' in g4
+          assert 'Toute couleur débloquée reste disponible' in g4
+          assert 'Fusion par glisser-déposer' in g4
+          assert 'data-sanct-slot' in g4 and 'sanctMergePiece' in g4
+          assert 'SANCTUARY_DRAG_MERGE_V34' in g5 and 'function sanctMergeDrop' in g5
+          assert all(x in g5 for x in ['pointerdown','pointermove','pointerup'])
+          assert 'chosen===sanctSupplierTier(lv)' in g5
+          assert 'SANCTUARY_DRAG_MERGE_V34' in css
           assert 'SANCT_MERGE_ORDER' in g4 and 'SANCT_BOARD_SIZE = 16' in g4
-          assert '2026.09.06.32' in g2 and '2026.09.06.32' in idx
-          print('v32 gold economy checks passed')
+          assert 'Total exact des 50 niveaux : 35 000 PR' in g1
+          assert 'gold: raidReward("or", s.raids.or.level) * 0.25' in g1
+          assert '2026.09.06.34' in g2 and '2026.09.06.34' in idx
+          print('v34 sanctuary drag checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
-          git add game-1.js game-2.js index.html
-          git commit -m 'Or Rebirth Rééquilibré' -m 'Réduit le coût total de l’amélioration Or du Rebirth de 135 000 à 35 000 PR tout en conservant 50 niveaux et +4 % par niveau. Rembourse automatiquement la différence de PR déjà dépensée selon le niveau acheté. Clarifie la branche Autonomie dédiée à l’Or en Prospection d’Or et porte son bonus maximal à +25 %, sans modifier l’efficacité générale qui continue d’augmenter toutes les ressources. Recalcule la réserve d’Or autonome encore non réclamée avec les nouveaux bonus. Le taux de base reste 25 % du Raid Or par heure et le Sanctuaire conserve son prix réduit. Aucun effacement de sauvegarde. Build 2026.09.06.32.'
+          git add game-4.js game-5.js game-2.js style.css index.html
+          git commit -m 'Sanctuaire Drag Merge' -m 'Transforme le plateau du Sanctuaire en vrai jeu de merge par glisser-déposer sur mobile et desktop. Une pièce glissée sur une pièce identique fusionne, une case vide déplace la pièce et une couleur différente refuse la fusion. Toutes les couleurs déjà débloquées restent achetables définitivement. Les niveaux intermédiaires réduisent leurs prix au lieu de rendre une même couleur plus chère, et seule la meilleure couleur disponible fait progresser la jauge du fournisseur. Plateau 16 cases, recettes, raretés, sauvegarde et économie Or/Rebirth sont conservés. Build 2026.09.06.34.'
           git push
