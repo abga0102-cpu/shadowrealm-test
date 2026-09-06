@@ -854,26 +854,7 @@ button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; fil
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
 }
-
-/* HICK_ACTION_HIERARCHY_V21
-   Une seule action dominante par zone. Les actions secondaires restent
-   disponibles mais visuellement plus calmes, afin de réduire le nombre de
-   décisions concurrentes sans supprimer de fonctionnalité. */
-:root { --primary-action-ring: rgba(127,212,255,.34); }
-[data-primary-action="true"] {
-  position: relative;
-  z-index: 1;
-  font-weight: 800;
-  transform: translateZ(0);
-  box-shadow: 0 0 0 2px var(--primary-action-ring), 0 8px 22px rgba(0,0,0,.22);
-}
-[data-secondary-action="true"] { opacity: .82; }
-[data-secondary-action="true"]:hover, [data-secondary-action="true"]:focus-visible { opacity: 1; }
-@media (prefers-reduced-motion: no-preference) {
-  [data-primary-action="true"] { transition: filter .15s ease, box-shadow .15s ease; }
-}
-
-/* HICK_ACTION_HIERARCHY_V21 */
+/* DECISION_HIERARCHY_V23 */
 :root { --primary-action-ring: rgba(127,212,255,.34); }
 [data-primary-action="true"] { position:relative; z-index:1; font-weight:800; transform:translateZ(0); box-shadow:0 0 0 2px var(--primary-action-ring),0 8px 22px rgba(0,0,0,.22); }
 [data-secondary-action="true"] { opacity:.82; }
