@@ -4,7 +4,7 @@
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.14";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.16";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -972,6 +972,13 @@ function cullMinions(c) {
     }
   });
 }
+function campaignBossStatMul(floor) {
+  // La rareté du Boss reste visuelle et thématique, mais ne provoque plus de
+  // saut brutal de statistiques. Boss 10 à 100 suivent une échelle régulière.
+  const bossNo = Math.max(1, Math.min(10, Math.floor((Number(floor) || 10) / RULES.BOSS_EVERY)));
+  return 1 + 0.06 * (bossNo - 1);
+}
+
 function makeEnemy(mode, opts) {
   const t = opts.type;
   const tierKey = opts.tier || (mode === "campaign" ? enemyTierFor(opts.floor) : "RARE");
@@ -980,8 +987,9 @@ function makeEnemy(mode, opts) {
   if (mode === "campaign") {
     const mulH = opts.boss ? (opts.floor === 40 ? 5.1 : 6) : opts.elite ? 2.3 : 1;
     const mulD = opts.boss ? (opts.floor === 40 ? 1.7 : 1.8) : opts.elite ? 1.4 : 1;
-    hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * tier.mul);
-    dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * tier.mul);
+    const statMul = opts.boss ? campaignBossStatMul(opts.floor) : tier.mul;
+    hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * statMul);
+    dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * statMul);
     // Campaign difficulty is fixed by floor and enemy identity, never by player gear.
   } else {
     hp = Math.floor(raidEnemyHP(opts.raidId, opts.raidLevel) * t.hpMul);
