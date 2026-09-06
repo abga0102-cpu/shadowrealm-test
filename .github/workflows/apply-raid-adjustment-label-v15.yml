@@ -1,4 +1,4 @@
-# trigger-v19-1
+# trigger-v19-2
 name: Apply accessible interface v19
 on:
   push:
@@ -19,97 +19,62 @@ jobs:
           css = Path('style.css')
           s = css.read_text()
           marker = '/* ACCESSIBILITY_SIMPLICITY_V19 */'
-          block = r'''
-/* ACCESSIBILITY_SIMPLICITY_V19 */
-/* Mobile-first accessibility pass: larger tap targets, clearer focus,
-   reduced accidental double taps and motion-respect without changing game balance. */
-html { -webkit-text-size-adjust: 100%; }
-body { overflow-x: hidden; }
-button, [data-act], [role="button"], input, select { touch-action: manipulation; }
-button:focus-visible,
-[data-act]:focus-visible,
-[role="button"]:focus-visible,
-input:focus-visible,
-select:focus-visible,
-a:focus-visible {
-  outline: 3px solid #7FD4FF;
-  outline-offset: 2px;
-}
-button:disabled,
-[aria-disabled="true"] {
-  opacity: .48;
-  cursor: not-allowed;
-  filter: saturate(.65);
-}
-@media (pointer: coarse) {
-  button,
-  [role="button"] {
-    min-height: 44px;
-  }
-  input,
-  select,
-  textarea {
-    min-height: 44px;
-    font-size: 16px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .001ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: .001ms !important;
-  }
-}
-'''
+          css_lines = [
+            '/* ACCESSIBILITY_SIMPLICITY_V19 */',
+            'html { -webkit-text-size-adjust: 100%; }',
+            'body { overflow-x: hidden; }',
+            'button, [data-act], [role="button"], input, select { touch-action: manipulation; }',
+            'button:focus-visible, [data-act]:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #7FD4FF; outline-offset: 2px; }',
+            'button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; filter: saturate(.65); }',
+            '@media (pointer: coarse) {',
+            '  button, [role="button"] { min-height: 44px; }',
+            '  input, select, textarea { min-height: 44px; font-size: 16px; }',
+            '}',
+            '@media (prefers-reduced-motion: reduce) {',
+            '  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }',
+            '}',
+          ]
           if marker not in s:
-              s += '\n' + block.strip() + '\n'
+              s += '\n' + '\n'.join(css_lines) + '\n'
           css.write_text(s)
 
           ui = Path('game-5.js')
           s = ui.read_text()
           marker = '// ACCESSIBILITY_KEYBOARD_V19'
-          block = r'''
-// ACCESSIBILITY_KEYBOARD_V19
-// Keep the existing click-driven UI, while making custom data-act controls usable
-// from a keyboard without changing their game actions or save state.
-document.addEventListener("keydown", function accessibilityActivate(e) {
-  if (e.key !== "Enter" && e.key !== " ") return;
-  const target = e.target && e.target.closest ? e.target.closest("[data-act]") : null;
-  if (!target || target.getAttribute("aria-disabled") === "true") return;
-  e.preventDefault();
-  target.click();
-});
-
-function enhanceInteractiveAccessibility(root) {
-  const scope = root && root.querySelectorAll ? root : document;
-  scope.querySelectorAll("[data-act]").forEach(function (el) {
-    if (!el.hasAttribute("tabindex") && el.tagName !== "BUTTON") el.setAttribute("tabindex", "0");
-    if (!el.hasAttribute("role") && el.tagName !== "BUTTON") el.setAttribute("role", "button");
-    if (!el.hasAttribute("aria-label")) {
-      const label = (el.getAttribute("title") || el.textContent || "").replace(/\s+/g, " ").trim();
-      if (label) el.setAttribute("aria-label", label.slice(0, 120));
-    }
-  });
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  enhanceInteractiveAccessibility(document);
-  const observer = new MutationObserver(function (mutations) {
-    mutations.forEach(function (m) {
-      m.addedNodes.forEach(function (node) {
-        if (node && node.nodeType === 1) {
-          if (node.matches && node.matches("[data-act]")) enhanceInteractiveAccessibility(node.parentNode || document);
-          else enhanceInteractiveAccessibility(node);
-        }
-      });
-    });
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-});
-'''
+          js_lines = [
+            '// ACCESSIBILITY_KEYBOARD_V19',
+            'document.addEventListener("keydown", function accessibilityActivate(e) {',
+            '  if (e.key !== "Enter" && e.key !== " ") return;',
+            '  const target = e.target && e.target.closest ? e.target.closest("[data-act]") : null;',
+            '  if (!target || target.getAttribute("aria-disabled") === "true") return;',
+            '  e.preventDefault();',
+            '  target.click();',
+            '});',
+            'function enhanceInteractiveAccessibility(root) {',
+            '  const scope = root && root.querySelectorAll ? root : document;',
+            '  scope.querySelectorAll("[data-act]").forEach(function (el) {',
+            '    if (!el.hasAttribute("tabindex") && el.tagName !== "BUTTON") el.setAttribute("tabindex", "0");',
+            '    if (!el.hasAttribute("role") && el.tagName !== "BUTTON") el.setAttribute("role", "button");',
+            '    if (!el.hasAttribute("aria-label")) {',
+            '      const label = (el.getAttribute("title") || el.textContent || "").replace(/\\s+/g, " ").trim();',
+            '      if (label) el.setAttribute("aria-label", label.slice(0, 120));',
+            '    }',
+            '  });',
+            '}',
+            'document.addEventListener("DOMContentLoaded", function () {',
+            '  enhanceInteractiveAccessibility(document);',
+            '  const observer = new MutationObserver(function (mutations) {',
+            '    mutations.forEach(function (m) {',
+            '      m.addedNodes.forEach(function (node) {',
+            '        if (node && node.nodeType === 1) enhanceInteractiveAccessibility(node);',
+            '      });',
+            '    });',
+            '  });',
+            '  observer.observe(document.body, { childList: true, subtree: true });',
+            '});',
+          ]
           if marker not in s:
-              s += '\n' + block.strip() + '\n'
+              s += '\n' + '\n'.join(js_lines) + '\n'
           ui.write_text(s)
 
           eng = Path('game-2.js')
@@ -161,5 +126,5 @@ document.addEventListener("DOMContentLoaded", function () {
             exit 0
           fi
           git add style.css game-5.js game-2.js index.html
-          git commit -m 'Interface Accessible' -m 'Améliore l’accessibilité et la simplicité d’utilisation sans modifier l’équilibrage : zones tactiles renforcées sur mobile, focus clavier clairement visible, activation clavier des contrôles personnalisés, meilleure gestion des états désactivés, prévention du zoom involontaire sur les champs iOS et respect du réglage Réduire les animations. Aucun changement de sauvegarde, d’économie ou de combat. Build 2026.09.06.19.'
+          git commit -m 'Interface Accessible' -m 'Améliore l’accessibilité et la simplicité d’utilisation sans modifier l’équilibrage : zones tactiles renforcées sur mobile, focus clavier visible, activation clavier des contrôles personnalisés, états désactivés plus clairs, prévention du zoom involontaire sur les champs iOS et respect du réglage Réduire les animations. Aucun changement de sauvegarde, d’économie ou de combat. Build 2026.09.06.19.'
           git push
