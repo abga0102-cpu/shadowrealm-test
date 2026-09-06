@@ -1,0 +1,59 @@
+name: Apply boss lock v10b
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-boss-lock-v10b.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          p=Path('game-2.js'); s=p.read_text()
+          s=s.replace('const mulD = opts.boss ? 1.7 : opts.elite ? 1.4 : 1;', 'const mulD = opts.boss ? (opts.floor === 40 ? 1.7 : 1.8) : opts.elite ? 1.4 : 1;')
+          s=s.replace('function startCampaign() { combat = spawnCampaign(S); }', '''function startCampaign() {
+            const pending = Number(S.pendingBossFloor || 0);
+            if (pending && S.floor >= pending) update((st) => { st.floor = Math.max(1, pending - 1); st.step = 1; });
+            combat = spawnCampaign(S);
+          }''')
+          old='''        const clearedFloor = s.floor;
+        s.step = 1;
+        s.floor += 1;
+        // Saut d'étage'''
+          new='''        const clearedFloor = s.floor;
+        s.step = 1;
+        const pendingBoss = Number(s.pendingBossFloor || 0);
+        if (!(pendingBoss && pendingBoss === s.floor + 1)) s.floor += 1;
+        // Saut d'étage'''
+          if old not in s: raise SystemExit('campaign progression anchor missing')
+          s=s.replace(old,new)
+          s=s.replace('if (weakFight && skipPct > 0 && !isElite(nextFloor)', 'if (!(pendingBoss && pendingBoss === s.floor + 1) && weakFight && skipPct > 0 && !isElite(nextFloor)')
+          s=s.replace('|| "2026.09.06.9";', '|| "2026.09.06.10";', 1)
+          p.write_text(s)
+          p=Path('game-4.js'); s=p.read_text()
+          old="btn(ic('trash',11)+' Recycler '+recycleSelectedIds.size,{small:true,cls:'red',act:'askRecycleSelected',dis:!recycleSelectedIds.size})"
+          new="btn(ic('trash',11)+' Recycler '+recycleSelectedIds.size+' · +'+fmt(selectedRecycleItems().reduce((a,x)=>a+recycleValue(x),0))+' Poussière',{small:true,cls:'red',act:'askRecycleSelected',dis:!recycleSelectedIds.size})"
+          if old not in s: raise SystemExit('recycle feedback anchor missing')
+          s=s.replace(old,new)
+          p.write_text(s)
+          p=Path('index.html'); p.write_text(p.read_text().replace('2026.09.06.9','2026.09.06.10'))
+          PY
+      - name: Syntax check
+        run: |
+          node --check game-1.js
+          node --check game-2.js
+          node --check game-3.js
+          node --check game-4.js
+          node --check game-5.js
+      - name: Commit update
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game-2.js game-4.js index.html
+          git commit -m 'Boss Lock' -m 'Après une défaite contre un Boss, le joueur reste sur l’étage précédent et peut le farmer sans relancer automatiquement le Boss. Seul le bouton BOSS permet une revanche. La réduction de dégâts est limitée au Boss 40 et le recyclage manuel affiche désormais la Poussière totale sélectionnée. Build 2026.09.06.10.'
+          git push
