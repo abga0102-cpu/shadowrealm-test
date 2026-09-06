@@ -4,7 +4,7 @@
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.8";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.9";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -979,7 +979,7 @@ function makeEnemy(mode, opts) {
   let hp, dmg;
   if (mode === "campaign") {
     const mulH = opts.boss ? (opts.floor === 40 ? 5.1 : 6) : opts.elite ? 2.3 : 1;
-    const mulD = opts.boss ? 1.8 : opts.elite ? 1.4 : 1;
+    const mulD = opts.boss ? 1.7 : opts.elite ? 1.4 : 1;
     hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * tier.mul);
     dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * tier.mul);
     // Campaign difficulty is fixed by floor and enemy identity, never by player gear.
@@ -1800,7 +1800,7 @@ function handleCombatEnd(c) {
       if (isCheckpoint(s.floor)) s.checkpoint = Math.max(s.checkpoint, s.floor);
     } else {
       const cp = Math.max(s.checkpoint, 1);
-      if (c.boss) { s.pendingBossFloor = s.floor; s.floor = Math.max(cp, s.floor - 1); }
+      if (c.boss) { s.pendingBossFloor = s.floor; s.floor = Math.max(1, s.floor - 1); }
       else s.floor = Math.max(cp, s.floor - 1);
       s.step = 1;
     }

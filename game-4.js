@@ -322,6 +322,28 @@ let invFilter = "ALL";
 let equipPreviewSet = {};
 let skillFilter = "ALL";
 let recycleRarity = "COMMUN";
+let recycleSelectMode = false;
+let recycleSelectedIds = new Set();
+let recycleSlots = new Set();
+function selectedRecycleItems() { return S.inventory.filter((x) => recycleSelectedIds.has(x.id)); }
+function recycleItemsByIds(ids) {
+  const set = new Set(ids);
+  const hit = S.inventory.filter((x) => set.has(x.id));
+  const dust = hit.reduce((a,x)=>a+recycleValue(x),0);
+  if (!hit.length) return {n:0,dust:0};
+  update((st)=>{ st.inventory=st.inventory.filter((x)=>!set.has(x.id)); st.poussiere+=dust; });
+  return {n:hit.length,dust};
+}
+function showRecycleSlotsPicker() {
+  const rows=SLOTS.map((slot)=>{ const hit=S.inventory.filter(x=>x.slot===slot); const on=recycleSlots.has(slot); return '<div class="itemRow" data-act="toggleRecycleSlot" data-arg="'+slot+'" style="cursor:pointer;border-left-color:'+(on?'var(--purple)':'var(--line)')+'"><div class="flex1"><div class="b small">'+SLOT_LABEL[slot]+'</div><div class="mute tiny">'+hit.length+' objet'+(hit.length>1?'s':'')+'</div></div><span class="pill" style="color:'+(on?'var(--greenLit)':'var(--textMute)')+';border-color:'+(on?'#3FB950':'var(--line)')+'">'+(on?'Sélectionnée':'Choisir')+'</span></div>'; }).join('');
+  const hit=S.inventory.filter(x=>recycleSlots.has(x.slot)); const dust=hit.reduce((a,x)=>a+recycleValue(x),0);
+  openModal(rows+'<div class="notice mt6">'+hit.length+' objet'+(hit.length>1?'s':'')+' · +'+fmt(dust)+' poussière</div><div class="row gap6 mt8">'+btn('Fermer',{cls:'ghost',small:true,act:'closeModal'})+btn(ic('trash',12)+' Recycler catégories',{cls:'red',small:true,act:'askRecycleSlots',dis:!hit.length})+'</div>','Recycler par catégories');
+}
+function askRecycleIds(ids,title) {
+  const hit=S.inventory.filter(x=>ids.includes(x.id)); if(!hit.length){toast('Aucun objet sélectionné');return;}
+  const dust=hit.reduce((a,x)=>a+recycleValue(x),0);
+  openModal('<div class="center">'+ic('trash',30)+'</div><div class="modalT center mt6">'+hit.length+' OBJET'+(hit.length>1?'S':'')+'</div><div class="dim small center mt6">Tu récupères <b style="color:var(--purpleLit)">'+fmt(dust)+'</b> poussière.<br>L’équipement porté ne sera jamais touché.</div><div class="mute tiny center mt6">Action irréversible.</div><div class="row gap6 mt8">'+btn('Annuler',{cls:'ghost',small:true,act:'closeModal'})+btn(ic('trash',12)+' Recycler',{cls:'red',small:true,act:'doRecycleSelected',arg:ids.join(',')})+'</div>',title);
+}
 function scrInventaire() {
   const list = invFilter === "ALL" ? S.inventory : S.inventory.filter((i) => i.slot === invFilter);
   const sorted = list.slice().sort((a, b) =>
@@ -472,7 +494,9 @@ function scrEquipement() {
     (hasPreview ? '<div class="notice mt8"><div class="between"><span><b style="color:#78B7FF">Mode test :</b> '+previewItems.length+' pièce'+(previewItems.length>1?'s':'')+'</span><span class="row gap4">'+btn("Annuler",{small:true,cls:"ghost",act:"clearEquipPreview"})+btn("Équiper le set",{small:true,cls:"green",act:"equipPreviewSet"})+'</span></div><div class="mute tiny mt4">Tu peux tester une pièce par emplacement avant de valider tout le set.</div></div>' : '') +
     '<div class="sect" style="margin:14px 0 8px">Points de statistiques ('+S.statPoints+')</div><div class="duo">'+STAT_META.map((m)=>'<div class="card" style="padding:7px 8px"><div class="between"><div class="b small" style="color:'+m.color+'">'+m.label+'</div><b>'+S.stats[m.key]+'</b></div><div class="row gap4 mt6">'+btn("+1",{small:true,act:"alloc",arg:m.key,arg2:1,dis:S.statPoints<1})+btn("+5",{small:true,act:"alloc",arg:m.key,arg2:5,dis:S.statPoints<5})+btn("Max",{small:true,act:"alloc",arg:m.key,arg2:"max",dis:S.statPoints<1})+'</div></div>').join('')+'</div>' +
     '<div class="sect" style="margin:16px 0 8px">Inventaire</div><div class="seg">'+filters.map((f)=>'<span class="'+(invFilter===f?'on':'')+'" data-act="invFilter" data-arg="'+f+'">'+(f==='ALL'?'Tout':SLOT_LABEL[f])+'</span>').join('')+'</div>' +
-    (sorted.length===0 ? '<div class="notice center mt8">Aucun objet disponible.</div>' : sorted.map((it)=>'<div class="itemRow" style="border-left-color:'+RARITY[it.rarity].c+'"><div class="imini" style="width:32px;height:32px;border-color:'+RARITY[it.rarity].c+'80">'+slotIcon(it.slot,20,it)+'</div><div class="flex1"><div class="b small">'+esc(it.name)+(it.level?' <span style="color:var(--goldLit)">+'+it.level+'</span>':'')+'</div><div class="mute tiny">'+(MASTERY_STAT[it.slot]==='dmg'?ic('sword',9)+'+'+fmtEquipStat(it.damage):ic('heart',9)+'+'+fmtEquipStat(it.hp))+(it.weaponType?' · '+esc(WEAPON_TYPES[it.weaponType]?.name||it.weaponType):'')+'</div>'+(it.affixes&&it.affixes.length?'<div class="equipAffixes">'+it.affixes.slice(0,3).map((a)=>'<span class="tag" style="color:'+affixColor(a)+';border-color:'+affixColor(a)+'66">'+affixText(a)+'</span>').join('')+'</div>':'')+'</div>'+rtag(it.rarity)+'<div class="col gap4">'+btn(previewBySlot[it.slot]&&previewBySlot[it.slot].id===it.id?"Testé":"Tester",{small:true,cls:"blue",act:"previewEquip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn("Équiper",{small:true,cls:"green",act:"equip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn(ic("cycle",10)+recycleValue(it),{small:true,cls:"dark",act:"recycle",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+'</div></div>').join('')) +
+    '<div class="row gap6 mt6">'+btn(recycleSelectMode?'Annuler sélection':'Sélection manuelle',{small:true,cls:recycleSelectMode?'blue':'ghost',act:'toggleRecycleSelect'})+btn('Recycler catégories',{small:true,cls:'dark',act:'recycleSlotsPicker'})+'</div>' +
+    (recycleSelectMode ? '<div class="row gap6 mt6">'+btn('Tout sélectionner'+(invFilter==='ALL'?'':' · '+SLOT_LABEL[invFilter]),{small:true,cls:'ghost',act:'selectVisibleRecycle',dis:!sorted.length})+btn(ic('trash',11)+' Recycler '+recycleSelectedIds.size,{small:true,cls:'red',act:'askRecycleSelected',dis:!recycleSelectedIds.size})+'</div>' : '') +
+    (sorted.length===0 ? '<div class="notice center mt8">Aucun objet disponible.</div>' : sorted.map((it)=>'<div class="itemRow" '+(recycleSelectMode?'data-act="toggleRecycleItem" data-arg="'+it.id+'" ':'')+'style="border-left-color:'+RARITY[it.rarity].c+(recycleSelectedIds.has(it.id)?';box-shadow:inset 0 0 0 2px #B15CF6':'')+'"><div class="imini" style="width:32px;height:32px;border-color:'+RARITY[it.rarity].c+'80">'+slotIcon(it.slot,20,it)+'</div><div class="flex1"><div class="b small">'+esc(it.name)+(it.level?' <span style="color:var(--goldLit)">+'+it.level+'</span>':'')+'</div><div class="mute tiny">'+(MASTERY_STAT[it.slot]==='dmg'?ic('sword',9)+'+'+fmtEquipStat(it.damage):ic('heart',9)+'+'+fmtEquipStat(it.hp))+(it.weaponType?' · '+esc(WEAPON_TYPES[it.weaponType]?.name||it.weaponType):'')+'</div>'+(it.affixes&&it.affixes.length?'<div class="equipAffixes">'+it.affixes.slice(0,3).map((a)=>'<span class="tag" style="color:'+affixColor(a)+';border-color:'+affixColor(a)+'66">'+affixText(a)+'</span>').join('')+'</div>':'')+'</div>'+rtag(it.rarity)+(recycleSelectMode?'<span class="pill" style="color:'+(recycleSelectedIds.has(it.id)?'var(--greenLit)':'var(--textMute)')+';border-color:'+(recycleSelectedIds.has(it.id)?'#3FB950':'var(--line)')+'">'+(recycleSelectedIds.has(it.id)?'Choisi':'Choisir')+'</span>':'<div class="col gap4">'+btn(previewBySlot[it.slot]&&previewBySlot[it.slot].id===it.id?"Testé":"Tester",{small:true,cls:"blue",act:"previewEquip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn("Équiper",{small:true,cls:"green",act:"equip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn(ic("cycle",10)+recycleValue(it),{small:true,cls:"dark",act:"recycle",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+'</div>')+'</div>').join('')) +
     (hasPreview ? '<div class="equipPreviewSpacer"></div>' : '<div style="height:8px"></div>') + '</div>' + testDock;
 }
 

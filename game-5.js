@@ -1642,7 +1642,15 @@ const ACT = {
     const why = castSkill(a);
     if (why) toast(why);
   },
-  invFilter: (a) => { invFilter = a; render(); },
+  invFilter: (a) => { invFilter = a; if(recycleSelectMode) recycleSelectedIds.clear(); render(); },
+  toggleRecycleSelect: () => { recycleSelectMode=!recycleSelectMode; recycleSelectedIds.clear(); render(); },
+  toggleRecycleItem: (a) => { if(!recycleSelectMode)return; recycleSelectedIds.has(a)?recycleSelectedIds.delete(a):recycleSelectedIds.add(a); render(); },
+  selectVisibleRecycle: () => { const list=invFilter==='ALL'?S.inventory:S.inventory.filter(x=>x.slot===invFilter); list.forEach(x=>recycleSelectedIds.add(x.id)); render(); },
+  askRecycleSelected: () => askRecycleIds(Array.from(recycleSelectedIds),'Recycler la sélection'),
+  doRecycleSelected: (a) => { const ids=String(a||'').split(',').filter(Boolean); const r=recycleItemsByIds(ids); recycleSelectedIds.clear(); recycleSelectMode=false; recycleSlots.clear(); closeModal(); toast(r.n?r.n+' objet'+(r.n>1?'s':'')+' recyclé'+(r.n>1?'s':'')+' · +'+fmt(r.dust)+' poussière':'Rien à recycler',!!r.n); render(); },
+  recycleSlotsPicker: () => { recycleSlots.clear(); showRecycleSlotsPicker(); },
+  toggleRecycleSlot: (a) => { recycleSlots.has(a)?recycleSlots.delete(a):recycleSlots.add(a); showRecycleSlotsPicker(); },
+  askRecycleSlots: () => { const ids=S.inventory.filter(x=>recycleSlots.has(x.slot)).map(x=>x.id); askRecycleIds(ids,'Recycler les catégories'); },
   pickRecycleRarity: () => showRecyclePicker(),
   setRecycleRarity: (a) => { recycleRarity = a; closeModal(); render(); },
   askRecycleBatch: () => askRecycleBatch(),
