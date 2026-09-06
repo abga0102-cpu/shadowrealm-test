@@ -3,6 +3,67 @@
    ========================================================================= */
 
 /* ---------------- ACCUEIL ---------------- */
+function recommendationDismissed(rec) {
+  if (!rec) return true;
+  const dismissed = S.recommendationDismissed || {};
+  return String(dismissed[rec.kind] || "") === String(rec.token || "");
+}
+function bestEquipmentUpgradeForRecommendation() {
+  const baseline = Number(S.power) || computePower(S);
+  let best = null, bestGain = 0;
+  (S.inventory || []).forEach((it) => {
+    if (!it || !it.slot || !Object.prototype.hasOwnProperty.call(S.equipped || {}, it.slot)) return;
+    const equipped = Object.assign({}, S.equipped, { [it.slot]: it });
+    const trial = Object.assign({}, S, { equipped });
+    const gain = Math.round(computePower(trial) - baseline);
+    if (gain > bestGain) { best = it; bestGain = gain; }
+  });
+  return best ? { item: best, gain: bestGain } : null;
+}
+function contextualHomeRecommendation() {
+  const now = Date.now();
+  const upgDone = S.forge.upgradeEnd > 0 && S.forge.upgradeEnd <= now;
+  if (upgDone) return { kind:"forge", token:String(S.forge.upgradeEnd), icon:"hammer",
+    title:"Récupérer la Forge", sub:"L’amélioration est terminée.", cta:"RÉCUPÉRER", cls:"green", act:"forgeCollect" };
+
+  const readyEggs = (S.eggs || []).filter((e) => eggIsHatching(e) && e.hatchEnd <= now);
+  if (readyEggs.length) return { kind:"eggs", token:readyEggs.map((e)=>e.id).sort().join(","), icon:"egg",
+    title:"Récupérer " + readyEggs.length + " œuf" + (readyEggs.length > 1 ? "s" : ""),
+    sub:"Une éclosion terminée t’attend.", cta:"OUVRIR", cls:"green", act:"go", arg:"familiers" };
+
+  if (S.tree && S.tree.active && S.tree.activeEnd > 0 && S.tree.activeEnd <= now) {
+    return { kind:"tree", token:String(S.tree.active) + ":" + String(S.tree.activeEnd), icon:"tree",
+      title:"Récupérer la recherche", sub:"Le bonus de l’Arbre est prêt.", cta:"OUVRIR", cls:"green", act:"go", arg:"arbre" };
+  }
+
+  const pendingBoss = Number(S.pendingBossFloor || 0);
+  const bossBlocked = pendingBoss === S.floor + 1 && isBoss(pendingBoss) &&
+    !(S.bossClears && S.bossClears[String(pendingBoss)]);
+  if (bossBlocked) {
+    const upgrade = bestEquipmentUpgradeForRecommendation();
+    if (upgrade) return { kind:"boss", token:String(pendingBoss), icon:"swords",
+      title:"Un meilleur équipement est disponible",
+      sub:"Une pièce du sac augmente ta Puissance de " + fmt(upgrade.gain) + ".",
+      cta:"ÉQUIPEMENT", cls:"blue", act:"go", arg:"equipement" };
+    if (S.minerai >= forgeCost(S.forge.level)) return { kind:"boss", token:String(pendingBoss), icon:"hammer",
+      title:"Renforce ton équipement", sub:"Le Boss " + pendingBoss + " bloque ta progression. La Forge peut améliorer ton build.",
+      cta:"VOIR LA FORGE", cls:"blue", act:"focusForge" };
+    return { kind:"boss", token:String(pendingBoss), icon:"shield",
+      title:"Renforce ton héros", sub:"Le Boss " + pendingBoss + " bloque ta progression.",
+      cta:"ÉQUIPEMENT", cls:"blue", act:"go", arg:"equipement" };
+  }
+
+  if (S.level >= RULES.RAID_UNLOCK_LEVEL) {
+    const raidKeys = RAID_IDS.reduce((n,id)=>n+Math.max(0,Number(S.raids[id] && S.raids[id].keys)||0),0);
+    const totalKeys = raidKeys + Math.max(0,Number(S.universalKeys)||0);
+    if (totalKeys > 0) return { kind:"raid", token:String(S.lastKeyReset || todayStr()), icon:"flame",
+      title:totalKeys + " clé" + (totalKeys > 1 ? "s" : "") + " de Raid disponible" + (totalKeys > 1 ? "s" : ""),
+      sub:"Une tentative peut accélérer ta progression, sans obligation.",
+      cta:"VOIR LES RAIDS", cls:"red", act:"go", arg:"raid" };
+  }
+  return null;
+}
+
 function scrAccueil() {
   const pendingBoss = Number(S.pendingBossFloor || 0);
   const canRetryBoss = pendingBoss === S.floor + 1 && isBoss(pendingBoss) && !(S.bossClears && S.bossClears[String(pendingBoss)]);
@@ -13,39 +74,21 @@ function scrAccueil() {
   const upgRemain = upgrading ? (S.forge.upgradeEnd - Date.now()) / 1000 : 0;
   const upgDone = S.forge.upgradeEnd > 0 && !upgrading;
 
-  // Une seule source de guidage : pendant une leçon, le Tutoriel reste seul.
-  // Ensuite viennent les collectes terminées, le Boss bloquant, puis l'objectif réel.
+  // Une recommandation n'existe que lorsqu'un événement utile le justifie.
+  // Aucun objectif général n'est poussé en permanence.
   const tutorialPending = typeof pendingTutorialStep === "function" && !!pendingTutorialStep();
-  const readyEggCount = (S.eggs || []).filter((e) => eggIsHatching(e) && e.hatchEnd <= Date.now()).length;
-  const readyResearch = !!(S.tree && S.tree.active && S.tree.activeEnd <= Date.now());
-  const goal = currentPrimaryGoal(S);
-  let recommended;
-  if (upgDone) {
-    recommended = { icon: "hammer", title: "Récupérer la Forge",
-      sub: "L’amélioration est terminée.", cta: "RÉCUPÉRER", cls: "green", act: "forgeCollect" };
-  } else if (readyEggCount > 0) {
-    recommended = { icon: "egg", title: "Récupérer " + readyEggCount + " œuf" + (readyEggCount > 1 ? "s" : ""),
-      sub: "Une éclosion terminée t’attend.", cta: "OUVRIR", cls: "green", act: "go", arg: "familiers" };
-  } else if (readyResearch) {
-    recommended = { icon: "tree", title: "Récupérer la recherche",
-      sub: "Le bonus de l’Arbre est prêt.", cta: "OUVRIR", cls: "green", act: "go", arg: "arbre" };
-  } else if (canRetryBoss) {
-    recommended = { icon: "skull", title: "Affronter le Boss " + pendingBoss,
-      sub: "Le Boss bloque le prochain étage.", cta: "AFFRONTER", cls: "red", act: "bossRetry" };
-  } else {
-    const target = goal.go || "accueil";
-    recommended = { icon: goal.category === "defi" ? "flame" : goal.category === "developpement" ? "tree" : "target",
-      title: goal.title, sub: goal.why, cta: "VOIR", cls: goal.category === "defi" ? "red" : "blue",
-      act: target === "accueil" ? "focusGoal" : "go", arg: target === "accueil" ? undefined : target };
-  }
-  const recommendedCard = tutorialPending ? "" :
+  const recommended = tutorialPending ? null : contextualHomeRecommendation();
+  const showRecommendation = recommended && !recommendationDismissed(recommended);
+  const recommendedCard = showRecommendation ?
     '<div class="pad recommendedWrap"><div class="card recommendedActionCard">' +
-    '<div class="recommendedKicker">' + ic("bolt", 11) + ' ACTION RECOMMANDÉE</div>' +
+    '<button class="recommendedClose iconBtn" data-act="dismissRecommendation" data-arg="' + esc(recommended.kind) +
+      '" data-arg2="' + esc(recommended.token) + '" aria-label="Fermer la recommandation" title="Fermer">×</button>' +
+    '<div class="recommendedKicker">' + ic("bolt", 11) + ' CONSEIL PONCTUEL</div>' +
     '<div class="between gap8 mt4"><div class="flex1"><div class="bb recommendedTitle">' +
     esc(recommended.title) + '</div><div class="mute tiny mt3">' + esc(recommended.sub) + '</div></div>' +
     btn(ic(recommended.icon, 14) + ' ' + recommended.cta, { cls: recommended.cls, small: true, act: recommended.act,
-      arg: recommended.arg, primary: true, style: "width:auto;min-width:92px;flex:0 0 auto" }) +
-    '</div></div></div>';
+      arg: recommended.arg, primary: true, style: "width:auto;min-width:104px;flex:0 0 auto" }) +
+    '</div></div></div>' : "";
 
   const pet = S.pets.find((p) => p.id === S.activePetId);
   // Keep AUTO's visual phase continuous even though the home screen re-renders.
@@ -143,7 +186,7 @@ function scrAccueil() {
         '<i class="catBar" style="background:' + wCol + '"></i>' +
       "</div>" + sb + "</div>" +
     '<div id="fxbar"></div>' +
-    '<div class="pad mt4"><div class="card frame homeForge">' +
+    '<div class="pad mt4"><div class="card frame homeForge" id="homeForge">' +
       '<div class="fgRow">' +
         '<div class="imini" style="width:21px;height:21px;border-color:var(--goldDim);flex:0 0 auto">' + ic("hammer", 12) + "</div>" +
         '<span class="bb gt" style="font-size:11px;letter-spacing:.6px;flex:0 0 auto">FORGE NIV.' + S.forge.level + "</span>" +
