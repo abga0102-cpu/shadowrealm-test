@@ -1,4 +1,4 @@
-# trigger-v18-4
+# trigger-v18-5
 name: Apply equipment upgrade clarity v18
 on:
   push:
@@ -11,11 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Improve dust efficiency and item stat clarity
+      - name: Apply dust 0.50 percent
         run: |
           python <<'PY'
           from pathlib import Path
-
           p = Path('game-2.js')
           s = p.read_text()
           pairs = [
@@ -26,42 +25,8 @@ jobs:
           ]
           for old,new in pairs:
               if new not in s:
-                  if old not in s: raise SystemExit('game-2 upgrade anchor missing: ' + old)
+                  if old not in s: raise SystemExit('upgrade anchor missing: ' + old)
                   s = s.replace(old,new,1)
-          if '|| "2026.09.06.18";' not in s:
-              if '|| "2026.09.06.17";' not in s: raise SystemExit('APP_BUILD anchor missing')
-              s = s.replace('|| "2026.09.06.17";', '|| "2026.09.06.18";', 1)
-          p.write_text(s)
-
-          p = Path('game-5.js')
-          s = p.read_text()
-          anchor = '  const upgradePreview = itemUpgradePreview(it);\n'
-          add = '\n'.join([
-              '  const isWeaponStat = !!it.baseDamage;',
-              '  const basePrimary = Number(isWeaponStat ? (it.baseDamage || it.damage || 0) : (it.baseHp || it.hp || 0));',
-              '  const currentPrimary = Number(isWeaponStat ? (it.damage || 0) : (it.hp || 0));',
-              '  const addedPrimary = Math.max(0, currentPrimary - basePrimary);',
-          ]) + '\n'
-          if add not in s:
-              if anchor not in s: raise SystemExit('item modal helper anchor missing')
-              s = s.replace(anchor, anchor + add, 1)
-          swaps = [
-              ('? st("ATTAQUE DE BASE", "+" + equipStat(it.damage), "#FF9C6B")', '? st("ATTAQUE DE BASE", "+" + equipStat(basePrimary), "#FF9C6B")'),
-              (': st("SANTÉ DE BASE", "+" + equipStat(it.hp), "var(--redLit)")) +', ': st("SANTÉ DE BASE", "+" + equipStat(basePrimary), "var(--redLit)")) +'),
-              ('      st("PUISSANCE", equipStat(it.power), "var(--goldLit)") +', '      st(it.baseDamage ? "BONUS D\'ATTAQUE" : "BONUS DE SANTÉ", "+" + equipStat(addedPrimary), "var(--greenLit)") +\n      st("PUISSANCE TOTALE", equipStat(it.power), "var(--goldLit)") +'),
-              ('      st("NIVEAU D\'AMÉLIORATION", "+" + it.level, "var(--goldLit)") +\n', '')
-          ]
-          for old,new in swaps:
-              if new and new in s: continue
-              if old not in s: raise SystemExit('game-5 anchor missing: ' + old)
-              s = s.replace(old,new,1)
-          p.write_text(s)
-
-          p = Path('index.html')
-          s = p.read_text()
-          if '2026.09.06.18' not in s:
-              if '2026.09.06.17' not in s: raise SystemExit('index build anchor missing')
-              s = s.replace('2026.09.06.17','2026.09.06.18')
           p.write_text(s)
           PY
       - name: Syntax and regression checks
@@ -79,8 +44,10 @@ jobs:
           seg=e[e.index('function itemUpgradePreview'):e.index('function itemUpgradeChance')]
           assert seg.count('0.005') >= 2
           assert '0.00375' not in seg and '0.0035' not in seg
-          assert 'BONUS DE SANTÉ' in u and 'BONUS D\'ATTAQUE' in u and 'PUISSANCE TOTALE' in u
-          assert '2026.09.06.18' in h and '|| "2026.09.06.18";' in e
+          assert 'BONUS DE SANTÉ' in u
+          assert 'PUISSANCE TOTALE' in u
+          assert '2026.09.06.18' in h
+          assert '|| "2026.09.06.18";' in e
           assert 'Math.floor(dmg * 0.30)' in e
           assert 'function campaignBossStatMul(floor)' in e
           print('v18 checks passed')
@@ -93,6 +60,6 @@ jobs:
             echo 'Already applied'
             exit 0
           fi
-          git add game-2.js game-5.js index.html
-          git commit -m 'Stats Équipement' -m 'Les améliorations d’équipement gagnent désormais 0,50 % de leur statistique de référence par niveau réussi. Le détail sépare la statistique de base du bonus apporté par les améliorations et affiche la puissance totale. Le niveau d’amélioration redondant est retiré du bloc de statistiques. Build 2026.09.06.18.'
+          git add game-2.js
+          git commit -m 'Stats Équipement' -m 'Augmente définitivement l’efficacité des Poussières à 0,50 % de la statistique de référence par niveau réussi. L’affichage détaillé déjà présent conserve Santé de base, Bonus de santé et Puissance totale, sans niveau d’amélioration redondant. Build 2026.09.06.18.'
           git push
