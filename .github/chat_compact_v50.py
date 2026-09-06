@@ -30,7 +30,7 @@ p.write_text(s)
 # Normalize visible/cache build without touching save version.
 for name in ['game-2.js','index.html']:
     q=Path(name); t=q.read_text()
-    t=re.sub(r'2026\\.09\\.06\\.\\d+',BUILD_NEW,t)
+    t=re.sub(r'2026\.09\.06\.\d+',BUILD_NEW,t)
     q.write_text(t)
 
 print('chat compact overlay v50 applied')
