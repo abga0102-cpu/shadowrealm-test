@@ -772,6 +772,7 @@ function btn(label, opts) {
   return '<button class="' + cls + '"' + (opts.act ? ' data-act="' + opts.act + '"' : "") +
     (opts.arg !== undefined ? ' data-arg="' + esc(opts.arg) + '"' : "") +
     (opts.arg2 !== undefined ? ' data-arg2="' + esc(opts.arg2) + '"' : "") +
+    (opts.primary ? ' data-primary="true"' : "") +
     (opts.dis ? " disabled" : "") +
     (opts.style ? ' style="' + opts.style + '"' : "") + ">" + label + "</button>";
 }
