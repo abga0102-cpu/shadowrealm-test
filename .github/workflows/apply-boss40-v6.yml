@@ -1,4 +1,4 @@
-name: Apply Boss 40 v6
+name: Apply Boss Checkpoints v7
 on:
   push:
     paths:
@@ -10,31 +10,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply targeted Boss 40 balance
+      - name: Apply Boss checkpoint flow
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('game-2.js')
-          s = p.read_text()
-          old = '    const mulH = opts.boss ? 6 : opts.elite ? 2.3 : 1;'
-          new = '    const mulH = opts.boss ? (opts.floor === 40 ? 5.1 : 6) : opts.elite ? 2.3 : 1;'
-          if old not in s:
-              raise SystemExit('Boss HP pattern not found')
-          s = s.replace(old, new, 1)
-          s = s.replace('|| "2026.09.06.5";', '|| "2026.09.06.6";', 1)
-          p.write_text(s)
-
-          p = Path('index.html')
-          s = p.read_text()
-          if '2026.09.06.5' not in s:
-              raise SystemExit('Build .5 not found in index')
-          p.write_text(s.replace('2026.09.06.5', '2026.09.06.6'))
+          p=Path('game-2.js'); s=p.read_text()
+          s=s.replace('  const elite = isElite(floor) && step === 3;\n  const boss = isBoss(floor) && step === 3;','  const boss = isBoss(floor);\n  const elite = !boss && isElite(floor) && step === 3;',1)
+          s=s.replace('function startCampaign() { combat = spawnCampaign(S); }','function startCampaign() { combat = spawnCampaign(S); }\nfunction retryPendingBoss() {\n  const floor = Number(S.pendingBossFloor || 0);\n  if (!floor || floor !== S.floor + 1 || !isBoss(floor) || (S.bossClears && S.bossClears[String(floor)])) return false;\n  update((s) => { s.floor = floor; s.step = 1; });\n  combat = spawnCampaign(S);\n  return true;\n}',1)
+          s=s.replace('      if (s.step < RULES.STEPS_PER_FLOOR) s.step += 1;\n      else {','      if (c.boss) {\n        s.pendingBossFloor = 0; s.step = 1; s.floor += 1;\n      } else if (s.step < RULES.STEPS_PER_FLOOR) s.step += 1;\n      else {',1)
+          s=s.replace('    } else {\n      const cp = Math.max(s.checkpoint, 1);\n      s.floor = Math.max(cp, s.floor - 1);\n      s.step = 1;\n    }','    } else {\n      const cp = Math.max(s.checkpoint, 1);\n      if (c.boss) { s.pendingBossFloor = s.floor; s.floor = Math.max(cp, s.floor - 1); }\n      else s.floor = Math.max(cp, s.floor - 1);\n      s.step = 1;\n    }',1)
+          s=s.replace('|| "2026.09.06.6";','|| "2026.09.06.7";',1); p.write_text(s)
+          p=Path('game-4.js'); s=p.read_text()
+          s=s.replace('  const atMax = S.forge.level >= RULES.FORGE_MAX;','  const pendingBoss = Number(S.pendingBossFloor || 0);\n  const canRetryBoss = pendingBoss === S.floor + 1 && isBoss(pendingBoss) && !(S.bossClears && S.bossClears[String(pendingBoss)]);\n  const atMax = S.forge.level >= RULES.FORGE_MAX;',1)
+          s=s.replace("  return '<div id=\"arenaSlot\"></div>' +","  return (canRetryBoss ? '<div class=\"pad mt4\">' + btn(ic(\"skull\",14) + ' BOSS',{cls:'red',act:'bossRetry',style:'font-weight:900;letter-spacing:1.2px'}) + '<div class=\"mute tiny center mt3\">Boss étage ' + fmtInt(pendingBoss) + ' · retente quand tu te sens prêt</div></div>' : '') + '<div id=\"arenaSlot\"></div>' +",1); p.write_text(s)
+          p=Path('game-5.js'); s=p.read_text()
+          s=s.replace('  abortRaid: () => { combat = null; startCampaign(); nav("accueil"); toast("Raid abandonné"); },','  bossRetry: () => { if (retryPendingBoss()) { nav("accueil"); toast("Boss relancé", true); } else toast("Boss non disponible"); },\n  abortRaid: () => { combat = null; startCampaign(); nav("accueil"); toast("Raid abandonné"); },',1); p.write_text(s)
+          p=Path('index.html'); s=p.read_text(); p.write_text(s.replace('2026.09.06.6','2026.09.06.7'))
           PY
           node --check game-2.js
+          node --check game-4.js
+          node --check game-5.js
       - name: Commit and publish
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add game-2.js index.html
-          git commit -m "Boss 40 ajusté" -m "Réduit uniquement les PV du Boss de l’étage 40 de 15 %, sans modifier les calculs ni la progression de difficulté des Boss suivants. Build 2026.09.06.6."
+          git add game-2.js game-4.js game-5.js index.html
+          git commit -m "Boss Checkpoints" -m "Les étages Boss contiennent uniquement le Boss. Une défaite renvoie et maintient le joueur à l’étage précédent. Un bouton BOSS permet de retenter le combat quand le joueur se sent prêt. L’ajustement ciblé de -15 % PV du Boss 40 est conservé. Build 2026.09.06.7."
           git push
