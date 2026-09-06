@@ -1749,6 +1749,13 @@ const ACT = {
   closeMega: () => { closeModal(); megaResult = null; startCampaign(); nav("mega"); },
 
   // sanctuaire
+  sanctPrepare: (a) => {
+    const r=SANCT_RECIPES.find((x)=>x.id===a);
+    if(!r) return;
+    if(!S.sanctuary) S.sanctuary={slotA:null,slotB:null,discovered:{},fusions:0,stabilitySeals:0};
+    S.sanctuary.slotA=r.a; S.sanctuary.slotB=r.b;
+    dirty=true; scheduleRender();
+  },
   sanctAdd: (a) => { sanctSetSlot(a); render(); },
   sanctClear: (a) => { sanctClearSlot(a); render(); },
   sanctFuse: () => {
