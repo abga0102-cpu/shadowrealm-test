@@ -1909,3 +1909,34 @@ boot();
 preloadFrames("hero");
 render();
 rafLoop();
+
+// ACCESSIBILITY_KEYBOARD_V19
+document.addEventListener("keydown", function accessibilityActivate(e) {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const target = e.target && e.target.closest ? e.target.closest("[data-act]") : null;
+  if (!target || target.getAttribute("aria-disabled") === "true") return;
+  e.preventDefault();
+  target.click();
+});
+function enhanceInteractiveAccessibility(root) {
+  const scope = root && root.querySelectorAll ? root : document;
+  scope.querySelectorAll("[data-act]").forEach(function (el) {
+    if (!el.hasAttribute("tabindex") && el.tagName !== "BUTTON") el.setAttribute("tabindex", "0");
+    if (!el.hasAttribute("role") && el.tagName !== "BUTTON") el.setAttribute("role", "button");
+    if (!el.hasAttribute("aria-label")) {
+      const label = (el.getAttribute("title") || el.textContent || "").replace(/\s+/g, " ").trim();
+      if (label) el.setAttribute("aria-label", label.slice(0, 120));
+    }
+  });
+}
+document.addEventListener("DOMContentLoaded", function () {
+  enhanceInteractiveAccessibility(document);
+  const observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node && node.nodeType === 1) enhanceInteractiveAccessibility(node);
+      });
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+});
