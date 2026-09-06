@@ -151,11 +151,14 @@ function scrAccueil() {
     { label: "Défis", icon: "flame", color: "#C22127", go: "defis",
       badge: RAID_IDS.some((r) => S.raids[r].keys > 0) || nextMegaBossFloor(S) !== null },
   ];
+  // CAMPAIGN_WORLD_NAV_V37
+  // Les systèmes secondaires restent accessibles, mais ils ne prennent plus de
+  // hauteur sous la campagne. Le Rebirth devient une action du monde, directement
+  // visible dans l'arène, et l'Ascension reste dans le menu compact.
   const sysBtns = [
     { label: "Clan", icon: "banner", color: "#B0862C", go: "clan", lock: S.level < 10 ? 10 : 0 },
     { label: "Boutique", icon: "shop", color: "#3B7FC4", go: "boutique" },
-    { label: "Progression", icon: "cycle", color: "#6B3AC4", go: "progression",
-      badge: canRebirth() || S.ascensionAvailable },
+    { label: "Ascension", icon: "star", color: "#6B3AC4", go: "ascension", badge: S.ascensionAvailable },
     { label: "Événement", icon: "gift", color: "#C22127", go: "evenement", badge: true },
     { label: "Classement", icon: "trophy", color: "#5A7099", go: "classement" },
   ];
@@ -173,11 +176,38 @@ function scrAccueil() {
       inner + '<div class="navLbl">' + (b.lock ? "Niv." + b.lock : b.label) + "</div></div>";
   };
 
+  const worldAction = (b, pos) => {
+    const art = ASSETS["nav_" + b.go];
+    const icoHtml = art
+      ? '<img src="' + art + '" alt="" draggable="false">'
+      : '<span class="worldActionIco">' + ic(b.icon, 18) + '</span>';
+    const lock = b.lock ? ' data-act="locked" data-arg="' + b.lock + '"' : ' data-act="go" data-arg="' + b.go + '"';
+    return '<button class="worldAction ' + pos + (b.lock ? ' locked' : '') + '"' + lock +
+      ' aria-label="' + esc(b.label) + '">' + icoHtml +
+      '<span>' + (b.lock ? 'Niv.' + b.lock : esc(b.label)) + '</span>' +
+      (b.badge && !b.lock ? '<i class="worldDot"></i>' : '') + '</button>';
+  };
+  const worldPrimary = [
+    { label:"Rebirth", icon:"cycle", go:"rebirth", badge:canRebirth() },
+    navBtns[0], navBtns[1], navBtns[2]
+  ];
+
   const wtHome = WEAPON_TYPES[D.weapon] || WEAPON_TYPES.epee;
   const wArt = ASSETS["weapon_" + D.weapon];
   const wRar = S.equipped.arme ? RARITY[S.equipped.arme.rarity] : null;
   const wCol = wRar ? wRar.c : "#d6dae4";
-  return recommendedCard + '<div id="arenaSlot"></div>' +
+  return recommendedCard + '<div class="campaignWorld">' +
+      '<div id="arenaSlot"></div>' +
+      '<div class="worldNavLayer">' +
+        worldAction(worldPrimary[0], "worldRebirth") +
+        worldAction(worldPrimary[1], "worldEquip") +
+        worldAction(worldPrimary[2], "worldDev") +
+        worldAction(worldPrimary[3], "worldDefis") +
+        '<details class="worldMenu"><summary>' + ic("menu", 14) + '<span>Menu</span>' +
+          (sysBtns.some((b)=>b.badge && !b.lock) ? '<i class="worldDot"></i>' : '') +
+        '</summary><div class="worldMenuPanel">' + sysBtns.map(tile).join("") + '</div></details>' +
+      '</div>' +
+    '</div>' +
     '<div id="skillbar">' +
       '<div class="slot" data-act="go" data-arg="equipement" title="' + esc(wtHome.name) +
         '" style="border-color:' + wCol + '66">' +
@@ -234,12 +264,7 @@ function scrAccueil() {
           (S.forge.filter ? "ACTIF" : "INACTIF") + "</span>" +
       "</div>" +
     "</div></div>" +
-    progressionGoalHTML(S) +
-    '<div class="navGrid homeNavPrimary">' + navBtns.map(tile).join("") + "</div>" +
-    '<details class="homeMore mt4" data-home-more="1"' + (homeMoreOpen ? ' open' : '') + '><summary>' + ic("menu", 12) + 'Plus' +
-      (sysBtns.some((b) => b.badge && !b.lock) ? '<span class="dot"></span>' : '') +
-      '</summary><div class="navGrid homeNavSecondary mt4">' + sysBtns.map(tile).join("") + "</div></details>" +
-    '<div style="height:4px"></div>';
+    '<div class="homeCompactEnd"></div>';
 }
 
 /* ---------------- PERSONNAGE ---------------- */
