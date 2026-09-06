@@ -1,4 +1,4 @@
-# trigger-v18-2
+# trigger-v18-3
 name: Apply equipment upgrade clarity v18
 on:
   push:
@@ -20,9 +20,9 @@ jobs:
           s = p.read_text()
           reps = [
               ('next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.0035) * 100) / 100;',
-               'next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.00375) * 100) / 100;'),
+               'next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.005) * 100) / 100;'),
               ('next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.0035) * 100) / 100;',
-               'next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.00375) * 100) / 100;'),
+               'next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.005) * 100) / 100;'),
               ('|| "2026.09.06.17";', '|| "2026.09.06.18";'),
           ]
           for old,new in reps:
@@ -79,7 +79,7 @@ jobs:
           u=Path('game-5.js').read_text()
           h=Path('index.html').read_text()
           seg=e[e.index('function itemUpgradePreview'):e.index('function itemUpgradeChance')]
-          assert seg.count('0.00375') >= 2
+          assert seg.count('0.005') >= 2
           assert '0.0035' not in seg
           modal=u[u.index('const upgradePreview = itemUpgradePreview(it)'):u.index('BONUS DE STATS',u.index('const upgradePreview = itemUpgradePreview(it)'))]
           assert 'BONUS DE SANTÉ' in modal
@@ -100,5 +100,5 @@ jobs:
             exit 0
           fi
           git add game-2.js game-5.js index.html
-          git commit -m 'Stats Équipement' -m 'Améliore légèrement l’efficacité des Poussières : chaque niveau réussi ajoute désormais 0,375 % de la statistique de référence au lieu de 0,35 %. Le détail d’un équipement affiche maintenant Santé de base, Bonus de santé et Puissance totale pour les pièces défensives, avec l’équivalent Attaque de base / Bonus d’attaque pour les armes. Le Niveau d’amélioration est retiré de ce bloc car il est déjà visible dans le nom de l’objet. Build 2026.09.06.18.'
+          git commit -m 'Stats Équipement' -m 'Augmente l’efficacité des Poussières : chaque niveau réussi ajoute désormais 0,50 % de la statistique de référence au lieu de 0,35 %. Le détail d’un équipement affiche maintenant Santé de base, Bonus de santé et Puissance totale pour les pièces défensives, avec l’équivalent Attaque de base / Bonus d’attaque pour les armes. Le Niveau d’amélioration est retiré de ce bloc car il est déjà visible dans le nom de l’objet. Build 2026.09.06.18.'
           git push
