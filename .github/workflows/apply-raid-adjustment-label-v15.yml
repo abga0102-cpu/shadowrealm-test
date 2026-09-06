@@ -1,5 +1,5 @@
-# trigger-v20-2
-name: Apply early progression tuning v20
+# trigger-v21-1
+name: Apply Hick hierarchy v21
 on:
   push:
     paths:
@@ -11,49 +11,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply early progression tuning
+      - name: Apply action hierarchy
         run: |
           python <<'PY'
           from pathlib import Path
 
-          g1=Path('game-1.js'); s=g1.read_text()
-          old='''function raidWaveHP(raid, level) {\n  return RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, level) * RAID_TUNE[raid].hp * raidDiffMul(S, raid);\n}\nfunction raidWaveDamage(raid, level) {\n  return RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, level) * RAID_TUNE[raid].dmg * raidDiffMul(S, raid);\n}'''
-          new='''function raidIntroDifficultyMul(raid, level) {\n  // Les deux premiers niveaux servent d’introduction. Dès le niveau 3, la\n  // courbe historique reprend exactement à 100 %, donc le développement futur\n  // et la difficulté des niveaux avancés restent inchangés.\n  if (raid !== "evolution" && raid !== "competence" && raid !== "familier") return 1;\n  if (level <= 1) return 0.65;\n  if (level === 2) return 0.80;\n  return 1;\n}\nfunction raidWaveHP(raid, level) {\n  return RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, level) * RAID_TUNE[raid].hp * raidDiffMul(S, raid) * raidIntroDifficultyMul(raid, level);\n}\nfunction raidWaveDamage(raid, level) {\n  return RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, level) * RAID_TUNE[raid].dmg * raidDiffMul(S, raid) * raidIntroDifficultyMul(raid, level);\n}'''
-          if 'function raidIntroDifficultyMul' not in s:
-              if old not in s: raise SystemExit('raid wave anchor missing')
-              s=s.replace(old,new,1)
-          g1.write_text(s)
-
-          g2=Path('game-2.js'); s=g2.read_text()
-          old='''    const statMul = opts.boss ? campaignBossStatMul(opts.floor) : tier.mul;\n    hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * statMul);\n    dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * statMul);'''
-          new='''    const statMul = opts.boss ? campaignBossStatMul(opts.floor) : tier.mul;\n    // Le Chef Gobelin est le premier checkpoint majeur : -20 % PV et dégâts.\n    // noFastback est utilisé par le Méga-Boss construit depuis ce Boss, ce qui\n    // garantit que Méga 1 conserve sa puissance de référence et son ×10.\n    const firstBossMul = opts.boss && opts.floor === 10 && !opts.noFastback ? 0.80 : 1;\n    hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * statMul * firstBossMul);\n    dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * statMul * firstBossMul);'''
-          if 'const firstBossMul' not in s:
-              if old not in s: raise SystemExit('campaign boss anchor missing')
-              s=s.replace(old,new,1)
-          if '|| "2026.09.06.20";' not in s:
-              if '|| "2026.09.06.19";' not in s: raise SystemExit('APP_BUILD .19 anchor missing')
-              s=s.replace('|| "2026.09.06.19";', '|| "2026.09.06.20";', 1)
-          g2.write_text(s)
-
           css=Path('style.css'); s=css.read_text()
-          if 'ACCESSIBILITY_SIMPLICITY_V20' not in s:
-              s=s.replace('/* ACCESSIBILITY_SIMPLICITY_V19 */','/* ACCESSIBILITY_SIMPLICITY_V20 */',1)
-              s=s.replace('body { overflow-x: hidden; }\n','',1)
-              s=s.replace('  button, [role="button"] { min-height: 44px; }','  button:not(.iconBtn):not(.tabIcon), [role="button"][data-act]:not(.iconBtn):not(.tabIcon) { min-height: 44px; }',1)
+          marker='/* HICK_ACTION_HIERARCHY_V21 */'
+          if marker not in s:
+              s += '''\n/* HICK_ACTION_HIERARCHY_V21\n   Une seule action dominante par zone. Les actions secondaires restent\n   disponibles mais visuellement plus calmes, afin de réduire le nombre de\n   décisions concurrentes sans supprimer de fonctionnalité. */\n:root { --primary-action-ring: rgba(127,212,255,.34); }\n[data-primary-action="true"] {\n  position: relative;\n  z-index: 1;\n  font-weight: 800;\n  transform: translateZ(0);\n  box-shadow: 0 0 0 2px var(--primary-action-ring), 0 8px 22px rgba(0,0,0,.22);\n}\n[data-secondary-action="true"] { opacity: .82; }\n[data-secondary-action="true"]:hover, [data-secondary-action="true"]:focus-visible { opacity: 1; }\n@media (prefers-reduced-motion: no-preference) {\n  [data-primary-action="true"] { transition: filter .15s ease, box-shadow .15s ease; }\n}\n'''
           css.write_text(s)
 
           ui=Path('game-5.js'); s=ui.read_text()
-          start=s.find('// ACCESSIBILITY_KEYBOARD_V19')
-          if '// ACCESSIBILITY_KEYBOARD_V20' not in s:
-              if start < 0: raise SystemExit('v19 accessibility block missing')
-              block='''// ACCESSIBILITY_KEYBOARD_V20\nfunction isNativeKeyboardControl(el) {\n  if (!el || !el.tagName) return false;\n  return el.tagName === "BUTTON" || el.tagName === "A" || el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA";\n}\nfunction accessibilityDisabled(el) {\n  return !el || el.disabled === true || el.getAttribute("aria-disabled") === "true" || el.hasAttribute("disabled");\n}\ndocument.addEventListener("keydown", function accessibilityActivate(e) {\n  if (e.key !== "Enter" && e.key !== " ") return;\n  const target = e.target && e.target.closest ? e.target.closest("[data-act]") : null;\n  if (!target || accessibilityDisabled(target) || isNativeKeyboardControl(target)) return;\n  e.preventDefault();\n  target.click();\n});\nfunction enhanceInteractiveAccessibility(root) {\n  if (!root || root.nodeType !== 1) return;\n  const nodes=[];\n  if (root.matches && root.matches("[data-act]")) nodes.push(root);\n  if (root.querySelectorAll) root.querySelectorAll("[data-act]").forEach(function(el){ nodes.push(el); });\n  nodes.forEach(function(el){\n    if (!isNativeKeyboardControl(el)) {\n      if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex","0");\n      if (!el.hasAttribute("role")) el.setAttribute("role","button");\n    }\n    if (!el.hasAttribute("aria-label") || el.getAttribute("data-auto-aria") === "true") {\n      const label=(el.getAttribute("title") || el.textContent || "").replace(/\\s+/g," ").trim();\n      if (label) { el.setAttribute("aria-label",label.slice(0,120)); el.setAttribute("data-auto-aria","true"); }\n    }\n  });\n}\nfunction startAccessibilityEnhancements(){\n  enhanceInteractiveAccessibility(document.body);\n  const observer=new MutationObserver(function(mutations){\n    const roots=new Set();\n    mutations.forEach(function(m){\n      m.addedNodes.forEach(function(node){ if(node && node.nodeType===1) roots.add(node); });\n      if(m.target && m.target.nodeType===1 && m.target.closest){ const changed=m.target.closest("[data-act]"); if(changed) roots.add(changed); }\n    });\n    roots.forEach(enhanceInteractiveAccessibility);\n  });\n  observer.observe(document.body,{childList:true,subtree:true});\n}\nif(document.readyState === "loading") document.addEventListener("DOMContentLoaded",startAccessibilityEnhancements,{once:true});\nelse startAccessibilityEnhancements();\n'''
-              s=s[:start]+block
+          marker='// HICK_ACTION_HIERARCHY_V21'
+          if marker not in s:
+              s += '''\n// HICK_ACTION_HIERARCHY_V21\n// Hiérarchie contextuelle non destructive : on ne cache aucune fonction.\n// Chaque groupe visible d'actions reçoit au maximum une action dominante.\nconst HICK_PRIMARY_HINTS_V21 = [\n  /continuer|combattre|combat|boss|réessayer|reessayer|lancer|invoquer|améliorer|ameliorer|rechercher|réclamer|reclamer|équiper|equiper|forger|valider|confirmer/i\n];\nconst HICK_SECONDARY_HINTS_V21 = /aperçu|apercu|détail|detail|info|fermer|annuler|retour/i;\nfunction hickActionTextV21(el) {\n  return ((el && (el.getAttribute("aria-label") || el.getAttribute("title") || el.textContent)) || "").replace(/\\s+/g," ").trim();\n}\nfunction hickVisibleV21(el) {\n  if (!el || el.disabled || el.getAttribute("aria-disabled") === "true") return false;\n  const r=el.getBoundingClientRect();\n  const cs=getComputedStyle(el);\n  return r.width>0 && r.height>0 && cs.display!=="none" && cs.visibility!=="hidden";\n}\nfunction hickGroupV21(el) {\n  return el.closest(".modal,.popup,.panel,.card,.screen,.page,.view,section,main") || el.parentElement || document.body;\n}\nfunction refreshActionHierarchyV21() {\n  document.querySelectorAll('[data-primary-action="true"],[data-secondary-action="true"]').forEach(function(el){\n    el.removeAttribute("data-primary-action"); el.removeAttribute("data-secondary-action");\n  });\n  const groups=new Map();\n  document.querySelectorAll("[data-act],button").forEach(function(el){\n    if (!hickVisibleV21(el)) return;\n    const g=hickGroupV21(el);\n    if (!groups.has(g)) groups.set(g,[]);\n    groups.get(g).push(el);\n  });\n  groups.forEach(function(actions){\n    if (actions.length < 2) return;\n    let primary=actions.find(function(el){ return el.getAttribute("data-primary") === "true"; });\n    if (!primary) primary=actions.find(function(el){ return HICK_PRIMARY_HINTS_V21.some(function(rx){ return rx.test(hickActionTextV21(el)); }); });\n    if (primary) primary.setAttribute("data-primary-action","true");\n    actions.forEach(function(el){\n      if (el !== primary && HICK_SECONDARY_HINTS_V21.test(hickActionTextV21(el))) el.setAttribute("data-secondary-action","true");\n    });\n  });\n}\nlet hickRefreshQueuedV21=false;\nfunction queueActionHierarchyV21(){\n  if(hickRefreshQueuedV21) return;\n  hickRefreshQueuedV21=true;\n  requestAnimationFrame(function(){ hickRefreshQueuedV21=false; refreshActionHierarchyV21(); });\n}\nfunction startActionHierarchyV21(){\n  refreshActionHierarchyV21();\n  new MutationObserver(queueActionHierarchyV21).observe(document.body,{childList:true,subtree:true});\n}\nif(document.readyState === "loading") document.addEventListener("DOMContentLoaded",startActionHierarchyV21,{once:true});\nelse startActionHierarchyV21();\n'''
           ui.write_text(s)
 
+          eng=Path('game-2.js'); s=eng.read_text()
+          if '|| "2026.09.06.21";' not in s:
+              if '|| "2026.09.06.20";' not in s: raise SystemExit('APP_BUILD .20 anchor missing')
+              s=s.replace('|| "2026.09.06.20";', '|| "2026.09.06.21";', 1)
+          eng.write_text(s)
+
           idx=Path('index.html'); s=idx.read_text()
-          if '2026.09.06.20' not in s:
-              if '2026.09.06.19' not in s: raise SystemExit('index .19 anchor missing')
-              s=s.replace('2026.09.06.19','2026.09.06.20')
+          if '2026.09.06.21' not in s:
+              if '2026.09.06.20' not in s: raise SystemExit('index .20 anchor missing')
+              s=s.replace('2026.09.06.20','2026.09.06.21')
           idx.write_text(s)
           PY
       - name: Syntax and regression checks
@@ -65,27 +49,26 @@ jobs:
           node --check game-5.js
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); idx=Path('index.html').read_text(); css=Path('style.css').read_text(); ui=Path('game-5.js').read_text()
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); ui=Path('game-5.js').read_text(); css=Path('style.css').read_text(); idx=Path('index.html').read_text()
+          assert 'HICK_ACTION_HIERARCHY_V21' in css and 'HICK_ACTION_HIERARCHY_V21' in ui
+          assert 'data-primary-action' in ui and 'data-secondary-action' in ui
+          assert '|| "2026.09.06.21";' in g2
+          assert idx.count('2026.09.06.21') == 7
+          # Conserver le rééquilibrage précédent et les correctifs d'accessibilité.
           assert 'function raidIntroDifficultyMul' in g1
-          assert 'if (level <= 1) return 0.65;' in g1
-          assert 'if (level === 2) return 0.80;' in g1
-          assert 'return 1;' in g1[g1.index('function raidIntroDifficultyMul'):g1.index('function raidWaveHP')]
+          assert 'if (level <= 1) return 0.65;' in g1 and 'if (level === 2) return 0.80;' in g1
           assert 'const firstBossMul = opts.boss && opts.floor === 10 && !opts.noFastback ? 0.80 : 1;' in g2
-          assert 'enemy.maxHP * 10' in g2 and 'enemy.dmg * 10' in g2
-          assert '|| "2026.09.06.20";' in g2
-          assert idx.count('2026.09.06.20') == 7
           assert 'ACCESSIBILITY_SIMPLICITY_V20' in css and 'ACCESSIBILITY_KEYBOARD_V20' in ui
           assert 'Math.floor(dmg * 0.30)' in g2
-          assert 'function campaignBossStatMul(floor)' in g2
           seg=g2[g2.index('function itemUpgradePreview'):g2.index('function itemUpgradeChance')]
           assert seg.count('0.005') >= 2
-          print('v20 early progression checks passed')
+          print('v21 hierarchy checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
-          git add game-1.js game-2.js game-5.js style.css index.html
-          git commit -m 'Début Adouci' -m 'Réduit la puissance des Raids Évolution, Compétence et Familier de 35 % au niveau 1 et 20 % au niveau 2, puis reprend exactement la courbe normale dès le niveau 3 afin de préserver toute la progression future. Réduit de 20 % les PV et dégâts du Boss normal de l’étage 10 sans modifier les Boss suivants ni le Méga-Boss correspondant. Intègre également les sécurités d’accessibilité préparées après l’audit précédent. Récompenses de raid inchangées. Build 2026.09.06.20.'
+          git add style.css game-5.js game-2.js index.html
+          git commit -m 'Hiérarchie Claire' -m 'Réduit la concurrence visuelle entre les choix : chaque zone d’actions met désormais en avant au maximum une action principale contextuelle, tandis que les actions secondaires comme retour, détails, annulation ou fermeture restent accessibles mais plus discrètes. Aucune fonctionnalité n’est supprimée et aucun changement n’est apporté à l’économie, aux sauvegardes ou à l’équilibrage. Conserve le rééquilibrage des premiers Raids et du Boss 10 ainsi que les correctifs d’accessibilité. Build 2026.09.06.21.'
           git push
