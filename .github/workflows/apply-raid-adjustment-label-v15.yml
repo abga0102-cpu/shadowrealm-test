@@ -1,4 +1,4 @@
-# trigger-v24-1
+# trigger-v24-2
 name: Fix combat scroll v24
 on:
   push:
@@ -20,38 +20,34 @@ jobs:
           if marker not in s:
               anchor='/* ---------------- go ---------------- */'
               if anchor not in s: raise SystemExit('go anchor missing')
-              block=r'''
-// SCROLL_PRESERVE_V24
-// Les rafraîchissements de combat peuvent reconstruire #screen. On mémorise
-// sa position tant que la route ne change pas, afin de ne jamais remonter
-// automatiquement le joueur en haut de la page pendant une action live.
-const renderBaseV24=render;
-render=function(){
-  const screen=document.getElementById("screen");
-  const beforeRoute=typeof route!=="undefined"?route:null;
-  const beforeTop=screen?screen.scrollTop:0;
-  const beforeMax=screen?Math.max(0,screen.scrollHeight-screen.clientHeight):0;
-  const wasNearBottom=screen?beforeMax-beforeTop<=24:false;
-  const out=renderBaseV24.apply(this,arguments);
-  const restore=function(){
-    const sc=document.getElementById("screen");
-    if(!sc||beforeRoute!==(typeof route!=="undefined"?route:null))return;
-    const max=Math.max(0,sc.scrollHeight-sc.clientHeight);
-    sc.scrollTop=wasNearBottom?max:Math.min(beforeTop,max);
-  };
-  restore();
-  requestAnimationFrame(restore);
-  return out;
-};
-
-'''
-              s=s.replace(anchor,block+anchor,1)
+              block='\n'.join([
+                '// SCROLL_PRESERVE_V24',
+                '// Conserve la position de #screen pendant les rafraichissements live.',
+                'const renderBaseV24=render;',
+                'render=function(){',
+                '  const screen=document.getElementById("screen");',
+                '  const beforeRoute=typeof route!=="undefined"?route:null;',
+                '  const beforeTop=screen?screen.scrollTop:0;',
+                '  const beforeMax=screen?Math.max(0,screen.scrollHeight-screen.clientHeight):0;',
+                '  const wasNearBottom=screen?beforeMax-beforeTop<=24:false;',
+                '  const out=renderBaseV24.apply(this,arguments);',
+                '  const restore=function(){',
+                '    const sc=document.getElementById("screen");',
+                '    if(!sc||beforeRoute!==(typeof route!=="undefined"?route:null))return;',
+                '    const max=Math.max(0,sc.scrollHeight-sc.clientHeight);',
+                '    sc.scrollTop=wasNearBottom?max:Math.min(beforeTop,max);',
+                '  };',
+                '  restore();',
+                '  requestAnimationFrame(restore);',
+                '  return out;',
+                '};',
+                ''
+              ])
+              s=s.replace(anchor,block+'\n'+anchor,1)
           ui.write_text(s)
-
           eng=Path('game-2.js'); e=eng.read_text()
           if '|| "2026.09.06.23";' not in e: raise SystemExit('APP_BUILD .23 anchor missing')
           eng.write_text(e.replace('|| "2026.09.06.23";', '|| "2026.09.06.24";', 1))
-
           idx=Path('index.html'); h=idx.read_text()
           if h.count('2026.09.06.23') != 7: raise SystemExit('Unexpected index build reference count')
           idx.write_text(h.replace('2026.09.06.23','2026.09.06.24'))
