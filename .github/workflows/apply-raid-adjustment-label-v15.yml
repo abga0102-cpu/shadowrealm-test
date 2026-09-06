@@ -1,5 +1,5 @@
-# trigger-v18-5
-name: Apply equipment upgrade clarity v18
+# trigger-v19-1
+name: Apply accessible interface v19
 on:
   push:
     paths:
@@ -11,23 +11,120 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply dust 0.50 percent
+      - name: Apply accessibility and simplicity pass
         run: |
           python <<'PY'
           from pathlib import Path
-          p = Path('game-2.js')
-          s = p.read_text()
-          pairs = [
-              ('next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.00375) * 100) / 100;',
-               'next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.005) * 100) / 100;'),
-              ('next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.00375) * 100) / 100;',
-               'next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.005) * 100) / 100;'),
-          ]
-          for old,new in pairs:
-              if new not in s:
-                  if old not in s: raise SystemExit('upgrade anchor missing: ' + old)
-                  s = s.replace(old,new,1)
-          p.write_text(s)
+
+          css = Path('style.css')
+          s = css.read_text()
+          marker = '/* ACCESSIBILITY_SIMPLICITY_V19 */'
+          block = r'''
+/* ACCESSIBILITY_SIMPLICITY_V19 */
+/* Mobile-first accessibility pass: larger tap targets, clearer focus,
+   reduced accidental double taps and motion-respect without changing game balance. */
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+button, [data-act], [role="button"], input, select { touch-action: manipulation; }
+button:focus-visible,
+[data-act]:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 3px solid #7FD4FF;
+  outline-offset: 2px;
+}
+button:disabled,
+[aria-disabled="true"] {
+  opacity: .48;
+  cursor: not-allowed;
+  filter: saturate(.65);
+}
+@media (pointer: coarse) {
+  button,
+  [role="button"] {
+    min-height: 44px;
+  }
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .001ms !important;
+  }
+}
+'''
+          if marker not in s:
+              s += '\n' + block.strip() + '\n'
+          css.write_text(s)
+
+          ui = Path('game-5.js')
+          s = ui.read_text()
+          marker = '// ACCESSIBILITY_KEYBOARD_V19'
+          block = r'''
+// ACCESSIBILITY_KEYBOARD_V19
+// Keep the existing click-driven UI, while making custom data-act controls usable
+// from a keyboard without changing their game actions or save state.
+document.addEventListener("keydown", function accessibilityActivate(e) {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const target = e.target && e.target.closest ? e.target.closest("[data-act]") : null;
+  if (!target || target.getAttribute("aria-disabled") === "true") return;
+  e.preventDefault();
+  target.click();
+});
+
+function enhanceInteractiveAccessibility(root) {
+  const scope = root && root.querySelectorAll ? root : document;
+  scope.querySelectorAll("[data-act]").forEach(function (el) {
+    if (!el.hasAttribute("tabindex") && el.tagName !== "BUTTON") el.setAttribute("tabindex", "0");
+    if (!el.hasAttribute("role") && el.tagName !== "BUTTON") el.setAttribute("role", "button");
+    if (!el.hasAttribute("aria-label")) {
+      const label = (el.getAttribute("title") || el.textContent || "").replace(/\s+/g, " ").trim();
+      if (label) el.setAttribute("aria-label", label.slice(0, 120));
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  enhanceInteractiveAccessibility(document);
+  const observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node && node.nodeType === 1) {
+          if (node.matches && node.matches("[data-act]")) enhanceInteractiveAccessibility(node.parentNode || document);
+          else enhanceInteractiveAccessibility(node);
+        }
+      });
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+});
+'''
+          if marker not in s:
+              s += '\n' + block.strip() + '\n'
+          ui.write_text(s)
+
+          eng = Path('game-2.js')
+          s = eng.read_text()
+          if '|| "2026.09.06.19";' not in s:
+              if '|| "2026.09.06.18";' not in s: raise SystemExit('APP_BUILD .18 anchor missing')
+              s = s.replace('|| "2026.09.06.18";', '|| "2026.09.06.19";', 1)
+          eng.write_text(s)
+
+          idx = Path('index.html')
+          s = idx.read_text()
+          if '2026.09.06.19' not in s:
+              if '2026.09.06.18' not in s: raise SystemExit('index .18 anchor missing')
+              s = s.replace('2026.09.06.18', '2026.09.06.19')
+          idx.write_text(s)
           PY
       - name: Syntax and regression checks
         run: |
@@ -38,19 +135,22 @@ jobs:
           node --check game-5.js
           python <<'PY'
           from pathlib import Path
-          e=Path('game-2.js').read_text()
-          u=Path('game-5.js').read_text()
-          h=Path('index.html').read_text()
-          seg=e[e.index('function itemUpgradePreview'):e.index('function itemUpgradeChance')]
+          css=Path('style.css').read_text()
+          ui=Path('game-5.js').read_text()
+          eng=Path('game-2.js').read_text()
+          idx=Path('index.html').read_text()
+          assert 'ACCESSIBILITY_SIMPLICITY_V19' in css
+          assert 'min-height: 44px' in css
+          assert 'prefers-reduced-motion: reduce' in css
+          assert 'ACCESSIBILITY_KEYBOARD_V19' in ui
+          assert 'MutationObserver' in ui
+          assert '|| "2026.09.06.19";' in eng
+          assert '2026.09.06.19' in idx
+          assert 'Math.floor(dmg * 0.30)' in eng
+          assert 'function campaignBossStatMul(floor)' in eng
+          seg=eng[eng.index('function itemUpgradePreview'):eng.index('function itemUpgradeChance')]
           assert seg.count('0.005') >= 2
-          assert '0.00375' not in seg and '0.0035' not in seg
-          assert 'BONUS DE SANTÉ' in u
-          assert 'PUISSANCE TOTALE' in u
-          assert '2026.09.06.18' in h
-          assert '|| "2026.09.06.18";' in e
-          assert 'Math.floor(dmg * 0.30)' in e
-          assert 'function campaignBossStatMul(floor)' in e
-          print('v18 checks passed')
+          print('v19 checks passed')
           PY
       - name: Commit update
         run: |
@@ -60,6 +160,6 @@ jobs:
             echo 'Already applied'
             exit 0
           fi
-          git add game-2.js
-          git commit -m 'Stats Équipement' -m 'Augmente définitivement l’efficacité des Poussières à 0,50 % de la statistique de référence par niveau réussi. L’affichage détaillé déjà présent conserve Santé de base, Bonus de santé et Puissance totale, sans niveau d’amélioration redondant. Build 2026.09.06.18.'
+          git add style.css game-5.js game-2.js index.html
+          git commit -m 'Interface Accessible' -m 'Améliore l’accessibilité et la simplicité d’utilisation sans modifier l’équilibrage : zones tactiles renforcées sur mobile, focus clavier clairement visible, activation clavier des contrôles personnalisés, meilleure gestion des états désactivés, prévention du zoom involontaire sur les champs iOS et respect du réglage Réduire les animations. Aucun changement de sauvegarde, d’économie ou de combat. Build 2026.09.06.19.'
           git push
