@@ -1,5 +1,5 @@
-# trigger-v28-1
-name: Sanctuary clarity v28
+# trigger-v30-1
+name: Sanctuary merge v30
 on:
   push:
     paths:
@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply sanctuary UX patch
-        run: python .github/sanctuaire_v28.py
+      - name: Apply sanctuary merge patch
+        run: python .github/sanctuaire_merge_v30.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -26,18 +26,29 @@ jobs:
           python <<'PY'
           from pathlib import Path
           g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
-          assert 'function sanctRecipeAffordableUI' in g4
+          assert 'SANCT_MERGE_ORDER' in g4
+          assert 'SANCT_BOARD_SIZE = 16' in g4
+          assert 'function sanctSupplierPrice(level)' in g4
+          assert '2500*Math.max(1,level)*Math.max(1,level)' in g4
+          assert 'function sanctMergeState()' in g4
+          assert 'Fusion manuelle' in g4
           assert 'ACTION RECOMMANDÉE' in g4
-          assert 'MAÎTRISE DU SANCTUAIRE' in g4
-          assert 'sanctPrepare' in g4 and 'sanctPrepare: (a)' in g5
-          assert 'Les coûts et récompenses du Sanctuaire n’ont pas été modifiés.' in g4
+          assert 'Livre de Fusion' in g4
+          assert 'sanctMergeBuy:' in g5
+          assert 'sanctMergeTile:' in g5
+          assert 'sanctRecipeCraft:' in g5
+          assert 'S.gold-=price' in g5
+          assert 'st.mergeBoard[sel]=null; st.mergeBoard[i]=nx' in g5
+          assert 'S.minerai-=' not in g5[g5.index('  // sanctuaire'):g5.index('\n  // tree',g5.index('  // sanctuaire'))]
+          assert 'S.eclat-=' not in g5[g5.index('  // sanctuaire'):g5.index('\n  // tree',g5.index('  // sanctuaire'))]
+          assert 'S.essence-=' not in g5[g5.index('  // sanctuaire'):g5.index('\n  // tree',g5.index('  // sanctuaire'))]
           assert 'const hop = 0;' in g3
           assert 'SCROLL_PRESERVE_V24' in g5
           assert 'DECISION_HIERARCHY_V23' in g5
           assert 'function raidIntroDifficultyMul' in g1
-          assert '|| "2026.09.06.28";' in g2
-          assert idx.count('2026.09.06.28') >= 7
-          print('v28 sanctuary checks passed')
+          assert '|| "2026.09.06.30";' in g2
+          assert idx.count('2026.09.06.30') >= 7
+          print('v30 sanctuary merge checks passed')
           PY
       - name: Commit update
         run: |
@@ -45,5 +56,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
           git add game-2.js game-4.js game-5.js index.html
-          git commit -m 'Sanctuaire Clair' -m 'Rend le Sanctuaire plus lisible et utile sans modifier son économie : progression des recettes, action recommandée, indication immédiate des recettes réalisables, coûts et récompenses visibles, bouton Préparer en un toucher et état clair des ressources insuffisantes. Les recettes, coûts, récompenses, sauvegardes et règles de fusion restent inchangés. Build 2026.09.06.28.'
+          git commit -m 'Sanctuaire Merge' -m 'Transforme complètement le Sanctuaire en mini-jeu de merge manuel. L’Or achète une couleur de base au prix fixe du niveau d’approvisionnement, chaque achat remplit sa jauge, et deux couleurs identiques fusionnent manuellement vers la rareté suivante sur un plateau de 16 cases. Les anciennes ressources Minerai, Éclat, Essence et Poussière ne sont plus consommées par le Sanctuaire. Le Livre de Fusion, les recettes secrètes, l’action recommandée, les Sceaux de stabilité et les accélérateurs sont conservés et adaptés au nouveau système. Aucun effacement de sauvegarde. Build 2026.09.06.30.'
           git push
