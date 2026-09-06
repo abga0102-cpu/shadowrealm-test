@@ -1,5 +1,5 @@
-# trigger-v20-1
-name: Apply accessibility fixes v20
+# trigger-v20-2
+name: Apply early progression tuning v20
 on:
   push:
     paths:
@@ -11,125 +11,49 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply accessibility bug fixes
+      - name: Apply early progression tuning
         run: |
           python <<'PY'
           from pathlib import Path
 
-          css = Path('style.css')
-          s = css.read_text()
-          old = '''/* ACCESSIBILITY_SIMPLICITY_V19 */
-html { -webkit-text-size-adjust: 100%; }
-body { overflow-x: hidden; }
-button, [data-act], [role="button"], input, select { touch-action: manipulation; }
-button:focus-visible, [data-act]:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #7FD4FF; outline-offset: 2px; }
-button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; filter: saturate(.65); }
-@media (pointer: coarse) {
-  button, [role="button"] { min-height: 44px; }
-  input, select, textarea { min-height: 44px; font-size: 16px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
-}
-'''
-          new = '''/* ACCESSIBILITY_SIMPLICITY_V20 */
-html { -webkit-text-size-adjust: 100%; }
-button, [data-act], [role="button"], input, select { touch-action: manipulation; }
-button:focus-visible, [data-act]:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #7FD4FF; outline-offset: 2px; }
-button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; filter: saturate(.65); }
-@media (pointer: coarse) {
-  button:not(.iconBtn):not(.tabIcon), [role="button"][data-act]:not(.iconBtn):not(.tabIcon) { min-height: 44px; }
-  input, select, textarea { min-height: 44px; font-size: 16px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
-}
-'''
-          if 'ACCESSIBILITY_SIMPLICITY_V20' not in s:
-              if old not in s: raise SystemExit('v19 CSS block missing')
-              s = s.replace(old, new, 1)
-          css.write_text(s)
+          g1=Path('game-1.js'); s=g1.read_text()
+          old='''function raidWaveHP(raid, level) {\n  return RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, level) * RAID_TUNE[raid].hp * raidDiffMul(S, raid);\n}\nfunction raidWaveDamage(raid, level) {\n  return RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, level) * RAID_TUNE[raid].dmg * raidDiffMul(S, raid);\n}'''
+          new='''function raidIntroDifficultyMul(raid, level) {\n  // Les deux premiers niveaux servent d’introduction. Dès le niveau 3, la\n  // courbe historique reprend exactement à 100 %, donc le développement futur\n  // et la difficulté des niveaux avancés restent inchangés.\n  if (raid !== "evolution" && raid !== "competence" && raid !== "familier") return 1;\n  if (level <= 1) return 0.65;\n  if (level === 2) return 0.80;\n  return 1;\n}\nfunction raidWaveHP(raid, level) {\n  return RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, level) * RAID_TUNE[raid].hp * raidDiffMul(S, raid) * raidIntroDifficultyMul(raid, level);\n}\nfunction raidWaveDamage(raid, level) {\n  return RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, level) * RAID_TUNE[raid].dmg * raidDiffMul(S, raid) * raidIntroDifficultyMul(raid, level);\n}'''
+          if 'function raidIntroDifficultyMul' not in s:
+              if old not in s: raise SystemExit('raid wave anchor missing')
+              s=s.replace(old,new,1)
+          g1.write_text(s)
 
-          ui = Path('game-5.js')
-          s = ui.read_text()
-          start = s.find('// ACCESSIBILITY_KEYBOARD_V19')
-          if start < 0 and '// ACCESSIBILITY_KEYBOARD_V20' not in s: raise SystemExit('v19 JS block missing')
-          if '// ACCESSIBILITY_KEYBOARD_V20' not in s:
-              old_block = s[start:]
-              new_block = '''// ACCESSIBILITY_KEYBOARD_V20
-function isNativeKeyboardControl(el) {
-  if (!el || !el.tagName) return false;
-  return el.tagName === "BUTTON" || el.tagName === "A" || el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA";
-}
-function accessibilityDisabled(el) {
-  return !el || el.disabled === true || el.getAttribute("aria-disabled") === "true" || el.hasAttribute("disabled");
-}
-document.addEventListener("keydown", function accessibilityActivate(e) {
-  if (e.key !== "Enter" && e.key !== " ") return;
-  const target = e.target && e.target.closest ? e.target.closest("[data-act]") : null;
-  if (!target || accessibilityDisabled(target) || isNativeKeyboardControl(target)) return;
-  e.preventDefault();
-  target.click();
-});
-function enhanceInteractiveAccessibility(root) {
-  if (!root || root.nodeType !== 1) return;
-  const nodes = [];
-  if (root.matches && root.matches("[data-act]")) nodes.push(root);
-  if (root.querySelectorAll) root.querySelectorAll("[data-act]").forEach(function (el) { nodes.push(el); });
-  nodes.forEach(function (el) {
-    if (!isNativeKeyboardControl(el)) {
-      if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
-      if (!el.hasAttribute("role")) el.setAttribute("role", "button");
-    }
-    if (!el.hasAttribute("aria-label") || el.getAttribute("data-auto-aria") === "true") {
-      const label = (el.getAttribute("title") || el.textContent || "").replace(/\\s+/g, " ").trim();
-      if (label) {
-        el.setAttribute("aria-label", label.slice(0, 120));
-        el.setAttribute("data-auto-aria", "true");
-      }
-    }
-  });
-}
-function refreshAccessibility(root) {
-  if (!root) return;
-  if (root.nodeType === 1) enhanceInteractiveAccessibility(root);
-  else if (root.parentElement) enhanceInteractiveAccessibility(root.parentElement);
-}
-function startAccessibilityEnhancements() {
-  enhanceInteractiveAccessibility(document.body);
-  const observer = new MutationObserver(function (mutations) {
-    const roots = new Set();
-    mutations.forEach(function (m) {
-      if (m.type === "childList") {
-        m.addedNodes.forEach(function (node) { if (node && node.nodeType === 1) roots.add(node); });
-        if (m.target && m.target.nodeType === 1 && m.target.closest) {
-          const changed = m.target.closest("[data-act]");
-          if (changed) roots.add(changed);
-        }
-      }
-    });
-    roots.forEach(refreshAccessibility);
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-}
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startAccessibilityEnhancements, { once: true });
-else startAccessibilityEnhancements();
-'''
-              s = s[:start] + new_block
-          ui.write_text(s)
-
-          eng = Path('game-2.js')
-          s = eng.read_text()
+          g2=Path('game-2.js'); s=g2.read_text()
+          old='''    const statMul = opts.boss ? campaignBossStatMul(opts.floor) : tier.mul;\n    hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * statMul);\n    dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * statMul);'''
+          new='''    const statMul = opts.boss ? campaignBossStatMul(opts.floor) : tier.mul;\n    // Le Chef Gobelin est le premier checkpoint majeur : -20 % PV et dégâts.\n    // noFastback est utilisé par le Méga-Boss construit depuis ce Boss, ce qui\n    // garantit que Méga 1 conserve sa puissance de référence et son ×10.\n    const firstBossMul = opts.boss && opts.floor === 10 && !opts.noFastback ? 0.80 : 1;\n    hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * statMul * firstBossMul);\n    dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * statMul * firstBossMul);'''
+          if 'const firstBossMul' not in s:
+              if old not in s: raise SystemExit('campaign boss anchor missing')
+              s=s.replace(old,new,1)
           if '|| "2026.09.06.20";' not in s:
               if '|| "2026.09.06.19";' not in s: raise SystemExit('APP_BUILD .19 anchor missing')
-              s = s.replace('|| "2026.09.06.19";', '|| "2026.09.06.20";', 1)
-          eng.write_text(s)
+              s=s.replace('|| "2026.09.06.19";', '|| "2026.09.06.20";', 1)
+          g2.write_text(s)
 
-          idx = Path('index.html')
-          s = idx.read_text()
+          css=Path('style.css'); s=css.read_text()
+          if 'ACCESSIBILITY_SIMPLICITY_V20' not in s:
+              s=s.replace('/* ACCESSIBILITY_SIMPLICITY_V19 */','/* ACCESSIBILITY_SIMPLICITY_V20 */',1)
+              s=s.replace('body { overflow-x: hidden; }\n','',1)
+              s=s.replace('  button, [role="button"] { min-height: 44px; }','  button:not(.iconBtn):not(.tabIcon), [role="button"][data-act]:not(.iconBtn):not(.tabIcon) { min-height: 44px; }',1)
+          css.write_text(s)
+
+          ui=Path('game-5.js'); s=ui.read_text()
+          start=s.find('// ACCESSIBILITY_KEYBOARD_V19')
+          if '// ACCESSIBILITY_KEYBOARD_V20' not in s:
+              if start < 0: raise SystemExit('v19 accessibility block missing')
+              block='''// ACCESSIBILITY_KEYBOARD_V20\nfunction isNativeKeyboardControl(el) {\n  if (!el || !el.tagName) return false;\n  return el.tagName === "BUTTON" || el.tagName === "A" || el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA";\n}\nfunction accessibilityDisabled(el) {\n  return !el || el.disabled === true || el.getAttribute("aria-disabled") === "true" || el.hasAttribute("disabled");\n}\ndocument.addEventListener("keydown", function accessibilityActivate(e) {\n  if (e.key !== "Enter" && e.key !== " ") return;\n  const target = e.target && e.target.closest ? e.target.closest("[data-act]") : null;\n  if (!target || accessibilityDisabled(target) || isNativeKeyboardControl(target)) return;\n  e.preventDefault();\n  target.click();\n});\nfunction enhanceInteractiveAccessibility(root) {\n  if (!root || root.nodeType !== 1) return;\n  const nodes=[];\n  if (root.matches && root.matches("[data-act]")) nodes.push(root);\n  if (root.querySelectorAll) root.querySelectorAll("[data-act]").forEach(function(el){ nodes.push(el); });\n  nodes.forEach(function(el){\n    if (!isNativeKeyboardControl(el)) {\n      if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex","0");\n      if (!el.hasAttribute("role")) el.setAttribute("role","button");\n    }\n    if (!el.hasAttribute("aria-label") || el.getAttribute("data-auto-aria") === "true") {\n      const label=(el.getAttribute("title") || el.textContent || "").replace(/\\s+/g," ").trim();\n      if (label) { el.setAttribute("aria-label",label.slice(0,120)); el.setAttribute("data-auto-aria","true"); }\n    }\n  });\n}\nfunction startAccessibilityEnhancements(){\n  enhanceInteractiveAccessibility(document.body);\n  const observer=new MutationObserver(function(mutations){\n    const roots=new Set();\n    mutations.forEach(function(m){\n      m.addedNodes.forEach(function(node){ if(node && node.nodeType===1) roots.add(node); });\n      if(m.target && m.target.nodeType===1 && m.target.closest){ const changed=m.target.closest("[data-act]"); if(changed) roots.add(changed); }\n    });\n    roots.forEach(enhanceInteractiveAccessibility);\n  });\n  observer.observe(document.body,{childList:true,subtree:true});\n}\nif(document.readyState === "loading") document.addEventListener("DOMContentLoaded",startAccessibilityEnhancements,{once:true});\nelse startAccessibilityEnhancements();\n'''
+              s=s[:start]+block
+          ui.write_text(s)
+
+          idx=Path('index.html'); s=idx.read_text()
           if '2026.09.06.20' not in s:
               if '2026.09.06.19' not in s: raise SystemExit('index .19 anchor missing')
-              s = s.replace('2026.09.06.19', '2026.09.06.20')
+              s=s.replace('2026.09.06.19','2026.09.06.20')
           idx.write_text(s)
           PY
       - name: Syntax and regression checks
@@ -141,32 +65,27 @@ else startAccessibilityEnhancements();
           node --check game-5.js
           python <<'PY'
           from pathlib import Path
-          css=Path('style.css').read_text()
-          ui=Path('game-5.js').read_text()
-          eng=Path('game-2.js').read_text()
-          idx=Path('index.html').read_text()
-          assert 'ACCESSIBILITY_SIMPLICITY_V20' in css
-          assert 'body { overflow-x: hidden; }' not in css[css.index('ACCESSIBILITY_SIMPLICITY_V20'):]
-          assert 'ACCESSIBILITY_KEYBOARD_V20' in ui
-          assert 'isNativeKeyboardControl' in ui
-          assert 'data-auto-aria' in ui
-          assert 'Set()' in ui
-          assert '|| "2026.09.06.20";' in eng
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); idx=Path('index.html').read_text(); css=Path('style.css').read_text(); ui=Path('game-5.js').read_text()
+          assert 'function raidIntroDifficultyMul' in g1
+          assert 'if (level <= 1) return 0.65;' in g1
+          assert 'if (level === 2) return 0.80;' in g1
+          assert 'return 1;' in g1[g1.index('function raidIntroDifficultyMul'):g1.index('function raidWaveHP')]
+          assert 'const firstBossMul = opts.boss && opts.floor === 10 && !opts.noFastback ? 0.80 : 1;' in g2
+          assert 'enemy.maxHP * 10' in g2 and 'enemy.dmg * 10' in g2
+          assert '|| "2026.09.06.20";' in g2
           assert idx.count('2026.09.06.20') == 7
-          assert 'Math.floor(dmg * 0.30)' in eng
-          assert 'function campaignBossStatMul(floor)' in eng
-          seg=eng[eng.index('function itemUpgradePreview'):eng.index('function itemUpgradeChance')]
+          assert 'ACCESSIBILITY_SIMPLICITY_V20' in css and 'ACCESSIBILITY_KEYBOARD_V20' in ui
+          assert 'Math.floor(dmg * 0.30)' in g2
+          assert 'function campaignBossStatMul(floor)' in g2
+          seg=g2[g2.index('function itemUpgradePreview'):g2.index('function itemUpgradeChance')]
           assert seg.count('0.005') >= 2
-          print('v20 checks passed')
+          print('v20 early progression checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          if git diff --quiet; then
-            echo 'Already applied'
-            exit 0
-          fi
-          git add style.css game-5.js game-2.js index.html
-          git commit -m 'Correctif Accessibilité' -m 'Sécurise la passe UX précédente : évite la double activation clavier des contrôles natifs, allège le suivi des changements DOM, actualise les libellés accessibles générés automatiquement, respecte les états désactivés et évite de forcer 44 px sur les contrôles compacts. Retire aussi le masquage horizontal global afin de ne pas cacher les débordements réels. Aucun changement d’économie, de sauvegarde ou d’équilibrage. Build 2026.09.06.20.'
+          if git diff --quiet; then echo 'Already applied'; exit 0; fi
+          git add game-1.js game-2.js game-5.js style.css index.html
+          git commit -m 'Début Adouci' -m 'Réduit la puissance des Raids Évolution, Compétence et Familier de 35 % au niveau 1 et 20 % au niveau 2, puis reprend exactement la courbe normale dès le niveau 3 afin de préserver toute la progression future. Réduit de 20 % les PV et dégâts du Boss normal de l’étage 10 sans modifier les Boss suivants ni le Méga-Boss correspondant. Intègre également les sécurités d’accessibilité préparées après l’audit précédent. Récompenses de raid inchangées. Build 2026.09.06.20.'
           git push
