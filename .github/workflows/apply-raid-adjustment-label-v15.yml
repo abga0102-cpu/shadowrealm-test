@@ -1,4 +1,4 @@
-# trigger-v30-5
+# trigger-v30-6
 name: Sanctuary merge v30
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
           assert 'S.minerai-=' not in sanct and 'S.eclat-=' not in sanct and 'S.essence-=' not in sanct and 'S.poussiere-=' not in sanct
           assert 'const hop = 0;' in g3
           assert 'SCROLL_PRESERVE_V24' in g5
-          assert 'DECISION_HIERARCHY_V23' in g5
+          assert 'DECISION_HIERARCHY_V29' in g5
           print('v30 sanctuary merge checks passed')
           PY
       - name: Commit update
