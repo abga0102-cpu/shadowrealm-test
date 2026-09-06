@@ -1,6 +1,6 @@
 from pathlib import Path
+import re
 
-BUILD_OLD='2026.09.06.47'
 BUILD_NEW='2026.09.06.48'
 
 p=Path('social-v1.js')
@@ -8,10 +8,8 @@ s=p.read_text()
 
 s=s.replace('#srChatBtn{position:absolute;right:12px;bottom:74px;z-index:70;width:52px;height:52px;border-radius:50%;border:2px solid #0A1020;background:linear-gradient(#5FB4F5,#1E72C8);color:white;font-weight:900;box-shadow:0 4px 0 #0A1020,0 8px 18px #0008;cursor:pointer}',
 '''#srChatBtn{position:absolute;z-index:95;width:44px;height:44px;border-radius:50%;border:2px solid #0A1020;background:linear-gradient(#5FB4F5,#1E72C8);color:white;font-weight:900;box-shadow:0 3px 0 #0A1020,0 6px 14px #0007;cursor:pointer;transition:left .16s ease,top .16s ease}''')
-
 s=s.replace('#srSocial{position:absolute;inset:0;z-index:120;background:#070B13f5;display:flex;flex-direction:column;color:#EDF1FA;font-family:var(--fu,system-ui)}',
 '''#srSocial{position:absolute;z-index:120;display:flex;flex-direction:column;color:#EDF1FA;font-family:var(--fu,system-ui);background:rgba(7,11,19,.66);border:1px solid rgba(74,100,148,.72);border-radius:14px;box-shadow:0 10px 30px #0007;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);overflow:hidden}''')
-
 s=s.replace('#srSocial .head{padding:10px 12px 8px;border-bottom:1px solid #2E4269;background:#101A2C;display:flex;align-items:center;gap:8px}',
 '''#srSocial .head{padding:8px 10px 6px;border-bottom:1px solid rgba(46,66,105,.72);background:rgba(16,26,44,.62);display:flex;align-items:center;gap:8px}''')
 s=s.replace('.srTabs{display:flex;background:#0B111F;border-bottom:1px solid #2E4269;padding:6px 7px 0;gap:4px}',
@@ -40,19 +38,14 @@ new2='''    const list=root.querySelector('.srMessages');if(list)list.scrollTop=
 if old2 not in s: raise SystemExit('render tail missing')
 s=s.replace(old2,new2,1)
 
-# Keep the chat docked beside the arena after home re-renders / orientation changes.
-needle='''  seed();injectStyle();mountButton();remotePull();\n})();\n'''
-repl='''  seed();injectStyle();mountButton();remotePull();\n  window.addEventListener("resize",dockSocialUI,{passive:true});\n  window.addEventListener("orientationchange",()=>setTimeout(dockSocialUI,120),{passive:true});\n  const dockObserver=new MutationObserver(()=>requestAnimationFrame(()=>{mountButton();dockSocialUI();}));\n  const dockTarget=document.getElementById("screen")||document.getElementById("app");\n  if(dockTarget)dockObserver.observe(dockTarget,{childList:true,subtree:false});\n})();\n'''
-if needle not in s: raise SystemExit('boot tail missing')
-s=s.replace(needle,repl,1)
+extra='''\n  // CHAT_ARENA_OVERLAY_V48 docking: follow the Campaign arena without covering Forge.\n  window.addEventListener("resize",dockSocialUI,{passive:true});\n  window.addEventListener("orientationchange",()=>setTimeout(dockSocialUI,120),{passive:true});\n  const dockObserver=new MutationObserver(()=>requestAnimationFrame(()=>{mountButton();dockSocialUI();}));\n  const dockTarget=document.getElementById("screen")||document.getElementById("app");\n  if(dockTarget)dockObserver.observe(dockTarget,{childList:true,subtree:false});\n'''
+pos=s.rfind('})();')
+if pos<0: raise SystemExit('social IIFE end missing')
+s=s[:pos]+extra+s[pos:]
 s='// CHAT_ARENA_OVERLAY_V48\n'+s
 p.write_text(s)
 
 for name in ['game-2.js','index.html']:
-    q=Path(name); t=q.read_text()
-    # index may have newer social-only build while game2 fallback lags. Normalize both to v48.
-    import re
-    t=re.sub(r'2026\.09\.06\.\d+',BUILD_NEW,t)
-    q.write_text(t)
+    q=Path(name); t=q.read_text(); t=re.sub(r'2026\.09\.06\.\d+',BUILD_NEW,t); q.write_text(t)
 
 print('chat arena overlay v48 applied')
