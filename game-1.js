@@ -1755,7 +1755,7 @@ function progressionGoals(st) {
     goal("epicGear","Obtenir un équipement Épique","Fais évoluer ton build au-delà des premiers affixes.",hasEquipAtLeast(st,"EPIQUE")?1:0,1,"developpement","equipement",72,forge>=6),
     goal("rarePet","Obtenir un Familier Rare","Ajoute une spécialisation élémentaire à ton build.",hasPetAtLeast(st,"RARE")?1:0,1,"developpement","familiers",70,floor>=20),
     goal("floor50","Atteindre l’étage 50","Débloque les Méga-Boss.",floor,50,"campagne","accueil",90,floor>=25),
-    goal("mega1","Vaincre ton premier Méga-Boss","Débloque le Sanctuaire et ses fusions.",mega,1,"defi","mega",89,floor>=50),
+    goal("mega1","Vaincre ton premier Méga-Boss","Débloque le Sanctuaire et ses fusions.",mega,1,"defi","mega",89,megaRaidUnlocked(st)),
     goal("fusion1","Réussir une fusion au Sanctuaire","Transforme les ressources accumulées en nouvelles récompenses.",fusions,1,"developpement","sanctuaire",89,mega>=1),
     goal("floor100","Atteindre l’étage 100","Entre dans la progression avancée de Shadowreach.",floor,100,"campagne","accueil",88,floor>=50),
     goal("rebirth5","Effectuer 5 Rebirth","Consolide tes bonus permanents avant l’endgame.",rebirths,5,"progression","rebirth",73,rebirths>=1),
@@ -1787,9 +1787,10 @@ function secondaryGoals(st, primaryId) {
 }
 function nextUnlockGoal(st) {
   const mega = st.megaBossClears ? Object.keys(st.megaBossClears).some((k) => st.megaBossClears[k]) : false;
+  const megaUnlocked = megaRaidUnlocked(st);
   const candidates = [
     {title:"Rebirth", note:"Étage 25", detail:"Convertis une partie de ta progression en PR permanents.", now:Math.min(st.recordFloor||1,25), max:25, done:(st.recordFloor||1)>=25, go:"rebirth"},
-    {title:"Méga-Boss", note:"Étage 50", detail:"Affronte des versions extrêmes des Boss et ouvre la voie au Sanctuaire.", now:Math.min(st.recordFloor||1,50), max:50, done:(st.recordFloor||1)>=50, go:"mega"},
+    {title:"Méga-Boss", note:"Vaincre le Boss 50", detail:"Affronte des versions extrêmes des Boss et ouvre la voie au Sanctuaire.", now:megaUnlocked?1:0, max:1, done:megaUnlocked, go:"mega"},
     {title:"Sanctuaire", note:"Vaincre un Méga-Boss", detail:"Fusionne tes ressources pour découvrir des recettes spéciales.", now:mega?1:0, max:1, done:mega, go:"sanctuaire"},
   ];
   return candidates.find((x) => !x.done) || null;
@@ -1840,7 +1841,7 @@ function progressionGoalHTML(st) {
     '</summary>' +
     '<div style="padding-top:7px;border-top:1px solid #263958;margin-top:7px">' +
       '<div class="goalWhy">' + esc(g.why) + '</div>' +
-      (g.go ? '<button class="btn blue sm" data-act="go" data-arg="' + esc(g.go) + '" data-primary="true" style="width:100%;margin-top:7px">ALLER À L’OBJECTIF</button>' : '') +
+      (g.go && g.go !== "accueil" ? '<button class="btn blue sm" data-act="go" data-arg="' + esc(g.go) + '" data-primary="true" style="width:100%;margin-top:7px">ALLER À L’OBJECTIF</button>' : '') +
       (subs.length ? '<div class="goalSub">' + subs.map((x) => '<div class="goalChip" data-act="go" data-arg="' + esc(x.go||"accueil") + '" style="cursor:pointer"><b>' + esc(goalCategoryLabel(x.category)) + ' · ' + esc(x.title) + '</b><span>' + Math.floor(x.now) + ' / ' + Math.floor(x.max) + ' · ouvrir ›</span></div>').join('') + '</div>' : '') +
       (unlock ? '<div class="goalUnlock" data-act="goalUnlockInfo" style="cursor:pointer">' + ic("lock",13) + '<div class="flex1"><b>PROCHAIN DÉBLOCAGE · ' + esc(unlock.title) + '</b><br><span>' + esc(unlock.note) + ' · ' + Math.floor(unlock.now) + ' / ' + Math.floor(unlock.max) + ' · détails ›</span></div></div>' : '') +
     '</div></details>';
@@ -1901,6 +1902,7 @@ function defaultState(name) {
     eventDay: todayStr(), eventClaims: {}, eventProgress: {},
     testDays: 0, power: 0,
     autoSkills: true, firstSeen: Date.now(), tutorial: { version: 3, seen: {} },
+    recommendationDismissed: {},
     raidKeyLossCompensationV1: true,
   };
 }
@@ -1935,6 +1937,7 @@ function migrate(s, name) {
     harvest: Object.assign({}, base.harvest, s.harvest || {}),
     economyDebt: Object.assign({}, base.economyDebt, s.economyDebt || {}),
     stars: Object.assign({}, base.stars, s.stars || {}),
+    recommendationDismissed: Object.assign({}, base.recommendationDismissed, s.recommendationDismissed || {}),
   });
 
   // ---- tree: the old save held a flat `unlocked` id list of single-level nodes.
