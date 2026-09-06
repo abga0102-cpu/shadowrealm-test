@@ -1,0 +1,60 @@
+name: Apply raid rebalance v14
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-raid-rebalance-v14.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply build 2026.09.06.14
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          p=Path('game-1.js'); s=p.read_text()
+          old='''  // Raid Compétence : 75 Éclats au niveau 1, puis +5 par niveau.\n  // Une première victoire finance exactement 3 invocations de base à 25.\n  if (raid === "competence") return 75 + 5 * Math.max(0, level - 1);\n  // Raid Familier : 75 Essences au niveau 1, puis +5 par niveau.\n  // Une première victoire finance exactement 3 invocations de base à 25,\n  // sans donner d'Essence au départ.\n  if (raid === "familier") return 75 + 5 * Math.max(0, level - 1);'''
+          new='''  // Raids Compétence et Familier : 125 au niveau 1, puis +5 par niveau.\n  // Une victoire de niveau 1 finance 5 invocations de base à 25.\n  if (raid === "competence") return 125 + 5 * Math.max(0, level - 1);\n  if (raid === "familier") return 125 + 5 * Math.max(0, level - 1);'''
+          if old not in s: raise SystemExit('raid reward anchor missing')
+          s=s.replace(old,new)
+          s=s.replace('''    economyRebaseV2: true,\n    economyRebaseV3: true,''','''    economyRebaseV2: true,\n    economyRebaseV3: true,\n    economyRebaseV4: true,''')
+
+          anchor='''    merged.economyRebaseNoticeV3 = {\n      skillAscPaid, petAscPaid, eclatDebt: merged.economyDebt.eclat || 0, essenceDebt: merged.economyDebt.essence || 0\n    };\n  }'''
+          if anchor not in s: raise SystemExit('economy V3 anchor missing')
+          v4=anchor+'''\n\n  /* V4 — Raid Compétence/Familier passent de 75 à 125 au niveau 1.\n     On rééquilibre les anciennes sauvegardes comme si cette valeur avait été\n     active depuis le début, mais uniquement sur les victoires que la sauvegarde\n     permet de prouver. Une étoile prouve un ladder 1→50 complet. Sur le ladder\n     courant, le niveau atteint prouve les niveaux précédents. Sans étoile, le\n     record permet aussi de reconnaître une victoire au niveau 50. On ne fabrique\n     pas de gains pour d'éventuels raids 50 farmés ni pour un historique AFK que\n     la sauvegarde ne journalise pas. Le bonus de +50 par victoire passe par le\n     même multiplicateur d'Arbre et rembourse d'abord une éventuelle dette. */\n  if (!Object.prototype.hasOwnProperty.call(s, "economyRebaseV4")) {\n    if (!merged.economyDebt || typeof merged.economyDebt !== "object") merged.economyDebt = { eclat: 0, essence: 0 };\n    const provenRaidWins = (rid) => {\n      const r = (merged.raids && merged.raids[rid]) || {};\n      const stars = Math.max(0, Number(r.stars) || 0);\n      const level = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Number(r.level) || 1));\n      if (stars > 0) return stars * RULES.RAID_MAX_LEVEL + Math.max(0, level - 1);\n      return Math.max(Math.max(0, level - 1), Math.max(0, Math.min(RULES.RAID_MAX_LEVEL, Number(r.record) || 0)));\n    };\n    const skillWins = provenRaidWins("competence");\n    const petWins = provenRaidWins("familier");\n    const skillBonusGross = Math.floor(skillWins * 50 * (1 + treeSum(merged, "skillPts") / 100));\n    const petBonusGross = Math.floor(petWins * 50 * (1 + treeSum(merged, "petPts") / 100));\n    const skillPay = creditRebalancedResource(merged, "eclat", skillBonusGross);\n    const petPay = creditRebalancedResource(merged, "essence", petBonusGross);\n    merged.economyRebaseV4 = true;\n    merged.economyRebaseNoticeV4 = {\n      skillWins, petWins,\n      eclatGross: skillBonusGross, eclatCredited: skillPay.credited, eclatDebtRepaid: skillPay.repaid,\n      essenceGross: petBonusGross, essenceCredited: petPay.credited, essenceDebtRepaid: petPay.repaid\n    };\n  }'''
+          s=s.replace(anchor,v4)
+          p.write_text(s)
+
+          p=Path('game-2.js'); s=p.read_text()
+          s=s.replace('|| "2026.09.06.13";', '|| "2026.09.06.14";', 1)
+          p.write_text(s)
+
+          p=Path('index.html'); s=p.read_text()
+          if '2026.09.06.13' not in s: raise SystemExit('index build anchor missing')
+          p.write_text(s.replace('2026.09.06.13','2026.09.06.14'))
+          PY
+      - name: Syntax and regression checks
+        run: |
+          node --check game-1.js
+          node --check game-2.js
+          node --check game-3.js
+          node --check game-4.js
+          node --check game-5.js
+          cat game-1.js game-2.js game-3.js game-4.js game-5.js > /tmp/all.js
+          node --check /tmp/all.js
+          grep -F 'return 125 + 5 * Math.max(0, level - 1)' game-1.js | test "$(wc -l)" -eq 2
+          grep -F 'economyRebaseV4: true' game-1.js
+          grep -F 'skillWins * 50' game-1.js
+          grep -F 'petWins * 50' game-1.js
+          grep -F 'shadowreach-build" content="2026.09.06.14' index.html
+          grep -F '|| "2026.09.06.14";' game-2.js
+      - name: Commit update
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game-1.js game-2.js index.html
+          git commit -m 'Rééquilibrage Raids' -m 'Passe les récompenses des Raids Compétence et Familier à 125 au niveau 1 puis +5 par niveau. Les sauvegardes existantes reçoivent automatiquement le différentiel de +50 pour chaque victoire de raid prouvable par leur niveau, record et Ascensions, avec application des bonus d’Arbre et remboursement prioritaire des dettes économiques. Les gains historiques impossibles à reconstruire, comme le farm supplémentaire au niveau 50 ou l’AFK passé, ne sont pas inventés. Build 2026.09.06.14.'
+          git push
