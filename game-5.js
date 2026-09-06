@@ -1028,28 +1028,28 @@ function updateTutorialGuide() {
   g.innerHTML = '<div class="arrow' + (above ? '' : ' down') + '"></div>';
   document.body.appendChild(g);
 }
-function checkTutorial() {
-  if (!S.tutorial || document.getElementById("tutorialCard")) return;
-  // Start a new guided lesson from Combat so the first arrow always has a real
-  // parent control to point at. Once started, the card follows the player into
-  // the hub and then points at the exact child feature.
-  if (route !== "accueil") return;
+function pendingTutorialStep() {
+  if (!S.tutorial) return null;
   const seen = S.tutorial.seen || (S.tutorial.seen = {});
-  let key = null, title = null, sub = null;
-  if (!seen.combat) { key="combat"; title="Combat automatique"; sub="Bats les ennemis pour monter les étages et gagner Or + EXP."; }
-  else if (!seen.equipement && (S.inventory.length || SLOTS.some((k)=>S.equipped[k]))) { key="equipement"; title="Équipement"; sub="Ouvre Équipement : inventaire, pièces portées et statistiques sont réunis au même endroit. Utilise Tester pour comparer avant d’équiper."; }
-  else if (!seen.competence && Object.keys(S.skills || {}).length) { key="competence"; title="Compétences"; sub="Suis les flèches : ouvre Développement, puis Compétences. Tu disposes de 3 emplacements actifs."; }
-  else if (!seen.familier && ((S.pets||[]).length || (S.eggs||[]).length)) { key="familier"; title="Familiers"; sub="Suis les flèches : ouvre Développement, puis Familiers. Tes œufs sont stockés individuellement avec leur vraie rareté."; }
-  else if (!seen.forge && S.minerai >= FORGE_CRAFT_COST) { key="forge"; title="Forge"; sub="Le Minerai fabrique l'équipement. L'Or améliore le niveau de Forge."; }
-  else if (!seen.raid && S.level >= RULES.RAID_UNLOCK_LEVEL) { key="raid"; title="Raids"; sub="Suis les flèches : ouvre Défis, puis Raids pour utiliser tes clés et obtenir des ressources spécialisées."; }
-  else if (!seen.rebirth && S.floor >= RULES.REBIRTH_UNLOCK_FLOOR) { key="rebirth"; title="Rebirth"; sub="Suis les flèches : ouvre Progression, puis Rebirth pour voir tes PR permanents et les conséquences de la renaissance."; }
-  else if (!seen.megaBoss && megaRaidUnlocked(S)) { key="megaBoss"; title="Méga Boss"; sub="Suis les flèches : ouvre Défis, puis Méga-Boss. Chaque Méga reprend un ancien Boss avec une puissance fortement augmentée."; }
-  else if (!seen.tree && (S.pe||0) > 0) { key="tree"; title="Arbre personnel"; sub="Suis les flèches : ouvre Développement, puis Arbre personnel. Les PE du Raid Évolution servent à améliorer ses nœuds."; }
-  if (!key) return;
-  tutorialCurrentKey = key;
+  if (!seen.combat) return {key:"combat",title:"Combat automatique",sub:"Bats les ennemis pour monter les étages et gagner Or + EXP."};
+  if (!seen.equipement && (S.inventory.length || SLOTS.some((k)=>S.equipped[k]))) return {key:"equipement",title:"Équipement",sub:"Ouvre Équipement : inventaire, pièces portées et statistiques sont réunis au même endroit. Utilise Tester pour comparer avant d’équiper."};
+  if (!seen.competence && Object.keys(S.skills || {}).length) return {key:"competence",title:"Compétences",sub:"Suis les flèches : ouvre Développement, puis Compétences. Tu disposes de 3 emplacements actifs."};
+  if (!seen.familier && ((S.pets||[]).length || (S.eggs||[]).length)) return {key:"familier",title:"Familiers",sub:"Suis les flèches : ouvre Développement, puis Familiers. Tes œufs sont stockés individuellement avec leur vraie rareté."};
+  if (!seen.forge && S.minerai >= FORGE_CRAFT_COST) return {key:"forge",title:"Forge",sub:"Le Minerai fabrique l'équipement. L'Or améliore le niveau de Forge."};
+  if (!seen.raid && S.level >= RULES.RAID_UNLOCK_LEVEL) return {key:"raid",title:"Raids",sub:"Suis les flèches : ouvre Défis, puis Raids pour utiliser tes clés et obtenir des ressources spécialisées."};
+  if (!seen.rebirth && S.floor >= RULES.REBIRTH_UNLOCK_FLOOR) return {key:"rebirth",title:"Rebirth",sub:"Suis les flèches : ouvre Progression, puis Rebirth pour voir tes PR permanents et les conséquences de la renaissance."};
+  if (!seen.megaBoss && megaRaidUnlocked(S)) return {key:"megaBoss",title:"Méga Boss",sub:"Suis les flèches : ouvre Défis, puis Méga-Boss. Chaque Méga reprend un ancien Boss avec une puissance fortement augmentée."};
+  if (!seen.tree && (S.pe||0) > 0) return {key:"tree",title:"Arbre personnel",sub:"Suis les flèches : ouvre Développement, puis Arbre personnel. Les PE du Raid Évolution servent à améliorer ses nœuds."};
+  return null;
+}
+function checkTutorial() {
+  if (!S.tutorial || document.getElementById("tutorialCard") || route !== "accueil") return;
+  const step = pendingTutorialStep();
+  if (!step) return;
+  tutorialCurrentKey = step.key;
   const el = document.createElement("div");
   el.id = "tutorialCard";
-  el.innerHTML = '<div class="tt">TUTORIEL · ' + esc(title) + '</div><div class="ts">' + esc(sub) +
+  el.innerHTML = '<div class="tt">TUTORIEL · ' + esc(step.title) + '</div><div class="ts">' + esc(step.sub) +
     '</div><div class="td"><button class="btn sm green" data-act="tutorialNext">Continuer</button></div>';
   document.getElementById("app").appendChild(el);
   requestAnimationFrame(updateTutorialGuide);
@@ -1576,6 +1576,14 @@ const ACT = {
     closeModal();
   },
   back: () => nav(TAB_IDS.includes(route) ? "accueil" : "accueil"),
+  focusGoal: () => {
+    goalDetailsOpen = true;
+    render();
+    requestAnimationFrame(() => {
+      const el = document.querySelector(".goalCard");
+      if (el) el.scrollIntoView({behavior:"smooth",block:"center"});
+    });
+  },
   closeModal: () => closeModal(),
   locked: (a) => toast("Débloqué au niveau " + a),
 
@@ -2015,54 +2023,42 @@ function startAccessibilityEnhancements(){
 }
 if(document.readyState === "loading") document.addEventListener("DOMContentLoaded",startAccessibilityEnhancements,{once:true});
 else startAccessibilityEnhancements();
-// DECISION_HIERARCHY_V29
-// Une priorité par écran ou fenêtre. Les actions urgentes utilisent l'état réel
-// et les destinations data-arg, pas seulement le texte visible du bouton.
-const DECISION_SECONDARY_V29=/aperçu|apercu|détail|detail|info|fermer|annuler|retour/i;
-function decisionTextV29(el){return ((el&&(el.getAttribute("aria-label")||el.getAttribute("title")||el.textContent))||"").replace(/\s+/g," ").trim();}
-function decisionMetaV29(el){return [decisionTextV29(el),el&&el.getAttribute("data-act"),el&&el.getAttribute("data-arg"),el&&el.getAttribute("data-arg2")].filter(Boolean).join(" ").toLowerCase();}
-function decisionVisibleV29(el){if(!el||el.disabled||el.getAttribute("aria-disabled")==="true")return false;const r=el.getBoundingClientRect(),cs=getComputedStyle(el);return r.width>0&&r.height>0&&cs.display!=="none"&&cs.visibility!=="hidden"&&cs.opacity!=="0";}
-function decisionScopeV29(el){return el.closest("#overlay .modal,#overlay .popup,#overlay,[data-decision-scope]")||document.getElementById("screen")||document.body;}
-function decisionScoreV29(el){
-  const text=decisionTextV29(el).toLowerCase(),meta=decisionMetaV29(el),st=(typeof S!=="undefined"&&S)||{},now=Date.now();
-  let score=0;
-  if(el.getAttribute("data-primary")==="true"||el.closest(".recommendedActionCard"))score+=5000;
-  if(/confirmer|valider|réclamer|reclamer|récupérer|recuperer/.test(text))score+=900;
-  if(typeof combat!=="undefined"&&combat&&combat.status==="lost"&&/réessayer|reessayer|rejouer/.test(meta))score+=1200;
-  if(st.pendingBossFloor&&/boss|bossretry|réessayer|reessayer/.test(meta))score+=1150;
-  if(st.forge&&st.forge.upgradeEnd&&st.forge.upgradeEnd<=now&&/forge|forgecollect|récupérer|recuperer/.test(meta))score+=1050;
-  if(Array.isArray(st.eggs)&&st.eggs.some(function(e){return e&&e.hatchEnd&&e.hatchEnd<=now;})&&/œuf|oeuf|éclos|eclos|familier|développement|developpement/.test(meta))score+=1020;
-  if(st.tree&&st.tree.active&&st.tree.activeEnd<=now&&/arbre|recherche|research|développement|developpement/.test(meta))score+=1000;
-  const raidReady=typeof RAID_IDS!=="undefined"&&RAID_IDS.some(function(id){return st.raids&&st.raids[id]&&(st.raids[id].keys||0)>0;});
-  if(raidReady&&/raid|défis|defis|mega/.test(meta))score+=920;
-  if(/continuer|combattre|combat|prochain étage|prochain etage/.test(meta))score+=700;
-  if(/invoquer|forger|améliorer|ameliorer|équiper|equiper|préparer|preparer|fusionner/.test(meta))score+=560;
-  if(DECISION_SECONDARY_V29.test(text))score-=1000;
-  return score;
+// DECISION_HIERARCHY_V30
+// Le choix de l'action vient du moteur de progression. Cette couche ne fait
+// qu'afficher les priorités explicitement désignées et les confirmations sûres.
+const DECISION_SECONDARY_V30=/aperçu|apercu|détail|detail|info|fermer|annuler|retour/i;
+const DECISION_CONFIRM_V30=/confirmer|valider|réclamer|reclamer|récupérer|recuperer/i;
+function decisionTextV30(el){return ((el&&(el.getAttribute("aria-label")||el.getAttribute("title")||el.textContent))||"").replace(/\s+/g," ").trim();}
+function decisionVisibleV30(el){
+  if(!el||el.disabled||el.getAttribute("aria-disabled")==="true")return false;
+  const r=el.getBoundingClientRect(),cs=getComputedStyle(el),vw=window.innerWidth||document.documentElement.clientWidth,vh=window.innerHeight||document.documentElement.clientHeight;
+  return r.width>0&&r.height>0&&r.bottom>0&&r.right>0&&r.top<vh&&r.left<vw&&cs.display!=="none"&&cs.visibility!=="hidden"&&cs.opacity!=="0";
 }
-function refreshDecisionHierarchyV29(){
+function decisionScopeV30(el){return el.closest("#overlay .modal,#overlay .popup,#overlay")||document.getElementById("screen")||document.body;}
+function refreshDecisionHierarchyV30(){
   document.querySelectorAll("[data-primary-action=true],[data-secondary-action=true]").forEach(function(el){el.removeAttribute("data-primary-action");el.removeAttribute("data-secondary-action");});
   const groups=new Map();
-  document.querySelectorAll("#screen [data-act],#screen button,#overlay [data-act],#overlay button").forEach(function(el){
-    if(!decisionVisibleV29(el))return;
-    const scope=decisionScopeV29(el);
+  document.querySelectorAll("#screen button,#overlay button").forEach(function(el){
+    if(!decisionVisibleV30(el)||el.closest("#arena,#skillbar,.navGrid"))return;
+    const scope=decisionScopeV30(el);
     if(!groups.has(scope))groups.set(scope,[]);
     groups.get(scope).push(el);
   });
   groups.forEach(function(actions){
-    if(!actions.length)return;
-    let best=null,bestScore=-Infinity;
-    actions.forEach(function(el){const score=decisionScoreV29(el);if(score>bestScore){best=el;bestScore=score;}});
-    const hasPrimary=!!best&&bestScore>0;
-    if(hasPrimary)best.setAttribute("data-primary-action","true");
-    actions.forEach(function(el){
-      if(el===best)return;
-      const secondary=DECISION_SECONDARY_V29.test(decisionTextV29(el))||(hasPrimary&&actions.length>=4&&decisionScoreV29(el)<=0);
-      if(secondary)el.setAttribute("data-secondary-action","true");
-    });
+    let best=actions.find(function(el){return el.getAttribute("data-primary")==="true";});
+    if(!best)best=actions.find(function(el){return DECISION_CONFIRM_V30.test(decisionTextV30(el));});
+    if(best)best.setAttribute("data-primary-action","true");
+    actions.forEach(function(el){if(el!==best&&DECISION_SECONDARY_V30.test(decisionTextV30(el)))el.setAttribute("data-secondary-action","true");});
   });
 }
-let decisionRefreshQueuedV29=false;
-function queueDecisionHierarchyV29(){if(decisionRefreshQueuedV29)return;decisionRefreshQueuedV29=true;requestAnimationFrame(function(){decisionRefreshQueuedV29=false;refreshDecisionHierarchyV29();});}
-function startDecisionHierarchyV29(){refreshDecisionHierarchyV29();new MutationObserver(queueDecisionHierarchyV29).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["disabled","aria-disabled","class","style"]});}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startDecisionHierarchyV29,{once:true});else startDecisionHierarchyV29();
+let decisionRefreshQueuedV30=false;
+function queueDecisionHierarchyV30(){if(decisionRefreshQueuedV30)return;decisionRefreshQueuedV30=true;requestAnimationFrame(function(){decisionRefreshQueuedV30=false;refreshDecisionHierarchyV30();});}
+function startDecisionHierarchyV30(){
+  refreshDecisionHierarchyV30();
+  const observer=new MutationObserver(queueDecisionHierarchyV30);
+  const screen=document.getElementById("screen"),app=document.getElementById("app");
+  if(screen)observer.observe(screen,{childList:true});
+  if(app)observer.observe(app,{childList:true});
+  if(screen)screen.addEventListener("scroll",queueDecisionHierarchyV30,{passive:true});
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startDecisionHierarchyV30,{once:true});else startDecisionHierarchyV30();
