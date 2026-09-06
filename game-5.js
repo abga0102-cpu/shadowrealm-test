@@ -1,3 +1,4 @@
+// GLOBAL_BUGFIX_V41
 /* ---------------------------- tree node types -----------------------------
    The reference sheet groups nodes by PURPOSE rather than by section, and
    colours both the node ring and the connecting path by that type. Every
@@ -1536,7 +1537,7 @@ const ACT = {
   tutorialOk: () => dismissTutorial(),
   tutorialNext: () => tutorialNext(),
   researchFinished: (a) => showResearchFinished(a),
-  eggFinished: (a) => { nav("familier"); setTimeout(() => showEggFinished(a), 30); },
+  eggFinished: (a) => { nav("familiers"); setTimeout(() => showEggFinished(a), 30); },
   collectEggPopup: (a) => { collectEgg(a); closeModal(); rewardPop("Œuf éclos", "Nouveau familier obtenu.", false); scheduleRender(); },
   collectResearchPopup: () => { collectResearch(); closeModal(); rewardPop("Amélioration récupérée", "Le bonus de l’Arbre est maintenant actif.", false); scheduleRender(); },
   goTreeFromNotice: (a) => { closeModal(); nav("arbre"); setTimeout(() => showTreeNode(a), 40); },

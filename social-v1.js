@@ -32,12 +32,12 @@
   }
   function read(){try{const a=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(a)?a.slice(-MAX):[]}catch(_){return[]}}
   function write(list){try{localStorage.setItem(KEY,JSON.stringify(list.slice(-MAX)))}catch(_){}}
-  function push(msg,broadcast=true){
+  function push(msg,broadcast=true,relay=broadcast){
     const list=read(); if(list.some(x=>x.id===msg.id))return;
     list.push(msg); write(list);
     if(broadcast&&channel)try{channel.postMessage(msg)}catch(_){ }
     if(!open){unread++;paintButton();} else render();
-    remoteSend(msg);
+    if(relay)remoteSend(msg);
   }
   async function remoteSend(msg){
     const ep=window.SHADOWREACH_SOCIAL_ENDPOINT; if(!ep)return;
@@ -45,7 +45,7 @@
   }
   async function remotePull(){
     const ep=window.SHADOWREACH_SOCIAL_ENDPOINT; if(!ep)return;
-    try{const r=await fetch(ep+(ep.includes("?")?"&":"?")+"since="+encodeURIComponent(now()-180000),{cache:"no-store"});if(!r.ok)return;const a=await r.json();if(Array.isArray(a))a.forEach(m=>push(m,false));}catch(_){ }
+    try{const r=await fetch(ep+(ep.includes("?")?"&":"?")+"since="+encodeURIComponent(now()-180000),{cache:"no-store"});if(!r.ok)return;const a=await r.json();if(Array.isArray(a))a.forEach(m=>push(m,true,false));}catch(_){ }
   }
   function sendText(text){
     text=String(text||"").trim().slice(0,220); if(!text)return;
@@ -53,10 +53,10 @@
   }
   function botSpeak(){
     const b=bots[Math.floor(Math.random()*bots.length)],text=botLines[Math.floor(Math.random()*botLines.length)];
-    push({id:"b"+now()+Math.random().toString(36).slice(2,7),type:"text",ts:now(),author:b.name,profile:b,text,bot:true});
+    push({id:"b"+now()+Math.random().toString(36).slice(2,7),type:"text",ts:now(),author:b.name,profile:b,text,bot:true},true,false);
     lastBotAt=now();
   }
-  function seed(){if(read().length)return;bots.slice(0,2).forEach((b,i)=>push({id:"seed"+i,type:"text",ts:now()-((2-i)*45000),author:b.name,profile:b,text:i?"Quelqu’un veut tester l’arène ?":"Bienvenue dans le chat test 👋",bot:true},false));}
+  function seed(){if(read().length)return;bots.slice(0,2).forEach((b,i)=>push({id:"seed"+i,type:"text",ts:now()-((2-i)*45000),author:b.name,profile:b,text:i?"Quelqu’un veut tester l’arène ?":"Bienvenue dans le chat test 👋",bot:true},false,false));}
   function fmtTime(ts){try{return new Date(ts).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}catch(_){return""}}
   function injectStyle(){
     const s=document.createElement("style");s.textContent=`
@@ -71,7 +71,11 @@
   }
   function paintButton(){const b=document.getElementById("srChatBtn");if(!b)return;b.innerHTML="💬"+(unread?"<b>"+Math.min(99,unread)+"</b>":"");}
   function mountButton(){
-    if(document.getElementById("srChatBtn"))return;
+    const existing=document.getElementById("srChatBtn");
+    let unlocked=true;
+    try{unlocked=typeof RULES==="undefined"||typeof S==="undefined"||Number(S.level||1)>=Number(RULES.CHAT_UNLOCK_LEVEL||3)}catch(_){unlocked=true}
+    if(!unlocked){if(existing)existing.remove();return;}
+    if(existing){paintButton();return;}
     const b=document.createElement("button");b.id="srChatBtn";b.type="button";b.setAttribute("aria-label","Ouvrir le chat");b.onclick=()=>{open=true;unread=0;paintButton();render();};document.getElementById("app").appendChild(b);paintButton();
   }
   function profileHTML(p){if(!p)return"";return `<div class="srProfile"><div style="display:flex;justify-content:space-between;gap:8px"><div><div style="font-weight:900;font-size:18px">${esc(p.name)}</div><div class="status">${p.bot?"BOT DE TEST":"JOUEUR"}</div></div><button class="srClose" data-sr="profileClose">✕</button></div><div class="srGrid"><div class="srStat">Niveau<br><b>${p.level||1}</b></div><div class="srStat">Puissance<br><b>${Math.round(p.power||1).toLocaleString()}</b></div><div class="srStat">Record étage<br><b>${p.floor||1}</b></div><div class="srStat">Forge<br><b>${p.forge||1}</b></div></div>${p.name!==myProfile().name?'<button class="srAction" style="width:100%" data-sr="challenge">⚔️ Défier en combat</button>':''}<div class="status" style="margin-top:8px">Le duel utilise le moteur PvP réel. Sans serveur social, le build adverse est approximé à partir de sa puissance publique.</div></div>`}
@@ -109,8 +113,9 @@
     else if(a==="shareLast"){shareCombat()}
   });
   document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="srInput"){e.preventDefault();sendText(e.target.value);e.target.value="";render();}});
-  if(channel)channel.onmessage=e=>{if(e&&e.data)push(e.data,false)};
+  if(channel)channel.onmessage=e=>{if(e&&e.data)push(e.data,false,false)};
   window.addEventListener("storage",e=>{if(e.key===KEY&&open)render()});
+  setInterval(()=>{mountButton();},1000);
   setInterval(()=>{remotePull();if(now()-lastBotAt>45000+Math.random()*90000&&Math.random()<.35)botSpeak();},15000);
   setInterval(()=>{
     if(!pendingChallenge)return;

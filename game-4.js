@@ -159,7 +159,7 @@ function scrAccueil() {
     { label: "Clan", icon: "banner", color: "#B0862C", go: "clan", lock: S.level < 10 ? 10 : 0 },
     { label: "Boutique", icon: "shop", color: "#3B7FC4", go: "boutique" },
     { label: "Ascension", icon: "star", color: "#6B3AC4", go: "ascension", badge: S.ascensionAvailable },
-    { label: "Événement", icon: "gift", color: "#C22127", go: "evenement", badge: true },
+    { label: "Événement", icon: "gift", color: "#C22127", go: "evenement", badge: (typeof eventDone === "function" && typeof EVENT_MISSIONS !== "undefined" && EVENT_MISSIONS.some((m) => eventDone(m.id) && !S.eventClaims[m.id])) },
     { label: "Classement", icon: "trophy", color: "#5A7099", go: "classement" },
   ];
   const tile = (b) => {
