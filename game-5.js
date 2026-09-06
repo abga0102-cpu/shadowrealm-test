@@ -2008,3 +2008,32 @@ function startActionHierarchyV21(){
 }
 if(document.readyState === "loading") document.addEventListener("DOMContentLoaded",startActionHierarchyV21,{once:true});
 else startActionHierarchyV21();
+
+// DECISION_HIERARCHY_V22
+const DECISION_SECONDARY_V22=/aperçu|apercu|détail|detail|info|fermer|annuler|retour/i;
+function decisionTextV22(el){return ((el&&(el.getAttribute("aria-label")||el.getAttribute("title")||el.textContent))||"").replace(/\s+/g," ").trim();}
+function decisionActV22(el){return ((el&&el.getAttribute("data-act"))||"").toLowerCase();}
+function decisionScoreV22(el){
+  const text=decisionTextV22(el),act=decisionActV22(el),st=(typeof S!=="undefined"&&S)||{};
+  let score=0;
+  if(el.getAttribute("data-primary")==="true") score+=1200;
+  if(/confirmer|valider|réclamer|reclamer/.test(text)) score+=900;
+  if(typeof combat!=="undefined"&&combat&&combat.status==="lost"&&/réessayer|reessayer|rejouer/.test(text)) score+=1000;
+  if(st.pendingBossFloor&&/boss|réessayer|reessayer/.test(text+" "+act)) score+=980;
+  if(st.forge&&st.forge.upgradeEnd&&st.forge.upgradeEnd<=Date.now()&&/forge|forger|améliorer|ameliorer|récupérer|recuperer/.test(text+" "+act)) score+=820;
+  if(Array.isArray(st.eggs)&&st.eggs.some(function(e){return e&&((e.end&&e.end<=Date.now())||(e.hatchEnd&&e.hatchEnd<=Date.now())||(e.ready===true));})&&/œuf|oeuf|éclore|eclore|ouvrir/.test(text+" "+act)) score+=820;
+  if(/raid/.test(act)&&/lancer|combat|entrer|raid/.test(text+" "+act)) score+=760;
+  if(/recherche|research/.test(act)&&/rechercher|lancer|améliorer|ameliorer/.test(text+" "+act)) score+=720;
+  if(/continuer|combattre|combat|prochain étage|prochain etage/.test(text)) score+=650;
+  if(/invoquer|forger|améliorer|ameliorer|équiper|equiper/.test(text)) score+=520;
+  if(DECISION_SECONDARY_V22.test(text)) score-=700;
+  return score;
+}
+function refreshDecisionHierarchyV22(){
+  document.querySelectorAll("[data-primary-action=true],[data-secondary-action=true]").forEach(function(el){el.removeAttribute("data-primary-action");el.removeAttribute("data-secondary-action");});
+  const groups=new Map();
+  document.querySelectorAll("[data-act],button").forEach(function(el){if(typeof hickVisibleV21==="function"&&!hickVisibleV21(el))return;const g=(typeof hickGroupV21==="function"?hickGroupV21(el):el.parentElement)||document.body;if(!groups.has(g))groups.set(g,[]);groups.get(g).push(el);});
+  groups.forEach(function(actions){if(actions.length<2)return;let best=null,bestScore=0;actions.forEach(function(el){const score=decisionScoreV22(el);if(score>bestScore){best=el;bestScore=score;}});if(best)best.setAttribute("data-primary-action","true");actions.forEach(function(el){if(el!==best&&(DECISION_SECONDARY_V22.test(decisionTextV22(el))||actions.length>=5&&decisionScoreV22(el)<=0))el.setAttribute("data-secondary-action","true");});});
+}
+if(typeof refreshActionHierarchyV21==="function") refreshActionHierarchyV21=refreshDecisionHierarchyV22;
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",refreshDecisionHierarchyV22,{once:true});else refreshDecisionHierarchyV22();
