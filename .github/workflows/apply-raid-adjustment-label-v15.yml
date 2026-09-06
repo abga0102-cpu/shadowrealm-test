@@ -1,5 +1,5 @@
-# trigger-arena-equipment-v42-1
-name: Arena equipment removal v42
+# trigger-arena-equipment-v45-1
+name: Arena equipment removal v45
 on:
   push:
     paths:
@@ -21,25 +21,31 @@ jobs:
           node --check game-4.js
           node --check game-5.js
           node --check social-v1.js
+          node --check social-p2p-v1.js
+          node --check social-forge-layout-v1.js
+          node --check social-bot-testers-v1.js
           node --check audio-v26.js
       - name: Regression checks
         run: |
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); social=Path('social-v1.js').read_text(); idx=Path('index.html').read_text()
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
           home=g4[g4.find('function scrAccueil()'):g4.find('/* ---------------- PERSONNAGE')]
-          assert 'ARENA_EQUIPMENT_REMOVED_V42' in g4
+          assert 'ARENA_EQUIPMENT_REMOVED_V45' in g4
           assert 'worldAction(worldPrimary[1], "worldEquip")' not in home
           assert 'worldAction(worldPrimary[0], "worldRebirth")' in home
           assert 'worldAction(worldPrimary[2], "worldDev")' in home
           assert 'worldAction(worldPrimary[3], "worldDefis")' in home
-          assert 'data-arg="equipement"' in home  # combat loadout access remains outside the arena decor
-          assert '2026.09.06.42' in g2 and '2026.09.06.42' in idx
-          assert 'social-v1.js?v=2026.09.06.42' in idx
+          assert 'data-arg="equipement"' in home
+          assert '2026.09.06.45' in g2 and '2026.09.06.45' in idx
+          assert 'social-v1.js?v=2026.09.06.45' in idx
+          assert 'social-p2p-v1.js?v=2026.09.06.45' in idx
+          assert 'social-forge-layout-v1.js?v=2026.09.06.45' in idx
+          assert 'social-bot-testers-v1.js?v=2026.09.06.45' in idx
           assert 'SKILL_SLOTS_BASE: 3' in g1
           assert 'ARENA_STABILITY_V36' in g3
           assert 'SANCTUARY_DRAG_MERGE_V34' in g5
-          print('v42 arena equipment removal checks passed')
+          print('v45 arena equipment removal checks passed')
           PY
       - name: Commit update
         run: |
@@ -47,5 +53,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
           git add game-2.js game-4.js index.html
-          git commit -m 'Arène Épurée' -m 'Retire le bouton Équipement du décor de l’arène. Rebirth, Développement, Défis et le menu compact restent intégrés au monde. L’accès à l’équipement reste disponible depuis les écrans prévus à cet effet et depuis la barre de combat, sans modifier la campagne, la Forge, le combat, le Sanctuaire, l’économie ni les sauvegardes. Build 2026.09.06.42.'
+          git commit -m 'Arène Épurée' -m 'Retire le bouton Équipement du décor de l’arène. Rebirth, Développement, Défis et le menu compact restent intégrés au monde. L’accès à l’équipement reste disponible depuis la barre de combat et les écrans prévus à cet effet. La campagne, la Forge, le combat, le Sanctuaire, l’économie, le social et les sauvegardes restent inchangés. Build 2026.09.06.45.'
           git push
