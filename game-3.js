@@ -1162,7 +1162,7 @@ function renderHUD() {
     '<div class="col gap6" style="align-items:flex-end">' +
       '<div class="row gap4">' +
         '<div class="curr" data-act="resInfo" data-arg="pa" title="Points de Statistique" style="cursor:pointer;border-color:' + (S.statPoints > 0 ? '#FFD65E88' : 'var(--line)') + ';color:' + (S.statPoints > 0 ? '#FFD65E' : 'var(--textDim)') + '">' + ic("pa", 15) + "<b>" + fmt(S.statPoints) + "</b>" +
-          '<span class="plus" data-act="go" data-arg="equipement">' + ic("plus", 10) + "</span></div>" +
+          '<span class="plus" data-act="go" data-arg="heros">' + ic("plus", 10) + "</span></div>" +
         '<div class="curr" data-act="resInfo" data-arg="gold" style="cursor:pointer">' + ic("gold", 15) + "<b>" + fmt(S.gold) + "</b>" +
           '<span class="plus" data-act="go" data-arg="raid">' + ic("plus", 10) + "</span></div>" +
         '<div class="curr" data-act="resInfo" data-arg="gems" style="cursor:pointer">' + ic("gem", 15) + "<b>" + fmt(S.gems) + "</b>" +

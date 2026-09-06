@@ -411,6 +411,22 @@ function scrInventaire() {
 
 
 /* ---------------- ÉQUIPEMENT UNIFIÉ ---------------- */
+function scrHerosStats() {
+  return topbar("Héros", '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">' +
+      ic("chart", 11) + fmt(S.statPoints || 0) + " point" + ((S.statPoints || 0) > 1 ? "s" : "") + "</span>") +
+    '<div class="pad mt8">' +
+      '<div class="sect" style="margin:4px 0 8px">Points de statistiques</div>' +
+      '<div class="duo">' + STAT_META.map((m) =>
+        '<div class="card" style="padding:9px 9px"><div class="between"><div class="b small" style="color:' + m.color + '">' +
+          m.label + '</div><b>' + S.stats[m.key] + '</b></div><div class="row gap4 mt8">' +
+          btn("+1", { small:true, act:"alloc", arg:m.key, arg2:1, dis:S.statPoints<1 }) +
+          btn("+5", { small:true, act:"alloc", arg:m.key, arg2:5, dis:S.statPoints<5 }) +
+          btn("Max", { small:true, act:"alloc", arg:m.key, arg2:"max", dis:S.statPoints<1 }) +
+        '</div></div>').join('') + '</div>' +
+      '<div class="mute tiny center mt10">' + fmt(S.statPoints || 0) + ' point' + ((S.statPoints || 0) > 1 ? 's' : '') + ' disponible' + ((S.statPoints || 0) > 1 ? 's' : '') + '.</div>' +
+    '<div style="height:8px"></div></div>';
+}
+
 function scrEquipement() {
   const previewItems = Object.values(equipPreviewSet).map((id) => S.inventory.find((x) => x.id === id)).filter(Boolean);
   const previewBySlot = {};
@@ -492,7 +508,6 @@ function scrEquipement() {
     '<details class="equipStatsMore"'+(hasPreview && stats.slice(8).some(x=>String(x[1])!==String(x[2]))?' open':'')+'><summary>Voir toutes les statistiques</summary><div class="row" style="flex-wrap:wrap">'+stats.slice(8).map(x=>statCell(...x)).join('')+'</div></details></div>' +
     '<div class="sect" style="margin:10px 0 6px">Équipement porté</div><div class="slotGrid">'+cells+'</div>' +
     (hasPreview ? '<div class="notice mt8"><div class="between"><span><b style="color:#78B7FF">Mode test :</b> '+previewItems.length+' pièce'+(previewItems.length>1?'s':'')+'</span><span class="row gap4">'+btn("Annuler",{small:true,cls:"ghost",act:"clearEquipPreview"})+btn("Équiper le set",{small:true,cls:"green",act:"equipPreviewSet"})+'</span></div><div class="mute tiny mt4">Tu peux tester une pièce par emplacement avant de valider tout le set.</div></div>' : '') +
-    '<div class="sect" style="margin:14px 0 8px">Points de statistiques ('+S.statPoints+')</div><div class="duo">'+STAT_META.map((m)=>'<div class="card" style="padding:7px 8px"><div class="between"><div class="b small" style="color:'+m.color+'">'+m.label+'</div><b>'+S.stats[m.key]+'</b></div><div class="row gap4 mt6">'+btn("+1",{small:true,act:"alloc",arg:m.key,arg2:1,dis:S.statPoints<1})+btn("+5",{small:true,act:"alloc",arg:m.key,arg2:5,dis:S.statPoints<5})+btn("Max",{small:true,act:"alloc",arg:m.key,arg2:"max",dis:S.statPoints<1})+'</div></div>').join('')+'</div>' +
     '<div class="sect" style="margin:16px 0 8px">Inventaire</div><div class="seg">'+filters.map((f)=>'<span class="'+(invFilter===f?'on':'')+'" data-act="invFilter" data-arg="'+f+'">'+(f==='ALL'?'Tout':SLOT_LABEL[f])+'</span>').join('')+'</div>' +
     '<div class="row gap6 mt6">'+btn(recycleSelectMode?'Annuler sélection':'Sélection manuelle',{small:true,cls:recycleSelectMode?'blue':'ghost',act:'toggleRecycleSelect'})+btn('Recycler catégories',{small:true,cls:'dark',act:'recycleSlotsPicker'})+'</div>' +
     (recycleSelectMode ? '<div class="row gap6 mt6">'+btn('Tout sélectionner'+(invFilter==='ALL'?'':' · '+SLOT_LABEL[invFilter]),{small:true,cls:'ghost',act:'selectVisibleRecycle',dis:!sorted.length})+btn(ic('trash',11)+' Recycler '+recycleSelectedIds.size+' · +'+fmt(selectedRecycleItems().reduce((a,x)=>a+recycleValue(x),0))+' Poussière',{small:true,cls:'red',act:'askRecycleSelected',dis:!recycleSelectedIds.size})+'</div>' : '') +

@@ -803,6 +803,7 @@ function scrProgression(){ return scrHub("Progression", [
    RENDER
    ========================================================================= */
 const SCREENS = {
+  heros: scrHerosStats,
   accueil: scrAccueil, personnage: scrEquipement, equipement: scrEquipement,
   inventaire: scrEquipement, competences: scrCompetences, familiers: scrFamiliers,
   raid: scrRaid, mega: scrMegaRaid, sanctuaire: scrSanctuaire, arena: scrArenaSim, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
