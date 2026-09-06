@@ -1576,12 +1576,22 @@ const ACT = {
     closeModal();
   },
   back: () => nav(TAB_IDS.includes(route) ? "accueil" : "accueil"),
+  dismissRecommendation: (kind, token) => {
+    update((st) => {
+      st.recommendationDismissed = st.recommendationDismissed || {};
+      st.recommendationDismissed[kind] = String(token || "");
+    });
+  },
+  focusForge: () => {
+    const el = document.getElementById("homeForge");
+    if (el) el.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
+  },
   focusGoal: () => {
     goalDetailsOpen = true;
     render();
     requestAnimationFrame(() => {
       const el = document.querySelector(".goalCard");
-      if (el) el.scrollIntoView({behavior:"smooth",block:"center"});
+      if (el) el.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
     });
   },
   closeModal: () => closeModal(),
@@ -2030,7 +2040,7 @@ const DECISION_SECONDARY_V30=/aperçu|apercu|détail|detail|info|fermer|annuler|
 const DECISION_CONFIRM_V30=/confirmer|valider|réclamer|reclamer|récupérer|recuperer/i;
 function decisionTextV30(el){return ((el&&(el.getAttribute("aria-label")||el.getAttribute("title")||el.textContent))||"").replace(/\s+/g," ").trim();}
 function decisionVisibleV30(el){
-  if(!el||el.disabled||el.getAttribute("aria-disabled")==="true")return false;
+  if(!el||el.disabled||el.getAttribute("aria-disabled")==="true"||el.closest("details:not([open])"))return false;
   const r=el.getBoundingClientRect(),cs=getComputedStyle(el),vw=window.innerWidth||document.documentElement.clientWidth,vh=window.innerHeight||document.documentElement.clientHeight;
   return r.width>0&&r.height>0&&r.bottom>0&&r.right>0&&r.top<vh&&r.left<vw&&cs.display!=="none"&&cs.visibility!=="hidden"&&cs.opacity!=="0";
 }
@@ -2061,4 +2071,4 @@ function startDecisionHierarchyV30(){
   if(app)observer.observe(app,{childList:true});
   if(screen)screen.addEventListener("scroll",queueDecisionHierarchyV30,{passive:true});
 }
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startDecisionHierarchyV30,{once:true});else startDecisionHierarchyV30();
+startDecisionHierarchyV30();
