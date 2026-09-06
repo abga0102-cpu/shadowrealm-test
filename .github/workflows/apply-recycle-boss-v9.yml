@@ -1,4 +1,4 @@
-name: Apply boss lock v10
+name: Apply hero stats v11
 on:
   push:
     paths:
@@ -10,24 +10,74 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply build 2026.09.06.10
+      - name: Apply build 2026.09.06.11
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          def rep(path, old, new, count=1):
-              p=Path(path); s=p.read_text()
-              if old not in s: raise SystemExit(f'missing pattern in {path}: {old[:100]}')
-              p.write_text(s.replace(old,new,count))
+          import re
 
-          rep('game-2.js','const mulD = opts.boss ? 1.7 : opts.elite ? 1.4 : 1;','const mulD = opts.boss ? (opts.floor === 40 ? 1.7 : 1.8) : opts.elite ? 1.4 : 1;')
-          rep('game-2.js','function startCampaign() { combat = spawnCampaign(S); }','''function startCampaign() {\n  const pending = Number(S.pendingBossFloor || 0);\n  if (pending && S.floor >= pending) update((st) => { st.floor = Math.max(1, pending - 1); st.step = 1; });\n  combat = spawnCampaign(S);\n}''')
-          rep('game-2.js','''        const clearedFloor = s.floor;\n        s.step = 1;\n        s.floor += 1;\n        // Saut d'étage''','''        const clearedFloor = s.floor;\n        s.step = 1;\n        const pendingBoss = Number(s.pendingBossFloor || 0);\n        if (!(pendingBoss && pendingBoss === s.floor + 1)) s.floor += 1;\n        // Saut d'étage''')
-          rep('game-2.js','if (weakFight && skipPct > 0 && !isElite(nextFloor)','if (!(pendingBoss && pendingBoss === s.floor + 1) && weakFight && skipPct > 0 && !isElite(nextFloor)')
-          rep('game-2.js','|| "2026.09.06.9";','|| "2026.09.06.10";')
+          p=Path('game-4.js'); s=p.read_text()
+          old='''    '<div class="sect" style="margin:14px 0 8px">Points de statistiques ('+S.statPoints+')</div><div class="duo">'+STAT_META.map((m)=>'<div class="card" style="padding:7px 8px"><div class="between"><div class="b small" style="color:'+m.color+'">'+m.label+'</div><b>'+S.stats[m.key]+'</b></div><div class="row gap4 mt6">'+btn("+1",{small:true,act:"alloc",arg:m.key,arg2:1,dis:S.statPoints<1})+btn("+5",{small:true,act:"alloc",arg:m.key,arg2:5,dis:S.statPoints<5})+btn("Max",{small:true,act:"alloc",arg:m.key,arg2:"max",dis:S.statPoints<1})+'</div></div>').join('')+'</div>' +\n'''
+          if old not in s: raise SystemExit('equipment stat-points block missing')
+          s=s.replace(old,'',1)
 
-          rep('game-4.js',"btn(ic('trash',11)+' Recycler '+recycleSelectedIds.size,{small:true,cls:'red',act:'askRecycleSelected',dis:!recycleSelectedIds.size})","btn(ic('trash',11)+' Recycler '+recycleSelectedIds.size+' · +'+fmt(selectedRecycleItems().reduce((a,x)=>a+recycleValue(x),0))+' Poussière',{small:true,cls:'red',act:'askRecycleSelected',dis:!recycleSelectedIds.size})")
+          marker='function scrEquipement() {'
+          if marker not in s: raise SystemExit('scrEquipement marker missing')
+          hero='''function scrHerosStats() {
+  return topbar("Héros", '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">' +
+      ic("chart", 11) + fmt(S.statPoints || 0) + " point" + ((S.statPoints || 0) > 1 ? "s" : "") + "</span>") +
+    '<div class="pad mt8">' +
+      '<div class="sect" style="margin:4px 0 8px">Points de statistiques</div>' +
+      '<div class="duo">' + STAT_META.map((m) =>
+        '<div class="card" style="padding:9px 9px"><div class="between"><div class="b small" style="color:' + m.color + '">' +
+          m.label + '</div><b>' + S.stats[m.key] + '</b></div><div class="row gap4 mt8">' +
+          btn("+1", { small:true, act:"alloc", arg:m.key, arg2:1, dis:S.statPoints<1 }) +
+          btn("+5", { small:true, act:"alloc", arg:m.key, arg2:5, dis:S.statPoints<5 }) +
+          btn("Max", { small:true, act:"alloc", arg:m.key, arg2:"max", dis:S.statPoints<1 }) +
+        '</div></div>').join('') + '</div>' +
+      '<div class="mute tiny center mt10">' + fmt(S.statPoints || 0) + ' point' + ((S.statPoints || 0) > 1 ? 's' : '') + ' disponible' + ((S.statPoints || 0) > 1 ? 's' : '') + '.</div>' +
+    '<div style="height:8px"></div></div>';
+}
 
-          p=Path('index.html'); p.write_text(p.read_text().replace('2026.09.06.9','2026.09.06.10'))
+'''
+          s=s.replace(marker,hero+marker,1)
+          p.write_text(s)
+
+          # Register the dedicated Héros screen wherever the screen map lives.
+          mapped=False
+          for fp in [Path(f'game-{i}.js') for i in range(1,6)]:
+            t=fp.read_text()
+            if re.search(r'const\s+SCREENS\s*=\s*\{',t):
+              if 'heros: scrHerosStats' not in t:
+                t=re.sub(r'(const\s+SCREENS\s*=\s*\{)',r'\1\n  heros: scrHerosStats,',t,count=1)
+                fp.write_text(t)
+              mapped=True
+              break
+          if not mapped: raise SystemExit('SCREENS map missing')
+
+          # The top-right Points de statistiques shortcut must open Héros, not Équipement.
+          changed=False
+          for fp in [Path(f'game-{i}.js') for i in range(1,6)]:
+            t=fp.read_text()
+            for m in list(re.finditer(r'.{0,420}S\.statPoints.{0,420}',t,re.S)):
+              seg=m.group(0)
+              if 'equipement' not in seg: continue
+              seg2=seg.replace('arg:"equipement"','arg:"heros"').replace("arg:'equipement'","arg:'heros'").replace('data-arg="equipement"','data-arg="heros"')
+              if seg2!=seg:
+                t=t[:m.start()]+seg2+t[m.end():]
+                changed=True
+                break
+            if changed:
+              fp.write_text(t)
+              break
+          if not changed: raise SystemExit('stat-points shortcut to equipment not found')
+
+          p=Path('game-2.js'); t=p.read_text();
+          if '2026.09.06.10' not in t: raise SystemExit('APP_BUILD .10 missing')
+          p.write_text(t.replace('2026.09.06.10','2026.09.06.11',1))
+          p=Path('index.html'); t=p.read_text();
+          if '2026.09.06.10' not in t: raise SystemExit('index build .10 missing')
+          p.write_text(t.replace('2026.09.06.10','2026.09.06.11'))
           PY
           node --check game-1.js
           node --check game-2.js
@@ -36,14 +86,14 @@ jobs:
           node --check game-5.js
           cat game-1.js game-2.js game-3.js game-4.js game-5.js > /tmp/all.js
           node --check /tmp/all.js
-          grep -q '2026.09.06.10' index.html
-          grep -q 'pendingBoss && pendingBoss === s.floor + 1' game-2.js
-          grep -q 'opts.floor === 40 ? 1.7 : 1.8' game-2.js
-          grep -q 'Poussière' game-4.js
+          grep -q '2026.09.06.11' index.html
+          grep -q 'function scrHerosStats' game-4.js
+          grep -q 'heros: scrHerosStats' game-*.js
+          ! grep -q 'Points de statistiques (' game-4.js
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add game-2.js game-4.js index.html
-          git commit -m "Boss Lock" -m "Après une défaite contre un Boss, le joueur reste sur l’étage précédent et peut le farmer sans relancer automatiquement le Boss. Seul le bouton BOSS permet une revanche. La réduction de dégâts est limitée au Boss 40 et le recyclage manuel affiche désormais la Poussière totale sélectionnée. Build 2026.09.06.10."
+          git add game-1.js game-2.js game-3.js game-4.js game-5.js index.html
+          git commit -m "Héros Stats" -m "Retire les Points de statistiques de l’écran Équipement. L’écran Héros est désormais dédié uniquement à l’attribution des Points de statistiques, et le raccourci du compteur ouvre directement Héros. Build 2026.09.06.11."
           git push
