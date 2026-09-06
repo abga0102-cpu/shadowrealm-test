@@ -4,7 +4,7 @@
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.32";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.33";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -2625,7 +2625,21 @@ function boot() {
   // Persistent Auto-Forge scheduler. It never stops because a wanted/rare item
   // was found; only the player switching AUTO off cancels it.
   if (S.forge.autoForge) scheduleAutoForge(0);
-  setInterval(() => { if (isTimerScreen()) scheduleRender(); }, 1000); // live countdowns
+  let homeTimerSignature = "";
+  setInterval(() => {
+    if (route === "accueil") {
+      const now = Date.now();
+      const forgeSecond = S.forge.upgradeEnd > now ? Math.ceil((S.forge.upgradeEnd - now) / 1000) : 0;
+      const forgeDone = S.forge.upgradeEnd > 0 && S.forge.upgradeEnd <= now ? S.forge.upgradeEnd : 0;
+      const readyEggs = (S.eggs || []).filter((e) => eggIsHatching(e) && e.hatchEnd <= now).map((e)=>e.id).sort().join(",");
+      const treeReady = S.tree.active && S.tree.activeEnd <= now ? String(S.tree.active) + ":" + S.tree.activeEnd : "";
+      const signature = [forgeSecond, forgeDone, readyEggs, treeReady].join("|");
+      if (signature !== homeTimerSignature) { homeTimerSignature = signature; scheduleRender(); }
+      return;
+    }
+    homeTimerSignature = "";
+    if (isTimerScreen()) scheduleRender();
+  }, 1000); // live countdowns without rebuilding an idle Home
   window.addEventListener("beforeunload", saveNow);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) saveNow();
