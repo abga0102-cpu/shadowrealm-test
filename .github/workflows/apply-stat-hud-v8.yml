@@ -1,0 +1,74 @@
+name: Apply stat HUD v8
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-stat-hud-v8.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply HUD update
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('game-3.js')
+          s = p.read_text()
+          old = '''          '<span class="power">' + ic("swords", 11) + fmt(S.power) + "</span>" +
+                    (S.statPoints > 0 ? '<span class="dot" style="position:static"></span>' : "") + "</div>" +'''
+          new = '''          '<span class="power">' + ic("swords", 11) + fmt(S.power) + "</span>" + "</div>" +'''
+          if old not in s:
+              raise SystemExit('HUD stat dot block not found')
+          s = s.replace(old, new, 1)
+
+          old = '''      '<div class="row gap4">' +
+                  '<div class="curr" data-act="resInfo" data-arg="gold" style="cursor:pointer">' + ic("gold", 15) + "<b>" + fmt(S.gold) + "</b>" +
+                    '<span class="plus" data-act="go" data-arg="raid">' + ic("plus", 10) + "</span></div>" +
+                  '<div class="curr" data-act="resInfo" data-arg="gems" style="cursor:pointer">' + ic("gem", 15) + "<b>" + fmt(S.gems) + "</b>" +
+                    '<span class="plus" data-act="go" data-arg="boutique">' + ic("plus", 10) + "</span></div>" +
+                "</div>" +'''
+          new = '''      '<div class="row gap4">' +
+                  '<div class="curr" data-act="resInfo" data-arg="pa" title="Points de Statistique" style="cursor:pointer;border-color:' + (S.statPoints > 0 ? '#FFD65E88' : 'var(--line)') + ';color:' + (S.statPoints > 0 ? '#FFD65E' : 'var(--textDim)') + '">' + ic("pa", 15) + "<b>" + fmt(S.statPoints) + "</b>" +
+                    '<span class="plus" data-act="go" data-arg="equipement">' + ic("plus", 10) + "</span></div>" +
+                  '<div class="curr" data-act="resInfo" data-arg="gold" style="cursor:pointer">' + ic("gold", 15) + "<b>" + fmt(S.gold) + "</b>" +
+                    '<span class="plus" data-act="go" data-arg="raid">' + ic("plus", 10) + "</span></div>" +
+                  '<div class="curr" data-act="resInfo" data-arg="gems" style="cursor:pointer">' + ic("gem", 15) + "<b>" + fmt(S.gems) + "</b>" +
+                    '<span class="plus" data-act="go" data-arg="boutique">' + ic("plus", 10) + "</span></div>" +
+                "</div>" +'''
+          if old not in s:
+              raise SystemExit('HUD currency row not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          p = Path('game-2.js')
+          s = p.read_text()
+          if '2026.09.06.7' not in s:
+              raise SystemExit('Expected build fallback not found')
+          p.write_text(s.replace('2026.09.06.7', '2026.09.06.8', 1))
+
+          p = Path('index.html')
+          s = p.read_text()
+          if '2026.09.06.7' not in s:
+              raise SystemExit('Expected index build not found')
+          p.write_text(s.replace('2026.09.06.7', '2026.09.06.8'))
+          PY
+          node --check game-2.js
+          node --check game-3.js
+          grep -q 'data-arg="pa"' game-3.js
+          grep -q '2026.09.06.8' index.html
+      - name: Commit update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game-2.js game-3.js index.html
+          git commit -m "Points de Statistique" -m "Affiche les Points de Statistique en permanence dans le HUD en haut à droite. Le compteur devient visible même à 0, se met en évidence quand des points sont disponibles, ouvre leur détail au toucher et propose un accès rapide à l’écran Équipement pour les attribuer. Build 2026.09.06.8."
+          git push origin main
