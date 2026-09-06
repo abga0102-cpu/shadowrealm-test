@@ -1,5 +1,5 @@
-# trigger-v34-2
-name: Sanctuary drag merge v34
+# trigger-v35-1
+name: Sanctuary gold refund v35
 on:
   push:
     paths:
@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply sanctuary drag merge
-        run: python .github/sanctuary_drag_v34.py
+      - name: Apply sanctuary gold refund
+        run: python .github/sanctuary_gold_refund_v35.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -25,26 +25,24 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); css=Path('style.css').read_text(); idx=Path('index.html').read_text()
-          assert 'SANCT_SUPPLIER_UNLOCK' in g4 and 'sanctSupplierUnlocked' in g4
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          assert 'SANCTUARY_GOLD_REBASE_V35' in g1
+          assert 'sanctuaryGoldRebaseV35' in g1 and 'refundGold' in g1
+          assert '250 * Math.max(1,l) * Math.max(1,l)' in g1
           assert 'Toute couleur débloquée reste disponible' in g4
           assert 'Fusion par glisser-déposer' in g4
-          assert 'data-sanct-slot' in g4 and 'sanctMergePiece' in g4
           assert 'SANCTUARY_DRAG_MERGE_V34' in g5 and 'function sanctMergeDrop' in g5
-          assert all(x in g5 for x in ['pointerdown','pointermove','pointerup'])
-          assert 'chosen===sanctSupplierTier(lv)' in g5
-          assert 'SANCTUARY_DRAG_MERGE_V34' in css
           assert 'SANCT_MERGE_ORDER' in g4 and 'SANCT_BOARD_SIZE = 16' in g4
           assert 'Total exact des 50 niveaux : 35 000 PR' in g1
           assert 'gold: raidReward("or", s.raids.or.level) * 0.25' in g1
-          assert '2026.09.06.34' in g2 and '2026.09.06.34' in idx
-          print('v34 sanctuary drag checks passed')
+          assert '2026.09.06.35' in g2 and '2026.09.06.35' in idx
+          print('v35 sanctuary gold refund checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
-          git add game-4.js game-5.js game-2.js style.css index.html
-          git commit -m 'Sanctuaire Drag Merge' -m 'Transforme le plateau du Sanctuaire en vrai jeu de merge par glisser-déposer sur mobile et desktop. Une pièce glissée sur une pièce identique fusionne, une case vide déplace la pièce et une couleur différente refuse la fusion. Toutes les couleurs déjà débloquées restent achetables définitivement. Les niveaux intermédiaires réduisent leurs prix au lieu de rendre une même couleur plus chère, et seule la meilleure couleur disponible fait progresser la jauge du fournisseur. Plateau 16 cases, recettes, raretés, sauvegarde et économie Or/Rebirth sont conservés. Build 2026.09.06.34.'
+          git add game-1.js game-2.js index.html
+          git commit -m 'Or Sanctuaire Remboursé' -m 'Rembourse automatiquement l’Or surpayé dans la progression du fournisseur du Sanctuaire avant son rééquilibrage. Le remboursement est calculé à partir du niveau et de la jauge enregistrés dans la sauvegarde, en comparant l’ancien tarif 250 × niveau² au nouveau tarif équitable. Au niveau 15, les achats libres non historisés ne sont pas inventés. Le Drag Merge, les couleurs débloquées, les recettes, l’économie Or/Rebirth et la sauvegarde sont conservés. Build 2026.09.06.35.'
           git push
