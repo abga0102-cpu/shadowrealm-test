@@ -1,4 +1,4 @@
-# trigger-v30-1
+# trigger-v30-2
 name: Sanctuary merge v30
 on:
   push:
@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Align build anchor
+        run: sed -i 's/2026.09.06.28/2026.09.06.29/' game-2.js
       - name: Apply sanctuary merge patch
         run: python .github/sanctuaire_merge_v30.py
       - name: Syntax checks
@@ -39,9 +41,8 @@ jobs:
           assert 'sanctRecipeCraft:' in g5
           assert 'S.gold-=price' in g5
           assert 'st.mergeBoard[sel]=null; st.mergeBoard[i]=nx' in g5
-          assert 'S.minerai-=' not in g5[g5.index('  // sanctuaire'):g5.index('\n  // tree',g5.index('  // sanctuaire'))]
-          assert 'S.eclat-=' not in g5[g5.index('  // sanctuaire'):g5.index('\n  // tree',g5.index('  // sanctuaire'))]
-          assert 'S.essence-=' not in g5[g5.index('  // sanctuaire'):g5.index('\n  // tree',g5.index('  // sanctuaire'))]
+          sanct=g5[g5.index('  // sanctuaire'):g5.index('\n  // tree',g5.index('  // sanctuaire'))]
+          assert 'S.minerai-=' not in sanct and 'S.eclat-=' not in sanct and 'S.essence-=' not in sanct and 'S.poussiere-=' not in sanct
           assert 'const hop = 0;' in g3
           assert 'SCROLL_PRESERVE_V24' in g5
           assert 'DECISION_HIERARCHY_V23' in g5
