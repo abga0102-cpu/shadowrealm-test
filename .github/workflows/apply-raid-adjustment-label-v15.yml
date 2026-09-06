@@ -1,5 +1,5 @@
-# trigger-v26-2
-name: Combat audio v26
+# trigger-v27-1
+name: Move stat points to hero v27
 on:
   push:
     paths: ['.github/workflows/apply-raid-adjustment-label-v15.yml']
@@ -10,75 +10,78 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add adaptive combat audio
+      - name: Move stat points into Hero
         run: |
           python <<'PY'
           from pathlib import Path
-          eng=Path('game-2.js'); e=eng.read_text()
-          if '// AUDIO_SYSTEM_V26' not in e:
-              anchor='let offlineRecap = null;'
-              if anchor not in e: raise SystemExit('audio global anchor missing')
-              block=r'''
 
-// AUDIO_SYSTEM_V26
-let SR_AUDIO=null,SR_MASTER=null,SR_MUSIC=null,SR_AUDIO_READY=false,SR_MUSIC_TIMER=null,SR_MUSIC_STEP=0;
-function srAudioUnlock(){
-  if(SR_AUDIO_READY&&SR_AUDIO){if(SR_AUDIO.state==='suspended')SR_AUDIO.resume();return true;}
-  try{const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return false;SR_AUDIO=new Ctx();SR_MASTER=SR_AUDIO.createGain();SR_MASTER.gain.value=.34;SR_MASTER.connect(SR_AUDIO.destination);SR_MUSIC=SR_AUDIO.createGain();SR_MUSIC.gain.value=.22;SR_MUSIC.connect(SR_MASTER);SR_AUDIO_READY=true;if(SR_AUDIO.state==='suspended')SR_AUDIO.resume();if(!SR_MUSIC_TIMER)SR_MUSIC_TIMER=setInterval(srCombatMusicTick,520);return true;}catch(_){return false;}
-}
-function srTone(freq,dur,vol,type,slide,dest){if(!SR_AUDIO_READY||!SR_AUDIO||!SR_MASTER)return;const t=SR_AUDIO.currentTime,o=SR_AUDIO.createOscillator(),g=SR_AUDIO.createGain();o.type=type||'sine';o.frequency.setValueAtTime(Math.max(30,freq),t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,slide),t+dur);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,vol),t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(dest||SR_MASTER);o.start(t);o.stop(t+dur+.02);}
-function srNoise(dur,vol,cut){if(!SR_AUDIO_READY||!SR_AUDIO)return;const len=Math.max(64,Math.floor(SR_AUDIO.sampleRate*dur)),b=SR_AUDIO.createBuffer(1,len,SR_AUDIO.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);const src=SR_AUDIO.createBufferSource(),f=SR_AUDIO.createBiquadFilter(),g=SR_AUDIO.createGain();src.buffer=b;f.type='lowpass';f.frequency.value=cut||1800;g.gain.value=vol;src.connect(f);f.connect(g);g.connect(SR_MASTER);src.start();}
-function srSfx(kind,power){if(!SR_AUDIO_READY)return;const p=Math.max(.35,Math.min(1.4,power||1));if(kind==='ui'){srTone(760,.045,.018,'sine',620);return;}if(kind==='swing'){srNoise(.09,.045*p,1200);srTone(150,.08,.026*p,'triangle',92);return;}if(kind==='shot'){srNoise(.055,.025*p,2600);srTone(520,.07,.025*p,'triangle',820);return;}if(kind==='enemySwing'){srNoise(.075,.025*p,900);srTone(105,.09,.019*p,'sawtooth',72);return;}if(kind==='enemyShot'){srTone(360,.08,.018*p,'square',520);return;}if(kind==='victory'){[523,659,784].forEach((n,i)=>setTimeout(()=>srTone(n,.32,.035,'triangle',n*1.03),i*90));return;}if(kind==='defeat'){[220,174,130].forEach((n,i)=>setTimeout(()=>srTone(n,.38,.035,'sine',n*.72),i*110));return;}}
-function srSkillSfx(k){if(!SR_AUDIO_READY)return;k=k||'impact';if(k==='heal'||k==='aura'){srTone(440,.42,.03,'sine',880);setTimeout(()=>srTone(660,.36,.022,'sine',990),70);}else if(k==='meteor'||k==='cataclysm'){srTone(82,.48,.055,'sawtooth',42);srNoise(.28,.06,1000);}else if(k==='vortex'||k==='curse'||k==='poison'){srTone(190,.38,.032,'triangle',95);srTone(285,.30,.018,'sine',150);}else if(k==='bolt'||k==='pierce'){srTone(620,.18,.035,'square',1120);srNoise(.08,.025,3000);}else if(k==='wave'){srTone(260,.34,.032,'sine',520);srNoise(.13,.025,1800);}else{srTone(330,.20,.032,'triangle',190);srNoise(.07,.03,1300);}}
-function srCombatMusicTick(){if(!SR_AUDIO_READY||!SR_AUDIO||!SR_MUSIC||!combat||combat.status!=='fight')return;const boss=!!combat.boss,notes=boss?[55,65.4,73.4,49]:[73.4,82.4,98,82.4],n=notes[SR_MUSIC_STEP++%notes.length];srTone(n,boss?.42:.32,boss?.030:.018,'triangle',n*.985,SR_MUSIC);if(SR_MUSIC_STEP%2===0)srTone(n*2,boss?.18:.14,boss?.012:.008,'sine',n*1.96,SR_MUSIC);}
-'''.replace('boss?.42:.32','boss ? .42 : .32').replace('boss?.030:.018','boss ? .030 : .018').replace('boss?.18:.14','boss ? .18 : .14').replace('boss?.012:.008','boss ? .012 : .008')
-              e=e.replace(anchor,anchor+block,1)
-              a='        c.heroAttacking = 0.2;\n        // weapon-type affixes only apply to the matching attack type'
-              if a not in e: raise SystemExit('hero attack anchor missing')
-              e=e.replace(a,'        c.heroAttacking = 0.2;\n        srSfx(wt.attackType === "RANGED" ? "shot" : "swing", .9);\n        // weapon-type affixes only apply to the matching attack type',1)
-              a='        e.attacking = 0.2;\n        // Arena rivals use true hit events.'
-              if a not in e: raise SystemExit('enemy attack anchor missing')
-              e=e.replace(a,'        e.attacking = 0.2;\n        srSfx(e.ranged ? "enemyShot" : "enemySwing", .62);\n        // Arena rivals use true hit events.',1)
-              a='        c.skillFxs.push({ id: def.id, color: def.color, fx: fxKind,\n          life: vfxDur(fxKind), max: vfxDur(fxKind) });'
-              if a not in e: raise SystemExit('skill anchor missing')
-              e=e.replace(a,a+'\n        srSkillSfx(fxKind);',1)
-              a='function handleCombatEnd(c) {\n  if (c.ctx === "arenaLive") {'
-              if a not in e: raise SystemExit('result anchor missing')
-              e=e.replace(a,'function handleCombatEnd(c) {\n  srSfx(c.status === "won" ? "victory" : "defeat", 1);\n  if (c.ctx === "arenaLive") {',1)
-          if '|| "2026.09.06.25";' not in e: raise SystemExit('build anchor missing')
-          eng.write_text(e.replace('|| "2026.09.06.25";','|| "2026.09.06.26";',1))
-          ui=Path('game-5.js'); u=ui.read_text()
-          a='document.getElementById("app").addEventListener("click", (e) => {\n  const el = e.target.closest("[data-act]");'
-          if a not in u: raise SystemExit('click unlock anchor missing')
-          u=u.replace(a,'document.getElementById("app").addEventListener("click", (e) => {\n  if (typeof srAudioUnlock === "function") srAudioUnlock();\n  const el = e.target.closest("[data-act]");',1)
-          a='  e.stopPropagation();\n  fn(el.dataset.arg, el.dataset.arg2);'
-          if a not in u: raise SystemExit('click sfx anchor missing')
-          u=u.replace(a,'  e.stopPropagation();\n  if (typeof srSfx === "function") srSfx("ui", .55);\n  fn(el.dataset.arg, el.dataset.arg2);',1)
-          ui.write_text(u)
-          idx=Path('index.html'); h=idx.read_text()
-          if h.count('2026.09.06.25')!=7: raise SystemExit('index build count mismatch')
-          idx.write_text(h.replace('2026.09.06.25','2026.09.06.26'))
+          hud=Path('game-3.js'); s=hud.read_text()
+          old='''    '<div class="pbox" data-act="go" data-arg="personnage">' +'''
+          new='''    '<div class="pbox" data-act="go" data-arg="heros" title="Héros · Points de statistiques">' +'''
+          if old not in s: raise SystemExit('hero HUD anchor missing')
+          s=s.replace(old,new,1)
+
+          old='''        '<div class="row gap6"><span class="pname flex1">' + esc(S.playerName) + "</span>" +
+          '<span class="power">' + ic("swords", 11) + fmt(S.power) + "</span>" + "</div>" +'''
+          new='''        '<div class="row gap6"><span class="pname flex1">' + esc(S.playerName) + "</span>" +
+          '<span class="power">' + ic("swords", 11) + fmt(S.power) + "</span>" +
+          (S.statPoints > 0 ? '<span class="dot" style="position:static;flex:0 0 auto" title="Points de statistiques disponibles"></span>' : "") + "</div>" +'''
+          if old not in s: raise SystemExit('hero row anchor missing')
+          s=s.replace(old,new,1)
+
+          old='''        '<div class="curr" data-act="resInfo" data-arg="pa" title="Points de Statistique" style="cursor:pointer;border-color:' + (S.statPoints > 0 ? '#FFD65E88' : 'var(--line)') + ';color:' + (S.statPoints > 0 ? '#FFD65E' : 'var(--textDim)') + '">' + ic("pa", 15) + "<b>" + fmt(S.statPoints) + "</b>" +
+          '<span class="plus" data-act="go" data-arg="heros">' + ic("plus", 10) + "</span></div>" +
+'''
+          if old not in s: raise SystemExit('stat points chip anchor missing')
+          s=s.replace(old,'',1)
+          hud.write_text(s)
+
+          home=Path('game-4.js'); h=home.read_text()
+          old='''    { label: "Équipement", icon: "swords", color: "#5A7099", go: "equipement", badge: S.statPoints > 0 || S.inventory.length > 0 },'''
+          new='''    { label: "Équipement", icon: "swords", color: "#5A7099", go: "equipement", badge: S.inventory.length > 0 },'''
+          if old not in h: raise SystemExit('equipment badge anchor missing')
+          home.write_text(h.replace(old,new,1))
+
+          eng=Path('game-2.js'); e=eng.read_text()
+          if '|| "2026.09.06.25";' not in e: raise SystemExit('APP_BUILD fallback anchor missing')
+          eng.write_text(e.replace('|| "2026.09.06.25";','|| "2026.09.06.27";',1))
+
+          idx=Path('index.html'); i=idx.read_text()
+          if i.count('2026.09.06.26') != 8: raise SystemExit('Unexpected index .26 reference count')
+          idx.write_text(i.replace('2026.09.06.26','2026.09.06.27'))
           PY
-      - name: Checks
+      - name: Syntax and regression checks
         run: |
           node --check game-1.js
           node --check game-2.js
           node --check game-3.js
           node --check game-4.js
           node --check game-5.js
+          node --check audio-v26.js
           python <<'PY'
           from pathlib import Path
-          g2=Path('game-2.js').read_text();g3=Path('game-3.js').read_text();g5=Path('game-5.js').read_text();h=Path('index.html').read_text()
-          assert g2.count('AUDIO_SYSTEM_V26')==1 and 'srSkillSfx(fxKind);' in g2 and 'srCombatMusicTick' in g2
-          assert 'srAudioUnlock();' in g5 and 'srSfx("ui", .55);' in g5
-          assert 'const hop = 0;' in g3 and 'SCROLL_PRESERVE_V24' in g5
-          assert '|| "2026.09.06.26";' in g2 and h.count('2026.09.06.26')==7
-          print('v26 audio checks passed')
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          assert 'data-arg="heros" title="Héros · Points de statistiques"' in g3
+          assert 'data-arg="pa" title="Points de Statistique"' not in g3
+          assert 'Points de statistiques disponibles' in g3
+          assert 'badge: S.inventory.length > 0' in g4
+          assert 'badge: S.statPoints > 0 || S.inventory.length > 0' not in g4
+          assert 'function scrHerosStats()' in g4
+          assert 'heros: scrHerosStats' in g5
+          assert 'const hop = 0;' in g3
+          assert 'SCROLL_PRESERVE_V24' in g5
+          assert 'DECISION_HIERARCHY_V23' in g5
+          assert 'function raidIntroDifficultyMul' in g1
+          assert '|| "2026.09.06.27";' in g2
+          assert idx.count('2026.09.06.27') == 8
+          assert 'audio-v26.js?v=2026.09.06.27' in idx
+          print('v27 hero HUD checks passed')
           PY
-      - name: Commit
+      - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add game-2.js game-5.js index.html
-          git commit -m 'Audio Combat' -m 'Ajoute ambiance musicale de combat et effets sonores pour attaques, compétences, ennemis, victoire, défaite et boutons. Audio procédural WebAudio sans fichier externe. Aucun changement d’équilibrage ou de sauvegarde. Build 2026.09.06.26.'
+          if git diff --quiet; then echo 'Already applied'; exit 0; fi
+          git add game-2.js game-3.js game-4.js index.html
+          git commit -m 'Héros Épuré' -m 'Retire complètement le compteur de Points de Statistique de la rangée des ressources du HUD. Le bloc Héros à gauche ouvre désormais directement l’écran Héros où les points sont consultés et attribués. Un indicateur discret apparaît sur le bloc Héros lorsqu’il reste des points à dépenser. Le badge Équipement ne s’allume plus à cause des Points de Statistique, uniquement pour son propre contenu. Aucun changement d’économie, de progression, de sauvegarde ou d’équilibrage. Build 2026.09.06.27.'
           git push
