@@ -1,4 +1,4 @@
-# trigger-v17-2
+# trigger-v17-3
 name: Apply dragon flight balance v17
 on:
   push:
