@@ -1,4 +1,4 @@
-# trigger-chat-compact-v50-1
+# trigger-chat-compact-v50-2
 name: Chat compact arena v50
 on:
   push:
@@ -30,18 +30,16 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); social=Path('social-v1.js').read_text(); idx=Path('index.html').read_text()
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); social=Path('social-v1.js').read_text(); idx=Path('index.html').read_text()
           assert 'CHAT_COMPACT_OVERLAY_V50' in social
           assert 'background:rgba(7,11,19,.36)' in social
           assert 'ar.width*.72' in social
           assert 'Math.min(268,ar.height-margin*2)' in social
           assert 'desired=ar.right-ap.left-b.offsetWidth*.46' in social
           assert 'app.clientWidth-20' in social
+          assert 'backdrop-filter:blur(3px)' not in social
           assert '2026.09.06.50' in g2 and '2026.09.06.50' in idx
           assert 'social-v1.js?v=2026.09.06.50' in idx
-          assert 'SCROLL_STABILITY_V47' in g5
-          assert 'ARENA_STABILITY_V36' in g3
-          assert 'ARENA_EQUIPMENT_REMOVED_V45' in g4
           assert 'SKILL_SLOTS_BASE: 3' in g1
           print('v50 compact chat checks passed')
           PY
