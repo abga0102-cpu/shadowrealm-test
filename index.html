@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="shadowreach-build" content="2026.09.06.1">
 <title>Shadowreach</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%23141F35%22%2F%3E%3Cpath%20d%3D%22M16%204l2.6%205.4L24%2012l-5.4%202.6L16%2020l-2.6-5.4L8%2012l5.4-2.6z%22%20fill%3D%22%23E8B44A%22%2F%3E%3Cpath%20d%3D%22M15%2019h2v8h-2z%22%20fill%3D%22%23C8912E%22%2F%3E%3Cpath%20d%3D%22M12%2025h8v2h-8z%22%20fill%3D%22%23C8912E%22%2F%3E%3C%2Fsvg%3E">
 <style>
@@ -3471,6 +3475,50 @@ function makeItem(slot, rarity, forgeLevel) {
    ENGINE — port of GameContext.tsx
    ========================================================================= */
 const SAVE_KEY = "shadowreach.save.local";
+// Build id is deliberately independent from SAVE_VERSION: changing the web build
+// must never migrate or erase the player's local progression.
+const APP_BUILD = "2026.09.06.1";
+let freshnessCheckBusy = false;
+let lastFreshnessCheck = 0;
+
+function remoteBuildFromHTML(html) {
+  const m = String(html || "").match(/<meta\s+name=["']shadowreach-build["']\s+content=["']([^"']+)["']/i)
+    || String(html || "").match(/<meta\s+content=["']([^"']+)["']\s+name=["']shadowreach-build["']/i);
+  return m ? m[1] : "";
+}
+function cacheBustedGameURL(build) {
+  const u = new URL(location.href);
+  u.searchParams.delete("__sr_probe");
+  u.searchParams.set("v", build || Date.now().toString());
+  return u.toString();
+}
+async function checkForFreshBuild(force) {
+  if (SMOKE || freshnessCheckBusy) return false;
+  const now = Date.now();
+  if (!force && now - lastFreshnessCheck < 15000) return false;
+  lastFreshnessCheck = now; freshnessCheckBusy = true;
+  try {
+    const probe = new URL(location.href);
+    probe.searchParams.set("__sr_probe", String(now));
+    const res = await fetch(probe.toString(), { cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+    if (!res.ok) return false;
+    const remote = remoteBuildFromHTML(await res.text());
+    if (remote && remote !== APP_BUILD) {
+      saveNow();
+      location.replace(cacheBustedGameURL(remote));
+      return true;
+    }
+  } catch (e) {
+    // Offline play remains available. A failed version probe must never block boot.
+    console.warn("version check failed", e);
+  } finally { freshnessCheckBusy = false; }
+  return false;
+}
+function forceFreshReload() {
+  saveNow();
+  location.replace(cacheBustedGameURL(Date.now().toString()));
+}
+
 
 let S = defaultState("Héros");      // player state
 let D = computeDerived(S);          // derived stats
@@ -5995,7 +6043,15 @@ function boot() {
   if (S.forge.autoForge) scheduleAutoForge(0);
   setInterval(() => { if (isTimerScreen()) scheduleRender(); }, 1000); // live countdowns
   window.addEventListener("beforeunload", saveNow);
-  document.addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) saveNow();
+    else checkForFreshBuild(false);
+  });
+  // Home-screen shortcuts / standalone WebViews can keep an old document alive
+  // much longer than Safari. Probe GitHub Pages on boot and whenever the page
+  // is restored from the back-forward cache, without touching localStorage.
+  window.addEventListener("pageshow", () => checkForFreshBuild(false));
+  setTimeout(() => checkForFreshBuild(true), 1200);
 
   if (S.harvest && S.harvest.secs > 120) showHarvestModal();
 }
@@ -8784,6 +8840,8 @@ function scrParametres() {
           btn(ic("save", 14) + "Sauver", { small: true, cls: "green", act: "saveNow" }) +
           btn(ic("upload", 14) + "Exporter", { small: true, cls: "ghost", act: "exportSave" }) +
           btn(ic("download", 14) + "Importer", { small: true, cls: "ghost", act: "importSave" }) +
+        '</div><div class="divider"></div><div class="between"><span class="dim tiny">Version web · ' + APP_BUILD + '</span>' +
+          btn("Forcer la mise à jour", { small: true, cls: "blue", act: "freshReload", style: "width:auto;padding:5px 10px" }) +
         "</div></div>") +
       fold("tools", "Outils de test", '<div class="card"><div class="dim small">Comme dans l\'app d\'origine : avance d\'une journée complète ' +
         "(recharge les clés, termine les recherches et les œufs, applique les gains AFK plafonnés).</div>" +
@@ -10136,6 +10194,7 @@ const ACT = {
 
   // settings
   saveNow: () => { saveNow(); toast("Sauvegardé", true); },
+  freshReload: () => forceFreshReload(),
   warpDay: () => { warpDay(); toast("+1 jour simulé", true); },
   rename: () => {
     const n = prompt("Nom du héros :", S.playerName);
