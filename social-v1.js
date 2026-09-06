@@ -1,4 +1,5 @@
 // CHAT_ARENA_OVERLAY_V48
+// CHAT_COMPACT_OVERLAY_V50
 /* SHADOWREACH SOCIAL V2
    Forge Master-inspired social UX: Monde / Clan / Annonces, compact feed,
    clickable player identity, PvP challenge and share cards. */
@@ -56,9 +57,9 @@
   function injectStyle(){
     const s=document.createElement("style");s.textContent=`
 #srChatBtn{position:absolute;z-index:95;width:44px;height:44px;border-radius:50%;border:2px solid #0A1020;background:linear-gradient(#5FB4F5,#1E72C8);color:white;font-weight:900;box-shadow:0 3px 0 #0A1020,0 6px 14px #0007;cursor:pointer;transition:left .16s ease,top .16s ease}#srChatBtn b{position:absolute;right:-3px;top:-5px;min-width:19px;height:19px;border-radius:10px;background:#E5484D;color:#fff;font:800 11px/19px system-ui;padding:0 5px}
-#srSocial{position:absolute;z-index:120;display:flex;flex-direction:column;color:#EDF1FA;font-family:var(--fu,system-ui);background:rgba(7,11,19,.66);border:1px solid rgba(74,100,148,.72);border-radius:14px;box-shadow:0 10px 30px #0007;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);overflow:hidden}#srSocial .head{padding:8px 10px 6px;border-bottom:1px solid rgba(46,66,105,.72);background:rgba(16,26,44,.62);display:flex;align-items:center;gap:8px}#srSocial .head .grow{flex:1}.srClose{border:0;background:#243553;color:#fff;border-radius:9px;padding:7px 10px;font-weight:900}.srStatus{font-size:9px;color:#93A4C4;margin-top:2px}
-.srTabs{display:flex;background:rgba(11,17,31,.54);border-bottom:1px solid rgba(46,66,105,.68);padding:4px 6px 0;gap:4px}.srTab{flex:1;text-align:center;padding:8px 3px;border-radius:9px 9px 0 0;color:#7F91B2;font-weight:900;font-size:11px;cursor:pointer;border:1px solid transparent;border-bottom:0}.srTab.on{background:rgba(23,36,59,.78);color:#FBDD8C;border-color:#2E4269}
-.srMessages{flex:1;overflow:auto;padding:6px 8px 58px;overscroll-behavior:contain}.srMsg{padding:6px 7px;margin:0 0 4px;border-bottom:1px solid rgba(30,44,73,.65);background:rgba(8,13,24,.24);border-radius:7px}.srMsg.combat{margin:7px 0;border:1px solid #8A6522;border-radius:10px;background:linear-gradient(180deg,#251d0e,#17130c);padding:9px}.srMsg.announcement{margin:7px 0;border:1px solid #4A6494;border-radius:10px;background:#111d31;padding:9px}.srName{font-weight:900;color:#93C6FF;cursor:pointer;font-size:12px}.srBot,.srBadge{font-size:8px;color:#FBDD8C;margin-left:5px;border:1px solid #8A6522;border-radius:5px;padding:1px 4px}.srText{font-size:12px;margin-top:2px;line-height:1.35}.srMeta{font-size:8px;color:#6A7B9C;margin-left:5px}.srCombatTitle{font-weight:900;color:#FBDD8C;font-size:12px}.srCombatVs{font-size:11px;margin-top:4px}.srCompose{position:absolute;left:0;right:0;bottom:0;padding:6px;background:rgba(16,26,44,.68);border-top:1px solid rgba(46,66,105,.72);display:flex;gap:5px}.srCompose input{flex:1;min-width:0;border:1px solid #2E4269;background:#080D18;color:white;border-radius:9px;padding:9px;font-size:13px}.srCompose button,.srAction{border:0;border-radius:9px;background:#1E72C8;color:white;padding:8px 10px;font-weight:900}.srCompose.readonly{display:block;text-align:center;color:#7F91B2;font-size:10px;padding:12px}.srProfile{position:absolute;left:14px;right:14px;top:18%;z-index:3;background:#141F35;border:1px solid #4A6494;border-radius:14px;padding:14px;box-shadow:0 15px 50px #000}.srGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.srStat{background:#0B111F;border:1px solid #26344F;border-radius:9px;padding:8px;font-size:11px}.srShare{margin:7px 10px 0;padding:8px;border:1px solid #8A6522;border-radius:9px;background:#231b0c;color:#FBDD8C;font-size:10px;cursor:pointer;text-align:center}
+#srSocial{position:absolute;z-index:120;display:flex;flex-direction:column;color:#EDF1FA;font-family:var(--fu,system-ui);background:rgba(7,11,19,.36);border:1px solid rgba(111,151,210,.58);border-radius:13px;box-shadow:0 8px 22px #0005;overflow:hidden}#srSocial .head{padding:8px 10px 6px;border-bottom:1px solid rgba(46,66,105,.72);background:rgba(16,26,44,.40);display:flex;align-items:center;gap:8px}#srSocial .head .grow{flex:1}.srClose{border:0;background:#243553;color:#fff;border-radius:9px;padding:7px 10px;font-weight:900}.srStatus{font-size:9px;color:#93A4C4;margin-top:2px}
+.srTabs{display:flex;background:rgba(11,17,31,.32);border-bottom:1px solid rgba(46,66,105,.68);padding:4px 6px 0;gap:4px}.srTab{flex:1;text-align:center;padding:8px 3px;border-radius:9px 9px 0 0;color:#7F91B2;font-weight:900;font-size:11px;cursor:pointer;border:1px solid transparent;border-bottom:0}.srTab.on{background:rgba(23,36,59,.48);color:#FBDD8C;border-color:#2E4269}
+.srMessages{flex:1;overflow:auto;padding:6px 8px 58px;overscroll-behavior:contain}.srMsg{padding:6px 7px;margin:0 0 4px;border-bottom:1px solid rgba(30,44,73,.65);background:rgba(8,13,24,.12);border-radius:7px}.srMsg.combat{margin:7px 0;border:1px solid #8A6522;border-radius:10px;background:linear-gradient(180deg,#251d0e,#17130c);padding:9px}.srMsg.announcement{margin:7px 0;border:1px solid #4A6494;border-radius:10px;background:#111d31;padding:9px}.srName{font-weight:900;color:#93C6FF;cursor:pointer;font-size:12px}.srBot,.srBadge{font-size:8px;color:#FBDD8C;margin-left:5px;border:1px solid #8A6522;border-radius:5px;padding:1px 4px}.srText{font-size:12px;margin-top:2px;line-height:1.35}.srMeta{font-size:8px;color:#6A7B9C;margin-left:5px}.srCombatTitle{font-weight:900;color:#FBDD8C;font-size:12px}.srCombatVs{font-size:11px;margin-top:4px}.srCompose{position:absolute;left:0;right:0;bottom:0;padding:6px;background:rgba(16,26,44,.42);border-top:1px solid rgba(46,66,105,.72);display:flex;gap:5px}.srCompose input{flex:1;min-width:0;border:1px solid #2E4269;background:rgba(8,13,24,.58);color:white;border-radius:9px;padding:9px;font-size:13px}.srCompose button,.srAction{border:0;border-radius:9px;background:#1E72C8;color:white;padding:8px 10px;font-weight:900}.srCompose.readonly{display:block;text-align:center;color:#7F91B2;font-size:10px;padding:12px}.srProfile{position:absolute;left:14px;right:14px;top:18%;z-index:3;background:#141F35;border:1px solid #4A6494;border-radius:14px;padding:14px;box-shadow:0 15px 50px #000}.srGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.srStat{background:#0B111F;border:1px solid #26344F;border-radius:9px;padding:8px;font-size:11px}.srShare{margin:7px 10px 0;padding:8px;border:1px solid #8A6522;border-radius:9px;background:#231b0c;color:#FBDD8C;font-size:10px;cursor:pointer;text-align:center}
 `;
     document.head.appendChild(s);
   }
@@ -70,19 +71,26 @@
     const ar=arena?arena.getBoundingClientRect():null, ap=app.getBoundingClientRect();
     if(b){
       if(ar){
-        const left=Math.max(6,Math.min(app.clientWidth-b.offsetWidth-6,ar.right-ap.left-b.offsetWidth+4));
-        const top=Math.max(8,ar.top-ap.top+12);
+        // Sit on the arena's outer edge instead of floating over Forge/content.
+        const desired=ar.right-ap.left-b.offsetWidth*.46;
+        const left=Math.max(6,Math.min(app.clientWidth-b.offsetWidth-4,desired));
+        const top=Math.max(8,ar.top-ap.top+14);
         b.style.left=left+"px";b.style.top=top+"px";b.style.right="auto";b.style.bottom="auto";
       }else{b.style.left="auto";b.style.top="66px";b.style.right="10px";b.style.bottom="auto";}
     }
     if(root){
       if(ar){
-        const margin=7, left=Math.max(margin,ar.left-ap.left+margin), top=Math.max(margin,ar.top-ap.top+margin);
-        const width=Math.max(240,Math.min(app.clientWidth-left-margin,ar.width-margin*2));
-        const height=Math.max(210,Math.min(286,ar.height-margin*2));
+        const margin=7, top=Math.max(margin,ar.top-ap.top+margin);
+        // About 72% of the arena width, anchored to its right edge.
+        const width=Math.max(220,Math.min(310,ar.width*.72));
+        const desiredLeft=ar.right-ap.left-width-margin;
+        const left=Math.max(margin,Math.min(app.clientWidth-width-margin,desiredLeft));
+        const height=Math.max(205,Math.min(268,ar.height-margin*2));
         root.style.left=left+"px";root.style.top=top+"px";root.style.right="auto";root.style.bottom="auto";root.style.width=width+"px";root.style.height=height+"px";
       }else{
-        root.style.left="10px";root.style.right="10px";root.style.top="72px";root.style.bottom="72px";root.style.width="auto";root.style.height="auto";
+        // Outside campaign, stay compact rather than becoming a near-full-screen sheet.
+        const width=Math.max(220,Math.min(310,app.clientWidth-20));
+        root.style.left="auto";root.style.right="10px";root.style.top="72px";root.style.bottom="auto";root.style.width=width+"px";root.style.height=Math.min(360,Math.max(240,app.clientHeight-160))+"px";
       }
     }
   }
