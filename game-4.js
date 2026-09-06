@@ -1072,7 +1072,7 @@ function sanctSupplierTier(level) {
   if(level>=5) return "PEU_COMMUN";
   return "COMMUN";
 }
-function sanctSupplierPrice(level) { return 2500*Math.max(1,level)*Math.max(1,level); }
+function sanctSupplierPrice(level) { return 250*Math.max(1,level)*Math.max(1,level); }
 function sanctSupplierNeed(level) { return 5+Math.floor((Math.max(1,level)-1)/2); }
 function sanctMergeNext(r) { const i=SANCT_MERGE_ORDER.indexOf(r); return i>=0&&i<SANCT_MERGE_ORDER.length-1?SANCT_MERGE_ORDER[i+1]:null; }
 function sanctMergeCount(st,r) { return st.mergeBoard.reduce((n,x)=>n+(x===r?1:0),0); }

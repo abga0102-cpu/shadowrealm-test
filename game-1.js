@@ -2249,6 +2249,44 @@ function migrate(s, name) {
   });
   merged.eggs = (merged.eggs || []).map((e) =>
     Object.assign({ species: randSpecies(), element: randElement() }, e));
+
+  // ECONOMY_REFUND_V31
+  // Remboursement automatique du Sanctuaire historique. L'ancienne sauvegarde
+  // mémorisait seulement les recettes découvertes et le nombre total de fusions,
+  // pas la recette de chaque fusion répétée. On rembourse donc exactement ce qui
+  // est prouvé par les découvertes, sans inventer la composition des extras.
+  if (!Object.prototype.hasOwnProperty.call(s, "sanctuaryMergeRefundV31")) {
+    const oldSanct = (s.sanctuary && typeof s.sanctuary === "object") ? s.sanctuary : {};
+    const disc = (oldSanct.discovered && typeof oldSanct.discovered === "object") ? oldSanct.discovered : {};
+    const refund = { minerai: 0, poussiere: 0, eclat: 0, essence: 0 };
+    if (disc.r1) refund.minerai += 200;
+    if (disc.r2) { refund.eclat += 20; refund.essence += 20; }
+    if (disc.r3) { refund.poussiere += 150; refund.minerai += 250; }
+    if (disc.r4) { refund.eclat += 50; refund.essence += 50; }
+    if (disc.r5) { refund.poussiere += 500; refund.essence += 100; }
+    Object.keys(refund).forEach((k) => { merged[k] = Math.max(0, Number(merged[k]) || 0) + refund[k]; });
+    const discoveredCount = ["r1","r2","r3","r4","r5"].filter((id) => !!disc[id]).length;
+    const totalFusions = Math.max(0, Math.floor(Number(oldSanct.fusions) || 0));
+    merged.sanctuaryMergeRefundV31 = true;
+    merged.sanctuaryMergeRefundNoticeV31 = {
+      refund, totalFusions, provenFusions: discoveredCount,
+      untraceableFusions: Math.max(0, totalFusions - discoveredCount)
+    };
+  }
+
+  // Revalorise uniquement l'Or d'Autonomie encore présent dans la réserve.
+  // Les encaissements historiques déjà réclamés ne sont pas reconstructibles,
+  // mais aucune réserve actuelle ne doit rester valorisée sous l'ancien taux.
+  if (!Object.prototype.hasOwnProperty.call(s, "autonomyGoldRebaseV31")) {
+    if (merged.harvest && Number(merged.harvest.secs) > 0) {
+      const secs = Math.max(0, Number(merged.harvest.secs) || 0);
+      const due = harvestRates(merged).gold * secs / 3600;
+      const before = Math.max(0, Number(merged.harvest.gold) || 0);
+      if (due > before) merged.harvest.gold = due;
+      merged.autonomyGoldRebaseNoticeV31 = { before, after: Math.max(before, due), added: Math.max(0, due - before) };
+    }
+    merged.autonomyGoldRebaseV31 = true;
+  }
   return merged;
 }
 
