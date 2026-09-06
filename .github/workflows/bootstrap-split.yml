@@ -1,0 +1,110 @@
+name: Bootstrap split deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bootstrap-split.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  split-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Split monolith and apply v2026.09.06.5
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          # Apply the validated skill-duration update that exists locally but is not yet online.
+          replacements = {
+              'eff: { key: "force",   stat: "dmg",      value: 40, dur: 7, label: "Force" }':
+              'eff: { key: "force",   stat: "dmg",      value: 40, dur: 8, label: "Force" }',
+              'eff: { key: "rempart", stat: "dmgRed",   value: 35, dur: 6, label: "Rempart" }':
+              'eff: { key: "rempart", stat: "dmgRed",   value: 35, dur: 8, label: "Rempart" }',
+              'eff: { key: "hate",    stat: "haste",    value: 30, dur: 6, label: "Hâte" }':
+              'eff: { key: "hate",    stat: "haste",    value: 30, dur: 8, label: "Hâte" }',
+              'eff: { key: "vuln",    stat: "vuln",     value: 30, dur: 6, label: "Vulnérable" }':
+              'eff: { key: "vuln",    stat: "vuln",     value: 30, dur: 7, label: "Vulnérable" }',
+              'eff: { key: "slow",    stat: "slow",     value: 40, dur: 7, label: "Lenteur" }':
+              'eff: { key: "slow",    stat: "slow",     value: 40, dur: 8, label: "Lenteur" }',
+              'eff: { key: "regen",   stat: "regen",    value: 3, dur: 8, label: "Régén." }':
+              'eff: { key: "regen",   stat: "regen",    value: 3, dur: 10, label: "Régén." }',
+          }
+          for old, new in replacements.items():
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one match for skill patch, got {count}: {old}')
+              s = s.replace(old, new)
+
+          # One build source of truth: meta tag. APP_BUILD reads it dynamically.
+          s = re.sub(r'<meta name="shadowreach-build" content="[^"]+">',
+                     '<meta name="shadowreach-build" content="2026.09.06.5">', s, count=1)
+          s = re.sub(r'(const APP_BUILD = document\.querySelector\(\'meta\[name="shadowreach-build"\]\'\)\?\.content \|\| ")[^"]+(";)',
+                     r'\g<1>2026.09.06.5\g<2>', s, count=1)
+
+          style_start = s.index('<style>')
+          style_end = s.index('</style>', style_start)
+          script_start = s.index('<script>', style_end)
+          script_end = s.index('</script>', script_start)
+
+          css = s[style_start + len('<style>'):style_end].lstrip('\n')
+          js = s[script_start + len('<script>'):script_end].lstrip('\n')
+
+          markers = [
+              '/* =========================================================================\n   ENGINE — port of GameContext.tsx',
+              '/* =========================================================================\n   ARENA RENDERER — port of src/ui/CombatArena.tsx',
+              '/* =========================================================================\n   SCREENS',
+              '/* ---------------------------- tree node types',
+          ]
+          positions = [0]
+          for marker in markers:
+              pos = js.find(marker)
+              if pos < 0:
+                  raise SystemExit(f'Split marker missing: {marker[:60]}')
+              positions.append(pos)
+          positions.append(len(js))
+
+          parts = []
+          for a, b in zip(positions, positions[1:]):
+              parts.append(js[a:b].strip() + '\n')
+
+          Path('style.css').write_text(css, encoding='utf-8')
+          for i, part in enumerate(parts, 1):
+              Path(f'game-{i}.js').write_text(part, encoding='utf-8')
+
+          head = s[:style_start]
+          middle = s[style_end + len('</style>'):script_start]
+          tail = s[script_end + len('</script>'):]
+          css_link = '<link rel="stylesheet" href="style.css?v=2026.09.06.5">'
+          script_links = '\n'.join(
+              f'<script src="game-{i}.js?v=2026.09.06.5"></script>'
+              for i in range(1, len(parts) + 1)
+          )
+          p.write_text(head + css_link + middle + script_links + tail, encoding='utf-8')
+          print('Created', len(parts), 'JS files; index.html is now', p.stat().st_size, 'bytes')
+          PY
+
+          for f in game-*.js; do node --check "$f"; done
+          cat game-*.js > /tmp/shadowreach-combined.js
+          node --check /tmp/shadowreach-combined.js
+
+      - name: Commit split build
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html style.css game-1.js game-2.js game-3.js game-4.js game-5.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Split game files and publish build 2026.09.06.5"
+          git push
