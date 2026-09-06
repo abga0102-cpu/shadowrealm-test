@@ -4,7 +4,7 @@
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.5";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.6";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -978,7 +978,7 @@ function makeEnemy(mode, opts) {
   const tier = ENEMY_TIERS[tierKey] || ENEMY_TIERS.COMMUN;
   let hp, dmg;
   if (mode === "campaign") {
-    const mulH = opts.boss ? 6 : opts.elite ? 2.3 : 1;
+    const mulH = opts.boss ? (opts.floor === 40 ? 5.1 : 6) : opts.elite ? 2.3 : 1;
     const mulD = opts.boss ? 1.8 : opts.elite ? 1.4 : 1;
     hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * tier.mul);
     dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * tier.mul);
