@@ -132,7 +132,7 @@ function heroHand(attacking) {
 }
 function weaponHTML(weapon, color, attacking, t, size) {
   const art = ASSETS["weapon_" + weapon];
-  const sway = Math.sin(t * 0.0034) * 5;
+  const sway = Math.sin(t * 0.0034) * 2.5;
   if (!art) return staffHTML(color, attacking ? 55 : sway, size);
 
   const hand = heroHand(attacking);
@@ -166,8 +166,9 @@ function staffHTML(color, swing, size) {
    again as long, and the heavier the effect the more it gained -- a Cataclysme
    should take its time. */
 const VFX_DUR = {
-  impact: 0.80, pierce: 0.90, vortex: 1.45, bolt: 0.90, wave: 1.30,
-  meteor: 1.70, aura: 1.60, curse: 1.35, poison: 1.60, heal: 1.45, cataclysm: 2.30,
+  // Effets plus réactifs : ils restent lisibles mais ne bloquent plus le rythme du combat.
+  impact: 0.62, pierce: 0.72, vortex: 1.10, bolt: 0.70, wave: 0.96,
+  meteor: 1.28, aura: 1.18, curse: 1.02, poison: 1.18, heal: 1.05, cataclysm: 1.65,
 };
 function vfxDur(kind) { return VFX_DUR[kind] || 0.4; }
 
@@ -263,9 +264,11 @@ function sparkHTML(life, max, size, col) {
 function oneVfxHTML(c, fx, scale, groundY, uni, vs) {
   const kind = fx.fx || "impact";
   const dur = fx.max || vfxDur(kind);
-  const p = Math.max(0, Math.min(1, 1 - fx.life / dur));   // 0 -> 1 over the effect
+  const rawP = Math.max(0, Math.min(1, 1 - fx.life / dur));
+  // Courbe d'animation continue : départ et fin sans cassure visuelle.
+  const p = rawP * rawP * (3 - 2 * rawP);
   const col = fx.color;
-  const fade = 1 - p;
+  const fade = Math.pow(1 - rawP, 0.72);
   // A unit is drawn at left = x*scale - size/2, top = groundY - size, so its
   // centre is (x*scale, groundY - size/2). The old anchors were x + 26 and a
   // flat groundY - 30, which put every effect low and to the right of whatever
@@ -509,11 +512,15 @@ function drawArena() {
   // ---- hero ----
   {
     const size = uni;
-    const idle = Math.sin(t * 0.0042) * 2 + Math.sin(t * 0.0017) * 1;
-    const hop = heroMoving ? -Math.abs(Math.sin(t * 0.017)) * 5 : 0;
-    const tilt = heroMoving ? Math.sin(t * 0.017) * 4 : Math.sin(t * 0.0032) * 1.6;
-    const lunge = c.heroAttacking > 0 ? 12 : 0;
-    const knock = c.heroHit > 0 ? -6 : 0;
+    // Marche naturelle : aucun saut vertical. Le déplacement vient de heroX,
+    // avec seulement un léger transfert de poids pour éviter l'effet de glisse.
+    const walkPhase = t * 0.0115;
+    const idle = heroMoving ? 0 : Math.sin(t * 0.0036) * 0.8;
+    const hop = 0;
+    const tilt = heroMoving ? Math.sin(walkPhase) * 1.8 : Math.sin(t * 0.0030) * 0.8;
+    const attackP = c.heroAttacking > 0 ? Math.max(0, Math.min(1, 1 - c.heroAttacking / ATTACK_WINDOW)) : 0;
+    const lunge = c.heroAttacking > 0 ? Math.sin(attackP * Math.PI) * 7 : 0;
+    const knock = c.heroHit > 0 ? -Math.min(4, c.heroHit * 14) : 0;
     const sc = 1;   // the hero holds one size: no breathing, no attack punch
     const auraPulse = 1 + Math.sin(t * 0.006) * 0.06;
     const hpPct = Math.max(0, (c.heroHP / c.heroMaxHP) * 100);
@@ -544,8 +551,9 @@ function drawArena() {
     const phase = (x % 100) / 16;
     const idle = Math.sin(t * 0.0045 + phase) * 2 + Math.sin(t * 0.0019 + phase) * 1;
     const tilt = Math.sin(t * 0.0045 + phase) * 2.4;
-    const lunge = (e.attacking > 0 ? -12 : 0) + (e.recoil > 0 ? e.recoil * 46 : 0);
-    const knock = e.hitFlash > 0 ? 7 : 0;
+    const enemyAttackP = e.attacking > 0 ? Math.max(0, Math.min(1, 1 - e.attacking / ATTACK_WINDOW)) : 0;
+    const lunge = (e.attacking > 0 ? -Math.sin(enemyAttackP * Math.PI) * 8 : 0) + (e.recoil > 0 ? e.recoil * 38 : 0);
+    const knock = e.hitFlash > 0 ? Math.min(5, e.hitFlash * 18) : 0;
     const hpPct = Math.max(0, (e.hp / e.maxHP) * 100);
     html += '<div class="unit" style="' + (e.vanish > 0 ? "opacity:.22;filter:brightness(.4);" : "") +
       (e.tint ? "filter:drop-shadow(0 0 7px " + e.tint + ") saturate(1.5);" : "") +
