@@ -1,5 +1,5 @@
-# trigger-v37-2
-name: Campaign world navigation v37
+# trigger-v39-1
+name: Campaign world navigation v39
 on:
   push:
     paths:
@@ -37,8 +37,8 @@ jobs:
           assert 'ARENA_STABILITY_V36' in g3 and 'arenaCombatRef !== combat' in g3
           assert 'SANCTUARY_GOLD_REBASE_V35' in g1
           assert 'Fusion par glisser-déposer' in g4 and 'SANCTUARY_DRAG_MERGE_V34' in g5
-          assert '2026.09.06.37' in g2 and '2026.09.06.37' in idx
-          print('v37 campaign world navigation checks passed')
+          assert '2026.09.06.39' in g2 and '2026.09.06.39' in idx
+          print('v39 campaign world navigation checks passed')
           PY
       - name: Commit update
         run: |
@@ -46,5 +46,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
           git add game-4.js style.css game-2.js index.html
-          git commit -m 'Campagne Monde' -m 'Intègre les accès principaux directement dans l’arène sans modifier sa taille ni sa structure. Rebirth devient visible en haut à gauche, Équipement, Développement et Défis flottent dans le monde, tandis que Clan, Boutique, Ascension, Événement et Classement sont regroupés dans un menu compact superposé. Les grilles et fenêtres de navigation sous la Forge sont retirées afin de réduire fortement le scroll de l’écran Campagne. La Forge, le combat, les compétences, les sauvegardes et les économies restent inchangés. Build 2026.09.06.37.'
+          git commit -m 'Campagne Monde' -m 'Intègre les accès principaux directement dans l’arène sans modifier sa taille ni sa structure. Rebirth devient visible en haut à gauche, Équipement, Développement et Défis flottent dans le monde, tandis que Clan, Boutique, Ascension, Événement et Classement sont regroupés dans un menu compact superposé. Les grilles et fenêtres de navigation sous la Forge sont retirées afin de réduire fortement le scroll de l’écran Campagne. La Forge, le combat, les compétences, les sauvegardes et les économies restent inchangés. Build 2026.09.06.39.'
           git push
