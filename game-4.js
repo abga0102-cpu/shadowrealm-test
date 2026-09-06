@@ -152,6 +152,7 @@ function scrAccueil() {
       badge: RAID_IDS.some((r) => S.raids[r].keys > 0) || nextMegaBossFloor(S) !== null },
   ];
   // CAMPAIGN_WORLD_NAV_V37
+  // ARENA_EQUIPMENT_REMOVED_V45: l'accès Équipement reste disponible hors du décor de l'arène.
   // Les systèmes secondaires restent accessibles, mais ils ne prennent plus de
   // hauteur sous la campagne. Le Rebirth devient une action du monde, directement
   // visible dans l'arène, et l'Ascension reste dans le menu compact.
@@ -200,7 +201,6 @@ function scrAccueil() {
       '<div id="arenaSlot"></div>' +
       '<div class="worldNavLayer">' +
         worldAction(worldPrimary[0], "worldRebirth") +
-        worldAction(worldPrimary[1], "worldEquip") +
         worldAction(worldPrimary[2], "worldDev") +
         worldAction(worldPrimary[3], "worldDefis") +
         '<details class="worldMenu"><summary>' + ic("menu", 14) + '<span>Menu</span>' +
