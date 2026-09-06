@@ -1,4 +1,4 @@
-# trigger-v21-1
+# trigger-v21-2
 name: Apply Hick hierarchy v21
 on:
   push:
@@ -19,13 +19,25 @@ jobs:
           css=Path('style.css'); s=css.read_text()
           marker='/* HICK_ACTION_HIERARCHY_V21 */'
           if marker not in s:
-              s += '''\n/* HICK_ACTION_HIERARCHY_V21\n   Une seule action dominante par zone. Les actions secondaires restent\n   disponibles mais visuellement plus calmes, afin de réduire le nombre de\n   décisions concurrentes sans supprimer de fonctionnalité. */\n:root { --primary-action-ring: rgba(127,212,255,.34); }\n[data-primary-action="true"] {\n  position: relative;\n  z-index: 1;\n  font-weight: 800;\n  transform: translateZ(0);\n  box-shadow: 0 0 0 2px var(--primary-action-ring), 0 8px 22px rgba(0,0,0,.22);\n}\n[data-secondary-action="true"] { opacity: .82; }\n[data-secondary-action="true"]:hover, [data-secondary-action="true"]:focus-visible { opacity: 1; }\n@media (prefers-reduced-motion: no-preference) {\n  [data-primary-action="true"] { transition: filter .15s ease, box-shadow .15s ease; }\n}\n'''
+              s += '\n'.join(['', '/* HICK_ACTION_HIERARCHY_V21 */', ':root { --primary-action-ring: rgba(127,212,255,.34); }', '[data-primary-action="true"] { position:relative; z-index:1; font-weight:800; transform:translateZ(0); box-shadow:0 0 0 2px var(--primary-action-ring),0 8px 22px rgba(0,0,0,.22); }', '[data-secondary-action="true"] { opacity:.82; }', '[data-secondary-action="true"]:hover,[data-secondary-action="true"]:focus-visible { opacity:1; }', '@media (prefers-reduced-motion:no-preference) { [data-primary-action="true"] { transition:filter .15s ease,box-shadow .15s ease; } }', ''])
           css.write_text(s)
 
           ui=Path('game-5.js'); s=ui.read_text()
           marker='// HICK_ACTION_HIERARCHY_V21'
           if marker not in s:
-              s += '''\n// HICK_ACTION_HIERARCHY_V21\n// Hiérarchie contextuelle non destructive : on ne cache aucune fonction.\n// Chaque groupe visible d'actions reçoit au maximum une action dominante.\nconst HICK_PRIMARY_HINTS_V21 = [\n  /continuer|combattre|combat|boss|réessayer|reessayer|lancer|invoquer|améliorer|ameliorer|rechercher|réclamer|reclamer|équiper|equiper|forger|valider|confirmer/i\n];\nconst HICK_SECONDARY_HINTS_V21 = /aperçu|apercu|détail|detail|info|fermer|annuler|retour/i;\nfunction hickActionTextV21(el) {\n  return ((el && (el.getAttribute("aria-label") || el.getAttribute("title") || el.textContent)) || "").replace(/\\s+/g," ").trim();\n}\nfunction hickVisibleV21(el) {\n  if (!el || el.disabled || el.getAttribute("aria-disabled") === "true") return false;\n  const r=el.getBoundingClientRect();\n  const cs=getComputedStyle(el);\n  return r.width>0 && r.height>0 && cs.display!=="none" && cs.visibility!=="hidden";\n}\nfunction hickGroupV21(el) {\n  return el.closest(".modal,.popup,.panel,.card,.screen,.page,.view,section,main") || el.parentElement || document.body;\n}\nfunction refreshActionHierarchyV21() {\n  document.querySelectorAll('[data-primary-action="true"],[data-secondary-action="true"]').forEach(function(el){\n    el.removeAttribute("data-primary-action"); el.removeAttribute("data-secondary-action");\n  });\n  const groups=new Map();\n  document.querySelectorAll("[data-act],button").forEach(function(el){\n    if (!hickVisibleV21(el)) return;\n    const g=hickGroupV21(el);\n    if (!groups.has(g)) groups.set(g,[]);\n    groups.get(g).push(el);\n  });\n  groups.forEach(function(actions){\n    if (actions.length < 2) return;\n    let primary=actions.find(function(el){ return el.getAttribute("data-primary") === "true"; });\n    if (!primary) primary=actions.find(function(el){ return HICK_PRIMARY_HINTS_V21.some(function(rx){ return rx.test(hickActionTextV21(el)); }); });\n    if (primary) primary.setAttribute("data-primary-action","true");\n    actions.forEach(function(el){\n      if (el !== primary && HICK_SECONDARY_HINTS_V21.test(hickActionTextV21(el))) el.setAttribute("data-secondary-action","true");\n    });\n  });\n}\nlet hickRefreshQueuedV21=false;\nfunction queueActionHierarchyV21(){\n  if(hickRefreshQueuedV21) return;\n  hickRefreshQueuedV21=true;\n  requestAnimationFrame(function(){ hickRefreshQueuedV21=false; refreshActionHierarchyV21(); });\n}\nfunction startActionHierarchyV21(){\n  refreshActionHierarchyV21();\n  new MutationObserver(queueActionHierarchyV21).observe(document.body,{childList:true,subtree:true});\n}\nif(document.readyState === "loading") document.addEventListener("DOMContentLoaded",startActionHierarchyV21,{once:true});\nelse startActionHierarchyV21();\n'''
+              block = '\n'.join([
+                '', marker,
+                'const HICK_PRIMARY_HINTS_V21=[/continuer|combattre|combat|boss|réessayer|reessayer|lancer|invoquer|améliorer|ameliorer|rechercher|réclamer|reclamer|équiper|equiper|forger|valider|confirmer/i];',
+                'const HICK_SECONDARY_HINTS_V21=/aperçu|apercu|détail|detail|info|fermer|annuler|retour/i;',
+                'function hickActionTextV21(el){return ((el&&(el.getAttribute("aria-label")||el.getAttribute("title")||el.textContent))||"").replace(/\\s+/g," ").trim();}',
+                'function hickVisibleV21(el){if(!el||el.disabled||el.getAttribute("aria-disabled")==="true")return false;const r=el.getBoundingClientRect(),cs=getComputedStyle(el);return r.width>0&&r.height>0&&cs.display!=="none"&&cs.visibility!=="hidden";}',
+                'function hickGroupV21(el){return el.closest(".modal,.popup,.panel,.card,.screen,.page,.view,section,main")||el.parentElement||document.body;}',
+                'function refreshActionHierarchyV21(){document.querySelectorAll("[data-primary-action=true],[data-secondary-action=true]").forEach(function(el){el.removeAttribute("data-primary-action");el.removeAttribute("data-secondary-action");});const groups=new Map();document.querySelectorAll("[data-act],button").forEach(function(el){if(!hickVisibleV21(el))return;const g=hickGroupV21(el);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(el);});groups.forEach(function(actions){if(actions.length<2)return;let primary=actions.find(function(el){return el.getAttribute("data-primary")==="true";});if(!primary)primary=actions.find(function(el){return HICK_PRIMARY_HINTS_V21.some(function(rx){return rx.test(hickActionTextV21(el));});});if(primary)primary.setAttribute("data-primary-action","true");actions.forEach(function(el){if(el!==primary&&HICK_SECONDARY_HINTS_V21.test(hickActionTextV21(el)))el.setAttribute("data-secondary-action","true");});});}',
+                'let hickRefreshQueuedV21=false;',
+                'function queueActionHierarchyV21(){if(hickRefreshQueuedV21)return;hickRefreshQueuedV21=true;requestAnimationFrame(function(){hickRefreshQueuedV21=false;refreshActionHierarchyV21();});}',
+                'function startActionHierarchyV21(){refreshActionHierarchyV21();new MutationObserver(queueActionHierarchyV21).observe(document.body,{childList:true,subtree:true});}',
+                'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startActionHierarchyV21,{once:true});else startActionHierarchyV21();',''])
+              s += block
           ui.write_text(s)
 
           eng=Path('game-2.js'); s=eng.read_text()
@@ -54,7 +66,6 @@ jobs:
           assert 'data-primary-action' in ui and 'data-secondary-action' in ui
           assert '|| "2026.09.06.21";' in g2
           assert idx.count('2026.09.06.21') == 7
-          # Conserver le rééquilibrage précédent et les correctifs d'accessibilité.
           assert 'function raidIntroDifficultyMul' in g1
           assert 'if (level <= 1) return 0.65;' in g1 and 'if (level === 2) return 0.80;' in g1
           assert 'const firstBossMul = opts.boss && opts.floor === 10 && !opts.noFastback ? 0.80 : 1;' in g2
