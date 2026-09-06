@@ -543,6 +543,22 @@ body{
 .homeMore .homeNavSecondary .navInner{width:34px;max-width:34px;flex-basis:34px}
 .homeMore .homeNavSecondary .navLbl{font-size:calc(10.2px * var(--s));white-space:normal;text-align:left;line-height:1.15}
 .homeMore .homeNavSecondary .navBtn:last-child:nth-child(odd){grid-column:1/-1;justify-content:center}
+
+/* Progression guidée : un objectif fort, quelques pistes secondaires et le prochain déblocage. */
+.goalCard{margin:6px 9px 0;padding:9px 10px;border:1px solid #314766;border-radius:10px;background:linear-gradient(180deg,#13233bd9,#0b1526d9);box-shadow:inset 0 1px #ffffff08}
+.goalHead{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:900;letter-spacing:.65px;color:#93C6FF;text-transform:uppercase}
+.goalTitle{font-size:12.5px;font-weight:900;color:var(--text);margin-top:4px;line-height:1.2}
+.goalWhy{font-size:9.5px;color:var(--textDim);margin-top:2px;line-height:1.25}
+.goalBar{height:6px;border-radius:99px;background:#07101d;overflow:hidden;margin-top:7px;border:1px solid #223650}
+.goalBar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#3F8FE8,#77C3FF)}
+.goalMeta{display:flex;justify-content:space-between;gap:8px;margin-top:4px;font-size:9px;color:var(--textDim)}
+.goalSub{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:7px}
+.goalChip{min-width:0;padding:5px 6px;border-radius:7px;background:#0a1423;border:1px solid #22344d;font-size:8.5px;color:var(--textDim);line-height:1.2}
+.goalChip b{display:block;color:var(--text);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.goalUnlock{margin-top:7px;padding-top:6px;border-top:1px solid #263958;display:flex;align-items:center;gap:7px}
+.goalUnlock .flex1{min-width:0}
+.goalUnlock b{font-size:9.5px;color:#F5C542}
+.goalUnlock span{font-size:8.5px;color:var(--textDim)}
 .homeForge .fgRow.mt6{margin-top:4px}
 .homeForge .btn{min-height:28px}
 .homeForge .tgl{min-height:28px}
@@ -2511,6 +2527,141 @@ const EVENT_MISSIONS = [
   { id: "mission", label: "Terminer les missions",     reward: "1× Accél. 15 min", accel: "a15x1" },
   { id: "hard",    label: "Battre un Boss majeur",     reward: "1× Accél. 30 min", accel: "a30x1" },
 ];
+
+/* ----------------------- guided progression -----------------------
+   Milestones are intentionally derived from real save data. They do not add a
+   second quest economy: the reward is the unlock/progression itself. */
+function hasEquipRarity(st, rarity) {
+  return Object.values(st.equipped || {}).some((it) => it && it.rarity === rarity) ||
+    (st.inventory || []).some((it) => it && it.rarity === rarity);
+}
+function hasEquipAtLeast(st, rarity) {
+  const order = ["COMMUN","RARE","EPIQUE","MYTHIQUE","ARTEFACT","LEGENDAIRE","INFERNAL","IMMORTEL","DIVIN"];
+  const need = order.indexOf(rarity);
+  return Object.values(st.equipped || {}).concat(st.inventory || []).some((it) => it && order.indexOf(it.rarity) >= need);
+}
+function hasPetAtLeast(st, rarity) {
+  const order = ["COMMUN","PEU_COMMUN","RARE","EPIQUE","MYTHIQUE","LEGENDAIRE","DIVIN"];
+  const need = order.indexOf(rarity);
+  return (st.pets || []).some((pet) => pet && order.indexOf(pet.rarity) >= need);
+}
+function progressionGoals(st) {
+  const raidEvo = st.raids && st.raids.evolution ? st.raids.evolution.record || 0 : 0;
+  const mega = st.megaBossClears ? Object.keys(st.megaBossClears).filter((k) => st.megaBossClears[k]).length : 0;
+  const fusions = st.sanctuary ? st.sanctuary.fusions || 0 : 0;
+  const skillEquipped = (st.skillSlots || []).slice(0, 3).filter(Boolean).length;
+  const skillMax = Object.values(st.skills || {}).reduce((m, x) => Math.max(m, Number(x && x.level) || 0), 0);
+  const treeNodes = Object.values((st.tree && st.tree.levels) || {}).filter((lv) => Number(lv) > 0).length;
+  const floor = st.recordFloor || 1, forge = (st.forge && st.forge.level) || 1;
+  const rebirths = (st.rebirth && st.rebirth.count) || 0;
+  const goal = (id,title,why,now,max,category,go,priority,prereq=true) => ({
+    id,title,why,now:Math.min(Number(now)||0,max),max,done:(Number(now)||0)>=max,category,go,priority,prereq
+  });
+  return [
+    goal("floor5","Atteindre l’étage 5","Progresse dans la campagne et prépare les premiers Élites.",floor,5,"campagne","accueil",100),
+    goal("forge3","Forge niveau 3","Renforce l’équipement avant les premiers vrais paliers.",forge,3,"developpement","accueil",96),
+    goal("floor10","Vaincre le Boss de l’étage 10","Premier grand jalon de la campagne.",floor,10,"campagne","accueil",94),
+    goal("skills3","Équiper 3 compétences","Construis une vraie rotation de combat.",skillEquipped,3,"developpement","competences",88,floor>=5),
+    goal("rareGear","Obtenir un équipement Rare","Commence à construire un build avec des affixes.",hasEquipAtLeast(st,"RARE")?1:0,1,"developpement","equipement",86,forge>=2),
+    goal("floor25","Atteindre l’étage 25","Débloque le Rebirth et la progression permanente.",floor,25,"campagne","accueil",92,floor>=10),
+    goal("rebirth1","Effectuer ton premier Rebirth","Transforme la campagne en progression permanente.",rebirths,1,"progression","rebirth",91,floor>=25),
+    goal("raidEvo3","Raid Évolution niveau 3","Obtiens des PE pour développer ton Arbre personnel.",raidEvo,3,"defi","raid",82,floor>=10),
+    goal("tree3","Activer 3 nœuds de l’Arbre","Commence à spécialiser durablement ta progression.",treeNodes,3,"developpement","arbre",80,raidEvo>=1 || treeNodes>0),
+    goal("skill5","Améliorer une compétence niveau 5","Fais progresser une compétence clé de ton build.",skillMax,5,"developpement","competences",74,skillEquipped>=3),
+    goal("forge10","Forge niveau 10","Accède plus régulièrement aux équipements puissants.",forge,10,"developpement","accueil",76,floor>=20),
+    goal("epicGear","Obtenir un équipement Épique","Fais évoluer ton build au-delà des premiers affixes.",hasEquipAtLeast(st,"EPIQUE")?1:0,1,"developpement","equipement",72,forge>=6),
+    goal("rarePet","Obtenir un Familier Rare","Ajoute une spécialisation élémentaire à ton build.",hasPetAtLeast(st,"RARE")?1:0,1,"developpement","familiers",70,floor>=20),
+    goal("floor50","Atteindre l’étage 50","Débloque les Méga-Boss.",floor,50,"campagne","accueil",90,floor>=25),
+    goal("mega1","Vaincre ton premier Méga-Boss","Débloque le Sanctuaire et ses fusions.",mega,1,"defi","mega",89,floor>=50),
+    goal("fusion1","Réussir une fusion au Sanctuaire","Transforme les ressources accumulées en nouvelles récompenses.",fusions,1,"developpement","sanctuaire",89,mega>=1),
+    goal("floor100","Atteindre l’étage 100","Entre dans la progression avancée de Shadowreach.",floor,100,"campagne","accueil",88,floor>=50),
+    goal("rebirth5","Effectuer 5 Rebirth","Consolide tes bonus permanents avant l’endgame.",rebirths,5,"progression","rebirth",73,rebirths>=1),
+    goal("forge25","Forge niveau 25","Atteins le cœur de la progression d’équipement.",forge,25,"developpement","accueil",68,forge>=10),
+  ];
+}
+function goalProgressPct(g) { return Math.max(0,Math.min(100,Math.round((Number(g.now)||0)/Math.max(1,Number(g.max)||1)*100))); }
+function goalScore(g) {
+  // Priority decides importance; progress gently favours a goal the player is already close to.
+  return (g.priority || 0) + goalProgressPct(g) * .015;
+}
+function currentPrimaryGoal(st) {
+  const candidates = progressionGoals(st).filter((g) => !g.done && g.prereq);
+  if (candidates.length) return candidates.sort((a,b) => goalScore(b)-goalScore(a))[0];
+  return {id:"mastery",title:"Repousser ton record",why:"Perfectionne ton build et pousse la campagne plus loin.",now:st.recordFloor||1,max:Math.max(100,(st.recordFloor||1)+10),done:false,category:"campagne",go:"accueil"};
+}
+function secondaryGoals(st, primaryId) {
+  const pool = progressionGoals(st).filter((g) => !g.done && g.prereq && g.id !== primaryId);
+  const primary = progressionGoals(st).find((g)=>g.id===primaryId);
+  const wanted = ["developpement","defi","progression","campagne"].filter((c)=>!primary || c!==primary.category);
+  const out=[];
+  wanted.forEach((cat)=>{
+    if(out.length>=2)return;
+    const matches=pool.filter((g)=>g.category===cat).sort((a,b)=>goalScore(b)-goalScore(a));
+    if(matches[0]&&!out.some((x)=>x.id===matches[0].id))out.push(matches[0]);
+  });
+  if(out.length<2) pool.sort((a,b)=>goalScore(b)-goalScore(a)).forEach((g)=>{if(out.length<2&&!out.some((x)=>x.id===g.id))out.push(g);});
+  return out;
+}
+function nextUnlockGoal(st) {
+  const mega = st.megaBossClears ? Object.keys(st.megaBossClears).some((k) => st.megaBossClears[k]) : false;
+  const candidates = [
+    {title:"Rebirth", note:"Étage 25", detail:"Convertis une partie de ta progression en PR permanents.", now:Math.min(st.recordFloor||1,25), max:25, done:(st.recordFloor||1)>=25, go:"rebirth"},
+    {title:"Méga-Boss", note:"Étage 50", detail:"Affronte des versions extrêmes des Boss et ouvre la voie au Sanctuaire.", now:Math.min(st.recordFloor||1,50), max:50, done:(st.recordFloor||1)>=50, go:"mega"},
+    {title:"Sanctuaire", note:"Vaincre un Méga-Boss", detail:"Fusionne tes ressources pour découvrir des recettes spéciales.", now:mega?1:0, max:1, done:mega, go:"sanctuaire"},
+  ];
+  return candidates.find((x) => !x.done) || null;
+}
+let goalNoticeTimer = 0;
+let observedGoal = null;
+let observedGoalDone = null;
+function queueGoalAdvance(before, after, completed) {
+  if (!before || !after || before.id === after.id) return;
+  clearTimeout(goalNoticeTimer);
+  // A primary objective may change simply because another objective became more
+  // relevant. Only announce completion when the previous objective is actually
+  // complete in the current state. Priority changes stay silent.
+  if (completed) {
+    toast("✓ Objectif terminé · " + before.title, true);
+    goalNoticeTimer = setTimeout(() => toast("Nouvel objectif · " + after.title, true), 1350);
+  }
+}
+function trackGoalProgress(st) {
+  const goals = progressionGoals(st);
+  const now = currentPrimaryGoal(st);
+  const doneNow = new Set(goals.filter((g) => g.done).map((g) => g.id));
+  if (!observedGoal) {
+    observedGoal = {id:now.id,title:now.title};
+    observedGoalDone = doneNow;
+    return;
+  }
+  if (observedGoal.id !== now.id) {
+    const before = observedGoal;
+    const completed = doneNow.has(before.id);
+    observedGoal = {id:now.id,title:now.title};
+    observedGoalDone = doneNow;
+    queueGoalAdvance(before, now, completed);
+    return;
+  }
+  observedGoalDone = doneNow;
+}
+function goalCategoryLabel(cat){return cat==="developpement"?"Développement":cat==="defi"?"Défi":cat==="progression"?"Progression":"Campagne";}
+function progressionGoalHTML(st) {
+  const g = currentPrimaryGoal(st), pct = goalProgressPct(g), subs = secondaryGoals(st,g.id), unlock = nextUnlockGoal(st);
+  return '<details class="goalCard" data-goal-details="1"' + (goalDetailsOpen ? ' open' : '') + '>' +
+    '<summary style="list-style:none;cursor:pointer">' +
+      '<div class="goalHead">' + ic("target",11) + ' Objectif actuel <span class="flex1"></span><span style="color:var(--textDim);font-size:8px">DÉTAILS ›</span></div>' +
+      '<div class="goalTitle">' + esc(g.title) + '</div>' +
+      '<div class="goalBar"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="goalMeta"><span>' + Math.floor(g.now) + ' / ' + Math.floor(g.max) + '</span><b>' + pct + '%</b></div>' +
+      '<div class="goalWhy" style="margin-top:5px">' + (subs.length ? subs.length + ' objectifs conseillés' : 'Progression libre') + (unlock ? ' · Prochain : ' + esc(unlock.title) + ' · ' + esc(unlock.note) : '') + '</div>' +
+    '</summary>' +
+    '<div style="padding-top:7px;border-top:1px solid #263958;margin-top:7px">' +
+      '<div class="goalWhy">' + esc(g.why) + '</div>' +
+      (g.go ? '<button class="btn blue sm" data-act="go" data-arg="' + esc(g.go) + '" style="width:100%;margin-top:7px">ALLER À L’OBJECTIF</button>' : '') +
+      (subs.length ? '<div class="goalSub">' + subs.map((x) => '<div class="goalChip" data-act="go" data-arg="' + esc(x.go||"accueil") + '" style="cursor:pointer"><b>' + esc(goalCategoryLabel(x.category)) + ' · ' + esc(x.title) + '</b><span>' + Math.floor(x.now) + ' / ' + Math.floor(x.max) + ' · ouvrir ›</span></div>').join('') + '</div>' : '') +
+      (unlock ? '<div class="goalUnlock" data-act="goalUnlockInfo" style="cursor:pointer">' + ic("lock",13) + '<div class="flex1"><b>PROCHAIN DÉBLOCAGE · ' + esc(unlock.title) + '</b><br><span>' + esc(unlock.note) + ' · ' + Math.floor(unlock.now) + ' / ' + Math.floor(unlock.max) + ' · détails ›</span></div></div>' : '') +
+    '</div></details>';
+}
 
 /* ---------------------------- state.ts ---------------------------- */
 const AW = 320;          // logical arena width
@@ -6426,6 +6577,7 @@ function sanctClearSlot(which){ update((st)=>{ if(which==='a') st.sanctuary.slot
 let route = "accueil";
 // Preserve the compact Home "Plus" drawer across the 1s live HUD re-render.
 let homeMoreOpen = false;
+let goalDetailsOpen = false;
 let renderQueued = false;
 let raidResult = null;      // { raidId, won, reward } pending modal
 let megaResult = null;      // first-clear state and Apple reward
@@ -7069,6 +7221,7 @@ function scrAccueil() {
           (S.forge.filter ? "ACTIF" : "INACTIF") + "</span>" +
       "</div>" +
     "</div></div>" +
+    progressionGoalHTML(S) +
     '<div class="navGrid homeNavPrimary">' + navBtns.map(tile).join("") + "</div>" +
     '<details class="homeMore mt4" data-home-more="1"' + (homeMoreOpen ? ' open' : '') + '><summary>' + ic("menu", 12) + 'Plus' +
       (sysBtns.some((b) => b.badge && !b.lock) ? '<span class="dot"></span>' : '') +
@@ -9148,6 +9301,10 @@ function syncEquipPreviewSpacer() {
 }
 
 function render() {
+  // Objective tracking belongs to the global state/render layer, not to Home.
+  // This keeps progress coherent when goals are completed from Skills, Pets,
+  // Raids, the Tree, etc. and the player has not returned Home yet.
+  trackGoalProgress(S);
   renderHUD();
   renderTabs();
   checkRewardNotice();
@@ -9557,6 +9714,16 @@ const ACT = {
   collectEggPopup: (a) => { collectEgg(a); closeModal(); rewardPop("Œuf éclos", "Nouveau familier obtenu.", false); scheduleRender(); },
   collectResearchPopup: () => { collectResearch(); closeModal(); rewardPop("Amélioration récupérée", "Le bonus de l’Arbre est maintenant actif.", false); scheduleRender(); },
   goTreeFromNotice: (a) => { closeModal(); nav("arbre"); setTimeout(() => showTreeNode(a), 40); },
+  goalUnlockInfo: () => {
+    const u = nextUnlockGoal(S);
+    if (!u) return;
+    openModal('<div class="modalT">' + esc(u.title) + '</div>' +
+      '<div class="card mt8"><div class="b small">Déblocage · ' + esc(u.note) + '</div>' +
+      '<div class="mute small mt6">' + esc(u.detail) + '</div>' +
+      '<div class="goalBar mt8"><i style="width:' + goalProgressPct(u) + '%"></i></div>' +
+      '<div class="goalMeta"><span>' + Math.floor(u.now) + ' / ' + Math.floor(u.max) + '</span><b>' + goalProgressPct(u) + '%</b></div></div>' +
+      btn('Compris',{cls:'blue',act:'closeModal'}));
+  },
   go: (a) => nav(a),
   goModal: (a) => { closeModal(); nav(a); },
   harvest: () => showHarvestModal(),
@@ -9874,6 +10041,7 @@ const ACT = {
 document.getElementById("app").addEventListener("toggle", (e) => {
   const d = e.target;
   if (d && d.matches && d.matches('details[data-home-more="1"]')) homeMoreOpen = d.open;
+  if (d && d.matches && d.matches('details[data-goal-details="1"]')) goalDetailsOpen = d.open;
 }, true);
 
 document.getElementById("app").addEventListener("click", (e) => {
