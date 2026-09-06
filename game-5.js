@@ -1910,33 +1910,48 @@ preloadFrames("hero");
 render();
 rafLoop();
 
-// ACCESSIBILITY_KEYBOARD_V19
+// ACCESSIBILITY_KEYBOARD_V20
+function isNativeKeyboardControl(el) {
+  if (!el || !el.tagName) return false;
+  return el.tagName === "BUTTON" || el.tagName === "A" || el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA";
+}
+function accessibilityDisabled(el) {
+  return !el || el.disabled === true || el.getAttribute("aria-disabled") === "true" || el.hasAttribute("disabled");
+}
 document.addEventListener("keydown", function accessibilityActivate(e) {
   if (e.key !== "Enter" && e.key !== " ") return;
   const target = e.target && e.target.closest ? e.target.closest("[data-act]") : null;
-  if (!target || target.getAttribute("aria-disabled") === "true") return;
+  if (!target || accessibilityDisabled(target) || isNativeKeyboardControl(target)) return;
   e.preventDefault();
   target.click();
 });
 function enhanceInteractiveAccessibility(root) {
-  const scope = root && root.querySelectorAll ? root : document;
-  scope.querySelectorAll("[data-act]").forEach(function (el) {
-    if (!el.hasAttribute("tabindex") && el.tagName !== "BUTTON") el.setAttribute("tabindex", "0");
-    if (!el.hasAttribute("role") && el.tagName !== "BUTTON") el.setAttribute("role", "button");
-    if (!el.hasAttribute("aria-label")) {
-      const label = (el.getAttribute("title") || el.textContent || "").replace(/\s+/g, " ").trim();
-      if (label) el.setAttribute("aria-label", label.slice(0, 120));
+  if (!root || root.nodeType !== 1) return;
+  const nodes=[];
+  if (root.matches && root.matches("[data-act]")) nodes.push(root);
+  if (root.querySelectorAll) root.querySelectorAll("[data-act]").forEach(function(el){ nodes.push(el); });
+  nodes.forEach(function(el){
+    if (!isNativeKeyboardControl(el)) {
+      if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex","0");
+      if (!el.hasAttribute("role")) el.setAttribute("role","button");
+    }
+    if (!el.hasAttribute("aria-label") || el.getAttribute("data-auto-aria") === "true") {
+      const label=(el.getAttribute("title") || el.textContent || "").replace(/\s+/g," ").trim();
+      if (label) { el.setAttribute("aria-label",label.slice(0,120)); el.setAttribute("data-auto-aria","true"); }
     }
   });
 }
-document.addEventListener("DOMContentLoaded", function () {
-  enhanceInteractiveAccessibility(document);
-  const observer = new MutationObserver(function (mutations) {
-    mutations.forEach(function (m) {
-      m.addedNodes.forEach(function (node) {
-        if (node && node.nodeType === 1) enhanceInteractiveAccessibility(node);
-      });
+function startAccessibilityEnhancements(){
+  enhanceInteractiveAccessibility(document.body);
+  const observer=new MutationObserver(function(mutations){
+    const roots=new Set();
+    mutations.forEach(function(m){
+      m.addedNodes.forEach(function(node){ if(node && node.nodeType===1) roots.add(node); });
+      if(m.target && m.target.nodeType===1 && m.target.closest){ const changed=m.target.closest("[data-act]"); if(changed) roots.add(changed); }
     });
+    roots.forEach(enhanceInteractiveAccessibility);
   });
-  observer.observe(document.body, { childList: true, subtree: true });
-});
+  observer.observe(document.body,{childList:true,subtree:true});
+}
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded",startAccessibilityEnhancements,{once:true});
+else startAccessibilityEnhancements();

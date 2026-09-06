@@ -1337,11 +1337,20 @@ function raidDiffMul(s, raid) {
   return RAID_ASCEND_DIFF_MUL[Math.min(Math.max(0, st), RAID_ASCEND_DIFF_MUL.length - 1)];
 }
 /* total HP / damage-per-second budget for the whole wave at this raid level */
+function raidIntroDifficultyMul(raid, level) {
+  // Les deux premiers niveaux servent d’introduction. Dès le niveau 3, la
+  // courbe historique reprend exactement à 100 %, donc le développement futur
+  // et la difficulté des niveaux avancés restent inchangés.
+  if (raid !== "evolution" && raid !== "competence" && raid !== "familier") return 1;
+  if (level <= 1) return 0.65;
+  if (level === 2) return 0.80;
+  return 1;
+}
 function raidWaveHP(raid, level) {
-  return RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, level) * RAID_TUNE[raid].hp * raidDiffMul(S, raid);
+  return RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, level) * RAID_TUNE[raid].hp * raidDiffMul(S, raid) * raidIntroDifficultyMul(raid, level);
 }
 function raidWaveDamage(raid, level) {
-  return RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, level) * RAID_TUNE[raid].dmg * raidDiffMul(S, raid);
+  return RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, level) * RAID_TUNE[raid].dmg * raidDiffMul(S, raid) * raidIntroDifficultyMul(raid, level);
 }
 function raidEnemyCount(raid, level) {
   if (raid === "or") return 5;

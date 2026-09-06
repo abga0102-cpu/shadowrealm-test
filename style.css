@@ -842,14 +842,13 @@ h2.title{font-family:var(--fd);font-size:calc(15.5px * var(--s));font-weight:900
   .equipCompareSticky .card{padding-top:6px;padding-bottom:6px}
 }
 
-/* ACCESSIBILITY_SIMPLICITY_V19 */
+/* ACCESSIBILITY_SIMPLICITY_V20 */
 html { -webkit-text-size-adjust: 100%; }
-body { overflow-x: hidden; }
 button, [data-act], [role="button"], input, select { touch-action: manipulation; }
 button:focus-visible, [data-act]:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #7FD4FF; outline-offset: 2px; }
 button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; filter: saturate(.65); }
 @media (pointer: coarse) {
-  button, [role="button"] { min-height: 44px; }
+  button:not(.iconBtn):not(.tabIcon), [role="button"][data-act]:not(.iconBtn):not(.tabIcon) { min-height: 44px; }
   input, select, textarea { min-height: 44px; font-size: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {

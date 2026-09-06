@@ -4,7 +4,7 @@
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.19";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.20";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -991,8 +991,12 @@ function makeEnemy(mode, opts) {
     const mulH = opts.boss ? (opts.floor === 40 ? 5.1 : 6) : opts.elite ? 2.3 : 1;
     const mulD = opts.boss ? (opts.floor === 40 ? 1.7 : 1.8) : opts.elite ? 1.4 : 1;
     const statMul = opts.boss ? campaignBossStatMul(opts.floor) : tier.mul;
-    hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * statMul);
-    dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * statMul);
+    // Le Chef Gobelin est le premier checkpoint majeur : -20 % PV et dégâts.
+    // noFastback est utilisé par le Méga-Boss construit depuis ce Boss, ce qui
+    // garantit que Méga 1 conserve sa puissance de référence et son ×10.
+    const firstBossMul = opts.boss && opts.floor === 10 && !opts.noFastback ? 0.80 : 1;
+    hp = Math.floor(enemyHP(opts.floor) * t.hpMul * mulH * statMul * firstBossMul);
+    dmg = Math.floor(enemyDamage(opts.floor) * t.dmgMul * mulD * statMul * firstBossMul);
     // Campaign difficulty is fixed by floor and enemy identity, never by player gear.
   } else {
     hp = Math.floor(raidEnemyHP(opts.raidId, opts.raidLevel) * t.hpMul);
