@@ -1,7 +1,7 @@
-/* SHADOWREACH HOME FRAME LAYOUT V10
-   Mobile-safe Home layout: only Rebirth stays in the arena toolbar, duplicate
-   Development/Challenges controls are hidden, combat info moves up, and fighters
-   are visually smaller without changing combat geometry or engine state. */
+/* SHADOWREACH HOME FRAME LAYOUT V11
+   Stable mobile Home: only Rebirth remains as a direct world action, combat
+   status sits below it without overlap, lower geometry is fixed, and chat is
+   visually docked without changing arena height. */
 (()=>{
 "use strict";
 const STORE="shadowreach.social.v1.messages";
@@ -11,53 +11,43 @@ function installStyle(){
  let s=document.getElementById("srForgeLayoutStyle");if(!s){s=document.createElement("style");s.id="srForgeLayoutStyle";document.head.appendChild(s)}
  s.textContent=`
 #app.srHomeFullArena{position:relative!important;overflow:hidden!important;--srHudH:118px;--srChatH:44px;--srSkillH:58px;--srForgeH:112px}
-#app.srHomeFullArena>#hud{
- position:absolute!important;left:0!important;right:0!important;top:-8px!important;z-index:70!important;
- height:var(--srHudH)!important;min-height:var(--srHudH)!important;max-height:var(--srHudH)!important;
- overflow:visible!important;flex:none!important;padding:4px 9px 3px!important;
- background:linear-gradient(180deg,#07101df2 0%,#0a1422d4 76%,#08101b70 92%,transparent 100%)!important;
- border:0!important;box-shadow:none!important;pointer-events:auto!important
-}
+#app.srHomeFullArena>#hud{position:absolute!important;left:0!important;right:0!important;top:-8px!important;z-index:70!important;height:var(--srHudH)!important;min-height:var(--srHudH)!important;max-height:var(--srHudH)!important;overflow:visible!important;flex:none!important;padding:4px 9px 3px!important;background:linear-gradient(180deg,#07101df2 0%,#0a1422d4 76%,#08101b70 92%,transparent 100%)!important;border:0!important;box-shadow:none!important;pointer-events:auto!important}
 #app.srHomeFullArena>#hud::after{display:none!important}
 #app.srHomeFullArena>#screen.fixed{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;padding:0!important;margin:0!important}
 #app.srHomeFullArena>#screen.fixed>.recommendedWrap{display:none!important}
-
-/* Arena dimension never depends on temporary Forge/chat content. */
 #app.srHomeFullArena #screen.fixed>.campaignWorld{position:relative!important;flex:1 1 0!important;min-height:0!important;height:auto!important;margin:0!important;overflow:hidden!important;background:#070b13!important}
 #app.srHomeFullArena #screen.fixed #arenaSlot{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;display:block!important}
 #app.srHomeFullArena #screen.fixed #arena{height:100%!important;min-height:100%!important;border-top:0!important}
 #app.srHomeFullArena #arenaBg{background-position:center center!important}
 
-/* Keep the combat readable: smaller sprites, same engine positions and floor line. */
-#app.srHomeFullArena #aLayer .unit{scale:.80!important;transform-origin:50% 100%!important}
+/* Smaller fighters, but never touch simulation coordinates/statistics. */
+#app.srHomeFullArena #aLayer .unit{scale:.78!important;transform-origin:50% 100%!important}
 
-/* Only Rebirth remains as a direct Home action. Development and Challenges are
-   already reachable from the permanent navigation/menu, so duplicate giant cards
-   waste combat space and are removed from Home. */
+/* One direct action only. Permanent navigation already exposes the other hubs. */
 #app.srHomeFullArena .worldNavLayer{position:absolute!important;inset:0!important;z-index:32!important;pointer-events:none!important}
 #app.srHomeFullArena .worldAction,#app.srHomeFullArena .worldMenu{pointer-events:auto!important}
 #app.srHomeFullArena .worldDev,#app.srHomeFullArena .worldDefis{display:none!important}
-#app.srHomeFullArena .worldRebirth{
- top:calc(var(--srHudH) + 5px)!important;bottom:auto!important;left:10px!important;right:auto!important;
- width:82px!important;height:34px!important;min-width:0!important;padding:2px 5px!important;border-radius:9px!important;
- box-shadow:0 2px 0 #0A1020,0 3px 7px #0007!important
-}
+#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 5px)!important;bottom:auto!important;left:10px!important;right:auto!important;width:82px!important;height:34px!important;min-width:0!important;padding:2px 5px!important;border-radius:9px!important;box-shadow:0 2px 0 #0A1020,0 3px 7px #0007!important}
 #app.srHomeFullArena .worldRebirth img{width:18px!important;height:18px!important;object-fit:contain!important}
 #app.srHomeFullArena .worldRebirth span{font-size:8px!important;line-height:1!important;white-space:nowrap!important}
 #app.srHomeFullArena .worldRebirth .worldDot{width:7px!important;height:7px!important;top:1px!important;right:1px!important}
 #app.srHomeFullArena .worldMenu{left:8px!important;top:auto!important;bottom:calc(var(--srChatH) + 7px)!important;right:auto!important}
 
-/* Combat status uses the space freed by the deleted duplicate buttons. */
-#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 6px)!important;bottom:auto!important;z-index:22!important}
+/* Important: status starts just below Rebirth. V10 accidentally put both on the
+   same vertical line, which could overlap the 10-floor track on phones. */
+#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 38px)!important;bottom:auto!important;z-index:22!important;gap:3px!important}
+#app.srHomeFullArena #arena .floorTxt{font-size:15px!important}
+#app.srHomeFullArena #arena .fTrack{transform:scale(.92)!important;transform-origin:center!important}
+#app.srHomeFullArena #arena #aSub{gap:5px!important}
 
-/* Reserve a visual chat lane without changing arena height. */
+/* Chat has its own visual lane; arena element itself never changes size. */
 #app.srHomeFullArena #arena #aLayer,#app.srHomeFullArena #arena #aDecor{inset:0!important;height:100%!important;bottom:0!important;transform:translateY(calc(-1 * var(--srChatH)))!important}
-#arena #srChatBtn{position:absolute!important;left:9px!important;right:auto!important;bottom:5px!important;width:36px!important;height:36px!important;border-radius:9px!important;z-index:86!important;box-shadow:0 2px 0 #060b13,0 3px 8px #0008!important}
-#arena #srChatPreview{position:absolute!important;left:51px!important;right:9px!important;bottom:5px!important;z-index:82!important;height:36px!important;min-height:36px!important;max-height:36px!important;padding:4px 8px!important;border-radius:9px!important;background:linear-gradient(90deg,#101a2cf5,#0c1423e8)!important;border:1px solid #34486e!important;pointer-events:none!important;overflow:hidden!important;box-shadow:none!important}
+#arena #srChatBtn{position:absolute!important;left:9px!important;right:auto!important;top:auto!important;bottom:5px!important;width:36px!important;height:36px!important;border-radius:9px!important;z-index:86!important;box-shadow:0 2px 0 #060b13,0 3px 8px #0008!important}
+#arena #srChatPreview{position:absolute!important;left:51px!important;right:9px!important;top:auto!important;bottom:5px!important;z-index:82!important;height:36px!important;min-height:36px!important;max-height:36px!important;padding:4px 8px!important;border-radius:9px!important;background:linear-gradient(90deg,#101a2cf5,#0c1423e8)!important;border:1px solid #34486e!important;pointer-events:none!important;overflow:hidden!important;box-shadow:none!important}
 #arena #srChatPreview .p{font-size:9.5px!important;line-height:1.42!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;color:#d9e4f7!important}
 #arena #srChatPreview .n{font-weight:900!important;color:#93c6ff!important;margin-right:4px!important}
 
-/* Stable lower frame: content may change, geometry may not. */
+/* Fixed lower frame: Forge/skills state can change without resizing combat. */
 #app.srHomeFullArena #screen.fixed>#skillbar{flex:0 0 var(--srSkillH)!important;height:var(--srSkillH)!important;min-height:var(--srSkillH)!important;max-height:var(--srSkillH)!important;margin:0!important;overflow:hidden!important}
 #app.srHomeFullArena #screen.fixed>#fxbar{display:none!important}
 #app.srHomeFullArena #screen.fixed>.pad.mt4{flex:0 0 var(--srForgeH)!important;height:var(--srForgeH)!important;min-height:var(--srForgeH)!important;max-height:var(--srForgeH)!important;margin:0!important;padding:2px 8px 4px!important;overflow:hidden!important}
@@ -71,21 +61,8 @@ function installStyle(){
 #app:not(.srHomeFullArena)>#srChatBtn{left:10px!important;right:auto!important;bottom:calc(68px + env(safe-area-inset-bottom))!important;width:44px!important;height:44px!important;z-index:86!important}
 #app:not(.srHomeFullArena)>#srChatPreview{position:absolute;left:60px;right:12px;bottom:calc(69px + env(safe-area-inset-bottom));z-index:82;min-height:38px;max-height:52px;padding:6px 9px;border-radius:9px;background:#09101be6;border:1px solid #2E426980;pointer-events:none;overflow:hidden}
 
-@media(max-width:370px){
- #app.srHomeFullArena{--srHudH:112px;--srForgeH:106px}
- #app.srHomeFullArena .worldRebirth{width:76px!important;height:32px!important;left:8px!important}
- #app.srHomeFullArena .worldRebirth span{font-size:7.5px!important}
- #app.srHomeFullArena #aLayer .unit{scale:.78!important}
-}
-@media(max-height:720px){
- #app.srHomeFullArena{--srHudH:108px;--srChatH:40px;--srSkillH:54px;--srForgeH:100px}
- #app.srHomeFullArena>#hud{top:-10px!important;padding-top:3px!important}
- #app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 4px)!important;height:32px!important}
- #app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 4px)!important}
- #arena #srChatBtn{width:32px!important;height:32px!important}
- #arena #srChatPreview{left:47px!important;height:32px!important;min-height:32px!important;max-height:32px!important}
- #app.srHomeFullArena>#tabs{height:60px!important;min-height:60px!important;max-height:60px!important;flex-basis:60px!important}
-}
+@media(max-width:370px){#app.srHomeFullArena{--srHudH:112px;--srForgeH:106px}#app.srHomeFullArena .worldRebirth{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 36px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.86)!important}}
+@media(max-height:720px){#app.srHomeFullArena{--srHudH:108px;--srChatH:40px;--srSkillH:54px;--srForgeH:100px}#app.srHomeFullArena>#hud{top:-10px!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 4px)!important;height:32px!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 35px)!important}#arena #srChatBtn{width:32px!important;height:32px!important}#arena #srChatPreview{left:47px!important;height:32px!important;min-height:32px!important;max-height:32px!important}#app.srHomeFullArena>#tabs{height:60px!important;min-height:60px!important;max-height:60px!important;flex-basis:60px!important}}
 `;
 }
 function ensurePreview(){let p=document.getElementById("srChatPreview");if(!p){p=document.createElement("div");p.id="srChatPreview"}return p}
