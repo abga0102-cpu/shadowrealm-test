@@ -1311,13 +1311,10 @@ function raidReward(raid, level) {
   // Mise à jour 10 : progression lisible et linéaire pour les trois ressources demandées.
   // Évolution : 10 au niveau 1, puis +3 par niveau.
   if (raid === "evolution") return 10 + 3 * Math.max(0, level - 1);
-  // Raid Compétence : 75 Éclats au niveau 1, puis +5 par niveau.
-  // Une première victoire finance exactement 3 invocations de base à 25.
-  if (raid === "competence") return 75 + 5 * Math.max(0, level - 1);
-  // Raid Familier : 75 Essences au niveau 1, puis +5 par niveau.
-  // Une première victoire finance exactement 3 invocations de base à 25,
-  // sans donner d'Essence au départ.
-  if (raid === "familier") return 75 + 5 * Math.max(0, level - 1);
+  // Raids Compétence et Familier : 125 au niveau 1, puis +5 par niveau.
+  // Une victoire de niveau 1 finance 5 invocations de base à 25.
+  if (raid === "competence") return 125 + 5 * Math.max(0, level - 1);
+  if (raid === "familier") return 125 + 5 * Math.max(0, level - 1);
   // Raid Or conserve sa courbe dédiée.
   if (raid === "or") return Math.floor(RAID_OR_BASE * Math.pow(RAID_OR_GROWTH, level - 1));
   if (raid === "minerai") return raidMineraiBase(S) + RAID_MINERAI_PER_LEVEL * (level - 1);
@@ -1891,6 +1888,7 @@ function defaultState(name) {
     economyDebt: { eclat: 0, essence: 0 },
     economyRebaseV2: true,
     economyRebaseV3: true,
+    economyRebaseV4: true,
     eventDay: todayStr(), eventClaims: {}, eventProgress: {},
     testDays: 0, power: 0,
     autoSkills: true, firstSeen: Date.now(), tutorial: { version: 3, seen: {} },
@@ -2118,6 +2116,38 @@ function migrate(s, name) {
     merged.economyRebaseV3 = true;
     merged.economyRebaseNoticeV3 = {
       skillAscPaid, petAscPaid, eclatDebt: merged.economyDebt.eclat || 0, essenceDebt: merged.economyDebt.essence || 0
+    };
+  }
+
+  /* V4 — Raid Compétence/Familier passent de 75 à 125 au niveau 1.
+     On rééquilibre les anciennes sauvegardes comme si cette valeur avait été
+     active depuis le début, mais uniquement sur les victoires que la sauvegarde
+     permet de prouver. Une étoile prouve un ladder 1→50 complet. Sur le ladder
+     courant, le niveau atteint prouve les niveaux précédents. Sans étoile, le
+     record permet aussi de reconnaître une victoire au niveau 50. On ne fabrique
+     pas de gains pour d'éventuels raids 50 farmés ni pour un historique AFK que
+     la sauvegarde ne journalise pas. Le bonus de +50 par victoire passe par le
+     même multiplicateur d'Arbre et rembourse d'abord une éventuelle dette. */
+  if (!Object.prototype.hasOwnProperty.call(s, "economyRebaseV4")) {
+    if (!merged.economyDebt || typeof merged.economyDebt !== "object") merged.economyDebt = { eclat: 0, essence: 0 };
+    const provenRaidWins = (rid) => {
+      const r = (merged.raids && merged.raids[rid]) || {};
+      const stars = Math.max(0, Number(r.stars) || 0);
+      const level = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Number(r.level) || 1));
+      if (stars > 0) return stars * RULES.RAID_MAX_LEVEL + Math.max(0, level - 1);
+      return Math.max(Math.max(0, level - 1), Math.max(0, Math.min(RULES.RAID_MAX_LEVEL, Number(r.record) || 0)));
+    };
+    const skillWins = provenRaidWins("competence");
+    const petWins = provenRaidWins("familier");
+    const skillBonusGross = Math.floor(skillWins * 50 * (1 + treeSum(merged, "skillPts") / 100));
+    const petBonusGross = Math.floor(petWins * 50 * (1 + treeSum(merged, "petPts") / 100));
+    const skillPay = creditRebalancedResource(merged, "eclat", skillBonusGross);
+    const petPay = creditRebalancedResource(merged, "essence", petBonusGross);
+    merged.economyRebaseV4 = true;
+    merged.economyRebaseNoticeV4 = {
+      skillWins, petWins,
+      eclatGross: skillBonusGross, eclatCredited: skillPay.credited, eclatDebtRepaid: skillPay.repaid,
+      essenceGross: petBonusGross, essenceCredited: petPay.credited, essenceDebtRepaid: petPay.repaid
     };
   }
 
