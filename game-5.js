@@ -1750,18 +1750,50 @@ const ACT = {
 
   // sanctuaire
   sanctPrepare: (a) => {
-    const r=SANCT_RECIPES.find((x)=>x.id===a);
-    if(!r) return;
-    if(!S.sanctuary) S.sanctuary={slotA:null,slotB:null,discovered:{},fusions:0,stabilitySeals:0};
-    S.sanctuary.slotA=r.a; S.sanctuary.slotB=r.b;
-    dirty=true; scheduleRender();
+    const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
+    if(!r||!sanctMergeRecipeKnown(st,r)) return;
+    st.mergeFocusRecipe=a; dirty=true; render();
   },
-  sanctAdd: (a) => { sanctSetSlot(a); render(); },
-  sanctClear: (a) => { sanctClearSlot(a); render(); },
-  sanctFuse: () => {
-    const r=sanctFuse();
-    if(!r.ok) toast(r.msg);
-    else { toast("Fusion réussie · "+r.recipe.name, true); render(); }
+  sanctMergeBuy: () => {
+    const st=sanctMergeState(), empty=st.mergeBoard.findIndex((x)=>!x);
+    if(empty<0) return toast("Plateau plein · fusionne ou fabrique d’abord");
+    const lv=st.supplierLevel, price=sanctSupplierPrice(lv);
+    if(S.gold<price) return toast("Pas assez d’Or");
+    S.gold-=price; st.mergeBoard[empty]=sanctSupplierTier(lv);
+    if(lv<SANCT_SUPPLIER_MAX){
+      st.supplierProgress++;
+      const need=sanctSupplierNeed(lv);
+      if(st.supplierProgress>=need){ st.supplierLevel=lv+1; st.supplierProgress=0; toast("Approvisionnement niveau "+st.supplierLevel,true); }
+    }
+    dirty=true; render();
+  },
+  sanctMergeTile: (a) => {
+    const st=sanctMergeState(), i=Number(a), r=st.mergeBoard[i];
+    if(!r) return;
+    const sel=Number(st.mergeSelected);
+    if(sel<0||!st.mergeBoard[sel]){ st.mergeSelected=i; dirty=true; return render(); }
+    if(sel===i){ st.mergeSelected=-1; dirty=true; return render(); }
+    const r0=st.mergeBoard[sel];
+    if(r0!==r){ st.mergeSelected=i; dirty=true; toast("Choisis une deuxième couleur identique"); return render(); }
+    const nx=sanctMergeNext(r);
+    if(!nx){ st.mergeSelected=-1; dirty=true; toast("Divin est la rareté maximale"); return render(); }
+    st.mergeBoard[sel]=null; st.mergeBoard[i]=nx; st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
+    sanctMergeDiscover(st,nx); dirty=true; toast(SANCT_MERGE_NAME[r]+" + "+SANCT_MERGE_NAME[r]+" → "+SANCT_MERGE_NAME[nx],true); render();
+  },
+  sanctMergeCancel: () => { const st=sanctMergeState(); st.mergeSelected=-1; dirty=true; render(); },
+  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.filter(Boolean); st.mergeBoard=kept.concat(Array(SANCT_BOARD_SIZE-kept.length).fill(null)); st.mergeSelected=-1; dirty=true; render(); },
+  sanctSelectPair: () => { const st=sanctMergeState(), p=sanctMergePair(st); if(!p)return; st.mergeSelected=p[0]; dirty=true; toast("Première "+SANCT_MERGE_NAME[p[2]]+" sélectionnée · touche la seconde"); render(); },
+  sanctRecipeCraft: (a) => {
+    const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
+    if(!r||!sanctMergeRecipeKnown(st,r)||!sanctMergeRecipeReady(st,r)) return toast("Couleurs insuffisantes");
+    Object.keys(r.req).forEach((rar)=>{ let n=r.req[rar]; for(let i=0;i<st.mergeBoard.length&&n>0;i++) if(st.mergeBoard[i]===rar){ st.mergeBoard[i]=null; n--; } });
+    if(r.kind==="seal") st.stabilitySeals=(st.stabilitySeals||0)+r.qty;
+    else {
+      const ad=ACCEL_DEFS.find((x)=>x.mins===r.mins) || ACCEL_DEFS.reduce((best,x)=>!best||Math.abs(x.mins-r.mins)<Math.abs(best.mins-r.mins)?x:best,null);
+      if(ad) S.accels[ad.key]=(S.accels[ad.key]||0)+r.qty;
+    }
+    st.mergeDiscovered[r.id]=true; st.mergeCrafts++; st.mergeFocusRecipe=a; st.mergeSelected=-1; dirty=true;
+    toast("Rituel réussi · "+r.name+" · "+sanctMergeRecipeOutput(r),true); render();
   },
 
   // tree
