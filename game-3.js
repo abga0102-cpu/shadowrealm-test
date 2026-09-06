@@ -1151,8 +1151,7 @@ function renderHUD() {
       '<div class="avatar"><img src="' + ASSETS.hero + '"></div>' +
       '<div class="flex1" style="margin-left:8px">' +
         '<div class="row gap6"><span class="pname flex1">' + esc(S.playerName) + "</span>" +
-          '<span class="power">' + ic("swords", 11) + fmt(S.power) + "</span>" +
-          (S.statPoints > 0 ? '<span class="dot" style="position:static"></span>' : "") + "</div>" +
+          '<span class="power">' + ic("swords", 11) + fmt(S.power) + "</span>" + "</div>" +
         '<div class="pbar mt6">' +
           '<span class="cap" style="background:linear-gradient(180deg,#B884FF,#7A34DC);' +
             'font-weight:900;font-size:12px;color:#fff;text-shadow:0 1px 2px #0008">' + S.level + "</span>" +
@@ -1162,6 +1161,8 @@ function renderHUD() {
       "</div></div>" +
     '<div class="col gap6" style="align-items:flex-end">' +
       '<div class="row gap4">' +
+        '<div class="curr" data-act="resInfo" data-arg="pa" title="Points de Statistique" style="cursor:pointer;border-color:' + (S.statPoints > 0 ? '#FFD65E88' : 'var(--line)') + ';color:' + (S.statPoints > 0 ? '#FFD65E' : 'var(--textDim)') + '">' + ic("pa", 15) + "<b>" + fmt(S.statPoints) + "</b>" +
+          '<span class="plus" data-act="go" data-arg="equipement">' + ic("plus", 10) + "</span></div>" +
         '<div class="curr" data-act="resInfo" data-arg="gold" style="cursor:pointer">' + ic("gold", 15) + "<b>" + fmt(S.gold) + "</b>" +
           '<span class="plus" data-act="go" data-arg="raid">' + ic("plus", 10) + "</span></div>" +
         '<div class="curr" data-act="resInfo" data-arg="gems" style="cursor:pointer">' + ic("gem", 15) + "<b>" + fmt(S.gems) + "</b>" +
