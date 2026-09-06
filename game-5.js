@@ -1472,8 +1472,7 @@ function showRaidResult(r) {
   const pay = (r.reward && typeof r.reward === "object") ? r.reward : { gross: Number(r.reward) || 0, credited: Number(r.reward) || 0, repaid: 0 };
   const rewardLine = pay.repaid > 0
     ? 'Récompense produite : <b style="color:' + meta.color + '">+' + fmt(pay.gross) + " " + meta.reward + '</b><br>' +
-      '<span style="color:var(--goldLit)">' + fmt(pay.repaid) + ' utilisé' + (pay.repaid > 1 ? 's' : '') +
-      ' pour le rééquilibrage historique</span><br>' +
+      '<span style="color:var(--goldLit)">Ajustement de progression : -' + fmt(pay.repaid) + " " + meta.reward + '</span><br>' +
       (pay.credited > 0 ? 'Crédité : <b style="color:' + meta.color + '">+' + fmt(pay.credited) + " " + meta.reward + '</b><br>' : '')
     : 'Récompense : <b style="color:' + meta.color + '">+' + fmt(pay.credited) + " " + meta.reward + '</b><br>';
   openModal('<div class="center">' + ic(r.won ? "trophy" : "skull", 40) + "</div>" +
