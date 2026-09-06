@@ -1,0 +1,74 @@
+from pathlib import Path
+import re
+
+p = Path('game-4.js')
+s = p.read_text()
+old = '''    '<div class="sect" style="margin:14px 0 8px">Points de statistiques ('+S.statPoints+')</div><div class="duo">'+STAT_META.map((m)=>'<div class="card" style="padding:7px 8px"><div class="between"><div class="b small" style="color:'+m.color+'">'+m.label+'</div><b>'+S.stats[m.key]+'</b></div><div class="row gap4 mt6">'+btn("+1",{small:true,act:"alloc",arg:m.key,arg2:1,dis:S.statPoints<1})+btn("+5",{small:true,act:"alloc",arg:m.key,arg2:5,dis:S.statPoints<5})+btn("Max",{small:true,act:"alloc",arg:m.key,arg2:"max",dis:S.statPoints<1})+'</div></div>').join('')+'</div>' +\n'''
+if old not in s:
+    raise SystemExit('equipment stat-points block missing')
+s = s.replace(old, '', 1)
+marker = 'function scrEquipement() {'
+if marker not in s:
+    raise SystemExit('scrEquipement marker missing')
+hero = '''function scrHerosStats() {
+  return topbar("Héros", '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">' +
+      ic("chart", 11) + fmt(S.statPoints || 0) + " point" + ((S.statPoints || 0) > 1 ? "s" : "") + "</span>") +
+    '<div class="pad mt8">' +
+      '<div class="sect" style="margin:4px 0 8px">Points de statistiques</div>' +
+      '<div class="duo">' + STAT_META.map((m) =>
+        '<div class="card" style="padding:9px 9px"><div class="between"><div class="b small" style="color:' + m.color + '">' +
+          m.label + '</div><b>' + S.stats[m.key] + '</b></div><div class="row gap4 mt8">' +
+          btn("+1", { small:true, act:"alloc", arg:m.key, arg2:1, dis:S.statPoints<1 }) +
+          btn("+5", { small:true, act:"alloc", arg:m.key, arg2:5, dis:S.statPoints<5 }) +
+          btn("Max", { small:true, act:"alloc", arg:m.key, arg2:"max", dis:S.statPoints<1 }) +
+        '</div></div>').join('') + '</div>' +
+      '<div class="mute tiny center mt10">' + fmt(S.statPoints || 0) + ' point' + ((S.statPoints || 0) > 1 ? 's' : '') + ' disponible' + ((S.statPoints || 0) > 1 ? 's' : '') + '.</div>' +
+    '<div style="height:8px"></div></div>';
+}
+
+'''
+s = s.replace(marker, hero + marker, 1)
+p.write_text(s)
+
+mapped = False
+for fp in [Path(f'game-{i}.js') for i in range(1, 6)]:
+    t = fp.read_text()
+    if re.search(r'const\s+SCREENS\s*=\s*\{', t):
+        if 'heros: scrHerosStats' not in t:
+            t = re.sub(r'(const\s+SCREENS\s*=\s*\{)', r'\1\n  heros: scrHerosStats,', t, count=1)
+            fp.write_text(t)
+        mapped = True
+        break
+if not mapped:
+    raise SystemExit('SCREENS map missing')
+
+changed = False
+for fp in [Path(f'game-{i}.js') for i in range(1, 6)]:
+    t = fp.read_text()
+    matches = list(re.finditer(r'.{0,420}S\.statPoints.{0,420}', t, re.S))
+    for m in matches:
+        seg = m.group(0)
+        if 'equipement' not in seg:
+            continue
+        seg2 = seg.replace('arg:"equipement"', 'arg:"heros"').replace("arg:'equipement'", "arg:'heros'").replace('data-arg="equipement"', 'data-arg="heros"')
+        if seg2 != seg:
+            t = t[:m.start()] + seg2 + t[m.end():]
+            fp.write_text(t)
+            changed = True
+            break
+    if changed:
+        break
+if not changed:
+    raise SystemExit('stat-points shortcut to equipment not found')
+
+p = Path('game-2.js')
+t = p.read_text()
+if '2026.09.06.10' not in t:
+    raise SystemExit('APP_BUILD .10 missing')
+p.write_text(t.replace('2026.09.06.10', '2026.09.06.11', 1))
+
+p = Path('index.html')
+t = p.read_text()
+if '2026.09.06.10' not in t:
+    raise SystemExit('index build .10 missing')
+p.write_text(t.replace('2026.09.06.10', '2026.09.06.11'))
