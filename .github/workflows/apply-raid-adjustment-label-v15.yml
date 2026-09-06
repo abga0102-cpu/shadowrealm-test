@@ -1,5 +1,5 @@
-# trigger-v27-2
-name: Move stat points to hero v27
+# trigger-v28-1
+name: Sanctuary clarity v28
 on:
   push:
     paths:
@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply Hero HUD patch
-        run: python .github/hero_v27.py
+      - name: Apply sanctuary UX patch
+        run: python .github/sanctuaire_v28.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -23,11 +23,27 @@ jobs:
           node --check audio-v26.js
       - name: Regression checks
         run: |
-          python -c "from pathlib import Path; g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text(); assert 'data-arg=\"heros\" title=\"Héros · Points de statistiques\"' in g3; assert 'data-arg=\"pa\" title=\"Points de Statistique\"' not in g3; assert 'Points de statistiques disponibles' in g3; assert 'badge: S.inventory.length > 0' in g4; assert 'function scrHerosStats()' in g4; assert 'heros: scrHerosStats' in g5; assert 'const hop = 0;' in g3; assert 'SCROLL_PRESERVE_V24' in g5; assert 'DECISION_HIERARCHY_V23' in g5; assert 'function raidIntroDifficultyMul' in g1; assert '|| \"2026.09.06.27\";' in g2; assert idx.count('2026.09.06.27') == 8; print('v27 checks passed')"
+          python <<'PY'
+          from pathlib import Path
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          assert 'function sanctRecipeAffordableUI' in g4
+          assert 'ACTION RECOMMANDÉE' in g4
+          assert 'MAÎTRISE DU SANCTUAIRE' in g4
+          assert 'sanctPrepare' in g4 and 'sanctPrepare: (a)' in g5
+          assert 'Les coûts et récompenses du Sanctuaire n’ont pas été modifiés.' in g4
+          assert 'const hop = 0;' in g3
+          assert 'SCROLL_PRESERVE_V24' in g5
+          assert 'DECISION_HIERARCHY_V23' in g5
+          assert 'function raidIntroDifficultyMul' in g1
+          assert '|| "2026.09.06.28";' in g2
+          assert idx.count('2026.09.06.28') >= 7
+          print('v28 sanctuary checks passed')
+          PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add game-2.js game-3.js game-4.js index.html
-          git commit -m 'Héros Épuré' -m 'Retire complètement le compteur de Points de Statistique de la rangée des ressources du HUD. Le bloc Héros à gauche ouvre désormais directement l’écran Héros où les points sont consultés et attribués. Un indicateur discret apparaît sur le bloc Héros lorsqu’il reste des points à dépenser. Le badge Équipement ne s’allume plus à cause des Points de Statistique. Aucun changement d’économie, de progression, de sauvegarde ou d’équilibrage. Build 2026.09.06.27.'
+          if git diff --quiet; then echo 'Already applied'; exit 0; fi
+          git add game-2.js game-4.js game-5.js index.html
+          git commit -m 'Sanctuaire Clair' -m 'Rend le Sanctuaire plus lisible et utile sans modifier son économie : progression des recettes, action recommandée, indication immédiate des recettes réalisables, coûts et récompenses visibles, bouton Préparer en un toucher et état clair des ressources insuffisantes. Les recettes, coûts, récompenses, sauvegardes et règles de fusion restent inchangés. Build 2026.09.06.28.'
           git push
