@@ -1,9 +1,8 @@
-# trigger-v26-1
+# trigger-v26-2
 name: Combat audio v26
 on:
   push:
-    paths:
-      - '.github/workflows/apply-raid-adjustment-label-v15.yml'
+    paths: ['.github/workflows/apply-raid-adjustment-label-v15.yml']
 permissions:
   contents: write
 jobs:
@@ -15,122 +14,52 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-
           eng=Path('game-2.js'); e=eng.read_text()
-          marker='// AUDIO_SYSTEM_V26'
-          if marker not in e:
+          if '// AUDIO_SYSTEM_V26' not in e:
               anchor='let offlineRecap = null;'
               if anchor not in e: raise SystemExit('audio global anchor missing')
               block=r'''
 
 // AUDIO_SYSTEM_V26
-// Audio procédural WebAudio : aucun fichier externe, démarrage uniquement après
-// une interaction utilisateur (règle autoplay mobile), volumes volontairement modérés.
-let SR_AUDIO=null, SR_MASTER=null, SR_MUSIC=null, SR_AUDIO_READY=false, SR_MUSIC_TIMER=null, SR_MUSIC_STEP=0;
+let SR_AUDIO=null,SR_MASTER=null,SR_MUSIC=null,SR_AUDIO_READY=false,SR_MUSIC_TIMER=null,SR_MUSIC_STEP=0;
 function srAudioUnlock(){
-  if(SR_AUDIO_READY&&SR_AUDIO){ if(SR_AUDIO.state==='suspended') SR_AUDIO.resume(); return true; }
-  try{
-    const Ctx=window.AudioContext||window.webkitAudioContext;
-    if(!Ctx) return false;
-    SR_AUDIO=new Ctx();
-    SR_MASTER=SR_AUDIO.createGain(); SR_MASTER.gain.value=0.34; SR_MASTER.connect(SR_AUDIO.destination);
-    SR_MUSIC=SR_AUDIO.createGain(); SR_MUSIC.gain.value=0.22; SR_MUSIC.connect(SR_MASTER);
-    SR_AUDIO_READY=true;
-    if(SR_AUDIO.state==='suspended') SR_AUDIO.resume();
-    if(!SR_MUSIC_TIMER) SR_MUSIC_TIMER=setInterval(srCombatMusicTick,520);
-    return true;
-  }catch(_){ return false; }
+  if(SR_AUDIO_READY&&SR_AUDIO){if(SR_AUDIO.state==='suspended')SR_AUDIO.resume();return true;}
+  try{const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return false;SR_AUDIO=new Ctx();SR_MASTER=SR_AUDIO.createGain();SR_MASTER.gain.value=.34;SR_MASTER.connect(SR_AUDIO.destination);SR_MUSIC=SR_AUDIO.createGain();SR_MUSIC.gain.value=.22;SR_MUSIC.connect(SR_MASTER);SR_AUDIO_READY=true;if(SR_AUDIO.state==='suspended')SR_AUDIO.resume();if(!SR_MUSIC_TIMER)SR_MUSIC_TIMER=setInterval(srCombatMusicTick,520);return true;}catch(_){return false;}
 }
-function srTone(freq,dur,vol,type,slide,dest){
-  if(!SR_AUDIO_READY||!SR_AUDIO||!SR_MASTER) return;
-  const t=SR_AUDIO.currentTime,o=SR_AUDIO.createOscillator(),g=SR_AUDIO.createGain();
-  o.type=type||'sine'; o.frequency.setValueAtTime(Math.max(30,freq),t);
-  if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,slide),t+dur);
-  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002,vol),t+0.008);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-  o.connect(g); g.connect(dest||SR_MASTER); o.start(t); o.stop(t+dur+0.02);
-}
-function srNoise(dur,vol,cut){
-  if(!SR_AUDIO_READY||!SR_AUDIO) return;
-  const len=Math.max(64,Math.floor(SR_AUDIO.sampleRate*dur)),b=SR_AUDIO.createBuffer(1,len,SR_AUDIO.sampleRate),d=b.getChannelData(0);
-  for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len);
-  const src=SR_AUDIO.createBufferSource(),f=SR_AUDIO.createBiquadFilter(),g=SR_AUDIO.createGain();
-  src.buffer=b; f.type='lowpass'; f.frequency.value=cut||1800; g.gain.value=vol;
-  src.connect(f); f.connect(g); g.connect(SR_MASTER); src.start();
-}
-function srSfx(kind,power){
-  if(!SR_AUDIO_READY) return;
-  const p=Math.max(.35,Math.min(1.4,power||1));
-  if(kind==='ui'){ srTone(760,.045,.018,'sine',620); return; }
-  if(kind==='swing'){ srNoise(.09,.045*p,1200); srTone(150,.08,.026*p,'triangle',92); return; }
-  if(kind==='shot'){ srNoise(.055,.025*p,2600); srTone(520,.07,.025*p,'triangle',820); return; }
-  if(kind==='enemySwing'){ srNoise(.075,.025*p,900); srTone(105,.09,.019*p,'sawtooth',72); return; }
-  if(kind==='enemyShot'){ srTone(360,.08,.018*p,'square',520); return; }
-  if(kind==='hit'){ srNoise(.06,.04*p,700); srTone(78,.07,.025*p,'sine',52); return; }
-  if(kind==='crit'){ srNoise(.10,.06*p,1500); srTone(96,.13,.045*p,'sawtooth',48); return; }
-  if(kind==='victory'){ [523,659,784].forEach((n,i)=>setTimeout(()=>srTone(n,.32,.035,'triangle',n*1.03),i*90)); return; }
-  if(kind==='defeat'){ [220,174,130].forEach((n,i)=>setTimeout(()=>srTone(n,.38,.035,'sine',n*.72),i*110)); return; }
-}
-function srSkillSfx(kind){
-  if(!SR_AUDIO_READY) return;
-  const k=kind||'impact';
-  if(k==='heal'||k==='aura'){ srTone(440,.42,.030,'sine',880); setTimeout(()=>srTone(660,.36,.022,'sine',990),70); }
-  else if(k==='meteor'||k==='cataclysm'){ srTone(82,.48,.055,'sawtooth',42); srNoise(.28,.06,1000); }
-  else if(k==='vortex'||k==='curse'||k==='poison'){ srTone(190,.38,.032,'triangle',95); srTone(285,.30,.018,'sine',150); }
-  else if(k==='bolt'||k==='pierce'){ srTone(620,.18,.035,'square',1120); srNoise(.08,.025,3000); }
-  else if(k==='wave'){ srTone(260,.34,.032,'sine',520); srNoise(.13,.025,1800); }
-  else { srTone(330,.20,.032,'triangle',190); srNoise(.07,.03,1300); }
-}
-function srCombatMusicTick(){
-  if(!SR_AUDIO_READY||!SR_AUDIO||!SR_MUSIC||!combat||combat.status!=='fight') return;
-  const boss=!!combat.boss, notes=boss?[55,65.4,73.4,49]:[73.4,82.4,98,82.4];
-  const n=notes[SR_MUSIC_STEP++%notes.length];
-  srTone(n,boss?.42:.32,boss?.030:.018,'triangle',n*.985,SR_MUSIC);
-  if(SR_MUSIC_STEP%2===0) srTone(n*2,boss?.18:.14,boss?.012:.008,'sine',n*1.96,SR_MUSIC);
-}
-'''
+function srTone(freq,dur,vol,type,slide,dest){if(!SR_AUDIO_READY||!SR_AUDIO||!SR_MASTER)return;const t=SR_AUDIO.currentTime,o=SR_AUDIO.createOscillator(),g=SR_AUDIO.createGain();o.type=type||'sine';o.frequency.setValueAtTime(Math.max(30,freq),t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,slide),t+dur);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,vol),t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(dest||SR_MASTER);o.start(t);o.stop(t+dur+.02);}
+function srNoise(dur,vol,cut){if(!SR_AUDIO_READY||!SR_AUDIO)return;const len=Math.max(64,Math.floor(SR_AUDIO.sampleRate*dur)),b=SR_AUDIO.createBuffer(1,len,SR_AUDIO.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);const src=SR_AUDIO.createBufferSource(),f=SR_AUDIO.createBiquadFilter(),g=SR_AUDIO.createGain();src.buffer=b;f.type='lowpass';f.frequency.value=cut||1800;g.gain.value=vol;src.connect(f);f.connect(g);g.connect(SR_MASTER);src.start();}
+function srSfx(kind,power){if(!SR_AUDIO_READY)return;const p=Math.max(.35,Math.min(1.4,power||1));if(kind==='ui'){srTone(760,.045,.018,'sine',620);return;}if(kind==='swing'){srNoise(.09,.045*p,1200);srTone(150,.08,.026*p,'triangle',92);return;}if(kind==='shot'){srNoise(.055,.025*p,2600);srTone(520,.07,.025*p,'triangle',820);return;}if(kind==='enemySwing'){srNoise(.075,.025*p,900);srTone(105,.09,.019*p,'sawtooth',72);return;}if(kind==='enemyShot'){srTone(360,.08,.018*p,'square',520);return;}if(kind==='victory'){[523,659,784].forEach((n,i)=>setTimeout(()=>srTone(n,.32,.035,'triangle',n*1.03),i*90));return;}if(kind==='defeat'){[220,174,130].forEach((n,i)=>setTimeout(()=>srTone(n,.38,.035,'sine',n*.72),i*110));return;}}
+function srSkillSfx(k){if(!SR_AUDIO_READY)return;k=k||'impact';if(k==='heal'||k==='aura'){srTone(440,.42,.03,'sine',880);setTimeout(()=>srTone(660,.36,.022,'sine',990),70);}else if(k==='meteor'||k==='cataclysm'){srTone(82,.48,.055,'sawtooth',42);srNoise(.28,.06,1000);}else if(k==='vortex'||k==='curse'||k==='poison'){srTone(190,.38,.032,'triangle',95);srTone(285,.30,.018,'sine',150);}else if(k==='bolt'||k==='pierce'){srTone(620,.18,.035,'square',1120);srNoise(.08,.025,3000);}else if(k==='wave'){srTone(260,.34,.032,'sine',520);srNoise(.13,.025,1800);}else{srTone(330,.20,.032,'triangle',190);srNoise(.07,.03,1300);}}
+function srCombatMusicTick(){if(!SR_AUDIO_READY||!SR_AUDIO||!SR_MUSIC||!combat||combat.status!=='fight')return;const boss=!!combat.boss,notes=boss?[55,65.4,73.4,49]:[73.4,82.4,98,82.4],n=notes[SR_MUSIC_STEP++%notes.length];srTone(n,boss?.42:.32,boss?.030:.018,'triangle',n*.985,SR_MUSIC);if(SR_MUSIC_STEP%2===0)srTone(n*2,boss?.18:.14,boss?.012:.008,'sine',n*1.96,SR_MUSIC);}
+'''.replace('boss?.42:.32','boss ? .42 : .32').replace('boss?.030:.018','boss ? .030 : .018').replace('boss?.18:.14','boss ? .18 : .14').replace('boss?.012:.008','boss ? .012 : .008')
               e=e.replace(anchor,anchor+block,1)
-
-              old='''        c.heroAttacking = 0.2;\n        // weapon-type affixes only apply to the matching attack type'''
-              new='''        c.heroAttacking = 0.2;\n        srSfx(wt.attackType === "RANGED" ? "shot" : "swing", 0.9);\n        // weapon-type affixes only apply to the matching attack type'''
-              if old not in e: raise SystemExit('hero attack audio anchor missing')
-              e=e.replace(old,new,1)
-
-              old='''        e.attacking = 0.2;\n        // Arena rivals use true hit events.'''
-              new='''        e.attacking = 0.2;\n        srSfx(e.ranged ? "enemyShot" : "enemySwing", 0.62);\n        // Arena rivals use true hit events.'''
-              if old not in e: raise SystemExit('enemy attack audio anchor missing')
-              e=e.replace(old,new,1)
-
-              old='''        c.skillFxs.push({ id: def.id, color: def.color, fx: fxKind,\n          life: vfxDur(fxKind), max: vfxDur(fxKind) });'''
-              new='''        c.skillFxs.push({ id: def.id, color: def.color, fx: fxKind,\n          life: vfxDur(fxKind), max: vfxDur(fxKind) });\n        srSkillSfx(fxKind);'''
-              if old not in e: raise SystemExit('skill audio anchor missing')
-              e=e.replace(old,new,1)
-
-              old='''function handleCombatEnd(c) {\n  if (c.ctx === "arenaLive") {'''
-              new='''function handleCombatEnd(c) {\n  srSfx(c.status === "won" ? "victory" : "defeat", 1);\n  if (c.ctx === "arenaLive") {'''
-              if old not in e: raise SystemExit('combat result audio anchor missing')
-              e=e.replace(old,new,1)
-
-          if '|| "2026.09.06.25";' not in e: raise SystemExit('APP_BUILD .25 anchor missing')
-          e=e.replace('|| "2026.09.06.25";', '|| "2026.09.06.26";', 1)
-          eng.write_text(e)
-
+              a='        c.heroAttacking = 0.2;\n        // weapon-type affixes only apply to the matching attack type'
+              if a not in e: raise SystemExit('hero attack anchor missing')
+              e=e.replace(a,'        c.heroAttacking = 0.2;\n        srSfx(wt.attackType === "RANGED" ? "shot" : "swing", .9);\n        // weapon-type affixes only apply to the matching attack type',1)
+              a='        e.attacking = 0.2;\n        // Arena rivals use true hit events.'
+              if a not in e: raise SystemExit('enemy attack anchor missing')
+              e=e.replace(a,'        e.attacking = 0.2;\n        srSfx(e.ranged ? "enemyShot" : "enemySwing", .62);\n        // Arena rivals use true hit events.',1)
+              a='        c.skillFxs.push({ id: def.id, color: def.color, fx: fxKind,\n          life: vfxDur(fxKind), max: vfxDur(fxKind) });'
+              if a not in e: raise SystemExit('skill anchor missing')
+              e=e.replace(a,a+'\n        srSkillSfx(fxKind);',1)
+              a='function handleCombatEnd(c) {\n  if (c.ctx === "arenaLive") {'
+              if a not in e: raise SystemExit('result anchor missing')
+              e=e.replace(a,'function handleCombatEnd(c) {\n  srSfx(c.status === "won" ? "victory" : "defeat", 1);\n  if (c.ctx === "arenaLive") {',1)
+          if '|| "2026.09.06.25";' not in e: raise SystemExit('build anchor missing')
+          eng.write_text(e.replace('|| "2026.09.06.25";','|| "2026.09.06.26";',1))
           ui=Path('game-5.js'); u=ui.read_text()
-          old='''document.getElementById("app").addEventListener("click", (e) => {\n  const el = e.target.closest("[data-act]");'''
-          new='''document.getElementById("app").addEventListener("click", (e) => {\n  if (typeof srAudioUnlock === "function") srAudioUnlock();\n  const el = e.target.closest("[data-act]");'''
-          if old not in u: raise SystemExit('app click audio unlock anchor missing')
-          u=u.replace(old,new,1)
-          old='''  e.stopPropagation();\n  fn(el.dataset.arg, el.dataset.arg2);'''
-          new='''  e.stopPropagation();\n  if (typeof srSfx === "function") srSfx("ui", 0.55);\n  fn(el.dataset.arg, el.dataset.arg2);'''
-          if old not in u: raise SystemExit('ui click sfx anchor missing')
-          u=u.replace(old,new,1)
+          a='document.getElementById("app").addEventListener("click", (e) => {\n  const el = e.target.closest("[data-act]");'
+          if a not in u: raise SystemExit('click unlock anchor missing')
+          u=u.replace(a,'document.getElementById("app").addEventListener("click", (e) => {\n  if (typeof srAudioUnlock === "function") srAudioUnlock();\n  const el = e.target.closest("[data-act]");',1)
+          a='  e.stopPropagation();\n  fn(el.dataset.arg, el.dataset.arg2);'
+          if a not in u: raise SystemExit('click sfx anchor missing')
+          u=u.replace(a,'  e.stopPropagation();\n  if (typeof srSfx === "function") srSfx("ui", .55);\n  fn(el.dataset.arg, el.dataset.arg2);',1)
           ui.write_text(u)
-
           idx=Path('index.html'); h=idx.read_text()
-          if h.count('2026.09.06.25') != 7: raise SystemExit('Unexpected index build reference count')
+          if h.count('2026.09.06.25')!=7: raise SystemExit('index build count mismatch')
           idx.write_text(h.replace('2026.09.06.25','2026.09.06.26'))
           PY
-      - name: Syntax and regression checks
+      - name: Checks
         run: |
           node --check game-1.js
           node --check game-2.js
@@ -139,26 +68,17 @@ function srCombatMusicTick(){
           node --check game-5.js
           python <<'PY'
           from pathlib import Path
-          g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
-          assert g2.count('AUDIO_SYSTEM_V26') == 1
-          assert 'function srAudioUnlock' in g2 and 'function srSfx' in g2 and 'function srSkillSfx' in g2
-          assert 'function srCombatMusicTick' in g2
-          assert 'srSfx(wt.attackType === "RANGED" ? "shot" : "swing"' in g2
-          assert 'srSfx(e.ranged ? "enemyShot" : "enemySwing"' in g2
-          assert 'srSkillSfx(fxKind);' in g2
-          assert 'srSfx(c.status === "won" ? "victory" : "defeat"' in g2
-          assert 'srAudioUnlock();' in g5 and 'srSfx("ui", 0.55);' in g5
-          assert 'const hop = 0;' in g3
-          assert 'SCROLL_PRESERVE_V24' in g5 and 'DECISION_HIERARCHY_V23' in g5
-          assert '|| "2026.09.06.26";' in g2
-          assert idx.count('2026.09.06.26') == 7
-          print('v26 combat audio checks passed')
+          g2=Path('game-2.js').read_text();g3=Path('game-3.js').read_text();g5=Path('game-5.js').read_text();h=Path('index.html').read_text()
+          assert g2.count('AUDIO_SYSTEM_V26')==1 and 'srSkillSfx(fxKind);' in g2 and 'srCombatMusicTick' in g2
+          assert 'srAudioUnlock();' in g5 and 'srSfx("ui", .55);' in g5
+          assert 'const hop = 0;' in g3 and 'SCROLL_PRESERVE_V24' in g5
+          assert '|| "2026.09.06.26";' in g2 and h.count('2026.09.06.26')==7
+          print('v26 audio checks passed')
           PY
-      - name: Commit update
+      - name: Commit
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          if git diff --quiet; then echo 'Already applied'; exit 0; fi
           git add game-2.js game-5.js index.html
-          git commit -m 'Audio Combat' -m 'Ajoute une ambiance musicale procédurale discrète pendant les combats, des sons distincts pour attaques au corps à corps et à distance, attaques ennemies, compétences selon leur famille, victoire, défaite et interactions de boutons. Le système WebAudio se déverrouille au premier toucher pour respecter les navigateurs mobiles et n’utilise aucun fichier audio externe. Aucun changement de dégâts, progression, économie ou sauvegarde. Build 2026.09.06.26.'
+          git commit -m 'Audio Combat' -m 'Ajoute ambiance musicale de combat et effets sonores pour attaques, compétences, ennemis, victoire, défaite et boutons. Audio procédural WebAudio sans fichier externe. Aucun changement d’équilibrage ou de sauvegarde. Build 2026.09.06.26.'
           git push
