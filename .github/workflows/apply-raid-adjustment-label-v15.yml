@@ -1,5 +1,5 @@
-# trigger-v19-2
-name: Apply accessible interface v19
+# trigger-v20-1
+name: Apply accessibility fixes v20
 on:
   push:
     paths:
@@ -11,84 +11,125 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply accessibility and simplicity pass
+      - name: Apply accessibility bug fixes
         run: |
           python <<'PY'
           from pathlib import Path
 
           css = Path('style.css')
           s = css.read_text()
-          marker = '/* ACCESSIBILITY_SIMPLICITY_V19 */'
-          css_lines = [
-            '/* ACCESSIBILITY_SIMPLICITY_V19 */',
-            'html { -webkit-text-size-adjust: 100%; }',
-            'body { overflow-x: hidden; }',
-            'button, [data-act], [role="button"], input, select { touch-action: manipulation; }',
-            'button:focus-visible, [data-act]:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #7FD4FF; outline-offset: 2px; }',
-            'button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; filter: saturate(.65); }',
-            '@media (pointer: coarse) {',
-            '  button, [role="button"] { min-height: 44px; }',
-            '  input, select, textarea { min-height: 44px; font-size: 16px; }',
-            '}',
-            '@media (prefers-reduced-motion: reduce) {',
-            '  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }',
-            '}',
-          ]
-          if marker not in s:
-              s += '\n' + '\n'.join(css_lines) + '\n'
+          old = '''/* ACCESSIBILITY_SIMPLICITY_V19 */
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+button, [data-act], [role="button"], input, select { touch-action: manipulation; }
+button:focus-visible, [data-act]:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #7FD4FF; outline-offset: 2px; }
+button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; filter: saturate(.65); }
+@media (pointer: coarse) {
+  button, [role="button"] { min-height: 44px; }
+  input, select, textarea { min-height: 44px; font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
+}
+'''
+          new = '''/* ACCESSIBILITY_SIMPLICITY_V20 */
+html { -webkit-text-size-adjust: 100%; }
+button, [data-act], [role="button"], input, select { touch-action: manipulation; }
+button:focus-visible, [data-act]:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #7FD4FF; outline-offset: 2px; }
+button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; filter: saturate(.65); }
+@media (pointer: coarse) {
+  button:not(.iconBtn):not(.tabIcon), [role="button"][data-act]:not(.iconBtn):not(.tabIcon) { min-height: 44px; }
+  input, select, textarea { min-height: 44px; font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
+}
+'''
+          if 'ACCESSIBILITY_SIMPLICITY_V20' not in s:
+              if old not in s: raise SystemExit('v19 CSS block missing')
+              s = s.replace(old, new, 1)
           css.write_text(s)
 
           ui = Path('game-5.js')
           s = ui.read_text()
-          marker = '// ACCESSIBILITY_KEYBOARD_V19'
-          js_lines = [
-            '// ACCESSIBILITY_KEYBOARD_V19',
-            'document.addEventListener("keydown", function accessibilityActivate(e) {',
-            '  if (e.key !== "Enter" && e.key !== " ") return;',
-            '  const target = e.target && e.target.closest ? e.target.closest("[data-act]") : null;',
-            '  if (!target || target.getAttribute("aria-disabled") === "true") return;',
-            '  e.preventDefault();',
-            '  target.click();',
-            '});',
-            'function enhanceInteractiveAccessibility(root) {',
-            '  const scope = root && root.querySelectorAll ? root : document;',
-            '  scope.querySelectorAll("[data-act]").forEach(function (el) {',
-            '    if (!el.hasAttribute("tabindex") && el.tagName !== "BUTTON") el.setAttribute("tabindex", "0");',
-            '    if (!el.hasAttribute("role") && el.tagName !== "BUTTON") el.setAttribute("role", "button");',
-            '    if (!el.hasAttribute("aria-label")) {',
-            '      const label = (el.getAttribute("title") || el.textContent || "").replace(/\\s+/g, " ").trim();',
-            '      if (label) el.setAttribute("aria-label", label.slice(0, 120));',
-            '    }',
-            '  });',
-            '}',
-            'document.addEventListener("DOMContentLoaded", function () {',
-            '  enhanceInteractiveAccessibility(document);',
-            '  const observer = new MutationObserver(function (mutations) {',
-            '    mutations.forEach(function (m) {',
-            '      m.addedNodes.forEach(function (node) {',
-            '        if (node && node.nodeType === 1) enhanceInteractiveAccessibility(node);',
-            '      });',
-            '    });',
-            '  });',
-            '  observer.observe(document.body, { childList: true, subtree: true });',
-            '});',
-          ]
-          if marker not in s:
-              s += '\n' + '\n'.join(js_lines) + '\n'
+          start = s.find('// ACCESSIBILITY_KEYBOARD_V19')
+          if start < 0 and '// ACCESSIBILITY_KEYBOARD_V20' not in s: raise SystemExit('v19 JS block missing')
+          if '// ACCESSIBILITY_KEYBOARD_V20' not in s:
+              old_block = s[start:]
+              new_block = '''// ACCESSIBILITY_KEYBOARD_V20
+function isNativeKeyboardControl(el) {
+  if (!el || !el.tagName) return false;
+  return el.tagName === "BUTTON" || el.tagName === "A" || el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA";
+}
+function accessibilityDisabled(el) {
+  return !el || el.disabled === true || el.getAttribute("aria-disabled") === "true" || el.hasAttribute("disabled");
+}
+document.addEventListener("keydown", function accessibilityActivate(e) {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const target = e.target && e.target.closest ? e.target.closest("[data-act]") : null;
+  if (!target || accessibilityDisabled(target) || isNativeKeyboardControl(target)) return;
+  e.preventDefault();
+  target.click();
+});
+function enhanceInteractiveAccessibility(root) {
+  if (!root || root.nodeType !== 1) return;
+  const nodes = [];
+  if (root.matches && root.matches("[data-act]")) nodes.push(root);
+  if (root.querySelectorAll) root.querySelectorAll("[data-act]").forEach(function (el) { nodes.push(el); });
+  nodes.forEach(function (el) {
+    if (!isNativeKeyboardControl(el)) {
+      if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+      if (!el.hasAttribute("role")) el.setAttribute("role", "button");
+    }
+    if (!el.hasAttribute("aria-label") || el.getAttribute("data-auto-aria") === "true") {
+      const label = (el.getAttribute("title") || el.textContent || "").replace(/\\s+/g, " ").trim();
+      if (label) {
+        el.setAttribute("aria-label", label.slice(0, 120));
+        el.setAttribute("data-auto-aria", "true");
+      }
+    }
+  });
+}
+function refreshAccessibility(root) {
+  if (!root) return;
+  if (root.nodeType === 1) enhanceInteractiveAccessibility(root);
+  else if (root.parentElement) enhanceInteractiveAccessibility(root.parentElement);
+}
+function startAccessibilityEnhancements() {
+  enhanceInteractiveAccessibility(document.body);
+  const observer = new MutationObserver(function (mutations) {
+    const roots = new Set();
+    mutations.forEach(function (m) {
+      if (m.type === "childList") {
+        m.addedNodes.forEach(function (node) { if (node && node.nodeType === 1) roots.add(node); });
+        if (m.target && m.target.nodeType === 1 && m.target.closest) {
+          const changed = m.target.closest("[data-act]");
+          if (changed) roots.add(changed);
+        }
+      }
+    });
+    roots.forEach(refreshAccessibility);
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startAccessibilityEnhancements, { once: true });
+else startAccessibilityEnhancements();
+'''
+              s = s[:start] + new_block
           ui.write_text(s)
 
           eng = Path('game-2.js')
           s = eng.read_text()
-          if '|| "2026.09.06.19";' not in s:
-              if '|| "2026.09.06.18";' not in s: raise SystemExit('APP_BUILD .18 anchor missing')
-              s = s.replace('|| "2026.09.06.18";', '|| "2026.09.06.19";', 1)
+          if '|| "2026.09.06.20";' not in s:
+              if '|| "2026.09.06.19";' not in s: raise SystemExit('APP_BUILD .19 anchor missing')
+              s = s.replace('|| "2026.09.06.19";', '|| "2026.09.06.20";', 1)
           eng.write_text(s)
 
           idx = Path('index.html')
           s = idx.read_text()
-          if '2026.09.06.19' not in s:
-              if '2026.09.06.18' not in s: raise SystemExit('index .18 anchor missing')
-              s = s.replace('2026.09.06.18', '2026.09.06.19')
+          if '2026.09.06.20' not in s:
+              if '2026.09.06.19' not in s: raise SystemExit('index .19 anchor missing')
+              s = s.replace('2026.09.06.19', '2026.09.06.20')
           idx.write_text(s)
           PY
       - name: Syntax and regression checks
@@ -104,18 +145,19 @@ jobs:
           ui=Path('game-5.js').read_text()
           eng=Path('game-2.js').read_text()
           idx=Path('index.html').read_text()
-          assert 'ACCESSIBILITY_SIMPLICITY_V19' in css
-          assert 'min-height: 44px' in css
-          assert 'prefers-reduced-motion: reduce' in css
-          assert 'ACCESSIBILITY_KEYBOARD_V19' in ui
-          assert 'MutationObserver' in ui
-          assert '|| "2026.09.06.19";' in eng
-          assert '2026.09.06.19' in idx
+          assert 'ACCESSIBILITY_SIMPLICITY_V20' in css
+          assert 'body { overflow-x: hidden; }' not in css[css.index('ACCESSIBILITY_SIMPLICITY_V20'):]
+          assert 'ACCESSIBILITY_KEYBOARD_V20' in ui
+          assert 'isNativeKeyboardControl' in ui
+          assert 'data-auto-aria' in ui
+          assert 'Set()' in ui
+          assert '|| "2026.09.06.20";' in eng
+          assert idx.count('2026.09.06.20') == 7
           assert 'Math.floor(dmg * 0.30)' in eng
           assert 'function campaignBossStatMul(floor)' in eng
           seg=eng[eng.index('function itemUpgradePreview'):eng.index('function itemUpgradeChance')]
           assert seg.count('0.005') >= 2
-          print('v19 checks passed')
+          print('v20 checks passed')
           PY
       - name: Commit update
         run: |
@@ -126,5 +168,5 @@ jobs:
             exit 0
           fi
           git add style.css game-5.js game-2.js index.html
-          git commit -m 'Interface Accessible' -m 'Améliore l’accessibilité et la simplicité d’utilisation sans modifier l’équilibrage : zones tactiles renforcées sur mobile, focus clavier visible, activation clavier des contrôles personnalisés, états désactivés plus clairs, prévention du zoom involontaire sur les champs iOS et respect du réglage Réduire les animations. Aucun changement de sauvegarde, d’économie ou de combat. Build 2026.09.06.19.'
+          git commit -m 'Correctif Accessibilité' -m 'Sécurise la passe UX précédente : évite la double activation clavier des contrôles natifs, allège le suivi des changements DOM, actualise les libellés accessibles générés automatiquement, respecte les états désactivés et évite de forcer 44 px sur les contrôles compacts. Retire aussi le masquage horizontal global afin de ne pas cacher les débordements réels. Aucun changement d’économie, de sauvegarde ou d’équilibrage. Build 2026.09.06.20.'
           git push
