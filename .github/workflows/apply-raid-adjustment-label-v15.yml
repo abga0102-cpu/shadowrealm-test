@@ -1,4 +1,4 @@
-# trigger-v17-3
+# trigger-v17-4
 name: Apply dragon flight balance v17
 on:
   push:
@@ -17,19 +17,23 @@ jobs:
           from pathlib import Path
           p = Path('game-2.js')
           s = p.read_text()
-          old = '''      // in the air a sword swings at nothing; arrows and spells still reach him
-      if (src !== "weapon" || RANGED_IDS.indexOf(D.weapon) >= 0) return dmg;
-      c.floats.push({ id: rid(), x: e.x, val: 0, crit: false, color: "#B15CF6",
-        born: Date.now(), text: "HORS D'ATTEINTE" });
-      return 0;'''
-          new = '''      // Ranged weapons and skills keep full damage. Melee can still clip the Dragon
-      // during Envol, but at only 30%, so the phase remains a meaningful disadvantage
-      // without turning a melee build completely off for four seconds.
-      if (src !== "weapon" || RANGED_IDS.indexOf(D.weapon) >= 0) return dmg;
-      const glancing = Math.max(1, Math.floor(dmg * 0.30));
-      c.floats.push({ id: rid(), x: e.x, val: glancing, crit: false, color: "#B15CF6",
-        born: Date.now(), text: "ENVOL · 30%" });
-      return glancing;'''
+          old = '\n'.join([
+              '      // in the air a sword swings at nothing; arrows and spells still reach him',
+              '      if (src !== "weapon" || RANGED_IDS.indexOf(D.weapon) >= 0) return dmg;',
+              '      c.floats.push({ id: rid(), x: e.x, val: 0, crit: false, color: "#B15CF6",',
+              '        born: Date.now(), text: "HORS D\'ATTEINTE" });',
+              '      return 0;'
+          ])
+          new = '\n'.join([
+              '      // Ranged weapons and skills keep full damage. Melee can still clip the Dragon',
+              '      // during Envol, but at only 30%, so the phase remains a meaningful disadvantage',
+              '      // without turning a melee build completely off for four seconds.',
+              '      if (src !== "weapon" || RANGED_IDS.indexOf(D.weapon) >= 0) return dmg;',
+              '      const glancing = Math.max(1, Math.floor(dmg * 0.30));',
+              '      c.floats.push({ id: rid(), x: e.x, val: glancing, crit: false, color: "#B15CF6",',
+              '        born: Date.now(), text: "ENVOL · 30%" });',
+              '      return glancing;'
+          ])
           if new not in s:
               if old not in s:
                   raise SystemExit('Dragon Envol anchor missing')
