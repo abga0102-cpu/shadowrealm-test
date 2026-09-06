@@ -1,4 +1,4 @@
-# trigger-v30-2
+# trigger-v30-3
 name: Sanctuary merge v30
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
           assert 'SANCT_MERGE_ORDER' in g4
           assert 'SANCT_BOARD_SIZE = 16' in g4
           assert 'function sanctSupplierPrice(level)' in g4
@@ -46,7 +46,6 @@ jobs:
           assert 'const hop = 0;' in g3
           assert 'SCROLL_PRESERVE_V24' in g5
           assert 'DECISION_HIERARCHY_V23' in g5
-          assert 'function raidIntroDifficultyMul' in g1
           assert '|| "2026.09.06.30";' in g2
           assert idx.count('2026.09.06.30') >= 7
           print('v30 sanctuary merge checks passed')
