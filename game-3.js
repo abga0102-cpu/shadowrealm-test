@@ -13,6 +13,7 @@ const ARENA_H = 286, CHAR = 64;   // sprite unit; scaled to the arena at draw ti
 
 const P = { hero: HERO_START, en: {} };   // smoothed positions
 let arenaEl = null, arenaNodes = null, arenaT = 0;
+let arenaCombatRef = null; // ARENA_STABILITY_V36
 let lastTrack = "", lastSub = "", lastDecor = "";         // header caches, so rAF skips DOM writes
 let floorFlash = null;                    // brief "ÉTAGE N" beat between floors
 
@@ -72,9 +73,14 @@ function mountArena(el) {
     layer: el.querySelector("#aLayer"),
     banner: el.querySelector("#banner"),
   };
-  // reset smoothing so a screen change does not slide sprites across the arena
-  P.hero = combat ? combat.heroX : HERO_START;
-  P.en = {};
+  // ARENA_STABILITY_V36: a UI re-render must not reset fighter smoothing mid-combat.
+  // Reset positions only when the actual combat instance changes. This removes
+  // the occasional visible jump caused by remounting the arena for unrelated UI updates.
+  if (arenaCombatRef !== combat) {
+    P.hero = combat ? combat.heroX : HERO_START;
+    P.en = {};
+    arenaCombatRef = combat;
+  }
   lastTrack = lastSub = lastDecor = "";   // fresh nodes, so force the next write
   arenaNodes.bg.style.backgroundImage = 'url("' + bgFor(combat && combat.bg) + '")';
 }
