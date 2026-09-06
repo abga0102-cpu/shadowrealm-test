@@ -67,7 +67,7 @@ function scrAccueil() {
   // Navigation regroupée : Forge reste visible sur l'écran Combat; les systèmes
   // secondaires sont réunis dans des hubs cohérents au lieu de multiplier les fenêtres.
   const navBtns = [
-    { label: "Équipement", icon: "swords", color: "#5A7099", go: "equipement", badge: S.statPoints > 0 || S.inventory.length > 0 },
+    { label: "Équipement", icon: "swords", color: "#5A7099", go: "equipement", badge: S.inventory.length > 0 },
     { label: "Développement", icon: "tree", color: "#2F8A45", go: "developpement",
       badge: !S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n)) },
     { label: "Défis", icon: "flame", color: "#C22127", go: "defis",
