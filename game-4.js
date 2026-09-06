@@ -13,43 +13,37 @@ function scrAccueil() {
   const upgRemain = upgrading ? (S.forge.upgradeEnd - Date.now()) / 1000 : 0;
   const upgDone = S.forge.upgradeEnd > 0 && !upgrading;
 
-  // Une recommandation réelle, calculée à partir de l'état du joueur.
-  // Elle reste actionnable même lorsque la fonctionnalité se trouve sur un autre écran.
+  // Une seule source de guidage : pendant une leçon, le Tutoriel reste seul.
+  // Ensuite viennent les collectes terminées, le Boss bloquant, puis l'objectif réel.
+  const tutorialPending = typeof pendingTutorialStep === "function" && !!pendingTutorialStep();
   const readyEggCount = (S.eggs || []).filter((e) => eggIsHatching(e) && e.hatchEnd <= Date.now()).length;
   const readyResearch = !!(S.tree && S.tree.active && S.tree.activeEnd <= Date.now());
-  const readyRaid = RAID_IDS.find((id) => S.raids[id] && S.raids[id].keys > 0);
-  const affordableTree = !S.tree.active && TREE_NODES.some((n) => treeCanBuy(S, n));
+  const goal = currentPrimaryGoal(S);
   let recommended;
-  if (canRetryBoss) {
-    recommended = { icon: "skull", title: "Affronter le Boss " + pendingBoss,
-      sub: "Le Boss bloque le prochain étage.", cls: "red", act: "bossRetry" };
-  } else if (upgDone) {
+  if (upgDone) {
     recommended = { icon: "hammer", title: "Récupérer la Forge",
-      sub: "L’amélioration est terminée.", cls: "green", act: "forgeCollect" };
+      sub: "L’amélioration est terminée.", cta: "RÉCUPÉRER", cls: "green", act: "forgeCollect" };
   } else if (readyEggCount > 0) {
     recommended = { icon: "egg", title: "Récupérer " + readyEggCount + " œuf" + (readyEggCount > 1 ? "s" : ""),
-      sub: "Une éclosion terminée t’attend.", cls: "green", act: "go", arg: "familiers" };
+      sub: "Une éclosion terminée t’attend.", cta: "OUVRIR", cls: "green", act: "go", arg: "familiers" };
   } else if (readyResearch) {
     recommended = { icon: "tree", title: "Récupérer la recherche",
-      sub: "Le bonus de l’Arbre est prêt.", cls: "green", act: "go", arg: "arbre" };
-  } else if (readyRaid) {
-    recommended = { icon: "flame", title: "Utiliser une clé de Raid",
-      sub: RAIDS[readyRaid].reward + " est disponible.", cls: "red", act: "go", arg: "defis" };
-  } else if (!S.forge.autoForge && S.minerai >= forgeCost(S.forge.level)) {
-    recommended = { icon: "hammer", title: "Forger une pièce",
-      sub: "Tu as assez de minerai.", cls: "blue", act: "forge", arg: 1 };
-  } else if (affordableTree) {
-    recommended = { icon: "tree", title: "Développer un bonus",
-      sub: "Une amélioration de l’Arbre est disponible.", cls: "green", act: "go", arg: "developpement" };
+      sub: "Le bonus de l’Arbre est prêt.", cta: "OUVRIR", cls: "green", act: "go", arg: "arbre" };
+  } else if (canRetryBoss) {
+    recommended = { icon: "skull", title: "Affronter le Boss " + pendingBoss,
+      sub: "Le Boss bloque le prochain étage.", cta: "AFFRONTER", cls: "red", act: "bossRetry" };
   } else {
-    recommended = { icon: "swords", title: "Vérifier l’équipement",
-      sub: "Optimise ton héros pendant sa progression.", cls: "blue", act: "go", arg: "equipement" };
+    const target = goal.go || "accueil";
+    recommended = { icon: goal.category === "defi" ? "flame" : goal.category === "developpement" ? "tree" : "target",
+      title: goal.title, sub: goal.why, cta: "VOIR", cls: goal.category === "defi" ? "red" : "blue",
+      act: target === "accueil" ? "focusGoal" : "go", arg: target === "accueil" ? undefined : target };
   }
-  const recommendedCard = '<div class="pad recommendedWrap"><div class="card recommendedActionCard">' +
+  const recommendedCard = tutorialPending ? "" :
+    '<div class="pad recommendedWrap"><div class="card recommendedActionCard" data-decision-scope="recommendation">' +
     '<div class="recommendedKicker">' + ic("bolt", 11) + ' ACTION RECOMMANDÉE</div>' +
     '<div class="between gap8 mt4"><div class="flex1"><div class="bb recommendedTitle">' +
     esc(recommended.title) + '</div><div class="mute tiny mt3">' + esc(recommended.sub) + '</div></div>' +
-    btn(ic(recommended.icon, 14) + ' OUVRIR', { cls: recommended.cls, small: true, act: recommended.act,
+    btn(ic(recommended.icon, 14) + ' ' + recommended.cta, { cls: recommended.cls, small: true, act: recommended.act,
       arg: recommended.arg, primary: true, style: "width:auto;min-width:92px;flex:0 0 auto" }) +
     '</div></div></div>';
 
