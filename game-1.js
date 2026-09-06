@@ -1840,7 +1840,7 @@ function progressionGoalHTML(st) {
     '</summary>' +
     '<div style="padding-top:7px;border-top:1px solid #263958;margin-top:7px">' +
       '<div class="goalWhy">' + esc(g.why) + '</div>' +
-      (g.go ? '<button class="btn blue sm" data-act="go" data-arg="' + esc(g.go) + '" style="width:100%;margin-top:7px">ALLER À L’OBJECTIF</button>' : '') +
+      (g.go ? '<button class="btn blue sm" data-act="go" data-arg="' + esc(g.go) + '" data-primary="true" style="width:100%;margin-top:7px">ALLER À L’OBJECTIF</button>' : '') +
       (subs.length ? '<div class="goalSub">' + subs.map((x) => '<div class="goalChip" data-act="go" data-arg="' + esc(x.go||"accueil") + '" style="cursor:pointer"><b>' + esc(goalCategoryLabel(x.category)) + ' · ' + esc(x.title) + '</b><span>' + Math.floor(x.now) + ' / ' + Math.floor(x.max) + ' · ouvrir ›</span></div>').join('') + '</div>' : '') +
       (unlock ? '<div class="goalUnlock" data-act="goalUnlockInfo" style="cursor:pointer">' + ic("lock",13) + '<div class="flex1"><b>PROCHAIN DÉBLOCAGE · ' + esc(unlock.title) + '</b><br><span>' + esc(unlock.note) + ' · ' + Math.floor(unlock.now) + ' / ' + Math.floor(unlock.max) + ' · détails ›</span></div></div>' : '') +
     '</div></details>';
