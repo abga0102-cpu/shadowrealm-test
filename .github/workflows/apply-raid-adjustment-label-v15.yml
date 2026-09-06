@@ -1,5 +1,5 @@
-# trigger-v17-4
-name: Apply dragon flight balance v17
+# trigger-v18-1
+name: Apply equipment upgrade clarity v18
 on:
   push:
     paths:
@@ -11,45 +11,72 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Soften melee penalty during Dragon flight
+      - name: Improve dust efficiency and item stat clarity
         run: |
           python <<'PY'
           from pathlib import Path
+
+          # Slightly improve Dust efficiency: +0.35% -> +0.375% of the reference stat per successful level.
           p = Path('game-2.js')
           s = p.read_text()
-          old = '\n'.join([
-              '      // in the air a sword swings at nothing; arrows and spells still reach him',
-              '      if (src !== "weapon" || RANGED_IDS.indexOf(D.weapon) >= 0) return dmg;',
-              '      c.floats.push({ id: rid(), x: e.x, val: 0, crit: false, color: "#B15CF6",',
-              '        born: Date.now(), text: "HORS D\'ATTEINTE" });',
-              '      return 0;'
-          ])
-          new = '\n'.join([
-              '      // Ranged weapons and skills keep full damage. Melee can still clip the Dragon',
-              '      // during Envol, but at only 30%, so the phase remains a meaningful disadvantage',
-              '      // without turning a melee build completely off for four seconds.',
-              '      if (src !== "weapon" || RANGED_IDS.indexOf(D.weapon) >= 0) return dmg;',
-              '      const glancing = Math.max(1, Math.floor(dmg * 0.30));',
-              '      c.floats.push({ id: rid(), x: e.x, val: glancing, crit: false, color: "#B15CF6",',
-              '        born: Date.now(), text: "ENVOL · 30%" });',
-              '      return glancing;'
-          ])
-          if new not in s:
-              if old not in s:
-                  raise SystemExit('Dragon Envol anchor missing')
-              s = s.replace(old, new, 1)
-          if '|| "2026.09.06.17";' not in s:
-              if '|| "2026.09.06.16";' not in s:
-                  raise SystemExit('APP_BUILD fallback .16 missing')
-              s = s.replace('|| "2026.09.06.16";', '|| "2026.09.06.17";', 1)
+          old_dmg = 'next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.0035) * 100) / 100;'
+          new_dmg = 'next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.00375) * 100) / 100;'
+          old_hp = 'next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.0035) * 100) / 100;'
+          new_hp = 'next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.00375) * 100) / 100;'
+          if new_dmg not in s:
+              if old_dmg not in s: raise SystemExit('Damage upgrade anchor missing')
+              s = s.replace(old_dmg, new_dmg, 1)
+          if new_hp not in s:
+              if old_hp not in s: raise SystemExit('HP upgrade anchor missing')
+              s = s.replace(old_hp, new_hp, 1)
+          if '|| "2026.09.06.18";' not in s:
+              if '|| "2026.09.06.17";' not in s: raise SystemExit('APP_BUILD .17 anchor missing')
+              s = s.replace('|| "2026.09.06.17";', '|| "2026.09.06.18";', 1)
           p.write_text(s)
 
+          # Clarify the item detail summary.
+          p = Path('game-5.js')
+          s = p.read_text()
+          anchor = '  const upgradePreview = itemUpgradePreview(it);\n'
+          add = '\n'.join([
+              '  const isWeaponStat = !!it.baseDamage;',
+              '  const basePrimary = Number(isWeaponStat ? (it.baseDamage || it.damage || 0) : (it.baseHp || it.hp || 0));',
+              '  const currentPrimary = Number(isWeaponStat ? (it.damage || 0) : (it.hp || 0));',
+              '  const addedPrimary = Math.max(0, currentPrimary - basePrimary);',
+          ]) + '\n'
+          if add not in s:
+              if anchor not in s: raise SystemExit('Item modal preview anchor missing')
+              s = s.replace(anchor, anchor + add, 1)
+
+          old_block = '\n'.join([
+              '      (it.baseDamage',
+              '        ? st("ATTAQUE DE BASE", "+" + equipStat(it.damage), "#FF9C6B")',
+              '        : st("SANTÉ DE BASE", "+" + equipStat(it.hp), "var(--redLit)")) +',
+              '      st("PUISSANCE", equipStat(it.power), "var(--goldLit)") +',
+              '      (wt ? st("TYPE D\'ARME", wt.name + " · " + (wt.attackType === "MELEE" ? "mêlée" : "distance"), "var(--blueLit)") +',
+              '        st("PORTÉE · VITESSE", wt.range + " · ×" + wt.speed, "var(--blueLit)") : "") +',
+              '      st("NIVEAU D\'AMÉLIORATION", "+" + it.level, "var(--goldLit)") +',
+          ])
+          new_block = '\n'.join([
+              '      (it.baseDamage',
+              '        ? st("ATTAQUE DE BASE", "+" + equipStat(basePrimary), "#FF9C6B")',
+              '        : st("SANTÉ DE BASE", "+" + equipStat(basePrimary), "var(--redLit)")) +',
+              '      st(it.baseDamage ? "BONUS D\'ATTAQUE" : "BONUS DE SANTÉ", "+" + equipStat(addedPrimary), "var(--greenLit)") +',
+              '      st("PUISSANCE TOTALE", equipStat(it.power), "var(--goldLit)") +',
+              '      (wt ? st("TYPE D\'ARME", wt.name + " · " + (wt.attackType === "MELEE" ? "mêlée" : "distance"), "var(--blueLit)") +',
+              '        st("PORTÉE · VITESSE", wt.range + " · ×" + wt.speed, "var(--blueLit)") : "") +',
+          ])
+          if new_block not in s:
+              if old_block not in s: raise SystemExit('Item stat block anchor missing')
+              s = s.replace(old_block, new_block, 1)
+          p.write_text(s)
+
+          # Bump cache-busted web build.
           p = Path('index.html')
           s = p.read_text()
-          if '2026.09.06.17' not in s:
-              if '2026.09.06.16' not in s:
-                  raise SystemExit('build .16 anchor missing')
-              s = s.replace('2026.09.06.16', '2026.09.06.17')
+          if '2026.09.06.18' not in s:
+              if '2026.09.06.17' not in s: raise SystemExit('index build .17 anchor missing')
+              s = s.replace('2026.09.06.17', '2026.09.06.18')
           p.write_text(s)
           PY
       - name: Syntax and regression checks
@@ -61,15 +88,19 @@ jobs:
           node --check game-5.js
           python <<'PY'
           from pathlib import Path
-          s=Path('game-2.js').read_text()
-          assert 'Math.floor(dmg * 0.30)' in s
-          assert 'ENVOL · 30%' in s
-          assert 'return glancing;' in s
-          assert 'function campaignBossStatMul(floor)' in s
-          assert '|| "2026.09.06.17";' in s
+          e=Path('game-2.js').read_text()
+          u=Path('game-5.js').read_text()
           h=Path('index.html').read_text()
-          assert '2026.09.06.17' in h
-          print('Dragon Envol melee damage = 30%; boss normalization preserved')
+          assert 'steps * 0.00375' in e
+          assert 'steps * 0.0035' not in e[e.index('function itemUpgradePreview'):e.index('function itemUpgradeChance')]
+          assert 'BONUS DE SANTÉ' in u
+          assert 'PUISSANCE TOTALE' in u
+          assert 'NIVEAU D\'AMÉLIORATION' not in u[u.index('const upgradePreview = itemUpgradePreview(it)'):u.index('BONUS DE STATS', u.index('const upgradePreview = itemUpgradePreview(it)'))]
+          assert '2026.09.06.18' in h
+          assert '|| "2026.09.06.18";' in e
+          assert 'Math.floor(dmg * 0.30)' in e
+          assert 'function campaignBossStatMul(floor)' in e
+          print('Equipment stats clarified; Dust effectiveness +7.14% per upgrade step coefficient.')
           PY
       - name: Commit update
         run: |
@@ -79,6 +110,6 @@ jobs:
             echo 'Already applied'
             exit 0
           fi
-          git add game-2.js index.html
-          git commit -m 'Envol Dragon' -m 'Réduit la pénalité de mêlée pendant l’Envol du Dragon des Cendres. Les attaques d’arme de mêlée infligent désormais 30 % de leurs dégâts au lieu de 0 %, tandis que les armes à distance et les compétences restent inchangées. La durée de l’Envol, le Souffle, l’Intimidation et la normalisation des Boss restent identiques. Build 2026.09.06.17.'
+          git add game-2.js game-5.js index.html
+          git commit -m 'Stats Équipement' -m 'Améliore légèrement l’efficacité des Poussières : chaque niveau réussi ajoute désormais 0,375 % de la statistique de référence au lieu de 0,35 %. Le détail d’un équipement affiche maintenant Santé de base, Bonus de santé et Puissance totale pour les pièces défensives, avec l’équivalent Attaque de base / Bonus d’attaque pour les armes. Le Niveau d’amélioration est retiré de ce bloc car il est déjà visible dans le nom de l’objet. Build 2026.09.06.18.'
           git push
