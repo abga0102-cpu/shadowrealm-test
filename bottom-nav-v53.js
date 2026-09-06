@@ -1,5 +1,5 @@
-// BOTTOM_NAV_FANTASY_V59
-// Navigation fantasy illustrée inspirée du style validé par l'utilisateur.
+// BOTTOM_NAV_FANTASY_V61
+// Navigation fantasy illustrée, avec garde anti-boucle MutationObserver.
 (function(){
   const ICONS={
     accueil:`<svg class="fantasyNavSvg" viewBox="0 0 64 64" aria-hidden="true">
@@ -56,10 +56,10 @@
     root.querySelectorAll('button,.tab,[data-act]').forEach(el=>{
       const text=normalize(el.textContent);
       const alias=Object.keys(aliases).find(k=>text===k||text.endsWith(k));
-      if(!alias)return;
+      if(!alias||el.dataset.navIconV59==='1')return;
       const key=aliases[alias];
-      el.classList.add('fantasyNavV59');
       el.dataset.navIconV59='1';
+      el.classList.add('fantasyNavV59');
       const old=el.querySelector('svg,img');
       if(old) old.outerHTML=ICONS[key]; else el.insertAdjacentHTML('afterbegin',ICONS[key]);
     });
