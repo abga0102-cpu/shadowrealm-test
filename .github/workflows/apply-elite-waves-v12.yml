@@ -1,0 +1,35 @@
+name: Apply elite waves v12
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-elite-waves-v12.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply build 2026.09.06.12
+        run: python3 scripts/apply_v12.py
+      - name: Syntax and regression checks
+        run: |
+          node --check game-1.js
+          node --check game-2.js
+          node --check game-3.js
+          node --check game-4.js
+          node --check game-5.js
+          cat game-1.js game-2.js game-3.js game-4.js game-5.js > /tmp/all.js
+          node --check /tmp/all.js
+          grep -q '2026.09.06.12' index.html
+          grep -q 'function campaignWaveCount' game-2.js
+          grep -q 'isElite(floor)) return 2' game-2.js
+          grep -q 'step === campaignWaveCount(floor)' game-2.js
+          grep -q 's.step < campaignWaveCount(s.floor)' game-2.js
+      - name: Commit update
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game-2.js index.html
+          git commit -m "Vagues Élite" -m "Réduit les étages Élite à 2 vagues : une première vague normale puis l’Élite en deuxième vague. Les étages normaux restent à 3 vagues et les étages Boss restent des combats uniques. Build 2026.09.06.12."
+          git push
