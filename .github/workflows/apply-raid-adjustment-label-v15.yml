@@ -1,4 +1,4 @@
-# trigger-v18-1
+# trigger-v18-2
 name: Apply equipment upgrade clarity v18
 on:
   push:
@@ -16,25 +16,21 @@ jobs:
           python <<'PY'
           from pathlib import Path
 
-          # Slightly improve Dust efficiency: +0.35% -> +0.375% of the reference stat per successful level.
           p = Path('game-2.js')
           s = p.read_text()
-          old_dmg = 'next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.0035) * 100) / 100;'
-          new_dmg = 'next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.00375) * 100) / 100;'
-          old_hp = 'next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.0035) * 100) / 100;'
-          new_hp = 'next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.00375) * 100) / 100;'
-          if new_dmg not in s:
-              if old_dmg not in s: raise SystemExit('Damage upgrade anchor missing')
-              s = s.replace(old_dmg, new_dmg, 1)
-          if new_hp not in s:
-              if old_hp not in s: raise SystemExit('HP upgrade anchor missing')
-              s = s.replace(old_hp, new_hp, 1)
-          if '|| "2026.09.06.18";' not in s:
-              if '|| "2026.09.06.17";' not in s: raise SystemExit('APP_BUILD .17 anchor missing')
-              s = s.replace('|| "2026.09.06.17";', '|| "2026.09.06.18";', 1)
+          reps = [
+              ('next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.0035) * 100) / 100;',
+               'next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.00375) * 100) / 100;'),
+              ('next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.0035) * 100) / 100;',
+               'next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.00375) * 100) / 100;'),
+              ('|| "2026.09.06.17";', '|| "2026.09.06.18";'),
+          ]
+          for old,new in reps:
+              if new not in s:
+                  if old not in s: raise SystemExit('game-2 anchor missing: ' + old)
+                  s = s.replace(old,new,1)
           p.write_text(s)
 
-          # Clarify the item detail summary.
           p = Path('game-5.js')
           s = p.read_text()
           anchor = '  const upgradePreview = itemUpgradePreview(it);\n'
@@ -45,38 +41,29 @@ jobs:
               '  const addedPrimary = Math.max(0, currentPrimary - basePrimary);',
           ]) + '\n'
           if add not in s:
-              if anchor not in s: raise SystemExit('Item modal preview anchor missing')
+              if anchor not in s: raise SystemExit('item modal helper anchor missing')
               s = s.replace(anchor, anchor + add, 1)
 
-          old_block = '\n'.join([
-              '      (it.baseDamage',
-              '        ? st("ATTAQUE DE BASE", "+" + equipStat(it.damage), "#FF9C6B")',
-              '        : st("SANTÉ DE BASE", "+" + equipStat(it.hp), "var(--redLit)")) +',
-              '      st("PUISSANCE", equipStat(it.power), "var(--goldLit)") +',
-              '      (wt ? st("TYPE D\'ARME", wt.name + " · " + (wt.attackType === "MELEE" ? "mêlée" : "distance"), "var(--blueLit)") +',
-              '        st("PORTÉE · VITESSE", wt.range + " · ×" + wt.speed, "var(--blueLit)") : "") +',
-              '      st("NIVEAU D\'AMÉLIORATION", "+" + it.level, "var(--goldLit)") +',
-          ])
-          new_block = '\n'.join([
-              '      (it.baseDamage',
-              '        ? st("ATTAQUE DE BASE", "+" + equipStat(basePrimary), "#FF9C6B")',
-              '        : st("SANTÉ DE BASE", "+" + equipStat(basePrimary), "var(--redLit)")) +',
-              '      st(it.baseDamage ? "BONUS D\'ATTAQUE" : "BONUS DE SANTÉ", "+" + equipStat(addedPrimary), "var(--greenLit)") +',
-              '      st("PUISSANCE TOTALE", equipStat(it.power), "var(--goldLit)") +',
-              '      (wt ? st("TYPE D\'ARME", wt.name + " · " + (wt.attackType === "MELEE" ? "mêlée" : "distance"), "var(--blueLit)") +',
-              '        st("PORTÉE · VITESSE", wt.range + " · ×" + wt.speed, "var(--blueLit)") : "") +',
-          ])
-          if new_block not in s:
-              if old_block not in s: raise SystemExit('Item stat block anchor missing')
-              s = s.replace(old_block, new_block, 1)
+          swaps = [
+              ('? st("ATTAQUE DE BASE", "+" + equipStat(it.damage), "#FF9C6B")',
+               '? st("ATTAQUE DE BASE", "+" + equipStat(basePrimary), "#FF9C6B")'),
+              (': st("SANTÉ DE BASE", "+" + equipStat(it.hp), "var(--redLit)")) +',
+               ': st("SANTÉ DE BASE", "+" + equipStat(basePrimary), "var(--redLit)")) +'),
+              ('      st("PUISSANCE", equipStat(it.power), "var(--goldLit)") +',
+               '      st(it.baseDamage ? "BONUS D\'ATTAQUE" : "BONUS DE SANTÉ", "+" + equipStat(addedPrimary), "var(--greenLit)") +\n      st("PUISSANCE TOTALE", equipStat(it.power), "var(--goldLit)") +'),
+              ('      st("NIVEAU D\'AMÉLIORATION", "+" + it.level, "var(--goldLit)") +\n', '')
+          ]
+          for old,new in swaps:
+              if new and new in s: continue
+              if old not in s: raise SystemExit('game-5 anchor missing: ' + old)
+              s = s.replace(old,new,1)
           p.write_text(s)
 
-          # Bump cache-busted web build.
           p = Path('index.html')
           s = p.read_text()
           if '2026.09.06.18' not in s:
-              if '2026.09.06.17' not in s: raise SystemExit('index build .17 anchor missing')
-              s = s.replace('2026.09.06.17', '2026.09.06.18')
+              if '2026.09.06.17' not in s: raise SystemExit('index .17 anchor missing')
+              s = s.replace('2026.09.06.17','2026.09.06.18')
           p.write_text(s)
           PY
       - name: Syntax and regression checks
@@ -91,16 +78,18 @@ jobs:
           e=Path('game-2.js').read_text()
           u=Path('game-5.js').read_text()
           h=Path('index.html').read_text()
-          assert 'steps * 0.00375' in e
-          assert 'steps * 0.0035' not in e[e.index('function itemUpgradePreview'):e.index('function itemUpgradeChance')]
-          assert 'BONUS DE SANTÉ' in u
-          assert 'PUISSANCE TOTALE' in u
-          assert 'NIVEAU D\'AMÉLIORATION' not in u[u.index('const upgradePreview = itemUpgradePreview(it)'):u.index('BONUS DE STATS', u.index('const upgradePreview = itemUpgradePreview(it)'))]
+          seg=e[e.index('function itemUpgradePreview'):e.index('function itemUpgradeChance')]
+          assert seg.count('0.00375') >= 2
+          assert '0.0035' not in seg
+          modal=u[u.index('const upgradePreview = itemUpgradePreview(it)'):u.index('BONUS DE STATS',u.index('const upgradePreview = itemUpgradePreview(it)'))]
+          assert 'BONUS DE SANTÉ' in modal
+          assert 'PUISSANCE TOTALE' in modal
+          assert 'NIVEAU D\'AMÉLIORATION' not in modal
           assert '2026.09.06.18' in h
           assert '|| "2026.09.06.18";' in e
           assert 'Math.floor(dmg * 0.30)' in e
           assert 'function campaignBossStatMul(floor)' in e
-          print('Equipment stats clarified; Dust effectiveness +7.14% per upgrade step coefficient.')
+          print('v18 checks passed')
           PY
       - name: Commit update
         run: |
