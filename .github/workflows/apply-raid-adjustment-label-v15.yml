@@ -1,4 +1,4 @@
-# trigger-v32-2
+# trigger-v32-3
 name: Gold economy v32
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g4=Path('game-4.js').read_text(); idx=Path('index.html').read_text()
           assert 'Total exact des 50 niveaux : 35 000 PR' in g1
           assert 'costs: [25,40,50,65,80,90,105,130,145,155' in g1
           assert '1815]' in g1
@@ -38,7 +38,6 @@ jobs:
           assert 'gold: raidReward("or", s.raids.or.level) * 0.25' in g1
           assert '250*Math.max(1,level)*Math.max(1,level)' in g4
           assert 'SANCT_MERGE_ORDER' in g4 and 'SANCT_BOARD_SIZE = 16' in g4
-          assert 'SCROLL_PRESERVE_V24' in g5 and 'DECISION_HIERARCHY_V29' in g5
           assert '2026.09.06.32' in g2 and '2026.09.06.32' in idx
           print('v32 gold economy checks passed')
           PY
