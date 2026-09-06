@@ -1,5 +1,5 @@
-# trigger-scroll-stability-v47-1
-name: Scroll stability v47
+# trigger-chat-arena-overlay-v48-1
+name: Chat arena overlay v48
 on:
   push:
     paths:
@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply scroll stability fix
-        run: python .github/scroll_stability_v47.py
+      - name: Apply chat arena overlay
+        run: python .github/chat_arena_overlay_v48.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -30,24 +30,26 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); social=Path('social-v1.js').read_text(); idx=Path('index.html').read_text()
+          assert 'CHAT_ARENA_OVERLAY_V48' in social
+          assert 'function dockSocialUI()' in social
+          assert 'background:rgba(7,11,19,.66)' in social
+          assert 'backdrop-filter:blur(3px)' in social
+          assert 'Math.min(286,ar.height-margin*2)' in social
+          assert 'dockObserver' in social
+          assert '2026.09.06.48' in g2 and '2026.09.06.48' in idx
+          assert 'social-v1.js?v=2026.09.06.48' in idx
           assert 'SCROLL_STABILITY_V47' in g5
-          assert 'SCROLL_PRESERVE_V24' not in g5
-          assert 'wasNearBottom' not in g5
-          assert 'requestAnimationFrame(restore)' not in g5
-          assert 'activelyScrolling' in g5 and 'scrollDeferredV47' in g5
-          assert '2026.09.06.47' in g2 and '2026.09.06.47' in idx
-          assert 'SKILL_SLOTS_BASE: 3' in g1
           assert 'ARENA_STABILITY_V36' in g3
           assert 'ARENA_EQUIPMENT_REMOVED_V45' in g4
-          assert 'SANCTUARY_DRAG_MERGE_V34' in g5
-          print('v47 scroll stability checks passed')
+          assert 'SKILL_SLOTS_BASE: 3' in g1
+          print('v48 chat arena overlay checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
-          git add game-2.js game-5.js index.html
-          git commit -m 'Scroll Stable' -m 'Empêche les rafraîchissements live de reconstruire l’écran pendant un scroll ou son inertie, retire le double rétablissement de scroll et le collage automatique en bas de page responsables des sauts sur Arbre et autres écrans longs. La position est conservée une seule fois après rendu, puis le dernier rendu attendu est rejoué après la fin du geste. Aucun changement de progression, économie, combat, Forge, Sanctuaire ou sauvegarde. Build 2026.09.06.47.'
+          git add social-v1.js game-2.js index.html
+          git commit -m 'Chat Arène Transparent' -m 'Place le bouton Chat au bord de l’arène sur la Campagne et transforme le chat ouvert en panneau translucide limité à la hauteur de l’arène. Le combat reste visible derrière et la Forge n’est plus recouverte. Le panneau se recale après les rerenders et les changements d’orientation. Les systèmes de combat, progression, économie, Sanctuaire, Forge et sauvegardes restent inchangés. Build 2026.09.06.48.'
           git push
