@@ -1,129 +1,108 @@
-/* SHADOWREACH SOCIAL V1
-   Frontend social layer. Same-origin tabs/devices on the same browser sync via
-   BroadcastChannel + localStorage. A remote transport can be attached later via
-   window.SHADOWREACH_SOCIAL_ENDPOINT without changing the UI contract. */
+/* SHADOWREACH SOCIAL V2
+   Forge Master-inspired social UX: Monde / Clan / Annonces, compact feed,
+   clickable player identity, PvP challenge and share cards. */
 (() => {
   const KEY="shadowreach.social.v1.messages";
-  const MAX=120;
+  const MAX=160;
   const channel = typeof BroadcastChannel!=="undefined" ? new BroadcastChannel("shadowreach-social-v1") : null;
-  let open=false, profileOpen=null, unread=0, lastArenaResult=null, pendingChallenge=null, lastBotAt=0;
+  let open=false, profileOpen=null, unread=0, lastArenaResult=null, pendingChallenge=null, lastBotAt=0, activeTab="world";
+  const tabs={world:"Monde",clan:"Clan",announcements:"Annonces"};
   const bots=[
     {name:"Nyx",level:34,power:18000,floor:62,forge:17,bot:true},
     {name:"Kael",level:48,power:42000,floor:81,forge:24,bot:true},
     {name:"Mira",level:27,power:9700,floor:49,forge:12,bot:true},
     {name:"Rook",level:61,power:86000,floor:103,forge:31,bot:true},
   ];
-  const botLines=[
-    "Quelqu’un a déjà passé le prochain boss ?",
-    "Je viens de changer mon build, ça tape beaucoup mieux.",
-    "J’économise mes clés pour les raids.",
-    "Le Raid Évolution commence enfin à devenir rentable.",
-    "Qui veut tester un duel ?",
-    "Je me suis encore fait surprendre par un boss 😅",
-    "La forge me ruine mais je continue quand même.",
-    "Je viens de gagner un niveau, enfin.",
-  ];
+  const botLines={
+    world:["Quelqu’un a déjà passé le prochain boss ?","Je viens de changer mon build, ça tape beaucoup mieux.","J’économise mes clés pour les raids.","Qui veut tester un duel ?","Je me suis encore fait surprendre par un boss 😅","La forge me ruine mais je continue quand même."],
+    clan:["Quelqu’un garde des clés pour le prochain objectif ?","Je peux tester un duel si besoin.","Je viens de monter ma Forge."],
+  };
   const esc=s=>String(s??"").replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
   const now=()=>Date.now();
+  const msgChannel=m=>tabs[m&&m.channel]?m.channel:"world";
   function myProfile(){
-    try{
-      return {name:String(S.playerName||"Héros").slice(0,24),level:Number(S.level)||1,power:Math.max(1,Number(S.power)||Number(typeof computePower==="function"?computePower(S):1)||1),floor:Number(S.recordFloor||S.floor)||1,forge:Number(S.forge&&S.forge.level)||1,bot:false};
-    }catch(_){return {name:"Héros",level:1,power:1,floor:1,forge:1,bot:false};}
+    try{return {name:String(S.playerName||S.name||"Héros").slice(0,24),level:Number(S.level)||1,power:Math.max(1,Number(S.power)||Number(typeof computePower==="function"?computePower(S):1)||1),floor:Number(S.recordFloor||S.floor)||1,forge:Number(S.forge&&S.forge.level)||1,bot:false};}
+    catch(_){return {name:"Héros",level:1,power:1,floor:1,forge:1,bot:false};}
   }
   function read(){try{const a=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(a)?a.slice(-MAX):[]}catch(_){return[]}}
   function write(list){try{localStorage.setItem(KEY,JSON.stringify(list.slice(-MAX)))}catch(_){}}
   function push(msg,broadcast=true,relay=broadcast){
-    const list=read(); if(list.some(x=>x.id===msg.id))return;
+    if(!msg||!msg.id)return; msg.channel=msgChannel(msg);
+    const list=read(); if(list.some(x=>x&&x.id===msg.id))return;
     list.push(msg); write(list);
     if(broadcast&&channel)try{channel.postMessage(msg)}catch(_){ }
-    if(!open){unread++;paintButton();} else render();
+    if(!open){unread++;paintButton();} else if(msg.channel===activeTab)render();
     if(relay)remoteSend(msg);
   }
-  async function remoteSend(msg){
-    const ep=window.SHADOWREACH_SOCIAL_ENDPOINT; if(!ep)return;
-    try{await fetch(ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(msg)})}catch(_){ }
-  }
-  async function remotePull(){
-    const ep=window.SHADOWREACH_SOCIAL_ENDPOINT; if(!ep)return;
-    try{const r=await fetch(ep+(ep.includes("?")?"&":"?")+"since="+encodeURIComponent(now()-180000),{cache:"no-store"});if(!r.ok)return;const a=await r.json();if(Array.isArray(a))a.forEach(m=>push(m,true,false));}catch(_){ }
-  }
+  async function remoteSend(msg){const ep=window.SHADOWREACH_SOCIAL_ENDPOINT;if(!ep)return;try{await fetch(ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(msg)})}catch(_){ }}
+  async function remotePull(){const ep=window.SHADOWREACH_SOCIAL_ENDPOINT;if(!ep)return;try{const r=await fetch(ep+(ep.includes("?")?"&":"?")+"since="+encodeURIComponent(now()-180000),{cache:"no-store"});if(!r.ok)return;const a=await r.json();if(Array.isArray(a))a.forEach(m=>push(m,true,false));}catch(_){ }}
   function sendText(text){
+    if(activeTab==="announcements")return;
     text=String(text||"").trim().slice(0,220); if(!text)return;
-    const p=myProfile(); push({id:"m"+now()+Math.random().toString(36).slice(2,7),type:"text",ts:now(),author:p.name,profile:p,text});
+    const p=myProfile(); push({id:"m"+now()+Math.random().toString(36).slice(2,7),type:"text",channel:activeTab,ts:now(),author:p.name,profile:p,text});
   }
   function botSpeak(){
-    const b=bots[Math.floor(Math.random()*bots.length)],text=botLines[Math.floor(Math.random()*botLines.length)];
-    push({id:"b"+now()+Math.random().toString(36).slice(2,7),type:"text",ts:now(),author:b.name,profile:b,text,bot:true},true,false);
-    lastBotAt=now();
+    const tab=Math.random()<.82?"world":"clan", pool=botLines[tab], b=bots[Math.floor(Math.random()*bots.length)],text=pool[Math.floor(Math.random()*pool.length)];
+    push({id:"b"+now()+Math.random().toString(36).slice(2,7),type:"text",channel:tab,ts:now(),author:b.name,profile:b,text,bot:true},true,false); lastBotAt=now();
   }
-  function seed(){if(read().length)return;bots.slice(0,2).forEach((b,i)=>push({id:"seed"+i,type:"text",ts:now()-((2-i)*45000),author:b.name,profile:b,text:i?"Quelqu’un veut tester l’arène ?":"Bienvenue dans le chat test 👋",bot:true},false,false));}
+  function seed(){
+    if(read().length)return;
+    const n=now();
+    push({id:"seed-ann",type:"announcement",channel:"announcements",ts:n-90000,author:"Shadowreach",text:"Bienvenue dans le chat des testeurs. Utilise Monde pour discuter avec tous les joueurs et Clan pour coordonner ton groupe.",system:true},false,false);
+    push({id:"seed-world",type:"text",channel:"world",ts:n-45000,author:bots[0].name,profile:bots[0],text:"Bienvenue dans le chat test 👋",bot:true},false,false);
+  }
   function fmtTime(ts){try{return new Date(ts).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}catch(_){return""}}
   function injectStyle(){
     const s=document.createElement("style");s.textContent=`
-#srChatBtn{position:absolute;right:12px;bottom:74px;z-index:70;width:54px;height:54px;border-radius:50%;border:2px solid #0A1020;background:linear-gradient(#5FB4F5,#1E72C8);color:white;font-weight:900;box-shadow:0 4px 0 #0A1020,0 8px 18px #0008;cursor:pointer}
-#srChatBtn b{position:absolute;right:-3px;top:-5px;min-width:19px;height:19px;border-radius:10px;background:#E5484D;color:#fff;font:800 11px/19px system-ui;padding:0 5px}
-#srSocial{position:absolute;inset:0;z-index:120;background:#070B13f2;display:flex;flex-direction:column;color:#EDF1FA;font-family:var(--fu,system-ui)}
-#srSocial .head{padding:12px 14px;border-bottom:1px solid #2E4269;background:#101A2C;display:flex;align-items:center;gap:10px}
-#srSocial .head .grow{flex:1}.srClose{border:0;background:#243553;color:#fff;border-radius:10px;padding:8px 11px;font-weight:900}
-#srSocial .status{font-size:10px;color:#93A4C4}.srMessages{flex:1;overflow:auto;padding:10px 12px 88px}.srMsg{padding:9px 10px;margin:0 0 7px;border:1px solid #2E4269;border-radius:11px;background:#141F35}.srMsg.combat{border-color:#8A6522;background:#1b1a16}.srName{font-weight:900;color:#93C6FF;cursor:pointer}.srBot{font-size:9px;color:#FBDD8C;margin-left:5px}.srText{font-size:13px;margin-top:3px;line-height:1.35}.srMeta{font-size:9px;color:#6A7B9C;margin-top:4px}.srCompose{position:absolute;left:0;right:0;bottom:0;padding:9px;background:#101A2C;border-top:1px solid #2E4269;display:flex;gap:7px}.srCompose input{flex:1;min-width:0;border:1px solid #2E4269;background:#080D18;color:white;border-radius:10px;padding:10px;font-size:14px}.srCompose button,.srAction{border:0;border-radius:10px;background:#1E72C8;color:white;padding:9px 11px;font-weight:900}.srProfile{position:absolute;left:14px;right:14px;top:20%;z-index:3;background:#141F35;border:1px solid #4A6494;border-radius:14px;padding:14px;box-shadow:0 15px 50px #000}.srGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.srStat{background:#0B111F;border:1px solid #26344F;border-radius:9px;padding:8px;font-size:11px}.srShare{margin:0 12px 8px;padding:9px;border:1px solid #8A6522;border-radius:10px;background:#231b0c;color:#FBDD8C;font-size:11px;cursor:pointer}
+#srChatBtn{position:absolute;right:12px;bottom:74px;z-index:70;width:52px;height:52px;border-radius:50%;border:2px solid #0A1020;background:linear-gradient(#5FB4F5,#1E72C8);color:white;font-weight:900;box-shadow:0 4px 0 #0A1020,0 8px 18px #0008;cursor:pointer}#srChatBtn b{position:absolute;right:-3px;top:-5px;min-width:19px;height:19px;border-radius:10px;background:#E5484D;color:#fff;font:800 11px/19px system-ui;padding:0 5px}
+#srSocial{position:absolute;inset:0;z-index:120;background:#070B13f5;display:flex;flex-direction:column;color:#EDF1FA;font-family:var(--fu,system-ui)}#srSocial .head{padding:10px 12px 8px;border-bottom:1px solid #2E4269;background:#101A2C;display:flex;align-items:center;gap:8px}#srSocial .head .grow{flex:1}.srClose{border:0;background:#243553;color:#fff;border-radius:9px;padding:7px 10px;font-weight:900}.srStatus{font-size:9px;color:#93A4C4;margin-top:2px}
+.srTabs{display:flex;background:#0B111F;border-bottom:1px solid #2E4269;padding:6px 7px 0;gap:4px}.srTab{flex:1;text-align:center;padding:8px 3px;border-radius:9px 9px 0 0;color:#7F91B2;font-weight:900;font-size:11px;cursor:pointer;border:1px solid transparent;border-bottom:0}.srTab.on{background:#17243B;color:#FBDD8C;border-color:#2E4269}
+.srMessages{flex:1;overflow:auto;padding:8px 10px 84px}.srMsg{padding:7px 8px;margin:0 0 5px;border-bottom:1px solid #1E2C49}.srMsg.combat{margin:7px 0;border:1px solid #8A6522;border-radius:10px;background:linear-gradient(180deg,#251d0e,#17130c);padding:9px}.srMsg.announcement{margin:7px 0;border:1px solid #4A6494;border-radius:10px;background:#111d31;padding:9px}.srName{font-weight:900;color:#93C6FF;cursor:pointer;font-size:12px}.srBot,.srBadge{font-size:8px;color:#FBDD8C;margin-left:5px;border:1px solid #8A6522;border-radius:5px;padding:1px 4px}.srText{font-size:12px;margin-top:2px;line-height:1.35}.srMeta{font-size:8px;color:#6A7B9C;margin-left:5px}.srCombatTitle{font-weight:900;color:#FBDD8C;font-size:12px}.srCombatVs{font-size:11px;margin-top:4px}.srCompose{position:absolute;left:0;right:0;bottom:0;padding:8px;background:#101A2C;border-top:1px solid #2E4269;display:flex;gap:6px}.srCompose input{flex:1;min-width:0;border:1px solid #2E4269;background:#080D18;color:white;border-radius:9px;padding:9px;font-size:13px}.srCompose button,.srAction{border:0;border-radius:9px;background:#1E72C8;color:white;padding:8px 10px;font-weight:900}.srCompose.readonly{display:block;text-align:center;color:#7F91B2;font-size:10px;padding:12px}.srProfile{position:absolute;left:14px;right:14px;top:18%;z-index:3;background:#141F35;border:1px solid #4A6494;border-radius:14px;padding:14px;box-shadow:0 15px 50px #000}.srGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.srStat{background:#0B111F;border:1px solid #26344F;border-radius:9px;padding:8px;font-size:11px}.srShare{margin:7px 10px 0;padding:8px;border:1px solid #8A6522;border-radius:9px;background:#231b0c;color:#FBDD8C;font-size:10px;cursor:pointer;text-align:center}
 `;
     document.head.appendChild(s);
   }
   function paintButton(){const b=document.getElementById("srChatBtn");if(!b)return;b.innerHTML="💬"+(unread?"<b>"+Math.min(99,unread)+"</b>":"");}
   function mountButton(){
-    const existing=document.getElementById("srChatBtn");
-    let unlocked=true;
+    const existing=document.getElementById("srChatBtn"); let unlocked=true;
     try{unlocked=typeof RULES==="undefined"||typeof S==="undefined"||Number(S.level||1)>=Number(RULES.CHAT_UNLOCK_LEVEL||3)}catch(_){unlocked=true}
-    if(!unlocked){if(existing)existing.remove();return;}
-    if(existing){paintButton();return;}
+    if(!unlocked){if(existing)existing.remove();return;} if(existing){paintButton();return;}
     const b=document.createElement("button");b.id="srChatBtn";b.type="button";b.setAttribute("aria-label","Ouvrir le chat");b.onclick=()=>{open=true;unread=0;paintButton();render();};document.getElementById("app").appendChild(b);paintButton();
   }
-  function profileHTML(p){if(!p)return"";return `<div class="srProfile"><div style="display:flex;justify-content:space-between;gap:8px"><div><div style="font-weight:900;font-size:18px">${esc(p.name)}</div><div class="status">${p.bot?"BOT DE TEST":"JOUEUR"}</div></div><button class="srClose" data-sr="profileClose">✕</button></div><div class="srGrid"><div class="srStat">Niveau<br><b>${p.level||1}</b></div><div class="srStat">Puissance<br><b>${Math.round(p.power||1).toLocaleString()}</b></div><div class="srStat">Record étage<br><b>${p.floor||1}</b></div><div class="srStat">Forge<br><b>${p.forge||1}</b></div></div>${p.name!==myProfile().name?'<button class="srAction" style="width:100%" data-sr="challenge">⚔️ Défier en combat</button>':''}<div class="status" style="margin-top:8px">Le duel utilise le moteur PvP réel. Sans serveur social, le build adverse est approximé à partir de sa puissance publique.</div></div>`}
-  function render(){
-    let root=document.getElementById("srSocial");if(!open){if(root)root.remove();return;}
-    if(!root){root=document.createElement("div");root.id="srSocial";document.getElementById("app").appendChild(root)}
-    const msgs=read();const status=window.SHADOWREACH_SOCIAL_ENDPOINT?"Temps réel connecté":"Mode test local · serveur social non configuré";
-    root.innerHTML=`<div class="head"><div class="grow"><div style="font-weight:900">Chat des testeurs</div><div class="status">${status}</div></div><button class="srClose" data-sr="close">✕</button></div>${lastArenaResult?'<div class="srShare" data-sr="shareLast">Partager le dernier combat dans le chat</div>':''}<div class="srMessages">${msgs.map(m=>`<div class="srMsg ${m.type==='combat'?'combat':''}"><div><span class="srName" data-sr="profile" data-id="${esc(m.id)}">${esc(m.author||"?")}</span>${m.bot?'<span class="srBot">BOT</span>':''}</div><div class="srText">${esc(m.text||"")}</div><div class="srMeta">${fmtTime(m.ts)}</div></div>`).join("")}</div><div class="srCompose"><input id="srInput" maxlength="220" placeholder="Écrire un message…"><button data-sr="send">Envoyer</button></div>${profileHTML(profileOpen)}`;
-    const list=root.querySelector('.srMessages'); if(list)list.scrollTop=list.scrollHeight;
+  function profileHTML(p){if(!p)return"";return `<div class="srProfile"><div style="display:flex;justify-content:space-between;gap:8px"><div><div style="font-weight:900;font-size:18px">${esc(p.name)}</div><div class="srStatus">${p.bot?"BOT DE TEST":"JOUEUR"}</div></div><button class="srClose" data-sr="profileClose">✕</button></div><div class="srGrid"><div class="srStat">Niveau<br><b>${p.level||1}</b></div><div class="srStat">Puissance<br><b>${Math.round(p.power||1).toLocaleString()}</b></div><div class="srStat">Record étage<br><b>${p.floor||1}</b></div><div class="srStat">Forge<br><b>${p.forge||1}</b></div></div>${p.name!==myProfile().name?'<button class="srAction" style="width:100%" data-sr="challenge">⚔️ Défier</button>':''}</div>`}
+  function messageHTML(m){
+    const type=m.type==="combat"?"combat":m.type==="announcement"?"announcement":"";
+    if(type==="combat")return `<div class="srMsg combat"><div><span class="srName" data-sr="profile" data-id="${esc(m.id)}">${esc(m.author||"?")}</span><span class="srMeta">${fmtTime(m.ts)}</span></div><div class="srCombatTitle">${m.won?"🏆 Victoire PvP":"⚔️ Duel PvP"}</div><div class="srCombatVs">${esc(m.text||"")}</div></div>`;
+    if(type==="announcement")return `<div class="srMsg announcement"><div><span class="srName">${esc(m.author||"Shadowreach")}</span><span class="srBadge">ANNONCE</span><span class="srMeta">${fmtTime(m.ts)}</span></div><div class="srText">${esc(m.text||"")}</div></div>`;
+    return `<div class="srMsg"><div><span class="srName" data-sr="profile" data-id="${esc(m.id)}">${esc(m.author||"?")}</span>${m.bot?'<span class="srBot">BOT</span>':''}<span class="srMeta">${fmtTime(m.ts)}</span></div><div class="srText">${esc(m.text||"")}</div></div>`;
   }
-  function findProfileByMessage(id){const m=read().find(x=>x.id===id);return m&&m.profile?m.profile:null}
+  function render(){
+    let root=document.getElementById("srSocial");if(!open){if(root)root.remove();return;} if(!root){root=document.createElement("div");root.id="srSocial";document.getElementById("app").appendChild(root)}
+    const msgs=read().filter(m=>msgChannel(m)===activeTab); const status=window.SHADOWREACH_SOCIAL_ENDPOINT?"Temps réel connecté":"Chat test · connexion P2P si disponible";
+    const composer=activeTab==="announcements"?'<div class="srCompose readonly">Canal réservé aux annonces du jeu et du clan.</div>':'<div class="srCompose"><input id="srInput" maxlength="220" placeholder="Message '+tabs[activeTab]+'…"><button data-sr="send">Envoyer</button></div>';
+    root.innerHTML=`<div class="head"><div class="grow"><div style="font-weight:900">Chat</div><div class="srStatus status">${status}</div></div><button class="srClose" data-sr="close">✕</button></div><div class="srTabs">${Object.keys(tabs).map(k=>`<div class="srTab ${activeTab===k?'on':''}" data-sr="tab" data-tab="${k}">${tabs[k]}</div>`).join("")}</div>${lastArenaResult&&activeTab!=="announcements"?'<div class="srShare" data-sr="shareLast">⚔️ Partager le dernier duel dans '+tabs[activeTab]+'</div>':''}<div class="srMessages">${msgs.map(messageHTML).join("")||'<div class="srStatus" style="text-align:center;margin-top:24px">Aucun message dans ce canal.</div>'}</div>${composer}${profileHTML(profileOpen)}`;
+    const list=root.querySelector('.srMessages');if(list)list.scrollTop=list.scrollHeight;
+  }
+  function findProfileByMessage(id){const m=read().find(x=>x&&x.id===id);return m&&m.profile?m.profile:null}
   function startChallenge(p){
     if(!p||typeof startArenaLiveFight!=="function"||typeof arenaSimCfg!=="object")return;
-    const mine=myProfile();const ratio=Math.max(50,Math.min(200,Math.round((Number(p.power)||mine.power)/Math.max(1,mine.power)*100)));
-    arenaSimCfg.ratio=ratio;arenaSimCfg.build="equilibre";
-    const before=typeof arenaLiveResult!=="undefined"?arenaLiveResult:null;
-    if(!startArenaLiveFight())return;
+    const mine=myProfile(),ratio=Math.max(50,Math.min(200,Math.round((Number(p.power)||mine.power)/Math.max(1,mine.power)*100))); arenaSimCfg.ratio=ratio;arenaSimCfg.build="equilibre";
+    const before=typeof arenaLiveResult!=="undefined"?arenaLiveResult:null; if(!startArenaLiveFight())return;
     try{if(arenaLiveBot)arenaLiveBot.name=p.name;if(combat&&combat.enemies){const e=combat.enemies.find(x=>x.arenaProfile)||combat.enemies[0];if(e)e.name=p.name;}}catch(_){ }
-    pendingChallenge={target:p,started:now(),before};open=false;profileOpen=null;render();
-    try{toast("Duel contre "+p.name)}catch(_){ }
+    pendingChallenge={target:p,started:now(),before};open=false;profileOpen=null;render();try{toast("Duel contre "+p.name)}catch(_){ }
   }
   function shareCombat(){
-    if(!lastArenaResult)return;const me=myProfile(),r=lastArenaResult,target=r.target||{name:r.bot&&r.bot.name||"Rival"};
-    push({id:"fight"+now()+Math.random().toString(36).slice(2,6),type:"combat",ts:now(),author:me.name,profile:me,text:(r.won?"🏆 Victoire":"💀 Défaite")+" contre "+target.name+" · duel partagé depuis l’Arène"});
-    open=true;render();
+    if(!lastArenaResult||activeTab==="announcements")return;const me=myProfile(),r=lastArenaResult,target=r.target||{name:r.bot&&r.bot.name||"Rival"};
+    push({id:"fight"+now()+Math.random().toString(36).slice(2,6),type:"combat",channel:activeTab,ts:now(),author:me.name,profile:me,target:target.name,won:!!r.won,text:(r.won?"Victoire":"Défaite")+" de "+me.name+" contre "+target.name});open=true;render();
   }
   document.addEventListener("click",e=>{
-    const el=e.target.closest&&e.target.closest("[data-sr]");if(!el)return;
-    const a=el.dataset.sr;
-    if(a==="close"){open=false;profileOpen=null;render()}
-    else if(a==="send"){const i=document.getElementById("srInput");sendText(i&&i.value);if(i)i.value="";render()}
-    else if(a==="profile"){profileOpen=findProfileByMessage(el.dataset.id);render()}
-    else if(a==="profileClose"){profileOpen=null;render()}
-    else if(a==="challenge"){startChallenge(profileOpen)}
-    else if(a==="shareLast"){shareCombat()}
+    const el=e.target.closest&&e.target.closest("[data-sr]");if(!el)return;const a=el.dataset.sr;
+    if(a==="close"){open=false;profileOpen=null;render()} else if(a==="tab"){if(tabs[el.dataset.tab]){activeTab=el.dataset.tab;profileOpen=null;render()}}
+    else if(a==="send"){const i=document.getElementById("srInput");sendText(i&&i.value);if(i)i.value="";render()} else if(a==="profile"){profileOpen=findProfileByMessage(el.dataset.id);render()}
+    else if(a==="profileClose"){profileOpen=null;render()} else if(a==="challenge"){startChallenge(profileOpen)} else if(a==="shareLast"){shareCombat()}
   });
   document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="srInput"){e.preventDefault();sendText(e.target.value);e.target.value="";render();}});
-  if(channel)channel.onmessage=e=>{if(e&&e.data)push(e.data,false,false)};
-  window.addEventListener("storage",e=>{if(e.key===KEY&&open)render()});
-  setInterval(()=>{mountButton();},1000);
-  setInterval(()=>{remotePull();if(now()-lastBotAt>45000+Math.random()*90000&&Math.random()<.35)botSpeak();},15000);
-  setInterval(()=>{
-    if(!pendingChallenge)return;
-    try{
-      if(typeof arenaLiveResult!=="undefined"&&arenaLiveResult&&arenaLiveResult!==pendingChallenge.before){
-        lastArenaResult={...arenaLiveResult,target:pendingChallenge.target};pendingChallenge=null;try{toast("Combat terminé · partage disponible dans le chat",true)}catch(_){ }
-      }
-    }catch(_){ }
-  },800);
+  if(channel)channel.onmessage=e=>{if(e&&e.data)push(e.data,false,false)};window.addEventListener("storage",e=>{if(e.key===KEY&&open)render()});
+  setInterval(()=>mountButton(),1000);setInterval(()=>{remotePull();if(now()-lastBotAt>60000+Math.random()*120000&&Math.random()<.28)botSpeak();},15000);
+  setInterval(()=>{if(!pendingChallenge)return;try{if(typeof arenaLiveResult!=="undefined"&&arenaLiveResult&&arenaLiveResult!==pendingChallenge.before){lastArenaResult={...arenaLiveResult,target:pendingChallenge.target};pendingChallenge=null;try{toast("Combat terminé · partage disponible dans le chat",true)}catch(_){ }}}catch(_){ }},800);
   seed();injectStyle();mountButton();remotePull();
 })();
