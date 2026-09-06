@@ -1,7 +1,7 @@
-/* SHADOWREACH BOT TESTER UI V2
-   Bot tester presentation is confined to the real chat. Any legacy/social test
-   markup that leaks outside #srSocial is removed so debug text can never extend
-   below the game frame. */
+/* SHADOWREACH BOT TESTER UI V3
+   Bot tester presentation is confined to the real chat. The UI no longer scans
+   the whole document every 900 ms; enhancement work happens on demand and only
+   while the chat exists. */
 (() => {
   "use strict";
   const STORE="shadowreach.social.v1.messages",MAX=160;
@@ -19,15 +19,9 @@
     if(changed)try{localStorage.setItem(STORE,JSON.stringify(b.slice(-MAX)))}catch(_){ }
   }
   function removeStraySocial(){
-    document.querySelectorAll('.srMessages,.srMsg,.srText,.srBotTestMeta').forEach(el=>{
-      if(el.closest('#srSocial'))return;
-      if(el.closest('#srChatPreview'))return;
-      el.remove();
-    });
     document.querySelectorAll('[data-bot-test-output],[id*="botTestOutput"],[class*="botTestOutput"]').forEach(el=>el.remove());
   }
   function enhance(){
-    removeStraySocial();
     const root=document.getElementById("srSocial");if(!root)return;
     const messages=read();
     const byId=new Map(messages.filter(Boolean).map(m=>[String(m.id||""),m]));
@@ -53,10 +47,11 @@
   }
   function style(){if(document.getElementById('srBotTesterStyle'))return;const s=document.createElement('style');s.id='srBotTesterStyle';s.textContent=`
 .srBotTestMeta{font-size:8px;margin-left:5px;border:1px solid #496A91;border-radius:5px;padding:1px 4px;color:#A9CFFF;font-weight:900}.srMsg.botTesterMsg{background:#0D1727;border:1px solid #263D5E!important;border-radius:9px}.srMsg.botTesterMsg.strongSignal{background:#251B0D;border-color:#9A6E20!important;box-shadow:inset 3px 0 #D59A2F}.srMsg.botTesterMsg.strongSignal .srBotTestMeta{color:#FBDD8C;border-color:#9A6E20}
-/* defensive rule: social message cards only exist inside the chat window */
-#app .srMsg:not(#srSocial .srMsg),#app .srMessages:not(#srSocial .srMessages),body>.srMsg,body>.srMessages{display:none!important}
+#app>.srMsg,#app>.srMessages,body>.srMsg,body>.srMessages{display:none!important}
 `;document.head.appendChild(s)}
+  function refresh(){removeStraySocial();enhance()}
   style();cleanLegacy();removeStraySocial();
-  setInterval(()=>{cleanLegacy();enhance()},900);
-  window.addEventListener('storage',()=>setTimeout(()=>{cleanLegacy();enhance()},0));
+  window.addEventListener('storage',e=>{if(!e||!e.key||e.key===STORE)setTimeout(refresh,0)});
+  document.addEventListener('click',e=>{if(e.target&&e.target.closest&&e.target.closest('#srChatBtn,#srSocial'))setTimeout(refresh,0)},true);
+  setInterval(()=>{if(document.getElementById('srSocial'))enhance()},3000);
 })();
