@@ -4,7 +4,7 @@
 const SAVE_KEY = "shadowreach.save.local";
 // Build id is deliberately independent from SAVE_VERSION: changing the web build
 // must never migrate or erase the player's local progression.
-const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.11";
+const APP_BUILD = document.querySelector('meta[name="shadowreach-build"]')?.content || "2026.09.06.12";
 let freshnessCheckBusy = false;
 let lastFreshnessCheck = 0;
 
@@ -998,10 +998,17 @@ function makeEnemy(mode, opts) {
   };
 }
 
+function campaignWaveCount(floor) {
+  // Boss = combat unique. Élite = une vague normale puis l’Élite. Les étages
+  // standards conservent les 3 vagues historiques.
+  if (isBoss(floor)) return 1;
+  if (isElite(floor)) return 2;
+  return RULES.STEPS_PER_FLOOR;
+}
 function spawnCampaign(s) {
   const floor = s.floor, step = s.step;
   const boss = isBoss(floor);
-  const elite = !boss && isElite(floor) && step === 3;
+  const elite = !boss && isElite(floor) && step === campaignWaveCount(floor);
   const count = (boss || elite) ? 1 : enemyCount(floor, step);
   const dv = computeDerived(s);
   const enemies = [];
@@ -1774,7 +1781,7 @@ function handleCombatEnd(c) {
       s.eventProgress.floors = (s.eventProgress.floors || 0) + 1;
       if (c.boss) {
         s.pendingBossFloor = 0; s.step = 1; s.floor += 1;
-      } else if (s.step < RULES.STEPS_PER_FLOOR) s.step += 1;
+      } else if (s.step < campaignWaveCount(s.floor)) s.step += 1;
       else {
         const clearedFloor = s.floor;
         s.step = 1;
