@@ -1,5 +1,5 @@
-# trigger-v35-1
-name: Sanctuary gold refund v35
+# trigger-v36-1
+name: Image stability v36
 on:
   push:
     paths:
@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply sanctuary gold refund
-        run: python .github/sanctuary_gold_refund_v35.py
+      - name: Apply image stability fix
+        run: python .github/fix_image_jump_v36.py
       - name: Syntax checks
         run: |
           node --check game-1.js
@@ -25,24 +25,19 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          g1=Path('game-1.js').read_text(); g2=Path('game-2.js').read_text(); g3=Path('game-3.js').read_text(); g4=Path('game-4.js').read_text(); g5=Path('game-5.js').read_text(); idx=Path('index.html').read_text()
+          assert 'ARENA_STABILITY_V36' in g3 and 'arenaCombatRef !== combat' in g3
           assert 'SANCTUARY_GOLD_REBASE_V35' in g1
-          assert 'sanctuaryGoldRebaseV35' in g1 and 'refundGold' in g1
-          assert '250 * Math.max(1,l) * Math.max(1,l)' in g1
-          assert 'Toute couleur débloquée reste disponible' in g4
           assert 'Fusion par glisser-déposer' in g4
-          assert 'SANCTUARY_DRAG_MERGE_V34' in g5 and 'function sanctMergeDrop' in g5
-          assert 'SANCT_MERGE_ORDER' in g4 and 'SANCT_BOARD_SIZE = 16' in g4
-          assert 'Total exact des 50 niveaux : 35 000 PR' in g1
-          assert 'gold: raidReward("or", s.raids.or.level) * 0.25' in g1
-          assert '2026.09.06.35' in g2 and '2026.09.06.35' in idx
-          print('v35 sanctuary gold refund checks passed')
+          assert 'SANCTUARY_DRAG_MERGE_V34' in g5
+          assert '2026.09.06.36' in g2 and '2026.09.06.36' in idx
+          print('v36 image stability checks passed')
           PY
       - name: Commit update
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet; then echo 'Already applied'; exit 0; fi
-          git add game-1.js game-2.js index.html
-          git commit -m 'Or Sanctuaire Remboursé' -m 'Rembourse automatiquement l’Or surpayé dans la progression du fournisseur du Sanctuaire avant son rééquilibrage. Le remboursement est calculé à partir du niveau et de la jauge enregistrés dans la sauvegarde, en comparant l’ancien tarif 250 × niveau² au nouveau tarif équitable. Au niveau 15, les achats libres non historisés ne sont pas inventés. Le Drag Merge, les couleurs débloquées, les recettes, l’économie Or/Rebirth et la sauvegarde sont conservés. Build 2026.09.06.35.'
+          git add game-3.js game-2.js index.html
+          git commit -m 'Image Stable' -m 'Supprime le sursaut visuel occasionnel de l’arène en conservant les positions lissées du héros et des ennemis lors des re-rendus d’interface. Les positions ne sont réinitialisées que lorsqu’un nouveau combat commence réellement. Les animations, combats, Sanctuaire, sauvegardes et économies restent inchangés. Build 2026.09.06.36.'
           git push
