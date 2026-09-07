@@ -1,68 +1,19 @@
-// MEGA_WEEKLY_REWARDS_V71
+// MEGA_WEEKLY_REWARDS_V74
 (function(){
   'use strict';
   const MAX=50;
   const FUS=[0,10,15,20,25,30,40,50,60,75,100,110,120,130,140,150,165,180,195,210,225,240,255,270,285,300,320,340,360,380,400,420,440,460,480,500,525,550,575,600,625,650,675,700,725,750,780,810,840,870,900];
-  function accel(level){
-    const oldQty=level<=4?4+level:level<=10?level*2:level+10;
-    const total=oldQty*5;
-    const mins=level<10?5:level<25?15:level<40?30:60;
-    return {mins,qty:Math.max(1,Math.round(total/mins)),total};
-  }
+  function stateReady(){return typeof S!=='undefined'&&S&&typeof S==='object';}
+  function accel(level){const oldQty=level<=4?4+level:level<=10?level*2:level+10,total=oldQty*5,mins=level<10?5:level<25?15:level<40?30:60;return {mins,qty:Math.max(1,Math.round(total/mins)),total};}
   function reward(level){level=Math.max(1,Math.min(MAX,level|0));const a=accel(level);return {level,fusions:FUS[level],mins:a.mins,qty:a.qty,total:a.total};}
-  function highest(){
-    const clears=(window.S&&S.megaBossClears)||{};let best=0;
-    Object.keys(clears).forEach(function(f){if(!clears[f])return;const n=typeof megaLevelForFloor==='function'?megaLevelForFloor(Number(f)):Math.max(0,Math.floor(Number(f)/10)-4);if(n>best)best=n;});
-    return Math.min(MAX,best);
-  }
-  function weekEpoch(now){
-    const d=new Date(now||Date.now()),day=d.getDay(),back=(day+6)%7;
-    const m=new Date(d.getFullYear(),d.getMonth(),d.getDate()-back,2,0,0,0);
-    if(d<m)m.setDate(m.getDate()-7);
-    return m.getTime();
-  }
-  function ensure(){
-    if(!window.S)return null;
-    if(!S.megaWeekly||typeof S.megaWeekly!=='object')S.megaWeekly={lastEpoch:0,lastLevel:0,lastReward:null};
-    if(!S.sanctuary||typeof S.sanctuary!=='object')S.sanctuary={};
-    if(!Array.isArray(S.sanctuary.mergeBoard))S.sanctuary.mergeBoard=Array(typeof SANCT_BOARD_SIZE==='number'?SANCT_BOARD_SIZE:16).fill(null);
-    if(!S.sanctuary.weeklyReserve||typeof S.sanctuary.weeklyReserve!=='object')S.sanctuary.weeklyReserve={COMMUN:0};
-    S.sanctuary.weeklyReserve.COMMUN=Math.max(0,Number(S.sanctuary.weeklyReserve.COMMUN)||0);
-    return S.megaWeekly;
-  }
-  function placeReserve(){
-    ensure();const st=S.sanctuary,b=st.mergeBoard;let left=st.weeklyReserve.COMMUN|0,put=0;
-    for(let i=0;i<b.length&&left>0;i++)if(!b[i]){b[i]='COMMUN';left--;put++;}
-    st.weeklyReserve.COMMUN=left;return put;
-  }
-  function grant(){
-    const w=ensure();if(!w)return false;const ep=weekEpoch(),lv=highest();
-    if(!lv||Number(w.lastEpoch||0)>=ep)return false;
-    const r=reward(lv);S.sanctuary.weeklyReserve.COMMUN+=r.fusions;
-    const placed=placeReserve();
-    const def=(typeof ACCEL_DEFS!=='undefined'&&ACCEL_DEFS.find(function(x){return Number(x.mins)===r.mins;}));
-    if(def){if(!S.accels)S.accels={};S.accels[def.key]=(Number(S.accels[def.key])||0)+r.qty;}
-    w.lastEpoch=ep;w.lastLevel=lv;w.lastReward={level:lv,fusions:r.fusions,accelMins:r.mins,accelQty:r.qty,placed:placed,at:Date.now()};
-    if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();
-    return true;
-  }
+  function highest(){const clears=stateReady()&&S.megaBossClears&&typeof S.megaBossClears==='object'?S.megaBossClears:{};let best=0;Object.keys(clears).forEach(function(f){if(!clears[f])return;const n=typeof megaLevelForFloor==='function'?megaLevelForFloor(Number(f)):Math.max(1,Math.floor(Number(f)/10));if(n>best)best=n;});return Math.min(MAX,best);}
+  function weekEpoch(now){const d=new Date(now||Date.now()),day=d.getDay(),back=(day+6)%7,m=new Date(d.getFullYear(),d.getMonth(),d.getDate()-back,2,0,0,0);if(d<m)m.setDate(m.getDate()-7);return m.getTime();}
+  function ensure(){if(!stateReady())return null;if(!S.megaWeekly||typeof S.megaWeekly!=='object')S.megaWeekly={lastEpoch:0,lastLevel:0,lastReward:null};if(!S.sanctuary||typeof S.sanctuary!=='object')S.sanctuary={};if(!Array.isArray(S.sanctuary.mergeBoard))S.sanctuary.mergeBoard=Array(typeof SANCT_BOARD_SIZE==='number'?SANCT_BOARD_SIZE:16).fill(null);if(!S.sanctuary.weeklyReserve||typeof S.sanctuary.weeklyReserve!=='object')S.sanctuary.weeklyReserve={COMMUN:0};S.sanctuary.weeklyReserve.COMMUN=Math.max(0,Number(S.sanctuary.weeklyReserve.COMMUN)||0);return S.megaWeekly;}
+  function placeReserve(){if(!ensure())return 0;const st=S.sanctuary,b=st.mergeBoard;let left=st.weeklyReserve.COMMUN|0,put=0;for(let i=0;i<b.length&&left>0;i++)if(!b[i]){b[i]='COMMUN';left--;put++;}st.weeklyReserve.COMMUN=left;return put;}
+  function grant(){const w=ensure();if(!w)return false;const ep=weekEpoch(),lv=highest();if(!lv||Number(w.lastEpoch||0)>=ep)return false;const r=reward(lv);S.sanctuary.weeklyReserve.COMMUN+=r.fusions;const placed=placeReserve(),def=typeof ACCEL_DEFS!=='undefined'&&ACCEL_DEFS.find(function(x){return Number(x.mins)===r.mins;});if(def){if(!S.accels)S.accels={};S.accels[def.key]=(Number(S.accels[def.key])||0)+r.qty;}w.lastEpoch=ep;w.lastLevel=lv;w.lastReward={level:lv,fusions:r.fusions,accelMins:r.mins,accelQty:r.qty,placed:placed,at:Date.now()};if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();return true;}
   function nextMonday(){return new Date(weekEpoch()+7*86400000);}
   function row(level,unlocked){const r=reward(level);return '<div style="display:grid;grid-template-columns:34px 1fr auto;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)"><b style="color:'+(unlocked?'#84E891':'#6A7B9C')+'">'+(unlocked?'✓':'○')+' '+level+'</b><span style="font-size:11px;color:#C9D4E6">'+r.fusions+' Fusions communes</span><span style="font-size:11px;color:#8FEFF4">'+r.qty+'× '+r.mins+' min</span></div>';}
-  function inject(){
-    const screen=document.getElementById('screen');if(!screen||!window.S)return;
-    const title=screen.textContent||'';if(title.indexOf('Méga Boss')<0&&title.indexOf('MÉGA')<0)return;
-    if(screen.querySelector('#megaWeeklyV71'))return;
-    const pad=screen.querySelector('.pad');if(!pad)return;
-    const lv=highest(),r=lv?reward(lv):null,reserve=(ensure()&&S.sanctuary.weeklyReserve.COMMUN)||0,next=nextMonday();
-    const box=document.createElement('div');box.id='megaWeeklyV71';box.className='card frame mt8';box.style.borderLeftColor='#3FCFD6';
-    let rows='';for(let i=1;i<=MAX;i++)rows+=row(i,i<=lv);
-    box.innerHTML='<div class="between"><div><div class="bb small">Récompense hebdomadaire</div><div class="mute tiny b">Chaque lundi à 02:00 · seul le plus haut Méga Boss validé est payé</div></div><span class="pill" style="color:#84E891;border-color:#3FB950">Méga '+lv+'</span></div>'+
-      (r?'<div class="notice mt8 tiny"><b>Prochaine récompense :</b> '+r.fusions+' Fusions communes + '+r.qty+'× '+r.mins+' min<br><span class="mute">Prochain versement : '+next.toLocaleString('fr-FR',{weekday:'long',hour:'2-digit',minute:'2-digit'})+'</span></div>':'<div class="notice mt8 tiny">Vaincs le Méga Boss 1 pour débloquer la récompense hebdomadaire.</div>')+
-      (reserve?'<button id="megaWeeklyPlaceV71" class="btn small mt8" style="width:100%">Placer '+reserve+' Fusion'+(reserve>1?'s':'')+' commune'+(reserve>1?'s':'')+' en réserve</button>':'')+
-      '<details class="mt8"><summary class="b small" style="cursor:pointer">Voir les 50 paliers</summary><div class="mt6" style="max-height:260px;overflow:auto">'+rows+'</div></details>';
-    pad.insertBefore(box,pad.firstChild);
-    const b=box.querySelector('#megaWeeklyPlaceV71');if(b)b.addEventListener('click',function(){const n=placeReserve();if(n&&typeof saveNow==='function')saveNow();if(typeof render==='function')render();});
-  }
-  function boot(){ensure();grant();inject();setInterval(grant,60000);setInterval(inject,1200);}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,250);},{once:true});else setTimeout(boot,250);
+  function inject(){const screen=document.getElementById('screen');if(!screen||!stateReady())return;const title=screen.textContent||'';if(!/méga[ -]?boss/i.test(title)&&title.indexOf('MÉGA')<0)return;if(screen.querySelector('#megaWeeklyV74'))return;const pad=screen.querySelector('.pad');if(!pad)return;const lv=highest(),r=lv?reward(lv):null,reserve=(ensure()&&S.sanctuary.weeklyReserve.COMMUN)||0,next=nextMonday(),box=document.createElement('div');box.id='megaWeeklyV74';box.className='card frame mt8';box.style.borderLeftColor='#3FCFD6';let rows='';for(let i=1;i<=MAX;i++)rows+=row(i,i<=lv);box.innerHTML='<div class="between"><div><div class="bb small">Récompense hebdomadaire</div><div class="mute tiny b">Chaque lundi à 02:00 · seul le plus haut Méga Boss validé est payé</div></div><span class="pill" style="color:#84E891;border-color:#3FB950">Méga '+lv+'</span></div>'+(r?'<div class="notice mt8 tiny"><b>Prochaine récompense :</b> '+r.fusions+' Fusions communes + '+r.qty+'× '+r.mins+' min<br><span class="mute">Prochain versement : '+next.toLocaleString('fr-FR',{weekday:'long',hour:'2-digit',minute:'2-digit'})+'</span></div>':'<div class="notice mt8 tiny">Vaincs le Méga Boss 1 pour débloquer la récompense hebdomadaire.</div>')+(reserve?'<button id="megaWeeklyPlaceV74" class="btn small mt8" style="width:100%">Placer '+reserve+' Fusion'+(reserve>1?'s':'')+' commune'+(reserve>1?'s':'')+' en réserve</button>':'')+'<details class="mt8"><summary class="b small" style="cursor:pointer">Voir les 50 paliers</summary><div class="mt6" style="max-height:260px;overflow:auto">'+rows+'</div></details>';pad.insertBefore(box,pad.firstChild);const b=box.querySelector('#megaWeeklyPlaceV74');if(b)b.addEventListener('click',function(){const n=placeReserve();if(n&&typeof saveNow==='function')saveNow();if(typeof render==='function')render();});}
+  function boot(){if(!stateReady()){setTimeout(boot,150);return;}ensure();grant();inject();setInterval(grant,60000);setInterval(inject,700);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,150);},{once:true});else setTimeout(boot,150);
 })();
