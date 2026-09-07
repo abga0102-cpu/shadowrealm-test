@@ -1,4 +1,4 @@
-/* SHADOWREACH · Arbre personnel radial v85
+/* SHADOWREACH · Arbre personnel radial v86
    Topologie libre: spécialisations + satellites, sans modifier les valeurs existantes.
    1/5 ouvre les routes normales. Les clés de maîtrise demandent 2/5 sur leurs
    nœuds désignés puis une recherche de 7 jours (réduction Recherche incluse).
@@ -87,10 +87,10 @@
     return 'autonomie';
   }
 
-  var ANGLE={familier:-90,eggs:-126,or:-18,autonomie:-48,forge:30,pe:126,research:162,competence:198,equipment:234};
-  var SECTOR_LABEL={familier:'FAMILIER',or:'OR',forge:'MINERAIS',pe:'PE',competence:'COMPÉTENCE'};
-  var SECTOR_COLOR={familier:'#F5C542',or:'#E8B44A',forge:'#8FC4FF',pe:'#57E07A',competence:'#B15CF6'};
-  var SAT_COLOR={eggs:'#8FEFF4',autonomie:'#6FA8DC',research:'#3FCFD6',equipment:'#FF7A5C'};
+  var ANGLE={familier:-90,eggs:-126,or:-18,autonomie:-48,forge:30,minerai:54,pe:126,research:162,competence:198,equipment:234};
+  var SECTOR_LABEL={familier:'FAMILIER',or:'OR',minerai:'MINERAIS',pe:'PE',competence:'COMPÉTENCE'};
+  var SECTOR_COLOR={familier:'#F5C542',or:'#E8B44A',minerai:'#8FC4FF',pe:'#57E07A',competence:'#B15CF6'};
+  var SAT_COLOR={eggs:'#8FEFF4',autonomie:'#6FA8DC',forge:'#8FC4FF',research:'#3FCFD6',equipment:'#FF7A5C'};
 
   var visible=TREE_NODES.filter(function(n){return !n.deprecatedKey&&!n.masteryKey;});
   var routeNames=['familier','eggs','or','autonomie','forge','pe','research','competence','equipment'];
@@ -158,11 +158,11 @@
         '<text x="700" y="'+(700-r+18)+'" text-anchor="middle" fill="'+c+'" font-size="15" font-weight="900" opacity=".9">PALIER '+(i+1)+'</text>';
     });
     var sectors='';
-    ['familier','or','forge','pe','competence'].forEach(function(f){
+    ['familier','or','minerai','pe','competence'].forEach(function(f){
       var p=pol(cx,cy,680,ANGLE[f]);
       sectors+='<text x="'+p.x.toFixed(1)+'" y="'+p.y.toFixed(1)+'" text-anchor="middle" fill="'+SECTOR_COLOR[f]+'" font-size="22" font-weight="900" letter-spacing="1.4">'+SECTOR_LABEL[f]+'</text>';
     });
-    [['eggs','ŒUFS'],['research','RECHERCHE'],['equipment','ÉQUIPEMENT'],['autonomie','AUTONOMIE']].forEach(function(x){
+    [['eggs','ŒUFS'],['forge','FORGE'],['research','RECHERCHE'],['equipment','ÉQUIPEMENT'],['autonomie','AUTONOMIE']].forEach(function(x){
       var p=pol(cx,cy,665,ANGLE[x[0]]);
       sectors+='<text x="'+p.x.toFixed(1)+'" y="'+p.y.toFixed(1)+'" text-anchor="middle" fill="'+SAT_COLOR[x[0]]+'" font-size="12" font-weight="800" opacity=".85">'+x[1]+'</text>';
     });
