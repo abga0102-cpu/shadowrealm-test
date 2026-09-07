@@ -1,30 +1,19 @@
-/* SHADOWREACH · accomplishments settings entry v123
-   Robust UI mount: the v121 module tried to patch a renderer that is not present
-   in the current split build. This patch mounts the entry directly in the live
-   Paramètres screen without touching save data or progression. */
+/* SHADOWREACH · accomplishments Development entry v124
+   Accomplissements belongs to the progression hub, not Settings.
+   This patch mounts the entry directly in the live Développement screen. */
 (function(){
 'use strict';
-if(window.__srAccomplishmentsUIV123)return;
-window.__srAccomplishmentsUIV123=true;
+if(window.__srAccomplishmentsUIV124)return;
+window.__srAccomplishmentsUIV124=true;
 
 function norm(v){
   try{return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
   catch(_){return String(v||'').toLowerCase();}
 }
-function isSettingsScreen(screen){
+function isDevelopmentScreen(screen){
   if(!screen)return false;
   var txt=norm(screen.textContent);
-  return txt.indexOf('parametres')>=0;
-}
-function pendingCount(){
-  try{
-    if(typeof S==='undefined'||!S||!S.accomplishments)return 0;
-    var x=S.accomplishments;
-    if(!x.claimed||typeof x.claimed!=='object')return 0;
-    /* v121 owns the exact milestone predicates. We deliberately do not duplicate
-       them here, so this UI patch cannot drift from gameplay logic. */
-    return 0;
-  }catch(_){return 0;}
+  return txt.indexOf('developpement')>=0;
 }
 function openAccomplishments(e){
   if(e){e.preventDefault();e.stopPropagation();}
@@ -39,7 +28,7 @@ function openAccomplishments(e){
 function mount(){
   try{
     var screen=document.getElementById('screen');
-    if(!isSettingsScreen(screen))return;
+    if(!isDevelopmentScreen(screen))return;
     if(screen.querySelector('[data-sr-accomplishments-entry]'))return;
 
     var host=screen.querySelector('.pad')||screen.querySelector('.screenBody')||screen;
@@ -49,8 +38,7 @@ function mount(){
     card.setAttribute('aria-label','Ouvrir les accomplissements');
     card.className='card lit';
     card.style.cssText='display:block;width:100%;box-sizing:border-box;text-align:left;cursor:pointer;margin:8px 0 10px;padding:12px 14px;color:inherit;font:inherit;';
-    var count=pendingCount();
-    card.innerHTML='<div class="between"><div><b>Accomplissements</b><div class="mute tiny mt3">Progression, jalons et récompenses</div></div><span class="pill">'+(count>0?count+' à récupérer':'Voir')+'</span></div>';
+    card.innerHTML='<div class="between"><div><b>Accomplissements</b><div class="mute tiny mt3">Progression, jalons et récompenses</div></div><span class="pill">Voir</span></div>';
     card.addEventListener('click',openAccomplishments,true);
     host.insertBefore(card,host.firstChild||null);
   }catch(_){}
