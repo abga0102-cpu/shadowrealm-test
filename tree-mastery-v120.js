@@ -1,6 +1,6 @@
 /* SHADOWREACH · mastery key requirement fix v120
-   All mastery raid keys require every mastery node at level 2/5 minimum.
-   Also corrects the detail popup so it shows >= 2 instead of the generic >= 1. */
+   All mastery raid keys require every mastery node at level 3/5 minimum.
+   Also corrects the detail popup so it shows >= 3 instead of the generic >= 1. */
 (function(){
 'use strict';
 if(window.__srTreeMasteryV120)return;window.__srTreeMasteryV120=true;
@@ -11,7 +11,7 @@ var previousTreeReqOk=treeReqOk;
 treeReqOk=function(s,node){
   if(node&&node.masteryKey){
     var req=node.masteryReq||node.req||[];
-    for(var i=0;i<req.length;i++)if(treeLv(s,req[i])<2)return false;
+    for(var i=0;i<req.length;i++)if(treeLv(s,req[i])<3)return false;
     return true;
   }
   return previousTreeReqOk(s,node);
@@ -46,16 +46,16 @@ function syncPopup(){
         if(!txt)continue;
         for(var r=0;r<req.length;r++){
           var label=nodeLabel(req[r]);
-          if(txt.indexOf(label)>=0&&/≥\s*1/.test(txt)){
-            el.textContent=txt.replace(/≥\s*1/g,'≥ 2');
-            var ok=treeLv(S,req[r])>=2;
+          if(txt.indexOf(label)>=0&&/≥\s*[12]/.test(txt)){
+            el.textContent=txt.replace(/≥\s*[12]/g,'≥ 3');
+            var ok=treeLv(S,req[r])>=3;
             el.style.color=ok?'#84E891':'#8FA0BE';
           }
         }
-        if(txt.indexOf("Requiert d'abord")>=0){
+        if(txt.indexOf("Requiert d'abord")>=0||txt.indexOf('Requiert d’abord')>=0){
           var missing='';
-          for(var m=0;m<req.length;m++)if(treeLv(S,req[m])<2){missing=nodeLabel(req[m]);break;}
-          if(missing)el.textContent="Requiert d’abord : "+missing+' niveau 2.';
+          for(var m=0;m<req.length;m++)if(treeLv(S,req[m])<3){missing=nodeLabel(req[m]);break;}
+          if(missing)el.textContent="Requiert d’abord : "+missing+' niveau 3.';
           else el.textContent='Tous les prérequis de maîtrise sont remplis.';
         }
       }
