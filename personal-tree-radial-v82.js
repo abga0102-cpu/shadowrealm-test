@@ -1,4 +1,4 @@
-/* SHADOWREACH · Arbre personnel radial v84
+/* SHADOWREACH · Arbre personnel radial v85
    Topologie libre: spécialisations + satellites, sans modifier les valeurs existantes.
    1/5 ouvre les routes normales. Les clés de maîtrise demandent 2/5 sur leurs
    nœuds désignés puis une recherche de 7 jours (réduction Recherche incluse).
@@ -19,10 +19,13 @@
        celui d'un satellite afin de ne pas prétendre que Forge = Minerais. */
     { id:'mk_minerai', label:'Clé Raid Minerais', short:'Clé Minerais', raid:'minerai', angle:54,
       mastery:['n1_01','n1_02','n2_01','n2_02'] },
+    /* PE possède moins de familles réelles que les autres spécialisations. On
+       utilise donc ses trois occurrences réelles I-II-III plutôt que d'imposer
+       un satellite Recherche qui rendrait cette route artificiellement obligatoire. */
     { id:'mk_pe', label:'Clé Raid PE', short:'Clé PE', raid:'evolution', angle:126,
-      mastery:['n1_30','n2_30'] },
+      mastery:['n1_30','n2_30','n3_30'] },
     { id:'mk_competence', label:'Clé Raid Compétence', short:'Clé Compétence', raid:'competence', angle:198,
-      mastery:['n1_09','n1_10','n1_12','n1_29','n2_09','n2_10'] }
+      mastery:['n1_09','n1_12','n2_09','n2_12'] }
   ];
   var KEY_BY_ID = {};
   KEY_DEFS.forEach(function(k){ KEY_BY_ID[k.id] = k; });
@@ -69,8 +72,6 @@
     st.raidKeyAlloc[node.raidTarget] = (st.raidKeyAlloc[node.raidTarget] || 0) + 1;
   };
 
-  /* Placement != spécialisation. Les satellites restent identifiables et sont
-     volontairement placés entre deux secteurs plutôt que fusionnés avec eux. */
   function placementOf(n){
     var e=n.effect||'';
     if(n.masteryKey) return 'key';
@@ -86,12 +87,7 @@
     return 'autonomie';
   }
 
-  var ANGLE={
-    familier:-90, eggs:-126,
-    or:-18, autonomie:-48,
-    forge:30, pe:126, research:162,
-    competence:198, equipment:234
-  };
+  var ANGLE={familier:-90,eggs:-126,or:-18,autonomie:-48,forge:30,pe:126,research:162,competence:198,equipment:234};
   var SECTOR_LABEL={familier:'FAMILIER',or:'OR',forge:'MINERAIS',pe:'PE',competence:'COMPÉTENCE'};
   var SECTOR_COLOR={familier:'#F5C542',or:'#E8B44A',forge:'#8FC4FF',pe:'#57E07A',competence:'#B15CF6'};
   var SAT_COLOR={eggs:'#8FEFF4',autonomie:'#6FA8DC',research:'#3FCFD6',equipment:'#FF7A5C'};
@@ -102,9 +98,6 @@
   routeNames.forEach(function(f){groups[f]={1:[],2:[],3:[],4:[]};});
   visible.forEach(function(n){groups[placementOf(n)][n.tier].push(n);});
 
-  /* Chaque route devient un petit graphe ramifié: 2 racines possibles par palier,
-     puis les autres nœuds se répartissent sur ces racines. On garde 1 seul parent
-     principal par nœud pour la lisibilité mobile. */
   routeNames.forEach(function(f){
     var g=groups[f];
     [1,2,3,4].forEach(function(t){
@@ -125,26 +118,24 @@
     });
   });
 
-  /* Passerelles hybrides. Ce sont des accès alternatifs (OU), jamais des taxes.
-     On les concentre surtout dans I-II pour laisser III-IV exprimer la maîtrise. */
   function bridge(a,b){
     var n=TREE_BY_ID[b];
     if(!TREE_BY_ID[a]||!n) return;
     if(n.req.indexOf(a)<0)n.req.push(a);
     n.bridgeAny=true;
   }
-  bridge('n1_28','n1_13');  // Œufs -> Familier
-  bridge('n1_04','n1_06');  // Recherche -> Or
-  bridge('n1_30','n1_12');  // PE -> Compétence
-  bridge('n1_01','n1_15');  // Forge -> Équipement
-  bridge('n1_15','n1_09');  // Équipement -> Compétence
-  bridge('n1_07','n1_01');  // Or -> Forge/Minerais
+  bridge('n1_28','n1_13');
+  bridge('n1_04','n1_06');
+  bridge('n1_30','n1_12');
+  bridge('n1_01','n1_15');
+  bridge('n1_15','n1_09');
+  bridge('n1_07','n1_01');
   bridge('n2_28','n2_13');
   bridge('n2_04','n2_30');
   bridge('n2_01','n2_15');
   bridge('n2_15','n2_09');
 
-  function escSvg(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c];});}
+  function escSvg(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function pol(cx,cy,r,deg){var a=deg*Math.PI/180;return{x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r};}
   function routeColor(route){return SECTOR_COLOR[route]||SAT_COLOR[route]||'#7B8FB8';}
   function nodePos(n,idx,count){
