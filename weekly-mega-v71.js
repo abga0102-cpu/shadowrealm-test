@@ -4,7 +4,7 @@
   const MAX=50;
   const FUS=[0,10,15,20,25,30,40,50,60,75,100,110,120,130,140,150,165,180,195,210,225,240,255,270,285,300,320,340,360,380,400,420,440,460,480,500,525,550,575,600,625,650,675,700,725,750,780,810,840,870,900];
   function accel(level){
-    const oldQty=level<=4?4+level:level===5?10:level<=9?level+6:level+10;
+    const oldQty=level<=4?4+level:level<=10?level*2:level+10;
     const total=oldQty*5;
     const mins=level<10?5:level<25?15:level<40?30:60;
     return {mins,qty:Math.max(1,Math.round(total/mins)),total};
