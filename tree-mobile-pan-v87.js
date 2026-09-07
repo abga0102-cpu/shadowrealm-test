@@ -1,15 +1,15 @@
-/* SHADOWREACH · tree view bridge v90 */
+/* SHADOWREACH · tree view bridge v92 */
 (function(){
   'use strict';
-  if (window.__srTreeSimpleV90Loading) return;
-  window.__srTreeSimpleV90Loading = true;
+  if (window.__srTreeForgeV92Loading) return;
+  window.__srTreeForgeV92Loading = true;
   var s = document.createElement('script');
-  s.src = 'tree-simple-v90.js?v=2026.09.07.90';
+  s.src = 'tree-forgemaster-v92.js?v=2026.09.07.92';
   s.async = false;
   s.onload = function(){
-    window.__srTreeSimpleV90Loaded = true;
+    window.__srTreeForgeV92Loaded = true;
     try { if (typeof render === 'function') render(); } catch(_) {}
   };
-  s.onerror = function(){ window.__srTreeSimpleV90Loaded = false; };
+  s.onerror = function(){ window.__srTreeForgeV92Loaded = false; };
   document.body.appendChild(s);
 })();
