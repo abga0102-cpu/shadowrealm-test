@@ -1,111 +1,152 @@
-// HOME_LAYOUT_AND_MODAL_STABILITY_V75
-// Compacte l'accueil sur les écrans mobiles hauts, remonte l'arène sans réduire
-// les combattants et protège les fenêtres de récompense contre les rerenders.
+// HOME_LAYOUT_AND_MODAL_STABILITY_V76
+// Corrige les fermetures de fenêtres concurrentes, les sursauts de rendu et
+// récupère de la hauteur réelle sur l'accueil sans réduire les combattants.
 (function(){
   'use strict';
 
   const css=document.createElement('style');
-  css.id='homeLayoutModalStabilityV75';
+  css.id='homeLayoutModalStabilityV76';
   css.textContent=`
-    /* Le contenu ne doit jamais se glisser sous la barre principale. */
     #screen{padding-bottom:max(4px,env(safe-area-inset-bottom));overflow-anchor:none;overscroll-behavior-y:contain}
 
-    /* Accueil : récupérer la hauteur gaspillée au-dessus et réserver la partie
-       basse aux contrôles/Forge. La taille interne de #arena n'est pas changée,
-       donc les combattants gardent exactement leur échelle. */
+    /* Accueil : compacter d'abord le chrome supérieur. L'arène et les sprites
+       gardent leur taille; on récupère l'espace autour d'eux. */
+    #app:has(#screen .campaignWorld) #hud{padding:4px 8px 4px;gap:5px}
+    #app:has(#screen .campaignWorld) #hud .pbox{padding:3px 6px 3px 4px}
+    #app:has(#screen .campaignWorld) #hud .avatar{width:36px;height:36px}
+    #app:has(#screen .campaignWorld) #hud .iconBtn{width:38px;height:38px;min-width:38px}
+
     #screen:has(.campaignWorld){scroll-padding-bottom:118px}
-    #screen:has(.campaignWorld) .recommendedWrap{margin-bottom:2px}
-    #screen:has(.campaignWorld) .campaignWorld{margin-top:-4px}
+    #screen:has(.campaignWorld) .recommendedWrap{margin-top:-2px;margin-bottom:1px}
+    #screen:has(.campaignWorld) .campaignWorld{margin-top:-10px}
     #screen:has(.campaignWorld) .campaignWorld #arenaSlot{margin-top:0}
-    #screen:has(.campaignWorld) .homeSkillBar{margin-top:2px!important}
-    #screen:has(.campaignWorld) .homeForge{margin-top:3px!important;padding:5px 7px!important}
-    #screen:has(.campaignWorld) .homeForge .fgRow.mt6{margin-top:3px}
-    #screen:has(.campaignWorld) .homeForge .forgeAnim{margin-top:4px!important}
+    #screen:has(.campaignWorld) .homeSkillBar{margin-top:1px!important}
+    #screen:has(.campaignWorld) .homeForge{margin-top:2px!important;padding:4px 7px!important}
+    #screen:has(.campaignWorld) .homeForge .fgRow.mt6{margin-top:2px}
+    #screen:has(.campaignWorld) .homeForge .forgeAnim{margin-top:3px!important}
 
-    /* L'animation manuelle de Forge avait une fenêtre trop basse : on lui
-       garantit une vraie zone de mouvement et on garde le marteau à l'intérieur. */
-    #screen:has(.campaignWorld) .homeForge .forgeAnim:not(.compactAuto){min-height:84px;padding:7px 9px 6px}
-    #screen:has(.campaignWorld) .homeForge .forgeScene{height:52px;overflow:visible}
-    #screen:has(.campaignWorld) .homeForge .forgeHammerHit{top:-2px}
-    #screen:has(.campaignWorld) .homeForge .forgeSpark{bottom:18px}
+    /* Animation Forge entièrement visible sans gonfler inutilement le panneau. */
+    #screen:has(.campaignWorld) .homeForge .forgeAnim:not(.compactAuto){min-height:70px;padding:5px 8px 5px}
+    #screen:has(.campaignWorld) .homeForge .forgeScene{height:46px;overflow:visible}
+    #screen:has(.campaignWorld) .homeForge .forgeHammerHit{top:-7px}
+    #screen:has(.campaignWorld) .homeForge .forgeSpark{bottom:13px}
 
-    /* iPhone / mobiles proches de la capture : compacter le chrome avant de
-       toucher à l'arène. Les boutons restent >=44 px dans le décor. */
+    /* Les accès flottants restent tactiles : jamais de scale qui réduise la cible. */
+    #screen:has(.campaignWorld) .worldAction,
+    #screen:has(.campaignWorld) .worldMenu>summary{min-width:44px;min-height:44px;height:44px}
+
     @media (max-width:520px) and (max-height:960px){
-      #screen:has(.campaignWorld) .campaignWorld{margin-top:-10px}
-      #screen:has(.campaignWorld) .worldAction,
-      #screen:has(.campaignWorld) .worldMenu>summary{min-width:44px;height:40px;padding:2px 5px}
-      #screen:has(.campaignWorld) .homeForge{padding-top:4px!important;padding-bottom:4px!important}
-      #screen:has(.campaignWorld) .homeForge .forgeAnim:not(.compactAuto){min-height:78px}
-      #screen:has(.campaignWorld) .recommendedWrap{margin-top:-2px}
+      #app:has(#screen .campaignWorld) #hud{padding-top:3px;padding-bottom:3px}
+      #app:has(#screen .campaignWorld) #hud .avatar{width:34px;height:34px}
+      #screen:has(.campaignWorld) .campaignWorld{margin-top:-16px}
+      #screen:has(.campaignWorld) .homeForge{padding-top:3px!important;padding-bottom:3px!important}
+      #screen:has(.campaignWorld) .homeForge .forgeAnim:not(.compactAuto){min-height:66px}
     }
 
     @media (max-width:520px) and (max-height:860px){
-      #screen:has(.campaignWorld) .campaignWorld{margin-top:-16px}
-      #screen:has(.campaignWorld) .worldAction,
-      #screen:has(.campaignWorld) .worldMenu>summary{transform:scale(.92);transform-origin:top left}
-      #screen:has(.campaignWorld) .worldDev,
-      #screen:has(.campaignWorld) .worldDefis{transform-origin:top right}
-      #screen:has(.campaignWorld) .homeForge .forgeAnim:not(.compactAuto){min-height:72px}
+      #app:has(#screen .campaignWorld) #hud{padding:2px 7px 2px;gap:4px}
+      #app:has(#screen .campaignWorld) #hud .pbox{padding-top:2px;padding-bottom:2px}
+      #screen:has(.campaignWorld) .campaignWorld{margin-top:-20px}
+      #screen:has(.campaignWorld) .homeForge .forgeAnim:not(.compactAuto){min-height:62px}
     }
 
-    /* Une modale ouverte ne doit pas participer aux variations de layout de
-       l'écran derrière elle. */
+    /* Seule la carte RACINE de la fenêtre est contrainte. Les cartes internes
+       gardent leur propre hauteur et ne sont plus coupées. */
     #overlay[data-sr-persistent='1']{contain:layout style;overscroll-behavior:contain}
-    #overlay[data-sr-persistent='1'] .card{max-height:min(82dvh,720px);overflow:hidden}
-    #overlay[data-sr-persistent='1'] .mbody{max-height:calc(min(82dvh,720px) - 46px);overflow-y:auto;overscroll-behavior:contain}
+    #overlay[data-sr-persistent='1'] > .card{max-height:min(82dvh,720px);overflow:hidden}
+    #overlay[data-sr-persistent='1'] > .card > .mbody{max-height:calc(min(82dvh,720px) - 46px);overflow-y:auto;overscroll-behavior:contain}
   `;
   document.head.appendChild(css);
 
-  // Marquer chaque nouvelle modale et empêcher un rerender de fond de la faire
-  // disparaître. Une fermeture explicite reste évidemment autorisée.
-  let explicitCloseGeneration=0;
-  const originalClose=typeof window.closeModal==='function'?window.closeModal:null;
-  if(originalClose){
-    window.closeModal=function(){
-      explicitCloseGeneration++;
-      return originalClose.apply(this,arguments);
+  /* -----------------------------------------------------------------------
+     MODALES V76
+     Une notification automatique n'a plus le droit d'écraser une récompense
+     ou un panneau que le joueur est en train d'utiliser. Elle attend son tour.
+     En revanche, une action faite DANS la fenêtre peut la remplacer immédiatement
+     (ex. détail d'objet -> détail mis à jour).
+     ----------------------------------------------------------------------- */
+  const modalQueue=[];
+  let lastOverlayInteraction=-1e9;
+  let draining=false;
+
+  function nowMs(){return (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();}
+  function currentOverlay(){return document.getElementById('overlay');}
+  function removeOverlay(){const ov=currentOverlay();if(ov)ov.remove();}
+
+  function mountModal(html,title){
+    const app=document.getElementById('app');
+    if(!app)return;
+    const ov=document.createElement('div');
+    ov.id='overlay';
+    ov.setAttribute('data-sr-persistent','1');
+    ov.innerHTML='<div class="card frame">'+
+      (title?'<div class="mhead"><span class="mt">'+title+'</span><div class="mx" data-act="closeModal">'+
+        (typeof ic==='function'?ic('cross',10):'×')+'</div></div>':'')+
+      '<div class="mbody">'+html+'</div></div>';
+    ov.addEventListener('pointerdown',function(){lastOverlayInteraction=nowMs();},{capture:true,passive:true});
+    ov.addEventListener('click',function(e){
+      lastOverlayInteraction=nowMs();
+      if(e.target===ov&&typeof closeModal==='function')closeModal();
+    });
+    app.appendChild(ov);
+  }
+
+  function enqueueModal(html,title){
+    const key=String(title||'')+'\n'+String(html||'');
+    if(modalQueue.some(function(x){return x.key===key;}))return;
+    modalQueue.push({html:html,title:title,key:key,at:Date.now()});
+    if(modalQueue.length>8)modalQueue.shift();
+  }
+
+  function drainModalQueue(){
+    if(draining||currentOverlay()||!modalQueue.length)return;
+    draining=true;
+    requestAnimationFrame(function(){
+      draining=false;
+      if(currentOverlay())return;
+      while(modalQueue.length&&Date.now()-modalQueue[0].at>30000)modalQueue.shift();
+      const next=modalQueue.shift();
+      if(next)mountModal(next.html,next.title);
+    });
+  }
+
+  window.openModal=function(html,title){
+    const ov=currentOverlay();
+    if(!ov){mountModal(html,title);return;}
+
+    // Une action effectuée à l'intérieur d'une fenêtre peut légitimement la
+    // remplacer. Tout autre popup est considéré comme concurrent et mis en file.
+    if(nowMs()-lastOverlayInteraction<650){
+      removeOverlay();
+      mountModal(html,title);
+      return;
+    }
+    enqueueModal(html,title);
+  };
+
+  window.closeModal=function(){
+    removeOverlay();
+    drainModalQueue();
+  };
+
+  // Une navigation explicite vide les notifications trop anciennes mais ne
+  // ferme jamais de force la fenêtre active. Le rendu de fond reste indépendant.
+  const originalNav=typeof window.nav==='function'?window.nav:null;
+  if(originalNav){
+    window.nav=function(){
+      while(modalQueue.length&&Date.now()-modalQueue[0].at>15000)modalQueue.shift();
+      return originalNav.apply(this,arguments);
     };
   }
 
-  const originalOpen=typeof window.openModal==='function'?window.openModal:null;
-  if(originalOpen){
-    window.openModal=function(){
-      const out=originalOpen.apply(this,arguments);
-      const ov=document.getElementById('overlay');
-      if(ov) ov.setAttribute('data-sr-persistent','1');
-      return out;
-    };
-  }
-
-  const originalRender=typeof window.render==='function'?window.render:null;
-  if(originalRender){
-    window.render=function(){
-      const ov=document.getElementById('overlay');
-      const closeGen=explicitCloseGeneration;
-      const parent=ov&&ov.parentNode;
-      const out=originalRender.apply(this,arguments);
-      // Un rendu normal n'a pas le droit de fermer une fenêtre déjà ouverte.
-      // Si closeModal a été demandé explicitement, on respecte la fermeture.
-      if(ov && !document.documentElement.contains(ov) && closeGen===explicitCloseGeneration){
-        (parent&&document.documentElement.contains(parent)?parent:document.getElementById('app')).appendChild(ov);
-      }
-      const now=document.getElementById('overlay');
-      if(now) now.setAttribute('data-sr-persistent','1');
-      return out;
-    };
-  }
-
-  // Les mutations de l'accueil peuvent arriver après le premier rendu. Cette
-  // routine ne réécrit rien : elle ne fait qu'ajouter un marqueur de contexte,
-  // évitant les recalculs/flashs provoqués par des modifications DOM inutiles.
+  // Marquage léger uniquement; aucun wrapper supplémentaire autour de render().
+  // Cela évite d'empiler deux systèmes de stabilisation du rendu.
   const app=document.getElementById('app');
   if(app){
     const mark=function(){
       const sc=document.getElementById('screen');
-      if(!sc)return;
-      sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));
-      const ov=document.getElementById('overlay');
+      if(sc)sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));
+      const ov=currentOverlay();
       if(ov)ov.setAttribute('data-sr-persistent','1');
     };
     let queued=false;
