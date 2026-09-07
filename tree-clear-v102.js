@@ -1,136 +1,28 @@
-/* SHADOWREACH - Personal tree clear renderer v102
-   UI only. Keeps TREE_NODES, requirements, costs, levels, timers and saves. */
-(function () {
-  'use strict';
-  if (typeof TREE_NODES === 'undefined' || typeof treeLv !== 'function' || typeof treeReqOk !== 'function') return;
-
-  var BRANCHES = [
-    { id: 'familier', label: 'FAMILIER', sub: 'Oeufs', color: '#F5C542', icon: '🐾' },
-    { id: 'or', label: 'OR', sub: 'Autonomie', color: '#E8B44A', icon: '●' },
-    { id: 'minerai', label: 'MINERAIS', sub: 'Forge', color: '#8FC4FF', icon: '⛏' },
-    { id: 'pe', label: 'PE', sub: 'Recherche', color: '#57E07A', icon: '◆' },
-    { id: 'competence', label: 'COMPETENCE', sub: 'Equipement', color: '#B15CF6', icon: '✦' }
-  ];
-
-  function esc(value) {
-    return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
-      var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-      return map[c];
-    });
-  }
-
-  function branchId(n) {
-    var e = n.effect || '';
-    if (n.masteryKey) {
-      if (n.raidTarget === 'evolution') return 'pe';
-      return n.raidTarget || 'pe';
-    }
-    if (e === 'petDmg' || e === 'petHp' || e === 'eggFree' || e === 'eggSlot' || e.indexOf('hatch_') === 0) return 'familier';
-    if (e === 'goldAll' || e === 'afkGain' || e === 'afkTime') return 'or';
-    if (e.indexOf('forge') === 0) return 'minerai';
-    if (e === 'peRaid' || e === 'research' || e === 'techCost') return 'pe';
-    if (e === 'skillDmg' || e === 'skillFree' || e === 'skillCost' || e === 'passDmg' || e === 'passHp' || e.indexOf('eq_') === 0) return 'competence';
-    return 'pe';
-  }
-
-  function subLabel(n, id) {
-    var e = n.effect || '';
-    if (id === 'familier' && (e === 'eggFree' || e === 'eggSlot' || e.indexOf('hatch_') === 0)) return 'OEUFS';
-    if (id === 'or' && e === 'afkTime') return 'AUTONOMIE';
-    if (id === 'minerai') return 'FORGE';
-    if (id === 'pe' && (e === 'research' || e === 'techCost')) return 'RECHERCHE';
-    if (id === 'competence' && e.indexOf('eq_') === 0) return 'EQUIPEMENT';
-    return '';
-  }
-
-  function masteryProgress(n) {
-    var req = n.masteryReq || [];
-    var done = 0;
-    for (var i = 0; i < req.length; i++) if (treeLv(S, req[i]) >= 2) done++;
-    return done + '/' + req.length;
-  }
-
-  function nodeCard(n, branch, active, remain) {
-    var lv = treeLv(S, n.id);
-    var maxed = lv >= n.max;
-    var busy = active === n.id;
-    var open = treeReqOk(S, n);
-    var border = open ? branch.color : '#34435E';
-    if (maxed) border = '#57E07A';
-    if (busy) border = '#FFD65E';
-    var state = lv + '/' + n.max;
-    if (n.masteryKey) state = lv ? 'OBTENUE' : masteryProgress(n);
-    if (busy && typeof fmtTime === 'function') state = fmtTime(remain);
-    var sub = subLabel(n, branch.id);
-    var cls = 'srTreeNode';
-    if (!open) cls += ' locked';
-    if (maxed) cls += ' maxed';
-    if (busy) cls += ' busy';
-    return '<button class="' + cls + '" data-act="treeNode" data-arg="' + esc(n.id) + '" style="--branch:' + border + '">' +
-      '<span class="srTreeNodeIcon">' + (n.masteryKey ? '🔑' : '◆') + '</span>' +
-      '<span class="srTreeNodeText"><strong>' + esc(n.short || n.label || n.id) + '</strong>' +
-      (sub ? '<small>' + sub + '</small>' : '') + '</span>' +
-      '<span class="srTreeNodeState">' + esc(state) + '</span>' +
-      '</button>';
-  }
-
-  function forgeTreeGraph(active, remain) {
-    var groups = {};
-    for (var b = 0; b < BRANCHES.length; b++) groups[BRANCHES[b].id] = { 1: [], 2: [], 3: [], 4: [], key: [] };
-    for (var i = 0; i < TREE_NODES.length; i++) {
-      var n = TREE_NODES[i];
-      if (n.deprecatedKey) continue;
-      var id = branchId(n);
-      if (!groups[id]) continue;
-      if (n.masteryKey) groups[id].key.push(n);
-      else if (n.tier >= 1 && n.tier <= 4) groups[id][n.tier].push(n);
-    }
-
-    var html = '<div class="srTreeClear"><div class="srTreeCore"><b>NOYAU</b><span>5 voies de progression</span></div>';
-    for (var bi = 0; bi < BRANCHES.length; bi++) {
-      var branch = BRANCHES[bi];
-      var g = groups[branch.id];
-      html += '<section class="srTreeBranch" style="--branch:' + branch.color + '">';
-      html += '<header><span class="srTreeBranchIcon">' + branch.icon + '</span><div><b>' + branch.label + '</b><small>Voie secondaire : ' + branch.sub + '</small></div></header>';
-      for (var tier = 1; tier <= 4; tier++) {
-        var arr = g[tier];
-        arr.sort(function (a, z) { return (a.row - z.row) || (a.lane - z.lane) || a.id.localeCompare(z.id); });
-        html += '<div class="srTreeTier"><div class="srTreeTierTitle"><span></span>PALIER ' + tier + '</div>';
-        for (var ni = 0; ni < arr.length; ni++) html += nodeCard(arr[ni], branch, active, remain);
-        html += '</div>';
-        if (tier === 2 && g.key.length) {
-          html += '<div class="srTreeMastery"><div class="srTreeMasteryTitle">MAITRISE DE LA VOIE</div>';
-          for (var ki = 0; ki < g.key.length; ki++) html += nodeCard(g.key[ki], { id: branch.id, color: '#FFD65E' }, active, remain);
-          html += '</div>';
-        }
-      }
-      html += '</section>';
-    }
-    html += '</div>';
-    return html;
-  }
-
-  treeGraph = forgeTreeGraph;
-  try { window.treeGraph = forgeTreeGraph; } catch (e) {}
-
-  var style = document.createElement('style');
-  style.textContent =
-    '.srTreeClear{padding:10px 8px 28px;background:linear-gradient(180deg,#060A12,#0A1020);border-radius:18px;color:#EEF4FF}' +
-    '.srTreeCore{margin:4px auto 18px;max-width:330px;padding:15px;text-align:center;border:1px solid #52DDE5;border-radius:18px;background:linear-gradient(135deg,#142A40,#09111E);box-shadow:0 0 24px rgba(82,221,229,.08)}' +
-    '.srTreeCore b{display:block;font-size:18px}.srTreeCore span{display:block;margin-top:3px;color:#82E9EE;font-size:11px;font-weight:800}' +
-    '.srTreeBranch{margin:0 0 18px;padding:10px;border:1px solid color-mix(in srgb,var(--branch) 45%,#26344F);border-radius:18px;background:#0A111D}' +
-    '.srTreeBranch>header{display:flex;align-items:center;gap:11px;padding:8px 7px 13px;border-bottom:1px solid #1D2A3F}' +
-    '.srTreeBranchIcon{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:color-mix(in srgb,var(--branch) 14%,#09111E);color:var(--branch);font-size:21px}' +
-    '.srTreeBranch header b{display:block;color:var(--branch);font-size:16px;letter-spacing:.6px}.srTreeBranch header small{display:block;color:#8D9DB8;margin-top:2px}' +
-    '.srTreeTier{position:relative;padding:12px 0 1px}.srTreeTierTitle{display:flex;align-items:center;gap:7px;color:#9FB0CA;font-size:10px;font-weight:900;letter-spacing:1px;margin:0 4px 8px}.srTreeTierTitle span{width:7px;height:7px;border-radius:50%;background:var(--branch)}' +
-    '.srTreeNode{width:100%;min-height:58px;margin:0 0 8px;padding:8px 10px;display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:8px;text-align:left;border:1.5px solid var(--branch);border-radius:14px;background:#101A2A;color:#F4F7FC;box-shadow:none}' +
-    '.srTreeNode.locked{opacity:.58;background:#080D16}.srTreeNode.maxed{background:#10251A}.srTreeNode.busy{background:#28200D}' +
-    '.srTreeNodeIcon{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--branch);border-radius:50%;color:var(--branch);background:#070C14}' +
-    '.srTreeNodeText strong{display:block;font-size:12px;line-height:1.2}.srTreeNodeText small{display:block;margin-top:4px;color:var(--branch);font-size:8px;font-weight:900;letter-spacing:.7px}' +
-    '.srTreeNodeState{color:var(--branch);font-size:11px;font-weight:900;white-space:nowrap}' +
-    '.srTreeMastery{margin:9px 0 3px;padding:9px;border:1px solid rgba(255,214,94,.35);border-radius:14px;background:rgba(255,214,94,.04)}.srTreeMasteryTitle{text-align:center;color:#FFD65E;font-size:9px;font-weight:900;letter-spacing:1px;margin-bottom:8px}' +
-    '.srRadialTree{display:none!important}';
-  document.head.appendChild(style);
-  window.__srTreeClearV102 = true;
-  try { if (typeof render === 'function') render(); } catch (e) {}
+/* SHADOWREACH - Personal tree dedicated renderer v111
+   UI/navigation only. Existing TREE_NODES, effects, levels, costs, timers, requirements and saves stay authoritative.
+   One specialization at a time. Existing tier/node distribution is preserved: no same-effect stacking is introduced. */
+(function(){
+'use strict';
+if(typeof TREE_NODES==='undefined'||typeof treeLv!=='function'||typeof treeReqOk!=='function')return;
+var B=[
+{id:'familier',label:'Familier',sub:'Oeufs',icon:'🐾'},
+{id:'or',label:'Or',sub:'Autonomie',icon:'●'},
+{id:'minerai',label:'Minerais',sub:'Forge',icon:'⛏'},
+{id:'pe',label:'PE',sub:'Recherche',icon:'◆'},
+{id:'competence',label:'Compétence',sub:'Équipement',icon:'✦'}];
+var selected='familier';
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function bid(n){var e=n.effect||'';if(n.masteryKey){if(n.raidTarget==='evolution')return'pe';return n.raidTarget||'pe';}if(e==='petDmg'||e==='petHp'||e==='eggFree'||e==='eggSlot'||e.indexOf('hatch_')===0)return'familier';if(e==='goldAll'||e==='afkGain'||e==='afkTime')return'or';if(e.indexOf('forge')===0)return'minerai';if(e==='peRaid'||e==='research'||e==='techCost')return'pe';if(e==='skillDmg'||e==='skillFree'||e==='skillCost'||e==='passDmg'||e==='passHp'||e.indexOf('eq_')===0)return'competence';return'pe';}
+function mastery(n){var r=n.masteryReq||[],d=0;for(var i=0;i<r.length;i++)if(treeLv(S,r[i])>=2)d++;return d+'/'+r.length;}
+function card(n,active,remain){var lv=treeLv(S,n.id),max=lv>=n.max,busy=active===n.id,open=treeReqOk(S,n),state=n.masteryKey?(lv?'OBTENUE':mastery(n)):(lv+'/'+n.max);if(busy&&typeof fmtTime==='function')state=fmtTime(remain);return '<button class="srDNode '+(!open?'locked ':'')+(max?'maxed ':'')+(busy?'busy':'')+'" data-act="treeNode" data-arg="'+esc(n.id)+'"><span class="ico">'+(n.masteryKey?'🔑':'◆')+'</span><span class="txt"><b>'+esc(n.short||n.label||n.id)+'</b><small>'+esc(n.effect||'Bonus')+'</small></span><strong>'+esc(state)+'</strong></button>';}
+function graph(active,remain){var groups={};for(var i=0;i<B.length;i++)groups[B[i].id]={1:[],2:[],3:[],4:[],key:[]};for(var j=0;j<TREE_NODES.length;j++){var n=TREE_NODES[j];if(n.deprecatedKey)continue;var id=bid(n);if(!groups[id])continue;if(n.masteryKey)groups[id].key.push(n);else if(n.tier>=1&&n.tier<=4)groups[id][n.tier].push(n);}var br=B.filter(function(x){return x.id===selected;})[0]||B[0],g=groups[br.id];var h='<div class="srDedicatedTree"><div class="srDTop"><div class="srDProgress"><b>ARBRE</b><span>'+esc(typeof treeTotalLevels==='function'?treeTotalLevels(S):'')+'</span></div><button class="srDInfo" type="button" title="Les PE du Raid Évolution servent à ouvrir et améliorer les nœuds.">ⓘ</button></div><div class="srDTabs">';for(i=0;i<B.length;i++)h+='<button type="button" class="srDTab '+(B[i].id===br.id?'on':'')+'" data-tree-tab="'+B[i].id+'"><span>'+B[i].icon+'</span><small>'+B[i].label+'</small></button>';h+='</div><section class="srDPath"><header><span class="big">'+br.icon+'</span><div><b>'+br.label.toUpperCase()+'</b><small>Voie secondaire : '+br.sub+'</small></div></header>';
+for(var t=1;t<=4;t++){var a=g[t];a.sort(function(x,y){return(x.row-y.row)||(x.lane-y.lane)||x.id.localeCompare(y.id);});h+='<div class="srDTier"><div class="srDTierTitle">PALIER '+t+'</div>';for(var k=0;k<a.length;k++)h+=card(a[k],active,remain);h+='</div>';if(t===2&&g.key.length){h+='<div class="srDMaster"><div>MAÎTRISE DE LA VOIE</div>';for(k=0;k<g.key.length;k++)h+=card(g.key[k],active,remain);h+='</div>';}}
+h+='</section></div>';return h;}
+treeGraph=graph;try{window.treeGraph=graph;}catch(e){}
+document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('[data-tree-tab]'):null;if(!b)return;e.preventDefault();selected=b.getAttribute('data-tree-tab')||'familier';try{if(typeof render==='function')render();}catch(_){}},true);
+function dedicated(){var s=document.getElementById('screen');if(!s)return false;return !!s.querySelector('.srDedicatedTree');}
+function syncShell(){var on=dedicated();document.documentElement.classList.toggle('srTreeDedicatedMode',on);}
+var st=document.createElement('style');st.textContent='
+html.srTreeDedicatedMode #hud,html.srTreeDedicatedMode #tabs{display:none!important}html.srTreeDedicatedMode #screen{padding-top:max(6px,env(safe-area-inset-top))!important;padding-bottom:8px!important;min-height:100vh!important}.srTreeDedicatedMode .screenHead{position:sticky!important;top:0!important;z-index:40!important;margin:0!important;padding:7px 9px!important;min-height:48px!important;background:#0b1425!important}.srTreeDedicatedMode .screenHead .title{font-size:17px!important}.srTreeDedicatedMode .screenHead .sub,.srTreeDedicatedMode .infoBox,.srTreeDedicatedMode .treeHelp,.srTreeDedicatedMode .hintBox{display:none!important}.srTreeDedicatedMode .screenHead+.card,.srTreeDedicatedMode .screenHead~.card:first-of-type{margin-top:4px!important}.srDedicatedTree{padding:2px 7px 24px;color:#eef4ff}.srDTop{display:flex;align-items:center;justify-content:space-between;padding:5px 3px 7px;border-bottom:1px solid #24344f}.srDProgress{display:flex;align-items:baseline;gap:8px}.srDProgress b{font-family:Georgia,serif;color:#f4d27b;font-size:15px;letter-spacing:1px}.srDProgress span{font-size:10px;color:#9babc5;font-weight:900}.srDInfo{width:27px;height:27px;border-radius:50%;border:1px solid #d8ae4d;background:#111b2c;color:#f2cc6b;font-weight:900}.srDTabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:8px 0;position:sticky;top:48px;z-index:35;background:#0a1220}.srDTab{min-width:0;padding:7px 2px 6px;border:1px solid #31415d;border-radius:10px;background:#111c2e;color:#9eabc1}.srDTab span{display:block;font-size:15px}.srDTab small{display:block;margin-top:3px;font-size:7.5px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.srDTab.on{border-color:#e9bd55;color:#ffd66f;background:#2a2418;box-shadow:0 0 12px rgba(233,189,85,.12)}.srDPath{border:1px solid #344763;border-radius:15px;background:#09111e;padding:9px}.srDPath>header{display:flex;align-items:center;gap:10px;padding:3px 3px 10px;border-bottom:1px solid #223149}.srDPath .big{display:grid;place-items:center;width:38px;height:38px;border:1px solid #d9ae4d;border-radius:50%;font-size:19px}.srDPath header b{display:block;color:#f1c65e;font-size:16px;letter-spacing:.6px}.srDPath header small{display:block;color:#8fa0ba;font-size:9px;margin-top:2px}.srDTier{padding:11px 0 2px}.srDTierTitle{color:#f0c45d;font:900 10px/1 system-ui;letter-spacing:1.3px;margin:0 2px 8px}.srDNode{width:100%;min-height:52px;margin:0 0 7px;padding:7px 9px;display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:8px;text-align:left;border:1px solid #49658c;border-radius:12px;background:#101b2c;color:#f5f7fb}.srDNode .ico{display:grid;place-items:center;width:31px;height:31px;border:1px solid #d7aa48;border-radius:50%;color:#efc55e}.srDNode .txt b{display:block;font-size:11px}.srDNode .txt small{display:block;margin-top:2px;color:#788ba8;font-size:7px}.srDNode>strong{font-size:9px;color:#e9c05c}.srDNode.locked{opacity:.52;background:#080d16}.srDNode.maxed{border-color:#48ca7b;background:#102218}.srDNode.busy{border-color:#f2c44f;background:#28200d}.srDMaster{margin:8px 0 2px;padding:8px;border:1px solid rgba(239,195,86,.4);border-radius:12px;background:rgba(239,195,86,.035);color:#f0c45d;font-size:9px;font-weight:900;letter-spacing:.8px}.srDMaster>div:first-child{margin-bottom:7px;text-align:center}.srRadialTree,.srTreeClear{display:none!important}';document.head.appendChild(st);
+if(typeof MutationObserver!=='undefined')new MutationObserver(syncShell).observe(document.body,{childList:true,subtree:true});setInterval(syncShell,500);setTimeout(syncShell,0);try{if(typeof render==='function')render();}catch(e){}
 })();
