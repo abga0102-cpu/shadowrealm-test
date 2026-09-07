@@ -1,12 +1,15 @@
-/* SHADOWREACH · tree camera bridge v89 */
+/* SHADOWREACH · tree view bridge v90 */
 (function(){
   'use strict';
-  if (window.__srTreeCameraV89Loading) return;
-  window.__srTreeCameraV89Loading = true;
+  if (window.__srTreeSimpleV90Loading) return;
+  window.__srTreeSimpleV90Loading = true;
   var s = document.createElement('script');
-  s.src = 'tree-camera-v88.js?v=2026.09.07.89';
+  s.src = 'tree-simple-v90.js?v=2026.09.07.90';
   s.async = false;
-  s.onload = function(){ window.__srTreeCameraV89Loaded = true; };
-  s.onerror = function(){ window.__srTreeCameraV89Loaded = false; };
+  s.onload = function(){
+    window.__srTreeSimpleV90Loaded = true;
+    try { if (typeof render === 'function') render(); } catch(_) {}
+  };
+  s.onerror = function(){ window.__srTreeSimpleV90Loaded = false; };
   document.body.appendChild(s);
 })();
