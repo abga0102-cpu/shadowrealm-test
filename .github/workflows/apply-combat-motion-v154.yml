@@ -1,0 +1,78 @@
+name: Apply combat motion V154
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-combat-motion-v154.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply visual combat motion V154
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          p = Path('game-3.js')
+          s = p.read_text()
+          replacements = [
+            (
+              'const heroMoving = !!tgt && c.heroAttacking <= 0 && (tgt.x - c.heroX) > wt.range + 4;',
+              'const heroMoving = !!tgt && c.heroAttacking <= 0 && (tgt.x - c.heroX) > wt.range + 2;'
+            ),
+            (
+              'const tilt = heroMoving ? Math.sin(walkPhase) * 1.8 : Math.sin(t * 0.0030) * 0.8;',
+              'const tilt = heroMoving ? Math.sin(walkPhase) * 2.35 : Math.sin(t * 0.0030) * 0.8;'
+            ),
+            (
+              'const lunge = c.heroAttacking > 0 ? Math.sin(attackP * Math.PI) * 7 : 0;',
+              'const lunge = c.heroAttacking > 0 ? Math.sin(attackP * Math.PI) * 9 : 0;'
+            ),
+            (
+              'const knock = c.heroHit > 0 ? -Math.min(4, c.heroHit * 14) : 0;',
+              'const knock = c.heroHit > 0 ? -Math.min(5, c.heroHit * 16) : 0;'
+            ),
+            (
+              'const lunge = (e.attacking > 0 ? -Math.sin(enemyAttackP * Math.PI) * 8 : 0) + (e.recoil > 0 ? e.recoil * 38 : 0);',
+              'const lunge = (e.attacking > 0 ? -Math.sin(enemyAttackP * Math.PI) * 10 : 0) + (e.recoil > 0 ? e.recoil * 44 : 0);'
+            ),
+            (
+              '// 0.22 chased the simulation hard enough to look stepped; 0.13 glides\n  P.hero += (c.heroX - P.hero) * 0.13;',
+              '// V154: slightly tighter visual follow reduces the last bit of skating without exposing simulation steps.\n  P.hero += (c.heroX - P.hero) * 0.16;'
+            ),
+          ]
+
+          for old, new in replacements:
+            if old not in s:
+              raise SystemExit('combat motion anchor missing: ' + old[:80])
+            s = s.replace(old, new, 1)
+
+          p.write_text(s)
+
+          p = Path('index.html')
+          s = p.read_text()
+          if '2026.09.08.153' not in s:
+            raise SystemExit('index build 153 anchor missing')
+          s = s.replace('<!-- Combat impact V153 · build 2026.09.08.153 -->', '<!-- Combat motion V154 · build 2026.09.08.154 -->', 1)
+          s = s.replace('shadowreach-build" content="2026.09.08.153"', 'shadowreach-build" content="2026.09.08.154"', 1)
+          s = s.replace("var V='2026.09.08.153'", "var V='2026.09.08.154'", 1)
+          p.write_text(s)
+          PY
+      - name: Syntax and regression checks
+        run: |
+          node --check game-3.js
+          grep -F 'wt.range + 2' game-3.js
+          grep -F 'Math.sin(attackP * Math.PI) * 9' game-3.js
+          grep -F 'e.recoil * 44' game-3.js
+          grep -F '(c.heroX - P.hero) * 0.16' game-3.js
+          grep -F 'shadowreach-build" content="2026.09.08.154' index.html
+          grep -F "var V='2026.09.08.154'" index.html
+      - name: Commit update
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game-3.js index.html
+          git commit -m 'Mouvements combat V154' -m 'Resserre le suivi visuel des positions, améliore l’approche au contact et renforce légèrement les transferts de poids, fentes et reculs. Aucun changement de dégâts, portée logique, vitesse de déplacement réelle, cooldown ou progression. Build 2026.09.08.154.'
+          git push
