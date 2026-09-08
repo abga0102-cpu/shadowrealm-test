@@ -8,8 +8,6 @@
 (function () {
   "use strict";
 
-  // Transition pacing: normal waves stay quick, floor/boss clears keep enough room
-  // for the death effect and reward beat to remain readable.
   if (typeof RULES !== "undefined" && RULES) {
     RULES.FIGHT_ENTRY_MS = 300;
     RULES.FIGHT_HOLD_MS = 550;
@@ -52,8 +50,6 @@
     });
   }
 
-  // One-shot boot hook: only the combat tick is sampled at ~60 Hz. Every other
-  // game timer keeps its original cadence.
   window.setInterval = function (fn, delay) {
     const extra = Array.prototype.slice.call(arguments, 2);
     if (!hooked && delay === 33 && typeof fn === "function" && fn.name === "tick") {
@@ -134,12 +130,4 @@
     ".unit img{backface-visibility:hidden;transform:translateZ(0)}"
   ].join("\n");
   document.head.appendChild(style);
-
-  // V157 boss + skill polish is split into its own tiny visual layer so it can
-  // evolve independently without touching combat math or the consolidated core.
-  const polish = document.createElement("script");
-  polish.src = "combat-polish-v157.js?v=2026.09.08.157";
-  polish.async = false;
-  polish.onerror = function () { console.warn("combat polish V157 failed to load"); };
-  document.body.appendChild(polish);
 })();
