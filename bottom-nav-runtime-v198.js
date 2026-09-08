@@ -1,6 +1,6 @@
 /* SHADOWREACH · Bottom navigation runtime V198
    Phase 2 ownership consolidation.
-   One owner for fantasy icon decoration and final V197 navigation geometry.
+   One owner for fantasy icon decoration and the effective V197 navigation styles.
    It replaces the legacy V65 observer + V183/V186/V187 override stack without
    changing routes, data-act values, click/touch handlers, or game state. */
 (function(){
@@ -18,6 +18,15 @@
   var style=document.createElement('style');
   style.id='srBottomNavRuntimeV198';
   style.textContent=`
+/* V65 baseline used by non-home screens in V197. */
+#tabs .fantasyNavV65{position:relative;overflow:visible}
+#tabs .fantasyNavIcon{width:38px;height:38px;display:block;margin:0 auto 2px;filter:drop-shadow(0 3px 4px #000a);transition:filter .18s,transform .18s,opacity .18s}
+#tabs .fantasyNavIcon svg{width:100%;height:100%;display:block;overflow:visible}
+#tabs .fantasyNavV65:not(.on):not(.active):not([aria-current="page"]) .fantasyNavIcon{opacity:.62;filter:saturate(.72) brightness(.78) drop-shadow(0 2px 3px #0009)}
+#tabs .fantasyNavV65.on .fantasyNavIcon,#tabs .fantasyNavV65.active .fantasyNavIcon,#tabs .fantasyNavV65[aria-current="page"] .fantasyNavIcon{transform:translateY(-2px) scale(1.07);filter:brightness(1.16) saturate(1.15) drop-shadow(0 0 8px #E8B44A99) drop-shadow(0 3px 4px #000a)}
+#tabs .fantasyNavV65.on,#tabs .fantasyNavV65.active,#tabs .fantasyNavV65[aria-current="page"]{color:#FBDD8C!important;text-shadow:0 0 10px #E8B44A66}
+
+/* V183/V186/V187 effective Home geometry, now owned in one place. */
 #app.srHomeFullArena>#tabs{
   box-sizing:border-box!important;display:grid!important;
   grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:58px!important;
@@ -51,7 +60,6 @@
   max-width:34px!important;max-height:34px!important;margin:0!important;padding:0!important;
   transform:translateX(-50%)!important;line-height:0!important;
 }
-#app.srHomeFullArena>#tabs .fantasyNavIcon svg{width:100%!important;height:100%!important;display:block!important;overflow:visible!important}
 #app.srHomeFullArena>#tabs>.tab>span:not(.ico):not(.fantasyNavIcon):not(.dot){
   position:absolute!important;left:0!important;right:0!important;top:40px!important;
   display:block!important;width:100%!important;height:14px!important;margin:0!important;padding:0!important;
@@ -59,26 +67,11 @@
   text-align:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:clip!important;
 }
 #app.srHomeFullArena>#tabs>.tab>.dot{top:3px!important;right:22%!important}
-#app.srHomeFullArena>#tabs>.fantasyNavV65 .fantasyNavIcon{
-  transition:filter .18s,opacity .18s!important;filter:drop-shadow(0 3px 4px #000a);
-}
-#app.srHomeFullArena>#tabs>.fantasyNavV65:not(.on):not(.active):not([aria-current="page"]) .fantasyNavIcon{
-  opacity:.74!important;filter:saturate(.78) brightness(.9) drop-shadow(0 2px 3px #0009)!important;
-}
-#app.srHomeFullArena>#tabs>.fantasyNavV65.on .fantasyNavIcon,
-#app.srHomeFullArena>#tabs>.fantasyNavV65.active .fantasyNavIcon,
-#app.srHomeFullArena>#tabs>.fantasyNavV65[aria-current="page"] .fantasyNavIcon{
-  opacity:1!important;filter:brightness(1.16) saturate(1.15) drop-shadow(0 0 8px #E8B44A99) drop-shadow(0 3px 4px #000a)!important;
-}
-#app.srHomeFullArena>#tabs>.tab.on>.ico .fantasyNavIcon,
-#app.srHomeFullArena>#tabs>.tab.active>.ico .fantasyNavIcon,
-#app.srHomeFullArena>#tabs>.tab[aria-current="page"]>.ico .fantasyNavIcon{transform:none!important}
-#app.srHomeFullArena>#tabs>.tab.on>.fantasyNavIcon,
-#app.srHomeFullArena>#tabs>.tab.active>.fantasyNavIcon,
-#app.srHomeFullArena>#tabs>.tab[aria-current="page"]>.fantasyNavIcon{transform:translateX(-50%)!important}
-#app.srHomeFullArena>#tabs>.fantasyNavV65.on,
-#app.srHomeFullArena>#tabs>.fantasyNavV65.active,
-#app.srHomeFullArena>#tabs>.fantasyNavV65[aria-current="page"]{color:#FBDD8C!important;text-shadow:0 0 10px #E8B44A66}
+#app.srHomeFullArena>#tabs>.fantasyNavV65 .fantasyNavIcon{transition:filter .18s,opacity .18s!important;filter:drop-shadow(0 3px 4px #000a)}
+#app.srHomeFullArena>#tabs>.fantasyNavV65:not(.on):not(.active):not([aria-current="page"]) .fantasyNavIcon{opacity:.74!important;filter:saturate(.78) brightness(.9) drop-shadow(0 2px 3px #0009)!important}
+#app.srHomeFullArena>#tabs>.fantasyNavV65.on .fantasyNavIcon,#app.srHomeFullArena>#tabs>.fantasyNavV65.active .fantasyNavIcon,#app.srHomeFullArena>#tabs>.fantasyNavV65[aria-current="page"] .fantasyNavIcon{opacity:1!important;filter:brightness(1.16) saturate(1.15) drop-shadow(0 0 8px #E8B44A99) drop-shadow(0 3px 4px #000a)!important}
+#app.srHomeFullArena>#tabs>.tab.on>.ico .fantasyNavIcon,#app.srHomeFullArena>#tabs>.tab.active>.ico .fantasyNavIcon,#app.srHomeFullArena>#tabs>.tab[aria-current="page"]>.ico .fantasyNavIcon{transform:none!important}
+#app.srHomeFullArena>#tabs>.tab.on>.fantasyNavIcon,#app.srHomeFullArena>#tabs>.tab.active>.fantasyNavIcon,#app.srHomeFullArena>#tabs>.tab[aria-current="page"]>.fantasyNavIcon{transform:translateX(-50%)!important}
 @media(max-width:370px),(max-height:720px){
   #app.srHomeFullArena>#tabs{
     grid-template-rows:54px!important;flex-basis:calc(54px + env(safe-area-inset-bottom))!important;
@@ -100,7 +93,9 @@
     var markup=ICONS[key];
     if(!markup)return;
     if(!tab.querySelector('.fantasyNavIcon')){
-      if(key==='developpement'){
+      var app=document.getElementById('app');
+      var home=!!(app&&app.classList.contains('srHomeFullArena'));
+      if(key==='developpement'&&home){
         var direct=tab.querySelector(':scope > .ico');
         if(direct)direct.outerHTML=markup;
         else tab.insertAdjacentHTML('afterbegin',markup);
