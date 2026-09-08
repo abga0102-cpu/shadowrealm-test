@@ -27,6 +27,7 @@
   <script src="combat-animation-v169.js?v=2026.09.08.169"></script>
   <script src="game-4.js?v=2026.09.08.151"></script>
   <script src="game-5.js?v=2026.09.08.151"></script>
+  <script src="bottom-nav-runtime-v198.js?v=2026.09.08.198"></script>
   <script src="sanctuary-pricing-v125.js?v=2026.09.08.151"></script>
   <script src="sanctuary-rarities-v129.js?v=2026.09.08.151"></script>
   <script src="sanctuary-endgame-v130.js?v=2026.09.08.175"></script>
@@ -89,7 +90,7 @@
     function extras(){
       requestAnimationFrame(function(){
         setTimeout(function(){
-          chain(['social-v1.js','social-p2p-v1.js','social-forge-layout-v1.js','home-layout-runtime-v198.js','bottom-nav-runtime-v198.js'],function(){
+          chain(['social-v1.js','social-p2p-v1.js','social-forge-layout-v1.js','home-layout-runtime-v198.js'],function(){
             setTimeout(function(){chain(['social-bot-testers-v5.js','social-bot-ui-v1.js']);},mobile?2200:250);
           });
         },mobile?180:40);
