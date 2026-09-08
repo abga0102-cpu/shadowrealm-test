@@ -1,0 +1,56 @@
+name: Bottom navigation V188 browser check
+
+on:
+  push:
+    branches:
+      - canonical-bottom-nav-v188
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bottom-nav-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Start local game server
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/shadowreach-http.log 2>&1 &
+          echo $! >/tmp/shadowreach-http.pid
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8080/index.html >/dev/null; then exit 0; fi
+            sleep 0.25
+          done
+          cat /tmp/shadowreach-http.log
+          exit 1
+
+      - name: Run V188 visual regression matrix in Chrome
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME" ]; then
+            echo "No Chromium/Chrome binary found on runner"
+            exit 1
+          fi
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --virtual-time-budget=30000 \
+            --dump-dom \
+            http://127.0.0.1:8080/bottom-nav-visual-test-v188.html \
+            > /tmp/bottom-nav-v188-results.html
+          grep -F "PASS ·" /tmp/bottom-nav-v188-results.html
+          if grep -F "ÉCHEC" /tmp/bottom-nav-v188-results.html; then
+            echo "V188 visual regression reported a failure"
+            cat /tmp/bottom-nav-v188-results.html
+            exit 1
+          fi
+
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/shadowreach-http.log || true
