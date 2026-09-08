@@ -7,20 +7,47 @@ if (!chrome) {
   process.exit(1);
 }
 
-const scripts = [
+/* Step 7 intentionally tests the NEW navigation contract in isolation instead
+   of booting the whole game or executing the legacy V183/V186/V187 patch stack.
+   Step 8 will retire those legacy owners from the production load chain. */
+const browserScripts = [
   'bottom-nav-v53.js',
-  'bottom-nav-layout-v183.js',
-  'bottom-nav-development-v186.js',
-  'bottom-nav-active-normalize-v187.js',
   'bottom-nav-canonical-v188.js',
   'bottom-nav-interaction-v188.js',
 ];
-for (const file of scripts) {
+const sourceFiles = [
+  ...browserScripts,
+  'home-layout-fix-v119.js',
+];
+for (const file of sourceFiles) {
   if (!fs.existsSync(file)) {
     console.error(`Missing ${file}`);
     process.exit(1);
   }
 }
+
+function sourceCheck(ok, message) {
+  console.log(`${ok ? 'PASS' : 'FAIL'} source · ${message}`);
+  if (!ok) sourceFailures++;
+}
+let sourceFailures = 0;
+const fantasySource = fs.readFileSync('bottom-nav-v53.js', 'utf8');
+const canonicalSource = fs.readFileSync('bottom-nav-canonical-v188.js', 'utf8');
+const interactionSource = fs.readFileSync('bottom-nav-interaction-v188.js', 'utf8');
+const homeLayoutSource = fs.readFileSync('home-layout-fix-v119.js', 'utf8');
+
+sourceCheck(!/scale\(1\.07\)/.test(fantasySource), 'active fantasy icon no longer scales to 1.07');
+sourceCheck(!/translateY\(-2px\)\s*scale/.test(fantasySource), 'active fantasy icon no longer shifts vertically');
+sourceCheck(!/#tabs|\.fantasyNavIcon|\.tab>\.ico/.test(homeLayoutSource), 'home-layout compatibility layer no longer owns bottom navigation');
+sourceCheck(/inventaire\s*:\s*['"]equipement['"]/.test(canonicalSource), 'inventory maps to Equipment');
+sourceCheck(/competences\s*:\s*['"]developpement['"]/.test(canonicalSource), 'competences maps to Development');
+sourceCheck(/familiers\s*:\s*['"]developpement['"]/.test(canonicalSource), 'familiers maps to Development');
+sourceCheck(/arbre\s*:\s*['"]developpement['"]/.test(canonicalSource), 'arbre maps to Development');
+sourceCheck(/parametres\s*:\s*['"]parametres['"]/.test(canonicalSource), 'Settings maps to Settings');
+sourceCheck(/max-width:370px/.test(canonicalSource) && /max-height:720px/.test(canonicalSource), 'compact mobile breakpoint is present');
+sourceCheck(/env\(safe-area-inset-bottom\)/.test(canonicalSource), 'safe-area bottom contract is present');
+sourceCheck(/pointer-events:none!important/.test(interactionSource), 'decorative nav children cannot intercept taps');
+sourceCheck(/touch-action:manipulation!important/.test(interactionSource), 'primary tabs use touch-action manipulation');
 
 const profiles = [
   { name: 'compact-height', width: 375, height: 667 },
@@ -73,18 +100,17 @@ renderTabs();
 </body>
 </html>`;
 
-function near(a,b,t=0.9){ return Math.abs(Number(a)-Number(b)) <= t; }
-
 const browser = await puppeteer.launch({
   executablePath: chrome,
   headless: true,
   args: ['--no-sandbox','--disable-gpu','--disable-dev-shm-usage'],
 });
 
-let globalFail = 0;
+let browserFailures = 0;
 try {
   for (const profile of profiles) {
     const page = await browser.newPage();
+    page.setDefaultTimeout(10000);
     await page.setViewport({
       width: profile.width,
       height: profile.height,
@@ -92,18 +118,18 @@ try {
       isMobile: true,
       hasTouch: true,
     });
-    await page.setContent(html, { waitUntil: 'domcontentloaded' });
-    for (const file of scripts) {
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 10000 });
+    for (const file of browserScripts) {
       await page.addScriptTag({ content: fs.readFileSync(file, 'utf8') });
     }
+    await new Promise(resolve => setTimeout(resolve, 120));
 
     const result = await page.evaluate(async () => {
       const details=[];
       let pass=0,fail=0;
       const record=(ok,msg)=>{details.push({ok:!!ok,msg});ok?pass++:fail++;};
       const near=(a,b,t=0.9)=>Math.abs(Number(a)-Number(b))<=t;
-      const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-      const settle=async()=>{await sleep(35);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await sleep(20);};
+      const settle=()=>new Promise(resolve=>setTimeout(resolve,80));
       const target=tab=>tab.getAttribute('data-nav-target')||tab.getAttribute('data-arg')||'';
       const box=(el,parent)=>{const a=el.getBoundingClientRect(),b=parent.getBoundingClientRect();return{x:a.left-b.left,y:a.top-b.top,w:a.width,h:a.height,cx:(a.left+a.right)/2-b.left};};
       const snap=()=>Array.from(document.querySelectorAll('#tabs>.tab')).map(tab=>{
@@ -121,9 +147,7 @@ try {
       const expectedLabel=compact?36:40;
 
       const audit=window.__srBottomNavV188Audit&&window.__srBottomNavV188Audit();
-      record(!!audit&&audit.ok,'canonical destinations');
-      const canonicalStyle=document.getElementById('srBottomNavCanonicalV188');
-      record(!!canonicalStyle&&canonicalStyle.textContent.includes('env(safe-area-inset-bottom)'),'safe-area contract');
+      record(!!audit&&audit.ok,'canonical four destinations');
 
       const routes=[
         ['accueil','accueil'],['equipement','equipement'],['inventaire','equipement'],['personnage','equipement'],['heros','equipement'],
@@ -134,7 +158,7 @@ try {
         nav(routeName);await settle();
         const tabs=Array.from(document.querySelectorAll('#tabs>.tab'));
         const active=tabs.filter(t=>t.classList.contains('on')||t.getAttribute('aria-current')==='page');
-        record(active.length===1&&target(active[0])===owner,`${routeName} owner ${owner}`);
+        record(active.length===1&&target(active[0])===owner,`${routeName} has exactly one owner: ${owner}`);
         let ok=tabs.length===4,why='';
         for(const v of snap()){
           if(!v.icon||!v.label){ok=false;why=`${v.target} missing canonical child`;break;}
@@ -147,7 +171,7 @@ try {
           if(!baseline[v.target])baseline[v.target]=v;
           else if(!same(baseline[v.target],v)){ok=false;why=`${v.target} changes geometry when active`;break;}
         }
-        record(ok,`${routeName} stable geometry${why?' — '+why:''}`);
+        record(ok,`${routeName} geometry stable${why?' — '+why:''}`);
       }
 
       nav('accueil');await settle();
@@ -163,7 +187,7 @@ try {
         if(added)dot.remove();
         if(!badgeOk)break;
       }
-      record(badgeOk,`badge stability${badgeWhy?' — '+badgeWhy:''}`);
+      record(badgeOk,`badges preserve geometry and taps${badgeWhy?' — '+badgeWhy:''}`);
 
       let touchOk=true,touchWhy='';
       for(const tab of Array.from(document.querySelectorAll('#tabs>.tab'))){
@@ -172,7 +196,7 @@ try {
         if(getComputedStyle(icon).pointerEvents!=='none'||getComputedStyle(label).pointerEvents!=='none'){touchOk=false;touchWhy=`${target(tab)} child intercepts taps`;break;}
         if(b.height<44){touchOk=false;touchWhy=`${target(tab)} target ${b.height}px`;break;}
       }
-      record(touchOk,`touch targets${touchWhy?' — '+touchWhy:''}`);
+      record(touchOk,`all tab cells are >=44px touch targets${touchWhy?' — '+touchWhy:''}`);
 
       let clickOk=true;
       for(const id of ['accueil','equipement','developpement','parametres']){
@@ -181,22 +205,24 @@ try {
         tab.click();await settle();
         if(route!==id){clickOk=false;break;}
       }
-      record(clickOk,'click sequence routes correctly');
+      record(clickOk,'Accueil → Équipement → Développement → Réglages click sequence routes correctly');
 
       return {pass,fail,details,compact};
     });
 
     console.log(`\n=== ${profile.name} ${profile.width}x${profile.height} ===`);
-    console.log(JSON.stringify(result,null,2));
-    globalFail += result.fail;
+    for (const detail of result.details) console.log(`${detail.ok ? 'PASS' : 'FAIL'} browser · ${detail.msg}`);
+    console.log(`Result: ${result.pass} passed / ${result.fail} failed`);
+    browserFailures += result.fail;
     await page.close();
   }
 } finally {
   await browser.close();
 }
 
-if (globalFail) {
-  console.error(`\nV188 deterministic nav contract failed with ${globalFail} assertion(s).`);
+const totalFailures = sourceFailures + browserFailures;
+if (totalFailures) {
+  console.error(`\nV188 Step 7 failed with ${totalFailures} assertion(s).`);
   process.exit(1);
 }
-console.log('\nV188 deterministic nav contract passed for all viewport profiles.');
+console.log('\nV188 Step 7 passed: source ownership + isolated canonical browser contract are green on all four mobile viewport profiles.');
