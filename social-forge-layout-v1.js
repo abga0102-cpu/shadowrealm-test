@@ -1,8 +1,11 @@
-/* SHADOWREACH HOME FRAME LAYOUT V14
+/* SHADOWREACH HOME FRAME LAYOUT V15 · Phase 2B deterministic Home ownership
    Home keeps a stable combat/lower-function split. Floor status is high, world
-   actions sit below it, and the HUD spends less space on duplicated resources. */
+   actions sit below it, and the HUD spends less space on duplicated resources.
+   Home classification now follows the render lifecycle instead of DOM mutation. */
 (()=>{
 "use strict";
+if(window.__srHomeFramePhase2B)return;
+window.__srHomeFramePhase2B=true;
 const STORE="shadowreach.social.v1.messages";
 function read(){try{const a=JSON.parse(localStorage.getItem(STORE)||"[]");return Array.isArray(a)?a:[]}catch(_){return[]}}
 function esc(v){return String(v??"").replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
@@ -98,27 +101,38 @@ function installStyle(){
 }
 function makePreview(){const p=document.createElement("div");p.id="srChatPreview";return p}
 function updatePreview(p){const root=document.getElementById("srSocial");p.style.display=root?"none":"block";if(root)return;const msgs=read().filter(m=>m&&m.channel!=="announcements").slice(-2);p.innerHTML=msgs.map(m=>'<div class="p"><span class="n">'+esc(m.author||"?")+'</span>'+esc(m.text||"")+"</div>").join("")}
-let scheduled=false;
 function sync(){
- if(scheduled)return;scheduled=true;
- requestAnimationFrame(()=>{
-  scheduled=false;
-  const app=document.getElementById("app"),screen=document.getElementById("screen");if(!app||!screen)return;
-  const home=screen.classList.contains("fixed")&&!!screen.querySelector(".campaignWorld");
-  app.classList.toggle("srHomeFullArena",home);
-  const btn=document.getElementById("srChatBtn");let p=document.getElementById("srChatPreview");
-  if(home){
-   const arena=screen.querySelector("#arena");
-   if(!arena){if(p&&p.parentElement===app)p.remove();return;}
-   if(btn&&btn.parentElement!==arena)arena.appendChild(btn);
-   if(!p)p=makePreview();if(p.parentElement!==arena)arena.appendChild(p);updatePreview(p);
-  }else{
-   if(p)p.remove();
-   if(btn&&btn.parentElement!==app)app.appendChild(btn);
-  }
- });
+ const app=document.getElementById("app"),screen=document.getElementById("screen");if(!app||!screen)return;
+ const home=screen.classList.contains("fixed")&&!!screen.querySelector(".campaignWorld");
+ app.classList.toggle("srHomeFullArena",home);
+ const btn=document.getElementById("srChatBtn");let p=document.getElementById("srChatPreview");
+ if(home){
+  const arena=screen.querySelector("#arena");
+  if(!arena){if(p&&p.parentElement===app)p.remove();return;}
+  if(btn&&btn.parentElement!==arena)arena.appendChild(btn);
+  if(!p)p=makePreview();if(p.parentElement!==arena)arena.appendChild(p);updatePreview(p);
+ }else{
+  if(p)p.remove();
+  if(btn&&btn.parentElement!==app)app.appendChild(btn);
+ }
+}
+let scheduled=false;
+function scheduleSync(){
+ if(scheduled)return;
+ scheduled=true;
+ requestAnimationFrame(()=>{scheduled=false;sync();});
 }
 installStyle();
-const screen=document.getElementById("screen");if(screen)new MutationObserver(sync).observe(screen,{childList:true});
-window.addEventListener("storage",sync);window.addEventListener("resize",sync);sync();
+window.__srSyncHomeFramePhase2B=sync;
+const nativeRenderTabs=typeof window.renderTabs==="function"?window.renderTabs:null;
+if(nativeRenderTabs){
+ window.renderTabs=function(){
+  const out=nativeRenderTabs.apply(this,arguments);
+  scheduleSync();
+  return out;
+ };
+}
+window.addEventListener("storage",scheduleSync);
+window.addEventListener("resize",scheduleSync);
+scheduleSync();
 })();

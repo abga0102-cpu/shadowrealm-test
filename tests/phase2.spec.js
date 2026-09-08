@@ -81,3 +81,67 @@ test('fantasy navigation remains singular and stable through repeated renders', 
   }
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
+
+test('Phase 2B moves Home classification and compatibility off DOM mutation observers', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
+  const homeFrame = fs.readFileSync(path.join(root, 'social-forge-layout-v1.js'), 'utf8');
+  const compatibility = fs.readFileSync(path.join(root, 'home-layout-fix-v119.js'), 'utf8');
+
+  expect(homeFrame).toContain('__srHomeFramePhase2B');
+  expect(homeFrame).toContain('__srSyncHomeFramePhase2B');
+  expect(homeFrame).toContain('nativeRenderTabs');
+  expect(homeFrame).not.toContain('new MutationObserver');
+
+  expect(compatibility).toContain('__srHomeLayoutPhase2B');
+  expect(compatibility).toContain('__srSyncHomeFramePhase2B');
+  expect(compatibility).toContain('nativeRenderTabs');
+  expect(compatibility).not.toContain('new MutationObserver');
+});
+
+test('Home state follows the rendered route without stale observer timing', async ({ page }, testInfo) => {
+  await openCleanGame(page);
+  await expect.poll(() => page.evaluate(() => !!window.__srHomeFramePhase2B && !!window.__srHomeLayoutPhase2B), { timeout: 10000 }).toBe(true);
+
+  const tabs = page.locator('#tabs .tab');
+  const routeArgs = await tabs.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-arg')));
+  const homeIndex = routeArgs.indexOf('accueil');
+  expect(homeIndex).toBeGreaterThanOrEqual(0);
+
+  const expectHomeState = async (expected) => {
+    await expect.poll(() => page.evaluate(() => {
+      const app = document.getElementById('app');
+      const screen = document.getElementById('screen');
+      return {
+        full: !!app && app.classList.contains('srHomeFullArena'),
+        world: !!screen && !!screen.querySelector('.campaignWorld')
+      };
+    })).toEqual({ full: expected, world: expected });
+  };
+
+  await expectHomeState(true);
+
+  for (let round = 0; round < 3; round++) {
+    for (let i = 0; i < routeArgs.length; i++) {
+      const tab = tabs.nth(i);
+      const routeArg = routeArgs[i];
+      await activate(page, tab, testInfo);
+      await expect(page.locator('#tabs .tab.on')).toHaveAttribute('data-arg', routeArg);
+      await expectHomeState(routeArg === 'accueil');
+    }
+  }
+
+  await activate(page, tabs.nth(homeIndex), testInfo);
+  await expectHomeState(true);
+
+  const info = page.locator('.homeForge .iBtn').first();
+  await expect(info).toBeVisible();
+  const circle = await info.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    return { width: rect.width, height: rect.height, radius: style.borderRadius };
+  });
+  expect(Math.abs(circle.width - circle.height)).toBeLessThan(0.5);
+  expect(circle.width).toBeGreaterThanOrEqual(27);
+  expect(circle.radius).toBe('50%');
+  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
+});
