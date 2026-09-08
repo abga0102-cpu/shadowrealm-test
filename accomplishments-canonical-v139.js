@@ -1,5 +1,5 @@
-/* SHADOWREACH · Accomplishments canonical mobile UI v139 · Forge balance V200
-   Canonical renderer for Accomplissements. Reward labels match the reliable claim engine. */
+/* SHADOWREACH · Accomplishments canonical mobile UI v139 · Fusion milestones V201
+   Canonical renderer for Accomplissements. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsCanonicalV139)return;
@@ -11,6 +11,7 @@ function raids(){return n(S.accomplishments&&S.accomplishments.raidWins);}
 function rb(){return n(S.rebirth&&S.rebirth.count);}
 function forge(){return n(S.forge&&S.forge.level);}
 function floor(){return n(S.recordFloor);}
+function fusions(){var st=S.sanctuary||{},a=S.accomplishments||{};return Math.max(n(st.mergeCrafts),n(st.fusions),n(a.fusionCount));}
 var ITEMS={
  Forge:[
   ['forge5',5,'Forge niveau 5','5 000 Or'],['forge10',10,'Forge niveau 10','10 000 Or'],
@@ -23,6 +24,15 @@ var ITEMS={
   ['rb30',30,'30 Rebirths','30 Pièces de fusion Communes'],['rb50',50,'50 Rebirths','5× accélérateur 10 min + 20 Pièces de fusion Peu communes'],
   ['rb100',100,'100 Rebirths','1 Clé universelle + 20 Pièces de fusion Rares + 500 Essences + 500 Étincelles']
  ],
+ Fusions:[
+  ['fusion50',50,'50 Fusions','15 Pièces de fusion Communes'],
+  ['fusion150',150,'150 Fusions','15 Pièces de fusion Peu communes'],
+  ['fusion250',250,'250 Fusions','15 Pièces de fusion Rares + Boost +10% Or d’étage · 30 min'],
+  ['fusion350',350,'350 Fusions','15 Pièces de fusion Rares'],
+  ['fusion500',500,'500 Fusions','20 Pièces de fusion Épiques + Boost +10% Or d’étage · 30 min'],
+  ['fusion1000',1000,'1 000 Fusions','20 Pièces de fusion Mythiques'],
+  ['fusion1500',1500,'1 500 Fusions','20 Pièces de fusion Mythiques + Boost +50% Or d’étage · 30 min']
+ ],
  Raids:[
   ['raid10',10,'10 Raids accomplis','5 000 Or'],['raid20',20,'20 Raids accomplis','30 Pièces de fusion Communes'],
   ['raid50',50,'50 Raids accomplis','20 Pièces de fusion Rares + choix : 500 Étincelles OU 500 Essences','choice'],
@@ -33,13 +43,13 @@ var ITEMS={
   ['floor75',75,'Atteindre l’étage 75','1 000 PR + 30 Pièces de fusion Communes'],['floor100',100,'Atteindre l’étage 100','500 Étincelles + 500 Essences + 30 Pièces de fusion Communes']
  ]
 };
-function value(cat){return cat==='Forge'?forge():cat==='Rebirth'?rb():cat==='Raids'?raids():floor();}
+function value(cat){return cat==='Forge'?forge():cat==='Rebirth'?rb():cat==='Fusions'?fusions():cat==='Raids'?raids():floor();}
 function steps(cat){return ITEMS[cat].map(function(x){return x[1];});}
 function status(cat){var v=value(cat),ss=steps(cat),done=0,next=null;for(var i=0;i<ss.length;i++){if(v>=ss[i])done++;else if(next===null)next=ss[i];}var fin=done===ss.length;return '<div class="card frame"'+(cat==='Etages'?' data-ach-floor-overview-v138="1" data-ach-floor-overview-v137="1"':'')+' style="margin:6px 0;width:100%;box-sizing:border-box"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0"><div style="min-width:0;flex:1"><div class="b">'+(cat==='Etages'?'Étages':cat)+'</div><div class="mute tiny">'+(fin?done+' / '+ss.length+' jalons atteints':'Prochain jalon : '+next+' · '+done+' / '+ss.length+' atteints')+'</div></div><span class="pill" style="flex:0 0 auto'+(fin?';color:var(--greenLit);border-color:#3FB950':'')+'">'+(fin?'Terminé':v+' / '+next)+'</span></div></div>';}
 function action(x,done){if(claimed(x[0]))return '<span class="pill" style="color:var(--greenLit);border-color:#3FB950;flex:0 0 auto">Récupéré</span>';if(!done)return '<span class="pill" style="flex:0 0 auto">En cours</span>';if(x[4]==='choice')return '<div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm blue" data-ach="'+x[0]+'" data-ach-choice="eclat">500 Étincelles</button><button class="btn sm purple" data-ach="'+x[0]+'" data-ach-choice="essence">500 Essences</button></div>';return '<button class="btn sm green" data-ach="'+x[0]+'" style="flex:0 0 auto">Récupérer</button>';}
 function section(cat){var v=value(cat),attrs=cat==='Etages'?' data-ach-floors-v138="1" data-ach-floors-v137-safe="1"':'';return '<div'+attrs+' style="width:100%;min-width:0;box-sizing:border-box"><div class="sect" style="margin:14px 0 6px">'+(cat==='Etages'?'Étages':cat)+'</div>'+ITEMS[cat].map(function(x){var done=v>=x[1];return '<div class="itemRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;min-width:0;box-sizing:border-box"><div style="flex:1 1 180px;min-width:0"><div class="b small">'+x[2]+'</div><div class="mute tiny" style="overflow-wrap:anywhere">'+x[3]+'</div></div>'+action(x,done)+'</div>';}).join('')+'</div>';}
 function titleSection(){S.titles=S.titles&&typeof S.titles==='object'?S.titles:{};if(typeof S.equippedTitle!=='string')S.equippedTitle='';var st=S.sanctuary||{},unlocked=!!(st.divineTitleUnlocked||S.titles.divin),eq=S.equippedTitle==='divin';return '<div data-ach-titles-v134="1" style="width:100%;min-width:0;box-sizing:border-box"><div class="sect" style="margin:14px 0 6px">Titres</div><div class="card frame" style="margin-bottom:7px;width:100%;box-sizing:border-box"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div style="min-width:0"><div class="b">Vue d’ensemble des titres</div><div class="mute tiny">Débloqués : '+(unlocked?1:0)+' / 1</div></div><span class="pill">'+(unlocked?'1 / 1':'0 / 1')+'</span></div></div><div class="itemRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;min-width:0;box-sizing:border-box"><div style="flex:1 1 180px;min-width:0"><div class="b small" style="color:#FFB52E">Divin</div><div class="mute tiny">Sacrifier un Divin · '+(unlocked?'1 / 1':'0 / 1')+'</div></div>'+(unlocked?'<button class="btn sm '+(eq?'dark':'gold')+'" data-ach-title="divin">'+(eq?'Équipé':'Équiper')+'</button>':'<span class="pill">Verrouillé</span>')+'</div></div>';}
-function html(){return '<div class="srAch139" data-ach-canonical-v139="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden"><div data-ach-overview-v135="1" style="width:100%;min-width:0"><div class="sect" style="margin:0 0 6px">Vue d’ensemble</div>'+['Forge','Rebirth','Raids','Etages'].map(status).join('')+'</div>'+section('Forge')+section('Rebirth')+section('Raids')+section('Etages')+titleSection()+'<div class="mt10" style="width:100%;box-sizing:border-box"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
+function html(){var cats=['Forge','Rebirth','Fusions','Raids','Etages'];return '<div class="srAch139" data-ach-canonical-v139="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden"><div data-ach-overview-v135="1" style="width:100%;min-width:0"><div class="sect" style="margin:0 0 6px">Vue d’ensemble</div>'+cats.map(status).join('')+'</div>'+cats.map(section).join('')+titleSection()+'<div class="mt10" style="width:100%;box-sizing:border-box"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
 function install(){if(typeof S==='undefined'||typeof ACT==='undefined'||typeof openModal!=='function')return;var baseOpen=openModal;openModal=function(content,title){if(norm(title).trim()==='accomplissements')content=html();return baseOpen(content,title);};ACT.accomplishments=function(){openModal(html(),'Accomplissements');};}
 setTimeout(install,0);
 })();
