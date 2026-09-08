@@ -1,4 +1,4 @@
-/* SHADOWREACH · Divine mastery v152
+/* SHADOWREACH · Divine mastery v175
    Makes the Divin title a real equipable prestige reward and makes Divine Tokens spendable.
    Five capped 5-level tracks. Sensitive rewards (PR, seals, keys, tokens, temporary boosts) are never multiplied. */
 (function(){
@@ -6,47 +6,14 @@
 if(window.__srDivineMasteryV132)return;window.__srDivineMasteryV132=true;
 if(typeof S==='undefined'||typeof sanctMergeState!=='function')return;
 var st=sanctMergeState();
-function ensure(){
- st=sanctMergeState();st.divineMastery=st.divineMastery&&typeof st.divineMastery==='object'?st.divineMastery:{};
- ['bargain','mineral','essence','spark','chrono'].forEach(function(k){st.divineMastery[k]=Math.max(0,Math.min(5,Math.floor(Number(st.divineMastery[k])||0)));});
- S.titles=S.titles&&typeof S.titles==='object'?S.titles:{};if(typeof S.equippedTitle!=='string')S.equippedTitle='';return st;
-}
-var DEF={
- bargain:{name:'Marchandage',desc:'-5% coût Or du fournisseur par niveau'},
- mineral:{name:'Abondance',desc:'+5% récompenses de Minéraux par niveau'},
- essence:{name:'Essence',desc:'+5% récompenses d’Essences par niveau'},
- spark:{name:'Étincelle',desc:'+5% récompenses d’Étincelles par niveau'},
- chrono:{name:'Chronos',desc:'+5% valeur des accélérateurs du Sanctuaire par niveau'}
-};
+function ensure(){st=sanctMergeState();st.divineMastery=st.divineMastery&&typeof st.divineMastery==='object'?st.divineMastery:{};['bargain','mineral','essence','spark','chrono'].forEach(function(k){st.divineMastery[k]=Math.max(0,Math.min(5,Math.floor(Number(st.divineMastery[k])||0)));});S.titles=S.titles&&typeof S.titles==='object'?S.titles:{};if(typeof S.equippedTitle!=='string')S.equippedTitle='';return st;}
+var DEF={bargain:{name:'Marchandage',desc:'-5% coût Or du fournisseur par niveau'},mineral:{name:'Abondance',desc:'+5% récompenses de Minéraux par niveau'},essence:{name:'Essence',desc:'+5% récompenses d’Essences par niveau'},spark:{name:'Étincelle',desc:'+5% récompenses d’Étincelles par niveau'},chrono:{name:'Chronos',desc:'+5% valeur des accélérateurs du Sanctuaire par niveau'}};
 function lvl(k){return ensure().divineMastery[k]||0;}
-if(typeof sanctSupplierPrice==='function'){
- var prevPrice=sanctSupplierPrice;
- sanctSupplierPrice=function(level,r){var p=Math.max(0,Number(prevPrice(level,r))||0),m=1-lvl('bargain')*.05;return Math.max(1,Math.round(p*m));};
-}
-function rewardDelta(r){var out={};
- if(r==='RARE_I')out.mineral=25;if(r==='RARE_II')out.mineral=50;if(r==='MYTHIQUE_II')out.mineral=150;if(r==='MYTHIQUE_III')out.mineral=1500;if(r==='LEGENDAIRE_I')out.mineral=15000;if(r==='LEGENDAIRE_III')out.mineral=25000;if(r==='INFERNAL_I')out.mineral=25000;if(r==='IMMORTEL_II')out.mineral=100000;
- if(r==='ARTEFACT_II'){out.essence=750;out.spark=750;}if(r==='ARTEFACT_III'){out.essence=1000;out.spark=1000;}if(r==='LEGENDAIRE_II'){out.essence=1500;out.spark=1500;}if(r==='INFERNAL_III'){out.essence=15000;out.spark=15000;}if(r==='IMMORTEL_II')out.essence=10000;
- var acc={EPIQUE_I:[5,1],EPIQUE_II:[5,2],MYTHIQUE_II:[30,1],LEGENDAIRE_II:[60,5],INFERNAL_II:[60,10],IMMORTEL_II:[60,20],DIVIN:[60,25]}[r];if(acc)out.accel=acc;return out;
-}
-function addMasteryDelta(r){var x=rewardDelta(r),changed=false;
- if(x.mineral&&lvl('mineral')){S.minerai=(S.minerai||0)+Math.floor(x.mineral*lvl('mineral')*.05);changed=true;}
- if(x.essence&&lvl('essence')){S.essence=(S.essence||0)+Math.floor(x.essence*lvl('essence')*.05);changed=true;}
- if(x.spark&&lvl('spark')){S.eclat=(S.eclat||0)+Math.floor(x.spark*lvl('spark')*.05);changed=true;}
- if(x.accel&&lvl('chrono')&&typeof ACCEL_DEFS!=='undefined'){
-   var bonus=x.accel[0]*x.accel[1]*lvl('chrono')*.05,defs=ACCEL_DEFS.slice().sort(function(a,b){return a.mins-b.mins;}),pick=null;
-   for(var i=defs.length-1;i>=0;i--)if(defs[i].mins<=bonus+0.001){pick=defs[i];break;}
-   if(pick){S.accels=S.accels||{};S.accels[pick.key]=(S.accels[pick.key]||0)+1;changed=true;}
- }
- if(changed){dirty=true;if(typeof saveNow==='function')saveNow();}
-}
+if(typeof sanctSupplierPrice==='function'){var prevPrice=sanctSupplierPrice;sanctSupplierPrice=function(level,r){var p=Math.max(0,Number(prevPrice(level,r))||0),m=1-lvl('bargain')*.05;return Math.max(1,Math.round(p*m));};}
+function rewardDelta(r){var out={};if(r==='RARE_I')out.mineral=25;if(r==='RARE_II')out.mineral=50;if(r==='MYTHIQUE_III')out.mineral=2500;if(r==='LEGENDAIRE_I')out.mineral=15000;if(r==='LEGENDAIRE_III')out.mineral=25000;if(r==='INFERNAL_I')out.mineral=25000;if(r==='IMMORTEL_II')out.mineral=100000;if(r==='ARTEFACT_II'){out.essence=750;out.spark=750;}if(r==='ARTEFACT_III'){out.essence=1000;out.spark=1000;}if(r==='LEGENDAIRE_II'){out.essence=1500;out.spark=1500;}if(r==='INFERNAL_III'){out.essence=15000;out.spark=15000;}if(r==='IMMORTEL_II')out.essence=10000;var acc={EPIQUE_I:5,EPIQUE_II:10,MYTHIQUE_II:60,MYTHIQUE_III:30,LEGENDAIRE_II:300,INFERNAL_II:600,IMMORTEL_II:1200,DIVIN:1500}[r];if(acc)out.accelMinutes=acc;return out;}
+function addMasteryDelta(r){var x=rewardDelta(r),changed=false;if(x.mineral&&lvl('mineral')){S.minerai=(S.minerai||0)+Math.floor(x.mineral*lvl('mineral')*.05);changed=true;}if(x.essence&&lvl('essence')){S.essence=(S.essence||0)+Math.floor(x.essence*lvl('essence')*.05);changed=true;}if(x.spark&&lvl('spark')){S.eclat=(S.eclat||0)+Math.floor(x.spark*lvl('spark')*.05);changed=true;}if(x.accelMinutes&&lvl('chrono')&&typeof ACCEL_DEFS!=='undefined'){var bonus=x.accelMinutes*lvl('chrono')*.05,defs=ACCEL_DEFS.slice().sort(function(a,b){return a.mins-b.mins;}),pick=null;for(var i=defs.length-1;i>=0;i--)if(defs[i].mins<=bonus+0.001){pick=defs[i];break;}if(pick){S.accels=S.accels||{};S.accels[pick.key]=(S.accels[pick.key]||0)+1;changed=true;}}if(changed){dirty=true;if(typeof saveNow==='function')saveNow();}}
 function spend(k){var s=ensure();if(!DEF[k])return;if(lvl(k)>=5)return toast('Maîtrise déjà au maximum');if((s.divineTokens||0)<1)return toast('Jeton Divin insuffisant');s.divineTokens--;s.divineMastery[k]++;dirty=true;if(typeof saveNow==='function')saveNow();toast(DEF[k].name+' · niveau '+s.divineMastery[k]+'/5',true);render();}
 function equipTitle(){ensure();if(!S.titles.divin)return toast('Titre Divin non débloqué');S.equippedTitle=S.equippedTitle==='divin'?'':'divin';dirty=true;if(typeof saveNow==='function')saveNow();toast(S.equippedTitle==='divin'?'Titre Divin équipé':'Titre retiré',true);render();}
-function panel(){var s=ensure(),rows=Object.keys(DEF).map(function(k){var l=lvl(k);return '<div class="itemRow"><div class="flex1"><div class="b small">'+DEF[k].name+' <span style="color:#FFB52E">'+l+'/5</span></div><div class="mute tiny">'+DEF[k].desc+' · actuel : '+(l*5)+'%</div></div><button class="btn sm '+(l<5&&(s.divineTokens||0)>0?'gold':'dark')+'" data-divine-v132="spend" data-key="'+k+'" '+(l>=5||(s.divineTokens||0)<1?'disabled':'')+'>+1</button></div>';}).join('');
- var title=s.divineTitleUnlocked||S.titles.divin?'<div class="card frame mt8"><div class="between"><div><div class="tiny b" style="color:#FFB52E">TITRE DÉBLOQUÉ</div><div class="bb mt3">✦ DIVIN ✦</div><div class="mute tiny">Titre de prestige permanent, sans bonus de puissance.</div></div><button class="btn sm gold" data-divine-v132="title">'+(S.equippedTitle==='divin'?'Retirer':'Équiper')+'</button></div></div>':'';
- return '<div class="sect">Maîtrises Divines</div><div class="notice tiny">1 Jeton Divin = 1 niveau. Maximum 5/5 par bonus. PR, clés, Sceaux, bonus temporaires et Jetons Divins ne sont jamais augmentés.</div><div class="card frame mt8"><div class="between"><b>Jetons disponibles</b><span class="pill" style="color:#FFB52E;border-color:#FFB52E">'+fmt(s.divineTokens||0)+'</span></div>'+rows+'</div>'+title;
-}
-var oldScreen=scrSanctuaire;scrSanctuaire=function(){return oldScreen()+panel();};if(typeof SCREENS!=='undefined')SCREENS.sanctuaire=scrSanctuaire;
-document.getElementById('app').addEventListener('click',function(e){var b=e.target.closest('[data-divine-v132]');if(!b)return;e.preventDefault();e.stopPropagation();if(b.dataset.divineV132==='spend')spend(b.dataset.key);else if(b.dataset.divineV132==='title')equipTitle();},true);
-document.getElementById('app').addEventListener('click',function(e){var b=e.target.closest('[data-sanct-v130="sacrifice"]');if(!b)return;var r=b.dataset.rarity,before=sanctMergeState().mergeBoard.filter(function(x){return x===r;}).length;setTimeout(function(){var after=sanctMergeState().mergeBoard.filter(function(x){return x===r;}).length;if(after===before-1)addMasteryDelta(r);},0);},false);
-try{ensure();dirty=true;if(typeof saveNow==='function')saveNow();render();}catch(e){console.warn('Divine mastery v152 init',e);}
+function panel(){var s=ensure(),rows=Object.keys(DEF).map(function(k){var l=lvl(k);return '<div class="itemRow"><div class="flex1"><div class="b small">'+DEF[k].name+' <span style="color:#FFB52E">'+l+'/5</span></div><div class="mute tiny">'+DEF[k].desc+' · actuel : '+(l*5)+'%</div></div><button class="btn sm '+(l<5&&(s.divineTokens||0)>0?'gold':'dark')+'" data-divine-v132="spend" data-key="'+k+'" '+(l>=5||(s.divineTokens||0)<1?'disabled':'')+'>+1</button></div>';}).join('');var title=s.divineTitleUnlocked||S.titles.divin?'<div class="card frame mt8"><div class="between"><div><div class="tiny b" style="color:#FFB52E">TITRE DÉBLOQUÉ</div><div class="bb mt3">✦ DIVIN ✦</div><div class="mute tiny">Titre de prestige permanent, sans bonus de puissance.</div></div><button class="btn sm gold" data-divine-v132="title">'+(S.equippedTitle==='divin'?'Retirer':'Équiper')+'</button></div></div>':'';return '<div class="sect">Maîtrises Divines</div><div class="notice tiny">1 Jeton Divin = 1 niveau. Maximum 5/5 par bonus. PR, clés, Sceaux, bonus temporaires et Jetons Divins ne sont jamais augmentés.</div><div class="card frame mt8"><div class="between"><b>Jetons disponibles</b><span class="pill" style="color:#FFB52E;border-color:#FFB52E">'+fmt(s.divineTokens||0)+'</span></div>'+rows+'</div>'+title;}
+var oldScreen=scrSanctuaire;scrSanctuaire=function(){return oldScreen()+panel();};if(typeof SCREENS!=='undefined')SCREENS.sanctuaire=scrSanctuaire;document.getElementById('app').addEventListener('click',function(e){var b=e.target.closest('[data-divine-v132]');if(!b)return;e.preventDefault();e.stopPropagation();if(b.dataset.divineV132==='spend')spend(b.dataset.key);else if(b.dataset.divineV132==='title')equipTitle();},true);document.getElementById('app').addEventListener('click',function(e){var b=e.target.closest('[data-sanct-v130="sacrifice"]');if(!b)return;var r=b.dataset.rarity,before=sanctMergeState().mergeBoard.filter(function(x){return x===r;}).length;setTimeout(function(){var after=sanctMergeState().mergeBoard.filter(function(x){return x===r;}).length;if(after===before-1)addMasteryDelta(r);},0);},false);try{ensure();dirty=true;if(typeof saveNow==='function')saveNow();render();}catch(e){console.warn('Divine mastery v175 init',e);}
 })();
