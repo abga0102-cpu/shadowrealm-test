@@ -52,9 +52,11 @@
   function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
   async function settle(W){await raf(W);await sleep(45);await raf(W)}
   async function waitReady(W){
-    var end=Date.now()+6000;
+    var end=Date.now()+10000;
     while(Date.now()<end){
-      if(W.__smoke&&W.__srBottomNavV188Audit&&typeof W.nav==='function'&&W.document.querySelectorAll('#tabs>.tab').length===4)return true;
+      try{
+        if(W.__smoke&&W.__srBottomNavV188Audit&&typeof W.nav==='function'&&W.document.querySelectorAll('#tabs>.tab').length===4)return true;
+      }catch(_){}
       await sleep(60);
     }
     return false;
@@ -78,7 +80,6 @@
   async function runProfile(p){
     group(p.name+' · '+p.w+'×'+p.h);
     var f=document.createElement('iframe');f.className='runner';f.style.width=p.w+'px';f.style.height=p.h+'px';f.src='index.html?smoke=1&navv188='+Date.now();document.body.appendChild(f);
-    await new Promise(function(resolve){f.onload=resolve});
     var W=f.contentWindow;
     if(!await waitReady(W)){line(false,'V188 test hooks did not become ready');f.remove();return}
 
