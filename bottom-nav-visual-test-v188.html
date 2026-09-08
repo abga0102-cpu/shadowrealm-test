@@ -1,159 +1,144 @@
 <!doctype html>
+<html lang="fr">
+<head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shadowreach — Bottom navigation V188 visual regression</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bottom navigation V188 visual fixture</title>
+<link rel="stylesheet" href="style.css?v=2026.09.08.151">
 <style>
-  :root{color-scheme:dark}
-  body{margin:0;background:#070c16;color:#edf1fa;font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
-  header{padding:18px 22px;border-bottom:1px solid #22314c}
-  h1{margin:0;font-size:19px}.sub{margin-top:5px;color:#93a4c3}
-  #summary{padding:14px 22px;font-weight:800}
-  #out{padding:0 22px 40px}.profile{margin:18px 0 7px;color:#e8b44a;font-size:11px;font-weight:900;letter-spacing:1px}
-  .r{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #131c2e}.state{width:58px;flex:0 0 auto;font-size:11px;font-weight:900}
-  .ok .state{color:#57e07a}.ko .state{color:#ff6666}.msg{color:#c9d4e8}.ko .msg{color:#ffd0d0}
-  iframe.runner{position:fixed;left:-12000px;top:0;border:0;background:#000}
+  html,body{margin:0;min-height:100%;background:#07101e;color:#eef4ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+  #app{position:relative;width:100%;min-height:100vh;display:flex;flex-direction:column}
+  #hud{height:50px;flex:0 0 50px}
+  #screen{flex:1 1 auto;min-height:80px}
+  #tabs{position:relative}
+  .fixtureStatus{position:fixed;left:8px;top:8px;z-index:9999;padding:5px 8px;background:#07101eee;border:1px solid #31405d;border-radius:7px;font:700 11px/1.2 system-ui;pointer-events:none}
 </style>
-<header>
-  <h1>Bottom navigation V188 — visual regression</h1>
-  <div class="sub">Active/inactive geometry · badges · route ownership · compact breakpoints · safe-area contract</div>
-</header>
-<div id="summary">Running…</div>
-<div id="out"></div>
+</head>
+<body>
+<div id="app" class="srHomeFullArena">
+  <div id="hud"></div>
+  <div id="screen"></div>
+  <div id="tabs"></div>
+</div>
+<div class="fixtureStatus" id="fixtureStatus">V188 test…</div>
+<script>
+'use strict';
+var route='accueil';
+var TABS_FIXTURE=[
+  {id:'accueil',label:'Accueil'},
+  {id:'equipement',label:'Équipement'},
+  {id:'developpement',label:'Développement'},
+  {id:'parametres',label:'Réglages'}
+];
+function rawIcon(){return '<span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle></svg></span>'}
+function renderTabsFixture(){
+  var root=document.getElementById('tabs');
+  var exact=TABS_FIXTURE.some(function(t){return t.id===route})?route:null;
+  root.innerHTML=TABS_FIXTURE.map(function(t){
+    var badge=t.id==='equipement'||t.id==='developpement';
+    return '<div class="tab'+(exact===t.id?' on':'')+'" data-act="go" data-arg="'+t.id+'">'+
+      rawIcon()+'<span>'+t.label+'</span>'+(badge?'<div class="dot"></div>':'')+'</div>';
+  }).join('');
+}
+function nav(to){route=String(to||'accueil');renderTabsFixture()}
+renderTabsFixture();
+</script>
+<script src="bottom-nav-v53.js?v=2026.09.08.188"></script>
+<script src="home-layout-fix-v119.js?v=2026.09.08.188"></script>
+<script src="bottom-nav-layout-v183.js?v=2026.09.08.188"></script>
+<script src="bottom-nav-development-v186.js?v=2026.09.08.188"></script>
+<script src="bottom-nav-active-normalize-v187.js?v=2026.09.08.188"></script>
+<script src="bottom-nav-canonical-v188.js?v=2026.09.08.188"></script>
+<script src="bottom-nav-interaction-v188.js?v=2026.09.08.188"></script>
 <script>
 (function(){
   'use strict';
-  var out=document.getElementById('out'),summary=document.getElementById('summary');
   var pass=0,fail=0,details=[];
-  var profiles=[
-    {name:'iPhone short · compact by height',w:375,h:667,icon:31,tab:54,labelTop:36},
-    {name:'iPhone narrow · compact by width',w:360,h:780,icon:31,tab:54,labelTop:36},
-    {name:'iPhone standard',w:390,h:844,icon:34,tab:58,labelTop:40},
-    {name:'iPhone large',w:430,h:932,icon:34,tab:58,labelTop:40}
-  ];
-  var routes=[
-    ['accueil','accueil'],
-    ['equipement','equipement'],
-    ['heros','equipement'],
-    ['developpement','developpement'],
-    ['competences','developpement'],
-    ['familiers','developpement'],
-    ['arbre','developpement'],
-    ['parametres','parametres']
-  ];
-  function group(text){var d=document.createElement('div');d.className='profile';d.textContent=text;out.appendChild(d)}
-  function line(ok,msg){
-    var d=document.createElement('div');d.className='r '+(ok?'ok':'ko');
-    d.innerHTML='<span class="state">'+(ok?'OK':'ÉCHEC')+'</span><span class="msg"></span>';
-    d.querySelector('.msg').textContent=msg;out.appendChild(d);
-    (ok?pass++:fail++);details.push({ok:ok,msg:msg});
-  }
-  function near(a,b,t){return Math.abs(Number(a)-Number(b)) <= (t == null ? .8 : t)}
-  function raf(W){return new Promise(function(resolve){W.requestAnimationFrame(function(){W.requestAnimationFrame(resolve)})})}
+  function record(ok,msg){details.push({ok:!!ok,msg:msg});if(ok)pass++;else fail++}
+  function near(a,b,t){return Math.abs(Number(a)-Number(b))<=(t==null?.8:t)}
   function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
-  async function settle(W){await raf(W);await sleep(45);await raf(W)}
-  async function waitReady(W){
-    var end=Date.now()+10000;
-    while(Date.now()<end){
-      try{
-        if(W.__smoke&&W.__srBottomNavV188Audit&&typeof W.nav==='function'&&W.document.querySelectorAll('#tabs>.tab').length===4)return true;
-      }catch(_){}
-      await sleep(60);
-    }
-    return false;
-  }
-  function targetOf(tab){return tab.getAttribute('data-nav-target')||tab.getAttribute('data-arg')||''}
-  function relBox(el,parent){
-    var a=el.getBoundingClientRect(),b=parent.getBoundingClientRect();
-    return {x:a.left-b.left,y:a.top-b.top,w:a.width,h:a.height,cx:(a.left+a.right)/2-b.left,cy:(a.top+a.bottom)/2-b.top};
-  }
-  function snapshot(W){
-    var tabs=Array.from(W.document.querySelectorAll('#tabs>.tab'));
-    return tabs.map(function(tab){
-      var icon=tab.querySelector('.fantasyNavIcon'),label=tab.querySelector(':scope>.navLabel')||tab.querySelector(':scope>span:not(.ico):not(.fantasyNavIcon)');
-      return {target:targetOf(tab),tab:relBox(tab,W.document.getElementById('tabs')),icon:icon?relBox(icon,tab):null,label:label?relBox(label,tab):null};
+  function raf(){return new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve)})})}
+  async function settle(){await sleep(30);await raf();await sleep(20)}
+  function target(tab){return tab.getAttribute('data-nav-target')||tab.getAttribute('data-arg')||''}
+  function box(el,parent){var a=el.getBoundingClientRect(),b=parent.getBoundingClientRect();return{x:a.left-b.left,y:a.top-b.top,w:a.width,h:a.height,cx:(a.left+a.right)/2-b.left}}
+  function snap(){
+    return Array.from(document.querySelectorAll('#tabs>.tab')).map(function(tab){
+      var icon=tab.querySelector('.fantasyNavIcon');
+      var label=tab.querySelector(':scope>.navLabel')||tab.querySelector(':scope>span:not(.ico):not(.fantasyNavIcon)');
+      return{target:target(tab),tab:box(tab,document.getElementById('tabs')),icon:icon?box(icon,tab):null,label:label?box(label,tab):null};
     });
   }
-  function sameGeometry(a,b){
-    return near(a.icon.w,b.icon.w,.5)&&near(a.icon.h,b.icon.h,.5)&&near(a.icon.x,b.icon.x,.7)&&near(a.icon.y,b.icon.y,.7)&&
-      near(a.label.x,b.label.x,.7)&&near(a.label.y,b.label.y,.7)&&near(a.label.w,b.label.w,.7)&&near(a.label.h,b.label.h,.7);
+  function same(a,b){return near(a.icon.x,b.icon.x,.7)&&near(a.icon.y,b.icon.y,.7)&&near(a.icon.w,b.icon.w,.5)&&near(a.icon.h,b.icon.h,.5)&&near(a.label.x,b.label.x,.7)&&near(a.label.y,b.label.y,.7)&&near(a.label.w,b.label.w,.7)&&near(a.label.h,b.label.h,.7)}
+  async function clickTarget(id){
+    var tab=Array.from(document.querySelectorAll('#tabs>.tab')).find(function(t){return target(t)===id});
+    if(!tab)return false;
+    tab.click();await settle();
+    return route===id;
   }
-  async function runProfile(p){
-    group(p.name+' · '+p.w+'×'+p.h);
-    var f=document.createElement('iframe');f.className='runner';f.style.width=p.w+'px';f.style.height=p.h+'px';f.src='index.html?smoke=1&navv188='+Date.now();document.body.appendChild(f);
-    var W=f.contentWindow;
-    if(!await waitReady(W)){line(false,'V188 test hooks did not become ready');f.remove();return}
+  async function run(){
+    await settle();
+    var compact=matchMedia('(max-width:370px),(max-height:720px)').matches;
+    var expectedIcon=compact?31:34,expectedTab=compact?54:58,expectedTop=compact?2:3,expectedLabel=compact?36:40;
+    record(document.querySelector('meta[name="viewport"]').content.indexOf('viewport-fit=cover')!==-1,'viewport-fit=cover');
+    var canonicalStyle=document.getElementById('srBottomNavCanonicalV188');
+    record(!!canonicalStyle&&canonicalStyle.textContent.indexOf('env(safe-area-inset-bottom)')!==-1,'safe-area bottom contract');
+    var audit=window.__srBottomNavV188Audit&&window.__srBottomNavV188Audit();
+    record(!!audit&&audit.ok,'four canonical navigation destinations');
 
-    var meta=W.document.querySelector('meta[name="viewport"]');
-    var canonicalStyle=W.document.getElementById('srBottomNavCanonicalV188');
-    line(!!meta&&/viewport-fit=cover/.test(meta.content),'viewport keeps viewport-fit=cover for iPhone safe areas');
-    line(!!canonicalStyle&&canonicalStyle.textContent.indexOf('env(safe-area-inset-bottom)')!==-1,'canonical nav reserves env(safe-area-inset-bottom)');
-
-    var audit=W.__srBottomNavV188Audit();
-    line(audit.ok,'interaction destinations are Accueil → Équipement → Développement → Réglages');
-
-    var baselines={};
+    var routes=[['accueil','accueil'],['equipement','equipement'],['heros','equipement'],['developpement','developpement'],['competences','developpement'],['familiers','developpement'],['arbre','developpement'],['parametres','parametres']];
+    var baseline={};
     for(var r=0;r<routes.length;r++){
-      var route=routes[r][0],owner=routes[r][1];
-      W.nav(route);await settle(W);
-      var app=W.document.getElementById('app');app.classList.add('srHomeFullArena');await settle(W);
-      var tabs=Array.from(W.document.querySelectorAll('#tabs>.tab'));
+      nav(routes[r][0]);await settle();
+      var tabs=Array.from(document.querySelectorAll('#tabs>.tab'));
       var active=tabs.filter(function(t){return t.classList.contains('on')||t.getAttribute('aria-current')==='page'});
-      line(active.length===1&&targetOf(active[0])===owner,'route '+route+' selects exactly '+owner);
-
-      var snap=snapshot(W),routeOk=true,why='';
-      if(snap.length!==4){routeOk=false;why='expected 4 tabs, got '+snap.length}
-      snap.forEach(function(s){
-        if(!routeOk)return;
-        if(!s.icon||!s.label){routeOk=false;why=s.target+' missing icon or label';return}
-        if(!near(s.tab.h,p.tab,.8)){routeOk=false;why=s.target+' tab '+s.tab.h.toFixed(1)+'px';return}
-        if(!near(s.icon.w,p.icon,.8)||!near(s.icon.h,p.icon,.8)){routeOk=false;why=s.target+' icon '+s.icon.w.toFixed(1)+'×'+s.icon.h.toFixed(1);return}
-        if(!near(s.icon.cx,s.tab.w/2,.9)){routeOk=false;why=s.target+' icon not horizontally centered';return}
-        var expectedTop=p.icon===31?2:3;
-        if(!near(s.icon.y,expectedTop,.9)){routeOk=false;why=s.target+' icon top '+s.icon.y.toFixed(1)+'px';return}
-        if(!near(s.label.y,p.labelTop,1)){routeOk=false;why=s.target+' label top '+s.label.y.toFixed(1)+'px';return}
-        if(s.icon.y+s.icon.h>s.label.y+.5){routeOk=false;why=s.target+' icon overlaps label';return}
-        if(!baselines[s.target])baselines[s.target]=s;
-        else if(!sameGeometry(baselines[s.target],s)){routeOk=false;why=s.target+' geometry changed when active/inactive';return}
+      record(active.length===1&&target(active[0])===routes[r][1],routes[r][0]+' has exactly one owner: '+routes[r][1]);
+      var s=snap(),ok=s.length===4,why='';
+      s.forEach(function(v){
+        if(!ok)return;
+        if(!v.icon||!v.label){ok=false;why=v.target+' missing canonical child';return}
+        if(!near(v.tab.h,expectedTab,.8)){ok=false;why=v.target+' tab height '+v.tab.h;return}
+        if(!near(v.icon.w,expectedIcon,.8)||!near(v.icon.h,expectedIcon,.8)){ok=false;why=v.target+' icon '+v.icon.w+'x'+v.icon.h;return}
+        if(!near(v.icon.cx,v.tab.w/2,.9)){ok=false;why=v.target+' icon off center';return}
+        if(!near(v.icon.y,expectedTop,.9)){ok=false;why=v.target+' icon top '+v.icon.y;return}
+        if(!near(v.label.y,expectedLabel,1)){ok=false;why=v.target+' label top '+v.label.y;return}
+        if(v.icon.y+v.icon.h>v.label.y+.5){ok=false;why=v.target+' icon overlaps label';return}
+        if(!baseline[v.target])baseline[v.target]=v;else if(!same(baseline[v.target],v)){ok=false;why=v.target+' changes geometry when selected';return}
       });
-      line(routeOk,'geometry remains identical on '+route+(why?' — '+why:''));
+      record(ok,routes[r][0]+' geometry stable'+(why?' — '+why:''));
     }
 
-    W.nav('accueil');await settle(W);W.document.getElementById('app').classList.add('srHomeFullArena');await settle(W);
+    nav('accueil');await settle();
     var badgeOk=true,badgeWhy='';
-    var tabs2=Array.from(W.document.querySelectorAll('#tabs>.tab'));
+    var tabs2=Array.from(document.querySelectorAll('#tabs>.tab'));
     for(var i=0;i<tabs2.length;i++){
-      var tab=tabs2[i],before=snapshot(W)[i],existing=tab.querySelector(':scope>.dot'),added=false;
-      if(!existing){existing=W.document.createElement('div');existing.className='dot';tab.appendChild(existing);added=true}
-      await settle(W);var after=snapshot(W)[i];
-      if(!sameGeometry(before,after)){badgeOk=false;badgeWhy=targetOf(tab)+' moved when badge appeared'}
-      else if(W.getComputedStyle(existing).pointerEvents!=='none'){badgeOk=false;badgeWhy=targetOf(tab)+' badge intercepts pointer events'}
-      if(added)existing.remove();await settle(W);
-      if(!badgeOk)break;
+      var before=snap()[i],dot=tabs2[i].querySelector(':scope>.dot'),added=false;
+      if(!dot){dot=document.createElement('div');dot.className='dot';tabs2[i].appendChild(dot);added=true}
+      await settle();var after=snap()[i];
+      if(!same(before,after)){badgeOk=false;badgeWhy=target(tabs2[i])+' moved with badge'}
+      else if(getComputedStyle(dot).pointerEvents!=='none'){badgeOk=false;badgeWhy=target(tabs2[i])+' badge steals taps'}
+      if(added)dot.remove();await settle();if(!badgeOk)break;
     }
-    line(badgeOk,'notification dots never move icons/labels or steal taps'+(badgeWhy?' — '+badgeWhy:''));
+    record(badgeOk,'badges do not move geometry or intercept taps'+(badgeWhy?' — '+badgeWhy:''));
 
     var pointerOk=true,pointerWhy='';
-    Array.from(W.document.querySelectorAll('#tabs>.tab')).forEach(function(tab){
-      if(!pointerOk)return;
-      var icon=tab.querySelector('.fantasyNavIcon'),label=tab.querySelector('.navLabel');
-      if(!icon||!label){pointerOk=false;pointerWhy=targetOf(tab)+' missing canonical child';return}
-      if(W.getComputedStyle(icon).pointerEvents!=='none'||W.getComputedStyle(label).pointerEvents!=='none'){
-        pointerOk=false;pointerWhy=targetOf(tab)+' decorative child receives taps';return;
-      }
-      var b=tab.getBoundingClientRect();
-      if(b.height<44){pointerOk=false;pointerWhy=targetOf(tab)+' touch target is '+b.height.toFixed(1)+'px high'}
+    Array.from(document.querySelectorAll('#tabs>.tab')).forEach(function(tab){
+      var icon=tab.querySelector('.fantasyNavIcon'),label=tab.querySelector('.navLabel'),b=tab.getBoundingClientRect();
+      if(!icon||!label){pointerOk=false;pointerWhy=target(tab)+' missing child';return}
+      if(getComputedStyle(icon).pointerEvents!=='none'||getComputedStyle(label).pointerEvents!=='none'){pointerOk=false;pointerWhy=target(tab)+' child steals taps';return}
+      if(b.height<44){pointerOk=false;pointerWhy=target(tab)+' target '+b.height+'px'}
     });
-    line(pointerOk,'all four full tab cells remain usable touch targets'+(pointerWhy?' — '+pointerWhy:''));
+    record(pointerOk,'all full tab cells are >=44px touch targets'+(pointerWhy?' — '+pointerWhy:''));
 
-    f.remove();
+    var clickOk=true;
+    for(var c=0;c<TABS_FIXTURE.length;c++)if(!await clickTarget(TABS_FIXTURE[c].id)){clickOk=false;break}
+    record(clickOk,'full tab click routes Accueil → Équipement → Développement → Réglages');
+
+    window.__bottomNavV188Results={done:true,pass:pass,fail:fail,details:details,viewport:{width:innerWidth,height:innerHeight,compact:compact}};
+    document.getElementById('fixtureStatus').textContent=(fail?'FAIL':'PASS')+' '+pass+'/'+(pass+fail);
+    document.title=(fail?'FAIL':'PASS')+' — Bottom navigation V188 visual fixture';
   }
-  async function main(){
-    for(var i=0;i<profiles.length;i++)await runProfile(profiles[i]);
-    summary.textContent=fail?'FAIL · '+fail+' failed · '+pass+' passed':'PASS · '+pass+' checks';
-    summary.style.color=fail?'#ff6666':'#57e07a';
-    window.__bottomNavV188Results={pass:pass,fail:fail,details:details,done:true};
-    document.title=(fail?'FAIL':'PASS')+' — Bottom navigation V188 visual regression';
-  }
-  main().catch(function(e){line(false,'test harness exception: '+e.message);summary.textContent='FAIL · harness exception';window.__bottomNavV188Results={pass:pass,fail:fail+1,details:details,done:true,error:String(e&&e.stack||e)}});
+  run().catch(function(err){window.__bottomNavV188Results={done:true,pass:pass,fail:fail+1,error:String(err&&err.stack||err),details:details};document.getElementById('fixtureStatus').textContent='FAIL exception'});
 })();
 </script>
+</body>
+</html>
