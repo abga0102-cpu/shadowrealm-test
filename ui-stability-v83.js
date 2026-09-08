@@ -1,7 +1,9 @@
-// RELIABLE_ACTIONS_AND_MODAL_STABILITY_V83
+// RELIABLE_ACTIONS_AND_MODAL_STABILITY_V83 · Phase 2C modal lifecycle owner
 // Priorité: aucun bouton volontaire du joueur ne doit être bloqué par la couche de stabilité.
 (function(){
   'use strict';
+  if(window.__srModalLifecyclePhase2C)return;
+  window.__srModalLifecyclePhase2C=true;
 
   const css=document.createElement('style');
   css.id='reliableActionsModalStabilityV83';
@@ -89,9 +91,28 @@
   let draining=false;
   let explicitUntil=0;
   let nativeTransitionDepth=0;
+  let modalStateQueued=false;
+  let modalStateForce=false;
+  let lastModalState=null;
   function now(){return typeof performance!=='undefined'?performance.now():Date.now();}
   function overlay(){return document.getElementById('overlay');}
   function markOverlay(){const ov=overlay();if(ov)ov.setAttribute('data-sr-persistent','1');}
+  function publishModalState(force){
+    modalStateForce=modalStateForce||!!force;
+    if(modalStateQueued)return;
+    modalStateQueued=true;
+    requestAnimationFrame(function(){
+      modalStateQueued=false;
+      const open=!!overlay();
+      markOverlay();
+      const emit=modalStateForce||lastModalState!==open;
+      modalStateForce=false;
+      if(!emit)return;
+      lastModalState=open;
+      try{window.dispatchEvent(new CustomEvent('sr:modal-state',{detail:{open:open}}));}catch(_){}
+    });
+  }
+  window.__srGetModalStatePhase2C=function(){return !!overlay();};
   function fullKey(args){return String(args[1]||'')+'\n'+String(args[0]||'');}
   function enqueue(args){
     const arr=Array.from(args),key=fullKey(arr);
@@ -100,11 +121,18 @@
   }
   function nativeOpenSafe(ctx,args){
     nativeTransitionDepth++;
-    try{return nativeOpen.apply(ctx,args);}finally{nativeTransitionDepth=Math.max(0,nativeTransitionDepth-1);markOverlay();}
+    try{return nativeOpen.apply(ctx,args);}finally{
+      nativeTransitionDepth=Math.max(0,nativeTransitionDepth-1);
+      markOverlay();
+      publishModalState();
+    }
   }
   function nativeCloseSafe(ctx,args){
     nativeTransitionDepth++;
-    try{return nativeClose.apply(ctx,args);}finally{nativeTransitionDepth=Math.max(0,nativeTransitionDepth-1);}
+    try{return nativeClose.apply(ctx,args);}finally{
+      nativeTransitionDepth=Math.max(0,nativeTransitionDepth-1);
+      publishModalState();
+    }
   }
   function drain(){
     if(draining||overlay()||!queue.length)return;
@@ -152,9 +180,10 @@
   const app=document.getElementById('app');
   if(app){
     let queued=false;
-    const mark=function(){const sc=document.getElementById('screen');if(sc)sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));markOverlay();if(!overlay())drain();};
+    const mark=function(){const sc=document.getElementById('screen');if(sc)sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));markOverlay();publishModalState();if(!overlay())drain();};
     const schedule=function(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;mark();});};
     new MutationObserver(schedule).observe(app,{childList:true,subtree:false});
     mark();
   }
+  publishModalState(true);
 })();
