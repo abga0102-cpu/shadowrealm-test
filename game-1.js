@@ -1381,53 +1381,20 @@ function raidEnemyDamage(raid, level) {
 const PR_PER_FLOOR = 6;
 function prFromFloor(floor) { return Math.floor(floor * PR_PER_FLOOR); }
 const REBIRTH_UPGRADES = [
-  // Values roughly doubled so PR spent buys a permanent gain worth feeling.
-  // "Vit. Déplac." was removed outright — it did almost nothing for the player.
-  //
-  // The five combat bonuses run to 20 levels (5 for Vol de Vie) on a ladder
-  // that starts at 3 PR and ends at 422. The step ratio decays smoothly from
-  // 2.0 to 1.17, so the early levels stay impulse-buys while the last few are
-  // a deliberate saving goal, rather than a cliff at the end.
-  /* Section 4C takes these two to 50. The effect per level is untouched -- 5%
-     and 6% -- so the ceilings become 250% and 300%.
-
-     The cost ladder is extended by its own rule rather than a new one. It is
-     not an exponential: its second difference climbs by 2 every couple of
-     levels, which is a polynomial, and continuing that is what "conserver le
-     systeme de progression" means here. Reading it as an exponential and
-     holding the 1.17 tail ratio would have cost 320000 PR a line instead of
-     95000, for no reason anyone chose. Levels 1-20 are byte-identical. */
-  { key: "damage",     label: "Dégâts",         icon: "flame",   max: 50, perLvl: 5,    unit: "%",   costs: [
-      10,20,32,46,64,86,112,142,178,220,
-      270,328,396,474,564,668,788,926,1084,1266,
-      1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,
-      5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,
-      12524,13498,14520,15590,16710,17880,19102,20376,21704,23086] },
-  { key: "life",       label: "Vie",            icon: "heart",   max: 50, perLvl: 6,    unit: "%",   costs: [
-      10,20,32,46,64,86,112,142,178,220,
-      270,328,396,474,564,668,788,926,1084,1266,
-      1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,
-      5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,
-      12524,13498,14520,15590,16710,17880,19102,20376,21704,23086] },
-  { key: "atkspeed",   label: "Vit. Attaque",   icon: "bolt",    max: 5,  perLvl: 3,    unit: "%",   costs: [10,20,30,50,75] },
-  { key: "critdmg",    label: "Dégâts Crit.",   icon: "sparkle", max: 5,  perLvl: 8,    unit: "%",   costs: [10,20,30,50,75] },
-  { key: "dmgred",     label: "Réduc. Dégâts",  icon: "shield",  max: 20, perLvl: 2,    unit: "%",   costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266] },
-  { key: "regen",      label: "Régénération",   icon: "potion",  max: 5,  perLvl: 0.6,  unit: "%/s", costs: [10,20,30,50,75] },
-  { key: "lifesteal",  label: "Vol de Vie",     icon: "droplet", max: 5,  perLvl: 1,    unit: "%",   costs: [10,20,32,46,64] },
-  { key: "bossdmg",    label: "Dégâts Boss",    icon: "skull",   max: 20, perLvl: 8,    unit: "%",   costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266] },
-  { key: "exp",        label: "EXP",            icon: "cap",     max: 10, perLvl: 5,    unit: "%",   costs: [10,20,30,50,75,110,160,230,320,450] },
-  { key: "gold",       label: "Or",             icon: "gold",    max: 50, perLvl: 4,    unit: "%", costDiv: 1,
-    // Prix REELS affichés/payés. Total exact des 50 niveaux : 35 000 PR.
-    costs: [25,40,50,65,80,90,105,130,145,155,180,205,220,245,270,300,325,350,375,415,440,465,505,545,570,610,650,685,725,765,805,845,895,935,970,1025,1075,1115,1165,1220,1270,1320,1375,1425,1490,1545,1595,1660,1725,1815] },
-  { key: "apples",     label: "Gain Pommes",     icon: "paw",     max: 20, perLvl: 5, unit: "%", costDiv: 1,
-    costs: [200,300,400,500,650,800,950,1100,1300,1500,1700,1900,2100,2300,2500,2800,3100,3400,3700,3800] },
-  { key: "prgain",     label: "Gain PR",        icon: "chart",   max: 50, perLvl: 8,    unit: "%", costDiv: 1,
-    // Total exact pour maxer les 50 niveaux : 35 000 PR.
-    costs: [50,77,103,130,156,183,209,236,262,289,315,342,368,395,421,448,474,501,528,554,581,607,634,660,687,713,740,766,793,819,846,872,899,926,952,979,1005,1032,1058,1085,1111,1138,1164,1191,1217,1244,1270,1297,1323,1350] },
-  { key: "keep",       label: "Conservation",   icon: "cycle",   max: 5,  perLvl: 2,    unit: "%",   costs: [100,200,350,550,800] },
-  { key: "floorSkip",  label: "Saut d'étage",  icon: "forward", max: 25, perLvl: 0.8,  unit: "%", costDiv: 1,
-    // 25 niveaux, 20% au maximum, 50 000 PR au total.
-    costs: [100,258,417,575,733,892,1050,1208,1367,1525,1683,1842,2000,2158,2317,2475,2633,2792,2950,3108,3267,3425,3583,3742,3900] },
+  { key: "damage", label: "Dégâts", icon: "flame", max: 100, perLvl: 8, unit: "%", costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266,1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,12524,13498,14520,15590,16710,17880,19102,20376,21704,23086,24524,26018,27570,29180,30850,32580,34372,36226,38144,40126,42174,44288,46470,48720,51040,53430,55892,58426,61034,63716,66474,69308,72220,75210,78280,81430,84662,87976,91374,94856,98424,102078,105820,109650,113570,117580,121682,125876,130164,134546,139024,143598,148270,153040,157910,162880,167952,173126,178404,183786] },
+  { key: "life", label: "Vie", icon: "heart", max: 100, perLvl: 8, unit: "%", costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266,1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,12524,13498,14520,15590,16710,17880,19102,20376,21704,23086,24524,26018,27570,29180,30850,32580,34372,36226,38144,40126,42174,44288,46470,48720,51040,53430,55892,58426,61034,63716,66474,69308,72220,75210,78280,81430,84662,87976,91374,94856,98424,102078,105820,109650,113570,117580,121682,125876,130164,134546,139024,143598,148270,153040,157910,162880,167952,173126,178404,183786] },
+  { key: "atkspeed", label: "Vit. Attaque", icon: "bolt", max: 5, perLvl: 3, unit: "%", costs: [10,20,30,50,75] },
+  { key: "critdmg", label: "Dégâts Crit.", icon: "sparkle", max: 5, perLvl: 8, unit: "%", costs: [10,20,30,50,75] },
+  { key: "dmgred", label: "Réduc. Dégâts", icon: "shield", max: 50, perLvl: 6, unit: "%", costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266,1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,12524,13498,14520,15590,16710,17880,19102,20376,21704,23086] },
+  { key: "regen", label: "Régénération", icon: "potion", max: 5, perLvl: 0.6, unit: "%/s", costs: [10,20,30,50,75] },
+  { key: "lifesteal", label: "Vol de Vie", icon: "droplet", max: 5, perLvl: 1, unit: "%", costs: [10,20,32,46,64] },
+  { key: "bossdmg", label: "Dégâts Boss", icon: "skull", max: 20, perLvl: 8, unit: "%", costDiv: 1, costs: [100,300,500,700,900,1100,1300,1500,1700,1900,2100,2300,2500,2700,2900,3100,3300,3500,3700,3900] },
+  { key: "exp", label: "EXP", icon: "cap", max: 100, perLvl: 2, unit: "%", costs: [10,20,30,50,75,110,160,230,320,450,610,800,1020,1270,1550,1860,2200,2570,2970,3400,3860,4350,4870,5420,6000,6610,7250,7920,8620,9350,10110,10900,11720,12570,13450,14360,15300,16270,17270,18300,19360,20450,21570,22720,23900,25110,26350,27620,28920,30250,31610,33000,34420,35870,37350,38860,40400,41970,43570,45200,46860,48550,50270,52020,53800,55610,57450,59320,61220,63150,65110,67100,69120,71170,73250,75360,77500,79670,81870,84100,86360,88650,90970,93320,95700,98110,100550,103020,105520,108050,110610,113200,115820,118470,121150,123860,126600,129370,132170,135000] },
+  { key: "gold", label: "Or", icon: "gold", max: 100, perLvl: 6, unit: "%", costDiv: 1, costs: [25,40,50,65,80,90,105,130,145,155,180,205,220,245,270,300,325,350,375,415,440,465,505,545,570,610,650,685,725,765,805,845,895,935,970,1025,1075,1115,1165,1220,1270,1320,1375,1425,1490,1545,1595,1660,1725,1815,1875,1935,1995,2055,2115,2180,2245,2310,2375,2440,2510,2580,2650,2720,2790,2865,2940,3015,3090,3165,3245,3325,3405,3485,3565,3650,3735,3820,3905,3990,4080,4170,4260,4350,4440,4535,4630,4725,4820,4915,5015,5115,5215,5315,5415,5520,5625,5730,5835,5940] },
+  { key: "apples", label: "Gain Pommes", icon: "paw", max: 20, perLvl: 5, unit: "%", costDiv: 1, costs: [200,300,400,500,650,800,950,1100,1300,1500,1700,1900,2100,2300,2500,2800,3100,3400,3700,3800] },
+  { key: "prgain", label: "Gain PR", icon: "chart", max: 25, perLvl: 8, unit: "%", costDiv: 1, costs: [50,129,208,288,367,446,525,604,683,762,842,921,1000,1079,1158,1238,1317,1396,1475,1554,1633,1712,1792,1871,1950] },
+  { key: "keep", label: "Conservation", icon: "cycle", max: 5, perLvl: 2, unit: "%", costs: [100,200,350,550,800] },
+  { key: "floorSkip", label: "Saut d'étage", icon: "forward", max: 50, perLvl: 0.8, unit: "%", costDiv: 1, costs: [100,258,417,575,733,892,1050,1208,1367,1525,1683,1842,2000,2158,2317,2475,2633,2792,2950,3108,3267,3425,3583,3742,3900,4058,4217,4375,4533,4692,4850,5008,5167,5325,5483,5642,5800,5958,6117,6275,6433,6592,6750,6908,7067,7225,7383,7542,7700,7858] },
 ];
 function rebirthKeepPct(keepLevel) { return 50 + keepLevel; }
 const REBIRTH_COST_DIV = 3;
@@ -2290,6 +2257,17 @@ function migrate(s, name) {
     }
     merged.autonomyGoldRebaseV31 = true;
   }
+  // REBIRTH_CAPS_V171
+  if (!Object.prototype.hasOwnProperty.call(s, "rebirthCapsV171")) {
+    const oldCosts=[50,77,103,130,156,183,209,236,262,289,315,342,368,395,421,448,474,501,528,554,581,607,634,660,687,713,740,766,793,819,846,872,899,926,952,979,1005,1032,1058,1085,1111,1138,1164,1191,1217,1244,1270,1297,1323,1350];
+    const ups=merged.rebirth.upgrades || (merged.rebirth.upgrades={});
+    const oldLv=Math.max(0,Math.min(50,Math.floor(Number(ups.prgain)||0)));
+    let refundPR=0;
+    if(oldLv>25){ refundPR=oldCosts.slice(25,oldLv).reduce((a,b)=>a+b,0); merged.rebirth.pr=Math.max(0,Number(merged.rebirth.pr)||0)+refundPR; ups.prgain=25; }
+    merged.rebirthCapsV171=true;
+    if(refundPR>0) merged.rebirthCapsV171Notice={oldLevel:oldLv,newLevel:25,refundPR};
+  }
+
   // GOLD_ECONOMY_REBASE_V32
   // Le coût Rebirth Or passe de 135 000 à 35 000 PR au total. Un joueur qui a
   // déjà acheté des niveaux récupère exactement la différence entre l'ancienne
@@ -2366,7 +2344,8 @@ function migrate(s, name) {
 function rb(s, key) {
   const def = REBIRTH_UPGRADES.find((u) => u.key === key);
   if (!def) return 0;
-  return (s.rebirth.upgrades[key] || 0) * def.perLvl;
+  const lvl = Math.max(0, Math.min(def.max, Number((s.rebirth.upgrades || {})[key]) || 0));
+  return lvl * def.perLvl;
 }
 /* ---- tree accessors: level 1 == activated, so children open immediately ---- */
 function treeLv(s, id) { return (s.tree.levels && s.tree.levels[id]) || 0; }
