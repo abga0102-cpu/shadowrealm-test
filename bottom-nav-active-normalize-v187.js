@@ -1,6 +1,6 @@
-/* SHADOWREACH · Bottom nav active icon normalization V187 · import guard V205
+/* SHADOWREACH · Bottom nav active icon normalization V187
    Keep selected icons the same size and position as inactive icons.
-   Also harden save import so importing never triggers a daily raid-key refill. */
+   Save import is owned by import-save-guard-v207.js. */
 (function(){
   'use strict';
   if(window.__srBottomNavActiveNormalizeV187)return;
@@ -71,45 +71,4 @@
 }
 `;
   document.head.appendChild(style);
-})();
-
-/* SAVE IMPORT GUARD V205
-   Import must be a replacement of saved state, never a fake calendar event. */
-(function(){
-  'use strict';
-  if(window.__srImportSaveGuardV205)return;
-  window.__srImportSaveGuardV205=true;
-  if(typeof ACT!=='object'||!ACT)return;
-  ACT.importSave=function(){
-    var inp=document.createElement('input');
-    inp.type='file';
-    inp.accept='.json,application/json';
-    inp.onchange=function(){
-      var f=inp.files&&inp.files[0];
-      if(!f)return;
-      var fr=new FileReader();
-      fr.onload=function(){
-        try{
-          var raw=JSON.parse(String(fr.result));
-          S=migrate(raw,'Héros');
-          /* Anchor the imported save to the current real day BEFORE any normal
-             lifecycle can run, while preserving exactly the key counts in JSON. */
-          S.lastKeyReset=todayStr();
-          S.eventDay=todayStr();
-          S.testDays=Math.max(0,Number(S.testDays)||0);
-          S.power=computePower(S);
-          refreshDerived();
-          saveNow();
-          startCampaign();
-          nav('accueil');
-          toast('Sauvegarde importée',true);
-        }catch(e){
-          console.warn('import save failed',e);
-          toast('Fichier invalide');
-        }
-      };
-      fr.readAsText(f);
-    };
-    inp.click();
-  };
 })();
