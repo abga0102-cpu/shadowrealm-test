@@ -21,10 +21,10 @@
   }
   const css=document.createElement('style');css.id='fantasyNavStyleV65';css.textContent=`
     #tabs .fantasyNavV65{position:relative;overflow:visible}
-    #tabs .fantasyNavIcon{width:38px;height:38px;display:block;margin:0 auto 2px;filter:drop-shadow(0 3px 4px #000a);transition:filter .18s,transform .18s,opacity .18s}
+    #tabs .fantasyNavIcon{width:38px;height:38px;display:block;margin:0 auto 2px;filter:drop-shadow(0 3px 4px #000a);transition:filter .18s,opacity .18s}
     #tabs .fantasyNavIcon svg{width:100%;height:100%;display:block;overflow:visible}
     #tabs .fantasyNavV65:not(.on):not(.active):not([aria-current="page"]) .fantasyNavIcon{opacity:.62;filter:saturate(.72) brightness(.78) drop-shadow(0 2px 3px #0009)}
-    #tabs .fantasyNavV65.on .fantasyNavIcon,#tabs .fantasyNavV65.active .fantasyNavIcon,#tabs .fantasyNavV65[aria-current="page"] .fantasyNavIcon{transform:translateY(-2px) scale(1.07);filter:brightness(1.16) saturate(1.15) drop-shadow(0 0 8px #E8B44A99) drop-shadow(0 3px 4px #000a)}
+    #tabs .fantasyNavV65.on .fantasyNavIcon,#tabs .fantasyNavV65.active .fantasyNavIcon,#tabs .fantasyNavV65[aria-current="page"] .fantasyNavIcon{filter:brightness(1.16) saturate(1.15) drop-shadow(0 0 8px #E8B44A99) drop-shadow(0 3px 4px #000a)}
     #tabs .fantasyNavV65.on,#tabs .fantasyNavV65.active,#tabs .fantasyNavV65[aria-current="page"]{color:#FBDD8C!important;text-shadow:0 0 10px #E8B44A66}
   `;document.head.appendChild(css);
   const root=document.getElementById('tabs');if(root)new MutationObserver(apply).observe(root,{childList:true,subtree:true});
