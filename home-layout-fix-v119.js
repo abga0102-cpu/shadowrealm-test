@@ -1,4 +1,4 @@
-/* SHADOWREACH · Home layout fix v119
+/* SHADOWREACH · Home layout fix v119 · Phase 2B lifecycle compatibility
    Mobile-safe compatibility layer.
    V182: restore full HUD visibility and compact bottom navigation while
    preserving Forge, reward, Equipment and Settings polish. UI only. */
@@ -6,6 +6,7 @@
   'use strict';
   if(window.__srHomeLayoutFixV119)return;
   window.__srHomeLayoutFixV119=true;
+  window.__srHomeLayoutPhase2B=true;
 
   var s=document.createElement('style');
   s.id='srHomeLayoutFixV119';
@@ -294,6 +295,7 @@
   }
 
   function decorate(){
+    if(typeof window.__srSyncHomeFramePhase2B==='function')window.__srSyncHomeFramePhase2B();
     var screen=document.getElementById('screen');if(!screen)return;
     fixForgeInfo(screen);normalizeHomeFrame();
     var title=screen.querySelector('#topbar h2.title');
@@ -319,8 +321,14 @@
 
   var pending=false;
   function schedule(){if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;decorate();});}
-  var app=document.getElementById('app');
-  if(app)new MutationObserver(schedule).observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  var nativeRenderTabs=typeof window.renderTabs==='function'?window.renderTabs:null;
+  if(nativeRenderTabs){
+    window.renderTabs=function(){
+      var out=nativeRenderTabs.apply(this,arguments);
+      schedule();
+      return out;
+    };
+  }
   window.addEventListener('resize',schedule);
   schedule();
 })();
