@@ -12,7 +12,7 @@ permissions:
 jobs:
   bottom-nav-visual:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
@@ -28,28 +28,44 @@ jobs:
           cat /tmp/shadowreach-http.log
           exit 1
 
+      - name: Install browser driver
+        run: npm install --no-save puppeteer-core@24
+
       - name: Run V188 visual regression matrix in Chrome
+        env:
+          CI: "true"
         run: |
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
           if [ -z "$CHROME" ]; then
             echo "No Chromium/Chrome binary found on runner"
             exit 1
           fi
-          "$CHROME" \
-            --headless=new \
-            --no-sandbox \
-            --disable-gpu \
-            --disable-dev-shm-usage \
-            --virtual-time-budget=30000 \
-            --dump-dom \
-            http://127.0.0.1:8080/bottom-nav-visual-test-v188.html \
-            > /tmp/bottom-nav-v188-results.html
-          grep -F "PASS ·" /tmp/bottom-nav-v188-results.html
-          if grep -F "ÉCHEC" /tmp/bottom-nav-v188-results.html; then
-            echo "V188 visual regression reported a failure"
-            cat /tmp/bottom-nav-v188-results.html
-            exit 1
-          fi
+          export CHROME
+          node <<'NODE'
+          const puppeteer = require('puppeteer-core');
+          (async () => {
+            const browser = await puppeteer.launch({
+              executablePath: process.env.CHROME,
+              headless: true,
+              args: ['--no-sandbox','--disable-gpu','--disable-dev-shm-usage']
+            });
+            try {
+              const page = await browser.newPage();
+              page.on('console', msg => console.log('[browser]', msg.text()));
+              page.on('pageerror', err => console.error('[pageerror]', err.message));
+              await page.goto('http://127.0.0.1:8080/bottom-nav-visual-test-v188.html', {waitUntil: 'load', timeout: 30000});
+              await page.waitForFunction(() => window.__bottomNavV188Results && window.__bottomNavV188Results.done === true, {timeout: 120000});
+              const result = await page.evaluate(() => window.__bottomNavV188Results);
+              console.log(JSON.stringify(result, null, 2));
+              if (!result || result.fail !== 0) process.exitCode = 1;
+            } finally {
+              await browser.close();
+            }
+          })().catch(err => {
+            console.error(err && err.stack || err);
+            process.exit(1);
+          });
+          NODE
 
       - name: Show server log on failure
         if: failure()
