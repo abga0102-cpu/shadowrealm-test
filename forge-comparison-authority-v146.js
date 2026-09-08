@@ -1,10 +1,9 @@
 /* SHADOWREACH · Forge comparison authority v146
    Additive final presentation authority loaded after v145.
    Keeps every previous Forge file in place, but future Forge results are handled here.
-   One visible candidate per equipment slot, dynamic re-ranking after equip, clearer
-   upgrade labels, icon + affixes for worn gear, and defensive affix formatting.
-   V182: a compared drop can also be recycled immediately for the exact same Dust
-   value as Inventory recycling. Drop rates, filters and save structure are unchanged. */
+   V199: Auto-Forge results selected by the Forge filter are queued exactly as dropped,
+   regardless of power, and AUTO resumes only after the comparison queue is resolved.
+   Compared drops can be kept, equipped or recycled for the normal Inventory Dust value. */
 (function(){
 'use strict';
 if(window.__srForgeComparisonAuthorityV146)return;
@@ -13,6 +12,7 @@ if(typeof showForgeResult!=='function'||typeof equipItem!=='function')return;
 
 var ROOT='srForgeArenaPreview146';
 var pending={};
+var autoPending=[];
 var current=null;
 
 function byId(id){
@@ -76,17 +76,30 @@ function position(root){
  if(ar&&ar.height>60){var below=ar.bottom+6,needed=250;if(below+needed<vh-68){root.style.top=Math.max(8,below)+'px';root.style.bottom='auto';return;}root.style.top=Math.max(8,Math.min(vh-needed-72,ar.top+8))+'px';root.style.bottom='auto';return;}
  root.style.bottom='calc(env(safe-area-inset-bottom) + 76px)';root.style.top='auto';
 }
-function cleanPending(){Object.keys(pending).forEach(function(slot){var r=pending[slot],it=byId(r&&r.id);if(!it||it.slot!==slot)delete pending[slot];});}
-function pendingCount(){cleanPending();return Object.keys(pending).length;}
+function maybeResumeAuto(){
+ if(current||autoPending.length||Object.keys(pending).length)return;
+ try{if(typeof window.__srResumeAutoForgeV199==='function')window.__srResumeAutoForgeV199();}catch(_){}
+}
+function cleanPending(){
+ Object.keys(pending).forEach(function(slot){var r=pending[slot],it=byId(r&&r.id);if(!it||it.slot!==slot)delete pending[slot];});
+ autoPending=autoPending.filter(function(r){return !!byId(r&&r.id);});
+}
+function pendingCount(){cleanPending();return autoPending.length+Object.keys(pending).length;}
 function takeBest(){
- cleanPending();var slots=Object.keys(pending);if(!slots.length)return null;
+ cleanPending();
+ if(autoPending.length)return autoPending.shift();
+ var slots=Object.keys(pending);if(!slots.length)return null;
  slots.sort(function(a,b){return score(byId(pending[b].id))-score(byId(pending[a].id));});
  var slot=slots[0],r=pending[slot];delete pending[slot];return r;
 }
-function next(){current=takeBest();if(!current){remove();return;}render();}
-function clearAll(){pending={};current=null;remove();}
+function next(){current=takeBest();if(!current){remove();maybeResumeAuto();return;}render();}
+function clearAll(){pending={};autoPending=[];current=null;remove();maybeResumeAuto();}
 function ingest(r){
  var it=byId(r&&r.id);if(!it||!it.slot)return;
+ if(r&&r.__autoForgeCompareV199){
+   if(!current){current=r;return;}
+   autoPending.push(r);return;
+ }
  if(current){var curIt=byId(current.id);if(curIt&&curIt.slot===it.slot){if(score(it)>score(curIt)){current=r;render();}return;}}
  var old=pending[it.slot],oldIt=old&&byId(old.id);if(!oldIt||score(it)>score(oldIt))pending[it.slot]=r;
 }
@@ -120,7 +133,7 @@ showForgeResult=function(res){
  res=Array.isArray(res)?res:[];
  var kept=res.filter(function(r){return r&&!r.recycled&&r.id&&byId(r.id);});
  var melted=res.filter(function(r){return r&&r.recycled;});
- if(!kept.length){var dust=melted.reduce(function(a,r){return a+(Number(r.dust)||0);},0);try{if(typeof toast==='function')toast(melted.length+' pièce'+(melted.length>1?'s':'')+' recyclée'+(melted.length>1?'s':'')+' · +'+fmt2(dust)+' poussière',true);}catch(_){}return;}
+ if(!kept.length){var dust=melted.reduce(function(a,r){return a+(Number(r.dust)||0);},0);try{if(typeof toast==='function')toast(melted.length+' pièce'+(melted.length>1?'s':'')+' recyclée'+(melted.length>1?'s':'')+' · +'+fmt2(dust)+' poussière',true);}catch(_){}maybeResumeAuto();return;}
  kept.forEach(ingest);if(!current)next();else render();
 };
 
