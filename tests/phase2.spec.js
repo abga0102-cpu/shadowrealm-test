@@ -135,9 +135,6 @@ test('Home state follows the rendered route without stale observer timing', asyn
 
   const info = page.locator('.homeForge .iBtn').first();
   await expect(info).toBeVisible();
-  // Home can render once more while tutorial timing settles, so measure the current
-  // live node until its canonical circular geometry is stable rather than holding a
-  // transient DOM instance between two assertions.
   await expect.poll(async () => info.evaluate((el) => {
     const rect = el.getBoundingClientRect();
     const style = getComputedStyle(el);
@@ -193,8 +190,6 @@ test('Tutorial yields to an opened modal and resumes after canonical close', asy
   await expect(page.locator('#overlay')).toHaveCount(1);
   await expect(page.locator('#tutorialCard')).toHaveCount(0, { timeout: 3000 });
 
-  // The modal has both its native X and this explicit body button; exercise the
-  // body action deliberately so the test is unambiguous in Chromium and WebKit.
   const close = page.locator('#overlay button[data-act="closeModal"]', { hasText: 'Fermer' });
   await activate(page, close, testInfo);
   await expect(page.locator('#overlay')).toHaveCount(0, { timeout: 3000 });
