@@ -112,6 +112,14 @@ function run(W) {
     if (Math.abs(r.width - r.height) > 1) return r.width.toFixed(1) + " × " + r.height.toFixed(1) + "px";
     return radius >= r.width * .45 ? true : "rayon insuffisant";
   });
+  check("le tutoriel Combat ne masque pas les commandes de Forge", function () {
+    W.nav("accueil"); W.render();
+    const tutorial = W.document.querySelector("#tutorialCard");
+    const forge = W.document.querySelector("#homeForge");
+    if (!tutorial || !forge) return null;
+    const t = tutorial.getBoundingClientRect(), f = forge.getBoundingClientRect();
+    return t.bottom <= f.top ? true : "recouvrement de " + (t.bottom - f.top).toFixed(1) + "px";
+  });
   check("les statistiques Réglages restent dans leurs cartes", function () {
     W.nav("parametres"); W.render();
     const cells = Array.from(W.document.querySelectorAll(".settingsStatCell"));
