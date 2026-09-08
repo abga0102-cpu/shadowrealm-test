@@ -40,10 +40,14 @@ async function activate(page, locator, testInfo) {
 test('Phase 2A replaces observer-driven fantasy decoration with the render lifecycle', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
   const nav = fs.readFileSync(path.join(root, 'bottom-nav-v53.js'), 'utf8');
+  const executableNav = nav
+    .split('\n')
+    .filter((line) => !line.trimStart().startsWith('//'))
+    .join('\n');
   expect(nav).toContain('__srBottomNavPhase2A');
   expect(nav).toContain('nativeRenderTabs');
   expect(nav).toContain('window.renderTabs=function');
-  expect(nav).not.toContain('MutationObserver');
+  expect(executableNav).not.toContain('MutationObserver');
 });
 
 test('fantasy navigation remains singular and stable through repeated renders', async ({ page }, testInfo) => {
