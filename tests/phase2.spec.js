@@ -145,3 +145,95 @@ test('Home state follows the rendered route without stale observer timing', asyn
   expect(circle.radius).toBe('50%');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
+
+test('V209 retires Development-only BottomNav layers and owns geometry after render', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
+  const layout = fs.readFileSync(path.join(root, 'bottom-nav-layout-v183.js'), 'utf8');
+  const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+
+  expect(layout).toContain('__srBottomNavGeometryV209');
+  expect(layout).toContain('normalizeIconSlot');
+  expect(layout).toContain('nativeRenderTabs');
+  expect(layout).not.toContain('MutationObserver');
+  expect(index).toContain('premium-ui-v209.js');
+  expect(index).not.toContain("'bottom-nav-development-v186.js'");
+  expect(index).not.toContain("'bottom-nav-active-normalize-v187.js'");
+});
+
+test('Development uses the exact same icon slot and geometry as every other BottomNav tab', async ({ page }, testInfo) => {
+  await openCleanGame(page);
+  await expect.poll(() => page.evaluate(() => !!window.__srBottomNavGeometryV209 && !!window.__srPremiumUiV209), { timeout: 10000 }).toBe(true);
+
+  await expect(page.locator('#tabs > .tab > .fantasyNavIcon')).toHaveCount(0);
+  await expect(page.locator('#tabs > .tab > .ico > .fantasyNavIcon')).toHaveCount(4);
+
+  const geometry = async () => page.locator('#tabs > .tab').evaluateAll((tabs) => tabs.map((tab) => {
+    const slot = tab.querySelector(':scope > .ico');
+    const icon = slot && slot.querySelector(':scope > .fantasyNavIcon');
+    const label = tab.querySelector(':scope > span:not(.fantasyNavIcon):not(.dot)');
+    const tr = tab.getBoundingClientRect();
+    const sr = slot.getBoundingClientRect();
+    const ir = icon.getBoundingClientRect();
+    const lr = label.getBoundingClientRect();
+    return {
+      route: tab.getAttribute('data-arg'),
+      slotCenter: sr.left + sr.width / 2 - tr.left,
+      iconCenter: ir.left + ir.width / 2 - tr.left,
+      iconTop: ir.top - tr.top,
+      iconWidth: ir.width,
+      iconHeight: ir.height,
+      labelTop: lr.top - tr.top,
+      labelCenter: lr.left + lr.width / 2 - tr.left
+    };
+  }));
+
+  const assertUniform = (rows) => {
+    for (const key of ['slotCenter', 'iconCenter', 'iconTop', 'iconWidth', 'iconHeight', 'labelTop', 'labelCenter']) {
+      const values = rows.map((row) => row[key]);
+      expect(Math.max(...values) - Math.min(...values), `${key} must match across all four tabs`).toBeLessThan(0.75);
+    }
+  };
+
+  assertUniform(await geometry());
+
+  const development = page.locator('#tabs > .tab[data-arg="developpement"]');
+  await activate(page, development, testInfo);
+  await expect(page.locator('#tabs > .tab.on')).toHaveAttribute('data-arg', 'developpement');
+  assertUniform(await geometry());
+
+  const equipment = page.locator('#tabs > .tab[data-arg="equipement"]');
+  await activate(page, equipment, testInfo);
+  await expect(page.locator('#tabs > .tab.on')).toHaveAttribute('data-arg', 'equipement');
+  await activate(page, development, testInfo);
+  await expect(page.locator('#tabs > .tab.on')).toHaveAttribute('data-arg', 'developpement');
+  assertUniform(await geometry());
+  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
+});
+
+test('premium interaction layer replaces cyan primary rings with warm gold', async ({ page }) => {
+  await openCleanGame(page);
+  await expect.poll(() => page.evaluate(() => !!window.__srPremiumUiV209), { timeout: 10000 }).toBe(true);
+
+  const visual = await page.evaluate(() => {
+    const ring = getComputedStyle(document.documentElement).getPropertyValue('--primary-action-ring').trim();
+    const button = document.createElement('button');
+    button.className = 'btn blue';
+    button.setAttribute('data-primary-action', 'true');
+    button.textContent = 'Premium';
+    document.body.appendChild(button);
+    const style = getComputedStyle(button);
+    const out = {
+      ring,
+      borderColor: style.borderColor,
+      boxShadow: style.boxShadow,
+      backgroundImage: style.backgroundImage
+    };
+    button.remove();
+    return out;
+  });
+
+  expect(visual.ring.toUpperCase()).toBe('#D7AE58');
+  expect(visual.borderColor).not.toContain('127, 212, 255');
+  expect(visual.boxShadow).not.toContain('127, 212, 255');
+  expect(visual.backgroundImage).not.toContain('127, 212, 255');
+});
