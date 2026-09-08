@@ -55,7 +55,7 @@ renderTabsFixture();
   'use strict';
   var pass=0,fail=0,details=[];
   function record(ok,msg){details.push({ok:!!ok,msg:msg});if(ok)pass++;else fail++}
-  function near(a,b,t){return Math.abs(Number(a)-Number(b))<=(t==null?.8:t)}
+  function near(a,b,t){return Math.abs(Number(a)-Number(b)) <= (t == null ? .8 : t)}
   function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
   function raf(){return new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve)})})}
   async function settle(){await sleep(30);await raf();await sleep(20)}
