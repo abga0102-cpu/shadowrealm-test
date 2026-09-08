@@ -1,0 +1,72 @@
+name: Apply combat flow v155
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-combat-flow-v155.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply combat flow V155
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          p=Path('game-1.js'); s=p.read_text()
+          old='''  FIGHT_ENTRY_MS: 420, FIGHT_HOLD_MS: 820,
+  // clearing the last step of a floor gets a longer beat plus an on-screen
+  // floor banner, so a post-Rebirth sprint stays readable instead of a blur
+  FLOOR_CLEAR_MS: 700, FLOOR_FLASH_MS: 900,'''
+          new='''  // Combat Flow V155: garde une vraie entrée/sortie lisible, mais retire les
+  // temps morts qui s'accumulaient à chaque vague. Les valeurs restent assez
+  // longues pour que l'impact final et l'arrivée du prochain groupe soient vus.
+  FIGHT_ENTRY_MS: 260, FIGHT_HOLD_MS: 460,
+  // La fin d'étage conserve un temps distinct pour les récompenses et le repère
+  // d'étage, sans immobiliser le combat plus d'une seconde supplémentaire.
+  FLOOR_CLEAR_MS: 360, FLOOR_FLASH_MS: 700,'''
+          if old not in s: raise SystemExit('combat timing anchor missing')
+          p.write_text(s.replace(old,new,1))
+
+          p=Path('game-2.js'); s=p.read_text()
+          old='''  setTimeout(startCampaign, 40);'''
+          new='''  // Combat Flow V155: le moteur peut préparer la vague suivante dès que la
+  // résolution précédente est terminée. requestAnimationFrame évite un frame
+  // intermédiaire vide tout en laissant update() publier les récompenses.
+  if (typeof requestAnimationFrame === "function") requestAnimationFrame(startCampaign);
+  else setTimeout(startCampaign, 16);'''
+          if old not in s: raise SystemExit('next-wave anchor missing')
+          p.write_text(s.replace(old,new,1))
+
+          p=Path('index.html'); s=p.read_text()
+          if '2026.09.08.154' not in s: raise SystemExit('build 154 anchor missing')
+          s=s.replace('<!-- Combat motion V154 · build 2026.09.08.154 -->','<!-- Combat flow V155 · build 2026.09.08.155 -->',1)
+          s=s.replace('content="2026.09.08.154"','content="2026.09.08.155"',1)
+          s=s.replace("var V='2026.09.08.154'","var V='2026.09.08.155'",1)
+          p.write_text(s)
+          PY
+      - name: Syntax and regression checks
+        run: |
+          node --check game-1.js
+          node --check game-2.js
+          node --check game-3.js
+          node --check game-4.js
+          node --check game-5.js
+          cat game-1.js game-2.js game-3.js game-4.js game-5.js > /tmp/all.js
+          node --check /tmp/all.js
+          grep -F 'FIGHT_ENTRY_MS: 260, FIGHT_HOLD_MS: 460' game-1.js
+          grep -F 'FLOOR_CLEAR_MS: 360, FLOOR_FLASH_MS: 700' game-1.js
+          grep -F 'requestAnimationFrame(startCampaign)' game-2.js
+          grep -F 'shadowreach-build" content="2026.09.08.155' index.html
+          grep -F "var V='2026.09.08.155'" index.html
+          grep -F 'combat-fluidity-v152.js?v=2026.09.08.152' index.html
+          grep -F 'combat-impact-v153.js?v=2026.09.08.153' index.html
+      - name: Commit update
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game-1.js game-2.js index.html
+          git commit -m 'Transitions combat V155' -m 'Réduit les temps morts entre entrée, victoire et vague suivante tout en conservant une respiration distincte en fin d’étage. La vague suivante est préparée au prochain frame après attribution des récompenses. Aucun changement de dégâts, HP, vitesse d’attaque, économie, récompenses ou progression. Build 2026.09.08.155.'
+          git push
