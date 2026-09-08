@@ -477,8 +477,8 @@ function drawArena() {
   if (lastDecor !== dKey) { arenaNodes.decor.innerHTML = decorHTML(c.bg, c.floor || 1); lastDecor = dKey; }
 
   // smoothing toward the simulation snapshot
-  // 0.22 chased the simulation hard enough to look stepped; 0.13 glides
-  P.hero += (c.heroX - P.hero) * 0.13;
+  // V154: slightly tighter visual follow reduces the last bit of skating without exposing simulation steps.
+  P.hero += (c.heroX - P.hero) * 0.16;
   const live = {};
   c.enemies.forEach((e) => {
     live[e.id] = 1;
@@ -491,7 +491,7 @@ function drawArena() {
   const tgt = c.enemies.filter((e) => e.alive).sort((a, b) => a.x - b.x)[0];
   // the walk cycle now follows the same rule the movement does, so an archer
   // closing the gap is animated as walking rather than gliding
-  const heroMoving = !!tgt && c.heroAttacking <= 0 && (tgt.x - c.heroX) > wt.range + 4;
+  const heroMoving = !!tgt && c.heroAttacking <= 0 && (tgt.x - c.heroX) > wt.range + 2;
 
   // best equipped rarity → aura
   let bestIdx = -1, auraRar = null;
@@ -523,10 +523,10 @@ function drawArena() {
     const walkPhase = t * 0.0115;
     const idle = heroMoving ? 0 : Math.sin(t * 0.0036) * 0.8;
     const hop = 0;
-    const tilt = heroMoving ? Math.sin(walkPhase) * 1.8 : Math.sin(t * 0.0030) * 0.8;
+    const tilt = heroMoving ? Math.sin(walkPhase) * 2.35 : Math.sin(t * 0.0030) * 0.8;
     const attackP = c.heroAttacking > 0 ? Math.max(0, Math.min(1, 1 - c.heroAttacking / ATTACK_WINDOW)) : 0;
-    const lunge = c.heroAttacking > 0 ? Math.sin(attackP * Math.PI) * 7 : 0;
-    const knock = c.heroHit > 0 ? -Math.min(4, c.heroHit * 14) : 0;
+    const lunge = c.heroAttacking > 0 ? Math.sin(attackP * Math.PI) * 9 : 0;
+    const knock = c.heroHit > 0 ? -Math.min(5, c.heroHit * 16) : 0;
     const sc = 1;   // the hero holds one size: no breathing, no attack punch
     const auraPulse = 1 + Math.sin(t * 0.006) * 0.06;
     const hpPct = Math.max(0, (c.heroHP / c.heroMaxHP) * 100);
@@ -558,7 +558,7 @@ function drawArena() {
     const idle = Math.sin(t * 0.0045 + phase) * 2 + Math.sin(t * 0.0019 + phase) * 1;
     const tilt = Math.sin(t * 0.0045 + phase) * 2.4;
     const enemyAttackP = e.attacking > 0 ? Math.max(0, Math.min(1, 1 - e.attacking / ATTACK_WINDOW)) : 0;
-    const lunge = (e.attacking > 0 ? -Math.sin(enemyAttackP * Math.PI) * 8 : 0) + (e.recoil > 0 ? e.recoil * 38 : 0);
+    const lunge = (e.attacking > 0 ? -Math.sin(enemyAttackP * Math.PI) * 10 : 0) + (e.recoil > 0 ? e.recoil * 44 : 0);
     const knock = e.hitFlash > 0 ? Math.min(5, e.hitFlash * 18) : 0;
     const hpPct = Math.max(0, (e.hp / e.maxHP) * 100);
     html += '<div class="unit" style="' + (e.vanish > 0 ? "opacity:.22;filter:brightness(.4);" : "") +
