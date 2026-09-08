@@ -116,11 +116,10 @@ function sync(){
   if(btn&&btn.parentElement!==app)app.appendChild(btn);
  }
 }
-let scheduled=false;
+let syncTicket=0;
 function scheduleSync(){
- if(scheduled)return;
- scheduled=true;
- requestAnimationFrame(()=>{scheduled=false;sync();});
+ const ticket=++syncTicket;
+ Promise.resolve().then(()=>{if(ticket!==syncTicket)return;sync();});
 }
 installStyle();
 window.__srSyncHomeFramePhase2B=sync;
