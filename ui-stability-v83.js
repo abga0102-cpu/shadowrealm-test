@@ -83,6 +83,40 @@
   document.addEventListener('click',function(){setTimeout(clearBypass,0);},true);
   document.addEventListener('pointercancel',function(){tap=null;clearBypass();},true);
 
+  // Récolte met à jour ses chiffres toutes les secondes. Le moteur remplaçait
+  // auparavant toute la .mbody, y compris RÉCLAMER, ce qui pouvait supprimer le
+  // bouton entre pointerdown et pointerup sur Safari/WebKit. On rafraîchit tout
+  // le contenu informatif mais on conserve le même nœud d'action jusqu'à la fermeture.
+  const nativeHarvestRefresh=typeof window.refreshHarvestModal==='function'?window.refreshHarvestModal:null;
+  if(nativeHarvestRefresh&&typeof window.harvestModalHTML==='function'){
+    window.refreshHarvestModal=function(){
+      const ov=document.getElementById('overlay');
+      if(!ov||ov.getAttribute('data-modal')!=='harvest')return nativeHarvestRefresh.apply(this,arguments);
+      const body=ov.querySelector('.mbody');
+      if(!body)return;
+      const action=body.lastElementChild;
+      const liveBtn=action&&action.querySelector? action.querySelector('[data-act="harvestClaim"]'):null;
+      if(!action||!liveBtn)return nativeHarvestRefresh.apply(this,arguments);
+
+      const fresh=document.createElement('div');
+      fresh.innerHTML=window.harvestModalHTML();
+      const freshAction=fresh.lastElementChild;
+      const freshBtn=freshAction&&freshAction.querySelector?freshAction.querySelector('[data-act="harvestClaim"]'):null;
+      if(!freshAction||!freshBtn)return nativeHarvestRefresh.apply(this,arguments);
+
+      // Keep the live action node attached throughout the refresh. Only mirror
+      // whether the current state makes the claim available.
+      if(freshBtn.hasAttribute('disabled')) liveBtn.setAttribute('disabled','');
+      else liveBtn.removeAttribute('disabled');
+      liveBtn.disabled=!!freshBtn.disabled;
+
+      while(body.firstChild&&body.firstChild!==action)body.removeChild(body.firstChild);
+      while(fresh.firstChild&&fresh.firstChild!==freshAction)body.insertBefore(fresh.firstChild,action);
+      if(typeof queueDecisionHierarchyV30==='function')queueDecisionHierarchyV30();
+    };
+    window.__srHarvestStableActionPhase2C=true;
+  }
+
   const nativeOpen=typeof window.openModal==='function'?window.openModal:null;
   const nativeClose=typeof window.closeModal==='function'?window.closeModal:null;
   if(!nativeOpen||!nativeClose)return;
