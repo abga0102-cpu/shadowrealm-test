@@ -1,8 +1,7 @@
 /* SHADOWREACH · Home layout fix v119
-   Fixes Forge panel clipping on tall iPhones and keeps bottom navigation labels,
-   especially "Développement", fully inside the safe area. UI only.
-   V177-safe extension: restores the missing V170 readability/alignment polish
-   without reverting newer Forge, Equipment or Rebirth work. */
+   Mobile-safe layout and readability compatibility layer.
+   V180: exact HUD alignment, true circular Forge info control, compact reward
+   notices, and preserved Equipment/Settings polish. UI only. */
 (function(){
   'use strict';
   if(window.__srHomeLayoutFixV119)return;
@@ -25,6 +24,12 @@
   overflow:hidden!important;
   padding:5px 7px 7px!important;
 }
+#app.srHomeFullArena .homeForge>.fgRow:first-child{
+  min-height:30px!important;
+  align-items:center!important;
+  gap:6px!important;
+}
+#app.srHomeFullArena .homeForge>.fgRow:first-child .gt{line-height:28px!important}
 #app.srHomeFullArena .homeForge .compactAuto{
   flex:0 0 auto!important;
   min-height:34px!important;
@@ -75,13 +80,11 @@
 }
 #app.srHomeFullArena>#tabs .tab:nth-child(3){font-size:10.5px!important}
 
-/* V177-safe HUD alignment: target the existing structure instead of replacing it. */
 #app.srHomeFullArena>#hud{align-items:flex-start!important}
-#app.srHomeFullArena>#hud>.pbox{align-self:flex-start!important}
+#app.srHomeFullArena>#hud>.pbox{align-self:flex-start!important;margin-top:0!important}
 #app.srHomeFullArena>#hud>.col{align-items:flex-end!important;align-self:flex-start!important;margin-top:0!important}
 #app.srHomeFullArena>#hud>.col>.row{justify-content:flex-end!important}
 
-/* Keep the Forge information control visually round even with coarse-pointer rules. */
 #app.srHomeFullArena .homeForge .iBtn{
   box-sizing:border-box!important;
   width:28px!important;height:28px!important;
@@ -92,9 +95,34 @@
   border-radius:50%!important;
   display:inline-flex!important;align-items:center!important;justify-content:center!important;
   line-height:1!important;aspect-ratio:1/1!important;
+  font-family:var(--fd)!important;font-size:13px!important;font-weight:900!important;
+  color:var(--goldLit)!important;background:linear-gradient(180deg,#18253d,#0d1627)!important;
+  border:1px solid var(--goldDim)!important;
+  box-shadow:inset 0 1px 0 #ffffff20,0 1px 3px #0008!important;
 }
 
-/* Equipment filters: preserve V176 stats logic, only make the existing segmented row usable on mobile. */
+/* Compact reward/egg notices so they stay in the upper-right margin instead of
+   covering the campaign track and combatants. */
+#app.srHomeFullArena #rewardFeed{
+  right:8px!important;top:86px!important;width:min(176px,46%)!important;gap:3px!important;
+  z-index:66!important;pointer-events:none!important;
+}
+#app.srHomeFullArena #rewardFeed .rewardPop{
+  padding:4px 7px!important;min-height:0!important;border-radius:8px!important;
+  background:linear-gradient(180deg,#17263ee8,#0b1425df)!important;
+  box-shadow:0 2px 6px #0006!important;backdrop-filter:blur(3px)!important;
+  -webkit-backdrop-filter:blur(3px)!important;pointer-events:auto!important;
+}
+#app.srHomeFullArena #rewardFeed .rewardPop .rpT{
+  font-size:10px!important;line-height:1.15!important;white-space:nowrap!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;
+}
+#app.srHomeFullArena #rewardFeed .rewardPop .rpS{
+  font-size:8.5px!important;line-height:1.15!important;white-space:nowrap!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;
+}
+#app.srHomeFullArena #rewardFeed .rewardPop.clickable::after{display:none!important}
+
 #screen .equipFiltersCompat{
   display:flex!important;gap:5px!important;overflow-x:auto!important;overflow-y:hidden!important;
   border:0!important;box-shadow:none!important;border-radius:0!important;
@@ -113,7 +141,6 @@
 #screen .equipFiltersCompat + .row{flex-wrap:wrap!important;align-items:stretch!important}
 #screen .equipFiltersCompat + .row>.btn{flex:1 1 145px!important}
 
-/* Settings stats: decorate the current V177 markup at runtime, no game-state changes. */
 #screen .settingsStatGridCompat{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
 #screen .settingsStatGridCompat>.settingsStatCellCompat{width:auto!important;min-width:0!important}
 #screen .settingsStatGridCompat .kv{
@@ -127,10 +154,6 @@
 #screen .settingsStatGridCompat .kv>span{font-size:11px!important;color:#AAB8D0!important}
 #screen .settingsStatGridCompat .kv>b{font-size:13px!important}
 
-/* Readability for transient UI. */
-.rewardPop .rpT{font-size:11.5px!important}
-.rewardPop .rpS{font-size:10.5px!important;line-height:1.3!important}
-.rewardPop.clickable::after{font-size:9.5px!important;margin-top:3px!important}
 #toast{max-width:calc(100% - 24px)!important;left:12px!important;right:12px!important;margin:0 auto!important}
 #app.srHomeFullArena #tutorialCard{bottom:calc(var(--srForgeH) + var(--srSkillH) + 78px + env(safe-area-inset-bottom))!important}
 #app.srHomeFullArena:has(#tutorialCard) #toast{bottom:calc(var(--srForgeH) + var(--srSkillH) + 178px + env(safe-area-inset-bottom))!important}
@@ -146,6 +169,7 @@
   #app.srHomeFullArena>#tabs .tab{min-height:68px!important;font-size:10.5px!important}
   #app.srHomeFullArena>#tabs .fantasyNavIcon{width:31px!important;height:31px!important}
   #screen .settingsStatGridCompat{grid-template-columns:1fr!important}
+  #app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}
 }
 @media(max-height:720px){
   #app.srHomeFullArena{--srForgeH:184px!important}
@@ -162,24 +186,47 @@
 `;
   document.head.appendChild(s);
 
+  function important(el,prop,value){if(el)el.style.setProperty(prop,value,'important');}
+
+  function fixForgeInfo(screen){
+    var info=screen&&screen.querySelector('.homeForge .iBtn');
+    if(!info)return;
+    important(info,'box-sizing','border-box');
+    important(info,'width','28px'); important(info,'height','28px');
+    important(info,'min-width','28px'); important(info,'min-height','28px');
+    important(info,'max-width','28px'); important(info,'max-height','28px');
+    important(info,'flex','0 0 28px'); important(info,'padding','0'); important(info,'margin','0');
+    important(info,'border-radius','50%'); important(info,'display','inline-flex');
+    important(info,'align-items','center'); important(info,'justify-content','center');
+    important(info,'line-height','1'); important(info,'aspect-ratio','1 / 1');
+    info.setAttribute('role','button'); info.setAttribute('tabindex','0');
+    info.setAttribute('aria-label','Informations sur les raretés');
+  }
+
+  function alignHud(){
+    var app=document.getElementById('app');
+    if(!app||!app.classList.contains('srHomeFullArena'))return;
+    var hud=document.getElementById('hud'); if(!hud)return;
+    var hero=hud.querySelector(':scope > .pbox');
+    var actions=hud.querySelector(':scope > .col');
+    if(!hero||!actions)return;
+    important(hud,'align-items','flex-start');
+    important(hero,'margin-top','0'); important(hero,'align-self','flex-start');
+    important(actions,'margin-top','0'); important(actions,'align-self','flex-start'); important(actions,'align-items','flex-end');
+    important(hero,'transform','none');
+    var a=actions.getBoundingClientRect(),h=hero.getBoundingClientRect();
+    var dy=a.top-h.top;
+    if(Math.abs(dy)>0.5)important(hero,'transform','translateY('+dy.toFixed(1)+'px)');
+  }
+
   function decorate(){
-    var screen=document.getElementById('screen');
-    if(!screen)return;
+    var screen=document.getElementById('screen'); if(!screen)return;
+    fixForgeInfo(screen); alignHud();
     var title=screen.querySelector('#topbar h2.title');
     var label=title&&String(title.textContent||'').trim();
-
-    var info=screen.querySelector('.homeForge .iBtn');
-    if(info){
-      info.setAttribute('role','button');
-      info.setAttribute('tabindex','0');
-      info.setAttribute('aria-label','Informations sur les raretés');
-    }
-
     if(label==='Équipement'){
-      var seg=screen.querySelector('.seg');
-      if(seg)seg.classList.add('equipFiltersCompat');
+      var seg=screen.querySelector('.seg'); if(seg)seg.classList.add('equipFiltersCompat');
     }
-
     if(label==='Réglages'){
       var card=screen.querySelector('.pad.mt6 > .card.frame');
       if(card){
@@ -196,7 +243,10 @@
     }
   }
 
-  var screen=document.getElementById('screen');
-  if(screen)new MutationObserver(decorate).observe(screen,{childList:true,subtree:true});
-  requestAnimationFrame(decorate);
+  var pending=false;
+  function schedule(){if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;decorate();});}
+  var app=document.getElementById('app');
+  if(app)new MutationObserver(schedule).observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  window.addEventListener('resize',schedule);
+  schedule();
 })();
