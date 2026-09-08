@@ -1,0 +1,22 @@
+name: Inspect temporary boosts V173
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/inspect_temp_boosts_v173.py'
+      - '.github/workflows/inspect-temp-boosts-v173.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Inspect boost-related code
+        run: python3 .github/inspect_temp_boosts_v173.py
