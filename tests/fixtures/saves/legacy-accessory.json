@@ -1,0 +1,29 @@
+{
+  "v": 1,
+  "level": 40,
+  "inventory": [
+    {
+      "id": "legacy-bag-ring",
+      "slot": "accessoire",
+      "rarity": "RARE",
+      "damage": 50,
+      "hp": 10,
+      "power": 60
+    }
+  ],
+  "equipped": {
+    "arme": null,
+    "casque": null,
+    "armure": null,
+    "gants": null,
+    "bottes": null,
+    "accessoire": {
+      "id": "legacy-equipped-ring",
+      "slot": "accessoire",
+      "rarity": "EPIQUE",
+      "damage": 90,
+      "hp": 20,
+      "power": 110
+    }
+  }
+}
