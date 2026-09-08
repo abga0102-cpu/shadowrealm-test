@@ -173,7 +173,12 @@
 `;
   document.head.appendChild(style);
 
-  function imp(el,p,v){if(el)el.style.setProperty(p,v,'important');}
+  function imp(el,p,v){
+    if(!el)return;
+    if(el.style.getPropertyValue(p)!==v||el.style.getPropertyPriority(p)!=='important'){
+      el.style.setProperty(p,v,'important');
+    }
+  }
 
   function compact(){
     try{return matchMedia('(max-width:370px),(max-height:720px)').matches;}catch(_){return false;}
@@ -202,7 +207,8 @@
   }
 
   function tabKey(tab){
-    return String(tab.getAttribute('data-nav-key')||tab.getAttribute('data-arg')||'').trim().toLowerCase();
+    var key=String(tab.getAttribute('data-nav-key')||tab.getAttribute('data-arg')||'').trim().toLowerCase();
+    return key==='reglages'?'parametres':key;
   }
 
   function setActive(tab,on){
