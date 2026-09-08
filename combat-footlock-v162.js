@@ -81,6 +81,10 @@
 
   function isHeroUnit(unit){
     if (!unit) return false;
+    // Stable DOM markers survive attack-frame src changes, unlike checking ASSETS.hero.
+    if (String(unit.style.zIndex||"") === "4") return true;
+    const hp=unit.querySelector(":scope > .hpMini");
+    if (hp && !hp.classList.contains("foe")) return true;
     const img=unit.querySelector(":scope > img");
     if (!img || !ASSETS || !ASSETS.hero) return false;
     try {
@@ -100,7 +104,7 @@
       if(!units.length) return;
 
       let ui=0;
-      // Harden defeat/hero-absent case: only consume first unit if it is actually hero.
+      // Only consume first rendered unit when it is definitely the hero.
       const maybeHero=units[0];
       if(isHeroUnit(maybeHero)){
         ui=1;
@@ -144,7 +148,12 @@
           unit.style.transform="translate(0px,0px)";
           img.style.transform="scaleX(-1) translateY("+p.lift.toFixed(2)+"px) rotate("+p.lean.toFixed(2)+"deg) scaleY("+p.squash.toFixed(4)+")";
           const shadow=unit.querySelector(":scope > .ushadow");
-          if(shadow){ shadow.style.transform="scaleX("+(e.boss?.985:.97 + gait.contact*(e.boss?.015:.03)).toFixed(3)+")"; shadow.style.opacity=(.52+gait.contact*.09).toFixed(3); }
+          if(shadow){
+            const shadowBase=e.boss?.985:.97;
+            const shadowRange=e.boss?.015:.03;
+            shadow.style.transform="scaleX("+(shadowBase+gait.contact*shadowRange).toFixed(3)+")";
+            shadow.style.opacity=(.52+gait.contact*.09).toFixed(3);
+          }
         }
       });
 
