@@ -43,7 +43,7 @@
     el.classList.add('fantasyNavV66');
     el.classList.remove('fantasyNavV65');
     el.dataset.fantasyNav='66';
-    el.dataset.navKey=k;
+    el.dataset.navKey=(k==='reglages'?'parametres':k);
   }
   function apply(){
     const root=document.getElementById('tabs');if(!root)return;
