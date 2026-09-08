@@ -1,6 +1,6 @@
-/* SHADOWREACH · Divine mastery v132
+/* SHADOWREACH · Divine mastery v152
    Makes the Divin title a real equipable prestige reward and makes Divine Tokens spendable.
-   Five capped 5-level tracks. Sensitive rewards (PR, seals, keys, tokens) are never multiplied. */
+   Five capped 5-level tracks. Sensitive rewards (PR, seals, keys, tokens, temporary boosts) are never multiplied. */
 (function(){
 'use strict';
 if(window.__srDivineMasteryV132)return;window.__srDivineMasteryV132=true;
@@ -19,17 +19,14 @@ var DEF={
  chrono:{name:'Chronos',desc:'+5% valeur des accélérateurs du Sanctuaire par niveau'}
 };
 function lvl(k){return ensure().divineMastery[k]||0;}
-/* Supplier discount is applied after the established v125/v130 price calculation. */
 if(typeof sanctSupplierPrice==='function'){
  var prevPrice=sanctSupplierPrice;
  sanctSupplierPrice=function(level,r){var p=Math.max(0,Number(prevPrice(level,r))||0),m=1-lvl('bargain')*.05;return Math.max(1,Math.round(p*m));};
 }
-/* v130 keeps reward functions private. Intercept the sacrifice click immediately before
-   v130 handles it, then award only the mastery delta. Base rewards remain authoritative. */
 function rewardDelta(r){var out={};
- if(r==='RARE_I')out.mineral=50;if(r==='RARE_II')out.mineral=150;if(r==='MYTHIQUE_III')out.mineral=5000;if(r==='LEGENDAIRE_I')out.mineral=35000;if(r==='DIVIN'){out.mineral=100000;out.essence=50000;out.spark=50000;}
- if(r==='ARTEFACT_II'){out.essence=1000;out.spark=1000;}if(r==='ARTEFACT_III'){out.essence=1500;out.spark=1500;}if(r==='LEGENDAIRE_II'){out.essence=7500;out.spark=7500;}if(r==='INFERNAL_II'){out.essence=10000;out.spark=10000;}if(r==='INFERNAL_III'){out.essence=20000;out.spark=20000;}if(r==='IMMORTEL_II'){out.essence=40000;out.spark=40000;}if(r==='IMMORTEL_III'){out.essence=75000;out.spark=75000;}
- var acc={EPIQUE_I:[15,1],EPIQUE_II:[30,1],MYTHIQUE_I:[60,1],MYTHIQUE_II:[60,2]}[r];if(acc)out.accel=acc;return out;
+ if(r==='RARE_I')out.mineral=25;if(r==='RARE_II')out.mineral=50;if(r==='MYTHIQUE_II')out.mineral=150;if(r==='MYTHIQUE_III')out.mineral=1500;if(r==='LEGENDAIRE_I')out.mineral=15000;if(r==='LEGENDAIRE_III')out.mineral=25000;if(r==='INFERNAL_I')out.mineral=25000;if(r==='IMMORTEL_II')out.mineral=100000;
+ if(r==='ARTEFACT_II'){out.essence=750;out.spark=750;}if(r==='ARTEFACT_III'){out.essence=1000;out.spark=1000;}if(r==='LEGENDAIRE_II'){out.essence=1500;out.spark=1500;}if(r==='INFERNAL_III'){out.essence=15000;out.spark=15000;}if(r==='IMMORTEL_II')out.essence=10000;
+ var acc={EPIQUE_I:[5,1],EPIQUE_II:[5,2],MYTHIQUE_II:[30,1],LEGENDAIRE_II:[60,5],INFERNAL_II:[60,10],IMMORTEL_II:[60,20],DIVIN:[60,25]}[r];if(acc)out.accel=acc;return out;
 }
 function addMasteryDelta(r){var x=rewardDelta(r),changed=false;
  if(x.mineral&&lvl('mineral')){S.minerai=(S.minerai||0)+Math.floor(x.mineral*lvl('mineral')*.05);changed=true;}
@@ -46,11 +43,10 @@ function spend(k){var s=ensure();if(!DEF[k])return;if(lvl(k)>=5)return toast('Ma
 function equipTitle(){ensure();if(!S.titles.divin)return toast('Titre Divin non débloqué');S.equippedTitle=S.equippedTitle==='divin'?'':'divin';dirty=true;if(typeof saveNow==='function')saveNow();toast(S.equippedTitle==='divin'?'Titre Divin équipé':'Titre retiré',true);render();}
 function panel(){var s=ensure(),rows=Object.keys(DEF).map(function(k){var l=lvl(k);return '<div class="itemRow"><div class="flex1"><div class="b small">'+DEF[k].name+' <span style="color:#FFB52E">'+l+'/5</span></div><div class="mute tiny">'+DEF[k].desc+' · actuel : '+(l*5)+'%</div></div><button class="btn sm '+(l<5&&(s.divineTokens||0)>0?'gold':'dark')+'" data-divine-v132="spend" data-key="'+k+'" '+(l>=5||(s.divineTokens||0)<1?'disabled':'')+'>+1</button></div>';}).join('');
  var title=s.divineTitleUnlocked||S.titles.divin?'<div class="card frame mt8"><div class="between"><div><div class="tiny b" style="color:#FFB52E">TITRE DÉBLOQUÉ</div><div class="bb mt3">✦ DIVIN ✦</div><div class="mute tiny">Titre de prestige permanent, sans bonus de puissance.</div></div><button class="btn sm gold" data-divine-v132="title">'+(S.equippedTitle==='divin'?'Retirer':'Équiper')+'</button></div></div>':'';
- return '<div class="sect">Maîtrises Divines</div><div class="notice tiny">1 Jeton Divin = 1 niveau. Maximum 5/5 par bonus. PR, clés, Sceaux et Jetons Divins ne sont jamais augmentés.</div><div class="card frame mt8"><div class="between"><b>Jetons disponibles</b><span class="pill" style="color:#FFB52E;border-color:#FFB52E">'+fmt(s.divineTokens||0)+'</span></div>'+rows+'</div>'+title;
+ return '<div class="sect">Maîtrises Divines</div><div class="notice tiny">1 Jeton Divin = 1 niveau. Maximum 5/5 par bonus. PR, clés, Sceaux, bonus temporaires et Jetons Divins ne sont jamais augmentés.</div><div class="card frame mt8"><div class="between"><b>Jetons disponibles</b><span class="pill" style="color:#FFB52E;border-color:#FFB52E">'+fmt(s.divineTokens||0)+'</span></div>'+rows+'</div>'+title;
 }
 var oldScreen=scrSanctuaire;scrSanctuaire=function(){return oldScreen()+panel();};if(typeof SCREENS!=='undefined')SCREENS.sanctuaire=scrSanctuaire;
 document.getElementById('app').addEventListener('click',function(e){var b=e.target.closest('[data-divine-v132]');if(!b)return;e.preventDefault();e.stopPropagation();if(b.dataset.divineV132==='spend')spend(b.dataset.key);else if(b.dataset.divineV132==='title')equipTitle();},true);
-/* Capture sacrifice intent, apply delta after v130 has completed synchronously and only if piece disappeared. */
 document.getElementById('app').addEventListener('click',function(e){var b=e.target.closest('[data-sanct-v130="sacrifice"]');if(!b)return;var r=b.dataset.rarity,before=sanctMergeState().mergeBoard.filter(function(x){return x===r;}).length;setTimeout(function(){var after=sanctMergeState().mergeBoard.filter(function(x){return x===r;}).length;if(after===before-1)addMasteryDelta(r);},0);},false);
-try{ensure();dirty=true;if(typeof saveNow==='function')saveNow();render();}catch(e){console.warn('Divine mastery v132 init',e);}
+try{ensure();dirty=true;if(typeof saveNow==='function')saveNow();render();}catch(e){console.warn('Divine mastery v152 init',e);}
 })();
