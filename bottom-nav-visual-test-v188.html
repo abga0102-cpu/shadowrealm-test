@@ -1,0 +1,156 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shadowreach — Bottom navigation V188 visual regression</title>
+<style>
+  :root{color-scheme:dark}
+  body{margin:0;background:#070c16;color:#edf1fa;font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+  header{padding:18px 22px;border-bottom:1px solid #22314c}
+  h1{margin:0;font-size:19px}.sub{margin-top:5px;color:#93a4c3}
+  #summary{padding:14px 22px;font-weight:800}
+  #out{padding:0 22px 40px}.profile{margin:18px 0 7px;color:#e8b44a;font-size:11px;font-weight:900;letter-spacing:1px}
+  .r{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #131c2e}.state{width:58px;flex:0 0 auto;font-size:11px;font-weight:900}
+  .ok .state{color:#57e07a}.ko .state{color:#ff6666}.msg{color:#c9d4e8}.ko .msg{color:#ffd0d0}
+  iframe.runner{position:fixed;left:-12000px;top:0;border:0;background:#000}
+</style>
+<header>
+  <h1>Bottom navigation V188 — visual regression</h1>
+  <div class="sub">Active/inactive geometry · badges · route ownership · compact breakpoints · safe-area contract</div>
+</header>
+<div id="summary">Running…</div>
+<div id="out"></div>
+<script>
+(function(){
+  'use strict';
+  var out=document.getElementById('out'),summary=document.getElementById('summary');
+  var pass=0,fail=0,details=[];
+  var profiles=[
+    {name:'iPhone short · compact by height',w:375,h:667,icon:31,tab:54,labelTop:36},
+    {name:'iPhone narrow · compact by width',w:360,h:780,icon:31,tab:54,labelTop:36},
+    {name:'iPhone standard',w:390,h:844,icon:34,tab:58,labelTop:40},
+    {name:'iPhone large',w:430,h:932,icon:34,tab:58,labelTop:40}
+  ];
+  var routes=[
+    ['accueil','accueil'],
+    ['equipement','equipement'],
+    ['heros','equipement'],
+    ['developpement','developpement'],
+    ['competences','developpement'],
+    ['familiers','developpement'],
+    ['arbre','developpement'],
+    ['parametres','parametres']
+  ];
+  function group(text){var d=document.createElement('div');d.className='profile';d.textContent=text;out.appendChild(d)}
+  function line(ok,msg){
+    var d=document.createElement('div');d.className='r '+(ok?'ok':'ko');
+    d.innerHTML='<span class="state">'+(ok?'OK':'ÉCHEC')+'</span><span class="msg"></span>';
+    d.querySelector('.msg').textContent=msg;out.appendChild(d);
+    (ok?pass++:fail++);details.push({ok:ok,msg:msg});
+  }
+  function near(a,b,t){return Math.abs(Number(a)-Number(b))<=(t==null?.8:t)}
+  function raf(W){return new Promise(function(resolve){W.requestAnimationFrame(function(){W.requestAnimationFrame(resolve)})})}
+  function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
+  async function settle(W){await raf(W);await sleep(45);await raf(W)}
+  async function waitReady(W){
+    var end=Date.now()+6000;
+    while(Date.now()<end){
+      if(W.__smoke&&W.__srBottomNavV188Audit&&typeof W.nav==='function'&&W.document.querySelectorAll('#tabs>.tab').length===4)return true;
+      await sleep(60);
+    }
+    return false;
+  }
+  function targetOf(tab){return tab.getAttribute('data-nav-target')||tab.getAttribute('data-arg')||''}
+  function relBox(el,parent){
+    var a=el.getBoundingClientRect(),b=parent.getBoundingClientRect();
+    return {x:a.left-b.left,y:a.top-b.top,w:a.width,h:a.height,cx:(a.left+a.right)/2-b.left,cy:(a.top+a.bottom)/2-b.top};
+  }
+  function snapshot(W){
+    var tabs=Array.from(W.document.querySelectorAll('#tabs>.tab'));
+    return tabs.map(function(tab){
+      var icon=tab.querySelector('.fantasyNavIcon'),label=tab.querySelector(':scope>.navLabel')||tab.querySelector(':scope>span:not(.ico):not(.fantasyNavIcon)');
+      return {target:targetOf(tab),tab:relBox(tab,W.document.getElementById('tabs')),icon:icon?relBox(icon,tab):null,label:label?relBox(label,tab):null};
+    });
+  }
+  function sameGeometry(a,b){
+    return near(a.icon.w,b.icon.w,.5)&&near(a.icon.h,b.icon.h,.5)&&near(a.icon.x,b.icon.x,.7)&&near(a.icon.y,b.icon.y,.7)&&
+      near(a.label.x,b.label.x,.7)&&near(a.label.y,b.label.y,.7)&&near(a.label.w,b.label.w,.7)&&near(a.label.h,b.label.h,.7);
+  }
+  async function runProfile(p){
+    group(p.name+' · '+p.w+'×'+p.h);
+    var f=document.createElement('iframe');f.className='runner';f.style.width=p.w+'px';f.style.height=p.h+'px';f.src='index.html?smoke=1&navv188='+Date.now();document.body.appendChild(f);
+    await new Promise(function(resolve){f.onload=resolve});
+    var W=f.contentWindow;
+    if(!await waitReady(W)){line(false,'V188 test hooks did not become ready');f.remove();return}
+
+    var meta=W.document.querySelector('meta[name="viewport"]');
+    var canonicalStyle=W.document.getElementById('srBottomNavCanonicalV188');
+    line(!!meta&&/viewport-fit=cover/.test(meta.content),'viewport keeps viewport-fit=cover for iPhone safe areas');
+    line(!!canonicalStyle&&canonicalStyle.textContent.indexOf('env(safe-area-inset-bottom)')!==-1,'canonical nav reserves env(safe-area-inset-bottom)');
+
+    var audit=W.__srBottomNavV188Audit();
+    line(audit.ok,'interaction destinations are Accueil → Équipement → Développement → Réglages');
+
+    var baselines={};
+    for(var r=0;r<routes.length;r++){
+      var route=routes[r][0],owner=routes[r][1];
+      W.nav(route);await settle(W);
+      var app=W.document.getElementById('app');app.classList.add('srHomeFullArena');await settle(W);
+      var tabs=Array.from(W.document.querySelectorAll('#tabs>.tab'));
+      var active=tabs.filter(function(t){return t.classList.contains('on')||t.getAttribute('aria-current')==='page'});
+      line(active.length===1&&targetOf(active[0])===owner,'route '+route+' selects exactly '+owner);
+
+      var snap=snapshot(W),routeOk=true,why='';
+      if(snap.length!==4){routeOk=false;why='expected 4 tabs, got '+snap.length}
+      snap.forEach(function(s){
+        if(!routeOk)return;
+        if(!s.icon||!s.label){routeOk=false;why=s.target+' missing icon or label';return}
+        if(!near(s.tab.h,p.tab,.8)){routeOk=false;why=s.target+' tab '+s.tab.h.toFixed(1)+'px';return}
+        if(!near(s.icon.w,p.icon,.8)||!near(s.icon.h,p.icon,.8)){routeOk=false;why=s.target+' icon '+s.icon.w.toFixed(1)+'×'+s.icon.h.toFixed(1);return}
+        if(!near(s.icon.cx,s.tab.w/2,.9)){routeOk=false;why=s.target+' icon not horizontally centered';return}
+        var expectedTop=p.icon===31?2:3;
+        if(!near(s.icon.y,expectedTop,.9)){routeOk=false;why=s.target+' icon top '+s.icon.y.toFixed(1)+'px';return}
+        if(!near(s.label.y,p.labelTop,1)){routeOk=false;why=s.target+' label top '+s.label.y.toFixed(1)+'px';return}
+        if(s.icon.y+s.icon.h>s.label.y+.5){routeOk=false;why=s.target+' icon overlaps label';return}
+        if(!baselines[s.target])baselines[s.target]=s;
+        else if(!sameGeometry(baselines[s.target],s)){routeOk=false;why=s.target+' geometry changed when active/inactive';return}
+      });
+      line(routeOk,'geometry remains identical on '+route+(why?' — '+why:''));
+    }
+
+    W.nav('accueil');await settle(W);W.document.getElementById('app').classList.add('srHomeFullArena');await settle(W);
+    var badgeOk=true,badgeWhy='';
+    var tabs2=Array.from(W.document.querySelectorAll('#tabs>.tab'));
+    for(var i=0;i<tabs2.length;i++){
+      var tab=tabs2[i],before=snapshot(W)[i],existing=tab.querySelector(':scope>.dot'),added=false;
+      if(!existing){existing=W.document.createElement('div');existing.className='dot';tab.appendChild(existing);added=true}
+      await settle(W);var after=snapshot(W)[i];
+      if(!sameGeometry(before,after)){badgeOk=false;badgeWhy=targetOf(tab)+' moved when badge appeared';break}
+      if(W.getComputedStyle(existing).pointerEvents!=='none'){badgeOk=false;badgeWhy=targetOf(tab)+' badge intercepts pointer events';break}
+      if(added)existing.remove();await settle(W);
+    }
+    line(badgeOk,'notification dots never move icons/labels or steal taps'+(badgeWhy?' — '+badgeWhy:''));
+
+    var pointerOk=true,pointerWhy='';
+    Array.from(W.document.querySelectorAll('#tabs>.tab')).forEach(function(tab){
+      if(!pointerOk)return;
+      var icon=tab.querySelector('.fantasyNavIcon'),label=tab.querySelector('.navLabel');
+      if(W.getComputedStyle(icon).pointerEvents!=='none'||W.getComputedStyle(label).pointerEvents!=='none'){
+        pointerOk=false;pointerWhy=targetOf(tab)+' decorative child receives taps';return;
+      }
+      var b=tab.getBoundingClientRect();
+      if(b.height<44){pointerOk=false;pointerWhy=targetOf(tab)+' touch target is '+b.height.toFixed(1)+'px high'}
+    });
+    line(pointerOk,'all four full tab cells remain usable touch targets'+(pointerWhy?' — '+pointerWhy:''));
+
+    f.remove();
+  }
+  async function main(){
+    for(var i=0;i<profiles.length;i++)await runProfile(profiles[i]);
+    summary.textContent=fail?'FAIL · '+fail+' failed · '+pass+' passed':'PASS · '+pass+' checks';
+    summary.style.color=fail?'#ff6666':'#57e07a';
+    window.__bottomNavV188Results={pass:pass,fail:fail,details:details,done:true};
+    document.title=(fail?'FAIL':'PASS')+' — Bottom navigation V188 visual regression';
+  }
+  main().catch(function(e){line(false,'test harness exception: '+e.message);summary.textContent='FAIL · harness exception';window.__bottomNavV188Results={pass:pass,fail:fail+1,details:details,done:true,error:String(e&&e.stack||e)}});
+})();
+</script>
