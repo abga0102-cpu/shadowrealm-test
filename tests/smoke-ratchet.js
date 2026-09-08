@@ -87,8 +87,13 @@ async function readSmokeFailures(browser, rootDir, label) {
       throw new Error(`${label} smoke suite did not report a numeric result: ${text}`);
     }
 
+    const failureDetails = await page.locator('#out .r.ko .m').allTextContents();
     console.log(`${label} legacy smoke failures: ${failures}`);
-    return failures;
+    if (failureDetails.length) {
+      console.log(`${label} legacy smoke failure details:`);
+      failureDetails.forEach((detail) => console.log(` - ${detail.trim()}`));
+    }
+    return { failures, failureDetails: failureDetails.map((detail) => detail.trim()) };
   } finally {
     await page.close();
     await new Promise((resolve) => server.close(resolve));
@@ -98,16 +103,22 @@ async function readSmokeFailures(browser, rootDir, label) {
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
-    const baselineFailures = await readSmokeFailures(browser, baselineArg, 'Baseline');
-    const currentFailures = await readSmokeFailures(browser, currentArg, 'Current');
+    const baseline = await readSmokeFailures(browser, baselineArg, 'Baseline');
+    const current = await readSmokeFailures(browser, currentArg, 'Current');
 
-    if (currentFailures > baselineFailures) {
-      console.error(`Legacy smoke regression detected: ${baselineFailures} -> ${currentFailures}`);
+    if (current.failures > baseline.failures) {
+      const baselineSet = new Set(baseline.failureDetails);
+      const added = current.failureDetails.filter((detail) => !baselineSet.has(detail));
+      if (added.length) {
+        console.error('New legacy smoke failure detail(s):');
+        added.forEach((detail) => console.error(` + ${detail}`));
+      }
+      console.error(`Legacy smoke regression detected: ${baseline.failures} -> ${current.failures}`);
       process.exitCode = 1;
       return;
     }
 
-    console.log(`Legacy smoke ratchet passed: ${baselineFailures} -> ${currentFailures}`);
+    console.log(`Legacy smoke ratchet passed: ${baseline.failures} -> ${current.failures}`);
   } finally {
     await browser.close();
   }
