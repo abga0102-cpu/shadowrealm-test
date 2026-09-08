@@ -3,7 +3,8 @@
    Keeps every previous Forge file in place, but future Forge results are handled here.
    One visible candidate per equipment slot, dynamic re-ranking after equip, clearer
    upgrade labels, icon + affixes for worn gear, and defensive affix formatting.
-   No drop rates, filters, recycling, inventory ownership, equipment persistence or economy are changed. */
+   V182: a compared drop can also be recycled immediately for the exact same Dust
+   value as Inventory recycling. Drop rates, filters and save structure are unchanged. */
 (function(){
 'use strict';
 if(window.__srForgeComparisonAuthorityV146)return;
@@ -72,7 +73,7 @@ function position(root){
  var vw=Math.max(document.documentElement.clientWidth||0,window.innerWidth||0),vh=Math.max(document.documentElement.clientHeight||0,window.innerHeight||0),ar=null;
  try{if(typeof arenaEl!=='undefined'&&arenaEl&&arenaEl.getBoundingClientRect)ar=arenaEl.getBoundingClientRect();}catch(_){}
  var w=Math.min(vw-16,390);root.style.width=w+'px';root.style.left=Math.max(8,(vw-w)/2)+'px';root.style.transform='none';
- if(ar&&ar.height>60){var below=ar.bottom+6,needed=230;if(below+needed<vh-68){root.style.top=Math.max(8,below)+'px';root.style.bottom='auto';return;}root.style.top=Math.max(8,Math.min(vh-needed-72,ar.top+8))+'px';root.style.bottom='auto';return;}
+ if(ar&&ar.height>60){var below=ar.bottom+6,needed=250;if(below+needed<vh-68){root.style.top=Math.max(8,below)+'px';root.style.bottom='auto';return;}root.style.top=Math.max(8,Math.min(vh-needed-72,ar.top+8))+'px';root.style.bottom='auto';return;}
  root.style.bottom='calc(env(safe-area-inset-bottom) + 76px)';root.style.top='auto';
 }
 function cleanPending(){Object.keys(pending).forEach(function(slot){var r=pending[slot],it=byId(r&&r.id);if(!it||it.slot!==slot)delete pending[slot];});}
@@ -101,12 +102,17 @@ function wornCard(cur,pd){
 }
 function render(){
  remove();var it=byId(current&&current.id);if(!it){next();return;}
- var cur=(S.equipped||{})[it.slot]||null,worn=cur&&cur.id===it.id,nb=primary(it),cb=cur&&!worn?primary(cur):0,bd=cur&&!worn?Math.round(nb-cb):Math.round(nb),pd=worn?0:powerDelta(it),r=rarity(it),more=pendingCount();
+ var cur=(S.equipped||{})[it.slot]||null,worn=cur&&cur.id===it.id,nb=primary(it),cb=cur&&!worn?primary(cur):0,bd=cur&&!worn?Math.round(nb-cb):Math.round(nb),pd=worn?0:powerDelta(it),r=rarity(it),more=pendingCount(),dust=0;
+ try{if(!worn&&typeof dustValue==='function')dust=dustValue(S,it);}catch(_){}
  var root=document.createElement('div');root.id=ROOT;root.style.cssText='position:fixed;z-index:8800;pointer-events:auto;font-family:inherit;max-width:calc(100vw - 16px);';
  root.innerHTML='<div style="background:rgba(7,12,21,.97);border:1px solid '+r.c+'88;border-radius:13px;box-shadow:0 10px 30px #0009;padding:9px;overflow:hidden">'+
   '<div style="display:flex;align-items:center;gap:8px"><div style="width:38px;height:38px;flex:0 0 38px;border:1px solid '+r.c+'99;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#0b1220">'+iconHtml(it,24)+'</div><div style="min-width:0;flex:1"><div style="font-size:9px;font-weight:900;letter-spacing:.7px;color:'+r.c+'">FORGE · '+esc2(r.label).toUpperCase()+'</div><div style="font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(slotName(it))+'</div></div>'+(more?'<span style="font-size:9px;font-weight:900;padding:3px 6px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">+'+more+'</span>':'')+'<button data-sr-fp146="closeAll" aria-label="Fermer toute la file" style="border:0;background:transparent;color:#9dacbf;font-size:21px;padding:2px 5px">×</button></div>'+
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px"><div style="padding:6px;border-radius:8px;background:#0b1220"><div style="font-size:8px;color:#8493aa;font-weight:900">NOUVEAU</div><div style="font-size:11px;font-weight:900;color:'+r.c+'">'+primaryLabel(it)+' '+fmt2(nb)+'</div><div style="font-size:9px;font-weight:800;color:'+(bd>0?'#6ee7a0':bd<0?'#ff7474':'#9dacbf')+'">'+signed(bd)+' stat</div><div style="font-size:8px;color:#8493aa;font-weight:900;margin:5px 0 3px">BONUS</div>'+affixHtml(it)+'</div>'+wornCard(cur,pd)+'</div>'+weaponHtml(it)+
-  '<div style="display:flex;gap:6px;margin-top:8px"><button data-sr-fp146="keep" style="flex:1;min-height:36px;border-radius:8px;border:1px solid #35445e;background:#111a2a;color:#c2cce0;font-weight:900">'+(more?'GARDER · SUIVANT':'GARDER')+'</button>'+(worn?'<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#6ee7a0;font-weight:900;font-size:11px">✓ ÉQUIPÉ</div>':'<button data-sr-fp146="equip" style="flex:1;min-height:36px;border-radius:8px;border:1px solid #3fb950;background:#173d26;color:#8ff0aa;font-weight:900">ÉQUIPER</button>')+'</div></div>';
+  '<div style="display:grid;grid-template-columns:'+(worn?'1fr 1fr':'1fr 1fr 1fr')+';gap:6px;margin-top:8px">'+
+    (!worn?'<button data-sr-fp146="recycle" style="min-height:38px;border-radius:8px;border:1px solid #7a3137;background:#2b1216;color:#ff9aa0;font-weight:900;font-size:10px">RECYCLER'+(dust>0?' · +'+fmt2(dust):'')+'</button>':'')+
+    '<button data-sr-fp146="keep" style="min-height:38px;border-radius:8px;border:1px solid #35445e;background:#111a2a;color:#c2cce0;font-weight:900;font-size:10px">'+(more?'GARDER · SUIVANT':'GARDER')+'</button>'+
+    (worn?'<div style="display:flex;align-items:center;justify-content:center;color:#6ee7a0;font-weight:900;font-size:11px">✓ ÉQUIPÉ</div>':'<button data-sr-fp146="equip" style="min-height:38px;border-radius:8px;border:1px solid #3fb950;background:#173d26;color:#8ff0aa;font-weight:900;font-size:10px">ÉQUIPER</button>')+
+  '</div></div>';
  document.body.appendChild(root);position(root);
 }
 
@@ -123,6 +129,7 @@ document.addEventListener('click',function(e){
  e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();
  var a=b.getAttribute('data-sr-fp146');
  if(a==='equip'&&current){var it=byId(current.id);if(it){try{equipItem(it.id);}catch(_){}}current=null;next();}
+ else if(a==='recycle'&&current){var rit=byId(current.id),dust=0;if(rit){try{if(typeof recycleItem==='function')dust=recycleItem(rit.id)||0;}catch(_){}}if(dust>0){try{if(typeof toast==='function')toast('Équipement recyclé · +'+fmt2(dust)+' poussière',true);}catch(_){}}current=null;next();}
  else if(a==='keep'){current=null;next();}
  else if(a==='closeAll')clearAll();
 },true);
