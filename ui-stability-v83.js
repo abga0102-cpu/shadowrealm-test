@@ -91,26 +91,16 @@
   let draining=false;
   let explicitUntil=0;
   let nativeTransitionDepth=0;
-  let modalStateQueued=false;
-  let modalStateForce=false;
   let lastModalState=null;
   function now(){return typeof performance!=='undefined'?performance.now():Date.now();}
   function overlay(){return document.getElementById('overlay');}
   function markOverlay(){const ov=overlay();if(ov)ov.setAttribute('data-sr-persistent','1');}
   function publishModalState(force){
-    modalStateForce=modalStateForce||!!force;
-    if(modalStateQueued)return;
-    modalStateQueued=true;
-    requestAnimationFrame(function(){
-      modalStateQueued=false;
-      const open=!!overlay();
-      markOverlay();
-      const emit=modalStateForce||lastModalState!==open;
-      modalStateForce=false;
-      if(!emit)return;
-      lastModalState=open;
-      try{window.dispatchEvent(new CustomEvent('sr:modal-state',{detail:{open:open}}));}catch(_){}
-    });
+    const open=!!overlay();
+    markOverlay();
+    if(!force&&lastModalState===open)return;
+    lastModalState=open;
+    try{window.dispatchEvent(new CustomEvent('sr:modal-state',{detail:{open:open}}));}catch(_){}
   }
   window.__srGetModalStatePhase2C=function(){return !!overlay();};
   function fullKey(args){return String(args[1]||'')+'\n'+String(args[0]||'');}
