@@ -1,122 +1,127 @@
-/* SHADOWREACH · Mobile UI stability V210
-   - Preserve Familiar screen scroll position when activating a pet.
-   - Prevent Rebirth values/actions from overflowing on narrow screens.
+/* SHADOWREACH · Mobile UI stability V211
+   - Preserve Familiar scroll continuously across every rerender, not only pet activation.
+   - Scope Rebirth layout fixes to the actual Rebirth route.
    UI-only: no economy, save schema or gameplay values are changed. */
 (function(){
   'use strict';
-  if(window.__srMobileUiStabilityV210)return;
-  window.__srMobileUiStabilityV210=true;
+  if(window.__srMobileUiStabilityV211)return;
+  window.__srMobileUiStabilityV211=true;
 
   var screen=document.getElementById('screen');
   if(!screen)return;
 
+  /* Tag the actual route output instead of guessing from visible text. */
+  try{
+    if(typeof SCREENS!=='undefined'&&SCREENS){
+      if(typeof SCREENS.familiers==='function'&&!SCREENS.familiers.__srV211){
+        var oldFam=SCREENS.familiers;
+        var famWrap=function(){return '<div data-sr-route="familiers">'+oldFam()+'</div>';};
+        famWrap.__srV211=true;
+        SCREENS.familiers=famWrap;
+      }
+      if(typeof SCREENS.rebirth==='function'&&!SCREENS.rebirth.__srV211){
+        var oldRb=SCREENS.rebirth;
+        var rbWrap=function(){return '<div data-sr-route="rebirth" class="srRebirthV211">'+oldRb()+'</div>';};
+        rbWrap.__srV211=true;
+        SCREENS.rebirth=rbWrap;
+      }
+    }
+  }catch(_){ }
+
+  var oldStyle=document.getElementById('srMobileUiStabilityV210');
+  if(oldStyle)oldStyle.remove();
   var style=document.createElement('style');
-  style.id='srMobileUiStabilityV210';
+  style.id='srMobileUiStabilityV211';
   style.textContent=`
-#screen.srRebirthV210,
-#screen.srRebirthV210 *{box-sizing:border-box;}
-#screen.srRebirthV210 .card,
-#screen.srRebirthV210 .itemRow,
-#screen.srRebirthV210 .between,
-#screen.srRebirthV210 .row{min-width:0;max-width:100%;}
-#screen.srRebirthV210 .between,
-#screen.srRebirthV210 .itemRow{flex-wrap:wrap!important;}
-#screen.srRebirthV210 .between>.flex1,
-#screen.srRebirthV210 .itemRow>.flex1,
-#screen.srRebirthV210 .between>div:first-child,
-#screen.srRebirthV210 .itemRow>div:first-child{
+[data-sr-route="rebirth"],
+[data-sr-route="rebirth"] *{box-sizing:border-box;}
+[data-sr-route="rebirth"] .card,
+[data-sr-route="rebirth"] .itemRow,
+[data-sr-route="rebirth"] .between,
+[data-sr-route="rebirth"] .row{min-width:0;max-width:100%;}
+[data-sr-route="rebirth"] .between,
+[data-sr-route="rebirth"] .itemRow{gap:8px;}
+[data-sr-route="rebirth"] .between>.flex1,
+[data-sr-route="rebirth"] .itemRow>.flex1,
+[data-sr-route="rebirth"] .between>div:first-child,
+[data-sr-route="rebirth"] .itemRow>div:first-child{
   min-width:0!important;
-  flex:1 1 170px!important;
+  flex:1 1 0!important;
 }
-#screen.srRebirthV210 .pill,
-#screen.srRebirthV210 .btn{
-  max-width:100%!important;
+[data-sr-route="rebirth"] .pill,
+[data-sr-route="rebirth"] .btn{
+  max-width:46%!important;
   white-space:normal!important;
   overflow-wrap:anywhere!important;
+  text-align:center!important;
+  flex:0 0 auto!important;
 }
-#screen.srRebirthV210 .between>.pill,
-#screen.srRebirthV210 .itemRow>.pill,
-#screen.srRebirthV210 .between>.btn,
-#screen.srRebirthV210 .itemRow>.btn{
-  margin-left:auto!important;
-  flex:0 1 auto!important;
-}
-#screen.srRebirthV210 .mute,
-#screen.srRebirthV210 .tiny,
-#screen.srRebirthV210 .small,
-#screen.srRebirthV210 .b,
-#screen.srRebirthV210 .bb{
+[data-sr-route="rebirth"] .between>.pill,
+[data-sr-route="rebirth"] .itemRow>.pill,
+[data-sr-route="rebirth"] .between>.btn,
+[data-sr-route="rebirth"] .itemRow>.btn{margin-left:auto!important;}
+[data-sr-route="rebirth"] .mute,
+[data-sr-route="rebirth"] .tiny,
+[data-sr-route="rebirth"] .small,
+[data-sr-route="rebirth"] .b,
+[data-sr-route="rebirth"] .bb{
   min-width:0!important;
   max-width:100%!important;
   overflow-wrap:anywhere!important;
 }
 @media(max-width:430px){
-  #screen.srRebirthV210 .card{overflow:hidden;}
-  #screen.srRebirthV210 .between{gap:6px!important;align-items:flex-start!important;}
-  #screen.srRebirthV210 .itemRow{gap:7px!important;align-items:center!important;}
-  #screen.srRebirthV210 .pill{font-size:10px!important;line-height:1.25!important;}
+  [data-sr-route="rebirth"] .card{overflow:hidden;}
+  [data-sr-route="rebirth"] .between,
+  [data-sr-route="rebirth"] .itemRow{align-items:center!important;}
+  [data-sr-route="rebirth"] .pill{font-size:10px!important;line-height:1.25!important;}
+  [data-sr-route="rebirth"] .btn{font-size:11px!important;}
 }
 `;
   document.head.appendChild(style);
 
-  function norm(s){
-    try{return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
-    catch(_){return String(s||'').toLowerCase();}
-  }
-  function classify(){
-    var t=norm(screen.textContent);
-    screen.classList.toggle('srRebirthV210',t.indexOf('rebirth')>=0);
-  }
+  var lastFamTop=0;
+  var restoring=false;
+  var lastRouteFam=false;
 
-  var pending=null;
-  function isPetActivationTarget(target){
-    var ctl=target&&target.closest&&target.closest('button,[role="button"],[data-act]');
-    if(!ctl||!screen.contains(ctl))return false;
-    var page=norm(screen.textContent);
-    if(page.indexOf('familier')<0)return false;
-    var label=norm(ctl.textContent);
-    if(label.indexOf('activer')>=0)return true;
-    var act=norm(ctl.getAttribute('data-act'));
-    return act.indexOf('pet')>=0&&(act.indexOf('active')>=0||act.indexOf('equip')>=0||act.indexOf('select')>=0);
+  function isFamScreen(){
+    return !!screen.querySelector('[data-sr-route="familiers"]');
   }
-  function snapshot(target){
-    if(!isPetActivationTarget(target))return;
-    pending={
-      top:screen.scrollTop,
-      left:screen.scrollLeft,
-      at:Date.now()
-    };
+  function remember(){
+    if(restoring||!isFamScreen())return;
+    lastFamTop=screen.scrollTop;
+    lastRouteFam=true;
   }
-  function restore(){
-    if(!pending)return;
-    if(Date.now()-pending.at>700){pending=null;return;}
-    var p=pending;
-    function apply(){
-      screen.scrollTop=p.top;
-      screen.scrollLeft=p.left;
+  function restoreIfNeeded(){
+    var fam=isFamScreen();
+    if(!fam){lastRouteFam=false;return;}
+    if(!lastRouteFam){
+      lastFamTop=screen.scrollTop;
+      lastRouteFam=true;
+      return;
     }
-    requestAnimationFrame(function(){
-      apply();
-      requestAnimationFrame(apply);
-      setTimeout(apply,40);
-      setTimeout(function(){apply();pending=null;},120);
-    });
+    var max=Math.max(0,screen.scrollHeight-screen.clientHeight);
+    var wanted=Math.max(0,Math.min(lastFamTop,max));
+    if(Math.abs(screen.scrollTop-wanted)<1)return;
+    restoring=true;
+    screen.scrollTop=wanted;
+    restoring=false;
   }
 
-  screen.addEventListener('pointerdown',function(e){snapshot(e.target);},true);
-  screen.addEventListener('touchstart',function(e){snapshot(e.target);},{capture:true,passive:true});
-  screen.addEventListener('click',function(e){
-    if(!pending&&isPetActivationTarget(e.target))snapshot(e.target);
-    if(pending){
-      try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(_){}
-      restore();
-    }
-  },true);
+  /* Every genuine user scroll updates the desired position continuously. */
+  screen.addEventListener('scroll',remember,{passive:true});
+  screen.addEventListener('touchmove',remember,{passive:true});
+  screen.addEventListener('pointermove',function(e){if(e.pointerType==='touch')remember();},{passive:true});
 
+  /* A game rerender can replace the whole Familiar DOM. MutationObserver runs
+     before the next paint, so restoring here prevents the visible upward jump. */
   var mo=new MutationObserver(function(){
-    classify();
-    if(pending)restore();
+    if(!isFamScreen()){lastRouteFam=false;return;}
+    restoreIfNeeded();
   });
   mo.observe(screen,{childList:true,subtree:true});
-  classify();
+
+  /* Activation also rerenders, but no delayed multi-restore that fights scrolling. */
+  screen.addEventListener('pointerdown',function(){if(isFamScreen())remember();},true);
+  screen.addEventListener('touchstart',function(){if(isFamScreen())remember();},{capture:true,passive:true});
+  screen.addEventListener('click',function(){if(isFamScreen())remember();},true);
 })();
