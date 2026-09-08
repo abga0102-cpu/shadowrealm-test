@@ -22,18 +22,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout PR baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: .phase1-base
+
+      - name: Checkout previous main revision
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.before }}
+          path: .phase1-base
+
       - name: Set up Node for test tooling only
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
 
       - name: Install development test tooling
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Install browser engines
         run: npx playwright install --with-deps chromium webkit
 
-      - name: Run static localhost regression tests
+      - name: Enforce moving legacy smoke ratchet
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        run: node tests/smoke-ratchet.js .phase1-base .
+
+      - name: Run static localhost regression tests after ratchet
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        env:
+          PHASE1_SMOKE_RATCHET_DONE: '1'
+        run: npm run test:e2e
+
+      - name: Run standalone static localhost regression tests
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.before == '0000000000000000000000000000000000000000')
         run: npm run test:e2e
 
       - name: Upload failure diagnostics
