@@ -55,6 +55,10 @@
       .replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
   }
 
+  function setAttr(el,name,value){
+    if(el.getAttribute(name)!==String(value))el.setAttribute(name,String(value));
+  }
+
   function keyFor(tab){
     var raw=normalizeText(tab.getAttribute('data-nav-key')||tab.getAttribute('data-arg')||'');
     if(raw==='parametres')return'parametres';
@@ -75,13 +79,13 @@
     var target=TARGET[key];
     if(!target)return false;
 
-    tab.setAttribute('data-act','go');
-    tab.setAttribute('data-arg',target);
-    tab.setAttribute('data-nav-target',target);
-    tab.setAttribute('role','button');
-    tab.setAttribute('tabindex','0');
-    tab.setAttribute('aria-label',LABEL[key]||LABEL[target]||target);
-    tab.setAttribute('draggable','false');
+    setAttr(tab,'data-act','go');
+    setAttr(tab,'data-arg',target);
+    setAttr(tab,'data-nav-target',target);
+    setAttr(tab,'role','button');
+    setAttr(tab,'tabindex','0');
+    setAttr(tab,'aria-label',LABEL[key]||LABEL[target]||target);
+    setAttr(tab,'draggable','false');
     if(tab.tagName==='BUTTON'&&!tab.getAttribute('type'))tab.setAttribute('type','button');
     return true;
   }
