@@ -53,7 +53,8 @@ jobs:
               const page = await browser.newPage();
               page.on('console', msg => console.log('[browser]', msg.text()));
               page.on('pageerror', err => console.error('[pageerror]', err.message));
-              await page.goto('http://127.0.0.1:8080/bottom-nav-visual-test-v188.html', {waitUntil: 'domcontentloaded', timeout: 15000});
+              await page.goto('http://127.0.0.1:8080/bottom-nav-visual-test-v188.html', {waitUntil: 'domcontentloaded', timeout: 5000})
+                .catch(err => console.log('[navigation lifecycle]', err.message));
               await page.waitForFunction(() => window.__bottomNavV188Results && window.__bottomNavV188Results.done === true, {timeout: 120000});
               const result = await page.evaluate(() => window.__bottomNavV188Results);
               console.log(JSON.stringify(result, null, 2));
