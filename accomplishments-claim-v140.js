@@ -1,0 +1,65 @@
+/* SHADOWREACH · Accomplishments claim reliability v140
+   Canonical document-level claim handler for the v139 modal.
+   Prevents modal placement from breaking reward clicks while preserving
+   existing claimed state and the v126 merge conversion pipeline. */
+(function(){
+'use strict';
+if(window.__srAccomplishmentsClaimV140)return;
+window.__srAccomplishmentsClaimV140=true;
+
+var REWARDS={
+ forge5:{gold:5000},forge10:{gold:10000},forge15:{merge:{COMMUN:15}},forge20:{merge:{COMMUN:30}},forge30:{gold:50000,merge:{COMMUN:20}},forge35:{raidKey:'minerai',pr:500},forge40:{raidKey:'minerai',gold:100000},forge50:{raidKey:'minerai',raidKeyQty:2,merge:{PEU_COMMUN:50}},
+ rb5:{accel:{a5:2}},rb15:{accel:{a5:5}},rb30:{merge:{COMMUN:30}},rb50:{accel:{a10:5},merge:{PEU_COMMUN:20}},rb100:{universal:1,merge:{RARE:20},essence:500,eclat:500},
+ raid10:{gold:5000},raid20:{merge:{COMMUN:30}},raid50:{merge:{RARE:20},choice:true},raid100:{gold:1500000,eclat:1000,essence:1000,merge:{RARE:50},validatedRaid100:true},
+ floor25:{essence:250},floor50:{minerai:2000,gold:5000},floor75:{pr:1000,merge:{COMMUN:30}},floor100:{eclat:500,essence:500,merge:{COMMUN:30}}
+};
+var NEED={
+ forge5:function(){return Number(S.forge&&S.forge.level)>=5;},forge10:function(){return Number(S.forge&&S.forge.level)>=10;},forge15:function(){return Number(S.forge&&S.forge.level)>=15;},forge20:function(){return Number(S.forge&&S.forge.level)>=20;},forge30:function(){return Number(S.forge&&S.forge.level)>=30;},forge35:function(){return Number(S.forge&&S.forge.level)>=35;},forge40:function(){return Number(S.forge&&S.forge.level)>=40;},forge50:function(){return Number(S.forge&&S.forge.level)>=50;},
+ rb5:function(){return Number(S.rebirth&&S.rebirth.count)>=5;},rb15:function(){return Number(S.rebirth&&S.rebirth.count)>=15;},rb30:function(){return Number(S.rebirth&&S.rebirth.count)>=30;},rb50:function(){return Number(S.rebirth&&S.rebirth.count)>=50;},rb100:function(){return Number(S.rebirth&&S.rebirth.count)>=100;},
+ raid10:function(){return Number(S.accomplishments&&S.accomplishments.raidWins)>=10;},raid20:function(){return Number(S.accomplishments&&S.accomplishments.raidWins)>=20;},raid50:function(){return Number(S.accomplishments&&S.accomplishments.raidWins)>=50;},raid100:function(){return Number(S.accomplishments&&S.accomplishments.raidWins)>=100;},
+ floor25:function(){return Number(S.recordFloor)>=25;},floor50:function(){return Number(S.recordFloor)>=50;},floor75:function(){return Number(S.recordFloor)>=75;},floor100:function(){return Number(S.recordFloor)>=100;}
+};
+function ensure(s){
+ if(!s.accomplishments||typeof s.accomplishments!=='object')s.accomplishments={};
+ var a=s.accomplishments;
+ if(!a.claimed||typeof a.claimed!=='object')a.claimed={};
+ if(!a.mergePieces||typeof a.mergePieces!=='object')a.mergePieces={};
+ if(!a.choices||typeof a.choices!=='object')a.choices={};
+ return a;
+}
+function grant(s,r,choice){
+ if(r.gold)s.gold=(Number(s.gold)||0)+r.gold;
+ if(r.minerai)s.minerai=(Number(s.minerai)||0)+r.minerai;
+ if(r.pr){if(!s.rebirth||typeof s.rebirth!=='object')s.rebirth={};s.rebirth.pr=(Number(s.rebirth.pr)||0)+r.pr;}
+ if(r.essence)s.essence=(Number(s.essence)||0)+r.essence;
+ if(r.eclat)s.eclat=(Number(s.eclat)||0)+r.eclat;
+ if(r.universal)s.universalKeys=(Number(s.universalKeys)||0)+r.universal;
+ if(r.raidKey&&s.raids&&s.raids[r.raidKey])s.raids[r.raidKey].keys=(Number(s.raids[r.raidKey].keys)||0)+(r.raidKeyQty||1);
+ if(r.accel){if(!s.accels||typeof s.accels!=='object')s.accels={};Object.keys(r.accel).forEach(function(k){s.accels[k]=(Number(s.accels[k])||0)+r.accel[k];});}
+ if(r.merge){var a=ensure(s);Object.keys(r.merge).forEach(function(k){a.mergePieces[k]=(Number(a.mergePieces[k])||0)+r.merge[k];});}
+ if(choice==='eclat')s.eclat=(Number(s.eclat)||0)+500;
+ if(choice==='essence')s.essence=(Number(s.essence)||0)+500;
+ if(r.validatedRaid100)ensure(s).raid100ValidatedV127=true;
+}
+function claim(id,choice){
+ if(typeof S==='undefined'||!S||!REWARDS[id]||!NEED[id]||!NEED[id]())return false;
+ var a=ensure(S),r=REWARDS[id];
+ if(a.claimed[id])return false;
+ if(r.choice&&choice!=='eclat'&&choice!=='essence')return false;
+ if(typeof update==='function'){
+  update(function(s){var x=ensure(s);if(x.claimed[id])return;grant(s,r,choice);x.claimed[id]=true;if(choice)x.choices[id]=choice;});
+ }else{
+  grant(S,r,choice);a.claimed[id]=true;if(choice)a.choices[id]=choice;
+  try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}
+ }
+ try{if(typeof toast==='function')toast('Récompense reçue !',true);}catch(_){}
+ try{if(typeof ACT!=='undefined'&&ACT&&typeof ACT.accomplishments==='function')ACT.accomplishments();}catch(_){}
+ return true;
+}
+document.addEventListener('click',function(e){
+ var b=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach]'):null;
+ if(!b)return;
+ e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+ claim(String(b.getAttribute('data-ach')||''),String(b.getAttribute('data-ach-choice')||''));
+},true);
+})();
