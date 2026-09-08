@@ -37,6 +37,28 @@ async function activate(page, locator, testInfo) {
   }
 }
 
+async function navGeometry(page) {
+  return page.locator('#tabs .tab').evaluateAll((nodes) => nodes.map((tab) => {
+    const tr = tab.getBoundingClientRect();
+    const icon = tab.querySelector('.fantasyNavIcon');
+    const label = tab.querySelector(':scope > span:not(.ico):not(.fantasyNavIcon):not(.dot)');
+    const ir = icon && icon.getBoundingClientRect();
+    const lr = label && label.getBoundingClientRect();
+    return {
+      arg: tab.getAttribute('data-arg'),
+      tabTop: tr.top,
+      tabHeight: tr.height,
+      tabCenterX: tr.left + tr.width / 2,
+      iconTop: ir && ir.top,
+      iconWidth: ir && ir.width,
+      iconHeight: ir && ir.height,
+      iconCenterX: ir && (ir.left + ir.width / 2),
+      labelTop: lr && lr.top,
+      direct: !!icon && icon.parentElement === tab
+    };
+  }));
+}
+
 test('Phase 2A replaces observer-driven fantasy decoration with the render lifecycle', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
   const nav = fs.readFileSync(path.join(root, 'bottom-nav-v53.js'), 'utf8');
@@ -65,7 +87,6 @@ test('fantasy navigation remains singular and stable through repeated renders', 
       await expect(tab).toHaveAttribute('data-fantasy-nav', 'phase2a');
       await activate(page, tab, testInfo);
       await expect(page.locator('#tabs .tab.on')).toHaveAttribute('data-arg', routeArg);
-      await expect(page.locator('#tabs .fantasyNavIcon')).toHaveCount(4);
       await expect(page.locator('#tabs .fantasyNavIcon')).toHaveCount(4);
     }
   }
@@ -143,5 +164,65 @@ test('Home state follows the rendered route without stale observer timing', asyn
   expect(Math.abs(circle.width - circle.height)).toBeLessThan(0.5);
   expect(circle.width).toBeGreaterThanOrEqual(27);
   expect(circle.radius).toBe('50%');
+  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
+});
+
+test('Phase 2C consolidates BottomNav geometry and retires correction layers', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
+  const geometry = fs.readFileSync(path.join(root, 'bottom-nav-layout-v183.js'), 'utf8');
+  const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+
+  expect(geometry).toContain('__srBottomNavGeometryPhase2C');
+  expect(geometry).toContain('__srApplyBottomNavGeometryPhase2C');
+  expect(geometry).toContain('nativeRenderTabs');
+  expect(geometry).toContain("fantasy.parentElement===tab");
+  expect(geometry).not.toContain('new MutationObserver');
+
+  expect(index).toContain("'bottom-nav-layout-v183.js'");
+  expect(index).not.toContain("'bottom-nav-development-v186.js'");
+  expect(index).not.toContain("'bottom-nav-active-normalize-v187.js'");
+});
+
+test('all four BottomNav tabs keep identical geometry including Development', async ({ page }, testInfo) => {
+  await openCleanGame(page);
+  await expect.poll(() => page.evaluate(() => !!window.__srBottomNavGeometryPhase2C), { timeout: 10000 }).toBe(true);
+
+  const tabs = page.locator('#tabs .tab');
+  const baseline = await navGeometry(page);
+  expect(baseline).toHaveLength(4);
+  baseline.forEach((g) => {
+    expect(g.iconWidth).toBeGreaterThan(0);
+    expect(g.iconHeight).toBeGreaterThan(0);
+    expect(Math.abs(g.iconCenterX - g.tabCenterX)).toBeLessThan(0.75);
+  });
+
+  const first = baseline[0];
+  baseline.slice(1).forEach((g) => {
+    expect(Math.abs(g.tabTop - first.tabTop)).toBeLessThan(0.75);
+    expect(Math.abs(g.tabHeight - first.tabHeight)).toBeLessThan(0.75);
+    expect(Math.abs(g.iconTop - first.iconTop)).toBeLessThan(0.75);
+    expect(Math.abs(g.iconWidth - first.iconWidth)).toBeLessThan(0.75);
+    expect(Math.abs(g.iconHeight - first.iconHeight)).toBeLessThan(0.75);
+    expect(Math.abs(g.labelTop - first.labelTop)).toBeLessThan(0.75);
+  });
+
+  const development = baseline.find((g) => g.arg === 'developpement');
+  expect(development).toBeTruthy();
+  expect(Math.abs(development.iconCenterX - development.tabCenterX)).toBeLessThan(0.75);
+
+  for (let i = 0; i < 4; i++) {
+    const tab = tabs.nth(i);
+    const routeArg = await tab.getAttribute('data-arg');
+    await activate(page, tab, testInfo);
+    await expect(page.locator('#tabs .tab.on')).toHaveAttribute('data-arg', routeArg);
+    const current = await navGeometry(page);
+    current.forEach((g, index) => {
+      const before = baseline[index];
+      expect(Math.abs(g.iconWidth - before.iconWidth)).toBeLessThan(0.75);
+      expect(Math.abs(g.iconHeight - before.iconHeight)).toBeLessThan(0.75);
+      expect(Math.abs(g.iconCenterX - g.tabCenterX)).toBeLessThan(0.75);
+    });
+  }
+
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
