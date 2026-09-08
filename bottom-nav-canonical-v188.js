@@ -1,7 +1,7 @@
 /* SHADOWREACH · Canonical bottom navigation owner V188
-   Single source of truth for bottom-nav geometry and visual state.
-   Older compatibility layers may still exist for now, but this module loads last
-   and reapplies one identical contract to all four primary tabs. */
+   Single source of truth for bottom-nav geometry and active state.
+   V188 owns one identical contract for all four primary tabs and maps every
+   route to exactly one primary owner. */
 (function(){
   'use strict';
   if(window.__srBottomNavCanonicalV188)return;
@@ -10,6 +10,19 @@
   var STYLE_ID='srBottomNavCanonicalV188';
   var existing=document.getElementById(STYLE_ID);
   if(existing)existing.remove();
+
+  var ROUTE_OWNER={
+    accueil:'accueil',
+    equipement:'equipement',
+    inventaire:'equipement',
+    personnage:'equipement',
+    heros:'equipement',
+    developpement:'developpement',
+    competences:'developpement',
+    familiers:'developpement',
+    arbre:'developpement',
+    parametres:'parametres'
+  };
 
   var style=document.createElement('style');
   style.id=STYLE_ID;
@@ -87,6 +100,7 @@
   top:3px!important;
   transform:translateX(-50%)!important;
 }
+#app.srHomeFullArena>#tabs>.tab>.navLabel,
 #app.srHomeFullArena>#tabs>.tab>span:not(.ico):not(.fantasyNavIcon){
   box-sizing:border-box!important;
   position:absolute!important;
@@ -148,6 +162,7 @@
     max-width:31px!important;max-height:31px!important;
   }
   #app.srHomeFullArena>#tabs>.tab>.fantasyNavIcon{top:2px!important}
+  #app.srHomeFullArena>#tabs>.tab>.navLabel,
   #app.srHomeFullArena>#tabs>.tab>span:not(.ico):not(.fantasyNavIcon){
     top:36px!important;
     height:14px!important;
@@ -162,6 +177,58 @@
 
   function compact(){
     try{return matchMedia('(max-width:370px),(max-height:720px)').matches;}catch(_){return false;}
+  }
+
+  function currentRoute(){
+    try{
+      if(typeof route!=='undefined'&&route)return String(route);
+    }catch(_){}
+    var active=document.querySelector('#tabs>.tab.on,#tabs>.tab.active,#tabs>.tab[aria-current="page"]');
+    if(active)return String(active.getAttribute('data-nav-key')||active.getAttribute('data-arg')||'');
+    return 'accueil';
+  }
+
+  function ownerForRoute(value){
+    var key=String(value||'').trim().toLowerCase();
+    return ROUTE_OWNER[key]||'accueil';
+  }
+
+  function setAttr(el,name,value){
+    if(value==null){
+      if(el.hasAttribute(name))el.removeAttribute(name);
+      return;
+    }
+    if(el.getAttribute(name)!==value)el.setAttribute(name,value);
+  }
+
+  function tabKey(tab){
+    return String(tab.getAttribute('data-nav-key')||tab.getAttribute('data-arg')||'').trim().toLowerCase();
+  }
+
+  function setActive(tab,on){
+    tab.classList.toggle('on',on);
+    tab.classList.remove('active');
+    setAttr(tab,'aria-current',on?'page':null);
+    setAttr(tab,'aria-selected',on?'true':'false');
+    setAttr(tab,'data-nav-active',on?'true':'false');
+  }
+
+  function syncActiveState(tabs){
+    var owner=ownerForRoute(currentRoute());
+    var all=tabs.querySelectorAll(':scope > .tab');
+    var found=false;
+
+    Array.prototype.forEach.call(all,function(tab){
+      var on=!found&&tabKey(tab)===owner;
+      if(on)found=true;
+      setActive(tab,on);
+    });
+
+    /* A malformed/partially-rendered nav still gets exactly one active tab. */
+    if(!found&&all.length){
+      var fallback=tabs.querySelector(':scope > .tab[data-nav-key="accueil"],:scope > .tab[data-arg="accueil"]')||all[0];
+      Array.prototype.forEach.call(all,function(tab){setActive(tab,tab===fallback);});
+    }
   }
 
   function normalizeTab(tab,isCompact){
@@ -195,7 +262,7 @@
       }
     });
 
-    var label=tab.querySelector(':scope > span:not(.ico):not(.fantasyNavIcon)');
+    var label=tab.querySelector(':scope > .navLabel')||tab.querySelector(':scope > span:not(.ico):not(.fantasyNavIcon)');
     if(label){
       imp(label,'position','absolute');imp(label,'left','0');imp(label,'right','0');imp(label,'top',labelTop);
       imp(label,'display','block');imp(label,'width','100%');imp(label,'height','14px');
@@ -208,7 +275,13 @@
   function apply(){
     var app=document.getElementById('app');
     var tabs=document.getElementById('tabs');
-    if(!app||!tabs||!app.classList.contains('srHomeFullArena'))return;
+    if(!tabs)return;
+
+    /* Active ownership is route logic, so it applies on every screen. */
+    syncActiveState(tabs);
+
+    /* Geometry remains scoped to the full-arena/mobile shell. */
+    if(!app||!app.classList.contains('srHomeFullArena'))return;
 
     var isCompact=compact();
     var navH=isCompact?'54px':'58px';
@@ -229,7 +302,10 @@
   }
 
   var tabs=document.getElementById('tabs');
-  if(tabs)new MutationObserver(schedule).observe(tabs,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','aria-current']});
+  if(tabs)new MutationObserver(schedule).observe(tabs,{
+    childList:true,subtree:true,attributes:true,
+    attributeFilter:['class','style','aria-current','aria-selected','data-nav-key','data-arg']
+  });
   var app=document.getElementById('app');
   if(app)new MutationObserver(schedule).observe(app,{attributes:true,attributeFilter:['class']});
   window.addEventListener('resize',schedule,{passive:true});
