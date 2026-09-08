@@ -95,8 +95,8 @@
   function now(){return typeof performance!=='undefined'?performance.now():Date.now();}
   function overlay(){return document.getElementById('overlay');}
   function markOverlay(){const ov=overlay();if(ov)ov.setAttribute('data-sr-persistent','1');}
-  function publishModalState(force){
-    const open=!!overlay();
+  function publishModalState(force,openOverride){
+    const open=typeof openOverride==='boolean'?openOverride:!!overlay();
     markOverlay();
     if(!force&&lastModalState===open)return;
     lastModalState=open;
@@ -111,6 +111,7 @@
   }
   function nativeOpenSafe(ctx,args){
     nativeTransitionDepth++;
+    publishModalState(false,true);
     try{return nativeOpen.apply(ctx,args);}finally{
       nativeTransitionDepth=Math.max(0,nativeTransitionDepth-1);
       markOverlay();
