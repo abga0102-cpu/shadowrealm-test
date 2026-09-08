@@ -72,3 +72,46 @@
     console.warn("Sanctuary pricing v125 migration failed", e);
   }
 })();
+
+/* IMPORT_GUARD_V206
+   Save import must preserve the exact key counts stored in the JSON. */
+(function(){
+  'use strict';
+  if(window.__srImportGuardV206)return;
+  window.__srImportGuardV206=true;
+  if(typeof ACT!=='object'||!ACT)return;
+
+  ACT.importSave=function(){
+    const inp=document.createElement('input');
+    inp.type='file';
+    inp.accept='.json,application/json';
+    inp.onchange=()=>{
+      const f=inp.files&&inp.files[0];
+      if(!f)return;
+      const fr=new FileReader();
+      fr.onload=()=>{
+        try{
+          const raw=JSON.parse(String(fr.result));
+          S=migrate(raw,'Héros');
+          /* Do NOT call applyDailyReset here. Import is state replacement,
+             not a new calendar day. Anchor the imported save to today so the
+             normal reset only resumes on the next real day. */
+          S.lastKeyReset=todayStr();
+          if(raw&&raw.eventDay)S.eventDay=raw.eventDay;
+          S.testDays=Math.max(0,Number(S.testDays)||0);
+          S.power=computePower(S);
+          refreshDerived();
+          saveNow();
+          startCampaign();
+          nav('accueil');
+          toast('Sauvegarde importée',true);
+        }catch(e){
+          console.warn('import save failed',e);
+          toast('Fichier invalide');
+        }
+      };
+      fr.readAsText(f);
+    };
+    inp.click();
+  };
+})();
