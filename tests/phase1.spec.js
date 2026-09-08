@@ -7,6 +7,10 @@ const fixture = (name) => JSON.parse(fs.readFileSync(path.join(fixturesDir, name
 const LEGACY_SMOKE_FAILURE_BASELINE = 20;
 
 async function openCleanGame(page) {
+  // Phase 1 is deliberately an offline/static regression harness. The social
+  // layer may attempt optional CDN imports; abort those in tests so network
+  // availability cannot make core UI interaction checks flaky.
+  await page.route('**/npm/**', (route) => route.abort());
   await page.addInitScript(() => {
     try {
       localStorage.removeItem('shadowreach.save.local');
@@ -19,9 +23,34 @@ async function openCleanGame(page) {
   await page.locator('#screen').waitFor({ state: 'visible' });
 }
 
-async function activate(locator, testInfo) {
-  if (testInfo.project.name === 'webkit-iphone') await locator.tap();
-  else await locator.click();
+async function activate(page, locator, testInfo) {
+  if (testInfo.project.name === 'webkit-iphone') {
+    await expect(locator).toBeVisible();
+    // The game intentionally replaces tab DOM nodes during renders. A real
+    // finger targets the stable on-screen slot, not one particular DOM node.
+    // Verify that the slot is genuinely hittable, then send a native touch at
+    // its center. This avoids Playwright waiting forever for a node instance
+    // that can be replaced between actionability checks without using force.
+    const hit = await locator.evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      const top = document.elementFromPoint(x, y);
+      return {
+        x,
+        y,
+        width: rect.width,
+        height: rect.height,
+        hitTarget: !!top && (top === el || el.contains(top))
+      };
+    });
+    expect(hit.width).toBeGreaterThan(0);
+    expect(hit.height).toBeGreaterThan(0);
+    expect(hit.hitTarget, 'bottom-nav touch point must not be covered by another layer').toBe(true);
+    await page.touchscreen.tap(hit.x, hit.y);
+  } else {
+    await locator.click();
+  }
 }
 
 async function seedHarvestAndOpen(page, testInfo) {
@@ -33,7 +62,7 @@ async function seedHarvestAndOpen(page, testInfo) {
   // the internal modal call; tests should not depend on that private function.
   const harvestButton = page.locator('[data-act="harvest"]').first();
   await expect(harvestButton).toBeVisible();
-  await activate(harvestButton, testInfo);
+  await activate(page, harvestButton, testInfo);
   await expect(page.locator('#overlay')).toBeVisible();
 }
 
@@ -62,8 +91,11 @@ test('all four bottom tabs remain responsive under repeated navigation', async (
     for (let i = 0; i < 4; i++) {
       const tabs = page.locator('#tabs .tab');
       const tab = tabs.nth(i);
-      await activate(tab, testInfo);
+      const routeArg = await tab.getAttribute('data-arg');
+      expect(routeArg).toBeTruthy();
+      await activate(page, tab, testInfo);
       await expect(page.locator('#tabs .tab')).toHaveCount(4);
+      await expect(page.locator('#tabs .tab.on')).toHaveAttribute('data-arg', routeArg);
       await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
     }
   }
@@ -81,13 +113,13 @@ test('harvest modal close and claim controls remain interactive', async ({ page 
   await seedHarvestAndOpen(page, testInfo);
   const close = page.locator('#overlay [data-act="closeModal"]').first();
   await expect(close).toBeVisible();
-  await activate(close, testInfo);
+  await activate(page, close, testInfo);
   await expect(page.locator('#overlay')).toHaveCount(0);
 
   await seedHarvestAndOpen(page, testInfo);
   const claim = page.locator('#overlay [data-act="harvestClaim"]');
   await expect(claim).toBeVisible();
-  await activate(claim, testInfo);
+  await activate(page, claim, testInfo);
   await expect(page.locator('#overlay')).toHaveCount(0);
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
