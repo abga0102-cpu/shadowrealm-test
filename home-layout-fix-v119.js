@@ -1,7 +1,7 @@
 /* SHADOWREACH · Home layout fix v119
    Mobile-safe compatibility layer.
-   V182: restore full HUD visibility and compact bottom navigation while
-   preserving Forge, reward, Equipment and Settings polish. UI only. */
+   V188: HUD, Forge, reward, Equipment and Settings polish only.
+   Bottom navigation is intentionally owned by bottom-nav-canonical-v188.js. */
 (function(){
   'use strict';
   if(window.__srHomeLayoutFixV119)return;
@@ -69,88 +69,6 @@
   flex:0 0 auto!important;
   min-height:42px!important;
   max-height:54px!important;
-}
-
-/* Bottom navigation: one compact row. The old 72px + safe-area rule plus the
-   third tab's inherited icon wrapper made Développement consume a second row. */
-#app.srHomeFullArena>#tabs{
-  box-sizing:border-box!important;
-  display:grid!important;
-  grid-template-columns:repeat(4,minmax(0,1fr))!important;
-  align-items:start!important;
-  flex:0 0 calc(58px + env(safe-area-inset-bottom))!important;
-  height:calc(58px + env(safe-area-inset-bottom))!important;
-  min-height:calc(58px + env(safe-area-inset-bottom))!important;
-  max-height:calc(58px + env(safe-area-inset-bottom))!important;
-  padding:2px 4px env(safe-area-inset-bottom)!important;
-  overflow:hidden!important;
-}
-#app.srHomeFullArena>#tabs .tab{
-  box-sizing:border-box!important;
-  width:100%!important;
-  height:56px!important;
-  min-height:56px!important;
-  max-height:56px!important;
-  min-width:0!important;
-  padding:2px 1px 1px!important;
-  margin:0!important;
-  display:flex!important;
-  flex-direction:column!important;
-  align-items:center!important;
-  justify-content:center!important;
-  gap:1px!important;
-  overflow:visible!important;
-  line-height:1!important;
-  font-size:10px!important;
-  color:#AAB8D0!important;
-  white-space:nowrap!important;
-  position:relative!important;
-  transform:none!important;
-}
-#app.srHomeFullArena>#tabs .tab>.ico{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:32px!important;
-  height:32px!important;
-  min-width:32px!important;
-  min-height:32px!important;
-  flex:0 0 32px!important;
-  margin:0 auto!important;
-  padding:0!important;
-  line-height:1!important;
-  position:static!important;
-  transform:none!important;
-}
-#app.srHomeFullArena>#tabs .fantasyNavIcon{
-  width:32px!important;
-  height:32px!important;
-  min-width:32px!important;
-  min-height:32px!important;
-  margin:0!important;
-  display:block!important;
-  position:static!important;
-  transform:none!important;
-}
-#app.srHomeFullArena>#tabs .tab>span:not(.fantasyNavIcon){
-  display:block!important;
-  position:static!important;
-  width:auto!important;
-  height:auto!important;
-  margin:1px 0 0!important;
-  padding:0!important;
-  transform:none!important;
-  line-height:11px!important;
-  font-size:10px!important;
-  white-space:nowrap!important;
-  overflow:visible!important;
-  text-overflow:clip!important;
-}
-#app.srHomeFullArena>#tabs .tab:nth-child(3),
-#app.srHomeFullArena>#tabs .tab:nth-child(3)>span:not(.fantasyNavIcon){font-size:9px!important}
-#app.srHomeFullArena>#tabs .fantasyNavV65:not(.on):not(.active):not([aria-current="page"]) .fantasyNavIcon{
-  opacity:.74!important;
-  filter:saturate(.78) brightness(.9) drop-shadow(0 2px 3px #0009)!important;
 }
 
 /* True circular Forge information control. */
@@ -230,14 +148,6 @@
 
 @media(max-width:370px){
   #app.srHomeFullArena{--srForgeH:204px!important}
-  #app.srHomeFullArena>#tabs{
-    flex-basis:calc(56px + env(safe-area-inset-bottom))!important;
-    height:calc(56px + env(safe-area-inset-bottom))!important;
-    min-height:calc(56px + env(safe-area-inset-bottom))!important;
-    max-height:calc(56px + env(safe-area-inset-bottom))!important;
-  }
-  #app.srHomeFullArena>#tabs .tab{height:54px!important;min-height:54px!important;max-height:54px!important}
-  #app.srHomeFullArena>#tabs .tab>.ico,#app.srHomeFullArena>#tabs .fantasyNavIcon{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;flex-basis:30px!important}
   #screen .settingsStatGridCompat{grid-template-columns:1fr!important}
   #app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}
 }
@@ -245,13 +155,6 @@
   #app.srHomeFullArena{--srForgeH:184px!important}
   #app.srHomeFullArena .homeForge .compactAuto{min-height:31px!important;max-height:34px!important}
   #app.srHomeFullArena .homeForge .fgFilter{min-height:24px!important}
-  #app.srHomeFullArena>#tabs{
-    flex-basis:calc(54px + env(safe-area-inset-bottom))!important;
-    height:calc(54px + env(safe-area-inset-bottom))!important;
-    min-height:calc(54px + env(safe-area-inset-bottom))!important;
-    max-height:calc(54px + env(safe-area-inset-bottom))!important;
-  }
-  #app.srHomeFullArena>#tabs .tab{height:52px!important;min-height:52px!important;max-height:52px!important;padding-top:1px!important}
 }
 `;
   document.head.appendChild(s);
@@ -278,19 +181,6 @@
     var actions=hud&&hud.querySelector(':scope > .col');
     if(hero){important(hero,'margin-top','0');important(hero,'transform','none');important(hero,'align-self','flex-start');}
     if(actions){important(actions,'margin-top','0');important(actions,'align-self','flex-start');important(actions,'align-items','flex-end');}
-
-    var tabs=document.getElementById('tabs');
-    if(tabs){
-      important(tabs,'display','grid');important(tabs,'grid-template-columns','repeat(4,minmax(0,1fr))');
-      tabs.querySelectorAll('.tab').forEach(function(tab){
-        important(tab,'display','flex');important(tab,'flex-direction','column');important(tab,'align-items','center');
-        important(tab,'justify-content','center');important(tab,'transform','none');important(tab,'margin','0');
-        var ico=tab.querySelector(':scope > .ico');
-        if(ico){important(ico,'position','static');important(ico,'transform','none');important(ico,'margin','0 auto');}
-        var label=tab.querySelector(':scope > span:not(.fantasyNavIcon)');
-        if(label){important(label,'position','static');important(label,'transform','none');important(label,'margin','1px 0 0');important(label,'white-space','nowrap');}
-      });
-    }
   }
 
   function decorate(){
