@@ -1,8 +1,7 @@
 /* SHADOWREACH · Home layout runtime V200
    Phase 2 ownership consolidation.
-   Owns HUD/Forge/reward/Equipment/Settings compatibility only.
-   Bottom navigation is intentionally excluded and belongs solely to
-   bottom-nav-runtime-v200.js. */
+   Owns Home-frame classification plus HUD/Forge/reward/Equipment/Settings
+   compatibility. Bottom navigation belongs solely to bottom-nav-runtime-v200.js. */
 (function(){
   'use strict';
   if(window.__srHomeLayoutRuntimeV200)return;
@@ -11,25 +10,25 @@
   var s=document.createElement('style');
   s.id='srHomeLayoutRuntimeV200';
   s.textContent=`
-#app.srHomeFullArena{--srForgeH:216px!important}
-#app.srHomeFullArena>#hud{top:0!important;align-items:flex-start!important;padding-top:6px!important}
-#app.srHomeFullArena>#hud>.pbox{align-self:flex-start!important;margin-top:0!important;transform:none!important}
-#app.srHomeFullArena>#hud>.col{align-items:flex-end!important;align-self:flex-start!important;margin-top:0!important}
-#app.srHomeFullArena>#hud>.col>.row{justify-content:flex-end!important}
+html #app.srHomeFullArena{--srForgeH:216px!important}
+html #app.srHomeFullArena>#hud{top:0!important;align-items:flex-start!important;padding-top:6px!important}
+html #app.srHomeFullArena>#hud>.pbox{align-self:flex-start!important;margin-top:0!important;transform:none!important}
+html #app.srHomeFullArena>#hud>.col{align-items:flex-end!important;align-self:flex-start!important;margin-top:0!important}
+html #app.srHomeFullArena>#hud>.col>.row{justify-content:flex-end!important}
 
-#app.srHomeFullArena #screen.fixed>.pad.mt4{
+html #app.srHomeFullArena #screen.fixed>.pad.mt4{
   flex:0 0 var(--srForgeH)!important;height:var(--srForgeH)!important;
   min-height:var(--srForgeH)!important;max-height:var(--srForgeH)!important;
   padding:2px 8px 6px!important;overflow:hidden!important;
 }
-#app.srHomeFullArena .homeForge{height:100%!important;max-height:100%!important;overflow:hidden!important;padding:5px 7px 7px!important}
-#app.srHomeFullArena .homeForge>.fgRow:first-child{min-height:30px!important;align-items:center!important;gap:6px!important}
-#app.srHomeFullArena .homeForge>.fgRow:first-child .gt{line-height:28px!important}
-#app.srHomeFullArena .homeForge .compactAuto{flex:0 0 auto!important;min-height:34px!important;max-height:38px!important;margin-top:4px!important;padding:4px 7px!important}
-#app.srHomeFullArena .homeForge .fgFilter{flex:0 0 auto!important;min-height:28px!important;margin-top:4px!important;padding:4px 7px!important;overflow:hidden!important}
-#app.srHomeFullArena .homeForge .forgeAnim:not(.compactAuto){flex:0 0 auto!important;min-height:42px!important;max-height:54px!important}
+html #app.srHomeFullArena .homeForge{height:100%!important;max-height:100%!important;overflow:hidden!important;padding:5px 7px 7px!important}
+html #app.srHomeFullArena .homeForge>.fgRow:first-child{min-height:30px!important;align-items:center!important;gap:6px!important}
+html #app.srHomeFullArena .homeForge>.fgRow:first-child .gt{line-height:28px!important}
+html #app.srHomeFullArena .homeForge .compactAuto{flex:0 0 auto!important;min-height:34px!important;max-height:38px!important;margin-top:4px!important;padding:4px 7px!important}
+html #app.srHomeFullArena .homeForge .fgFilter{flex:0 0 auto!important;min-height:28px!important;margin-top:4px!important;padding:4px 7px!important;overflow:hidden!important}
+html #app.srHomeFullArena .homeForge .forgeAnim:not(.compactAuto){flex:0 0 auto!important;min-height:42px!important;max-height:54px!important}
 
-#app.srHomeFullArena .homeForge .iBtn{
+html #app.srHomeFullArena .homeForge .iBtn{
   box-sizing:border-box!important;width:28px!important;height:28px!important;
   min-width:28px!important;min-height:28px!important;max-width:28px!important;max-height:28px!important;
   flex:0 0 28px!important;padding:0!important;margin:0!important;border-radius:50%!important;
@@ -40,11 +39,11 @@
   box-shadow:inset 0 1px 0 #ffffff20,0 1px 3px #0008!important;
 }
 
-#app.srHomeFullArena #rewardFeed{right:8px!important;top:96px!important;width:min(176px,46%)!important;gap:3px!important;z-index:66!important;pointer-events:none!important}
-#app.srHomeFullArena #rewardFeed .rewardPop{padding:4px 7px!important;min-height:0!important;border-radius:8px!important;background:linear-gradient(180deg,#17263ee8,#0b1425df)!important;box-shadow:0 2px 6px #0006!important;backdrop-filter:blur(3px)!important;-webkit-backdrop-filter:blur(3px)!important;pointer-events:auto!important}
-#app.srHomeFullArena #rewardFeed .rewardPop .rpT{font-size:10px!important;line-height:1.15!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-#app.srHomeFullArena #rewardFeed .rewardPop .rpS{font-size:8.5px!important;line-height:1.15!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-#app.srHomeFullArena #rewardFeed .rewardPop.clickable::after{display:none!important}
+html #app.srHomeFullArena #rewardFeed{right:8px!important;top:96px!important;width:min(176px,46%)!important;gap:3px!important;z-index:66!important;pointer-events:none!important}
+html #app.srHomeFullArena #rewardFeed .rewardPop{padding:4px 7px!important;min-height:0!important;border-radius:8px!important;background:linear-gradient(180deg,#17263ee8,#0b1425df)!important;box-shadow:0 2px 6px #0006!important;backdrop-filter:blur(3px)!important;-webkit-backdrop-filter:blur(3px)!important;pointer-events:auto!important}
+html #app.srHomeFullArena #rewardFeed .rewardPop .rpT{font-size:10px!important;line-height:1.15!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+html #app.srHomeFullArena #rewardFeed .rewardPop .rpS{font-size:8.5px!important;line-height:1.15!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+html #app.srHomeFullArena #rewardFeed .rewardPop.clickable::after{display:none!important}
 
 #screen .equipFiltersCompat{display:flex!important;gap:5px!important;overflow-x:auto!important;overflow-y:hidden!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:2px 1px 5px!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch}
 #screen .equipFiltersCompat::-webkit-scrollbar{display:none!important}
@@ -61,23 +60,32 @@
 #screen .settingsStatGridCompat .kv>b{font-size:13px!important}
 
 #toast{max-width:calc(100% - 24px)!important;left:12px!important;right:12px!important;margin:0 auto!important}
-#app.srHomeFullArena #tutorialCard{bottom:calc(var(--srForgeH) + var(--srSkillH) + 68px + env(safe-area-inset-bottom))!important}
-#app.srHomeFullArena:has(#tutorialCard) #toast{bottom:calc(var(--srForgeH) + var(--srSkillH) + 160px + env(safe-area-inset-bottom))!important}
+html #app.srHomeFullArena #tutorialCard{bottom:calc(var(--srForgeH) + var(--srSkillH) + 68px + env(safe-area-inset-bottom))!important}
+html #app.srHomeFullArena:has(#tutorialCard) #toast{bottom:calc(var(--srForgeH) + var(--srSkillH) + 160px + env(safe-area-inset-bottom))!important}
 
 @media(max-width:370px){
-  #app.srHomeFullArena{--srForgeH:204px!important}
+  html #app.srHomeFullArena{--srForgeH:204px!important}
   #screen .settingsStatGridCompat{grid-template-columns:1fr!important}
-  #app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}
+  html #app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}
 }
 @media(max-height:720px){
-  #app.srHomeFullArena{--srForgeH:184px!important}
-  #app.srHomeFullArena .homeForge .compactAuto{min-height:31px!important;max-height:34px!important}
-  #app.srHomeFullArena .homeForge .fgFilter{min-height:24px!important}
+  html #app.srHomeFullArena{--srForgeH:184px!important}
+  html #app.srHomeFullArena .homeForge .compactAuto{min-height:31px!important;max-height:34px!important}
+  html #app.srHomeFullArena .homeForge .fgFilter{min-height:24px!important}
 }
 `;
   document.head.appendChild(s);
 
   function important(el,prop,value){if(el)el.style.setProperty(prop,value,'important');}
+
+  function syncHomeState(){
+    var app=document.getElementById('app');
+    var screen=document.getElementById('screen');
+    if(!app||!screen)return false;
+    var home=screen.classList.contains('fixed')&&!!screen.querySelector('.campaignWorld');
+    app.classList.toggle('srHomeFullArena',home);
+    return home;
+  }
 
   function fixForgeInfo(screen){
     var info=screen&&screen.querySelector('.homeForge .iBtn');
@@ -103,6 +111,7 @@
 
   function decorate(){
     var screen=document.getElementById('screen');if(!screen)return;
+    syncHomeState();
     fixForgeInfo(screen);normalizeHomeFrame();
     var title=screen.querySelector('#topbar h2.title');
     var label=title&&String(title.textContent||'').trim();
@@ -131,8 +140,8 @@
     pending=true;
     requestAnimationFrame(function(){pending=false;decorate();});
   }
-  var app=document.getElementById('app');
-  if(app)new MutationObserver(schedule).observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  var screen=document.getElementById('screen');
+  if(screen)new MutationObserver(schedule).observe(screen,{childList:true,attributes:true,attributeFilter:['class']});
   window.addEventListener('resize',schedule);
   schedule();
 })();
