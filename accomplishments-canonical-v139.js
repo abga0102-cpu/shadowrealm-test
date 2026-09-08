@@ -1,4 +1,4 @@
-/* SHADOWREACH · Accomplishments canonical mobile UI v139 · Fusion milestones V201
+/* SHADOWREACH · Accomplishments canonical mobile UI v139 · Fusion milestones V202
    Canonical renderer for Accomplissements. */
 (function(){
 'use strict';
@@ -30,7 +30,7 @@ var ITEMS={
   ['fusion250',250,'250 Fusions','15 Pièces de fusion Rares + Boost +10% Or d’étage · 30 min'],
   ['fusion350',350,'350 Fusions','15 Pièces de fusion Rares'],
   ['fusion500',500,'500 Fusions','20 Pièces de fusion Épiques + Boost +10% Or d’étage · 30 min'],
-  ['fusion1000',1000,'1 000 Fusions','20 Pièces de fusion Mythiques'],
+  ['fusion1000',1000,'1 000 Fusions','20 Pièces de fusion Mythiques + 100 000 Or'],
   ['fusion1500',1500,'1 500 Fusions','20 Pièces de fusion Mythiques + Boost +50% Or d’étage · 30 min']
  ],
  Raids:[
