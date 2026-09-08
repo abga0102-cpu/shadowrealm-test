@@ -1,0 +1,11 @@
+{
+  "name": "shadowreach-local-tests",
+  "private": true,
+  "description": "Development-only regression tooling for the static Shadowreach HTML game.",
+  "scripts": {
+    "test:e2e": "playwright test -c tests/playwright.config.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.0"
+  }
+}

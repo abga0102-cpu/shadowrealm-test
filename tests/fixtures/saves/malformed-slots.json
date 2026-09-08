@@ -1,0 +1,25 @@
+{
+  "v": 1,
+  "playerName": "Malformed Fixture",
+  "level": 20,
+  "inventory": [],
+  "equipped": {
+    "arme": null,
+    "casque": null,
+    "armure": null,
+    "gants": null,
+    "bottes": null,
+    "ghostSlot": {
+      "id": "ghost-item",
+      "slot": "not-a-real-slot",
+      "rarity": "RARE",
+      "damage": 10,
+      "hp": 5,
+      "power": 15
+    }
+  },
+  "skillSlots": [null],
+  "raids": {
+    "or": { "level": 2, "keys": 1, "record": 1 }
+  }
+}
