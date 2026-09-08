@@ -1,0 +1,38 @@
+name: Apply boost inventory V173
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'boost-inventory-v173.js'
+      - '.github/boost_inventory_v173.py'
+      - '.github/workflows/apply-boost-inventory-v173.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch build
+        run: python3 .github/boost_inventory_v173.py
+      - name: Syntax check
+        run: node --check boost-inventory-v173.js
+      - name: Verify build
+        run: |
+          grep -q 'Boost Inventory V173' index.html
+          grep -q 'boost-inventory-v173.js?v=2026.09.08.173' index.html
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Apply boost inventory V173'
+          git push
