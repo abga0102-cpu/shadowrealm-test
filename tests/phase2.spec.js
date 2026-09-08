@@ -52,6 +52,7 @@ test('Phase 2 has one bottom-navigation runtime owner', async ({}, testInfo) => 
   expect(home, 'home layout must not mutate .tab nodes').not.toContain("querySelectorAll('.tab')");
   expect(nav, 'nav runtime should decorate after render, not observe DOM churn').not.toContain('MutationObserver');
   expect((index.match(/bottom-nav-runtime-v200\.js/g) || []).length).toBe(1);
+  expect((index.match(/home-layout-runtime-v200\.js/g) || []).length).toBe(1);
 });
 
 test('consolidated navigation preserves routes, icon ownership and Home geometry', async ({ page }, testInfo) => {
@@ -78,13 +79,14 @@ test('consolidated navigation preserves routes, icon ownership and Home geometry
   await expect(page.locator('#tabs .tab.on')).toHaveAttribute('data-arg', 'accueil');
   await expect.poll(() => page.evaluate(() => document.getElementById('app').classList.contains('srHomeFullArena'))).toBe(true);
 
+  const compact = await page.evaluate(() => matchMedia('(max-width:370px),(max-height:720px)').matches);
+  const expected = compact ? 31 : 34;
   const homeGeometry = await page.locator('#tabs .tab').evaluateAll((tabs) => tabs.map((tab) => {
     const icon = tab.querySelector('.fantasyNavIcon');
     const r = icon.getBoundingClientRect();
     const t = tab.getBoundingClientRect();
     return { w:r.width, h:r.height, cx:r.left+r.width/2, tabCx:t.left+t.width/2 };
   }));
-  const expected = testInfo.project.name === 'webkit-iphone' ? 31 : 34;
   for (const g of homeGeometry) {
     expect(Math.abs(g.w - expected)).toBeLessThan(0.75);
     expect(Math.abs(g.h - expected)).toBeLessThan(0.75);
@@ -94,10 +96,12 @@ test('consolidated navigation preserves routes, icon ownership and Home geometry
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
 
-test('home compatibility runtime still decorates Forge independently of navigation', async ({ page }) => {
+test('home compatibility runtime is synchronous and still decorates Forge independently of navigation', async ({ page }) => {
   await openCleanGame(page);
-  await expect.poll(() => page.evaluate(() => !!window.__srHomeLayoutRuntimeV200)).toBe(true);
   await expect(page.locator('#srHomeLayoutRuntimeV200')).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => !!window.__srHomeLayoutRuntimeV200)).toBe(true);
+  const home = await page.evaluate(() => document.getElementById('app').classList.contains('srHomeFullArena'));
+  expect(home).toBe(true);
   const info = page.locator('.homeForge .iBtn').first();
   if (await info.count()) {
     const radius = await info.evaluate((el) => getComputedStyle(el).borderRadius);
