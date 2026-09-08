@@ -135,14 +135,15 @@ test('Home state follows the rendered route without stale observer timing', asyn
 
   const info = page.locator('.homeForge .iBtn').first();
   await expect(info).toBeVisible();
-  const circle = await info.evaluate((el) => {
+  await expect.poll(async () => info.evaluate((el) => {
     const rect = el.getBoundingClientRect();
     const style = getComputedStyle(el);
-    return { width: rect.width, height: rect.height, radius: style.borderRadius };
-  });
-  expect(Math.abs(circle.width - circle.height)).toBeLessThan(0.5);
-  expect(circle.width).toBeGreaterThanOrEqual(27);
-  expect(circle.radius).toBe('50%');
+    return {
+      square: Math.abs(rect.width - rect.height) < 0.5,
+      largeEnough: rect.width >= 27,
+      round: style.borderRadius === '50%'
+    };
+  }), { timeout: 3000 }).toEqual({ square: true, largeEnough: true, round: true });
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
 
@@ -189,7 +190,7 @@ test('Tutorial yields to an opened modal and resumes after canonical close', asy
   await expect(page.locator('#overlay')).toHaveCount(1);
   await expect(page.locator('#tutorialCard')).toHaveCount(0, { timeout: 3000 });
 
-  const close = page.locator('#overlay [data-act="closeModal"]');
+  const close = page.locator('#overlay button[data-act="closeModal"]', { hasText: 'Fermer' });
   await activate(page, close, testInfo);
   await expect(page.locator('#overlay')).toHaveCount(0, { timeout: 3000 });
   await expect(page.locator('#tutorialCard')).toHaveCount(1, { timeout: 5000 });
