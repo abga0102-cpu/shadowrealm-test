@@ -68,14 +68,14 @@
   function bodyPose(phase, contact, profile){
     const q = phase*Math.PI*2;
     const push = Math.sin(q);
-    const liftBase = profile==="boss"?.48:profile==="small"?.95:.68;
-    const leanBase = profile==="boss"?.42:profile==="small"?1.18:.78;
+    const liftBase = profile === "boss" ? .48 : profile === "small" ? .95 : .68;
+    const leanBase = profile === "boss" ? .42 : profile === "small" ? 1.18 : .78;
     // During planted intervals the torso is almost still; motion lives in transfer.
     const free = 1-contact;
     return {
       lift: -Math.abs(Math.sin(q))*liftBase*free,
       lean: push*leanBase*free,
-      squash: 1-contact*(profile==="boss"?.0035:.0055)
+      squash: 1-contact*(profile === "boss" ? .0035 : .0055)
     };
   }
 
@@ -149,8 +149,8 @@
           img.style.transform="scaleX(-1) translateY("+p.lift.toFixed(2)+"px) rotate("+p.lean.toFixed(2)+"deg) scaleY("+p.squash.toFixed(4)+")";
           const shadow=unit.querySelector(":scope > .ushadow");
           if(shadow){
-            const shadowBase=e.boss?.985:.97;
-            const shadowRange=e.boss?.015:.03;
+            const shadowBase=e.boss ? .985 : .97;
+            const shadowRange=e.boss ? .015 : .03;
             shadow.style.transform="scaleX("+(shadowBase+gait.contact*shadowRange).toFixed(3)+")";
             shadow.style.opacity=(.52+gait.contact*.09).toFixed(3);
           }
