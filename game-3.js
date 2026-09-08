@@ -1163,7 +1163,7 @@ function renderHUD() {
   const hud = document.getElementById("hud");
   const need = expToNext(S.level);
   hud.innerHTML =
-    '<div class="pbox" data-act="go" data-arg="heros" title="Héros · Points de statistiques">' +
+    '<div class="pbox hudPlayer" data-act="go" data-arg="heros" title="Héros · Points de statistiques">' +
       '<div class="avatar"><img src="' + ASSETS.hero + '"></div>' +
       '<div class="flex1" style="margin-left:8px">' +
         '<div class="row gap6"><span class="pname flex1">' + esc(S.playerName) + "</span>" +
@@ -1176,14 +1176,14 @@ function renderHUD() {
             '%;background:linear-gradient(180deg,#C79BFF,#7A34DC)"></i>' +
           "<span>" + fmt(S.exp) + " / " + fmt(need) + "</span></span></div>" +
       "</div></div>" +
-    '<div class="col gap6" style="align-items:flex-end">' +
-      '<div class="row gap4">' +
+    '<div class="col gap6 hudActions">' +
+      '<div class="row gap4 hudCurrencyRow">' +
         '<div class="curr" data-act="resInfo" data-arg="gold" style="cursor:pointer">' + ic("gold", 15) + "<b>" + fmt(S.gold) + "</b>" +
           '<span class="plus" data-act="go" data-arg="raid">' + ic("plus", 10) + "</span></div>" +
         '<div class="curr" data-act="resInfo" data-arg="gems" style="cursor:pointer">' + ic("gem", 15) + "<b>" + fmt(S.gems) + "</b>" +
           '<span class="plus" data-act="go" data-arg="boutique">' + ic("plus", 10) + "</span></div>" +
       "</div>" +
-      '<div class="row gap4">' +
+      '<div class="row gap4 hudUtilityRow">' +
         '<div class="curr" data-act="resInfo" data-arg="minerai" style="cursor:pointer">' + ic("minerai", 15) + "<b>" + fmt(S.minerai) + "</b>" +
           '<span class="plus" data-act="go" data-arg="accueil">' + ic("plus", 10) + "</span></div>" +
         '<div class="hudBtn' + (harvestNotify(S) ? " ready" : "") + '" data-act="harvest" title="Récolte automatique">' +

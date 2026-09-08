@@ -419,6 +419,15 @@ function scrServerOnly(title, endpoints, blurb) {
 
 /* ---------------- PARAMÈTRES ---------------- */
 function scrParametres() {
+  const playerOverview = [
+    { label: "Niveau", value: S.level + " / " + RULES.MAX_LEVEL },
+    { label: "Étage · record", value: S.floor + " · " + S.recordFloor },
+    { label: "Puissance", value: fmt(S.power), tone: "gold" },
+    { label: "Rebirth · Asc.", value: S.rebirth.count + " · " + S.ascension },
+    { label: "Environnement", value: ENV_NAMES[combat && combat.bg] || "—", wide: true },
+    { label: "Jour", value: String(daysElapsed(S)), tone: "gold" },
+    { label: "Jours simulés", value: String(S.testDays || 0) },
+  ];
   return topbar("Réglages") +
     '<div class="pad mt6">' +
       '<div class="card frame"><div class="between"><div class="row gap10">' +
@@ -427,16 +436,11 @@ function scrParametres() {
         '<b style="font-size:15px">' + esc(S.playerName) + "</b></div></div>" +
         btn("Renommer", { small: true, cls: "ghost", act: "rename", style: "width:auto;padding:5px 10px" }) + "</div>" +
         '<div class="divider"></div>' +
-        '<div class="row" style="flex-wrap:wrap">' + [
-          ["Niveau", S.level + " / " + RULES.MAX_LEVEL, ""],
-          ["Étage · record", S.floor + " · " + S.recordFloor, ""],
-          ["Puissance", fmt(S.power), "color:var(--goldLit)"],
-          ["Rebirth · Asc.", S.rebirth.count + " · " + S.ascension, ""],
-          ["Environnement", ENV_NAMES[combat && combat.bg] || "—", ""],
-          ["Jour", String(daysElapsed(S)), "color:var(--goldLit)"],
-          ["Jours simulés", String(S.testDays || 0), ""],
-        ].map((r) => '<div style="width:50%"><div class="kv" style="border:none;padding:2px 0">' +
-          '<span class="dim">' + r[0] + '</span><b style="' + r[2] + '">' + r[1] + "</b></div></div>").join("") + "</div>" +
+        '<div class="settingsStatGrid">' + playerOverview.map((item) =>
+          '<div class="settingsStatCell' + (item.wide ? ' wide' : '') + '">' +
+            '<span class="settingsStatLabel">' + esc(item.label) + '</span>' +
+            '<b class="settingsStatValue' + (item.tone === 'gold' ? ' gold' : '') + '">' + esc(item.value) + '</b>' +
+          '</div>').join("") + "</div>" +
       "</div>" +
       fold("save", "Sauvegarde", '<div class="card"><div class="dim small" style="line-height:1.5">Progression enregistrée dans le ' +
         "<b>localStorage</b> du navigateur (clé <code>" + SAVE_KEY + "</code>), toutes les 8 s et à la fermeture. " +

@@ -87,6 +87,46 @@ function run(W) {
     });
   });
 
+  // ---------------------------------------------------------- interface V170
+  group("INTERFACE V170 — lisibilité mobile");
+  check("les aperçus QA de Forge ne sont pas chargés en production", function () {
+    const testScript = W.document.querySelector(
+      'script[src*="forge-preview-test"],script[src*="forge-comparison-test"]');
+    const testPanel = W.document.querySelector('#srForgePreviewTest144,#srForgeComparisonTest147');
+    return !testScript && !testPanel ? true : "une couche de test reste active";
+  });
+  check("le joueur et les ressources commencent sur la même ligne du HUD", function () {
+    W.nav("accueil"); W.render();
+    const player = W.document.querySelector("#hud .hudPlayer");
+    const actions = W.document.querySelector("#hud .hudActions");
+    if (!player || !actions) return "structure du HUD absente";
+    const delta = Math.abs(player.getBoundingClientRect().top - actions.getBoundingClientRect().top);
+    return delta <= 2 ? true : "décalage vertical de " + delta.toFixed(1) + "px";
+  });
+  check("le bouton d'information de la Forge est un cercle", function () {
+    W.nav("accueil"); W.render();
+    const info = W.document.querySelector("#homeForge .iBtn");
+    if (!info) return "bouton absent";
+    const r = info.getBoundingClientRect();
+    const radius = parseFloat(W.getComputedStyle(info).borderTopLeftRadius) || 0;
+    if (Math.abs(r.width - r.height) > 1) return r.width.toFixed(1) + " × " + r.height.toFixed(1) + "px";
+    return radius >= r.width * .45 ? true : "rayon insuffisant";
+  });
+  check("les statistiques Réglages restent dans leurs cartes", function () {
+    W.nav("parametres"); W.render();
+    const cells = Array.from(W.document.querySelectorAll(".settingsStatCell"));
+    if (cells.length !== 7) return cells.length + " cartes au lieu de 7";
+    const clipped = cells.filter(function (cell) { return cell.scrollWidth > cell.clientWidth + 1; });
+    return clipped.length ? clipped.length + " carte(s) débordent" : true;
+  });
+  check("les filtres Équipement gardent leurs libellés complets", function () {
+    W.nav("equipement"); W.render();
+    const filters = Array.from(W.document.querySelectorAll(".equipFilters>button"));
+    if (filters.length !== 9) return filters.length + " filtres au lieu de 9";
+    const clipped = filters.filter(function (button) { return button.scrollWidth > button.clientWidth + 1; });
+    return clipped.length ? "libellé tronqué : " + clipped[0].textContent : true;
+  });
+
   // ---------------------------------------------------------------- modals
   group("FENÊTRES (aucune ne doit être tronquée)");
   function modal(label, fn) {

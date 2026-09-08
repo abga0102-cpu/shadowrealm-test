@@ -59,15 +59,21 @@
   justify-content:flex-start!important;
   overflow:visible!important;
   line-height:1.05!important;
-  font-size:10px!important;
+  font-size:11.5px!important;
+  color:#8C9BB6!important;
 }
+#app.srHomeFullArena>#tabs .tab span{
+  font-size:11px!important;
+  line-height:1.12!important;
+}
+#app.srHomeFullArena>#tabs .tab.on{color:var(--goldLit)!important}
 #app.srHomeFullArena>#tabs .fantasyNavIcon{
   width:34px!important;
   height:34px!important;
   margin:0 auto 1px!important;
 }
 #app.srHomeFullArena>#tabs .tab:nth-child(3){
-  font-size:9px!important;
+  font-size:10.5px!important;
 }
 @media(max-width:370px){
   #app.srHomeFullArena{--srForgeH:204px!important}
@@ -77,7 +83,8 @@
     min-height:calc(68px + env(safe-area-inset-bottom))!important;
     max-height:calc(68px + env(safe-area-inset-bottom))!important;
   }
-  #app.srHomeFullArena>#tabs .tab{min-height:68px!important;font-size:9px!important}
+  #app.srHomeFullArena>#tabs .tab{min-height:68px!important;font-size:10.5px!important}
+  #app.srHomeFullArena>#tabs .tab span{font-size:10px!important}
   #app.srHomeFullArena>#tabs .fantasyNavIcon{width:31px!important;height:31px!important}
 }
 @media(max-height:720px){
