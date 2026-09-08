@@ -4,7 +4,7 @@ const path = require('path');
 
 const fixturesDir = path.join(__dirname, 'fixtures', 'saves');
 const fixture = (name) => JSON.parse(fs.readFileSync(path.join(fixturesDir, name), 'utf8'));
-const LEGACY_SMOKE_FAILURE_BASELINE = 20;
+const LEGACY_SMOKE_FAILURE_CEILING = 20;
 
 async function openCleanGame(page) {
   // Phase 1 is deliberately an offline/static regression harness. The social
@@ -66,22 +66,25 @@ async function seedHarvestAndOpen(page, testInfo) {
   await expect(page.locator('#overlay')).toBeVisible();
 }
 
-test('existing smoke suite does not exceed the V197 baseline', async ({ page }, testInfo) => {
+test('existing smoke suite stays under the Phase 1 emergency ceiling', async ({ page }, testInfo) => {
+  test.skip(process.env.PHASE1_SMOKE_RATCHET_DONE === '1', 'CI already compared this revision with its exact base revision.');
   test.skip(testInfo.project.name !== 'chromium-desktop', 'The full legacy smoke suite only needs one engine.');
   test.setTimeout(180000);
   await page.goto('/smoke-test.html');
   const summary = page.locator('#big');
   await expect(summary).toContainText(/AUCUNE RÉGRESSION|RÉGRESSION\(S\) DÉTECTÉE/, { timeout: 170000 });
   const text = ((await summary.textContent()) || '').trim();
-  console.log('Legacy smoke baseline:', text);
+  console.log('Legacy smoke ceiling:', text);
 
   const failures = /AUCUNE RÉGRESSION/.test(text)
     ? 0
     : Number((text.match(/(\d+)\s+RÉGRESSION/) || [])[1]);
   expect(Number.isFinite(failures), 'smoke-test.html must report a numeric result').toBe(true);
-  // V197 starts Phase 1 with 20 known legacy smoke failures. This is a ratchet:
-  // existing failures may be fixed, but a PR may not increase their count.
-  expect(failures).toBeLessThanOrEqual(LEGACY_SMOKE_FAILURE_BASELINE);
+  // V197 began Phase 1 with 20 known failures. This remains an emergency
+  // standalone ceiling for local/manual runs. CI uses smoke-ratchet.js to
+  // compare against the exact PR base (or previous main commit), so once a
+  // failure is fixed it cannot be silently reintroduced later.
+  expect(failures).toBeLessThanOrEqual(LEGACY_SMOKE_FAILURE_CEILING);
 });
 
 test('all four bottom tabs remain responsive under repeated navigation', async ({ page }, testInfo) => {
