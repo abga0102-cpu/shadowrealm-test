@@ -1,0 +1,135 @@
+name: Apply combat consolidation v156
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-combat-consolidation-v156.yml'
+permissions:
+  contents: write
+jobs:
+  consolidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Consolidate combat layers
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          # --- game-1: pacing aligned with 0.90s death readability ---
+          p=Path('game-1.js'); s=p.read_text()
+          old='''  // a fight is never resolved instantly, however overpowered the player is:
+  // ENTRY = enemy walks in before anyone swings, HOLD = victory/defeat beat.
+  FIGHT_ENTRY_MS: 420, FIGHT_HOLD_MS: 820,
+  // clearing the last step of a floor gets a longer beat plus an on-screen
+  // floor banner, so a post-Rebirth sprint stays readable instead of a blur
+  FLOOR_CLEAR_MS: 700, FLOOR_FLASH_MS: 900,'''
+          new='''  // Combat Consolidation V156: fast ordinary waves, but enough room for the
+  // 0.90s death effect and reward beat at meaningful floor/boss clears.
+  FIGHT_ENTRY_MS: 300, FIGHT_HOLD_MS: 550,
+  FLOOR_CLEAR_MS: 400, FLOOR_FLASH_MS: 800,'''
+          if old not in s: raise SystemExit('game-1 timing anchor missing')
+          p.write_text(s.replace(old,new,1))
+
+          # --- game-2: integrate V152 cadence/pose + V153 shake directly ---
+          p=Path('game-2.js'); s=p.read_text()
+          old='''        c.heroAtkCd = (1 / (dv.attackSpeed * wt.speed * (1 + fxVal(c, "buffs", "hate") / 100)))
+          * (0.88 + Math.random() * 0.24) * (target.arenaProfile && target.arenaProfile.petElem === "glace" ? 1.12 : 1)
+          * (c._arenaHeroSlow && Date.now()<c._arenaHeroSlow.until ? 1+c._arenaHeroSlow.value/100 : 1);
+        c.heroAttacking = 0.2;'''
+          new='''        c.heroAtkCd = (1 / (dv.attackSpeed * wt.speed * (1 + fxVal(c, "buffs", "hate") / 100)))
+          * (0.97 + Math.random() * 0.06) * (target.arenaProfile && target.arenaProfile.petElem === "glace" ? 1.12 : 1)
+          * (c._arenaHeroSlow && Date.now()<c._arenaHeroSlow.until ? 1+c._arenaHeroSlow.value/100 : 1);
+        // Consolidated from V152: visual anticipation/return only; hit timing is unchanged.
+        c.heroAttacking = 0.28;'''
+          if old not in s: raise SystemExit('hero cadence anchor missing')
+          s=s.replace(old,new,1)
+          if 'e.attacking = 0.2;' not in s: raise SystemExit('enemy attack pose anchor missing')
+          s=s.replace('e.attacking = 0.2;','e.attacking = 0.28;',1)
+          old='''function addShake(c, mag) {
+  const now = Date.now();
+  c.shake = { mag: Math.max(mag, (c.shake && c.shake.until > now) ? c.shake.mag : 0), until: now + 170 };
+}'''
+          new='''function addShake(c, mag) {
+  const now = Date.now();
+  const prev = (c.shake && c.shake.until > now) ? Number(c.shake.mag || 0) : 0;
+  c.shake = { mag: Math.max(Number(mag || 0), prev), until: now + 190 };
+}'''
+          if old not in s: raise SystemExit('shake anchor missing')
+          s=s.replace(old,new,1)
+          old='''  setTimeout(startCampaign, 40);'''
+          new='''  // Start the next combat on the next visual frame: rewards/state are already
+  // committed, and this removes the extra empty 40ms gap between waves.
+  if (typeof requestAnimationFrame === "function") requestAnimationFrame(startCampaign);
+  else setTimeout(startCampaign, 16);'''
+          if old not in s: raise SystemExit('next combat anchor missing')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          # --- game-3: integrate V153 burst envelope directly ---
+          p=Path('game-3.js'); s=p.read_text()
+          old='''const BURST_DUR = { hit: 0.30, crit: 0.50, death: 0.72 };
+function addBurst(c, kind, x, color) {
+  if (!c.bursts) c.bursts = [];
+  c.bursts.push({ kind, x, color, born: Date.now(), max: BURST_DUR[kind] });
+  if (c.bursts.length > 18) c.bursts.shift();
+}'''
+          new='''const BURST_DUR = { hit: 0.34, crit: 0.62, death: 0.90 };
+function addBurst(c, kind, x, color) {
+  if (!c) return;
+  if (!c.bursts) c.bursts = [];
+  c.bursts.push({ kind, x, color, born: Date.now(), max: BURST_DUR[kind] || 0.34 });
+  if (c.bursts.length > 20) c.bursts.shift();
+  // Consolidated V153 feedback: visual kick only, never combat math.
+  if (kind === "crit") addShake(c, 3.2);
+  else if (kind === "death") addShake(c, c.boss ? 4.6 : 3.4);
+}'''
+          if old not in s: raise SystemExit('burst anchor missing')
+          p.write_text(s.replace(old,new,1))
+
+          # --- style: preserve readability hints without runtime style injection ---
+          p=Path('style.css'); s=p.read_text()
+          marker='/* COMBAT_CONSOLIDATION_V156 */'
+          if marker not in s:
+            s += '''\n\n/* COMBAT_CONSOLIDATION_V156 */\n.float{letter-spacing:.1px;text-shadow:0 2px 4px #000,0 0 8px #0009}\n.fLbl{font-weight:950;letter-spacing:.45px}\n.proj{will-change:transform,left}\n.unit img{backface-visibility:hidden;transform:translateZ(0)}\n'''
+          p.write_text(s)
+
+          # --- index: remove runtime override layers and bump build ---
+          p=Path('index.html'); s=p.read_text()
+          s=s.replace('<script src="combat-fluidity-v152.js?v=2026.09.08.152"></script>','',1)
+          s=s.replace('<script src="combat-impact-v153.js?v=2026.09.08.153"></script>','',1)
+          s=s.replace('<!-- Combat motion V154 · build 2026.09.08.154 -->','<!-- Combat consolidation V156 · build 2026.09.08.156 -->',1)
+          if 'content="2026.09.08.154"' not in s: raise SystemExit('index build anchor missing')
+          s=s.replace('content="2026.09.08.154"','content="2026.09.08.156"',1)
+          if "var V='2026.09.08.154'" not in s: raise SystemExit('dynamic build anchor missing')
+          s=s.replace("var V='2026.09.08.154'","var V='2026.09.08.156'",1)
+          s=s.replace('style.css?v=2026.09.08.151','style.css?v=2026.09.08.156',1)
+          p.write_text(s)
+          PY
+      - name: Regression checks
+        run: |
+          node --check game-1.js
+          node --check game-2.js
+          node --check game-3.js
+          node --check game-4.js
+          node --check game-5.js
+          cat game-1.js game-2.js game-3.js game-4.js game-5.js > /tmp/shadowreach-all.js
+          node --check /tmp/shadowreach-all.js
+          grep -F 'FIGHT_ENTRY_MS: 300, FIGHT_HOLD_MS: 550' game-1.js
+          grep -F 'FLOOR_CLEAR_MS: 400, FLOOR_FLASH_MS: 800' game-1.js
+          grep -F '0.97 + Math.random() * 0.06' game-2.js
+          grep -F 'c.heroAttacking = 0.28' game-2.js
+          grep -F 'e.attacking = 0.28' game-2.js
+          grep -F 'until: now + 190' game-2.js
+          grep -F 'const BURST_DUR = { hit: 0.34, crit: 0.62, death: 0.90 }' game-3.js
+          grep -F 'COMBAT_CONSOLIDATION_V156' style.css
+          grep -F 'shadowreach-build" content="2026.09.08.156' index.html
+          grep -F "var V='2026.09.08.156'" index.html
+          ! grep -F 'combat-fluidity-v152.js' index.html
+          ! grep -F 'combat-impact-v153.js' index.html
+      - name: Commit consolidated combat
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game-1.js game-2.js game-3.js style.css index.html
+          git commit -m 'Consolidation combat V156' -m 'Intègre directement les améliorations V152/V153 dans le moteur et le renderer, conserve V154, aligne les transitions sur la durée des morts et supprime les deux surcharges runtime devenues inutiles. Aucun changement de dégâts, HP, récompenses, économie ou progression. Build 2026.09.08.156.'
+          git push
