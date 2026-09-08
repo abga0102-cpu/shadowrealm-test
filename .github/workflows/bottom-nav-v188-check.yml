@@ -1,0 +1,31 @@
+name: Bottom navigation V188 deterministic check
+
+on:
+  push:
+    branches:
+      - canonical-bottom-nav-v188
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bottom-nav-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Install browser driver
+        run: npm install --no-save puppeteer-core@24
+
+      - name: Run deterministic V188 navigation contract
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME" ]; then
+            echo "No Chromium/Chrome binary found on runner"
+            exit 1
+          fi
+          export CHROME
+          node scripts/check-bottom-nav-v188.mjs
