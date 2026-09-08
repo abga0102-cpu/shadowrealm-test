@@ -47,7 +47,7 @@
     d.querySelector('.msg').textContent=msg;out.appendChild(d);
     (ok?pass++:fail++);details.push({ok:ok,msg:msg});
   }
-  function near(a,b,t){return Math.abs(Number(a)-Number(b))<=(t==null?.8:t)}
+  function near(a,b,t){return Math.abs(Number(a)-Number(b)) <= (t == null ? .8 : t)}
   function raf(W){return new Promise(function(resolve){W.requestAnimationFrame(function(){W.requestAnimationFrame(resolve)})})}
   function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
   async function settle(W){await raf(W);await sleep(45);await raf(W)}
@@ -124,9 +124,10 @@
       var tab=tabs2[i],before=snapshot(W)[i],existing=tab.querySelector(':scope>.dot'),added=false;
       if(!existing){existing=W.document.createElement('div');existing.className='dot';tab.appendChild(existing);added=true}
       await settle(W);var after=snapshot(W)[i];
-      if(!sameGeometry(before,after)){badgeOk=false;badgeWhy=targetOf(tab)+' moved when badge appeared';break}
-      if(W.getComputedStyle(existing).pointerEvents!=='none'){badgeOk=false;badgeWhy=targetOf(tab)+' badge intercepts pointer events';break}
+      if(!sameGeometry(before,after)){badgeOk=false;badgeWhy=targetOf(tab)+' moved when badge appeared'}
+      else if(W.getComputedStyle(existing).pointerEvents!=='none'){badgeOk=false;badgeWhy=targetOf(tab)+' badge intercepts pointer events'}
       if(added)existing.remove();await settle(W);
+      if(!badgeOk)break;
     }
     line(badgeOk,'notification dots never move icons/labels or steal taps'+(badgeWhy?' — '+badgeWhy:''));
 
@@ -134,6 +135,7 @@
     Array.from(W.document.querySelectorAll('#tabs>.tab')).forEach(function(tab){
       if(!pointerOk)return;
       var icon=tab.querySelector('.fantasyNavIcon'),label=tab.querySelector('.navLabel');
+      if(!icon||!label){pointerOk=false;pointerWhy=targetOf(tab)+' missing canonical child';return}
       if(W.getComputedStyle(icon).pointerEvents!=='none'||W.getComputedStyle(label).pointerEvents!=='none'){
         pointerOk=false;pointerWhy=targetOf(tab)+' decorative child receives taps';return;
       }
