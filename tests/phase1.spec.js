@@ -4,6 +4,7 @@ const path = require('path');
 
 const fixturesDir = path.join(__dirname, 'fixtures', 'saves');
 const fixture = (name) => JSON.parse(fs.readFileSync(path.join(fixturesDir, name), 'utf8'));
+const LEGACY_SMOKE_FAILURE_BASELINE = 20;
 
 async function openCleanGame(page) {
   await page.addInitScript(() => {
@@ -23,17 +24,35 @@ async function activate(locator, testInfo) {
   else await locator.click();
 }
 
-test('existing smoke suite completes and exposes its baseline', async ({ page }, testInfo) => {
+async function seedHarvestAndOpen(page, testInfo) {
+  await page.evaluate(() => {
+    S.harvest = { secs: 3600, minerai: 25, essence: 12, eclat: 8, gold: 40 };
+    if (typeof render === 'function') render();
+  });
+  // Drive the game through its real public interaction path. ACT.harvest owns
+  // the internal modal call; tests should not depend on that private function.
+  const harvestButton = page.locator('[data-act="harvest"]').first();
+  await expect(harvestButton).toBeVisible();
+  await activate(harvestButton, testInfo);
+  await expect(page.locator('#overlay')).toBeVisible();
+}
+
+test('existing smoke suite does not exceed the V197 baseline', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'The full legacy smoke suite only needs one engine.');
   test.setTimeout(180000);
   await page.goto('/smoke-test.html');
   const summary = page.locator('#big');
   await expect(summary).toContainText(/AUCUNE RÉGRESSION|RÉGRESSION\(S\) DÉTECTÉE/, { timeout: 170000 });
-  const text = (await summary.textContent()) || '';
-  console.log('Legacy smoke baseline:', text.trim());
-  // Phase 1 first makes this suite automatic and observable. Once the current
-  // baseline is recorded, a later guard can reject any increase in failures.
-  expect(text.trim().length).toBeGreaterThan(0);
+  const text = ((await summary.textContent()) || '').trim();
+  console.log('Legacy smoke baseline:', text);
+
+  const failures = /AUCUNE RÉGRESSION/.test(text)
+    ? 0
+    : Number((text.match(/(\d+)\s+RÉGRESSION/) || [])[1]);
+  expect(Number.isFinite(failures), 'smoke-test.html must report a numeric result').toBe(true);
+  // V197 starts Phase 1 with 20 known legacy smoke failures. This is a ratchet:
+  // existing failures may be fixed, but a PR may not increase their count.
+  expect(failures).toBeLessThanOrEqual(LEGACY_SMOKE_FAILURE_BASELINE);
 });
 
 test('all four bottom tabs remain responsive under repeated navigation', async ({ page }, testInfo) => {
@@ -59,21 +78,13 @@ test('all four bottom tabs remain responsive under repeated navigation', async (
 test('harvest modal close and claim controls remain interactive', async ({ page }, testInfo) => {
   await openCleanGame(page);
 
-  await page.evaluate(() => {
-    S.harvest = { secs: 3600, minerai: 25, essence: 12, eclat: 8, gold: 40 };
-    showHarvestModal();
-  });
-  await expect(page.locator('#overlay')).toBeVisible();
+  await seedHarvestAndOpen(page, testInfo);
   const close = page.locator('#overlay [data-act="closeModal"]').first();
   await expect(close).toBeVisible();
   await activate(close, testInfo);
   await expect(page.locator('#overlay')).toHaveCount(0);
 
-  await page.evaluate(() => {
-    S.harvest = { secs: 3600, minerai: 25, essence: 12, eclat: 8, gold: 40 };
-    showHarvestModal();
-  });
-  await expect(page.locator('#overlay')).toBeVisible();
+  await seedHarvestAndOpen(page, testInfo);
   const claim = page.locator('#overlay [data-act="harvestClaim"]');
   await expect(claim).toBeVisible();
   await activate(claim, testInfo);
