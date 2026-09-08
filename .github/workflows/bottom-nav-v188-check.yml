@@ -1,4 +1,4 @@
-name: Bottom navigation V188 browser check
+name: Bottom navigation V188 deterministic check
 
 on:
   push:
@@ -10,30 +10,17 @@ permissions:
   contents: read
 
 jobs:
-  bottom-nav-visual:
+  bottom-nav-contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 5
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
 
-      - name: Start local game server
-        run: |
-          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/shadowreach-http.log 2>&1 &
-          echo $! >/tmp/shadowreach-http.pid
-          for i in {1..20}; do
-            if curl -fsS http://127.0.0.1:8080/bottom-nav-visual-test-v188.html >/dev/null; then exit 0; fi
-            sleep 0.25
-          done
-          cat /tmp/shadowreach-http.log
-          exit 1
-
       - name: Install browser driver
         run: npm install --no-save puppeteer-core@24
 
-      - name: Run V188 visual regression matrix in Chrome
-        env:
-          CI: "true"
+      - name: Run deterministic V188 navigation contract
         run: |
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
           if [ -z "$CHROME" ]; then
@@ -41,65 +28,4 @@ jobs:
             exit 1
           fi
           export CHROME
-          node <<'NODE'
-          const puppeteer = require('puppeteer-core');
-          const profiles = [
-            {name: 'iPhone short / compact-height', width: 375, height: 667},
-            {name: 'iPhone narrow / compact-width', width: 360, height: 780},
-            {name: 'iPhone standard', width: 390, height: 844},
-            {name: 'iPhone large', width: 430, height: 932},
-          ];
-
-          (async () => {
-            const browser = await puppeteer.launch({
-              executablePath: process.env.CHROME,
-              headless: true,
-              args: ['--no-sandbox','--disable-gpu','--disable-dev-shm-usage']
-            });
-            let failed = false;
-            try {
-              for (const profile of profiles) {
-                const page = await browser.newPage();
-                await page.setViewport({
-                  width: profile.width,
-                  height: profile.height,
-                  deviceScaleFactor: 1,
-                  isMobile: true,
-                  hasTouch: true,
-                });
-                page.on('console', msg => console.log(`[${profile.name}]`, msg.text()));
-                page.on('pageerror', err => console.error(`[${profile.name} pageerror]`, err.message));
-                try {
-                  await page.goto(
-                    `http://127.0.0.1:8080/bottom-nav-visual-test-v188.html?profile=${encodeURIComponent(profile.name)}&t=${Date.now()}`,
-                    {waitUntil: 'load', timeout: 15000}
-                  );
-                  await page.waitForFunction(
-                    () => window.__bottomNavV188Results && window.__bottomNavV188Results.done === true,
-                    {timeout: 15000}
-                  );
-                  const result = await page.evaluate(() => window.__bottomNavV188Results);
-                  console.log(`\n=== ${profile.name} ${profile.width}x${profile.height} ===`);
-                  console.log(JSON.stringify(result, null, 2));
-                  if (!result || result.fail !== 0) failed = true;
-                } catch (err) {
-                  failed = true;
-                  console.error(`\n=== ${profile.name} failed to execute ===`);
-                  console.error(err && err.stack || err);
-                } finally {
-                  await page.close();
-                }
-              }
-            } finally {
-              await browser.close();
-            }
-            if (failed) process.exit(1);
-          })().catch(err => {
-            console.error(err && err.stack || err);
-            process.exit(1);
-          });
-          NODE
-
-      - name: Show server log on failure
-        if: failure()
-        run: cat /tmp/shadowreach-http.log || true
+          node scripts/check-bottom-nav-v188.mjs
