@@ -42,6 +42,10 @@ function renderTabsFixture(){
 }
 function nav(to){route=String(to||'accueil');renderTabsFixture()}
 renderTabsFixture();
+document.getElementById('app').addEventListener('click',function(e){
+  var el=e.target&&e.target.closest?e.target.closest('[data-act]'):null;
+  if(el&&el.dataset.act==='go')nav(el.dataset.arg);
+});
 </script>
 <script src="bottom-nav-v53.js?v=2026.09.08.188"></script>
 <script src="home-layout-fix-v119.js?v=2026.09.08.188"></script>
