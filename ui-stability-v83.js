@@ -1,7 +1,9 @@
-// RELIABLE_ACTIONS_AND_MODAL_STABILITY_V83
+// RELIABLE_ACTIONS_AND_MODAL_STABILITY_V83 · Phase 2C modal lifecycle owner
 // Priorité: aucun bouton volontaire du joueur ne doit être bloqué par la couche de stabilité.
 (function(){
   'use strict';
+  if(window.__srModalLifecyclePhase2C)return;
+  window.__srModalLifecyclePhase2C=true;
 
   const css=document.createElement('style');
   css.id='reliableActionsModalStabilityV83';
@@ -81,6 +83,40 @@
   document.addEventListener('click',function(){setTimeout(clearBypass,0);},true);
   document.addEventListener('pointercancel',function(){tap=null;clearBypass();},true);
 
+  // Récolte met à jour ses chiffres toutes les secondes. Le moteur remplaçait
+  // auparavant toute la .mbody, y compris RÉCLAMER, ce qui pouvait supprimer le
+  // bouton entre pointerdown et pointerup sur Safari/WebKit. On rafraîchit tout
+  // le contenu informatif mais on conserve le même nœud d'action jusqu'à la fermeture.
+  const nativeHarvestRefresh=typeof window.refreshHarvestModal==='function'?window.refreshHarvestModal:null;
+  if(nativeHarvestRefresh&&typeof window.harvestModalHTML==='function'){
+    window.refreshHarvestModal=function(){
+      const ov=document.getElementById('overlay');
+      if(!ov||ov.getAttribute('data-modal')!=='harvest')return nativeHarvestRefresh.apply(this,arguments);
+      const body=ov.querySelector('.mbody');
+      if(!body)return;
+      const action=body.lastElementChild;
+      const liveBtn=action&&action.querySelector? action.querySelector('[data-act="harvestClaim"]'):null;
+      if(!action||!liveBtn)return nativeHarvestRefresh.apply(this,arguments);
+
+      const fresh=document.createElement('div');
+      fresh.innerHTML=window.harvestModalHTML();
+      const freshAction=fresh.lastElementChild;
+      const freshBtn=freshAction&&freshAction.querySelector?freshAction.querySelector('[data-act="harvestClaim"]'):null;
+      if(!freshAction||!freshBtn)return nativeHarvestRefresh.apply(this,arguments);
+
+      // Keep the live action node attached throughout the refresh. Only mirror
+      // whether the current state makes the claim available.
+      if(freshBtn.hasAttribute('disabled')) liveBtn.setAttribute('disabled','');
+      else liveBtn.removeAttribute('disabled');
+      liveBtn.disabled=!!freshBtn.disabled;
+
+      while(body.firstChild&&body.firstChild!==action)body.removeChild(body.firstChild);
+      while(fresh.firstChild&&fresh.firstChild!==freshAction)body.insertBefore(fresh.firstChild,action);
+      if(typeof queueDecisionHierarchyV30==='function')queueDecisionHierarchyV30();
+    };
+    window.__srHarvestStableActionPhase2C=true;
+  }
+
   const nativeOpen=typeof window.openModal==='function'?window.openModal:null;
   const nativeClose=typeof window.closeModal==='function'?window.closeModal:null;
   if(!nativeOpen||!nativeClose)return;
@@ -89,9 +125,18 @@
   let draining=false;
   let explicitUntil=0;
   let nativeTransitionDepth=0;
+  let lastModalState=null;
   function now(){return typeof performance!=='undefined'?performance.now():Date.now();}
   function overlay(){return document.getElementById('overlay');}
   function markOverlay(){const ov=overlay();if(ov)ov.setAttribute('data-sr-persistent','1');}
+  function publishModalState(force,openOverride){
+    const open=typeof openOverride==='boolean'?openOverride:!!overlay();
+    markOverlay();
+    if(!force&&lastModalState===open)return;
+    lastModalState=open;
+    try{window.dispatchEvent(new CustomEvent('sr:modal-state',{detail:{open:open}}));}catch(_){}
+  }
+  window.__srGetModalStatePhase2C=function(){return !!overlay();};
   function fullKey(args){return String(args[1]||'')+'\n'+String(args[0]||'');}
   function enqueue(args){
     const arr=Array.from(args),key=fullKey(arr);
@@ -100,11 +145,19 @@
   }
   function nativeOpenSafe(ctx,args){
     nativeTransitionDepth++;
-    try{return nativeOpen.apply(ctx,args);}finally{nativeTransitionDepth=Math.max(0,nativeTransitionDepth-1);markOverlay();}
+    publishModalState(false,true);
+    try{return nativeOpen.apply(ctx,args);}finally{
+      nativeTransitionDepth=Math.max(0,nativeTransitionDepth-1);
+      markOverlay();
+      publishModalState();
+    }
   }
   function nativeCloseSafe(ctx,args){
     nativeTransitionDepth++;
-    try{return nativeClose.apply(ctx,args);}finally{nativeTransitionDepth=Math.max(0,nativeTransitionDepth-1);}
+    try{return nativeClose.apply(ctx,args);}finally{
+      nativeTransitionDepth=Math.max(0,nativeTransitionDepth-1);
+      publishModalState();
+    }
   }
   function drain(){
     if(draining||overlay()||!queue.length)return;
@@ -152,9 +205,10 @@
   const app=document.getElementById('app');
   if(app){
     let queued=false;
-    const mark=function(){const sc=document.getElementById('screen');if(sc)sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));markOverlay();if(!overlay())drain();};
+    const mark=function(){const sc=document.getElementById('screen');if(sc)sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));markOverlay();publishModalState();if(!overlay())drain();};
     const schedule=function(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;mark();});};
     new MutationObserver(schedule).observe(app,{childList:true,subtree:false});
     mark();
   }
+  publishModalState(true);
 })();
