@@ -1,7 +1,6 @@
-/* SHADOWREACH · Auto-Forge Compare V199 / V253 batch authority
+/* SHADOWREACH · Auto-Forge Compare V199 / V273 batch authority
    AUTO follows the Forge filter only: every kept result is surfaced for comparison.
-   V253 adds a persisted batch size (1/3/5/10/20) per AUTO cycle while preserving
-   the original comparison pause/resume authority.
+   Canonical persisted batch sizes are 1/3/5/10, matching the Forge progression gate.
 */
 (function(){
 'use strict';
@@ -9,7 +8,7 @@ if(window.__srAutoForgeCompareV199)return;window.__srAutoForgeCompareV199=true;
 if(typeof S==='undefined'||!S.forge||typeof forgeSummon!=='function'||typeof showForgeResult!=='function')return;
 
 var pausedForCompare=false;
-var VALID_BATCH=[1,3,5,10,20];
+var VALID_BATCH=[1,3,5,10];
 function autoBatch(){var n=Math.floor(Number(S.forge.autoBatch)||1);return VALID_BATCH.indexOf(n)>=0?n:1;}
 function isWanted(r){return !!(r&&!r.recycled&&r.id);}
 function resume(){
