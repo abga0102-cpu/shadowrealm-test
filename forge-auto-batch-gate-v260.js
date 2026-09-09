@@ -9,11 +9,8 @@ if(typeof S==='undefined'||!S.forge)return;
 var OPTIONS=[1,3,5,10];
 function unlocked(){try{return Math.max(1,Math.floor(typeof forgeBatch==='function'?forgeBatch(S):1));}catch(_){return 1;}}
 function allowed(){var m=unlocked();return OPTIONS.filter(function(n){return n<=m;});}
-function safeChoice(n){var a=allowed(),v=Math.floor(Number(n)||1;if(a.indexOf(v)>=0)return v;for(var i=a.length-1;i>=0;i--)if(a[i]<=v)return a[i];return 1;}
+function safeChoice(n){var a=allowed(),v=Math.floor(Number(n)||1);if(a.indexOf(v)>=0)return v;for(var i=a.length-1;i>=0;i--){if(a[i]<=v)return a[i];}return 1;}
 function sanitize(save){var before=Math.floor(Number(S.forge.autoBatch)||1),after=safeChoice(before);if(before!==after){S.forge.autoBatch=after;if(save&&typeof saveNow==='function')try{saveNow();}catch(_){}}return after;}
-/* fix syntax-safe implementation below */
-function safeChoice260(n){var a=allowed(),v=Math.floor(Number(n)||1);if(a.indexOf(v)>=0)return v;for(var i=a.length-1;i>=0;i--){if(a[i]<=v)return a[i];}return 1;}
-safeChoice=safeChoice260;
 sanitize(true);
 if(typeof ACT!=='undefined'&&ACT){
   var base=ACT.autoForgeBatch258;
