@@ -32,15 +32,19 @@ async function touchCurrentLocator(page, locator, options = {}) {
           const attrs = {};
           const keep = new Set(['id', 'data-act', 'data-arg', 'data-testid', 'aria-label']);
           for (const attr of el.attributes) {
-            if (keep.has(attr.name) || attr.name.startsWith('data-sr-')) {
+            if (keep.has(attr.name) || attr.name.startsWith('data-sr-') || attr.name.startsWith('data-ach-')) {
               attrs[attr.name] = attr.value;
             }
           }
           const text = String(el.textContent || '').replace(/\s+/g, ' ').trim();
+          const hasStableIdentity = Object.keys(attrs).length > 0;
           return {
             tag: el.tagName,
             attrs,
-            text: text.length > 0 && text.length <= 80 ? text : ''
+            // Text is useful for otherwise anonymous controls, but it is not a
+            // stable identity when the control updates its own label on click
+            // (for example Équiper -> Équipé).
+            text: !hasStableIdentity && text.length > 0 && text.length <= 80 ? text : ''
           };
         })();
 
@@ -94,9 +98,9 @@ async function touchCurrentLocator(page, locator, options = {}) {
       }
 
       // Arm a capture-phase probe and recheck the sampled point after the probe
-      // is installed. The probe matches logical identity (data-act/data-arg,
-      // id, data-sr-* markers, etc.), so an equivalent replacement node is fine;
-      // a different control is not.
+      // is installed. The probe matches durable logical identity (data-act /
+      // data-arg, data-sr-*, data-ach-*, id, etc.), so an equivalent replacement
+      // node or an in-place label/class update is fine; a different control is not.
       const armed = await page.evaluate(({ x, y, signature }) => {
         const matches = (node) => {
           for (let cur = node; cur && cur.nodeType === 1; cur = cur.parentElement) {
