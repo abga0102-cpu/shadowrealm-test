@@ -99,4 +99,13 @@
   document.addEventListener('click',scheduleEnhance,true);
   window.addEventListener('focus',scheduleEnhance,{passive:true});
   scheduleEnhance();
+
+  /* Charge le module de pagination V232 sans toucher au moteur ni aux sauvegardes. */
+  if(!document.querySelector('script[data-sr-fam-v232]')){
+    var s=document.createElement('script');
+    s.src='familiars-noscr-pagination-v232.js?v=2026.09.09.232';
+    s.async=false;
+    s.dataset.srFamV232='1';
+    document.body.appendChild(s);
+  }
 })();
