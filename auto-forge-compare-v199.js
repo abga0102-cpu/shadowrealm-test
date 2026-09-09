@@ -1,7 +1,7 @@
-/* SHADOWREACH · Auto-Forge Compare V199
-   AUTO follows the Forge filter only: every kept result is surfaced for comparison,
-   regardless of power, base stats or affixes. Recycled results stay silent.
-   When a kept result appears, AUTO pauses until the comparison queue is resolved.
+/* SHADOWREACH · Auto-Forge Compare V199 / V253 batch authority
+   AUTO follows the Forge filter only: every kept result is surfaced for comparison.
+   V253 adds a persisted batch size (1/3/5/10/20) per AUTO cycle while preserving
+   the original comparison pause/resume authority.
 */
 (function(){
 'use strict';
@@ -9,10 +9,9 @@ if(window.__srAutoForgeCompareV199)return;window.__srAutoForgeCompareV199=true;
 if(typeof S==='undefined'||!S.forge||typeof forgeSummon!=='function'||typeof showForgeResult!=='function')return;
 
 var pausedForCompare=false;
-
-function isWanted(r){
- return !!(r&&!r.recycled&&r.id);
-}
+var VALID_BATCH=[1,3,5,10,20];
+function autoBatch(){var n=Math.floor(Number(S.forge.autoBatch)||1);return VALID_BATCH.indexOf(n)>=0?n:1;}
+function isWanted(r){return !!(r&&!r.recycled&&r.id);}
 function resume(){
  if(!pausedForCompare)return;
  pausedForCompare=false;
@@ -21,9 +20,7 @@ function resume(){
 window.__srResumeAutoForgeV199=resume;
 window.__srAutoForgePausedForCompareV199=function(){return pausedForCompare;};
 
-try{
- if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}
-}catch(_){}
+try{if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}}catch(_){}
 
 scheduleAutoForge=function(delay){
  if(pausedForCompare)return;
@@ -33,12 +30,13 @@ scheduleAutoForge=function(delay){
   if(!S.forge.autoForge||pausedForCompare)return;
   var shouldRearm=true;
   try{
-   if(S.minerai>=forgeCost(S.forge.level)){
-    var res=forgeSummon(1)||[];
+   var cost=forgeCost(S.forge.level);
+   if(S.minerai>=cost){
+    var affordable=Math.max(1,Math.floor(Number(S.minerai||0)/Math.max(1,cost)));
+    var amount=Math.max(1,Math.min(autoBatch(),affordable));
+    var res=forgeSummon(amount)||[];
     var wanted=res.filter(isWanted);
     if(wanted.length){
-      /* Mark these rows so the comparison authority keeps every filtered drop,
-         including two results for the same slot from a free extra forge. */
       wanted.forEach(function(r){r.__autoForgeCompareV199=true;});
       pausedForCompare=true;
       shouldRearm=false;
@@ -46,9 +44,7 @@ scheduleAutoForge=function(delay){
     }
    }
   }catch(err){console.error('auto-forge filter comparison tick failed',err);}
-  finally{
-   if(shouldRearm&&S.forge.autoForge&&!pausedForCompare)scheduleAutoForge(1500);
-  }
+  finally{if(shouldRearm&&S.forge.autoForge&&!pausedForCompare)scheduleAutoForge(1500);}
  },Math.max(0,delay==null?1500:delay));
 };
 
