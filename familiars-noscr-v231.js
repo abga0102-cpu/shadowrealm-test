@@ -52,3 +52,12 @@
   if(typeof SCREENS!=='undefined'&&SCREENS)SCREENS.familiers=renderV231;
   document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-fam-tab]');if(!t)return;tab=t.getAttribute('data-fam-tab')||'collection';if(typeof render==='function')render();},true);
 })();
+
+/* V233: charge toujours la couche de pagination/compaction, même si index.html n'a pas encore été rafraîchi. */
+(function(){
+  if(window.__srFamPaginationLoaderV233)return;window.__srFamPaginationLoaderV233=true;
+  var s=document.createElement('script');
+  s.src='familiars-noscr-pagination-v232.js?v=2026.09.09.233';
+  s.async=false;
+  document.body.appendChild(s);
+})();
