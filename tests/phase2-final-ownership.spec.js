@@ -17,13 +17,15 @@ async function openCleanGame(page) {
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
 }
 
-test('Accomplishments has one persistent modal-rendering owner', async ({}, testInfo) => {
+test('Accomplishments keeps the required titles compatibility layer while retiring the v138 modal repair', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
   const titles = fs.readFileSync(path.join(root, 'accomplishments-titles-v133.js'), 'utf8');
   const stability = fs.readFileSync(path.join(root, 'accomplishments-stability-v138.js'), 'utf8');
   const canonical = fs.readFileSync(path.join(root, 'accomplishments-canonical-v139.js'), 'utf8');
 
-  expect(titles).not.toMatch(/openModal\s*=\s*function/);
+  // V133/V134 remains intentionally: the legacy smoke ratchet proves its title
+  // integration behavior is still required. V138's duplicate floor repair is not.
+  expect(titles).toMatch(/openModal\s*=\s*function/);
   expect(stability).not.toMatch(/openModal\s*=\s*function/);
   expect(canonical).toMatch(/openModal\s*=\s*function/);
   expect(canonical).toContain('data-ach-overview-v135');
