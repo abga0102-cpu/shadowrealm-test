@@ -11,7 +11,7 @@ window.__srHomeLayoutPhase2B=true;
 var style=document.createElement('style');
 style.id='srHomeLayoutAuthorityV219';
 style.textContent=`
-#app.srHomeFullArena{position:relative!important;overflow:hidden!important;--srHudH:112px;--srSkillH:58px;--srForgeH:236px}
+#app.srHomeFullArena{position:relative!important;overflow:hidden!important;--srHudH:112px;--srSkillH:58px;--srForgeH:250px}
 #app.srHomeFullArena>#hud{position:absolute!important;left:0!important;right:0!important;top:-8px!important;z-index:70!important;height:var(--srHudH)!important;min-height:var(--srHudH)!important;max-height:var(--srHudH)!important;overflow:visible!important;flex:none!important;padding:4px 9px 3px!important;background:linear-gradient(180deg,#07101df2 0%,#0a1422d4 76%,#08101b70 92%,transparent 100%)!important;border:0!important;box-shadow:none!important;pointer-events:auto!important}
 #app.srHomeFullArena>#hud::after{display:none!important}
 #app.srHomeFullArena>#hud .curr[data-arg="minerai"]{display:none!important}
@@ -44,7 +44,7 @@ style.textContent=`
 #app.srHomeFullArena .homeForge .homeCompactEnd{display:block!important}
 
 @media(max-width:370px){
- #app.srHomeFullArena{--srHudH:106px;--srForgeH:226px}
+ #app.srHomeFullArena{--srHudH:106px;--srForgeH:240px}
  #app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}
  #app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}
  #app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}
@@ -54,7 +54,7 @@ style.textContent=`
  #app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}
 }
 @media(max-height:720px){
- #app.srHomeFullArena{--srHudH:104px;--srSkillH:54px;--srForgeH:210px}
+ #app.srHomeFullArena{--srHudH:104px;--srSkillH:54px;--srForgeH:225px}
  #app.srHomeFullArena>#hud{top:-10px!important;padding-top:3px!important}
  #app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}
  #app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}
