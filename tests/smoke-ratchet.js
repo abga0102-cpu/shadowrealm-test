@@ -88,6 +88,11 @@ async function readSmokeFailures(browser, rootDir, label) {
     }
 
     console.log(`${label} legacy smoke failures: ${failures}`);
+    const details = await page.locator('.ko .m').allTextContents();
+    if (details.length) {
+      console.log(`${label} failing smoke checks:`);
+      details.forEach((detail) => console.log(` - ${detail}`));
+    }
     return failures;
   } finally {
     await page.close();
