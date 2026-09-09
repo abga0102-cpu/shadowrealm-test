@@ -53,7 +53,10 @@ function startStaticServer(rootDir) {
     server.once('error', reject);
     server.listen(0, '127.0.0.1', () => {
       const address = server.address();
-      resolve({ server, url: `http://127.0.0.1:${address.port}` });
+      resolve({
+        server,
+        url: `http://127.0.0.1:${address.port}`
+      });
     });
   });
 }
@@ -85,9 +88,6 @@ async function readSmokeFailures(browser, rootDir, label) {
     }
 
     console.log(`${label} legacy smoke failures: ${failures}`);
-    const details = await page.locator('#out .ko .m').allTextContents();
-    console.log(`${label} legacy smoke failure details:`);
-    details.forEach((msg, i) => console.log(`  ${i + 1}. ${msg}`));
     return failures;
   } finally {
     await page.close();
