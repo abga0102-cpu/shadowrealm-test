@@ -1,37 +1,11 @@
 /* SHADOWREACH · Accomplishments title compatibility v134
-   - Canonical Accomplissements rendering belongs to v139.
-   - Keep only the title equip interaction/persistence and floating-chat suppression. */
+   Phase 3E: canonical title rendering and equip interaction belong to v139.
+   Keep only the requested floating-chat suppression here until social/UI
+   ownership is migrated separately. */
 (function(){
 'use strict';
-if(window.__srAccomplishmentsTitlesV134)return;window.__srAccomplishmentsTitlesV134=true;
-if(typeof S==='undefined')return;
-
-function ensureTitles(){
-  S.titles=S.titles&&typeof S.titles==='object'?S.titles:{};
-  if(typeof S.equippedTitle!=='string')S.equippedTitle='';
-}
-function divineUnlocked(){
-  ensureTitles();
-  var st=S.sanctuary||{};
-  return !!(st.divineTitleUnlocked||S.titles.divin);
-}
-function saveTitle(){try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){} }
-function syncTitleButton(b){
-  var equipped=S.equippedTitle==='divin';
-  b.textContent=equipped?'Équipé':'Équiper';
-  b.classList.remove('gold','dark');
-  b.classList.add(equipped?'dark':'gold');
-}
-
-document.addEventListener('click',function(e){
-  var b=e.target&&e.target.closest?e.target.closest('[data-ach-title="divin"]'):null;
-  if(!b)return;
-  e.preventDefault();e.stopPropagation();
-  if(!divineUnlocked())return;
-  S.equippedTitle=S.equippedTitle==='divin'?'':'divin';
-  saveTitle();
-  syncTitleButton(b);
-},true);
+if(window.__srAccomplishmentsTitlesV134)return;
+window.__srAccomplishmentsTitlesV134=true;
 
 /* Suppression demandée de la bulle flottante. Le système social reste chargé,
    mais son bouton flottant ne recouvre plus Développement, Accomplissements ou les autres écrans. */
