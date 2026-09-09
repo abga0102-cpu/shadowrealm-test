@@ -1,5 +1,6 @@
-/* SHADOWREACH · tutorial sequencing + AUTO unlock v100
+/* SHADOWREACH · tutorial sequencing + AUTO unlock v100 · Phase 2C
    - Tutorial cards never stack over a modal/result window.
+   - Tutorial sequencing consumes the canonical modal lifecycle instead of DOM mutation.
    - The next tutorial step waits for the previous UI to be fully closed.
    - Automatic skill casting unlocks at character level 10.
 */
@@ -7,6 +8,7 @@
   'use strict';
   if (window.__srTutorialAutoV100) return;
   window.__srTutorialAutoV100 = true;
+  window.__srTutorialModalPhase2C = true;
 
   if (typeof S === 'undefined') return;
 
@@ -55,6 +57,7 @@
 
   /* ---------- Tutorial: one UI step at a time ---------- */
   function blockingUiOpen(){
+    if (typeof window.__srGetModalStatePhase2C === 'function') return !!window.__srGetModalStatePhase2C();
     return !!document.getElementById('overlay');
   }
 
@@ -80,35 +83,26 @@
       scheduleTutorialCheck(180);
     };
 
-    /* When the blocking modal disappears, start the next introduction only
-       after the interface has settled. This also covers Forge -> Continuer. */
-    var observer = new MutationObserver(function(mutations){
-      var overlayChanged = false;
-      for (var i=0;i<mutations.length;i++) {
-        var m = mutations[i];
-        for (var j=0;j<m.addedNodes.length;j++) {
-          if (m.addedNodes[j] && m.addedNodes[j].id === 'overlay') overlayChanged = true;
-        }
-        for (var k=0;k<m.removedNodes.length;k++) {
-          if (m.removedNodes[k] && m.removedNodes[k].id === 'overlay') overlayChanged = true;
-        }
-      }
-      if (!overlayChanged) return;
-      if (blockingUiOpen()) {
-        /* Defensive cleanup: an introduction that slipped in during the same
-           event loop must not remain visible behind a newly opened modal. */
-        var card = document.getElementById('tutorialCard');
-        if (card && typeof clearTutorialGuide === 'function') {
-          clearTutorialGuide();
-          card.remove();
-          /* Do NOT mark it seen: it will be proposed again after the modal. */
-          if (typeof tutorialCurrentKey !== 'undefined') tutorialCurrentKey = null;
-        }
+    function removeTutorialBehindModal(){
+      var card = document.getElementById('tutorialCard');
+      if (!card) return;
+      if (typeof clearTutorialGuide === 'function') clearTutorialGuide();
+      card.remove();
+      /* Do NOT mark it seen: it will be proposed again after the modal. */
+      if (typeof tutorialCurrentKey !== 'undefined') tutorialCurrentKey = null;
+    }
+
+    /* The modal owner emits one coalesced state transition after open/close.
+       Tutorial reacts to that lifecycle instead of watching #app mutations. */
+    window.addEventListener('sr:modal-state', function(e){
+      var open = e && e.detail ? !!e.detail.open : blockingUiOpen();
+      if (open) {
+        clearTimeout(tutorialTimer);
+        removeTutorialBehindModal();
       } else {
         scheduleTutorialCheck(220);
       }
     });
-    observer.observe(document.getElementById('app') || document.body, {childList:true, subtree:false});
 
     /* Re-check after normal navigation/render settles as well. */
     window.addEventListener('load', function(){ scheduleTutorialCheck(300); }, {once:true});
