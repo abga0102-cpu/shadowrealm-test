@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { touchCurrentLocator } = require('./helpers/render-stable-touch');
 
 async function openCleanGame(page) {
   await page.route('**/npm/**', (route) => route.abort());
@@ -14,30 +15,9 @@ async function openCleanGame(page) {
   await expect.poll(() => page.evaluate(() => !!window.__srBottomNavPhase2A)).toBe(true);
 }
 
-async function tapAtCurrentCenter(page, locator, message) {
-  await expect(locator).toBeVisible();
-  const hit = await locator.evaluate((el) => {
-    const rect = el.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    const top = document.elementFromPoint(x, y);
-    return {
-      x,
-      y,
-      width: rect.width,
-      height: rect.height,
-      ok: !!top && (top === el || el.contains(top))
-    };
-  });
-  expect(hit.width).toBeGreaterThan(0);
-  expect(hit.height).toBeGreaterThan(0);
-  expect(hit.ok, message).toBe(true);
-  await page.touchscreen.tap(hit.x, hit.y);
-}
-
 async function activateBottomNav(page, locator, testInfo) {
   if (testInfo.project.name === 'webkit-iphone') {
-    await tapAtCurrentCenter(page, locator, 'bottom-nav center must remain touchable');
+    await touchCurrentLocator(page, locator, { label: 'Phase 3 BottomNav target' });
   } else {
     await locator.click();
   }
@@ -45,9 +25,11 @@ async function activateBottomNav(page, locator, testInfo) {
 
 async function activateScrollable(page, locator, testInfo) {
   if (testInfo.project.name === 'webkit-iphone') {
-    await expect(locator).toBeVisible();
-    await locator.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
-    await tapAtCurrentCenter(page, locator, 'target center must remain touchable after scrolling into view');
+    await touchCurrentLocator(page, locator, {
+      label: 'Phase 3 scrollable target',
+      scroll: true,
+      timeout: 10000
+    });
   } else {
     await locator.click();
   }
@@ -65,11 +47,20 @@ async function expectActiveRoute(page, routeArg) {
 }
 
 async function expectCanonicalAccomplishments(page) {
-  await expect(page.locator('#overlay')).toHaveCount(1, { timeout: 5000 });
-  await expect(page.locator('#overlay .srAch139')).toHaveCount(1);
-  await expect(page.locator('#overlay [data-ach-overview-v135]')).toHaveCount(1);
-  await expect(page.locator('#overlay [data-ach-floors-v138]')).toHaveCount(1);
-  await expect(page.locator('#overlay [data-ach-titles-v134]')).toHaveCount(1);
+  // Read the large canonical modal in one browser-side snapshot. Five separate
+  // locator assertions make Playwright trace the same deep modal five times;
+  // on WebKit that tracing overhead can consume the whole test timeout even
+  // though every selector has already resolved successfully.
+  await expect.poll(() => page.evaluate(() => ({
+    overlay: document.querySelectorAll('#overlay').length,
+    canonical: document.querySelectorAll('#overlay .srAch139').length,
+    overview: document.querySelectorAll('#overlay [data-ach-overview-v135]').length,
+    floors: document.querySelectorAll('#overlay [data-ach-floors-v138]').length,
+    titles: document.querySelectorAll('#overlay [data-ach-titles-v134]').length
+  })), {
+    timeout: 5000,
+    intervals: [50, 100, 250]
+  }).toEqual({ overlay: 1, canonical: 1, overview: 1, floors: 1, titles: 1 });
 }
 
 test('Accomplishments compatibility stack renders one canonical modal through repeated opens', async ({ page }, testInfo) => {
