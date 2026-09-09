@@ -4,7 +4,7 @@
 (function(){
 'use strict';
 if(window.__srAccomplishmentsTitlesV134)return;window.__srAccomplishmentsTitlesV134=true;
-if(typeof S==='undefined'||typeof ACT==='undefined')return;
+if(typeof S==='undefined')return;
 
 function ensureTitles(){
   S.titles=S.titles&&typeof S.titles==='object'?S.titles:{};
@@ -16,6 +16,12 @@ function divineUnlocked(){
   return !!(st.divineTitleUnlocked||S.titles.divin);
 }
 function saveTitle(){try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){} }
+function syncTitleButton(b){
+  var equipped=S.equippedTitle==='divin';
+  b.textContent=equipped?'Équipé':'Équiper';
+  b.classList.remove('gold','dark');
+  b.classList.add(equipped?'dark':'gold');
+}
 
 document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('[data-ach-title="divin"]'):null;
@@ -24,7 +30,7 @@ document.addEventListener('click',function(e){
   if(!divineUnlocked())return;
   S.equippedTitle=S.equippedTitle==='divin'?'':'divin';
   saveTitle();
-  if(typeof ACT.accomplishments==='function')ACT.accomplishments();
+  syncTitleButton(b);
 },true);
 
 /* Suppression demandée de la bulle flottante. Le système social reste chargé,
