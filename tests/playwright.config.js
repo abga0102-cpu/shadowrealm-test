@@ -20,6 +20,10 @@ module.exports = defineConfig({
   },
   projects: [
     { name: 'chromium-desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'webkit-iphone', use: { ...devices['iPhone 13'] } }
+    // WebKit tracing materially increases protocol/snapshot pressure during the
+    // deep Accomplishments modal stress checks and has produced nondeterministic
+    // WK target crashes on otherwise identical revisions. Keep the full iPhone
+    // suite and real touch input, but leave trace capture to Chromium diagnostics.
+    { name: 'webkit-iphone', use: { ...devices['iPhone 13'], trace: 'off' } }
   ]
 });
