@@ -1,4 +1,4 @@
-/* Shadowreach V246 loader — infusion recycling + Familiar 3-tab layout + one natural scroll. */
+/* Shadowreach V246 loader — infusion recycling + Familiar 3-tab layout + natural scroll + Personal Tree spectacle. */
 (function(){
   'use strict';
   if(window.__srFamV246Loader)return;
@@ -19,7 +19,9 @@
               load('familiars-tabs-merge-v241.js?v=2026.09.09.246',function(){
                 load('familiars-scroll-safearea-v242.js?v=2026.09.09.246',function(){
                   load('familiars-scroll-viewport-v245.js?v=2026.09.09.246',function(){
-                    load('familiars-scroll-natural-v246.js?v=2026.09.09.246');
+                    load('familiars-scroll-natural-v246.js?v=2026.09.09.246',function(){
+                      load('personal-tree-spectacle-v246.js?v=2026.09.09.246');
+                    });
                   });
                 });
               });
