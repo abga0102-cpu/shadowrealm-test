@@ -53,6 +53,17 @@ async function activateScrollable(page, locator, testInfo) {
   }
 }
 
+async function expectActiveRoute(page, routeArg) {
+  await expect.poll(async () => {
+    return page.locator('#tabs .tab.on').evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute('data-arg') || '')
+    );
+  }, {
+    timeout: 7000,
+    intervals: [50, 100, 250, 500]
+  }).toEqual([routeArg]);
+}
+
 async function expectCanonicalAccomplishments(page) {
   await expect(page.locator('#overlay')).toHaveCount(1, { timeout: 5000 });
   await expect(page.locator('#overlay .srAch139')).toHaveCount(1);
@@ -66,7 +77,7 @@ test('Accomplishments compatibility stack renders one canonical modal through re
 
   const development = page.locator('#tabs .tab[data-arg="developpement"]');
   await activateBottomNav(page, development, testInfo);
-  await expect(page.locator('#tabs .tab.on')).toHaveAttribute('data-arg', 'developpement');
+  await expectActiveRoute(page, 'developpement');
 
   const entry = page.locator('[data-sr-accomplishments-v138]');
   await expect(entry).toHaveCount(1, { timeout: 5000 });
@@ -89,7 +100,7 @@ test('BottomNav stays touchable after Accomplishments modal lifecycle', async ({
 
   const development = page.locator('#tabs .tab[data-arg="developpement"]');
   await activateBottomNav(page, development, testInfo);
-  await expect(page.locator('#tabs .tab.on')).toHaveAttribute('data-arg', 'developpement');
+  await expectActiveRoute(page, 'developpement');
 
   const entry = page.locator('[data-sr-accomplishments-v138]');
   await expect(entry).toHaveCount(1, { timeout: 5000 });
@@ -110,7 +121,7 @@ test('BottomNav stays touchable after Accomplishments modal lifecycle', async ({
     const tab = page.locator(`#tabs .tab[data-arg="${routeArg}"]`);
     await expect(tab).toHaveCount(1);
     await activateBottomNav(page, tab, testInfo);
-    await expect(page.locator('#tabs .tab.on')).toHaveAttribute('data-arg', routeArg);
+    await expectActiveRoute(page, routeArg);
     await expect(page.locator('#tabs .fantasyNavIcon')).toHaveCount(4);
   }
 
