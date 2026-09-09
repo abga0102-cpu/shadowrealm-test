@@ -77,15 +77,15 @@ test('V224 keeps Divine Forge drops locked before first Ascension', async ({ pag
   const result = await page.evaluate(() => {
     const zeroAscension = getRates('forge', 999, 0, 999);
     return {
-      getRatesOwned: !!(getRates && getRates.__srV224),
+      authorityLoaded: !!window.__srGameBalanceV224,
       divine: Number(zeroAscension && zeroAscension.DIVIN) || 0,
       total: Object.keys(zeroAscension || {}).reduce((sum, key) => sum + (Number(zeroAscension[key]) || 0), 0)
     };
   });
 
-  expect(result.getRatesOwned).toBe(true);
+  expect(result.authorityLoaded).toBe(true);
   expect(result.divine).toBe(0);
-  expect(result.total).toBeGreaterThan(0);
+  expect(result.total).toBeCloseTo(100, 8);
 });
 
 test('Forge arena preview follows the same fixed-base model as real drops', async ({ page }) => {
