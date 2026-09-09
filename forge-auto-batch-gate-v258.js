@@ -1,6 +1,7 @@
-/* SHADOWREACH · Forge Auto-Batch Gate V258
-   Final progression authority. No dynamic hot-loads.
-   Must load AFTER forge-ux-v258.js.
+/* SHADOWREACH · Forge Auto-Batch Gate V258 / V259 bridge
+   Final progression authority. Must load AFTER forge-ux-v258.js.
+   V259 additionally loads the compact Forge presentation authority; that layer is presentation-only
+   and does not wrap forgeSummon or alter progression/economy.
 */
 (function(){
 'use strict';
@@ -16,5 +17,8 @@ if(typeof ACT!=='undefined'&&ACT){var base=ACT.autoForgeBatch258;ACT.autoForgeBa
 function refresh(){sanitize(false);var max=unlocked();document.querySelectorAll('#srAutoBatch258 .srBatch258').forEach(function(b){var n=Math.floor(Number(b.getAttribute('data-arg'))||1),locked=n>max;b.disabled=locked;b.classList.toggle('srBatchLocked258',locked);b.classList.toggle('on',!locked&&n===safeChoice(S.forge.autoBatch));if(locked){b.setAttribute('aria-disabled','true');b.textContent='🔒 ×'+n;}else{b.removeAttribute('aria-disabled');b.textContent='×'+n;}});var box=document.getElementById('srAutoBatch258');if(box){var note=box.querySelector('.srBatchGateNote258');if(!note){note=document.createElement('div');note.className='srBatchGateNote258 mute tiny mt3';box.appendChild(note);}note.textContent='Maximum actuellement débloqué : ×'+max+'.';}}
 var prev=typeof showForgeFilterPicker==='function'?showForgeFilterPicker:null;if(prev){showForgeFilterPicker=function(){var r=prev.apply(this,arguments);requestAnimationFrame(refresh);return r;};try{window.showForgeFilterPicker=showForgeFilterPicker;}catch(_){}}
 var st=document.createElement('style');st.id='srForgeBatchGate258Style';st.textContent='.srBatch258.srBatchLocked258{opacity:.34!important;filter:grayscale(1);cursor:not-allowed!important;border-color:#354258!important;color:#738099!important;background:#0a111d!important;box-shadow:none!important}.srBatch258.srBatchLocked258:active{transform:none!important}';document.head.appendChild(st);setTimeout(refresh,0);
-window.__srForgeBatchGateV258={unlocked:unlocked,sanitize:sanitize,refresh:refresh,version:258};
+
+/* V259 presentation authority. Fresh key avoids stale mobile cache. */
+if(!window.__srForgePanelCompactV259){var s=document.createElement('script');s.src='forge-panel-compact-v259.js?v=2026.09.09.259';s.async=false;document.body.appendChild(s);}
+window.__srForgeBatchGateV258={unlocked:unlocked,sanitize:sanitize,refresh:refresh,version:259};
 })();
