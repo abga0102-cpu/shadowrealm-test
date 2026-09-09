@@ -1,5 +1,5 @@
-/* SHADOWREACH · Home layout authority V219 / V261
-   Home geometry authority. V261 aligns the combat/Forge split with the compact Forge renderer.
+/* SHADOWREACH · Home layout authority V219 / V262
+   Home geometry authority. V262 guarantees the Forge box ends above bottom navigation.
    UI-only: no combat values, economy, progression or save data are changed. */
 (function(){
 'use strict';
@@ -7,7 +7,6 @@ if(window.__srHomeLayoutAuthorityV219)return;
 window.__srHomeLayoutAuthorityV219=true;
 window.__srHomeFramePhase2B=true;
 window.__srHomeLayoutPhase2B=true;
-
 var style=document.createElement('style');
 style.id='srHomeLayoutAuthorityV219';
 style.textContent=`
@@ -38,45 +37,18 @@ style.textContent=`
 #app.srHomeFullArena #arena #aSub{gap:5px!important}
 #app.srHomeFullArena #screen.fixed>#skillbar{flex:0 0 var(--srSkillH)!important;height:var(--srSkillH)!important;min-height:var(--srSkillH)!important;max-height:var(--srSkillH)!important;margin:0!important;overflow:hidden!important}
 #app.srHomeFullArena #screen.fixed>#fxbar{display:none!important}
-#app.srHomeFullArena #screen.fixed>.pad.mt4{flex:0 0 var(--srForgeH)!important;height:var(--srForgeH)!important;min-height:var(--srForgeH)!important;max-height:var(--srForgeH)!important;margin:0!important;padding:2px 8px 4px!important;overflow:visible!important}
-#app.srHomeFullArena .homeForge{height:100%!important;max-height:100%!important;overflow:visible!important;padding:5px 7px!important;margin:0!important;display:flex!important;flex-direction:column!important}
+#app.srHomeFullArena #screen.fixed>.pad.mt4{box-sizing:border-box!important;flex:0 0 var(--srForgeH)!important;height:var(--srForgeH)!important;min-height:var(--srForgeH)!important;max-height:var(--srForgeH)!important;margin:0!important;padding:2px 8px 4px!important;overflow:hidden!important}
+#app.srHomeFullArena .homeForge{box-sizing:border-box!important;height:100%!important;max-height:100%!important;overflow:visible!important;padding:5px 7px!important;margin:0!important;display:flex!important;flex-direction:column!important;min-height:0!important}
 #app.srHomeFullArena .homeForge .fgFilter{display:flex!important;align-items:center!important}
 #app.srHomeFullArena .homeForge .homeCompactEnd{display:block!important}
-
-@media(max-width:370px){
- #app.srHomeFullArena{--srHudH:106px;--srForgeH:240px}
- #app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}
- #app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}
- #app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}
- #app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}
- #app.srHomeFullArena #aLayer .unit{scale:.75!important}
- #app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}
- #app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}
-}
-@media(max-height:720px){
- #app.srHomeFullArena{--srHudH:104px;--srSkillH:54px;--srForgeH:225px}
- #app.srHomeFullArena>#hud{top:-10px!important;padding-top:3px!important}
- #app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}
- #app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}
- #app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}
- #app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}
-}
+@media(max-width:370px){#app.srHomeFullArena{--srHudH:106px;--srForgeH:240px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}}
+@media(max-height:720px){#app.srHomeFullArena{--srHudH:104px;--srSkillH:54px;--srForgeH:225px}#app.srHomeFullArena>#hud{top:-10px!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
 `;
 document.head.appendChild(style);
-
-var app=document.getElementById('app');
-var screen=document.getElementById('screen');
+var app=document.getElementById('app'),screen=document.getElementById('screen');
 function sync(){if(!app||!screen)return;var home=screen.classList.contains('fixed')&&!!screen.querySelector('.campaignWorld');app.classList.toggle('srHomeFullArena',home);}
-var queued=false;
-function schedule(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;sync();});}
-window.__srSyncHomeLayoutV219=sync;
-window.__srSyncHomeFramePhase2B=sync;
-if(typeof window.renderTabs==='function'){
- var baseRenderTabs=window.renderTabs;
- window.renderTabs=function(){var out=baseRenderTabs.apply(this,arguments);schedule();return out;};
- try{renderTabs=window.renderTabs;}catch(_){}
-}
-window.addEventListener('resize',schedule,{passive:true});
-window.addEventListener('orientationchange',schedule,{passive:true});
-schedule();
+var queued=false;function schedule(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;sync();});}
+window.__srSyncHomeLayoutV219=sync;window.__srSyncHomeFramePhase2B=sync;
+if(typeof window.renderTabs==='function'){var baseRenderTabs=window.renderTabs;window.renderTabs=function(){var out=baseRenderTabs.apply(this,arguments);schedule();return out;};try{renderTabs=window.renderTabs;}catch(_){}}
+window.addEventListener('resize',schedule,{passive:true});window.addEventListener('orientationchange',schedule,{passive:true});schedule();
 })();
