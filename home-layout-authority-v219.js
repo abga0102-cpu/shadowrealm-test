@@ -1,11 +1,14 @@
 /* SHADOWREACH · Home layout authority V219
    Restores the previously validated Home geometry that was accidentally coupled
    to social-forge-layout-v1.js. Social/P2P remains disabled unless explicitly enabled.
+   V227: restores the Phase 2B lifecycle contract used by the regression guard.
    UI-only: no combat values, economy, progression or save data are changed. */
 (function(){
 'use strict';
 if(window.__srHomeLayoutAuthorityV219)return;
 window.__srHomeLayoutAuthorityV219=true;
+window.__srHomeFramePhase2B=true;
+window.__srHomeLayoutPhase2B=true;
 
 var style=document.createElement('style');
 style.id='srHomeLayoutAuthorityV219';
@@ -91,6 +94,7 @@ function sync(){
 var queued=false;
 function schedule(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;sync();});}
 window.__srSyncHomeLayoutV219=sync;
+window.__srSyncHomeFramePhase2B=sync;
 
 /* Follow the existing render lifecycle, without a global MutationObserver. */
 if(typeof window.renderTabs==='function'){
