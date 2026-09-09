@@ -1,6 +1,6 @@
-/* Shadowreach V245 — Familiers : viewport de scroll réservé au-dessus de la navigation basse.
-   Corrige définitivement la fin de Collection/Fusion, Œufs et Progression qui pouvait rester
-   visuellement sous la barre #tabs sur iPhone. UX uniquement : aucun changement gameplay/save. */
+/* Shadowreach V245/V246 hotfix — Familiers : un seul scroll naturel, comme l'Arbre.
+   Le viewport interne est supprimé : Collection/Fusion, Œufs/Accélérateurs et Progression
+   utilisent le scroll de #screen, ce qui élimine le contenu coincé derrière #tabs sur iPhone. */
 (function(){
   'use strict';
   if(window.__srFamScrollViewportV245)return;
@@ -10,32 +10,43 @@
   var style=document.createElement('style');
   style.id='famScrollViewportV245Style';
   style.textContent=`
-/* On réserve physiquement la hauteur de la navigation dans le VIEWPORT du contenu,
-   au lieu d'ajouter seulement un espace à la fin de la liste. C'est ce qui évite
-   qu'une ligne Fusion reste derrière #tabs sur Safari iOS. */
-#screen:has(.famScroll240) .fam240Body{
-  box-sizing:border-box!important;
-  min-height:0!important;
-  padding-bottom:calc(66px + env(safe-area-inset-bottom, 0px))!important;
-  overflow:hidden!important;
-}
-#screen:has(.famScroll240) .fam240Scroll{
-  box-sizing:border-box!important;
-  height:100%!important;
-  max-height:100%!important;
-  min-height:0!important;
-  padding-bottom:18px!important;
-  scroll-padding-bottom:18px!important;
+#screen:has(.famScroll240){
+  display:block!important;
   overflow-y:auto!important;
   overflow-x:hidden!important;
+  min-height:0!important;
   -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-y:contain!important;
 }
-#screen:has(.famScroll240) .fam241Integrated:last-child{
-  margin-bottom:18px!important;
+#screen:has(.famScroll240)>#topbar{position:relative!important}
+#screen:has(.famScroll240) .famScroll240{
+  display:block!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  padding:6px 10px calc(82px + env(safe-area-inset-bottom, 0px))!important;
 }
-/* Neutralise l'ancien correctif V242 : le dégagement est désormais porté par le viewport,
-   pas par un padding de 112px dans la liste. */
+#screen:has(.famScroll240) .fam240Body{
+  display:block!important;
+  height:auto!important;
+  max-height:none!important;
+  min-height:0!important;
+  overflow:visible!important;
+  padding-bottom:0!important;
+}
+#screen:has(.famScroll240) .fam240Scroll{
+  display:block!important;
+  height:auto!important;
+  max-height:none!important;
+  min-height:0!important;
+  overflow:visible!important;
+  padding:2px 0 0!important;
+  scroll-padding-bottom:0!important;
+}
 #screen:has(.famScroll240) .fam240BottomSpace{display:none!important}
+#screen:has(.famScroll240) .fam241Integrated:last-child{margin-bottom:24px!important}
+#screen:has(.famScroll240) .fam240HatchGrid{max-height:none!important;overflow:visible!important}
 `;
   document.head.appendChild(style);
 })();
