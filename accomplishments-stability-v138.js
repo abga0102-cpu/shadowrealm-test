@@ -1,7 +1,7 @@
-/* SHADOWREACH · Accomplishments stability v138
+/* SHADOWREACH · Accomplishments Development entry stability v138
    - Prevent the legacy text-based Development detector from mounting the card on Accueil.
    - Mount Accomplissements only when the real screen header is Developpement.
-   - Restore Etages after all older modal wrappers, while keeping v121 as claim/reward authority. */
+   - Canonical Accomplissements modal rendering belongs exclusively to v139. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsStabilityV138)return;window.__srAccomplishmentsStabilityV138=true;
@@ -36,43 +36,12 @@ function placeEntry(){
   b.addEventListener('click',openAchievements,true);host.appendChild(b);
  }catch(_){}
 }
-if(typeof MutationObserver!=='undefined'){var q=false;new MutationObserver(function(){if(q)return;q=true;requestAnimationFrame(function(){q=false;placeEntry();});}).observe(document.body,{childList:true,subtree:true});}
+if(typeof MutationObserver!=='undefined'){
+ var q=false;
+ new MutationObserver(function(){
+  if(q)return;q=true;
+  requestAnimationFrame(function(){q=false;placeEntry();});
+ }).observe(document.body,{childList:true,subtree:true});
+}
 setTimeout(placeEntry,0);
-
-var FLOORS=[
- ['floor25',25,'250 Essences'],
- ['floor50',50,'2 000 Minerais + 5 000 Or'],
- ['floor75',75,'1 000 PR + 30 Pièces de fusion Communes'],
- ['floor100',100,'500 Étincelles + 500 Essences + 30 Pièces de fusion Communes']
-];
-function floorRows(){
- var rec=Math.max(0,Number(typeof S!=='undefined'&&S.recordFloor)||0),claimed=(S.accomplishments&&S.accomplishments.claimed)||{};
- return '<div data-ach-floors-v138="1"><div class="sect" style="margin:12px 0 6px">Étages</div>'+FLOORS.map(function(x){
-  var got=!!claimed[x[0]],done=rec>=x[1],act=got?'<span class="pill" style="color:var(--greenLit);border-color:#3FB950">Récupéré</span>':done?'<button class="btn sm green" data-ach="'+x[0]+'">Récupérer</button>':'<span class="pill">En cours</span>';
-  return '<div class="itemRow"><div class="flex1"><div class="b small">Atteindre l’étage '+x[1]+'</div><div class="mute tiny">'+x[2]+'</div></div>'+act+'</div>';
- }).join('')+'</div>';
-}
-function floorOverview(){
- var rec=Math.max(0,Number(S.recordFloor)||0),steps=[25,50,75,100],done=0,next=null;
- for(var i=0;i<steps.length;i++){if(rec>=steps[i])done++;else if(next===null)next=steps[i];}
- var fin=done===steps.length;
- return '<div class="card frame" data-ach-floor-overview-v138="1" style="margin:6px 0"><div class="between"><div><div class="b">Étages</div><div class="mute tiny">'+(fin?'4 / 4 jalons atteints':'Prochain jalon : '+next+' · '+done+' / 4 atteints')+'</div></div><span class="pill">'+(fin?'Terminé':rec+' / '+next)+'</span></div></div>';
-}
-function installFinalModalFix(){
- if(typeof openModal!=='function'||window.__srAccomplishmentsFinalModalV138)return;
- window.__srAccomplishmentsFinalModalV138=true;
- var base=openModal;
- openModal=function(html,title){
-  html=String(html);
-  if(norm(title).trim()==='accomplissements'){
-   /* Remove any older injected floor copy, then add one canonical copy. */
-   html=html.replace(/<div data-ach-floors-v137="1">[\s\S]*?<\/div><\/div>/g,'');
-   if(html.indexOf('data-ach-floor-overview-v138')<0){var firstSect=html.indexOf('<div class="sect"');if(firstSect>=0)html=html.slice(0,firstSect)+floorOverview()+html.slice(firstSect);else html=floorOverview()+html;}
-   if(html.indexOf('data-ach-floors-v138')<0){var close='<div class="mt10"><button class="btn ghost" data-act="closeModal">Fermer</button></div>';html=html.indexOf(close)>=0?html.replace(close,floorRows()+close):html+floorRows();}
-  }
-  return base(html,title);
- };
-}
-/* All synchronous accomplishment layers load after this file; install last. */
-setTimeout(installFinalModalFix,0);
 })();
