@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
+const { touchCurrentLocator } = require('./helpers/render-stable-touch');
 
 const root = path.join(__dirname, '..');
 
@@ -20,18 +21,7 @@ async function openCleanGame(page) {
 
 async function activate(page, locator, testInfo) {
   if (testInfo.project.name === 'webkit-iphone') {
-    await expect(locator).toBeVisible();
-    const hit = await locator.evaluate((el) => {
-      const rect = el.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
-      const top = document.elementFromPoint(x, y);
-      return { x, y, width: rect.width, height: rect.height, ok: !!top && (top === el || el.contains(top)) };
-    });
-    expect(hit.width).toBeGreaterThan(0);
-    expect(hit.height).toBeGreaterThan(0);
-    expect(hit.ok, 'bottom-nav center must remain touchable').toBe(true);
-    await page.touchscreen.tap(hit.x, hit.y);
+    await touchCurrentLocator(page, locator, { label: 'Phase 2 touch target' });
   } else {
     await locator.click();
   }
