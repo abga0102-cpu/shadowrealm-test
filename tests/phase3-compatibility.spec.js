@@ -166,5 +166,11 @@ test('Accomplishments legacy owners keep only Development scope and title intera
   await expectActiveRoute(page, otherRoute);
   await expect(entry).toHaveCount(0, { timeout: 5000 });
 
+  // Verify the entry can remount after a full route transition. This is the
+  // WebKit race that surfaced only in the post-merge main run.
+  await activateBottomNav(page, development, testInfo);
+  await expectActiveRoute(page, 'developpement');
+  await expect(entry).toHaveCount(1, { timeout: 5000 });
+
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });

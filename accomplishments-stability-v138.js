@@ -1,6 +1,6 @@
 /* SHADOWREACH · Accomplishments Development entry stability v138
    - Prevent the legacy text-based Development detector from mounting the card on Accueil.
-   - Mount Accomplissements only when the real screen header is Developpement.
+   - Mount Accomplissements only on the canonical Development route.
    - Canonical Accomplissements modal rendering belongs exclusively to v139. */
 (function(){
 'use strict';
@@ -12,8 +12,15 @@ if(window.__srAccomplishmentsStabilityV138)return;window.__srAccomplishmentsStab
 window.__srAccomplishmentsUIV124=true;
 
 function norm(v){try{return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}catch(_){return String(v||'').toLowerCase();}}
+function activeDevelopmentRoute(){
+ var active=document.querySelector('#tabs .tab.on[data-arg="developpement"]');
+ return !!active;
+}
 function realDevelopmentScreen(){
  var s=document.getElementById('screen');if(!s)return false;
+ /* Phase 2A owns BottomNav route state. Prefer that stable owner so a transient
+    header render cannot remove the entry during WebKit navigation. */
+ if(activeDevelopmentRoute())return true;
  var heads=s.querySelectorAll('.topbar,.topBar,.screenTitle,h1,h2');
  for(var i=0;i<heads.length;i++)if(norm(heads[i].textContent).trim()==='developpement')return true;
  return false;
@@ -36,12 +43,18 @@ function placeEntry(){
   b.addEventListener('click',openAchievements,true);host.appendChild(b);
  }catch(_){}
 }
-if(typeof MutationObserver!=='undefined'){
- var q=false;
- new MutationObserver(function(){
-  if(q)return;q=true;
+var q=false,retry=0;
+function schedulePlace(){
+ if(!q){
+  q=true;
   requestAnimationFrame(function(){q=false;placeEntry();});
- }).observe(document.body,{childList:true,subtree:true});
+ }
+ clearTimeout(retry);
+ retry=setTimeout(placeEntry,120);
+}
+if(typeof MutationObserver!=='undefined'){
+ new MutationObserver(schedulePlace).observe(document.body,{childList:true,subtree:true,characterData:true});
 }
 setTimeout(placeEntry,0);
+setTimeout(placeEntry,120);
 })();
