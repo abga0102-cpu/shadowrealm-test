@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
+const { touchCurrentLocator } = require('./helpers/render-stable-touch');
 
 const fixturesDir = path.join(__dirname, 'fixtures', 'saves');
 const fixture = (name) => JSON.parse(fs.readFileSync(path.join(fixturesDir, name), 'utf8'));
@@ -25,29 +26,10 @@ async function openCleanGame(page) {
 
 async function activate(page, locator, testInfo) {
   if (testInfo.project.name === 'webkit-iphone') {
-    await expect(locator).toBeVisible();
-    // The game intentionally replaces tab DOM nodes during renders. A real
-    // finger targets the stable on-screen slot, not one particular DOM node.
-    // Verify that the slot is genuinely hittable, then send a native touch at
-    // its center. This avoids Playwright waiting forever for a node instance
-    // that can be replaced between actionability checks without using force.
-    const hit = await locator.evaluate((el) => {
-      const rect = el.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
-      const top = document.elementFromPoint(x, y);
-      return {
-        x,
-        y,
-        width: rect.width,
-        height: rect.height,
-        hitTarget: !!top && (top === el || el.contains(top))
-      };
-    });
-    expect(hit.width).toBeGreaterThan(0);
-    expect(hit.height).toBeGreaterThan(0);
-    expect(hit.hitTarget, 'bottom-nav touch point must not be covered by another layer').toBe(true);
-    await page.touchscreen.tap(hit.x, hit.y);
+    // The game intentionally replaces interactive DOM nodes during renders.
+    // Re-resolve until the current node has real geometry and owns its center,
+    // then send a genuine touchscreen tap at that stable on-screen point.
+    await touchCurrentLocator(page, locator, { label: 'Phase 1 touch target' });
   } else {
     await locator.click();
   }
