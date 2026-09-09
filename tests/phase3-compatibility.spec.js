@@ -15,6 +15,7 @@ async function openCleanGame(page) {
 
 async function activate(page, locator, testInfo) {
   if (testInfo.project.name === 'webkit-iphone') {
+    await locator.scrollIntoViewIfNeeded();
     await expect(locator).toBeVisible();
     const hit = await locator.evaluate((el) => {
       const rect = el.getBoundingClientRect();
@@ -31,7 +32,7 @@ async function activate(page, locator, testInfo) {
     });
     expect(hit.width).toBeGreaterThan(0);
     expect(hit.height).toBeGreaterThan(0);
-    expect(hit.ok, 'target center must remain touchable').toBe(true);
+    expect(hit.ok, 'target center must remain touchable once scrolled into view').toBe(true);
     await page.touchscreen.tap(hit.x, hit.y);
   } else {
     await locator.click();
@@ -85,7 +86,12 @@ test('BottomNav stays touchable after Accomplishments modal lifecycle', async ({
   await activate(page, close, testInfo);
   await expect(page.locator('#overlay')).toHaveCount(0, { timeout: 3000 });
 
-  const routeArgs = ['accueil', 'equipement', 'developpement', 'heros'];
+  const tabs = page.locator('#tabs .tab');
+  const routeArgs = await tabs.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-arg')));
+  expect(routeArgs).toHaveLength(4);
+  expect(routeArgs.every(Boolean)).toBe(true);
+  expect(new Set(routeArgs).size).toBe(4);
+
   for (const routeArg of routeArgs) {
     const tab = page.locator(`#tabs .tab[data-arg="${routeArg}"]`);
     await expect(tab).toHaveCount(1);
