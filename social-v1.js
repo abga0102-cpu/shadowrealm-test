@@ -56,6 +56,8 @@
   function fmtTime(ts){try{return new Date(ts).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}catch(_){return""}}
   function injectStyle(){
     const s=document.createElement("style");s.textContent=`
+/* Floating launcher intentionally suppressed by the social UI owner. */
+#srChatBtn{display:none!important}
 #srChatBtn{position:absolute;z-index:95;width:44px;height:44px;border-radius:50%;border:2px solid #0A1020;background:linear-gradient(#5FB4F5,#1E72C8);color:white;font-weight:900;box-shadow:0 3px 0 #0A1020,0 6px 14px #0007;cursor:pointer;transition:left .16s ease,top .16s ease}#srChatBtn b{position:absolute;right:-3px;top:-5px;min-width:19px;height:19px;border-radius:10px;background:#E5484D;color:#fff;font:800 11px/19px system-ui;padding:0 5px}
 #srSocial{position:absolute;z-index:120;display:flex;flex-direction:column;color:#EDF1FA;font-family:var(--fu,system-ui);background:rgba(7,11,19,.36);border:1px solid rgba(111,151,210,.58);border-radius:13px;box-shadow:0 8px 22px #0005;overflow:hidden}#srSocial .head{padding:8px 10px 6px;border-bottom:1px solid rgba(46,66,105,.72);background:rgba(16,26,44,.40);display:flex;align-items:center;gap:8px}#srSocial .head .grow{flex:1}.srClose{border:0;background:#243553;color:#fff;border-radius:9px;padding:7px 10px;font-weight:900}.srStatus{font-size:9px;color:#93A4C4;margin-top:2px}
 .srTabs{display:flex;background:rgba(11,17,31,.32);border-bottom:1px solid rgba(46,66,105,.68);padding:4px 6px 0;gap:4px}.srTab{flex:1;text-align:center;padding:8px 3px;border-radius:9px 9px 0 0;color:#7F91B2;font-weight:900;font-size:11px;cursor:pointer;border:1px solid transparent;border-bottom:0}.srTab.on{background:rgba(23,36,59,.48);color:#FBDD8C;border-color:#2E4269}
