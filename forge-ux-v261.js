@@ -1,9 +1,7 @@
-/* SHADOWREACH · Forge UX V261
+/* SHADOWREACH · Forge UX V261 / V262
    Final runtime authority after Auto-Forge V199.
-   - Results render inside the dedicated .srForgeLootReserve260 zone.
-   - No viewport/body overlay, no MutationObserver, no hot-loader.
-   - Re-attaches the same live result node after Home re-renders.
-   - Cleans result queue immediately when leaving the Forge/Home screen.
+   V262 keeps forged item cards fully readable inside the elastic loot reserve.
+   No viewport/body overlay, no MutationObserver, no hot-loader.
 */
 (function(){
 'use strict';
@@ -13,8 +11,7 @@ var reduced=false;try{reduced=!!matchMedia('(prefers-reduced-motion: reduce)').m
 var nativeForgeSummon=forgeSummon;
 var nativeFilter=(typeof showForgeFilterPicker==='function')?showForgeFilterPicker:null;
 var groups=[],busy=false,rootNode=null,activeWrap=null,holdTimer=0,removeTimer=0,watchTimer=0;
-var ROOT='srForgeLoot261';
-var BATCHES=[1,3,5,10];
+var ROOT='srForgeLoot261',BATCHES=[1,3,5,10];
 function batch(){var n=Math.floor(Number(S.forge.autoBatch)||1);return BATCHES.indexOf(n)>=0?n:1;}
 function persistBatch(n){n=Math.floor(Number(n)||1);if(BATCHES.indexOf(n)<0)n=1;S.forge.autoBatch=n;try{if(typeof saveNow==='function')saveNow();}catch(_){}try{if(typeof scheduleRender==='function')scheduleRender();}catch(_){} }
 var RARITY_C={COMMUN:'#9aa7bb',PEU_COMMUN:'#48c77a',RARE:'#4aa3ff',EPIQUE:'#b15cf6',MYTHIQUE:'#ff7a45',ARTEFACT:'#43c98b',LEGENDAIRE:'#f1c75b',INFERNAL:'#e5484d',IMMORTEL:'#d96cff',DIVIN:'#f7b52e'};
@@ -31,7 +28,7 @@ function ensureRoot(){var h=forgeHost();if(!h)return null;if(!rootNode){rootNode
 function clearTimers(){if(holdTimer){clearTimeout(holdTimer);holdTimer=0;}if(removeTimer){clearTimeout(removeTimer);removeTimer=0;}}
 function clearDisplay(clearQueue){clearTimers();busy=false;activeWrap=null;if(clearQueue)groups.length=0;if(rootNode&&rootNode.parentNode)rootNode.remove();}
 function watch(){if(watchTimer)return;watchTimer=setInterval(function(){if(!busy&&!groups.length){clearInterval(watchTimer);watchTimer=0;return;}if(!forgeHost()){clearDisplay(true);clearInterval(watchTimer);watchTimer=0;return;}if(rootNode&&activeWrap)ensureRoot();},120);}
-function particle(card,c){if(reduced)return;for(var i=0;i<6;i++){var p=document.createElement('i');p.className='srForgeDust261';var a=Math.PI*2*i/6,d=16+Math.random()*22;p.style.setProperty('--dx',(Math.cos(a)*d).toFixed(1)+'px');p.style.setProperty('--dy',(Math.sin(a)*d+7).toFixed(1)+'px');p.style.background=c;card.appendChild(p);}}
+function particle(card,c){if(reduced)return;for(var i=0;i<6;i++){var p=document.createElement('i');p.className='srForgeDust261';var a=Math.PI*2*i/6,d=14+Math.random()*18;p.style.setProperty('--dx',(Math.cos(a)*d).toFixed(1)+'px');p.style.setProperty('--dy',(Math.sin(a)*d+6).toFixed(1)+'px');p.style.background=c;card.appendChild(p);}}
 function cardFor(r){var recycle=!!r.recycled,c=col(r.rarity),d=document.createElement('div');d.className='srForgeCard261 '+(recycle?'recycled':'kept');d.style.setProperty('--r',c);d.innerHTML='<div class="srForgeState261">'+(recycle?'♻ RECYCLAGE':'FORGÉ')+'</div><div class="srForgeImg261"><img src="'+img(r.slot)+'" alt=""></div><div class="srForgeName261">'+label(r.slot)+'</div><div class="srForgeMeta261"><b>'+String(r.rarity||'').replace(/_/g,' ')+'</b>'+(r.power!=null?' · '+fmt2(r.power):'')+'</div>'+(recycle&&r.dust!=null?'<div class="srForgeGain261">+'+fmt2(r.dust)+' poussière</div>':'');if(recycle)particle(d,c);return d;}
 function showNext(){if(busy||!groups.length)return;if(document.hidden||!forgeHost()){clearDisplay(true);return;}var root=ensureRoot();if(!root){clearDisplay(true);return;}busy=true;watch();var group=groups.shift(),wrap=document.createElement('div');wrap.className='srForgeGroup261';activeWrap=wrap;root.replaceChildren(wrap);var mobile=(innerWidth||0)<=430,limit=mobile?3:4,visible=group.slice(0,limit);visible.forEach(function(r){var c=cardFor(r);wrap.appendChild(c);requestAnimationFrame(function(){c.classList.add('show');});});if(group.length>limit){var more=document.createElement('div');more.className='srForgeMore261';more.textContent='+'+(group.length-limit);wrap.appendChild(more);}var recycleOnly=visible.length&&visible.every(function(x){return !!x.recycled;});var hold=reduced?900:(recycleOnly?2200:3200);holdTimer=setTimeout(function(){if(!forgeHost()){clearDisplay(true);return;}ensureRoot();wrap.querySelectorAll('.srForgeCard261').forEach(function(c){c.classList.add(c.classList.contains('recycled')?'recycleOut':'keepOut');});removeTimer=setTimeout(function(){if(wrap.parentNode)wrap.remove();activeWrap=null;busy=false;if(groups.length)showNext();else if(rootNode&&rootNode.parentNode)rootNode.remove();},reduced?180:520);},hold);}
 function enqueue(res){if(!Array.isArray(res)||!res.length||document.hidden||!forgeHost())return;if(groups.length>6)groups.shift();groups.push(res.slice(0,20));showNext();}
@@ -44,23 +41,24 @@ document.addEventListener('click',function(e){var go=e.target&&e.target.closest?
 document.addEventListener('visibilitychange',function(){if(document.hidden)clearDisplay(true);});window.addEventListener('pagehide',function(){clearDisplay(true);});
 var st=document.createElement('style');st.id='srForgeUX261Style';st.textContent='\
 #'+ROOT+'.srForgeLootInline261{position:relative;width:100%;height:100%;box-sizing:border-box;pointer-events:none;overflow:visible}\
-#'+ROOT+' .srForgeGroup261{position:relative;width:100%;height:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;align-items:stretch;box-sizing:border-box}\
-#'+ROOT+' .srForgeCard261{--r:#8fa3bf;position:relative;min-width:0;height:100%;border:1.25px solid var(--r);border-radius:11px;background:linear-gradient(180deg,#14213af4,#09111ff4);box-shadow:0 4px 11px #0008,0 0 10px color-mix(in srgb,var(--r) 22%,transparent);text-align:center;opacity:0;transform:translateY(4px) scale(.94);transition:opacity .2s,transform .24s cubic-bezier(.2,.9,.25,1.15),filter .32s;overflow:visible}\
+#'+ROOT+' .srForgeGroup261{position:relative;width:100%;height:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;align-items:stretch;box-sizing:border-box}\
+#'+ROOT+' .srForgeCard261{--r:#8fa3bf;position:relative;min-width:0;height:100%;box-sizing:border-box;border:1.25px solid var(--r);border-radius:9px;background:linear-gradient(180deg,#14213af4,#09111ff4);box-shadow:0 3px 9px #0008,0 0 8px color-mix(in srgb,var(--r) 20%,transparent);text-align:center;opacity:0;transform:translateY(3px) scale(.95);transition:opacity .2s,transform .24s cubic-bezier(.2,.9,.25,1.15),filter .32s;overflow:visible;padding-bottom:2px}\
 #'+ROOT+' .srForgeCard261.show{opacity:1;transform:translateY(0) scale(1)}\
-#'+ROOT+' .srForgeState261{font-size:6.5px;font-weight:1000;letter-spacing:.45px;padding:5px 2px 0;color:#dce8f8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\
+#'+ROOT+' .srForgeState261{font-size:5.8px;font-weight:1000;letter-spacing:.35px;padding:3px 2px 0;color:#dce8f8;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\
 #'+ROOT+' .recycled .srForgeState261{color:#7ee7a3}\
-#'+ROOT+' .srForgeImg261{height:48px;display:grid;place-items:center;background:radial-gradient(circle,color-mix(in srgb,var(--r) 15%,transparent),transparent 68%)}\
-#'+ROOT+' .srForgeImg261 img{width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 4px 4px #0009)}\
-#'+ROOT+' .srForgeName261{font:900 9px/1.05 Georgia,serif;color:#f4df9d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}\
-#'+ROOT+' .srForgeMeta261{font-size:6.5px;font-weight:800;color:#97a8c1;margin:3px 2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#'+ROOT+' .srForgeMeta261 b{color:var(--r)}\
-#'+ROOT+' .srForgeGain261{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);white-space:nowrap;border:1px solid #557395;background:#111b2b;padding:2px 4px;border-radius:6px;color:#a8e8ff;font-size:6px;font-weight:900;z-index:2}\
-#'+ROOT+' .recycleOut{opacity:0;transform:translateY(4px) scale(.58);filter:grayscale(.75) blur(1.2px)}#'+ROOT+' .keepOut{opacity:0;transform:translateY(-7px) scale(.97)}\
+#'+ROOT+' .srForgeImg261{height:31px;display:grid;place-items:center;background:radial-gradient(circle,color-mix(in srgb,var(--r) 15%,transparent),transparent 68%)}\
+#'+ROOT+' .srForgeImg261 img{width:29px;height:29px;object-fit:contain;filter:drop-shadow(0 3px 3px #0009)}\
+#'+ROOT+' .srForgeName261{font:900 7.8px/1 Georgia,serif;color:#f4df9d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}\
+#'+ROOT+' .srForgeMeta261{font-size:5.7px;font-weight:800;color:#97a8c1;margin:2px 2px 1px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#'+ROOT+' .srForgeMeta261 b{color:var(--r)}\
+#'+ROOT+' .srForgeGain261{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);white-space:nowrap;border:1px solid #557395;background:#111b2b;padding:1px 3px;border-radius:5px;color:#a8e8ff;font-size:5.5px;font-weight:900;z-index:2}\
+#'+ROOT+' .recycleOut{opacity:0;transform:translateY(3px) scale(.6);filter:grayscale(.75) blur(1px)}#'+ROOT+' .keepOut{opacity:0;transform:translateY(-6px) scale(.97)}\
 #'+ROOT+' .recycleOut .srForgeImg261 img{animation:srRecycle261 .46s ease-in both}\
 #'+ROOT+' .srForgeDust261{position:absolute;left:50%;top:48%;width:3px;height:3px;border-radius:50%;opacity:0}#'+ROOT+' .recycleOut .srForgeDust261{animation:srDust261 .46s ease-out both}\
-#'+ROOT+' .srForgeMore261{position:absolute;right:3px;top:-7px;border:1px solid #62799a;background:#101a2b;color:#dbe7f7;border-radius:8px;padding:3px 5px;font-size:7px;font-weight:900;z-index:4}\
+#'+ROOT+' .srForgeMore261{position:absolute;right:3px;top:-6px;border:1px solid #62799a;background:#101a2b;color:#dbe7f7;border-radius:7px;padding:2px 4px;font-size:6px;font-weight:900;z-index:4}\
 #srAutoBatch261{margin-top:8px;padding:8px;border:1px solid #314a70;border-radius:12px;background:#0d1728}.srBatchBtns261{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px}.srBatch261{appearance:none;border:1px solid #405a80;background:#111d31;color:#b8c6dc;border-radius:9px;padding:7px 2px;font-size:10px;font-weight:900}.srBatch261.on{border-color:#e8b44a;color:#ffe2a0;background:#2a210d;box-shadow:0 0 0 1px #e8b44a55 inset}\
 @keyframes srRecycle261{0%{transform:scale(1);opacity:1}45%{transform:scale(.8);filter:brightness(1.7) saturate(.2)}100%{transform:scale(.14) rotate(16deg);opacity:0;filter:blur(3px)}}@keyframes srDust261{0%{opacity:0;transform:translate(0,0)}25%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy))}}\
-@media(max-width:430px){#'+ROOT+' .srForgeGroup261{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}#'+ROOT+' .srForgeImg261{height:46px}#'+ROOT+' .srForgeImg261 img{width:42px;height:42px}}\
+@media(max-width:430px){#'+ROOT+' .srForgeGroup261{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}}\
+@media(max-height:720px){#'+ROOT+' .srForgeImg261{height:27px}#'+ROOT+' .srForgeImg261 img{width:25px;height:25px}#'+ROOT+' .srForgeName261{font-size:7px}}\
 @media(prefers-reduced-motion:reduce){#'+ROOT+' *{animation:none!important;transition:opacity .1s linear!important}}';document.head.appendChild(st);
-window.__srForgeUXV261={batch:batch,enqueue:enqueue,clear:clearDisplay,version:261};
+window.__srForgeUXV261={batch:batch,enqueue:enqueue,clear:clearDisplay,version:262};
 })();
