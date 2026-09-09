@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { touchCurrentLocator } = require('./helpers/render-stable-touch');
 
 async function openCleanGame(page) {
   await page.route('**/npm/**', (route) => route.abort());
@@ -14,51 +15,21 @@ async function openCleanGame(page) {
   await expect.poll(() => page.evaluate(() => !!window.__srBottomNavPhase2A)).toBe(true);
 }
 
-async function tapAtCurrentCenter(page, locator, message) {
-  await expect(locator).toBeVisible();
-  const hit = await locator.evaluate((el) => {
-    const rect = el.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    const top = document.elementFromPoint(x, y);
-    return {
-      x,
-      y,
-      width: rect.width,
-      height: rect.height,
-      ok: !!top && (top === el || el.contains(top))
-    };
-  });
-  expect(hit.width).toBeGreaterThan(0);
-  expect(hit.height).toBeGreaterThan(0);
-  expect(hit.ok, message).toBe(true);
-  await page.touchscreen.tap(hit.x, hit.y);
-}
-
 async function activateBottomNav(page, locator, testInfo) {
   if (testInfo.project.name === 'webkit-iphone') {
-    await tapAtCurrentCenter(page, locator, 'bottom-nav center must remain touchable');
+    await touchCurrentLocator(page, locator, { label: 'Phase 3 BottomNav target' });
   } else {
     await locator.click();
   }
 }
 
-async function settleScrollAndRender(page) {
-  await page.evaluate(() => new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
-  }));
-}
-
 async function activateScrollable(page, locator, testInfo) {
   if (testInfo.project.name === 'webkit-iphone') {
-    await expect(locator).toBeVisible();
-    await locator.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
-    // WebKit can keep a deep nested-scroll input transaction alive when the
-    // raw touch is injected in the same frame as scrollIntoView. Real users
-    // naturally tap after scrolling has painted; wait two frames, then resolve
-    // the locator again and keep the same center hit-test + touchscreen tap.
-    await settleScrollAndRender(page);
-    await tapAtCurrentCenter(page, locator, 'target center must remain touchable after scrolling into view');
+    await touchCurrentLocator(page, locator, {
+      label: 'Phase 3 scrollable target',
+      scroll: true,
+      timeout: 10000
+    });
   } else {
     await locator.click();
   }
