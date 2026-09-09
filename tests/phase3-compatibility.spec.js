@@ -118,3 +118,53 @@ test('BottomNav stays touchable after Accomplishments modal lifecycle', async ({
 
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
+
+test('Accomplishments legacy owners keep only Development scope and title interaction', async ({ page }, testInfo) => {
+  await openCleanGame(page);
+
+  const entry = page.locator('[data-sr-accomplishments-v138]');
+  await expect(entry).toHaveCount(0);
+  expect(await page.evaluate(() => !!window.__srAccomplishmentsFinalModalV138)).toBe(false);
+
+  const development = page.locator('#tabs .tab[data-arg="developpement"]');
+  await activateBottomNav(page, development, testInfo);
+  await expectActiveRoute(page, 'developpement');
+  await expect(entry).toHaveCount(1, { timeout: 5000 });
+
+  await page.evaluate(() => {
+    S.sanctuary = S.sanctuary && typeof S.sanctuary === 'object' ? S.sanctuary : {};
+    S.sanctuary.divineTitleUnlocked = true;
+    S.titles = S.titles && typeof S.titles === 'object' ? S.titles : {};
+    S.equippedTitle = '';
+  });
+
+  await activateScrollable(page, entry, testInfo);
+  await expectCanonicalAccomplishments(page);
+
+  const titleButton = page.locator('#overlay [data-ach-title="divin"]');
+  await expect(titleButton).toHaveCount(1);
+  await expect(titleButton).toContainText('Équiper');
+  await activateScrollable(page, titleButton, testInfo);
+
+  await expect.poll(() => page.evaluate(() => S.equippedTitle), {
+    timeout: 5000,
+    intervals: [50, 100, 250]
+  }).toBe('divin');
+  await expectCanonicalAccomplishments(page);
+  await expect(page.locator('#overlay [data-ach-title="divin"]')).toContainText('Équipé');
+
+  const close = page.locator('#overlay [data-act="closeModal"]').filter({ hasText: 'Fermer' }).last();
+  await activateScrollable(page, close, testInfo);
+  await expect(page.locator('#overlay')).toHaveCount(0, { timeout: 3000 });
+
+  const otherRoute = await page.locator('#tabs .tab').evaluateAll((nodes) => {
+    const node = nodes.find((candidate) => candidate.getAttribute('data-arg') !== 'developpement');
+    return node ? node.getAttribute('data-arg') : '';
+  });
+  expect(otherRoute).toBeTruthy();
+  await activateBottomNav(page, page.locator(`#tabs .tab[data-arg="${otherRoute}"]`), testInfo);
+  await expectActiveRoute(page, otherRoute);
+  await expect(entry).toHaveCount(0, { timeout: 5000 });
+
+  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
+});
