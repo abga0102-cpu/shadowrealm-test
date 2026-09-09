@@ -7,49 +7,21 @@ async function touchCurrentLocator(page, locator, options = {}) {
     timeout = 7000
   } = options;
 
-  let hit = null;
-  await expect.poll(async () => {
-    try {
-      const candidate = await locator.evaluate(async (el, shouldScroll) => {
-        if (shouldScroll) {
-          el.scrollIntoView({ block: 'center', inline: 'nearest' });
-          await new Promise((resolve) => {
-            requestAnimationFrame(() => requestAnimationFrame(resolve));
-          });
-        }
+  // Use Playwright's locator-driven tap instead of sampling a DOM point and
+  // tapping that absolute coordinate later. On WebKit/iPhone, render churn can
+  // replace or move a target between those two operations, and elementFromPoint
+  // can also disagree with the visual viewport after scrolling. Locator.tap()
+  // re-resolves the current node and performs its own actionability / hit-target
+  // checks immediately before dispatching the touch sequence.
+  if (scroll) {
+    await locator.scrollIntoViewIfNeeded({ timeout });
+    await page.evaluate(() => new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    }));
+  }
 
-        const rect = el.getBoundingClientRect();
-        const x = rect.left + rect.width / 2;
-        const y = rect.top + rect.height / 2;
-        const inViewport = rect.width > 0 && rect.height > 0 &&
-          x >= 0 && y >= 0 && x < window.innerWidth && y < window.innerHeight;
-        const top = inViewport ? document.elementFromPoint(x, y) : null;
-        return {
-          x,
-          y,
-          width: rect.width,
-          height: rect.height,
-          ok: !!top && (top === el || el.contains(top))
-        };
-      }, scroll);
-
-      if (candidate.width > 0 && candidate.height > 0 && candidate.ok) {
-        hit = candidate;
-        return true;
-      }
-    } catch (_) {
-      // A render may replace the node between locator resolution and geometry
-      // sampling. Polling deliberately re-resolves the locator on the next pass.
-    }
-    hit = null;
-    return false;
-  }, {
-    timeout,
-    intervals: [25, 50, 100, 200, 400]
-  }).toBe(true);
-
-  expect(hit, `${label} must resolve to a current touch point`).toBeTruthy();
-  await page.touchscreen.tap(hit.x, hit.y);
+  await expect(locator, `${label} must be visible before touch`).toBeVisible({ timeout });
+  await locator.tap({ timeout });
 }
 
 module.exports = { touchCurrentLocator };
