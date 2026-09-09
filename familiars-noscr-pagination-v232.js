@@ -3,12 +3,6 @@
   'use strict';
   if(window.__srFamPageV233)return;window.__srFamPageV233=true;
   var petPage=0,eggPage=0,hatchPage=0,accelPage=0,fusionPage=0,scheduled=false;
-  function pager(kind,page,total,pageSize){
-    var pages=Math.max(1,Math.ceil(total/pageSize));
-    if(pages<=1)return '';
-    page=Math.min(page,pages-1);
-    return '<div class="famV232Pager" data-kind="'+kind+'"><button data-fam-v232-page="'+kind+'" data-dir="-1" '+(page<=0?'disabled':'')+'>‹</button><span>'+(page+1)+' / '+pages+'</span><button data-fam-v232-page="'+kind+'" data-dir="1" '+(page>=pages-1?'disabled':'')+'>›</button></div>';
-  }
   function compactRates(root){
     var box=root.querySelector('.famNsRates');
     if(!box||box.dataset.v233==='1')return;
@@ -17,16 +11,26 @@
     box.innerHTML='<div class="famV232Rates">'+PET_RARITY_ORDER.map(function(r){return '<span style="--rc:'+RARITY[r].c+'"><b>'+RARITY[r].label+'</b><em>'+Number(rates[r]||0).toFixed(1)+'%</em></span>';}).join('')+'</div>';
   }
   function setPage(kind,page){if(kind==='pet')petPage=page;else if(kind==='egg')eggPage=page;else if(kind==='hatch')hatchPage=page;else if(kind==='accel')accelPage=page;else if(kind==='fusion')fusionPage=page;}
+  function syncPager(root,kind,page,pages,anchor){
+    var p=root.querySelector('.famV232Pager[data-kind="'+kind+'"]');
+    if(pages<=1){if(p)p.remove();return;}
+    if(!p){
+      p=document.createElement('div');p.className='famV232Pager';p.dataset.kind=kind;
+      p.innerHTML='<button data-fam-v232-page="'+kind+'" data-dir="-1">‹</button><span></span><button data-fam-v232-page="'+kind+'" data-dir="1">›</button>';
+      if(anchor)anchor.insertAdjacentElement('afterend',p);
+    }
+    var prev=p.querySelector('[data-dir="-1"]'),next=p.querySelector('[data-dir="1"]'),label=p.querySelector('span');
+    if(label)label.textContent=(page+1)+' / '+pages;
+    if(prev)prev.disabled=page<=0;
+    if(next)next.disabled=page>=pages-1;
+  }
   function paginate(root,selector,kind,page,pageSize,after){
     var items=Array.from(root.querySelectorAll(selector));
-    var old=root.querySelector('.famV232Pager[data-kind="'+kind+'"]');if(old)old.remove();
-    if(!items.length)return;
+    if(!items.length){syncPager(root,kind,0,1,null);return;}
     var pages=Math.max(1,Math.ceil(items.length/pageSize));
     page=Math.min(page,pages-1);setPage(kind,page);
-    items.forEach(function(el,i){el.style.display=(i>=page*pageSize&&i<(page+1)*pageSize)?'':'none';});
-    if(pages<=1)return;
-    var wrap=document.createElement('div');wrap.innerHTML=pager(kind,page,items.length,pageSize);var p=wrap.firstElementChild;
-    var anchor=after||items[0].parentElement;if(anchor)anchor.insertAdjacentElement('afterend',p);
+    items.forEach(function(el,i){var show=i>=page*pageSize&&i<(page+1)*pageSize;el.style.display=show?'':'none';});
+    syncPager(root,kind,page,pages,after||items[0].parentElement);
   }
   function enhance(){
     scheduled=false;
@@ -35,12 +39,12 @@
     compactRates(root);
     paginate(root,'.famNsPet','pet',petPage,8);
     paginate(root,'.famNsStored','egg',eggPage,8);
-    var hatchRow=root.querySelector('.famNsHatchRow');if(hatchRow)paginate(root,'.famNsEgg','hatch',hatchPage,2,hatchRow);
+    var hatchRow=root.querySelector('.famNsHatchRow');if(hatchRow)paginate(root,'.famNsEgg','hatch',hatchPage,2,hatchRow);else syncPager(root,'hatch',0,1,null);
     var utility=root.querySelector('.famNsUtility');
     if(utility){
-      var accelAnchor=utility.querySelector('.famNsAccelRow');if(accelAnchor)paginate(root,'.famNsAccelRow','accel',accelPage,2,accelAnchor.parentElement);
-      var fusion=root.querySelector('.famNsFusion');if(fusion)paginate(root,'.famNsFusion>div','fusion',fusionPage,4,fusion);
-    }
+      var accelAnchor=utility.querySelector('.famNsAccelRow');if(accelAnchor)paginate(root,'.famNsAccelRow','accel',accelPage,2,accelAnchor.parentElement);else syncPager(root,'accel',0,1,null);
+      var fusion=root.querySelector('.famNsFusion');if(fusion)paginate(root,'.famNsFusion>div','fusion',fusionPage,4,fusion);else syncPager(root,'fusion',0,1,null);
+    }else{syncPager(root,'accel',0,1,null);syncPager(root,'fusion',0,1,null);}
   }
   function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(enhance);}
   var style=document.createElement('style');style.id='famV233PaginationStyle';style.textContent=`
