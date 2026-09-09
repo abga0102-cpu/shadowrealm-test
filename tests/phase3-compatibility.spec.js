@@ -76,11 +76,20 @@ async function expectActiveRoute(page, routeArg) {
 }
 
 async function expectCanonicalAccomplishments(page) {
-  await expect(page.locator('#overlay')).toHaveCount(1, { timeout: 5000 });
-  await expect(page.locator('#overlay .srAch139')).toHaveCount(1);
-  await expect(page.locator('#overlay [data-ach-overview-v135]')).toHaveCount(1);
-  await expect(page.locator('#overlay [data-ach-floors-v138]')).toHaveCount(1);
-  await expect(page.locator('#overlay [data-ach-titles-v134]')).toHaveCount(1);
+  // Read the large canonical modal in one browser-side snapshot. Five separate
+  // locator assertions make Playwright trace the same deep modal five times;
+  // on WebKit that tracing overhead can consume the whole test timeout even
+  // though every selector has already resolved successfully.
+  await expect.poll(() => page.evaluate(() => ({
+    overlay: document.querySelectorAll('#overlay').length,
+    canonical: document.querySelectorAll('#overlay .srAch139').length,
+    overview: document.querySelectorAll('#overlay [data-ach-overview-v135]').length,
+    floors: document.querySelectorAll('#overlay [data-ach-floors-v138]').length,
+    titles: document.querySelectorAll('#overlay [data-ach-titles-v134]').length
+  })), {
+    timeout: 5000,
+    intervals: [50, 100, 250]
+  }).toEqual({ overlay: 1, canonical: 1, overview: 1, floors: 1, titles: 1 });
 }
 
 test('Accomplishments compatibility stack renders one canonical modal through repeated opens', async ({ page }, testInfo) => {
