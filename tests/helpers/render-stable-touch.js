@@ -14,7 +14,14 @@ async function touchCurrentLocator(page, locator, options = {}) {
   // re-resolves the current node and performs its own actionability / hit-target
   // checks immediately before dispatching the touch sequence.
   if (scroll) {
-    await locator.scrollIntoViewIfNeeded({ timeout });
+    // scrollIntoViewIfNeeded() is itself an actionability operation and waits for
+    // the element to become stable. Some live game cards can keep moving by a few
+    // pixels while nearby content rerenders even though they are already visible
+    // and touchable. Scroll through the current DOM node directly, then let the
+    // final locator.tap() perform the real visibility/hit-target validation.
+    await locator.evaluate((el) => {
+      el.scrollIntoView({ block: 'center', inline: 'nearest' });
+    });
     await page.evaluate(() => new Promise((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(resolve));
     }));
