@@ -43,10 +43,21 @@ async function activateBottomNav(page, locator, testInfo) {
   }
 }
 
+async function settleScrollAndRender(page) {
+  await page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
+}
+
 async function activateScrollable(page, locator, testInfo) {
   if (testInfo.project.name === 'webkit-iphone') {
     await expect(locator).toBeVisible();
     await locator.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
+    // WebKit can keep a deep nested-scroll input transaction alive when the
+    // raw touch is injected in the same frame as scrollIntoView. Real users
+    // naturally tap after scrolling has painted; wait two frames, then resolve
+    // the locator again and keep the same center hit-test + touchscreen tap.
+    await settleScrollAndRender(page);
     await tapAtCurrentCenter(page, locator, 'target center must remain touchable after scrolling into view');
   } else {
     await locator.click();
