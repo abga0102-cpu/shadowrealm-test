@@ -3,6 +3,7 @@
    Keeps every previous Forge file in place, but future Forge results are handled here.
    V199: Auto-Forge results selected by the Forge filter are queued exactly as dropped,
    regardless of power, and AUTO resumes only after the comparison queue is resolved.
+   V226: multi-drop Auto-Forge batches show their sequential position (1/2, 2/2, etc.).
    Compared drops can be kept, equipped or recycled for the normal Inventory Dust value. */
 (function(){
 'use strict';
@@ -116,10 +117,12 @@ function wornCard(cur,pd){
 function render(){
  remove();var it=byId(current&&current.id);if(!it){next();return;}
  var cur=(S.equipped||{})[it.slot]||null,worn=cur&&cur.id===it.id,nb=primary(it),cb=cur&&!worn?primary(cur):0,bd=cur&&!worn?Math.round(nb-cb):Math.round(nb),pd=worn?0:powerDelta(it),r=rarity(it),more=pendingCount(),dust=0;
+ var batchTotal=Math.max(0,Number(current&&current.__srAutoForgeBatchTotal)||0),batchIndex=Math.max(0,Number(current&&current.__srAutoForgeBatchIndex)||0);
+ var queueBadge=batchTotal>1&&batchIndex>0?('<span style="font-size:9px;font-weight:900;padding:3px 6px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">'+batchIndex+'/'+batchTotal+'</span>'):(more?'<span style="font-size:9px;font-weight:900;padding:3px 6px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">+'+more+'</span>':'');
  try{if(!worn&&typeof dustValue==='function')dust=dustValue(S,it);}catch(_){}
  var root=document.createElement('div');root.id=ROOT;root.style.cssText='position:fixed;z-index:8800;pointer-events:auto;font-family:inherit;max-width:calc(100vw - 16px);';
  root.innerHTML='<div style="background:rgba(7,12,21,.97);border:1px solid '+r.c+'88;border-radius:13px;box-shadow:0 10px 30px #0009;padding:9px;overflow:hidden">'+
-  '<div style="display:flex;align-items:center;gap:8px"><div style="width:38px;height:38px;flex:0 0 38px;border:1px solid '+r.c+'99;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#0b1220">'+iconHtml(it,24)+'</div><div style="min-width:0;flex:1"><div style="font-size:9px;font-weight:900;letter-spacing:.7px;color:'+r.c+'">FORGE · '+esc2(r.label).toUpperCase()+'</div><div style="font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(slotName(it))+'</div></div>'+(more?'<span style="font-size:9px;font-weight:900;padding:3px 6px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">+'+more+'</span>':'')+'<button data-sr-fp146="closeAll" aria-label="Fermer toute la file" style="border:0;background:transparent;color:#9dacbf;font-size:21px;padding:2px 5px">×</button></div>'+
+  '<div style="display:flex;align-items:center;gap:8px"><div style="width:38px;height:38px;flex:0 0 38px;border:1px solid '+r.c+'99;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#0b1220">'+iconHtml(it,24)+'</div><div style="min-width:0;flex:1"><div style="font-size:9px;font-weight:900;letter-spacing:.7px;color:'+r.c+'">FORGE · '+esc2(r.label).toUpperCase()+'</div><div style="font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(slotName(it))+'</div></div>'+queueBadge+'<button data-sr-fp146="closeAll" aria-label="Fermer toute la file" style="border:0;background:transparent;color:#9dacbf;font-size:21px;padding:2px 5px">×</button></div>'+
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px"><div style="padding:6px;border-radius:8px;background:#0b1220"><div style="font-size:8px;color:#8493aa;font-weight:900">NOUVEAU</div><div style="font-size:11px;font-weight:900;color:'+r.c+'">'+primaryLabel(it)+' '+fmt2(nb)+'</div><div style="font-size:9px;font-weight:800;color:'+(bd>0?'#6ee7a0':bd<0?'#ff7474':'#9dacbf')+'">'+signed(bd)+' stat</div><div style="font-size:8px;color:#8493aa;font-weight:900;margin:5px 0 3px">BONUS</div>'+affixHtml(it)+'</div>'+wornCard(cur,pd)+'</div>'+weaponHtml(it)+
   '<div style="display:grid;grid-template-columns:'+(worn?'1fr 1fr':'1fr 1fr 1fr')+';gap:6px;margin-top:8px">'+
     (!worn?'<button data-sr-fp146="recycle" style="min-height:38px;border-radius:8px;border:1px solid #7a3137;background:#2b1216;color:#ff9aa0;font-weight:900;font-size:10px">RECYCLER'+(dust>0?' · +'+fmt2(dust):'')+'</button>':'')+
@@ -134,6 +137,8 @@ showForgeResult=function(res){
  var kept=res.filter(function(r){return r&&!r.recycled&&r.id&&byId(r.id);});
  var melted=res.filter(function(r){return r&&r.recycled;});
  if(!kept.length){var dust=melted.reduce(function(a,r){return a+(Number(r.dust)||0);},0);try{if(typeof toast==='function')toast(melted.length+' pièce'+(melted.length>1?'s':'')+' recyclée'+(melted.length>1?'s':'')+' · +'+fmt2(dust)+' poussière',true);}catch(_){}maybeResumeAuto();return;}
+ var autoKept=kept.filter(function(r){return !!(r&&r.__autoForgeCompareV199);});
+ if(autoKept.length>1)autoKept.forEach(function(r,i){r.__srAutoForgeBatchIndex=i+1;r.__srAutoForgeBatchTotal=autoKept.length;});
  kept.forEach(ingest);if(!current)next();else render();
 };
 
