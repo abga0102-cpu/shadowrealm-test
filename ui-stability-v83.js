@@ -14,10 +14,45 @@
     #app:has(#screen .campaignWorld) #hud .avatar{width:36px;height:36px}
     #app:has(#screen .campaignWorld) #hud .iconBtn{width:44px;height:44px;min-width:44px;min-height:44px}
     #screen:has(.campaignWorld){scroll-padding-bottom:118px}
+    #screen:has(.campaignWorld) .recommendedWrap{margin-top:-2px;margin-bottom:1px}
+    #screen:has(.campaignWorld) .campaignWorld{margin-top:-10px}
+    #screen:has(.campaignWorld) .campaignWorld #arenaSlot{margin-top:0}
+    #screen:has(.campaignWorld) .homeForge{margin-top:2px!important;padding:4px 7px!important}
+    #screen:has(.campaignWorld) .homeForge .fgRow.mt6{margin-top:2px}
+    #screen:has(.campaignWorld) .homeForge .forgeAnim{margin-top:3px!important}
+    #screen:has(.campaignWorld) .homeForge .forgeAnim:not(.compactAuto){min-height:70px;padding:5px 8px 5px}
+    #screen:has(.campaignWorld) .homeForge .forgeScene{height:46px;overflow:visible}
+    #screen:has(.campaignWorld) .homeForge .forgeHammerHit{top:-7px}
+    #screen:has(.campaignWorld) .homeForge .forgeSpark{bottom:13px}
+    #screen:has(.campaignWorld) .worldAction,
+    #screen:has(.campaignWorld) .worldMenu>summary{min-width:44px;min-height:44px;height:44px}
+    @media(max-height:700px){
+      #screen:has(.campaignWorld) .worldAction,
+      #screen:has(.campaignWorld) .worldMenu>summary{transform:none}
+    }
+    .recommendedActionCard{padding-right:52px}
+    .recommendedActionCard .recommendedClose{width:44px;height:44px;min-width:44px!important;min-height:44px!important;right:4px;top:4px}
+    @media (max-width:520px) and (max-height:960px){
+      #app:has(#screen .campaignWorld) #hud{padding-top:3px;padding-bottom:3px}
+      #app:has(#screen .campaignWorld) #hud .avatar{width:34px;height:34px}
+      #screen:has(.campaignWorld) .campaignWorld{margin-top:-16px}
+      #screen:has(.campaignWorld) .homeForge{padding-top:3px!important;padding-bottom:3px!important}
+      #screen:has(.campaignWorld) .homeForge .forgeAnim:not(.compactAuto){min-height:66px}
+    }
+    @media (max-width:520px) and (max-height:860px){
+      #app:has(#screen .campaignWorld) #hud{padding:2px 7px 2px;gap:4px}
+      #app:has(#screen .campaignWorld) #hud .pbox{padding-top:2px;padding-bottom:2px}
+      #screen:has(.campaignWorld) .campaignWorld{margin-top:-20px}
+      #screen:has(.campaignWorld) .homeForge .forgeAnim:not(.compactAuto){min-height:62px}
+    }
+    #overlay[data-sr-persistent='1']{contain:layout style;overscroll-behavior:contain}
+    #overlay[data-sr-persistent='1'] > .card{max-height:min(82dvh,720px);overflow:hidden}
+    #overlay[data-sr-persistent='1'] > .card > .mbody{max-height:calc(min(82dvh,720px) - 46px);overflow-y:auto;overscroll-behavior:contain}
     #app [data-act]:active,#overlay [data-act]:active{filter:brightness(1.14)}
   `;
   document.head.appendChild(css);
 
+  // Un vrai tap peut rendre immédiatement. Le bypass ne reste actif que jusqu'au clic.
   let tap=null;
   let bypassArmed=false;
   function actionTarget(t){return t&&t.closest?t.closest('#app [data-act]'):null;}
@@ -48,6 +83,10 @@
   document.addEventListener('click',function(){setTimeout(clearBypass,0);},true);
   document.addEventListener('pointercancel',function(){tap=null;clearBypass();},true);
 
+  // Récolte met à jour ses chiffres toutes les secondes. Le moteur remplaçait
+  // auparavant toute la .mbody, y compris RÉCLAMER, ce qui pouvait supprimer le
+  // bouton entre pointerdown et pointerup sur Safari/WebKit. On rafraîchit tout
+  // le contenu informatif mais on conserve le même nœud d'action jusqu'à la fermeture.
   const nativeHarvestRefresh=typeof window.refreshHarvestModal==='function'?window.refreshHarvestModal:null;
   if(nativeHarvestRefresh&&typeof window.harvestModalHTML==='function'){
     window.refreshHarvestModal=function(){
@@ -65,6 +104,8 @@
       const freshBtn=freshAction&&freshAction.querySelector?freshAction.querySelector('[data-act="harvestClaim"]'):null;
       if(!freshAction||!freshBtn)return nativeHarvestRefresh.apply(this,arguments);
 
+      // Keep the live action node attached throughout the refresh. Only mirror
+      // whether the current state makes the claim available.
       if(freshBtn.hasAttribute('disabled')) liveBtn.setAttribute('disabled','');
       else liveBtn.removeAttribute('disabled');
       liveBtn.disabled=!!freshBtn.disabled;
@@ -129,6 +170,10 @@
     });
   }
 
+  // Les actions de modale peuvent contenir un setTimeout / Promise avant de fermer.
+  // V81/V82 n'autorisaient la fermeture que pendant la microtask du clic, ce qui
+  // rendait certaines commandes visuellement mortes. On conserve ici une courte
+  // fenêtre d'intention utilisateur, et le clic sur le fond natif est aussi reconnu.
   document.addEventListener('click',function(e){
     if(!e.target||!e.target.closest)return;
     const ov=e.target.closest('#overlay');
@@ -146,9 +191,13 @@
     if(!overlay()){
       const out=nativeCloseSafe(this,arguments);drain();return out;
     }
+    // Une fermeture explicitement déclenchée par le joueur ne doit jamais être bloquée.
     if(explicitUntil>now()||nativeTransitionDepth>0){
       const out=nativeCloseSafe(this,arguments);drain();return out;
     }
+    // S'il existe une ouverture asynchrone mise en attente, on protège la modale
+    // actuelle contre la fermeture sœur de ce callback. Sinon on laisse le moteur
+    // natif fermer: le précédent blocage global était la cause des boutons morts.
     if(queue.length)return undefined;
     const out=nativeCloseSafe(this,arguments);drain();return out;
   };
@@ -156,13 +205,7 @@
   const app=document.getElementById('app');
   if(app){
     let queued=false;
-    const mark=function(){
-      const sc=document.getElementById('screen');
-      if(sc)sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));
-      markOverlay();
-      publishModalState();
-      if(!overlay())drain();
-    };
+    const mark=function(){const sc=document.getElementById('screen');if(sc)sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));markOverlay();publishModalState();if(!overlay())drain();};
     const schedule=function(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;mark();});};
     new MutationObserver(schedule).observe(app,{childList:true,subtree:false});
     mark();
