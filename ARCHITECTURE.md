@@ -8,7 +8,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 
 | Area | Canonical owner(s) | Notes |
 | --- | --- | --- |
-| Bottom navigation geometry / render lifecycle | `bottom-nav-layout-v183.js` | Despite the historical filename, this file contains the V209 BottomNav geometry authority and is the sole BottomNav `renderTabs` lifecycle wrapper. It invokes the fantasy decorator, then applies canonical geometry. |
+| Bottom navigation geometry / render lifecycle | `bottom-nav-layout-v183.js` | Despite the historical filename, this file contains the V209 BottomNav geometry authority and is the sole BottomNav `renderTabs` lifecycle wrapper. It invokes the fantasy decorator, applies canonical geometry, and publishes the post-render `sr:bottomnavrendered` event for scoped subscribers. |
 | Bottom navigation fantasy decoration | `bottom-nav-v53.js` | Owns fantasy icon markup and decoration only through `__srDecorateBottomNavPhase2A`; it no longer wraps `renderTabs`. |
 | Premium interaction / BottomNav visual polish | `premium-ui-v209.js` | Visual/material styling only; also owns the final no-badge/no-halo recommendation presentation formerly layered by V243. Not the BottomNav geometry or render-lifecycle owner. |
 | Home geometry / render lifecycle | `home-layout-authority-v219.js` | Owns Home frame geometry, `srHomeFullArena`, and Home render lifecycle. |
@@ -21,7 +21,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Forge item base power | `progression-overhaul-v283.js` | Current fixed-base equipment generation authority. |
 | Forge Divine pre-Ascension lock | `game-balance-v224.js` | Retains the Divine rarity gate only; not current base-power owner. |
 | Tree mastery gating / deep requirements / popup synchronization | `runtime-tree-stability-v216.js` | Sole active mastery owner; legacy V149 source has been retired. |
-| Accomplishments Development entry lifecycle | `accomplishments-stability-v138.js` | Route-bound lifecycle owner; no document-wide observer. |
+| Accomplishments Development entry lifecycle | `accomplishments-stability-v138.js` | Route-bound subscriber to V209's `sr:bottomnavrendered` lifecycle; no document-wide observer and no `renderTabs` wrapper. |
 | Accomplishments modal / title rendering + title interaction | `accomplishments-canonical-v139.js` | Canonical Accomplishments renderer and title owner. |
 | Canonical Accomplishments claims | `accomplishments-claim-v140.js` | Future claim payout authority. |
 | Accomplishments merge reward / reserve synchronization | `accomplishments-merge-v126.js` | Event-driven owner: claim completion and Sanctuary screen lifecycle synchronize pending pieces/reserve; no global `render` wrapper or perpetual poller. |
