@@ -9,7 +9,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Area | Canonical owner(s) | Notes |
 | --- | --- | --- |
 | Bottom navigation geometry | `bottom-nav-layout-v183.js` | Despite the historical filename, this file contains the V209 BottomNav geometry authority and `__srBottomNavGeometryV209` guard; loaded through the deferred core loader. |
-| Premium interaction / BottomNav visual polish | `premium-ui-v209.js` | Visual/material styling only; not the BottomNav geometry owner. |
+| Premium interaction / BottomNav visual polish | `premium-ui-v209.js` | Visual/material styling only; also owns the final no-badge/no-halo recommendation presentation formerly layered by V243. Not the BottomNav geometry owner. |
 | Home geometry / render lifecycle | `home-layout-authority-v219.js` | Owns Home frame geometry, `srHomeFullArena`, and Home render lifecycle. |
 | Home compatibility decoration | `home-layout-fix-v119.js` | Decoration/compatibility only; must not own Home or BottomNav geometry. |
 | Combat cadence / impact compatibility | `combat-consolidated-v156.js` | Active combat compatibility owner. |
@@ -31,6 +31,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 The following files may remain in source history, but must not regain active ownership. Where listed as unloaded, they should not be requested by either static script tags or the deferred loader in `index.html`.
 
 - `social-forge-layout-v1.js` — dormant Home duplicate bundle; unloaded/non-executable.
+- `premium-recommendation-cleanup-v243.js` — recommendation visual override absorbed into `premium-ui-v209.js`; unloaded.
 - `accomplishments-titles-v133.js` — compatibility marker only; unloaded.
 - `accomplishments-overview-v135.js` — compatibility marker only; unloaded.
 - `accomplishments-home-scope-v136.js` — compatibility marker only; unloaded.

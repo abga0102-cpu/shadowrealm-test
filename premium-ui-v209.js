@@ -20,8 +20,6 @@
   --premium-gold-dim:#81652D;
 }
 
-/* Accessibility stays obvious, but the old cyan halo is replaced by the same
-   warm metal language used everywhere else in the interface. */
 button:focus-visible,
 [data-act]:focus-visible,
 [role="button"]:focus-visible,
@@ -32,14 +30,10 @@ a:focus-visible{
   outline-offset:2px!important;
 }
 
-/* Primary decisions read as important without the bright cyan ring. */
 [data-primary-action="true"]{
   border-color:var(--premium-gold)!important;
   filter:brightness(1.04) saturate(1.02)!important;
-  box-shadow:
-    0 0 0 1px rgba(215,174,88,.72),
-    0 0 16px var(--primary-action-glow),
-    0 9px 22px rgba(0,0,0,.38)!important;
+  box-shadow:0 0 0 1px rgba(215,174,88,.72),0 0 16px var(--primary-action-glow),0 9px 22px rgba(0,0,0,.38)!important;
 }
 [data-primary-action="true"]:not([data-primary="true"])::after{
   background:linear-gradient(180deg,#E5C66F,#AE8232)!important;
@@ -59,8 +53,6 @@ a:focus-visible{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.11),0 0 0 1px rgba(215,174,88,.10),0 6px 18px rgba(0,0,0,.38)!important;
 }
 
-/* Buttons: less arcade-neon, more enamel / metal. Motion is short and weighted,
-   with no large bounce that makes one control feel different from another. */
 .btn{
   --bA:#D7B35C;--bB:#A87A27;--bS:#6D4B12;--bE:#F0D991;--bT:#211705;--bSh:0 1px 0 rgba(255,246,206,.34);
   border-color:#080D17!important;
@@ -103,7 +95,6 @@ a:focus-visible{
 }
 .btn.sm:active:not(:disabled){transform:translateY(1px) scale(.99)!important}
 
-/* Compact controls inherit the same material and motion language. */
 .hudBtn,.menuBtn,.iBtn,.recommendedClose{
   transition:transform .15s cubic-bezier(.2,.75,.2,1),filter .15s ease,border-color .15s ease,background .15s ease,box-shadow .15s ease!important;
 }
@@ -130,7 +121,6 @@ a:focus-visible{
 }
 .hudBtn:active,.menuBtn:active,.iBtn:active,.recommendedClose:active{transform:translateY(1px) scale(.96)!important;filter:brightness(.94)!important}
 
-/* Segments/toggles use darker jewel tones instead of cyan selection plates. */
 .seg>span{background:linear-gradient(180deg,#2B3444,#171E2B)!important;color:#A9B4C5!important;transition:background .16s,color .16s,filter .16s!important}
 .seg>span.on{
   background:linear-gradient(180deg,#C3A054,#886628)!important;
@@ -140,8 +130,6 @@ a:focus-visible{
 .tgl{background:linear-gradient(180deg,#303949,#1A2230)!important;transition:background .16s,filter .16s,transform .16s!important}
 .tgl.on{background:linear-gradient(180deg,#4C9860,#2E6A3D)!important;color:#F3FFF5!important;text-shadow:0 1px 1px #17351F!important}
 
-/* Bottom navigation: identical geometry for every route; selection is conveyed
-   with warmth/clarity rather than size jumps or blue rings. */
 #tabs{
   background:linear-gradient(180deg,#101724 0%,#080D16 82%)!important;
   border-top:1px solid rgba(215,174,88,.18)!important;
@@ -179,6 +167,25 @@ a:focus-visible{
   background:radial-gradient(65% 70% at 50% 0%,rgba(215,174,88,.075),transparent 74%)!important;
 }
 #tabs>.tab:active .fantasyNavIcon{filter:brightness(.95) saturate(.9) drop-shadow(0 1px 2px rgba(0,0,0,.72))!important}
+
+/* V243 final recommendation policy, now owned directly by Premium UI. */
+[data-primary-action="true"]:not([data-primary="true"])::after{
+  content:none!important;
+  display:none!important;
+}
+.btn[data-primary-action="true"]{
+  border-color:#080D17!important;
+  filter:none!important;
+  box-shadow:inset 0 1px 0 var(--bE),inset 0 -2px 0 var(--bS),0 3px 0 #080D17,0 8px 18px rgba(0,0,0,.42)!important;
+}
+[data-primary-action="true"]:not(.btn){box-shadow:none!important;filter:none!important}
+.recommendedActionCard{
+  border:1px solid var(--border)!important;
+  border-left:1px solid var(--border)!important;
+  background:linear-gradient(180deg,#1B2942 0%,#141F35 46%,#101A2C 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.35),0 4px 14px rgba(0,0,0,.34)!important;
+}
+.recommendedKicker{display:none!important}
 
 @media(prefers-reduced-motion:reduce){
   .btn,.hudBtn,.menuBtn,.iBtn,.recommendedClose,.seg>span,.tgl,#tabs>.tab,#tabs>.tab .fantasyNavIcon{transition:none!important}
