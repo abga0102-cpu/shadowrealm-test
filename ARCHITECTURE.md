@@ -24,6 +24,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Accomplishments Development entry lifecycle | `accomplishments-stability-v138.js` | Route-bound lifecycle owner; no document-wide observer. |
 | Accomplishments modal / title rendering + title interaction | `accomplishments-canonical-v139.js` | Canonical Accomplishments renderer and title owner. |
 | Canonical Accomplishments claims | `accomplishments-claim-v140.js` | Future claim payout authority. |
+| Accomplishments merge reward / reserve synchronization | `accomplishments-merge-v126.js` | Event-driven owner: claim completion and Sanctuary screen lifecycle synchronize pending pieces/reserve; no global `render` wrapper or perpetual poller. |
 | Raid 100 legacy compensation | `accomplishments-reward-fix-v127.js` | Migration/startup compatibility only; no perpetual poller. |
 | Floating Social launcher policy | `social-v1.js` | Owns launcher creation/remount and suppression policy when Social is enabled. |
 
