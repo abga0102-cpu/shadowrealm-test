@@ -31,7 +31,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 The following files may remain in source history, but must not regain active ownership. Where listed as unloaded, they should not be requested by either static script tags or the deferred loader in `index.html`.
 
 - `social-forge-layout-v1.js` — dormant Home duplicate bundle; unloaded/non-executable.
-- `premium-recommendation-cleanup-v243.js` — recommendation visual override absorbed into `premium-ui-v209.js`; unloaded.
+- `premium-recommendation-cleanup-v243.js` — recommendation visual override absorbed into `premium-ui-v209.js`; retired from runtime and source.
 - `accomplishments-titles-v133.js` — compatibility marker only; unloaded.
 - `accomplishments-overview-v135.js` — compatibility marker only; unloaded.
 - `accomplishments-home-scope-v136.js` — compatibility marker only; unloaded.

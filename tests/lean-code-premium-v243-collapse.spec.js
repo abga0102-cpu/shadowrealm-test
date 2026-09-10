@@ -11,6 +11,7 @@ test('Premium UI owns the final recommendation styling without loading v243', as
   const index = source('index.html');
   const premium = source('premium-ui-v209.js');
 
+  expect(fs.existsSync(path.join(root, 'premium-recommendation-cleanup-v243.js'))).toBe(false);
   expect(index).toContain('premium-ui-v209.js');
   expect(index).not.toContain('premium-recommendation-cleanup-v243.js');
   expect(premium).toContain('__srPremiumUiV209');
