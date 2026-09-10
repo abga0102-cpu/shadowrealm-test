@@ -10,12 +10,13 @@ const executable = (text) => text
   .filter((line) => !line.trimStart().startsWith('//'))
   .join('\n');
 
-test('Phase 4D leaves v149 as the sole loaded tree mastery gating and popup owner', async ({}, testInfo) => {
+test('Phase 4D leaves v149 as the sole loaded tree mastery gating owner and v216 as popup sync owner', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   const legacyRule = source('tree-mastery-v120.js');
   const legacyUi = source('tree-mastery-ui-v128.js');
   const canonical = source('tree-mastery-v149.js');
+  const runtime = source('runtime-tree-stability-v216.js');
   const index = source('index.html');
 
   expect(legacyRule).toContain('__srTreeMasteryV120');
@@ -31,13 +32,23 @@ test('Phase 4D leaves v149 as the sole loaded tree mastery gating and popup owne
 
   expect(canonical).toContain('__srTreeMasteryV149');
   expect(canonical).toContain('var REQUIRED=3');
-  expect(canonical).toContain('treeReqOk=function');
-  expect(canonical).toContain('showTreeNode=function');
-  expect(canonical).toContain('new MutationObserver');
+  expect(canonical).toContain('masteryLevelRequired=REQUIRED');
+  expect(canonical).toContain('treeLv(s,id)>=REQUIRED');
+  expect(canonical).toContain('niveau 3/5');
+  expect(canonical).not.toContain('showTreeNode=function');
+  expect(canonical).not.toContain('new MutationObserver');
+  expect(canonical).not.toContain('querySelectorAll(');
+
+  expect(runtime).toContain('__srRuntimeTreeStabilityV216');
+  expect(runtime).toContain('var LEVEL=3,COST=100');
+  expect(runtime).toContain('function syncPopup()');
+  expect(runtime).toContain('niveau 3/5 requis');
+  expect(runtime).not.toContain('new MutationObserver');
 
   expect(index).not.toContain('tree-mastery-v120.js');
   expect(index).not.toContain('tree-mastery-ui-v128.js');
   expect(index.match(/tree-mastery-v149\.js/g) || []).toHaveLength(1);
+  expect(index.match(/runtime-tree-stability-v216\.js/g) || []).toHaveLength(1);
 });
 
 test('retired tree mastery markers stay unloaded while v149 remains active', async ({ page }) => {
