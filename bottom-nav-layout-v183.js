@@ -180,6 +180,9 @@
     if(typeof window.__srDecorateBottomNavPhase2A==='function')window.__srDecorateBottomNavPhase2A();
     apply();
   }
+  function publishRendered(){
+    try{window.dispatchEvent(new Event('sr:bottomnavrendered'));}catch(_){}
+  }
 
   var scheduled=false;
   function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(function(){scheduled=false;decorateAndApply();});}
@@ -191,10 +194,12 @@
     window.renderTabs=function(){
       var out=nativeRenderTabs.apply(this,arguments);
       decorateAndApply();
+      publishRendered();
       return out;
     };
   }
   window.addEventListener('resize',schedule,{passive:true});
   window.addEventListener('orientationchange',schedule,{passive:true});
   decorateAndApply();
+  publishRendered();
 })();
