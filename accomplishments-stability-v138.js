@@ -1,7 +1,9 @@
 /* SHADOWREACH · Accomplishments Development entry stability v138
    - Prevent the legacy text-based Development detector from mounting the card on Accueil.
    - Mount Accomplissements only on the canonical Development route.
-   - Canonical Accomplissements modal rendering belongs exclusively to v139. */
+   - Canonical Accomplissements modal rendering belongs exclusively to v139.
+   - Phase 4F: reconcile the Development entry from BottomNav/renderTabs lifecycle,
+     not a document-wide MutationObserver. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsStabilityV138)return;window.__srAccomplishmentsStabilityV138=true;
@@ -11,19 +13,15 @@ if(window.__srAccomplishmentsStabilityV138)return;window.__srAccomplishmentsStab
    Accomplissements above the Forge. Stop only that UI injector. */
 window.__srAccomplishmentsUIV124=true;
 
-function norm(v){try{return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}catch(_){return String(v||'').toLowerCase();}}
 function activeDevelopmentRoute(){
  var active=document.querySelector('#tabs .tab.on[data-arg="developpement"]');
  return !!active;
 }
 function realDevelopmentScreen(){
  var s=document.getElementById('screen');if(!s)return false;
- /* Phase 2A owns BottomNav route state. Prefer that stable owner so a transient
-    header render cannot remove the entry during WebKit navigation. */
- if(activeDevelopmentRoute())return true;
- var heads=s.querySelectorAll('.topbar,.topBar,.screenTitle,h1,h2');
- for(var i=0;i<heads.length;i++)if(norm(heads[i].textContent).trim()==='developpement')return true;
- return false;
+ /* Phase 2A owns BottomNav route state. Phase 4F makes that route state the
+    exclusive scope signal instead of falling back to screen-heading text. */
+ return activeDevelopmentRoute();
 }
 function openAchievements(e){
  if(e){e.preventDefault();e.stopPropagation();}
@@ -52,9 +50,17 @@ function schedulePlace(){
  clearTimeout(retry);
  retry=setTimeout(placeEntry,120);
 }
-if(typeof MutationObserver!=='undefined'){
- new MutationObserver(schedulePlace).observe(document.body,{childList:true,subtree:true,characterData:true});
+
+/* BottomNav already owns deterministic route rendering through renderTabs.
+   Chain that lifecycle instead of observing every mutation in the document.
+   The RAF + single retry remain bounded protection for WebKit render settling. */
+var nativeRenderTabs=typeof window.renderTabs==='function'?window.renderTabs:null;
+if(nativeRenderTabs){
+ window.renderTabs=function(){
+  var out=nativeRenderTabs.apply(this,arguments);
+  schedulePlace();
+  return out;
+ };
 }
-setTimeout(placeEntry,0);
-setTimeout(placeEntry,120);
+schedulePlace();
 })();
