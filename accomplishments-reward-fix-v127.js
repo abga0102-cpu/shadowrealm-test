@@ -1,8 +1,9 @@
-/* Shadowreach v127 - Accomplishment reward audit fixes
+/* Shadowreach v127 - Accomplishment reward audit fixes · Phase 4G
    - Adds the missing 10-minute accelerator definition so rb50 rewards are usable.
-   - Compensates Raid 100 claims to the validated total without double-paying.
-   The legacy accomplishment module remains the source of claim state; this layer
-   only corrects the delta and is therefore safe for old and future saves. */
+   - Compensates legacy Raid 100 claims to the validated total without double-paying.
+   - Applies that legacy compensation once at boot and whenever migrate(...) processes
+     a save, instead of polling the whole runtime every 500 ms.
+   Canonical future claims are owned by accomplishments-claim-v140.js. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsRewardFixV127)return;
@@ -43,9 +44,9 @@ function compensateRaid100(s){
   return true;
 }
 
-function run(){
+function compensateCurrentState(){
   try{
-    if(typeof S==='undefined'||!S)return;
+    if(typeof S==='undefined'||!S)return false;
     var changed=compensateRaid100(S);
     if(changed){
       try{if(typeof dirty!=='undefined')dirty=true;}catch(_){}
@@ -53,10 +54,25 @@ function run(){
       try{if(typeof scheduleRender==='function')scheduleRender();}catch(_){}
       try{if(typeof toast==='function')toast('Récompense Raid 100 complétée',true);}catch(_){}
     }
-  }catch(_){}
+    return changed;
+  }catch(_){return false;}
 }
 
-/* Future claims are caught immediately after the legacy click handler marks raid100 claimed. */
-setInterval(run,500);
-setTimeout(run,50);
+/* Save import V207 resolves the global migrate(...) function when a file is
+   processed. Chaining that deterministic lifecycle preserves live-import
+   compensation without a perpetual timer. */
+var nativeMigrate=typeof window.migrate==='function'?window.migrate:null;
+if(nativeMigrate){
+  window.migrate=function(){
+    var migrated=nativeMigrate.apply(this,arguments);
+    try{compensateRaid100(migrated);}catch(_){}
+    return migrated;
+  };
+}
+
+/* The initial save is loaded before this compatibility layer. Reconcile it once
+   now, with one bounded fallback for unusual boot timing. The migration flag
+   makes both calls idempotent. */
+compensateCurrentState();
+setTimeout(compensateCurrentState,50);
 })();
