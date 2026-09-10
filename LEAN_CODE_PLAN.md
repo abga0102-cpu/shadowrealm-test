@@ -94,7 +94,8 @@ Completed so far:
 - Accomplishments V121/V126 converted away from recurring render/polling ownership to deterministic lifecycle hooks;
 - Accomplishments V138 stopped wrapping `renderTabs` and now subscribes to canonical `sr:bottomnavrendered` lifecycle;
 - Accomplishments V139 stopped wrapping global `openModal`; V121 claim refresh routes through canonical `ACT.accomplishments()`;
-- Tree V116 removed its duplicate permanent 500 ms `syncMode` poller while retaining the existing body `MutationObserver` and startup sync.
+- Tree V116 removed its duplicate permanent 500 ms `syncMode` poller while retaining the existing body `MutationObserver` and startup sync;
+- Home V219 stopped wrapping `renderTabs` and now subscribes to the canonical `sr:bottomnavrendered` lifecycle while keeping resize/orientation/startup synchronization.
 
 Continue with one behavior at a time. Do not remove migration/save compatibility responsibilities merely because their runtime path is infrequent.
 
@@ -127,6 +128,6 @@ Prefer coherent, reviewable batches. Multiple provably dormant scripts in one su
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
 
-Current lean-code baseline after the Accomplishments wrapper cleanup and Tree V116 polling cleanup: `main` `333c9b12e33e01e656856f08c5fe225b9b091257`. The loader inventory remains 106 JavaScript files in the normal non-Social session because the latest L2 changes reduced runtime wrapper/poller work rather than unloading additional scripts. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
+Current lean-code baseline before the Home V219 lifecycle cleanup: `main` `d05c7590352dcfad6c8d7a067dc07f534a196295`. The loader inventory remains 106 JavaScript files in the normal non-Social session because the recent L2 changes reduce runtime wrapper/poller work rather than unloading additional scripts. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
 V295 added `familiar-ladder-authority-v295.js`, confirming that Familiars remains feature-owner sensitive and should not be an early consolidation target unless current work is rechecked first.
