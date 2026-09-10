@@ -2,6 +2,8 @@
 
 This roadmap is the shared source of truth for reducing runtime complexity without interrupting active feature development. It is written for both human developers and AI coding agents working concurrently on the repository.
 
+**Repository-wide development standard:** `AGENTS.md` governs the fast local-first workflow, concurrent work rules, testing/debugging classification, and shipment gate for every AI-assisted change. This roadmap adds lean-code-specific boundaries on top of that standard.
+
 ## Goal
 
 Reduce runtime layers, wrapper chains, duplicate ownership, and dead script loads while preserving gameplay, saves, balance, UI behavior, and active feature work.
@@ -18,12 +20,12 @@ Line count alone is not a target.
 
 ## Mandatory concurrency protocol
 
-All developers and AI agents must follow these rules while this program is active:
+All developers and AI agents must first follow `AGENTS.md`, then apply these lean-code-specific rules:
 
 1. Read `ARCHITECTURE.md` and this file before editing runtime ownership or script loading.
 2. Fetch the current `main` SHA immediately before branching.
 3. Work from that exact SHA; never assume a previously inspected version is still current.
-4. Declare the subsystem/files being changed in the PR body.
+4. Declare the subsystem/files being changed in the PR body using the repository PR template.
 5. Treat actively evolving feature areas as feature-owner sensitive. If another branch/commit changes the same owner or loader entry, re-evaluate before continuing.
 6. If `main` moves, compare the intervening delta. Rebuild/rebase and retest only when it intersects the files/owners touched by the cleanup.
 7. Do not combine feature/balance changes with lean-code cleanup unless the feature itself requires an ownership transfer.
