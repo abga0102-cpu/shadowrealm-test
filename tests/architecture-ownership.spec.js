@@ -15,6 +15,7 @@ const countReferenced = (name) => referencedScripts.filter((s) => s === name).le
 
 const retiredUnloaded = [
   'social-forge-layout-v1.js',
+  'premium-recommendation-cleanup-v243.js',
   'accomplishments-titles-v133.js',
   'accomplishments-overview-v135.js',
   'accomplishments-home-scope-v136.js',
@@ -22,9 +23,11 @@ const retiredUnloaded = [
   'accomplishments-ui-v123.js',
   'tree-mastery-v120.js',
   'tree-mastery-ui-v128.js',
+  'tree-mastery-v149.js',
 ];
 
 const canonicalReferencedOnce = [
+  'bottom-nav-v53.js',
   'bottom-nav-layout-v183.js',
   'premium-ui-v209.js',
   'home-layout-authority-v219.js',
@@ -36,7 +39,7 @@ const canonicalReferencedOnce = [
   'import-save-guard-v207.js',
   'progression-overhaul-v283.js',
   'game-balance-v224.js',
-  'tree-mastery-v149.js',
+  'runtime-tree-stability-v216.js',
   'accomplishments-stability-v138.js',
   'accomplishments-canonical-v139.js',
   'accomplishments-claim-v140.js',
@@ -64,12 +67,21 @@ test('canonical ownership layers are referenced exactly once by the runtime load
   }
 });
 
-test('BottomNav geometry and visual polish remain separate responsibilities', () => {
+test('BottomNav uses one render lifecycle owner while keeping decoration and visual polish separate', () => {
+  const decoration = read('bottom-nav-v53.js');
   const geometry = read('bottom-nav-layout-v183.js');
   const premium = read('premium-ui-v209.js');
+  const executableDecoration = decoration
+    .split('\n')
+    .filter((line) => !line.trimStart().startsWith('//'))
+    .join('\n');
 
+  expect(decoration).toContain('__srDecorateBottomNavPhase2A');
+  expect(executableDecoration).not.toContain('window.renderTabs=function');
   expect(geometry).toContain('__srBottomNavGeometryV209');
   expect(geometry).toContain('__srApplyBottomNavGeometryV209');
+  expect(geometry).toContain('__srDecorateBottomNavPhase2A');
+  expect(geometry).toContain('window.renderTabs=function');
   expect(premium).toContain('__srPremiumUiV209');
   expect(premium).not.toContain('__srApplyBottomNavGeometryV209');
 });
