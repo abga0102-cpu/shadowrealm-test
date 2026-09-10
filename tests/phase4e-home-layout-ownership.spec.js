@@ -30,6 +30,7 @@ test('Phase 4E leaves V219 as the sole Home frame lifecycle owner and V209 as Bo
   const homeAuthority = source('home-layout-authority-v219.js');
   const navAuthority = source('bottom-nav-layout-v183.js');
   const legacyExecutable = executable(compatibility);
+  const homeExecutable = executable(homeAuthority);
 
   expect(compatibility).toContain('__srHomeLayoutCompatV119');
   expect(compatibility).toContain('__srApplyHomeCompatV119');
@@ -41,13 +42,16 @@ test('Phase 4E leaves V219 as the sole Home frame lifecycle owner and V209 as Bo
 
   expect(homeAuthority).toContain('__srHomeLayoutAuthorityV219');
   expect(homeAuthority).toContain('__srSyncHomeFramePhase2B');
-  expect(homeAuthority).toContain('window.renderTabs=function');
+  expect(homeExecutable).not.toContain('window.renderTabs=function');
+  expect(homeExecutable).toContain("addEventListener('sr:bottomnavrendered',schedule)");
   expect(homeAuthority).toContain('__srApplyHomeCompatV119');
   expect(homeAuthority).toContain('#app.srHomeFullArena>#hud>.pbox');
   expect(homeAuthority).toContain('top:0!important');
 
   expect(navAuthority).toContain('__srBottomNavGeometryV209');
   expect(navAuthority).toContain('normalizeIconSlot');
+  expect(navAuthority).toContain('window.renderTabs=function');
+  expect(navAuthority).toContain("new Event('sr:bottomnavrendered')");
 });
 
 test('Phase 4E preserves Home header alignment and unique V119 compatibility after repeated routes', async ({ page }) => {
