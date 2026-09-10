@@ -118,8 +118,8 @@ function install(){
   try{
     if(typeof SCREENS==='undefined'||!SCREENS||typeof SCREENS.familiers!=='function')return false;
     var current=SCREENS.familiers;
-    if(current.__srV309){lastOwner=current;return true;}
-    if(current===lastOwner)return true;
+    if(current.__srV309){lastOwner=current;return false;}
+    if(current===lastOwner)return false;
     var base=current;
     var wrapped=function(){return modernize(base.apply(this,arguments));};
     wrapped.__srV309=true;
@@ -136,8 +136,8 @@ function install(){
    SCREENS.familiers after this static file executes. Re-check a bounded set of
    times; each pass is a no-op unless ownership changed. No MutationObserver. */
 [0,40,120,260,520,900,1500,2400,3600].forEach(function(ms){setTimeout(function(){
-  install();
-  try{if(route==='familiers'&&typeof scheduleRender==='function')scheduleRender();}catch(_){ }
+  var changed=install();
+  try{if(changed&&route==='familiers'&&typeof scheduleRender==='function')scheduleRender();}catch(_){ }
 },ms);});
 try{window.addEventListener('load',install,{once:true});}catch(_){ }
 install();
