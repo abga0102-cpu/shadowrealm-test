@@ -25,6 +25,7 @@ const retiredUnloaded = [
 ];
 
 const canonicalReferencedOnce = [
+  'bottom-nav-layout-v183.js',
   'premium-ui-v209.js',
   'home-layout-authority-v219.js',
   'home-layout-fix-v119.js',
@@ -48,6 +49,7 @@ test('architecture source of truth exists and names concurrency workflow', () =>
   expect(architecture).toContain('Canonical owners');
   expect(architecture).toContain('Concurrency-safe workflow');
   expect(architecture).toContain('Merge only the exact tested head SHA');
+  expect(architecture).toContain('LEAN_CODE_PLAN.md');
 });
 
 test('retired ownership layers stay absent from all runtime loader paths', () => {
@@ -60,6 +62,16 @@ test('canonical ownership layers are referenced exactly once by the runtime load
   for (const file of canonicalReferencedOnce) {
     expect(countReferenced(file), `${file} must be referenced exactly once`).toBe(1);
   }
+});
+
+test('BottomNav geometry and visual polish remain separate responsibilities', () => {
+  const geometry = read('bottom-nav-layout-v183.js');
+  const premium = read('premium-ui-v209.js');
+
+  expect(geometry).toContain('__srBottomNavGeometryV209');
+  expect(geometry).toContain('__srApplyBottomNavGeometryV209');
+  expect(premium).toContain('__srPremiumUiV209');
+  expect(premium).not.toContain('__srApplyBottomNavGeometryV209');
 });
 
 test('known duplicate ownership mechanisms do not return', () => {
