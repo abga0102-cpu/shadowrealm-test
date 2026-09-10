@@ -80,10 +80,23 @@ Stop requesting scripts that are provably inert or fully superseded. Keep source
 
 Do not classify one-time save compensation/migration code as dead merely because current saves commonly carry its processed marker. Required historical-save compatibility must first be transferred to a durable migration owner before such a loader entry can be removed.
 
-### L2 — Wrapper-chain collapse
-Status: PLANNED
+Completed examples:
 
-Identify globals repeatedly wrapped by versioned patches. Move final intended behavior into the canonical owner and remove intermediate runtime wrappers.
+- retired Accomplishments marker sources V135/V136/V137 removed after their responsibilities were already owned by V138/V139.
+
+### L2 — Wrapper-chain collapse
+Status: IN PROGRESS
+
+Identify globals repeatedly wrapped by versioned patches. Move final intended behavior into the canonical owner and remove intermediate runtime wrappers or perpetual polling where deterministic lifecycle hooks already exist.
+
+Completed so far:
+
+- Accomplishments V121/V126 converted away from recurring render/polling ownership to deterministic lifecycle hooks;
+- Accomplishments V138 stopped wrapping `renderTabs` and now subscribes to canonical `sr:bottomnavrendered` lifecycle;
+- Accomplishments V139 stopped wrapping global `openModal`; V121 claim refresh routes through canonical `ACT.accomplishments()`;
+- Tree V116 removed its duplicate permanent 500 ms `syncMode` poller while retaining the existing body `MutationObserver` and startup sync.
+
+Continue with one behavior at a time. Do not remove migration/save compatibility responsibilities merely because their runtime path is infrequent.
 
 ### L3 — Subsystem consolidation
 Status: PLANNED
@@ -114,6 +127,6 @@ Prefer coherent, reviewable batches. Multiple provably dormant scripts in one su
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
 
-Current loader baseline after V310 and the Accomplishments lifecycle cleanup: `main` `2da269b6186a4f1f0cd7923c3056ca359ab1772a`, with 106 JavaScript files loaded in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
+Current lean-code baseline after the Accomplishments wrapper cleanup and Tree V116 polling cleanup: `main` `333c9b12e33e01e656856f08c5fe225b9b091257`. The loader inventory remains 106 JavaScript files in the normal non-Social session because the latest L2 changes reduced runtime wrapper/poller work rather than unloading additional scripts. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
-V295 added `familiar-ladder-authority-v295.js`, confirming that Familiars is currently feature-owner sensitive and should not be the first consolidation target.
+V295 added `familiar-ladder-authority-v295.js`, confirming that Familiars remains feature-owner sensitive and should not be an early consolidation target unless current work is rechecked first.
