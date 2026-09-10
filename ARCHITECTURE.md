@@ -2,11 +2,14 @@
 
 This file is the source-of-truth map for runtime ownership after the Phase 1–4 cleanup program. It is intentionally concise and should be updated whenever a change transfers ownership between loaded runtime layers.
 
+For the active code-leaning program and cross-developer/AI coordination rules, also read `LEAN_CODE_PLAN.md`.
+
 ## Canonical owners
 
 | Area | Canonical owner(s) | Notes |
 | --- | --- | --- |
-| Bottom navigation geometry | `premium-ui-v209.js` | V209 runtime geometry authority loaded through the deferred core loader. |
+| Bottom navigation geometry | `bottom-nav-layout-v183.js` | Despite the historical filename, this file contains the V209 BottomNav geometry authority and `__srBottomNavGeometryV209` guard; loaded through the deferred core loader. |
+| Premium interaction / BottomNav visual polish | `premium-ui-v209.js` | Visual/material styling only; not the BottomNav geometry owner. |
 | Home geometry / render lifecycle | `home-layout-authority-v219.js` | Owns Home frame geometry, `srHomeFullArena`, and Home render lifecycle. |
 | Home compatibility decoration | `home-layout-fix-v119.js` | Decoration/compatibility only; must not own Home or BottomNav geometry. |
 | Combat cadence / impact compatibility | `combat-consolidated-v156.js` | Active combat compatibility owner. |
@@ -38,15 +41,16 @@ The following files may remain in source history, but must not regain active own
 
 ## Concurrency-safe workflow
 
-1. Fetch the current `main` SHA before starting work.
-2. Branch from that exact SHA.
-3. Determine the subsystem owners and files the task can touch before editing.
-4. If `main` moves, inspect only the intervening commits that intersect those files/owners. Non-intersecting concurrent work should not automatically restart the task.
-5. Run targeted ownership/runtime tests while iterating.
-6. Run the moving smoke ratchet plus the full Chromium and iPhone/WebKit suite before merge.
-7. Fetch `main` again immediately before merge. If the intervening delta intersects the task, rebuild/rebase and retest; otherwise confirm the exact tested head can still merge safely.
-8. Merge only the exact tested head SHA.
-9. Update this file whenever canonical ownership changes.
+1. Read `LEAN_CODE_PLAN.md` before ownership or loader changes while the lean-code program is active.
+2. Fetch the current `main` SHA before starting work.
+3. Branch from that exact SHA.
+4. Determine the subsystem owners and files the task can touch before editing.
+5. If `main` moves, inspect only the intervening commits that intersect those files/owners. Non-intersecting concurrent work should not automatically restart the task.
+6. Run targeted ownership/runtime tests while iterating.
+7. Run the moving smoke ratchet plus the full Chromium and iPhone/WebKit suite before merge.
+8. Fetch `main` again immediately before merge. If the intervening delta intersects the task, rebuild/rebase and retest; otherwise confirm the exact tested head can still merge safely.
+9. Merge only the exact tested head SHA.
+10. Update this file whenever canonical ownership changes.
 
 ## Guardrail philosophy
 
