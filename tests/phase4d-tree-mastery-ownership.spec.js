@@ -15,14 +15,13 @@ test('Phase 4D keeps v216 as the sole loaded tree mastery gating and popup owner
 
   const legacyRule = source('tree-mastery-v120.js');
   const legacyUi = source('tree-mastery-ui-v128.js');
-  const retired = source('tree-mastery-v149.js');
   const canonical = source('runtime-tree-stability-v216.js');
   const index = source('index.html');
 
   expect(legacyRule).toContain('__srTreeMasteryV120');
   expect(legacyUi).toContain('__srTreeMasteryUIV128');
 
-  for (const legacy of [executable(legacyRule), executable(legacyUi), executable(retired)]) {
+  for (const legacy of [executable(legacyRule), executable(legacyUi)]) {
     expect(legacy).not.toContain('treeReqOk=');
     expect(legacy).not.toContain('showTreeNode=');
     expect(legacy).not.toContain('new MutationObserver');
@@ -30,7 +29,7 @@ test('Phase 4D keeps v216 as the sole loaded tree mastery gating and popup owner
     expect(legacy).not.toContain('querySelectorAll(');
   }
 
-  expect(retired).toContain('__srTreeMasteryV149');
+  expect(fs.existsSync(path.join(root, 'tree-mastery-v149.js'))).toBe(false);
   expect(canonical).toContain('__srRuntimeTreeStabilityV216');
   expect(canonical).toContain('var LEVEL=3,COST=100');
   expect(canonical).toContain('masteryLevelRequired=LEVEL');
