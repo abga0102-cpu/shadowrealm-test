@@ -19,7 +19,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Save import | `import-save-guard-v207.js` | Sole authoritative `ACT.importSave` owner. |
 | Forge item base power | `progression-overhaul-v283.js` | Current fixed-base equipment generation authority. |
 | Forge Divine pre-Ascension lock | `game-balance-v224.js` | Retains the Divine rarity gate only; not current base-power owner. |
-| Tree mastery level-3 gating / popup requirements | `tree-mastery-v149.js` | Sole loaded mastery gating/popup authority. |
+| Tree mastery gating / deep requirements / popup synchronization | `runtime-tree-stability-v216.js` | Sole active mastery owner; `tree-mastery-v149.js` is a compatibility marker only. |
 | Accomplishments Development entry lifecycle | `accomplishments-stability-v138.js` | Route-bound lifecycle owner; no document-wide observer. |
 | Accomplishments modal / title rendering + title interaction | `accomplishments-canonical-v139.js` | Canonical Accomplishments renderer and title owner. |
 | Canonical Accomplishments claims | `accomplishments-claim-v140.js` | Future claim payout authority. |
@@ -39,6 +39,7 @@ The following files may remain in source history, but must not regain active own
 - `accomplishments-ui-v123.js` — suppressed legacy UI; unloaded.
 - `tree-mastery-v120.js` — compatibility marker only; unloaded.
 - `tree-mastery-ui-v128.js` — compatibility marker only; unloaded.
+- `tree-mastery-v149.js` — compatibility marker only; still loaded temporarily to preserve the historical runtime marker while V216 owns active mastery behavior.
 
 ## Concurrency-safe workflow
 
