@@ -11,7 +11,7 @@ function combatScripts(html) {
     .filter((src) => /^combat-.*\.js$/.test(src));
 }
 
-test('Phase 4A locks the three active combat owners and their load order', async ({}, testInfo) => {
+test('Phase 4A locks the active combat owners and their load order', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   const index = source('index.html');
@@ -19,11 +19,13 @@ test('Phase 4A locks the three active combat owners and their load order', async
     'combat-consolidated-v156.js',
     'combat-polish-v157.js',
     'combat-animation-v169.js',
+    'combat-progression-authority-v285.js',
   ]);
 
   const consolidated = source('combat-consolidated-v156.js');
   const polish = source('combat-polish-v157.js');
   const animation = source('combat-animation-v169.js');
+  const progression = source('combat-progression-authority-v285.js');
 
   expect(consolidated).toContain('window.setInterval');
   expect(consolidated).toContain('addBurst');
@@ -38,6 +40,10 @@ test('Phase 4A locks the three active combat owners and their load order', async
   expect(animation).toContain('weaponHTML=function');
   expect(animation).toContain('drawArena=function');
   expect(animation).toContain('combat-animation-v169-style');
+
+  expect(progression).toContain('window.__srCombatProgressionV285=true');
+  expect(progression).toContain('window.__srV285EnemyHP=function');
+  expect(progression).toContain('window.__srV285BossHP=function');
 });
 
 test('campaign combat renders repeatedly with all active combat layers on Chromium and iPhone/WebKit', async ({ page }) => {
@@ -73,6 +79,7 @@ test('campaign combat renders repeatedly with all active combat layers on Chromi
       consolidatedStyle: !!document.getElementById('combat-consolidated-v156-style'),
       polishStyle: !!document.getElementById('combat-polish-v157-style'),
       animationStyle: !!document.getElementById('combat-animation-v169-style'),
+      progressionAuthority: !!window.__srCombatProgressionV285,
     };
   });
 
@@ -80,6 +87,7 @@ test('campaign combat renders repeatedly with all active combat layers on Chromi
   expect(setup.consolidatedStyle).toBe(true);
   expect(setup.polishStyle).toBe(true);
   expect(setup.animationStyle).toBe(true);
+  expect(setup.progressionAuthority).toBe(true);
 
   await expect(page.locator('#arena')).toBeVisible();
   await expect.poll(async () => page.locator('#arena .unit').count(), { timeout: 7000 }).toBeGreaterThan(0);
