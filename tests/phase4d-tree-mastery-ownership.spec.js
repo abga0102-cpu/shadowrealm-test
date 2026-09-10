@@ -10,7 +10,7 @@ const executable = (text) => text
   .filter((line) => !line.trimStart().startsWith('//'))
   .join('\n');
 
-test('Phase 4D leaves v149 as the sole tree mastery gating and popup owner', async ({}, testInfo) => {
+test('Phase 4D leaves v149 as the sole loaded tree mastery gating and popup owner', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   const legacyRule = source('tree-mastery-v120.js');
@@ -35,11 +35,25 @@ test('Phase 4D leaves v149 as the sole tree mastery gating and popup owner', asy
   expect(canonical).toContain('showTreeNode=function');
   expect(canonical).toContain('new MutationObserver');
 
-  const v120 = index.indexOf('tree-mastery-v120.js');
-  const v128 = index.indexOf('tree-mastery-ui-v128.js');
-  const v149 = index.indexOf('tree-mastery-v149.js');
-  expect(v120).toBeGreaterThan(-1);
-  expect(v128).toBeGreaterThan(v120);
-  expect(v149).toBeGreaterThan(v128);
+  expect(index).not.toContain('tree-mastery-v120.js');
+  expect(index).not.toContain('tree-mastery-ui-v128.js');
   expect(index.match(/tree-mastery-v149\.js/g) || []).toHaveLength(1);
+});
+
+test('tree mastery runtime loads v149 without the retired v120/v128 markers', async ({ page }) => {
+  await page.goto('/index.html?smoke=1');
+  await page.waitForFunction(() => typeof S !== 'undefined' && !!window.__srTreeMasteryV149);
+  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
+
+  const state = await page.evaluate(() => ({
+    v120: typeof window.__srTreeMasteryV120,
+    v128: typeof window.__srTreeMasteryUIV128,
+    v149: !!window.__srTreeMasteryV149,
+  }));
+
+  expect(state).toEqual({
+    v120: 'undefined',
+    v128: 'undefined',
+    v149: true,
+  });
 });
