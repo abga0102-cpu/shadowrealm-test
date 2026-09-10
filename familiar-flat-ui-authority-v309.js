@@ -104,9 +104,11 @@ function modernize(html){
     var lv=tile.querySelector('small,.famTileLv');
     if(lv)rewriteLevelNode(lv,p);
   });
+  /* Very old comparison cards do not expose a stable pet id; remove their inert
+     level line instead of guessing which Familiar the card represents. */
   Array.prototype.slice.call(root.querySelectorAll('.famComparePet')).forEach(function(card){
     var lv=Array.prototype.slice.call(card.querySelectorAll('.tiny')).find(function(el){return /^\s*Niv\./i.test(el.textContent||'');});
-    if(lv&&active)rewriteLevelNode(lv,active);
+    if(lv)lv.remove();
   });
 
   return tpl.innerHTML;
