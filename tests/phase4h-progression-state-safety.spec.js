@@ -68,7 +68,7 @@ test('Skill rarity previews use the explicit stars being evaluated, not live S',
 
 test('retired Apple and Rebirth systems remain inactive after late dynamic loaders', async ({ page }) => {
   await openCleanGame(page);
-  await page.waitForTimeout(700);
+  await page.waitForFunction(() => window.__srRebirthRemovalAuthorityV281 === true, null, { timeout: 5000 });
   const result = await page.evaluate(() => ({
     appleAuthority: window.__srAppleRetirementV306 === true,
     appleReward: typeof megaAppleBaseReward === 'function' ? megaAppleBaseReward(999) : 0,
