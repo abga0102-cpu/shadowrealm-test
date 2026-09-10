@@ -99,11 +99,19 @@
   }
   const oldRender=render;
   render=function(){ensure(S);oldRender();};
-  const oldRaid=ACT.closeRaid;
-  /* Une victoire est comptabilisee au resultat, pas a la fermeture. On observe
-     le passage de raidResult a un resultat gagne pour eviter les abandons. */
-  let seenRaid=null;
-  setInterval(()=>{if(typeof raidResult!=='undefined'&&raidResult&&raidResult.won){const sig=raidResult.raidId+':'+raidResult.level+':'+String(raidResult.reward);if(sig!==seenRaid){seenRaid=sig;update(s=>ensure(s).raidWins++);}}else if(typeof raidResult!=='undefined'&&!raidResult)seenRaid=null;},500);
+  /* A raid victory is recorded exactly when its result is presented. This keeps
+     the original result-time semantics without a permanent 500 ms observer. */
+  if(typeof showRaidResult==='function'){
+    const oldShowRaidResult=showRaidResult;
+    const seenRaidResults=new WeakSet();
+    showRaidResult=function(r){
+      if(r&&typeof r==='object'&&r.won&&!seenRaidResults.has(r)){
+        seenRaidResults.add(r);
+        update(s=>ensure(s).raidWins++);
+      }
+      return oldShowRaidResult.apply(this,arguments);
+    };
+  }
   const oldFuse=ACT.fuse;
   ACT.fuse=(a)=>{const before=(S.pets||[]).map(p=>p.id);oldFuse(a);const after=(S.pets||[]).filter(p=>before.indexOf(p.id)<0);if(after.length){const best=Math.max.apply(null,after.map(p=>RANK[p.rarity]??-1));if(best>=0)update(s=>{const x=ensure(s);x.fusedPetRank=Math.max(x.fusedPetRank,best);});}};
   ACT.accomplishments=()=>open();
