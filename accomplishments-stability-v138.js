@@ -2,8 +2,8 @@
    - Prevent the legacy text-based Development detector from mounting the card on Accueil.
    - Mount Accomplissements only on the canonical Development route.
    - Canonical Accomplissements modal rendering belongs exclusively to v139.
-   - Phase 4F: reconcile the Development entry from BottomNav/renderTabs lifecycle,
-     not a document-wide MutationObserver. */
+   - Phase 4F: reconcile the Development entry from the canonical BottomNav lifecycle,
+     not a document-wide MutationObserver or a second renderTabs wrapper. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsStabilityV138)return;window.__srAccomplishmentsStabilityV138=true;
@@ -51,16 +51,9 @@ function schedulePlace(){
  retry=setTimeout(placeEntry,120);
 }
 
-/* BottomNav already owns deterministic route rendering through renderTabs.
-   Chain that lifecycle instead of observing every mutation in the document.
-   The RAF + single retry remain bounded protection for WebKit render settling. */
-var nativeRenderTabs=typeof window.renderTabs==='function'?window.renderTabs:null;
-if(nativeRenderTabs){
- window.renderTabs=function(){
-  var out=nativeRenderTabs.apply(this,arguments);
-  schedulePlace();
-  return out;
- };
-}
+/* V209 is the sole BottomNav renderTabs owner and publishes this post-render
+   lifecycle event. V138 subscribes without wrapping renderTabs itself. The RAF
+   + single retry remain bounded protection for WebKit render settling. */
+window.addEventListener('sr:bottomnavrendered',schedulePlace);
 schedulePlace();
 })();
