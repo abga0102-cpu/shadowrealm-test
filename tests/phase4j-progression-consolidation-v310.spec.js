@@ -94,7 +94,7 @@ test('V310 Familiar flat stats use evaluated-state stars without mutating live s
 test('V310 Forge star derivation leaves evaluated and live Forge levels unchanged', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => {
-    const liveLevel = S.forge.level;
+    const liveBefore = S.forge.level;
     const state = structuredClone(S);
     state.forge = state.forge || {};
     state.stars = state.stars || {};
@@ -105,6 +105,7 @@ test('V310 Forge star derivation leaves evaluated and live Forge levels unchange
     return {
       before,
       after: state.forge.level,
+      liveBefore,
       liveAfter: S.forge.level,
       damage: derived.damage,
       hp: derived.maxHP,
@@ -113,7 +114,7 @@ test('V310 Forge star derivation leaves evaluated and live Forge levels unchange
 
   expect(result.before).toBe(10);
   expect(result.after).toBe(10);
-  expect(result.liveAfter).toBe(result.liveAfter);
+  expect(result.liveAfter).toBe(result.liveBefore);
   expect(Number.isFinite(result.damage)).toBe(true);
   expect(Number.isFinite(result.hp)).toBe(true);
 });
