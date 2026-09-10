@@ -33,7 +33,8 @@ test('Phase 4F keeps v138 as the sole route-driven Accomplishments Development-s
   expect(stability).toContain('data-sr-accomplishments-entry');
   expect(canonicalScope).not.toContain('MutationObserver');
   expect(canonicalScope).not.toContain('textContent');
-  expect(canonicalScope).toContain('window.renderTabs');
+  expect(canonicalScope).not.toContain('window.renderTabs');
+  expect(canonicalScope).toContain("window.addEventListener('sr:bottomnavrendered',schedulePlace)");
   expect(canonicalScope).toContain('schedulePlace');
   expect(canonicalScope).toContain('requestAnimationFrame');
 });
