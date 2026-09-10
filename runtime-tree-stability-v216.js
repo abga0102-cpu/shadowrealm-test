@@ -61,7 +61,7 @@ treeReqOk=function(s,node){
 };
 try{window.treeReqOk=treeReqOk;}catch(_){}
 function doneCount(k){var req=k.masteryReq||[];return req.filter(function(id){return treeLv(S,id)>=LEVEL;}).length;}
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c];});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function label(id){var n=TREE_BY_ID[id];return n?(n.short||n.label||id):id;}
 function halo(k){
  if(!Number.isFinite(Number(k.x))||!Number.isFinite(Number(k.y)))return '';
