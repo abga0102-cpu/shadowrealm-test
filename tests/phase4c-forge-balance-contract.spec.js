@@ -15,18 +15,20 @@ async function openCleanGame(page) {
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
 }
 
-test('Forge migration layers load before the V224 runtime authority', async () => {
+test('Forge balance migrations load before V224 and the V283 progression authority', async () => {
   const index = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   const v96 = index.indexOf('forge-rarity-balance-v96.js');
   const v98 = index.indexOf('forge-rarity-balance-v98.js');
   const v224 = index.indexOf('game-balance-v224.js');
+  const v283 = index.indexOf('progression-overhaul-v283.js');
 
   expect(v96).toBeGreaterThan(-1);
   expect(v98).toBeGreaterThan(v96);
   expect(v224).toBeGreaterThan(v98);
+  expect(v283).toBeGreaterThan(v224);
 });
 
-test('V224 owns new Forge equipment power independently of Forge level', async ({ page }) => {
+test('V283 owns current fixed-base Forge equipment power independently of Forge level', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
@@ -36,8 +38,8 @@ test('V224 owns new Forge equipment power independently of Forge level', async (
       const low = makeItem('arme', 'RARE', 1);
       const high = makeItem('arme', 'RARE', 999);
       return {
-        authorityLoaded: !!window.__srGameBalanceV224,
-        makeItemOwned: !!(makeItem && makeItem.__srV224),
+        authorityLoaded: !!window.__srProgressionOverhaulV283,
+        makeItemOwned: !!(makeItem && makeItem.__srV283),
         low: {
           damage: low.damage,
           hp: low.hp,
@@ -62,8 +64,8 @@ test('V224 owns new Forge equipment power independently of Forge level', async (
 
   expect(result.authorityLoaded).toBe(true);
   expect(result.makeItemOwned).toBe(true);
-  expect(result.low.curve).toBe(224);
-  expect(result.high.curve).toBe(224);
+  expect(result.low.curve).toBe(283);
+  expect(result.high.curve).toBe(283);
   expect(result.high.damage).toBe(result.low.damage);
   expect(result.high.hp).toBe(result.low.hp);
   expect(result.high.baseDamage).toBe(result.low.baseDamage);
@@ -88,7 +90,7 @@ test('V224 keeps Divine Forge drops locked before first Ascension', async ({ pag
   expect(result.total).toBeCloseTo(100, 8);
 });
 
-test('Forge arena preview follows the same fixed-base model as real drops', async ({ page }) => {
+test('Forge arena preview follows the current fixed-base model as real drops', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
