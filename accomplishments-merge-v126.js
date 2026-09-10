@@ -99,31 +99,28 @@ function syncAndRenderHint(){
   mountReserve();
 }
 
-/* Avant chaque rendu, la réserve recharge les cases libres et toute nouvelle
-   récompense d'accomplissement est convertie dans le vrai système de Merge. */
+/* The render lifecycle is the deterministic synchronization point: actions that
+   change the Sanctuary schedule a render, so pending rewards and reserve refill
+   are handled before the next frame instead of by a perpetual timer. */
 if(typeof render==='function'){
   var oldRender=render;
   render=function(){
-    try{if(typeof S!=='undefined'&&S){var st=ensureSanct(S);syncRewards(S);refill(st);}}catch(_){}
+    try{
+      if(typeof S!=='undefined'&&S){
+        var st=ensureSanct(S);
+        var moved=syncRewards(S);
+        var refilled=refill(st);
+        if(moved||refilled){
+          if(typeof dirty!=='undefined')dirty=true;
+          try{if(typeof saveNow==='function')saveNow();}catch(_){}
+        }
+      }
+    }catch(_){}
     var out=oldRender.apply(this,arguments);
     setTimeout(mountReserve,0);
     return out;
   };
 }
-
-/* Les actions du Sanctuaire peuvent libérer une case sans provoquer immédiatement
-   un nouveau gain. Ce passage garantit que la réserve remplit le plateau ensuite. */
-setInterval(function(){
-  try{
-    if(typeof S==='undefined'||!S)return;
-    var st=ensureSanct(S), before=st.mergeBoard.filter(Boolean).length;
-    var moved=syncRewards(S);var refilled=refill(st);
-    if(moved||refilled){if(typeof dirty!=='undefined')dirty=true;if(typeof scheduleRender==='function')scheduleRender();}
-    if(moved){try{if(typeof saveNow==='function')saveNow();}catch(_){}}
-    if(refilled&&before<st.mergeBoard.filter(Boolean).length){try{if(typeof saveNow==='function')saveNow();}catch(_){}}
-    mountReserve();
-  }catch(_){}
-},700);
 
 setTimeout(syncAndRenderHint,50);
 })();
