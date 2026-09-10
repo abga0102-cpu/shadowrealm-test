@@ -1,9 +1,7 @@
 /* SHADOWREACH · Bottom navigation authority V209
    All four tabs use one DOM shape, one geometry owner, and one render lifecycle.
-   The legacy Development icon was mask-based, so the fantasy decorator inserted
-   its replacement beside .ico instead of inside it. That made Development a
-   permanent special case. V209 folds every fantasy icon into the same .ico slot
-   and retires the observer/special-case geometry layers from production. */
+   V209 is also the sole BottomNav renderTabs lifecycle owner: it invokes the
+   fantasy decorator exported by bottom-nav-v53.js, then applies canonical geometry. */
 (function(){
   'use strict';
   if(window.__srBottomNavGeometryV209)return;
@@ -178,19 +176,25 @@
     });
   }
 
+  function decorateAndApply(){
+    if(typeof window.__srDecorateBottomNavPhase2A==='function')window.__srDecorateBottomNavPhase2A();
+    apply();
+  }
+
   var scheduled=false;
-  function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(function(){scheduled=false;apply();});}
+  function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(function(){scheduled=false;decorateAndApply();});}
   window.__srApplyBottomNavGeometryV209=apply;
+  window.__srRefreshBottomNavV209=decorateAndApply;
 
   var nativeRenderTabs=typeof window.renderTabs==='function'?window.renderTabs:null;
   if(nativeRenderTabs){
     window.renderTabs=function(){
       var out=nativeRenderTabs.apply(this,arguments);
-      apply();
+      decorateAndApply();
       return out;
     };
   }
   window.addEventListener('resize',schedule,{passive:true});
   window.addEventListener('orientationchange',schedule,{passive:true});
-  apply();
+  decorateAndApply();
 })();
