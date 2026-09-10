@@ -37,8 +37,18 @@ var ROUTES={
  mk_pe:['pe','research'],
  mk_competence:['competence','equipment']
 };
+var CANONICAL_REQ={
+ mk_familier:['n1_13','n1_14','n2_13','n2_14'],
+ mk_or:['n1_06','n1_07','n2_06','n2_07'],
+ mk_minerai:['n1_01','n1_02','n2_01','n2_02'],
+ mk_pe:['n1_30','n2_30','n3_30'],
+ mk_competence:['n1_09','n1_12','n2_09','n2_12']
+};
 function unique(a){var o={},r=[];a.forEach(function(x){if(x&&!o[x]){o[x]=1;r.push(x);}});return r;}
-function baseReq(k){return unique((k.masteryBaseReq&&k.masteryBaseReq.length?k.masteryBaseReq:(k.masteryReq||k.req||[])).slice());}
+function baseReq(k){
+ var canonical=CANONICAL_REQ[k.id];
+ return unique((canonical&&canonical.length?canonical:(k.masteryBaseReq&&k.masteryBaseReq.length?k.masteryBaseReq:(k.masteryReq||k.req||[]))).slice());
+}
 function chooseExtras(k,base){
  var allowed=ROUTES[k.id]||[],baseTier=0;
  base.forEach(function(id){var n=TREE_BY_ID[id];if(n)baseTier=Math.max(baseTier,Number(n.tier||0));});
