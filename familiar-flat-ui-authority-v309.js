@@ -12,7 +12,7 @@
    - removes inert Familiar levels from the live UI;
    - displays the authoritative flat DGT/PV contribution from V305;
    - tolerates the asynchronous Familiar renderer chain by re-wrapping only when
-     SCREENS.familiers ownership actually changes.
+     SCREENS.familiers ownership actually changes, including during a render.
    No economy, save schema, owned Familiar, rarity, fusion or combat value changes. */
 (function(){'use strict';
 if(window.__srFamiliarFlatUIV309)return;
@@ -121,7 +121,14 @@ function install(){
     if(current.__srV309){lastOwner=current;return false;}
     if(current===lastOwner)return false;
     var base=current;
-    var wrapped=function(){return modernize(base.apply(this,arguments));};
+    var wrapped=function(){
+      var html=modernize(base.apply(this,arguments));
+      /* Some legacy Familiar layers install their outer wrapper lazily while the
+         current screen function is executing. Reclaim authority synchronously so
+         the next render cannot fall back to the retired percentage/Apple UI. */
+      try{if(SCREENS.familiers!==wrapped)install();}catch(_){ }
+      return html;
+    };
     wrapped.__srV309=true;
     wrapped.__srPrevious=base;
     SCREENS.familiers=wrapped;
@@ -147,6 +154,7 @@ window.__srFamiliarFlatUIConfigV309={
   legacyLevelsVisible:false,
   flatStatsVisible:true,
   asyncRendererSafe:true,
+  renderTimeOwnerRecovery:true,
   destructiveMigration:false,
   economyRebalanced:false,
   saveSchemaChanged:false
