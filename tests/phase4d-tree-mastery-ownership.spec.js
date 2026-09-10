@@ -41,11 +41,11 @@ test('Phase 4D keeps v216 as the sole loaded tree mastery gating and popup owner
 
   expect(index).not.toContain('tree-mastery-v120.js');
   expect(index).not.toContain('tree-mastery-ui-v128.js');
-  expect(index.match(/tree-mastery-v149\.js/g) || []).toHaveLength(1);
+  expect(index).not.toContain('tree-mastery-v149.js');
   expect(index.match(/runtime-tree-stability-v216\.js/g) || []).toHaveLength(1);
 });
 
-test('retired tree mastery layers stay inert while v216 remains active', async ({ page }) => {
+test('retired tree mastery layers stay unloaded while v216 remains active', async ({ page }) => {
   await page.goto('/index.html?smoke=1');
   await page.waitForFunction(() => typeof S !== 'undefined' && !!window.__srRuntimeTreeStabilityV216);
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
@@ -53,14 +53,14 @@ test('retired tree mastery layers stay inert while v216 remains active', async (
   const state = await page.evaluate(() => ({
     v120: typeof window.__srTreeMasteryV120,
     v128: typeof window.__srTreeMasteryUIV128,
-    v149: !!window.__srTreeMasteryV149,
+    v149: typeof window.__srTreeMasteryV149,
     v216: !!window.__srRuntimeTreeStabilityV216,
   }));
 
   expect(state).toEqual({
     v120: 'undefined',
     v128: 'undefined',
-    v149: true,
+    v149: 'undefined',
     v216: true,
   });
 });
