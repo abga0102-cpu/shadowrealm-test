@@ -4,6 +4,7 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const source = (name) => fs.readFileSync(path.join(root, name), 'utf8');
+const exists = (name) => fs.existsSync(path.join(root, name));
 const executable = (text) => text
   .replace(/\/\*[\s\S]*?\*\//g, '')
   .split('\n')
@@ -12,24 +13,20 @@ const executable = (text) => text
   .trim();
 
 const retired = [
-  'accomplishments-titles-v133.js',
-  'accomplishments-overview-v135.js',
-  'accomplishments-home-scope-v136.js',
-  'accomplishments-floors-v137.js',
+  ['accomplishments-titles-v133.js', '__srAccomplishmentsTitlesV134'],
+  ['accomplishments-overview-v135.js', '__srAccomplishmentsOverviewV135'],
+  ['accomplishments-home-scope-v136.js', '__srAccomplishmentsHomeScopeV136'],
+  ['accomplishments-floors-v137.js', '__srAccomplishmentsFloorsV137'],
 ];
 
-test('post-4G stops loading retired Accomplishments compatibility markers', async ({}, testInfo) => {
+test('post-4G keeps retired Accomplishments markers out of the loader and allows source retirement', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   const index = source('index.html');
-  for (const file of retired) {
-    expect(index).not.toContain(file);
+  for (const [file, marker] of retired) {
+    expect(index, `${file} must remain absent from the runtime loader`).not.toContain(file);
+    if (exists(file)) expect(executable(source(file))).toContain(marker);
   }
-
-  expect(executable(source('accomplishments-titles-v133.js'))).toContain('__srAccomplishmentsTitlesV134');
-  expect(executable(source('accomplishments-overview-v135.js'))).toContain('__srAccomplishmentsOverviewV135');
-  expect(executable(source('accomplishments-home-scope-v136.js'))).toContain('__srAccomplishmentsHomeScopeV136');
-  expect(executable(source('accomplishments-floors-v137.js'))).toContain('__srAccomplishmentsFloorsV137');
 
   const stability = source('accomplishments-stability-v138.js');
   const canonical = source('accomplishments-canonical-v139.js');
