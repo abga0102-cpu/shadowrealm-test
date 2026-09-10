@@ -5,9 +5,9 @@
 var BASE={COMMUN:[1500,12000],PEU_COMMUN:[5000,40000],RARE:[20000,160000],EPIQUE:[120000,960000],MYTHIQUE:[900000,7200000],ANCESTRAL:[7000000,56000000],LEGENDAIRE:[70000000,560000000],DIVIN:[544000000,4350000000]};
 var SPEC={loup:[1.40,.65],felin:[1.20,.85],dragonnet:[1,1],oiseau:[.70,1.40]};
 var STAR=[1,1.5,2.1,3];
-function pstars(){try{return Math.max(0,Math.floor(starsOf(S,'pet')||0));}catch(_){return 0;}}
-function smul(){var s=pstars();return STAR[Math.min(s,STAR.length-1)]||STAR[STAR.length-1];}
-function stats(p,s){if(!p)return {damage:0,hp:0};var b=BASE[p.rarity]||BASE.COMMUN,sp=SPEC[p.species]||SPEC.dragonnet,m=smul();var d=b[0]*sp[0]*m,h=b[1]*sp[1]*m;try{d*=1+treeSum(s||S,'petDmg')/100;h*=1+treeSum(s||S,'petHp')/100;}catch(_){ }try{if(petElement(p).id==='normal')d*=1.10;}catch(_){ }return {damage:Math.round(d),hp:Math.round(h)};}
+function pstars(s){try{return Math.max(0,Math.floor(starsOf(s||S,'pet')||0));}catch(_){return 0;}}
+function smul(s){var stars=pstars(s);return STAR[Math.min(stars,STAR.length-1)]||STAR[STAR.length-1];}
+function stats(p,s){if(!p)return {damage:0,hp:0};var state=s||S,b=BASE[p.rarity]||BASE.COMMUN,sp=SPEC[p.species]||SPEC.dragonnet,m=smul(state);var d=b[0]*sp[0]*m,h=b[1]*sp[1]*m;try{d*=1+treeSum(state,'petDmg')/100;h*=1+treeSum(state,'petHp')/100;}catch(_){ }try{if(petElement(p).id==='normal')d*=1.10;}catch(_){ }return {damage:Math.round(d),hp:Math.round(h)};}
 window.__srV286PetStats=stats;
 /* Keep legacy petBonus callers harmless: percentage contribution is retired. */
 try{if(typeof petBonus==='function')petBonus=function(){return 0;};}catch(_){ }

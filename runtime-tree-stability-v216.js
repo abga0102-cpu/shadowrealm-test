@@ -15,7 +15,7 @@ window.__srPersonalTreeSpectacleV212=true;
 window.__srPersonalTreeMasteryClarityV213=true;
 
 if(typeof TREE_NODES==='undefined'||typeof TREE_BY_ID==='undefined'||typeof treeLv!=='function'||typeof treeReqOk!=='function')return;
-var LEVEL=3,COST=100;
+var LEVEL=2,COST=100;
 var keys=TREE_NODES.filter(function(n){return n&&n.masteryKey&&!n.deprecatedKey;});
 function route(n){
  var e=String((n&&n.effect)||'');
@@ -37,8 +37,18 @@ var ROUTES={
  mk_pe:['pe','research'],
  mk_competence:['competence','equipment']
 };
+var CANONICAL_REQ={
+ mk_familier:['n1_13','n1_14','n2_13','n2_14'],
+ mk_or:['n1_06','n1_07','n2_06','n2_07'],
+ mk_minerai:['n1_01','n1_02','n2_01','n2_02'],
+ mk_pe:['n1_30','n2_30','n3_30'],
+ mk_competence:['n1_09','n1_12','n2_09','n2_12']
+};
 function unique(a){var o={},r=[];a.forEach(function(x){if(x&&!o[x]){o[x]=1;r.push(x);}});return r;}
-function baseReq(k){return unique((k.masteryBaseReq&&k.masteryBaseReq.length?k.masteryBaseReq:(k.masteryReq||k.req||[])).slice());}
+function baseReq(k){
+ var canonical=CANONICAL_REQ[k.id];
+ return unique((canonical&&canonical.length?canonical:(k.masteryBaseReq&&k.masteryBaseReq.length?k.masteryBaseReq:(k.masteryReq||k.req||[]))).slice());
+}
 function chooseExtras(k,base){
  var allowed=ROUTES[k.id]||[],baseTier=0;
  base.forEach(function(id){var n=TREE_BY_ID[id];if(n)baseTier=Math.max(baseTier,Number(n.tier||0));});
@@ -49,9 +59,9 @@ function chooseExtras(k,base){
  return candidates.slice(0,3).map(function(n){return n.id;});
 }
 keys.forEach(function(k){
- var base=baseReq(k),extra=chooseExtras(k,base);
- k.cost=COST;k.masteryBaseReq=base;k.masteryDeepReq=extra;k.masteryReq=base.concat(extra);k.req=k.masteryReq.slice();k.masteryLevelRequired=LEVEL;
- k.note='Maîtrise avancée : tous les prérequis affichés doivent atteindre le niveau 3/5. Coût : 100 PE. Recherche de base : 7 jours.';
+ var base=baseReq(k);
+ k.cost=COST;k.masteryBaseReq=base;k.masteryDeepReq=[];k.masteryReq=base;k.req=k.masteryReq.slice();k.masteryLevelRequired=LEVEL;
+ k.note='Tous les prérequis affichés doivent atteindre le niveau 2/5. Coût : 100 PE. Recherche de base : 7 jours.';
 });
 var prevReq=treeReqOk;
 treeReqOk=function(s,node){
@@ -99,7 +109,7 @@ if(typeof treeGraph==='function'){
    var overlays='';
    keys.forEach(function(k){
     overlays+=halo(k);
-    var req=k.masteryReq||[],sub=treeLv(S,k.id)>=1?'OBTENUE':(doneCount(k)+'/'+req.length+' · 3/5');
+    var req=k.masteryReq||[],sub=treeLv(S,k.id)>=1?'OBTENUE':(doneCount(k)+'/'+req.length+' · 2/5');
     var re=new RegExp('(<g data-act="treeNode" data-arg="'+k.id+'"[\\s\\S]*?<text[^>]*>[\\s\\S]*?<\\/text>[\\s\\S]*?<text[^>]*>[\\s\\S]*?<\\/text>[\\s\\S]*?<text[^>]*>)([^<]*)(<\\/text><\\/g>)');
     html=html.replace(re,'$1'+esc(sub)+'$3');
    });
@@ -117,7 +127,7 @@ function syncPopup(){
    for(var i=0;i<keys.length;i++)if(txt.indexOf(String(keys[i].label||'').toLowerCase())>=0){k=keys[i];break;}
    if(!k)continue;
    var req=k.masteryReq||[],missing=req.filter(function(id){return treeLv(S,id)<LEVEL;}),done=req.length-missing.length;
-   var wanted=missing.length?'Maîtrise '+done+'/'+req.length+' · niveau 3/5 requis · Manque : '+missing.slice(0,3).map(label).join(', ')+(missing.length>3?'…':''):'Maîtrise '+req.length+'/'+req.length+' complète · clé disponible pour 100 PE.';
+   var wanted=missing.length?'Maîtrise '+done+'/'+req.length+' · niveau 2/5 requis · Manque : '+missing.slice(0,3).map(label).join(', ')+(missing.length>3?'…':''):'Maîtrise '+req.length+'/'+req.length+' complète · clé disponible pour 100 PE.';
    var leaves=root.querySelectorAll('*');
    for(var j=0;j<leaves.length;j++){
     var el=leaves[j];if(el.children.length)continue;var t=String(el.textContent||'').trim();if(!t)continue;
