@@ -1,8 +1,8 @@
 # Lean-code runtime audit
 
-Working document for `LEAN_CODE_PLAN.md`. This file records facts discovered during L0 so developers and AI agents do not repeatedly rediscover the same runtime relationships.
+Working document for `LEAN_CODE_PLAN.md`. This file records facts discovered during L0 and subsequent lean-code iterations so developers and AI agents do not repeatedly rediscover stale runtime relationships.
 
-Baseline for this audit: V295 plus the shared roadmap bootstrap (`f95f7fa385b244b97b1d0c74a5209d838f036aca`).
+Current coordination baseline: `main` `333c9b12e33e01e656856f08c5fe225b9b091257`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership.
 
 ## Loader structure
 
@@ -40,66 +40,19 @@ The presentation/cadence chain is contract-locked but progression authority is s
 
 ### Familiars — ACTIVE / FEATURE-OWNER SENSITIVE
 
-- `familiars-ui-v229.js`
-- `familiars-qa-v230.js`
-- `familiars-noscr-v231.js`
-- `familiars-stock-v274.js`
-- `familiars-stock-authority-v275.js`
-- `familiar-flat-stats-v286.js`
-- `familiar-ladder-authority-v295.js`
-
-V295 added the Ancestral ladder authority. This group is explicitly excluded from first cleanup batches until concurrent feature work settles.
+The loaded Familiar chain remains explicitly excluded from early cleanup until concurrent feature work settles. Use `RUNTIME_INVENTORY.md` for the current exhaustive list; do not infer redundancy from version numbers alone.
 
 ### Forge / Sanctuary / equipment / progression — ACTIVE / FEATURE-OWNER SENSITIVE
 
-Current runtime includes multiple historical and current layers, including:
-
-- `sanctuary-pricing-v125.js`
-- `sanctuary-rarities-v129.js`
-- `sanctuary-endgame-v130.js`
-- `sanctuary-legacy-merge-fix-v212.js`
-- `sanctuary-divine-rollback-v131.js`
-- `sanctuary-divine-mastery-v132.js`
-- `sanctuary-merge-fx-v178.js`
-- `sanctuary-touch-polish-v181.js`
-- `forge-rarity-balance-v96.js`
-- `forge-rarity-balance-v98.js`
-- `game-balance-v224.js`
-- `forge-compare-v95.js`
-- `forge-arena-preview-v142.js`
-- `forge-arena-stability-v143.js`
-- `forge-worn-details-v145.js`
-- `forge-comparison-authority-v146.js`
-- `forge-equipment-safety-v151.js`
-- `power-source-integrity-v256.js`
-- `auto-forge-v103.js`
-- `auto-forge-compare-v199.js`
-- `forge-ux-v273.js`
-- `forge-panel-authority-v266.js`
-- `forge-auto-batch-gate-v266.js`
-- `progression-overhaul-v283.js`
-- `dust-chance-floor-v292.js`
-- `dust-economy-authority-v293.js`
-- `forge-star-global-authority-v294.js`
-
-This is likely the largest eventual consolidation opportunity, but V283–V294 show that it is actively changing. Audit only until the feature owner is stable.
+This remains one of the largest eventual consolidation opportunities, but the current progression/Forge authority chain is still feature-owner sensitive. Audit only until current/open work proves the area stable.
 
 ### Home / BottomNav / premium UI — STABLE ENOUGH FOR EARLY LEANING
 
-Deferred runtime includes:
+Deferred runtime includes active compatibility and canonical ownership layers. L0 corrected the architecture map so `bottom-nav-layout-v183.js` is the BottomNav geometry/render lifecycle owner and `premium-ui-v209.js` remains visual/material polish only.
 
-- `home-layout-fix-v119.js` — compatibility/decorative layer;
-- `home-layout-authority-v219.js` — Home geometry/render owner;
-- `bottom-nav-layout-v183.js` — actual V209 BottomNav geometry authority despite filename;
-- `premium-ui-v209.js` — visual/material polish, not geometry authority;
-- `premium-recommendation-cleanup-v243.js`;
-- `mobile-ui-stability-v210.js`.
+`home-layout-fix-v119.js` has been re-audited after the Accomplishments cleanup and is not a dead load: it still supplies active Forge info-button accessibility/geometry, reward-feed compatibility styling, equipment-filter readability, Settings stat-card layout, and toast/tutorial positioning.
 
-L0 finding: the architecture map previously mislabeled `premium-ui-v209.js` as the BottomNav geometry owner. The implementation proves `bottom-nav-layout-v183.js` owns `__srBottomNavGeometryV209` and `__srApplyBottomNavGeometryV209`; the ownership map/test are corrected in the L0 branch.
-
-This group is a strong candidate for the first wrapper-chain consolidation after dead-load checks.
-
-### Accomplishments — STABLE BUT WRAPPER/POLLER HEAVY
+### Accomplishments — STABLE / L2 SUBSTANTIALLY CLEANED
 
 Loaded:
 
@@ -111,72 +64,43 @@ Loaded:
 - `accomplishments-claim-v140.js`
 - `accomplishments-floor-comp-v141.js`
 
-Already retired/unloaded:
+Already retired/unloaded or source-retired examples are tracked in `ARCHITECTURE.md`.
 
-- `accomplishments-ui-v123.js`
-- `accomplishments-titles-v133.js`
-- `accomplishments-overview-v135.js`
-- `accomplishments-home-scope-v136.js`
-- `accomplishments-floors-v137.js`
+Completed L2 findings:
 
-L0 findings:
+- V121/V126 no longer rely on perpetual render/polling ownership for the cleaned responsibilities; deterministic lifecycle hooks own those paths.
+- V138 no longer wraps `renderTabs`; it subscribes to canonical `sr:bottomnavrendered` lifecycle.
+- V139 no longer wraps global `openModal`; successful V121 claim refreshes route through canonical `ACT.accomplishments()` with its local legacy open path retained only as fallback.
+- Migration/startup compatibility layers such as V127 and V141 remain loaded because historical-save responsibilities are still required.
 
-- V121 still wraps `render`, wraps `ACT.fuse`, and polls raid-result state every 500 ms.
-- V126 wraps `render` again and runs a 700 ms interval to synchronize Merge rewards/reserve UI.
-- These are active behaviors, so they are not dead-load candidates; they are prime L2 wrapper/poller-collapse targets.
-
-Target direction: preserve the underlying reward/migration behavior while moving event-driven responsibilities into the canonical Accomplishments/Merge owners and eliminating perpetual polling where deterministic lifecycle hooks exist.
+Do not reintroduce wrapper chains merely because older source contracts once expected them.
 
 ### Tree — STABLE / EARLY CONSOLIDATION CANDIDATE
 
-Loaded:
+Loaded Tree runtime is inventoried in `RUNTIME_INVENTORY.md`. Current ownership corrections:
 
-- `personal-tree-radial-v82.js`
-- `tree-safety-v83.js`
-- `tree-research-v122.js`
-- `tree-dedicated-v116.js`
-- `tree-labels-v117.js`
-- `tree-mastery-v149.js`
-- `runtime-tree-stability-v216.js`
-- `personal-tree-spectacle-v247.js`
+- `runtime-tree-stability-v216.js` is the sole active mastery owner.
+- legacy `tree-mastery-v149.js` is retired from runtime and source; it must not be treated as the active mastery authority.
+- `tree-dedicated-v116.js` still owns the dedicated Tree renderer/mode presentation, but its duplicate permanent `setInterval(syncMode,500)` poller has been removed. The existing body `MutationObserver` plus startup sync remain responsible for mode synchronization.
+- `tree-labels-v117.js` still performs active label mutations and is not a dead load merely because it is small.
+- `tree-safety-v83.js` still contains active raid-reward compatibility and historical mastery-save restoration, so it is not a safe dead-load candidate.
+- `tree-research-v122.js` still changes future research-time tables and therefore remains active gameplay configuration, not cleanup-only code.
 
-Already retired/unloaded:
-
-- `tree-mastery-v120.js`
-- `tree-mastery-ui-v128.js`
-
-V149 remains the mastery gate/popup authority. This subsystem should be audited for wrapper chains before any module consolidation.
+Continue mapping Tree wrappers/actions one behavior at a time before any module consolidation.
 
 ### Rebirth — ACTIVE / OWNER-SENSITIVE
 
-Loaded/deferred layers include:
-
-- `rebirth-upgrades-cleanup-v223.js`
-- `rebirth-floor-skip-balance-v225.js`
-- `secondary-hud-selective-v279.js`
-- `rebirth-removal-v276.js`
-- `rebirth-removal-ui-v279.js`
-- `rebirth-spectacle-v222.js`
-- `rebirth-scroll-natural-v221.js`
-- `rebirth-ui-cleanup-v224.js`
-- `rebirth-removal-authority-v281.js`
-
-Do not consolidate while feature/progression work intersects this area.
+Rebirth remains feature/progression sensitive. Do not consolidate while current/open work intersects the area.
 
 ### Social — CONDITIONAL OPTIONAL FEATURE
 
-Deferred only when Social is enabled:
+Social and bot-tester scripts are conditional. Do not classify absence from a normal non-Social session as dead code.
 
-- `social-v1.js`
-- `social-p2p-v1.js`
+## Prioritized investigation queue
 
-Bot-tester scripts are separately conditional. Do not classify conditional absence from a normal session as dead code.
-
-## First prioritized investigation queue
-
-1. **Home/BottomNav:** determine whether any compatibility layer is now fully redundant under V219/V209; no unload until behavior is proved duplicated/inert.
-2. **Accomplishments:** replace V121/V126 polling/wrapper chains with deterministic lifecycle hooks, one behavior at a time.
-3. **Tree:** map wrappers around render/actions and identify logic that can move directly into V149 or another durable Tree module.
+1. **Home/BottomNav:** continue proof-based checks for compatibility behavior that is genuinely duplicated by V219/V209 owners; do not unload `home-layout-fix-v119.js` based on naming alone.
+2. **Accomplishments:** major wrapper/poller targets have been cleaned; future work should focus on durable subsystem consolidation and migration separation, not recreating retired wrapper ownership.
+3. **Tree:** continue mapping wrappers/actions after the V116 polling removal; prefer deterministic lifecycle hooks and the V216 mastery owner.
 4. **Shared helpers:** only after repeated helper implementations are confirmed across stable subsystems.
 5. **Forge/Familiars/Rebirth/combat progression:** postpone consolidation until active AI-driven feature work stops intersecting their owners.
 
