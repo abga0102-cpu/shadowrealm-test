@@ -82,6 +82,7 @@ test('BottomNav uses one render lifecycle owner while keeping decoration and vis
   expect(geometry).toContain('__srApplyBottomNavGeometryV209');
   expect(geometry).toContain('__srDecorateBottomNavPhase2A');
   expect(geometry).toContain('window.renderTabs=function');
+  expect(geometry).toContain("new Event('sr:bottomnavrendered')");
   expect(premium).toContain('__srPremiumUiV209');
   expect(premium).not.toContain('__srApplyBottomNavGeometryV209');
 });
@@ -93,6 +94,8 @@ test('known duplicate ownership mechanisms do not return', () => {
   const v125 = read('sanctuary-pricing-v125.js');
 
   expect(v138).not.toMatch(/new\s+MutationObserver\s*\(/);
+  expect(v138).not.toMatch(/renderTabs\s*=|function\s+renderTabs\b/);
+  expect(v138).toContain("addEventListener('sr:bottomnavrendered',schedulePlace)");
   expect(v127).not.toMatch(/setInterval\s*\([^,]+,\s*500\s*\)/s);
   expect(v119).not.toMatch(/renderTabs\s*=|function\s+renderTabs\b/);
   expect(v125).not.toContain('IMPORT_GUARD_V206');
