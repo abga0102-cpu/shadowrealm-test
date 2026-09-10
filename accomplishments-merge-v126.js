@@ -48,7 +48,7 @@ function refill(st){
   return changed;
 }
 function syncRewards(s){
-  if(syncing||!s)return 0;
+  if(syncing||!s)return {moved:0,refilled:false};
   syncing=true;
   try{
     var st=ensureSanct(s), pending=ensureAcc(s), moved=0;
@@ -59,12 +59,12 @@ function syncRewards(s){
       pending[r]=0;
       moved+=q;
     });
-    refill(st);
+    var refilled=refill(st);
     if(moved>0){
       st.accomplishmentMergeMigratedV126=true;
       st.accomplishmentMergeMigratedCount=(st.accomplishmentMergeMigratedCount||0)+moved;
     }
-    return moved;
+    return {moved:moved,refilled:refilled};
   }finally{syncing=false;}
 }
 function reserveTotal(st){return ORDER.reduce(function(n,r){return n+(Number(st.mergeReserve[r])||0);},0);}
@@ -91,36 +91,43 @@ function mountReserve(){
 }
 function syncAndRenderHint(){
   if(typeof S==='undefined'||!S)return;
-  var moved=syncRewards(S);
-  if(moved>0){
+  var result=syncRewards(S),moved=result.moved;
+  if(moved||result.refilled){
     try{if(typeof dirty!=='undefined')dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}
+  }
+  if(moved>0){
     try{if(typeof toast==='function')toast(moved+' pièce'+(moved>1?'s':'')+' de fusion ajoutée'+(moved>1?'s':'')+' au Sanctuaire',true);}catch(_){}
   }
   mountReserve();
 }
+window.__srSyncAccomplishmentMergeV126=syncAndRenderHint;
 
-/* The render lifecycle is the deterministic synchronization point: actions that
-   change the Sanctuary schedule a render, so pending rewards and reserve refill
-   are handled before the next frame instead of by a perpetual timer. */
-if(typeof render==='function'){
-  var oldRender=render;
-  render=function(){
-    try{
-      if(typeof S!=='undefined'&&S){
-        var st=ensureSanct(S);
-        var moved=syncRewards(S);
-        var refilled=refill(st);
-        if(moved||refilled){
-          if(typeof dirty!=='undefined')dirty=true;
-          try{if(typeof saveNow==='function')saveNow();}catch(_){}
-        }
-      }
-    }catch(_){}
-    var out=oldRender.apply(this,arguments);
+/* Reward claims are the event that creates pending merge pieces. This listener
+   is registered before the canonical V140 claim handler and schedules sync for
+   the end of the same click turn, after the claim has updated state. */
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach]'):null;
+  if(b)setTimeout(syncAndRenderHint,0);
+},true);
+
+/* Sanctuary rendering is the deterministic reserve-refill lifecycle. Sync before
+   building the screen so newly available board slots are filled immediately,
+   then mount the reserve summary after the returned HTML is committed. */
+if(typeof scrSanctuaire==='function'){
+  var oldScrSanctuaire=scrSanctuaire;
+  scrSanctuaire=function(){
+    var result=syncRewards(typeof S!=='undefined'?S:null);
+    if(result.moved||result.refilled){
+      try{if(typeof dirty!=='undefined')dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}
+    }
+    var out=oldScrSanctuaire.apply(this,arguments);
     setTimeout(mountReserve,0);
     return out;
   };
+  try{if(typeof SCREENS!=='undefined'&&SCREENS)SCREENS.sanctuaire=scrSanctuaire;}catch(_){}
 }
 
+/* Startup migration catches legacy/compensation pieces without a permanent
+   render wrapper or polling loop. */
 setTimeout(syncAndRenderHint,50);
 })();
