@@ -1,7 +1,7 @@
-// BOTTOM_NAV_FANTASY_V65 · Phase 2A deterministic ownership
-// Fantasy navigation decoration is applied directly after the native renderTabs()
-// lifecycle. This replaces the legacy MutationObserver without changing routes,
-// click/touch handling, badges, labels, or the later Home geometry compatibility.
+// BOTTOM_NAV_FANTASY_V65 · Phase 2A deterministic decoration
+// Owns fantasy icon markup and visual decoration only. The canonical BottomNav
+// render lifecycle is owned by bottom-nav-layout-v183.js (V209), which invokes
+// __srDecorateBottomNavPhase2A after native renderTabs().
 (function(){
   'use strict';
   if(window.__srBottomNavPhase2A)return;
@@ -45,13 +45,6 @@
   `;
   document.head.appendChild(css);
 
-  var nativeRenderTabs=typeof window.renderTabs==='function'?window.renderTabs:null;
-  if(nativeRenderTabs){
-    window.renderTabs=function(){
-      var out=nativeRenderTabs.apply(this,arguments);
-      decorate();
-      return out;
-    };
-  }
+  window.__srDecorateBottomNavPhase2A=decorate;
   decorate();
 })();
