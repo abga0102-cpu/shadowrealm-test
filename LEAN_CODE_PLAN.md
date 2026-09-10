@@ -59,19 +59,26 @@ Prefer these first when their behavior is already contract-locked:
 ## Phases
 
 ### L0 — Runtime inventory and coordination
-Status: IN PROGRESS
+Status: COMPLETE
 
-- inventory all scripts referenced by `index.html`, including deferred/conditional loader entries;
-- classify each as canonical owner, active extension, compatibility-only, migration-only, conditional optional feature, or candidate dead load;
-- record active feature-owner-sensitive areas;
-- add/refine architecture tests so removed owners cannot silently return.
+The exact loader inventory is maintained in `RUNTIME_INVENTORY.md`. At the post-V310 baseline it records 97 static script entries plus 9 deferred core scripts, for 106 JavaScript files in a normal non-Social session. Social and Bot Tester scripts remain conditional and are inventoried separately.
 
-Exit criteria: every loaded script has a reason to exist or is explicitly queued for investigation.
+Completed:
+
+- inventoried all scripts referenced by `index.html`, including deferred/conditional loader entries;
+- classified loaded entries by runtime responsibility or explicit feature-owner-sensitive investigation queue;
+- recorded active feature-owner-sensitive areas;
+- retained architecture guardrails so removed owners cannot silently return;
+- explicitly protected migration-only layers from being misclassified as dead code solely because they are historical.
+
+Exit criteria met: every loaded script has a reason to exist or is explicitly queued for proof-based investigation.
 
 ### L1 — Dead-load removal
-Status: PLANNED
+Status: IN PROGRESS
 
 Stop requesting scripts that are provably inert or fully superseded. Keep source files in Git history/repository initially. Each unload is behavior-preserving and independently testable.
+
+Do not classify one-time save compensation/migration code as dead merely because current saves commonly carry its processed marker. Required historical-save compatibility must first be transferred to a durable migration owner before such a loader entry can be removed.
 
 ### L2 — Wrapper-chain collapse
 Status: PLANNED
@@ -106,5 +113,7 @@ Prefer coherent, reviewable batches. Multiple provably dormant scripts in one su
 ## Current baseline
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
+
+Current loader baseline after V310 and the Accomplishments lifecycle cleanup: `main` `2da269b6186a4f1f0cd7923c3056ca359ab1772a`, with 106 JavaScript files loaded in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
 V295 added `familiar-ladder-authority-v295.js`, confirming that Familiars is currently feature-owner sensitive and should not be the first consolidation target.
