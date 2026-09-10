@@ -40,5 +40,7 @@ style.textContent=[
 '.srRadialTree,.srTreeClear{display:none!important}'
 ].join('');
 document.head.appendChild(style);
-if(typeof MutationObserver!=='undefined')new MutationObserver(syncMode).observe(document.body,{childList:true,subtree:true});setInterval(syncMode,500);setTimeout(syncMode,0);try{if(typeof render==='function')render();}catch(_){}
+/* Body subtree changes cover route rerenders, so one observer plus the startup sync
+   is sufficient; avoid a permanent 500 ms poller doing duplicate work. */
+if(typeof MutationObserver!=='undefined')new MutationObserver(syncMode).observe(document.body,{childList:true,subtree:true});setTimeout(syncMode,0);try{if(typeof render==='function')render();}catch(_){}
 })();
