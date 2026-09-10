@@ -97,8 +97,10 @@
     update(s=>{const y=ensure(s);grant(s,a[4],choice);y.claimed[id]=true;if(choice)y.choices=y.choices||{},y.choices[id]=choice;});
     toast('Accomplissement recupere !',true);open();
   }
-  const oldRender=render;
-  render=function(){ensure(S);oldRender();};
+  /* Initialize/migrate accomplishment state once at module startup. The state is
+     also normalized at every accomplishments/event entry point, so V121 does not
+     need to wrap the global render lifecycle. */
+  try{if(typeof S!=='undefined'&&S)ensure(S);}catch(_){}
   /* A raid victory is recorded exactly when its result is presented. This keeps
      the original result-time semantics without a permanent 500 ms observer. */
   if(typeof showRaidResult==='function'){
