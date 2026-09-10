@@ -15,7 +15,10 @@ try{
   ascendPowerMul=function(stars,sys){
     if(sys==='pet')return pick(PET_STAR,stars);
     if(sys==='skill')return pick(SKILL_STAR,stars);
-    return pick(FORGE_STAR,stars);
+    /* Preserve historical callers that omit sys: Forge was the legacy default.
+       Unknown explicit systems must stay neutral instead of silently inheriting Forge. */
+    if(sys==='forge'||sys==null)return pick(FORGE_STAR,stars);
+    return 1;
   };
 }catch(_){ }
 
