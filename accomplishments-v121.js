@@ -95,7 +95,8 @@
     if(x.claimed[id]||!a[3](S))return;
     if(a[4].choice&&choice!=='eclat'&&choice!=='essence')return;
     update(s=>{const y=ensure(s);grant(s,a[4],choice);y.claimed[id]=true;if(choice)y.choices=y.choices||{},y.choices[id]=choice;});
-    toast('Accomplissement recupere !',true);open();
+    toast('Accomplissement recupere !',true);
+    if(typeof ACT!=='undefined'&&typeof ACT.accomplishments==='function')ACT.accomplishments();else open();
   }
   /* Initialize/migrate accomplishment state once at module startup. The state is
      also normalized at every accomplishments/event entry point, so V121 does not

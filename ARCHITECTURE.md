@@ -22,7 +22,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Forge Divine pre-Ascension lock | `game-balance-v224.js` | Retains the Divine rarity gate only; not current base-power owner. |
 | Tree mastery gating / deep requirements / popup synchronization | `runtime-tree-stability-v216.js` | Sole active mastery owner; legacy V149 source has been retired. |
 | Accomplishments Development entry lifecycle | `accomplishments-stability-v138.js` | Route-bound subscriber to V209's `sr:bottomnavrendered` lifecycle; no document-wide observer and no `renderTabs` wrapper. |
-| Accomplishments modal / title rendering + title interaction | `accomplishments-canonical-v139.js` | Canonical Accomplishments renderer and title owner. |
+| Accomplishments modal / title rendering + title interaction | `accomplishments-canonical-v139.js` | Canonical `ACT.accomplishments` renderer and title owner. It opens the canonical modal directly and must not wrap the global `openModal` function; V121 claim refreshes route back through this action. |
 | Canonical Accomplishments claims | `accomplishments-claim-v140.js` | Future claim payout authority. |
 | Accomplishments merge reward / reserve synchronization | `accomplishments-merge-v126.js` | Event-driven owner: claim completion and Sanctuary screen lifecycle synchronize pending pieces/reserve; no global `render` wrapper or perpetual poller. |
 | Raid 100 legacy compensation | `accomplishments-reward-fix-v127.js` | Migration/startup compatibility only; no perpetual poller. |
