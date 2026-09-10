@@ -40,11 +40,15 @@ test('V309 keeps the final asynchronous Familiar renderer on flat stats with no 
     if (typeof nav === 'function') nav('familiers');
     if (typeof render === 'function') render();
 
+    const ownerAfterOpen = !!(SCREENS.familiers && SCREENS.familiers.__srV309);
+    if (typeof render === 'function') render();
+
     const active = S.pets[0];
     const expected = window.__srV305PetStats(active, S);
     const screen = document.getElementById('screen');
     const statBox = screen.querySelector('.fam240HeroStats,[data-fam-flat-damage]');
     return {
+      ownerAfterOpen,
       ownerV309: !!(SCREENS.familiers && SCREENS.familiers.__srV309),
       installCount: Number(window.__srFamiliarFlatUIInstallCountV309 || 0),
       appleNodes: screen.querySelectorAll('[data-arg="apples"],.fam240Res.apple').length,
@@ -60,6 +64,7 @@ test('V309 keeps the final asynchronous Familiar renderer on flat stats with no 
     };
   });
 
+  expect(result.ownerAfterOpen).toBe(true);
   expect(result.ownerV309).toBe(true);
   expect(result.installCount).toBeGreaterThan(0);
   expect(result.appleNodes).toBe(0);
@@ -89,6 +94,8 @@ test('V309 is presentation-only and preserves the V307/V308 progression contract
   expect(result.v308).not.toBeNull();
   expect(result.v308.skillRatesUseExplicitStars).toBe(true);
   expect(result.v309).not.toBeNull();
+  expect(result.v309.asyncRendererSafe).toBe(true);
+  expect(result.v309.renderTimeOwnerRecovery).toBe(true);
   expect(result.v309.destructiveMigration).toBe(false);
   expect(result.v309.economyRebalanced).toBe(false);
   expect(result.v309.saveSchemaChanged).toBe(false);
