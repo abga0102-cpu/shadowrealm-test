@@ -33,6 +33,30 @@ Work fast **locally first**, use GitHub as the integration gate, and never trade
 9. Immediately before merge, fetch `main` again and compare only the delta since the PR base.
 10. Merge only the exact tested head SHA. After merge, verify the resulting `main` commit.
 
+## Single-batch execution and CI polling discipline
+
+The default operating mode is **one coherent execution batch per scoped task**, not a sequence of tiny GitHub actions separated by repeated status checks.
+
+1. Implement the complete scoped change locally before publishing whenever practical.
+2. Consolidate local validation into one meaningful preflight: syntax/static checks, focused subsystem/contracts, required local browser/runtime coverage, and diff review.
+3. Push/update the branch once per meaningful implementation state. Do not create a stream of exploratory commits or PR updates for minor intermediate edits.
+4. Trigger the required GitHub CI once for that meaningful head and treat that exact SHA as the candidate merge head.
+5. Do **not** poll GitHub every 10–30 seconds while CI is merely running. Avoid repeated short waits followed by status-only checks.
+6. While CI is running, only perform useful independent work that cannot invalidate the candidate head. Otherwise leave the workflow alone until a materially useful recheck is justified.
+7. Recheck CI when there is a reasonable chance the required workflow has completed, or when GitHub reports a terminal state. Prefer one substantive recheck over many micro-checks.
+8. If CI is still running at a recheck, do not enter a tight polling loop. Keep the current candidate head unchanged unless new evidence requires action.
+9. If CI passes, verify the exact tested head and current `main`, then proceed directly to merge in the same work session when safe.
+10. If CI fails, inspect the concrete failure before taking action. Fix the cause locally, publish one new meaningful head, and run the gate again.
+11. Never skip the exact-head CI gate merely to make the workflow feel like a one-shot operation. The optimization is fewer unnecessary interactions, **not** less validation.
+
+Preferred flow:
+
+`complete scoped implementation -> local preflight -> one push/PR update -> one CI gate -> verify exact head + latest main -> merge -> verify post-merge main`
+
+Avoid this pattern:
+
+`small edit -> push -> wait 15s -> check -> wait 25s -> check -> tiny edit -> push -> repeat`
+
 ## Parallel work rules
 
 - **One active owner per responsibility.** Use `ARCHITECTURE.md` as the source of truth for canonical runtime ownership.
@@ -78,4 +102,4 @@ A change is shipped only when:
 
 ## Communication standard
 
-AI agents should work autonomously through routine local edits, debugging, and test cycles. Report back when the change is merged, when a real blocker requires human input, or when concurrent work materially changes the task. Avoid narrating every minor step.
+AI agents should work autonomously through routine local edits, debugging, and test cycles. Report back when the change is merged, when a real blocker requires human input, or when concurrent work materially changes the task. Avoid narrating every minor step, and do not send repetitive status updates caused only by CI still being in progress. Prefer one substantive update after a meaningful state change.
