@@ -31,11 +31,11 @@ test('Phase 4D keeps v216 as the sole loaded tree mastery gating and popup owner
 
   expect(fs.existsSync(path.join(root, 'tree-mastery-v149.js'))).toBe(false);
   expect(canonical).toContain('__srRuntimeTreeStabilityV216');
-  expect(canonical).toContain('var LEVEL=3,COST=100');
+  expect(canonical).toContain('var LEVEL=2,COST=100');
   expect(canonical).toContain('masteryLevelRequired=LEVEL');
   expect(canonical).toContain('treeReqOk=function');
   expect(canonical).toContain('function syncPopup()');
-  expect(canonical).toContain('niveau 3/5 requis');
+  expect(canonical).toContain('niveau 2/5 requis');
   expect(canonical).not.toContain('new MutationObserver');
 
   expect(index).not.toContain('tree-mastery-v120.js');
