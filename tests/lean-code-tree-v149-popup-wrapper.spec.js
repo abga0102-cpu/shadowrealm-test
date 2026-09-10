@@ -8,16 +8,9 @@ const source = (name) => fs.readFileSync(path.join(root, name), 'utf8');
 test('Tree mastery gating and popup synchronization have one active runtime owner', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
-  const v149 = source('tree-mastery-v149.js');
   const v216 = source('runtime-tree-stability-v216.js');
 
-  expect(v149).toContain('__srTreeMasteryV149');
-  expect(v149).not.toContain('treeReqOk=function');
-  expect(v149).not.toContain('masteryLevelRequired=');
-  expect(v149).not.toContain('showTreeNode=function');
-  expect(v149).not.toContain('new MutationObserver');
-  expect(v149).not.toContain('querySelectorAll(');
-
+  expect(fs.existsSync(path.join(root, 'tree-mastery-v149.js'))).toBe(false);
   expect(v216).toContain('__srRuntimeTreeStabilityV216');
   expect(v216).toContain('treeReqOk=function');
   expect(v216).toContain('masteryLevelRequired=LEVEL');
