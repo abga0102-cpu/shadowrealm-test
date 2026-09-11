@@ -45,7 +45,7 @@ test('retired Forge auto-batch gate history stays absent while V266 remains cano
     expect(index).not.toContain(file);
   }
 
-  expect(index).toContain('forge-auto-batch-gate-v266.js');
+  expect((index.match(/forge-auto-batch-gate-v266\.js/g) || []).length).toBe(1);
   const canonical = fs.readFileSync(path.join(root, 'forge-auto-batch-gate-v266.js'), 'utf8');
   expect(canonical).toContain('Canonical progression authority. No dynamic loaders.');
   expect(canonical).toContain('forgeBatch(S)');
@@ -59,6 +59,9 @@ test('retired Forge presentation history stays absent while V266 panel and V273 
   const root = path.join(__dirname, '..');
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const retired = [
+    'forge-loot-visual-v252.js',
+    'forge-ux-v253.js',
+    'forge-ux-v258.js',
     'forge-panel-compact-v259.js',
     'forge-panel-authority-v260.js',
     'forge-panel-authority-v261.js',
