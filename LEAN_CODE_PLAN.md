@@ -111,7 +111,7 @@ Completed so far:
 
 - BottomNav fantasy decoration from `bottom-nav-v53.js` was absorbed into `bottom-nav-layout-v183.js`, leaving one canonical BottomNav runtime owner for decoration, geometry and render lifecycle while `premium-ui-v209.js` remains visual polish only;
 - Home compatibility decoration from `home-layout-fix-v119.js` was absorbed into `home-layout-authority-v219.js`, leaving one canonical loaded Home owner for geometry, lifecycle, Forge info accessibility, reward-feed compatibility, equipment-filter readability, Settings stat cards and toast/tutorial positioning;
-- Accomplishments Settings entry injection moved from legacy V121 into canonical `accomplishments-canonical-v139.js`, reducing V121 to state/event compatibility and reward-history responsibilities while preserving the same Settings entry behavior.
+- Accomplishments Settings entry injection moved from legacy V121 into canonical `accomplishments-canonical-v139.js`; V121's duplicate claim/payout path and legacy modal/reward renderer were then removed, leaving V121 with state migration plus raid/fusion event compatibility only while V139/V140 remain the sole UI and payout owners.
 
 Remaining initial candidates:
 
