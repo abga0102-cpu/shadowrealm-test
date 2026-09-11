@@ -4,7 +4,9 @@ Audit date: 2026-09-11. Integration base: `d83da74` (PR #134); notification V105
 
 ## Verified baseline
 
-The notification candidate contains 93 static loader entries and 7 deferred core entries: 100 normal-session JavaScript files, 102 with Social, and 104 with Social + Bot Testers. Every normal-session entry matches `RUNTIME_INVENTORY.md`. The post-V310 inventory began at 106; this is six fewer normal-session script requests. It is not a measured frame-rate or download-time improvement.
+The notification candidate contains 93 static loader entries, 7 deferred core entries and 10 scripts loaded transitively by `familiars-noscr-v231.js`: **110 normal-session first-party JavaScript files**, 112 with Social, and 114 with Social + Bot Testers. Optional third-party Social modules are separate. Earlier counts omitted the transitive chain; 100 is only the index-managed subtotal. The notification change removes one request (111 → 110), not ten. A new browser contract verifies the complete set of successful first-party JS responses against the inventory.
+
+The source-reference audit excluded ten active nested dependencies from the initial 39-file scan. They must not be source-retired. The corrected investigation list contains 29 files.
 
 ## Completed work missing from the older roadmap narrative
 
@@ -20,7 +22,7 @@ The notification candidate contains 93 static loader entries and 7 deferred core
 
 | Phase / responsibility | Current evidence | Next reviewable scope and exit condition |
 | --- | --- | --- |
-| L1 / L5 historical source retirement | 39 root-level tracked JS files are absent from every literal loader path on the notification candidate. Absence alone does not prove no other references or active work. | Audit references, archived workflows, tests and concurrent owner work per family; delete only proven obsolete sources and preserve active contracts. |
+| L1 / L5 historical source retirement | 29 root-level tracked JS files are absent from the index and transitive Familiar loader paths on the notification candidate. Absence alone does not prove no other references or active work. | Audit references, archived workflows, tests and concurrent owner work per family; delete only proven obsolete sources and preserve active contracts. |
 | L2 Sanctuary reserve rendering | V126 retains a zero-delay `mountReserve` after `scrSanctuaire` returns HTML. | Prove a post-DOM-commit event covers initial entry, refill and rerender before transferring the mount. Calling it directly before HTML is inserted is not equivalent. |
 | L2 Accomplishments migration startup | V126 retains 50 ms startup synchronization; V127/V140 have later compensation passes. | Capture legacy pending pieces and compensation sequencing across fresh boot and import before removing a delay. Migration markers and reward conservation must stay locked. |
 | L2 power hints — RESERVED | Concurrent PR #135 now owns replacing the 350 ms V108 poller with `handleCombatEnd`. | Do not duplicate this work. Validate its exact-head gate and two same-floor defeats, victory reset, dismissal, and ignored Raid/PvP results within that workstream. |
@@ -32,14 +34,14 @@ The notification candidate contains 93 static loader entries and 7 deferred core
 
 ## Unloaded root-source inventory by family
 
-Counts and bytes below come from tracked root-level `.js` sources absent from the literal static/deferred/conditional loader strings. These are investigation candidates, not an automatic deletion list.
+Counts and bytes below come from tracked root-level `.js` sources absent from the static/deferred/conditional and transitive Familiar loader strings. These are investigation candidates, not an automatic deletion list.
 
 | Family | Files | Source bytes | Disposition |
 | --- | ---: | ---: | --- |
-| Forge / equipment | 24 | 240562 | Feature-owner and archived-reference audit required |
-| Familiars | 10 | 56418 | Feature-owner and archived-reference audit required |
+| Forge / equipment | 23 | 231658 | Feature-owner and archived-reference audit required |
+| Familiars | 1 | 5369 | Feature-owner and archived-reference audit required |
 | Progression / import | 2 | 6333 | Save-compatibility and authority audit required |
 | Rebirth | 1 | 3077 | Feature-owner and archived-reference audit required |
 | Staged UI sources | 2 | 2056 | Retain until subsequent integration proof |
 
-L0 is complete. L1, L2, L3 and L5 remain in progress. L4 now has concrete investigation evidence but no shared-helper production consolidation is claimed complete. Each production scope must still pass the exact-head moving smoke ratchet and full Chromium/WebKit gate, followed by a fresh main intersection check.
+L0 inventory correction is included in the notification batch; its new browser guard prevents the ten nested dependencies from being omitted again. L1, L2, L3 and L5 remain in progress. L4 now has concrete investigation evidence but no shared-helper production consolidation is claimed complete. Each production scope must still pass the exact-head moving smoke ratchet and full Chromium/WebKit gate, followed by a fresh main intersection check.

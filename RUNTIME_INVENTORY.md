@@ -8,13 +8,17 @@ Snapshot base before the Home V119 consolidation: `main` at `b5c43fedc700ffebc5e
 
 - 93 scripts are loaded synchronously through static `<script src>` entries.
 - 7 additional core UI scripts are loaded after startup in the default non-Social session.
-- Default runtime total: **100 JavaScript files**.
-- Social adds `social-v1.js` and `social-p2p-v1.js`: **102** files when Social is enabled.
-- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **104** files in that optional mode.
+- Index-managed subtotal: **100 JavaScript files**.
+- 10 additional scripts are loaded transitively by `familiars-noscr-v231.js`.
+- Default first-party runtime total: **110 JavaScript files**.
+- Social adds `social-v1.js` and `social-p2p-v1.js`: **112** first-party files when Social is enabled.
+- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **114** first-party files in that optional mode.
 
 The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation, then to 103 by unloading retired Accomplishments V141. After the staged V117 ownership transfer passed PR and post-merge regression, unloading inert Tree V117 reduced the static runtime to 95 entries and the normal non-Social runtime to 102 files. Unloading the retired Hero Equipment visual bridge reduces the static runtime to 94 entries and the normal non-Social runtime to 101 files.
 
 Absorbing the V105 notification CSS into `style.css` then reduces the static runtime to 93 entries and the normal runtime to 100 files.
+
+The earlier totals above counted only scripts managed by `index.html`; they omitted the ten-script nested Familiar loader. The full current normal-session first-party count is 110, down from 111 before notification V105 was unloaded. Social may additionally import third-party network modules; those are not included in the first-party counts.
 
 ## Static loader inventory
 
@@ -165,9 +169,24 @@ Reason: loaded after startup by the deferred `core` chain. Home V219 is now the 
 - `rebirth-ui-cleanup-v224.js`
 - `rebirth-removal-authority-v281.js`
 
+## Transitive Familiar / recycling loader — 10
+
+`familiars-noscr-v231.js` loads these scripts sequentially during normal startup. They are active feature-sensitive dependencies, not unloaded source-retirement candidates.
+
+- `equipment-recycle-infusion-v239.js`
+- `familiars-rates-balance-v237.js`
+- `familiars-noscr-v234.js`
+- `familiars-compact-active-v235.js`
+- `familiars-rates-modal-v236.js`
+- `familiars-scroll-layout-v240.js`
+- `familiars-tabs-merge-v241.js`
+- `familiars-scroll-safearea-v242.js`
+- `familiars-scroll-viewport-v245.js`
+- `familiars-scroll-natural-v246.js`
+
 ## Conditional optional loader entries — 4
 
-Reason: loaded only when their feature flag is enabled and therefore excluded from the 100-file normal-session total.
+Reason: loaded only when their feature flag is enabled and therefore excluded from the 110-file first-party normal-session total.
 
 - Social: `social-v1.js`, `social-p2p-v1.js`
 - Bot Testers, only with Social: `social-bot-testers-v5.js`, `social-bot-ui-v1.js`
