@@ -81,7 +81,7 @@ Loaded Tree runtime is inventoried in `RUNTIME_INVENTORY.md`. Current ownership 
 
 - `runtime-tree-stability-v216.js` is the sole active mastery owner.
 - legacy `tree-mastery-v149.js` is retired from runtime and source; it must not be treated as the active mastery authority.
-- `tree-dedicated-v116.js` still owns the dedicated Tree renderer/mode presentation, but its duplicate permanent `setInterval(syncMode,500)` poller has been removed. The existing body `MutationObserver` plus startup sync remain responsible for mode synchronization.
+- `tree-dedicated-v116.js` still owns the dedicated Tree renderer/mode presentation. Its duplicate permanent `setInterval(syncMode,500)` poller and document-wide `MutationObserver` have both been removed; canonical `sr:bottomnavrendered` lifecycle plus startup sync now own mode synchronization.
 - `tree-labels-v117.js` still performs active label mutations and is not a dead load merely because it is small.
 - `tree-safety-v83.js` still contains active raid-reward compatibility and historical mastery-save restoration, so it is not a safe dead-load candidate.
 - `tree-research-v122.js` still changes future research-time tables and therefore remains active gameplay configuration, not cleanup-only code.
@@ -100,7 +100,7 @@ Social and bot-tester scripts are conditional. Do not classify absence from a no
 
 1. **Home/BottomNav:** continue proof-based checks for compatibility behavior that is genuinely duplicated by V219/V209 owners; do not unload `home-layout-fix-v119.js` based on naming alone.
 2. **Accomplishments:** major wrapper/poller targets have been cleaned; future work should focus on durable subsystem consolidation and migration separation, not recreating retired wrapper ownership.
-3. **Tree:** continue mapping wrappers/actions after the V116 polling removal; prefer deterministic lifecycle hooks and the V216 mastery owner.
+3. **Tree:** continue mapping wrappers/actions after the V116 polling/observer removal; prefer deterministic lifecycle hooks and the V216 mastery owner.
 4. **Shared helpers:** only after repeated helper implementations are confirmed across stable subsystems.
 5. **Forge/Familiars/Rebirth/combat progression:** postpone consolidation until active AI-driven feature work stops intersecting their owners.
 
