@@ -61,7 +61,7 @@ Prefer these first when their behavior is already contract-locked:
 ### L0 — Runtime inventory and coordination
 Status: COMPLETE
 
-The exact loader inventory is maintained in `RUNTIME_INVENTORY.md`. At the post-V310 baseline it records 97 static script entries plus 9 deferred core scripts, for 106 JavaScript files in a normal non-Social session. Social and Bot Tester scripts remain conditional and are inventoried separately.
+The exact loader inventory is maintained in `RUNTIME_INVENTORY.md`. The post-V310 baseline recorded 97 static script entries plus 9 deferred core scripts, for 106 JavaScript files in a normal non-Social session. BottomNav consolidation reduces the current normal runtime to 105 files while preserving the 97-script static count and lowering deferred core to 8. Social and Bot Tester scripts remain conditional and are inventoried separately.
 
 Completed:
 
@@ -82,7 +82,8 @@ Do not classify one-time save compensation/migration code as dead merely because
 
 Completed examples:
 
-- retired Accomplishments marker sources V135/V136/V137 removed after their responsibilities were already owned by V138/V139.
+- retired Accomplishments marker sources V135/V136/V137 removed after their responsibilities were already owned by V138/V139;
+- `bottom-nav-v53.js` unloaded after its active fantasy-decoration responsibility was absorbed into canonical V209 BottomNav ownership.
 
 ### L2 — Wrapper-chain collapse
 Status: IN PROGRESS
@@ -95,16 +96,23 @@ Completed so far:
 - Accomplishments V138 stopped wrapping `renderTabs` and now subscribes to canonical `sr:bottomnavrendered` lifecycle;
 - Accomplishments V139 stopped wrapping global `openModal`; V121 claim refresh routes through canonical `ACT.accomplishments()`;
 - Tree V116 removed its duplicate permanent 500 ms `syncMode` poller and then its document-wide `MutationObserver`; Tree mode synchronization now subscribes to canonical `sr:bottomnavrendered` lifecycle while retaining startup sync;
-- Home V219 stopped wrapping `renderTabs` and now subscribes to the canonical `sr:bottomnavrendered` lifecycle while keeping resize/orientation/startup synchronization.
+- Home V219 stopped wrapping `renderTabs` and now subscribes to the canonical `sr:bottomnavrendered` lifecycle while keeping resize/orientation/startup synchronization;
+- Boot V115 removed its redundant permanent 500 ms wave-display poller while retaining the DOM-driven synchronization path and startup sync.
 
 Continue with one behavior at a time. Do not remove migration/save compatibility responsibilities merely because their runtime path is infrequent.
 
 ### L3 — Subsystem consolidation
-Status: PLANNED
+Status: IN PROGRESS
 
-Consolidate stable areas into durable modules instead of versioned patch chains. Initial candidates:
+Consolidate stable areas into durable modules instead of versioned patch chains.
 
-1. Home / BottomNav
+Completed so far:
+
+- BottomNav fantasy decoration from `bottom-nav-v53.js` was absorbed into `bottom-nav-layout-v183.js`, leaving one canonical BottomNav runtime owner for decoration, geometry and render lifecycle while `premium-ui-v209.js` remains visual polish only.
+
+Remaining initial candidates:
+
+1. Home / remaining BottomNav compatibility only where proof supports it
 2. Accomplishments
 3. Tree
 4. Combat presentation/cadence
@@ -128,6 +136,6 @@ Prefer coherent, reviewable batches. Multiple provably dormant scripts in one su
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
 
-Current lean-code baseline before the Home V219 lifecycle cleanup: `main` `d05c7590352dcfad6c8d7a067dc07f534a196295`. The loader inventory remains 106 JavaScript files in the normal non-Social session because the recent L2 changes reduce runtime wrapper/poller work rather than unloading additional scripts. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
+Current integration baseline before the BottomNav consolidation: `main` `2dadc3cd23b106792557d8cc7c6912aefb352353`. The current candidate loader inventory is 105 JavaScript files in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
 V295 added `familiar-ladder-authority-v295.js`, confirming that Familiars remains feature-owner sensitive and should not be an early consolidation target unless current work is rechecked first.
