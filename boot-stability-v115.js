@@ -1,16 +1,13 @@
 /* BOOT_STABILITY_V115
    Additive boot-safety layer.
-   wave-display-v112 observed characterData and rewrote that same characterData,
-   which could create a self-triggering MutationObserver loop on campaign render.
-   Keep the old file in the build, but mark its guard before it loads and install
-   the same UI correction with idempotent writes + child-list-only observation. */
+   Retired wave-display-v112 observed characterData and rewrote that same
+   characterData, which could create a self-triggering MutationObserver loop on
+   campaign render. V115 keeps the same UI correction with idempotent writes +
+   child-list-only observation. */
 (function(){
 'use strict';
 if(window.__srBootStabilityV115)return;
 window.__srBootStabilityV115=true;
-
-/* Prevent the legacy v112 observer from installing when its script loads next. */
-window.__srWaveDisplayV112=true;
 
 function totalFor(c){
   if(!c||c.ctx!=='campaign')return 0;
