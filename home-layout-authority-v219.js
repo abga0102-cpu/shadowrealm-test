@@ -98,5 +98,5 @@ var queued=false;function schedule(){if(queued)return;queued=true;requestAnimati
 window.__srApplyHomeCompatV119=decorate;
 window.__srSyncHomeLayoutV219=sync;window.__srSyncHomeFramePhase2B=sync;
 window.addEventListener('sr:bottomnavrendered',schedule);
-window.addEventListener('resize',schedule,{passive:true});window.addEventListener('orientationchange',schedule,{passive:true});schedule();
+window.addEventListener('resize',schedule,{passive:true});window.addEventListener('orientationchange',schedule,{passive:true});sync();
 })();
