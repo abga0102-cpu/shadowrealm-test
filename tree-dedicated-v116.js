@@ -47,9 +47,11 @@ style.textContent=[
 ].join('');
 document.head.appendChild(style);
 /* BottomNav's canonical post-render lifecycle covers route rerenders deterministically.
-   Keep startup sync for the initial DOM and avoid document-wide observation/polling. */
+   Keep direct startup sync after the initial synchronous render and avoid document-wide
+   observation, polling, or a zero-delay bootstrap timer. */
 var syncQueued=false;
 function scheduleModeSync(){if(syncQueued)return;syncQueued=true;requestAnimationFrame(function(){syncQueued=false;syncMode();});}
 window.addEventListener('sr:bottomnavrendered',scheduleModeSync);
-setTimeout(syncMode,0);try{if(typeof render==='function')render();}catch(_){}
+try{if(typeof render==='function')render();}catch(_){}
+syncMode();
 })();
