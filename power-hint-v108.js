@@ -49,5 +49,6 @@
   var st=document.createElement('style');
   st.textContent='#srPowerHint{position:fixed;z-index:9998;right:10px;top:calc(env(safe-area-inset-top) + 68px);width:min(245px,calc(100vw - 20px));padding:9px 28px 9px 10px;border:1px solid rgba(232,180,74,.42);border-radius:10px;background:rgba(13,20,34,.82);box-shadow:0 3px 12px rgba(0,0,0,.24);color:#edf1fa;font:600 10.5px/1.35 system-ui;animation:srHintIn .18s ease-out}#srPowerHint b{display:block;color:#fbdd8c;font-size:11px;margin-bottom:2px}#srPowerHint span{color:#c8d2e5}#srPowerHint button{position:absolute;right:5px;top:3px;border:0;background:transparent;color:#9eabc1;font:700 18px/1 system-ui;padding:3px 5px;cursor:pointer}@keyframes srHintIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}';
   document.head.appendChild(st);
+  window.__srPowerHintCombatEndLifecycleV108=true;
   setInterval(watch,350);
 })();
