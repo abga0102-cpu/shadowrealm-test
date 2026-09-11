@@ -15,6 +15,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Combat readability overlays | `combat-polish-v157.js` | Visual/readability responsibility only. |
 | Combat animation | `combat-animation-v169.js` | Locomotion, weapon choreography, `drawArena` animation wrapping. |
 | Campaign combat progression | `combat-progression-authority-v285.js` | Current enemy/boss HP progression authority. |
+| Raid Évolution PE reward | `raid-pe-authority-v290.js` | Sole canonical Evolution raid PE reward owner: 100 PE at level 1, then +3 PE per raid level. `tree-safety-v83.js` only audits the final runtime value and must not wrap `raidReward`. |
 | Save import | `import-save-guard-v207.js` | Sole authoritative `ACT.importSave` owner. |
 | Forge item base power | `progression-overhaul-v283.js` | Current fixed-base equipment generation authority. |
 | Forge Divine pre-Ascension lock | `game-balance-v224.js` | Retains the Divine rarity gate only; not current base-power owner. |
