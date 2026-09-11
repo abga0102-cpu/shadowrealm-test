@@ -71,8 +71,8 @@ Completed L2/L3 findings:
 - V138 no longer wraps `renderTabs`; it subscribes to canonical `sr:bottomnavrendered` lifecycle.
 - V139 no longer wraps global `openModal`; successful V121 claim refreshes route through canonical `ACT.accomplishments()` with its local legacy open path retained only as fallback.
 - The Settings-screen Accomplishments entry is now owned by canonical V139 rather than V121. V121 no longer wraps `scrParametres`, leaving its surviving responsibilities centered on legacy state/event compatibility and historical accomplishment tracking.
-- V127 remains loaded because its historical-save responsibilities are still required. V141's floor make-good responsibility was transferred into V127 and V141 was then unloaded.
-- `accomplishments-ui-v123.js` and `accomplishments-titles-v133.js` remained unloaded and contract-covered across subsequent releases. Their obsolete working-tree sources are now retired as the first Accomplishments L5 batch; Git history remains the archive.
+- V127 remains loaded because its historical-save responsibilities are still required. V141's floor make-good responsibility was transferred into V127; after remaining unloaded and contract-covered, its inert working-tree marker was source-retired.
+- `accomplishments-ui-v123.js` and `accomplishments-titles-v133.js` remained unloaded and contract-covered across subsequent releases. Their obsolete working-tree sources were retired in the first Accomplishments L5 batch; V141 completes the known Accomplishments source-retirement set, and Git history remains the archive.
 
 Do not reintroduce wrapper chains merely because older source contracts once expected them.
 
