@@ -7,9 +7,9 @@ const exists = file => fs.existsSync(path.join(root, file));
 const src = file => fs.readFileSync(path.join(root, file), 'utf8');
 
 test.describe('Power integrity V255 source retirement', () => {
-  test.skip(({ project }) => project.name !== 'chromium-desktop', 'source ownership is engine-independent');
+  test('V256 remains the loaded authority and owns V255 cleanup', async ({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'source ownership is engine-independent');
 
-  test('V256 remains the loaded authority and owns V255 cleanup', () => {
     expect(exists('power-integrity-v255.js')).toBe(false);
     expect(exists('power-source-integrity-v256.js')).toBe(true);
 
