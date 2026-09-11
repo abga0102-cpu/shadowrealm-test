@@ -102,6 +102,21 @@ test('retired Forge presentation history stays absent while V266 panel and V273 
   expect(ux).toContain('srForgeLoot273');
 });
 
+test('legacy Forge power popup stays retired while V146 owns inline comparison deltas', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
+
+  const root = path.join(__dirname, '..');
+  const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+
+  expect(fs.existsSync(path.join(root, 'forge-power-feedback-v148.js'))).toBe(false);
+  expect(index).not.toContain('forge-power-feedback-v148.js');
+  expect((index.match(/forge-comparison-authority-v146\.js/g) || []).length).toBe(1);
+
+  const comparison = fs.readFileSync(path.join(root, 'forge-comparison-authority-v146.js'), 'utf8');
+  expect(comparison).toContain('srCmpPow');
+  expect(comparison).toContain('powDelta');
+});
+
 test('V283 owns current fixed-base Forge equipment power independently of Forge level', async ({ page }) => {
   await openCleanGame(page);
 
