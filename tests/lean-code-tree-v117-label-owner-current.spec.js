@@ -5,10 +5,10 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const src = file => fs.readFileSync(path.join(root, file), 'utf8');
 
-test.describe('Tree clearer-label staged ownership', () => {
+test.describe('Tree clearer-label ownership', () => {
   test.skip(({ project }) => project.name !== 'chromium-desktop', 'source ownership is engine-independent');
 
-  test('V116 owns clearer gold labels while V117 remains an inert loaded marker', () => {
+  test('V116 owns clearer gold labels while V117 stays unloaded', () => {
     const owner = src('tree-dedicated-v116.js');
     const retired = src('tree-labels-v117.js');
     const index = src('index.html');
@@ -24,6 +24,6 @@ test.describe('Tree clearer-label staged ownership', () => {
 
     expect(retired).toContain('__srTreeLabelsV117Retired=true');
     expect(retired).not.toMatch(/TREE_BY_ID|\.label\s*=|\.short\s*=|\brender\s*\(/);
-    expect(index).toContain('tree-labels-v117.js');
+    expect(index).not.toContain('tree-labels-v117.js');
   });
 });
