@@ -14,6 +14,28 @@ Work fast **locally first**, use GitHub as the integration gate, and never trade
 4. Choose a narrow workstream with a clear owner boundary. Do not start overlapping work when another active PR owns the same files or runtime responsibility unless the work is explicitly coordinated.
 5. Record the exact starting `main` SHA.
 
+## Architecture-first code placement — mandatory
+
+**Do not create a new production JavaScript file merely because it is convenient.** New behavior must be placed in the existing canonical owner whenever that owner already covers the responsibility.
+
+Before creating any production `.js` file, every human or AI agent must follow this decision order:
+
+1. Read the canonical owner map in `ARCHITECTURE.md` and inspect the existing owner for the requested behavior.
+2. Search the current runtime for an adjacent owner that already owns the same domain, lifecycle, rendering surface, state, migration, or policy.
+3. If the behavior fits an existing owner's responsibility, **modify that owner**. Do not add a versioned patch, wrapper, observer, timer, compatibility layer, or one-off override file beside it.
+4. If the existing owner has become too broad, prefer a deliberate refactor or ownership transfer with tests and an architecture update over stacking another patch file on top.
+5. Create a new production file **only when no existing canonical owner can accept the responsibility without violating a clear module boundary or creating worse coupling**, and only when the new file represents a durable responsibility that deserves its own owner.
+6. New version-suffixed patch files such as `*-v123.js` are prohibited by default. A versioned filename is allowed only for a real compatibility/external-versioning reason that is explicitly justified in the PR.
+7. When a new production file is genuinely necessary:
+   - register it as a canonical owner in `ARCHITECTURE.md`;
+   - explain which existing owner(s) were considered and why they are not suitable;
+   - add/update ownership and behavior contracts;
+   - update the runtime inventory/loader documentation if it becomes executable runtime code;
+   - complete the architecture/file-placement section of the PR template.
+8. Tests, fixtures, documentation, and CI/tooling files are not production runtime modules and may be created when they are the appropriate artifact for the task, but they should still be placed in their established directories.
+
+The CI architecture file-placement guard enforces this policy for newly added production JavaScript. A direct push that introduces a new production `.js` file without the same architectural evidence is also treated as a failure.
+
 ## Fast local-first workflow
 
 1. Pull/materialize only the files needed for the task.
