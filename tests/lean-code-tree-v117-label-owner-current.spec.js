@@ -8,9 +8,8 @@ const src = file => fs.readFileSync(path.join(root, file), 'utf8');
 test.describe('Tree clearer-label ownership', () => {
   test.skip(({ project }) => project.name !== 'chromium-desktop', 'source ownership is engine-independent');
 
-  test('V116 owns clearer gold labels while V117 stays unloaded', () => {
+  test('V116 owns clearer gold labels while retired V117 stays absent', () => {
     const owner = src('tree-dedicated-v116.js');
-    const retired = src('tree-labels-v117.js');
     const index = src('index.html');
 
     for (const pair of [
@@ -22,8 +21,7 @@ test.describe('Tree clearer-label ownership', () => {
       expect(owner).toContain(`${pair[0]}:'${pair[1]}'`);
     }
 
-    expect(retired).toContain('__srTreeLabelsV117Retired=true');
-    expect(retired).not.toMatch(/TREE_BY_ID|\.label\s*=|\.short\s*=|\brender\s*\(/);
+    expect(fs.existsSync(path.join(root, 'tree-labels-v117.js'))).toBe(false);
     expect(index).not.toContain('tree-labels-v117.js');
   });
 });
