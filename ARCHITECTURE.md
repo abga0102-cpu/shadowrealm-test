@@ -20,10 +20,10 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Forge Divine pre-Ascension lock | `game-balance-v224.js` | Retains the Divine rarity gate only; not current base-power owner. |
 | Tree mastery gating / deep requirements / popup synchronization | `runtime-tree-stability-v216.js` | Sole active mastery owner; legacy V149 source has been retired. |
 | Accomplishments Development entry lifecycle | `accomplishments-stability-v138.js` | Route-bound subscriber to V209's `sr:bottomnavrendered` lifecycle; no document-wide observer and no `renderTabs` wrapper. |
-| Accomplishments modal / title rendering + title interaction / Settings entry | `accomplishments-canonical-v139.js` | Canonical `ACT.accomplishments` renderer, title owner and Settings-screen Accomplishments entry owner. It opens the canonical modal directly and must not wrap the global `openModal` function; V121 claim refreshes route back through this action. |
+| Accomplishments modal / title rendering + title interaction / Settings entry | `accomplishments-canonical-v139.js` | Canonical `ACT.accomplishments` renderer, title owner and Settings-screen Accomplishments entry owner. It opens the canonical modal directly and must not wrap the global `openModal` function. |
 | Canonical Accomplishments claims | `accomplishments-claim-v140.js` | Future claim payout authority. |
 | Accomplishments merge reward / reserve synchronization | `accomplishments-merge-v126.js` | Event-driven owner: claim completion and Sanctuary screen lifecycle synchronize pending pieces/reserve; no global `render` wrapper or perpetual poller. |
-| Raid 100 legacy compensation | `accomplishments-reward-fix-v127.js` | Migration/startup compatibility only; no perpetual poller. |
+| Accomplishments legacy reward migrations | `accomplishments-reward-fix-v127.js` | Sole active legacy reward-migration owner for Raid 100 and the floor25/floor50/floor75 make-good. It preserves persisted V127/V141 idempotency markers, runs bounded startup reconciliation, and chains the deterministic `migrate(...)` lifecycle for imported saves; no perpetual poller. |
 | Floating Social launcher policy | `social-v1.js` | Owns launcher creation/remount and suppression policy when Social is enabled. |
 
 ## Retired / compatibility-only runtime layers
@@ -39,6 +39,7 @@ The following files may remain in source history, but must not regain active own
 - `accomplishments-home-scope-v136.js` — compatibility marker only; unloaded.
 - `accomplishments-floors-v137.js` — compatibility marker only; unloaded.
 - `accomplishments-ui-v123.js` — suppressed legacy UI; unloaded.
+- `accomplishments-floor-comp-v141.js` — floor compensation ownership absorbed into V127; temporarily retained as an inert compatibility marker pending a later L1 unload.
 - `tree-mastery-v120.js` — compatibility marker only; unloaded.
 - `tree-mastery-ui-v128.js` — compatibility marker only; unloaded.
 - `tree-mastery-v149.js` — retired from runtime and source; V216 owns active mastery behavior.
