@@ -95,7 +95,7 @@ Completed so far:
 
 - Accomplishments V121/V126 converted away from recurring render/polling ownership for the cleaned responsibilities; deterministic lifecycle hooks own those paths;
 - Accomplishments V138 stopped wrapping `renderTabs` and now subscribes to canonical `sr:bottomnavrendered` lifecycle;
-- Accomplishments V139 stopped wrapping global `openModal`; V121 claim refresh routes through canonical `ACT.accomplishments()`;
+- Accomplishments V139 stopped wrapping global `openModal`; canonical Accomplishments presentation is owned directly by V139;
 - Tree V116 removed its duplicate permanent 500 ms `syncMode` poller and then its document-wide `MutationObserver`; Tree mode synchronization now subscribes to canonical `sr:bottomnavrendered` lifecycle while retaining startup sync;
 - Home V219 stopped wrapping `renderTabs` and now subscribes to the canonical `sr:bottomnavrendered` lifecycle while keeping resize/orientation/startup synchronization;
 - Boot V115 removed its redundant permanent 500 ms wave-display poller while retaining the DOM-driven synchronization path and startup sync.
@@ -111,11 +111,12 @@ Completed so far:
 
 - BottomNav fantasy decoration from `bottom-nav-v53.js` was absorbed into `bottom-nav-layout-v183.js`, leaving one canonical BottomNav runtime owner for decoration, geometry and render lifecycle while `premium-ui-v209.js` remains visual polish only;
 - Home compatibility decoration from `home-layout-fix-v119.js` was absorbed into `home-layout-authority-v219.js`, leaving one canonical loaded Home owner for geometry, lifecycle, Forge info accessibility, reward-feed compatibility, equipment-filter readability, Settings stat cards and toast/tutorial positioning;
-- Accomplishments Settings entry injection moved from legacy V121 into canonical `accomplishments-canonical-v139.js`, reducing V121 to state/event compatibility and reward-history responsibilities while preserving the same Settings entry behavior.
+- Accomplishments Settings entry injection moved from legacy V121 into canonical `accomplishments-canonical-v139.js`;
+- V121's superseded milestone/reward table, payout helpers, modal renderer and fallback claim path were removed. V121 is now explicitly compatibility-only for historical state normalization plus raid-win/familiar-fusion tracking, while V139 owns presentation and V140 owns current claims/payouts.
 
 Remaining initial candidates:
 
-1. Accomplishments durable consolidation / migration separation
+1. Accomplishments migration/compatibility separation (V126/V127/V141 proof-based only)
 2. Tree
 3. Combat presentation/cadence
 4. Forge / progression only after active feature work settles
