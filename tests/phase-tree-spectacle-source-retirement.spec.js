@@ -6,9 +6,9 @@ const root = path.resolve(__dirname, '..');
 const src = file => fs.readFileSync(path.join(root, file), 'utf8');
 
 test.describe('Tree spectacle historical source retirement', () => {
-  test.skip(({ project }) => project.name !== 'chromium-desktop', 'source ownership is engine-independent');
+  test('V212/V246 stay retired behind the dedicated Tree and current visual layer', async ({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'source ownership is engine-independent');
 
-  test('V212/V246 stay retired behind the dedicated Tree and current visual layer', () => {
     expect(fs.existsSync(path.join(root, 'personal-tree-spectacle-v212.js'))).toBe(false);
     expect(fs.existsSync(path.join(root, 'personal-tree-spectacle-v246.js'))).toBe(false);
 
