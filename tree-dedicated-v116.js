@@ -6,6 +6,13 @@
 if(window.__srTreeDedicatedV116)return;
 window.__srTreeDedicatedV116=true;
 if(typeof TREE_NODES==='undefined'||typeof treeLv!=='function'||typeof treeReqOk!=='function')return;
+/* V117 clearer gold-node naming is presentation-only and belongs with the
+   dedicated Tree presentation owner. Preserve the exact labels while avoiding
+   a separate runtime layer and its extra render pass. */
+if(typeof TREE_BY_ID!=='undefined'){
+  var clearerGoldNames={n1_07:'Gain d’Or I',n2_07:'Gain d’Or II',n3_07:'Gain d’Or III',n4_07:'Gain d’Or IV'};
+  Object.keys(clearerGoldNames).forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.label=clearerGoldNames[id];n.short=clearerGoldNames[id];});
+}
 var branches=[
 {id:'familier',label:'Familier',sub:'Oeufs',icon:'🐾'},
 {id:'or',label:'Or',sub:'Autonomie',icon:'●'},
