@@ -1,12 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
-test('campaign defeat returns to the previous checkpoint and starts a fresh playable fight', async ({ page }) => {
-  await page.route('**/npm/**', (route) => route.abort());
-  await page.goto('/index.html?smoke=1');
-  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
-  await page.waitForFunction(() => window.__smoke && typeof spawnCampaign === 'function' && typeof tick === 'function');
-
-  const before = await page.evaluate(() => {
+async function installDefeatFixture(page) {
+  return page.evaluate(() => {
     const H = window.__smoke;
     update((st) => {
       st.level = 40;
@@ -24,16 +19,41 @@ test('campaign defeat returns to the previous checkpoint and starts a fresh play
     });
     H.D = computeDerived(H.S);
     H.combat = spawnCampaign(H.S);
-    const defeated = H.combat;
-    defeated.heroHP = 0;
-    defeated.status = 'lost';
-    defeated.endAt = Date.now() - 1;
-    defeated._ended = false;
-    defeated.__deathRecoveryFixture = true;
+    H.combat.heroHP = 0;
+    H.combat.status = 'lost';
+    H.combat.endAt = Date.now() - 1;
+    H.combat._ended = false;
+    H.combat.__deathRecoveryFixture = true;
+    return true;
+  });
+}
 
-    // Exercise the real terminal-combat lifecycle. This is where a failed
-    // combat-end hook used to leave _ended=true forever on the dead combat.
-    tick();
+test.beforeEach(async ({ page }) => {
+  await page.route('**/npm/**', (route) => route.abort());
+  await page.goto('/index.html?smoke=1');
+  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
+  await page.waitForFunction(() => window.__smoke && typeof spawnCampaign === 'function' && typeof tick === 'function' && window.__srCampaignDeathRecoveryV312 === true);
+});
+
+test('campaign defeat restarts immediately without depending on a later timer task', async ({ page }) => {
+  await installDefeatFixture(page);
+
+  const result = await page.evaluate(() => {
+    const H = window.__smoke;
+    const defeated = H.combat;
+    const realSetTimeout = window.setTimeout;
+    let forbiddenDeferredRestart = false;
+
+    window.setTimeout = function(fn, delay) {
+      if (fn === startCampaign && Number(delay) === 40) {
+        forbiddenDeferredRestart = true;
+        throw new Error('deferred campaign restart is forbidden in this regression');
+      }
+      return realSetTimeout.apply(this, arguments);
+    };
+
+    try { tick(); }
+    finally { window.setTimeout = realSetTimeout; }
 
     return {
       floor: H.S.floor,
@@ -41,37 +61,73 @@ test('campaign defeat returns to the previous checkpoint and starts a fresh play
       checkpoint: H.S.checkpoint,
       terminalProcessed: defeated._ended === true,
       oldCombatStillInstalled: H.combat === defeated,
-    };
-  });
-
-  expect(before.floor).toBe(5);
-  expect(before.step).toBe(1);
-  expect(before.checkpoint).toBe(5);
-  expect(before.terminalProcessed).toBe(true);
-  expect(before.oldCombatStillInstalled).toBe(true);
-
-  await expect.poll(async () => page.evaluate(() => {
-    const H = window.__smoke;
-    return {
-      floor: H.S.floor,
-      step: H.S.step,
+      forbiddenDeferredRestart,
       combatFloor: H.combat && H.combat.floor,
       combatStep: H.combat && H.combat.step,
       combatStatus: H.combat && H.combat.status,
       fullHp: !!H.combat && H.combat.heroHP === H.combat.heroMaxHP && H.combat.heroHP > 0,
-      freshCombat: !!H.combat && !H.combat.__deathRecoveryFixture,
+      recoveredByGuard: !!H.combat && H.combat.__srRecoveredV312 === true,
     };
-  }), { timeout: 3000 }).toEqual({
+  });
+
+  expect(result).toEqual({
     floor: 5,
     step: 1,
+    checkpoint: 5,
+    terminalProcessed: true,
+    oldCombatStillInstalled: false,
+    forbiddenDeferredRestart: false,
     combatFloor: 5,
     combatStep: 1,
     combatStatus: 'fight',
     fullHp: true,
-    freshCombat: true,
+    recoveredByGuard: false,
   });
 
   await expect(page.locator('#tabs .tab').first()).toBeVisible();
+  await page.locator('#tabs .tab').nth(1).click();
+  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
+});
+
+test('campaign defeat still recovers if canonical settlement throws after combat is marked ended', async ({ page }) => {
+  await installDefeatFixture(page);
+
+  const result = await page.evaluate(() => {
+    const H = window.__smoke;
+    const defeated = H.combat;
+    const realUpdate = update;
+    update = function(){ throw new Error('forced settlement failure'); };
+
+    try { tick(); }
+    finally { update = realUpdate; }
+
+    return {
+      floor: H.S.floor,
+      step: H.S.step,
+      checkpoint: H.S.checkpoint,
+      terminalProcessed: defeated._ended === true,
+      oldCombatStillInstalled: H.combat === defeated,
+      combatFloor: H.combat && H.combat.floor,
+      combatStep: H.combat && H.combat.step,
+      combatStatus: H.combat && H.combat.status,
+      fullHp: !!H.combat && H.combat.heroHP === H.combat.heroMaxHP && H.combat.heroHP > 0,
+      recoveredByGuard: !!H.combat && H.combat.__srRecoveredV312 === true,
+    };
+  });
+
+  expect(result).toEqual({
+    floor: 5,
+    step: 1,
+    checkpoint: 5,
+    terminalProcessed: true,
+    oldCombatStillInstalled: false,
+    combatFloor: 5,
+    combatStep: 1,
+    combatStatus: 'fight',
+    fullHp: true,
+    recoveredByGuard: true,
+  });
+
   await page.locator('#tabs .tab').nth(1).click();
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
