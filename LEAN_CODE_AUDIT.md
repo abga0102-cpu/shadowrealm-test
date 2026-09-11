@@ -88,6 +88,7 @@ Loaded Tree runtime is inventoried in `RUNTIME_INVENTORY.md`. Current ownership 
 - V116's duplicate permanent `setInterval(syncMode,500)` poller and document-wide `MutationObserver` were removed; canonical `sr:bottomnavrendered` lifecycle plus startup sync own mode synchronization.
 - `tree-labels-v117.js` completed its staged ownership transfer, passed the regression soak, and is now unloaded. The normal non-Social runtime therefore remains at 102 files.
 - historical renderer/bridge sources V88, V102, V87 and V92 were source-retired after V116 ownership was contract-locked.
+- the unloaded V90 simple renderer and V213 mastery/observer layer were source-retired after V116/V216 ownership was contract-locked; V216 keeps the historical V213 guard claimed so stale legacy code cannot reinstall its observer.
 - `tree-safety-v83.js` no longer wraps canonical Evolution `raidReward`; V290 owns that reward rule while V83 retains historical mastery-save restoration and audit behavior.
 - `tree-research-v122.js` still changes future research-time tables and therefore remains active gameplay configuration, not cleanup-only code.
 
@@ -115,6 +116,7 @@ Straightforward runtime/source pruning is now close to exhaustion. Completed exa
 - conditional bot-test historical source;
 - duplicate legacy `index 2.html` (~498 KB);
 - Tree V117 unload and V88/V102/V87/V92 historical renderer/bridge sources;
+- Tree V90 historical renderer and V213 mastery/observer source;
 - power integrity V255 historical retirement source;
 - equipment stats V175 historical predecessor source and its obsolete V175 helper.
 

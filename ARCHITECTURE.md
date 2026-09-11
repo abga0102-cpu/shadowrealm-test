@@ -46,6 +46,8 @@ The following files may remain in source history, but must not regain active own
 - `tree-mastery-v120.js` — compatibility marker only; unloaded.
 - `tree-mastery-ui-v128.js` — compatibility marker only; unloaded.
 - `tree-mastery-v149.js` — retired from runtime and source; V216 owns active mastery behavior.
+- `tree-simple-v90.js` — unloaded historical simple renderer retired from source; V116 remains the sole dedicated Tree renderer.
+- `personal-tree-mastery-clarity-v213.js` — unloaded legacy mastery/observer layer retired from source; V216 owns its surviving mastery gating, visuals and popup synchronization.
 
 ## Concurrency-safe workflow
 
