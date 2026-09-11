@@ -91,6 +91,8 @@ Completed examples:
 - `tree-labels-v117.js` unloaded after its four naming-only `Gain d’Or I–IV` labels were absorbed into V116 and the staged transfer passed both exact-head and post-merge regression gates.
 - `notification-compact-v105.js` unloaded after its six CSS-only reward-notification overrides were folded into the existing canonical selectors in `style.css`.
 
+The corrected source-reference audit now has **27 remaining unloaded investigation candidates** after the two staged UI sources completed source retirement. Those 27 remain feature/save-sensitive and require family-specific proof before deletion.
+
 ### L2 — Wrapper-chain collapse
 Status: IN PROGRESS
 
@@ -141,7 +143,7 @@ Status: IN PROGRESS
 
 After scripts have remained unloaded and regression-covered across subsequent versions, delete obsolete source files from the working tree. Git history remains the archive.
 
-Completed examples include the retired Accomplishments marker families, V135 bridge and V141 layer, BottomNav V53, Home V119, Tree renderer/bridge history through V90/V92/V102/V213, Power Integrity V255, and Equipment V175.
+Completed examples include the retired Accomplishments marker families, V135 bridge and V141 layer, BottomNav V53, Home V119, Tree renderer/bridge history through V90/V92/V102/V213, Power Integrity V255, Equipment V175, Hero Equipment V1, and notification V105. Hero Equipment V1 and notification V105 were deleted only after their unload survived the #136 exact-head integration gate and the subsequent #137 integration; their ownership contracts now require source absence while preserving canonical behavior checks.
 
 ## Change-size policy
 
