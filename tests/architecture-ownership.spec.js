@@ -27,6 +27,7 @@ const retiredUnloaded = [
   'tree-mastery-v120.js',
   'tree-mastery-ui-v128.js',
   'tree-mastery-v149.js',
+  'rebirth-scroll-stability-v220.js',
 ];
 
 const canonicalReferencedOnce = [
@@ -41,6 +42,7 @@ const canonicalReferencedOnce = [
   'progression-overhaul-v283.js',
   'game-balance-v224.js',
   'runtime-tree-stability-v216.js',
+  'rebirth-scroll-natural-v221.js',
   'accomplishments-stability-v138.js',
   'accomplishments-canonical-v139.js',
   'accomplishments-claim-v140.js',
@@ -93,6 +95,15 @@ test('Home geometry, lifecycle and compatibility use one canonical runtime owner
   expect(home).toContain("aria-label','Informations sur les raretés");
   expect(home).toContain("addEventListener('sr:bottomnavrendered',schedule)");
   expect(home).not.toMatch(/renderTabs\s*=|function\s+renderTabs\b/);
+});
+
+test('Rebirth natural scroll V221 remains the sole loaded scroll-preservation owner', () => {
+  const v221 = read('rebirth-scroll-natural-v221.js');
+  expect(fs.existsSync(path.join(ROOT, 'rebirth-scroll-stability-v220.js'))).toBe(false);
+  expect(v221).toContain('Replaces V220 behavior');
+  expect(v221).toContain('window.__srRebirthScrollStabilityV220=true');
+  expect(v221).toContain('window.__srRebirthScrollV221=');
+  expect(v221).toContain('new MutationObserver');
 });
 
 test('known duplicate ownership mechanisms do not return', () => {

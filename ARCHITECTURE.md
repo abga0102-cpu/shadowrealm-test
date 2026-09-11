@@ -21,6 +21,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Forge item base power | `progression-overhaul-v283.js` | Current fixed-base equipment generation authority. |
 | Forge Divine pre-Ascension lock | `game-balance-v224.js` | Retains the Divine rarity gate only; not current base-power owner. |
 | Forge auto-batch unlock gating | `forge-auto-batch-gate-v266.js` | Canonical loaded owner for allowed batch choices, persisted selection sanitization, action gating and picker lock state. Historical V254/V258/V260/V261 gate sources are retired. |
+| Rebirth scroll preservation | `rebirth-scroll-natural-v221.js` | Sole loaded Rebirth scroll-preservation owner. V221 explicitly replaces V220 with continuous position preservation and suppresses the older V220 layer if it is ever encountered. |
 | Tree dedicated renderer / clearer gold-node labels | `tree-dedicated-v116.js` | Canonical dedicated Tree renderer and owner of the four clearer `Gain d’Or I–IV` labels formerly applied by V117. V117 is now unloaded. |
 | Tree mastery gating / deep requirements / popup synchronization | `runtime-tree-stability-v216.js` | Sole active mastery owner; legacy V149 source has been retired. |
 | Accomplishments Development entry lifecycle | `accomplishments-stability-v138.js` | Route-bound subscriber to V209's `sr:bottomnavrendered` lifecycle; no document-wide observer and no `renderTabs` wrapper. |
@@ -59,6 +60,7 @@ The following files may remain in source history, but must not regain active own
 - `hero-equipment-v1.js` — retired visual safety bridge formerly cleaning obsolete Hero Equipment artifacts after `drawArena`; retired from runtime and source after staged integration proof. Active hero animation/weapon presentation remains owned by the base arena renderer plus `combat-animation-v169.js`.
 - `notification-compact-v105.js` — its six compact reward-notification overrides are absorbed into `style.css`; retired from runtime and source after staged integration proof.
 - `forge-auto-batch-gate-v254.js`, `forge-auto-batch-gate-v258.js`, `forge-auto-batch-gate-v260.js`, `forge-auto-batch-gate-v261.js` — superseded Forge auto-batch gate chain retired from runtime and source; `forge-auto-batch-gate-v266.js` is the sole loaded gate owner.
+- `rebirth-scroll-stability-v220.js` — superseded Rebirth scroll-preservation layer retired from runtime and source; loaded `rebirth-scroll-natural-v221.js` explicitly replaces and suppresses V220.
 - `accomplishments-titles-v133.js` — compatibility marker only; unloaded.
 - `accomplishments-overview-v135.js` — compatibility marker only; unloaded.
 - `accomplishments-home-scope-v136.js` — compatibility marker only; unloaded.
