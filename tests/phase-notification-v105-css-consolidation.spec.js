@@ -6,10 +6,10 @@ const root = path.join(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const style = fs.readFileSync(path.join(root, 'style.css'), 'utf8');
 
-test('V105 compact notification CSS is canonically owned by style.css', async ({}, testInfo) => {
+test('V105 compact notification CSS is canonically owned by style.css and its source stays retired', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
-  expect(fs.existsSync(path.join(root, 'notification-compact-v105.js'))).toBe(true);
+  expect(fs.existsSync(path.join(root, 'notification-compact-v105.js'))).toBe(false);
   expect(index).not.toContain('notification-compact-v105.js');
   expect(index).toContain('style.css?v=2026.09.11.311');
   expect(style).toContain('Canonical compact reward-notification presentation (formerly V105).');
