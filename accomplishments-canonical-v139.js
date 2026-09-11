@@ -75,5 +75,5 @@ function installSettingsEntry(){
  SCREENS.parametres=scrParametres;
 }
 function install(){if(typeof S==='undefined'||typeof ACT==='undefined'||typeof openModal!=='function')return;ACT.accomplishments=function(){openModal(html(),'Accomplissements');};installTitleInteraction();installSettingsEntry();}
-setTimeout(install,0);
+install();
 })();
