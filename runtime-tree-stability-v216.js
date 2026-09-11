@@ -146,5 +146,4 @@ document.addEventListener('click',function(e){
 document.addEventListener('pointerup',function(e){
  var t=e&&e.target;if(t&&t.closest&&t.closest('.srRadialTree,[data-act="treeNode"]'))queuePopupSync();
 },true);
-setTimeout(syncPopup,0);
 })();
