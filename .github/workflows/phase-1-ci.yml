@@ -42,6 +42,12 @@ jobs:
           node-version: '22'
           cache: npm
 
+      - name: Enforce architecture-first file placement
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        env:
+          PR_BODY: ${{ github.event_name == 'pull_request' && github.event.pull_request.body || '' }}
+        run: node tests/architecture-file-placement-guard.js .phase1-base .
+
       - name: Install development test tooling
         run: npm ci --ignore-scripts --no-audit --no-fund
 
