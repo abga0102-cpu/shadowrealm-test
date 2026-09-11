@@ -12,7 +12,7 @@ Snapshot base before the Home V119 consolidation: `main` at `b5c43fedc700ffebc5e
 - Social adds `social-v1.js` and `social-p2p-v1.js`: **105** files when Social is enabled.
 - Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **107** files in that optional mode.
 
-The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation. Unloading retired Accomplishments V141 now reduces the static runtime from 97 to 96 entries and the normal non-Social runtime to 103 files.
+The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation. Unloading retired Accomplishments V141 reduced the static runtime from 97 to 96 entries and the normal non-Social runtime to 103 files. Tree V117 is currently retained as an inert staged marker; unloading it after regression soak would reduce the static runtime to 95 and the normal runtime to 102.
 
 ## Static loader inventory
 
@@ -87,7 +87,7 @@ Reason: active Sanctuary/Forge presentation, migration, balance and equipment au
 
 ### Tree, core UI and guidance — 18
 
-Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Known retired Tree mastery shells are already unloaded; `runtime-tree-stability-v216.js` is the active mastery owner. BottomNav decoration/geometry/lifecycle are consolidated in one static canonical owner. Remaining compatibility utilities require behavior proof before any L1 unload.
+Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Known retired Tree mastery shells are already unloaded; `runtime-tree-stability-v216.js` is the active mastery owner. `tree-dedicated-v116.js` now also owns the clearer `Gain d’Or I–IV` label overrides. `tree-labels-v117.js` is an inert compatibility marker retained only for staged regression soak before a separate L1 unload.
 
 - `personal-tree-radial-v82.js`
 - `tree-safety-v83.js`
@@ -100,7 +100,7 @@ Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Kno
 - `boss-gate-v101.js`
 - `tree-research-v122.js`
 - `tree-dedicated-v116.js`
-- `tree-labels-v117.js`
+- `tree-labels-v117.js` — inert marker, queued for unload after regression soak
 - `runtime-tree-stability-v216.js`
 - `personal-tree-spectacle-v247.js`
 - `notification-compact-v105.js`
