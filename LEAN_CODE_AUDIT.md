@@ -66,11 +66,12 @@ Loaded:
 
 Already retired/unloaded or source-retired examples are tracked in `ARCHITECTURE.md`.
 
-Completed L2 findings:
+Completed L2/L3 findings:
 
 - V121/V126 no longer rely on perpetual render/polling ownership for the cleaned responsibilities; deterministic lifecycle hooks own those paths.
 - V138 no longer wraps `renderTabs`; it subscribes to canonical `sr:bottomnavrendered` lifecycle.
 - V139 no longer wraps global `openModal`; successful V121 claim refreshes route through canonical `ACT.accomplishments()` with its local legacy open path retained only as fallback.
+- The Settings-screen Accomplishments entry is now owned by canonical V139 rather than V121. V121 no longer wraps `scrParametres`, leaving its surviving responsibilities centered on legacy state/event compatibility and historical accomplishment tracking.
 - Migration/startup compatibility layers such as V127 and V141 remain loaded because historical-save responsibilities are still required.
 
 Do not reintroduce wrapper chains merely because older source contracts once expected them.
