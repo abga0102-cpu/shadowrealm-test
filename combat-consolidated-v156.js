@@ -97,6 +97,100 @@
     return nativeSetInterval.apply(window, [fn, delay].concat(extra));
   };
 
+  /* Campaign defeat recovery V312.
+     `tick()` marks a terminal combat `_ended` before calling handleCombatEnd.
+     If settlement throws, or if the final 40 ms restart task never runs, that
+     dead combat otherwise remains permanently installed and the UI appears
+     frozen. Keep the canonical handler for rewards/checkpoints, but make only
+     its campaign-loss restart synchronous and provide an idempotent fallback. */
+  if (typeof handleCombatEnd === "function" && typeof startCampaign === "function" && !window.__srCampaignDeathRecoveryV312) {
+    window.__srCampaignDeathRecoveryV312 = true;
+    const baseHandleCombatEnd = handleCombatEnd;
+
+    function isCampaignLoss(c) {
+      return !!c && c.status === "lost" && c.ctx !== "raid" && c.ctx !== "mega" && c.ctx !== "arenaLive";
+    }
+
+    function forceCampaignRecovery(c, reason) {
+      let statePatched = false;
+      try {
+        if (typeof update === "function") {
+          update((s) => {
+            const floor = Math.max(1, Math.floor(Number(c && c.floor) || Number(s.floor) || 1));
+            const cp = Math.max(1, Math.floor(Number(s.checkpoint) || 1));
+            if (c && c.boss) { s.pendingBossFloor = floor; s.floor = Math.max(1, floor - 1); }
+            else s.floor = Math.max(cp, floor - 1);
+            s.step = 1;
+          });
+          statePatched = true;
+        }
+      } catch (e) {
+        try { console.error("campaign death recovery state update", e); } catch (_) {}
+      }
+
+      if (!statePatched) {
+        try {
+          const floor = Math.max(1, Math.floor(Number(c && c.floor) || Number(S && S.floor) || 1));
+          const cp = Math.max(1, Math.floor(Number(S && S.checkpoint) || 1));
+          if (c && c.boss) { S.pendingBossFloor = floor; S.floor = Math.max(1, floor - 1); }
+          else S.floor = Math.max(cp, floor - 1);
+          S.step = 1;
+          if (typeof refreshDerived === "function") refreshDerived();
+          if (typeof dirty !== "undefined") dirty = true;
+        } catch (e) {
+          try { console.error("campaign death recovery direct fallback", e); } catch (_) {}
+        }
+      }
+
+      try {
+        combat = spawnCampaign(S);
+        if (combat) combat.__srRecoveredV312 = true;
+        if (typeof scheduleRender === "function") scheduleRender();
+        return true;
+      } catch (e) {
+        try { console.error("campaign death recovery respawn", reason || e, e); } catch (_) {}
+        return false;
+      }
+    }
+
+    handleCombatEnd = function (c) {
+      if (!isCampaignLoss(c)) return baseHandleCombatEnd.apply(this, arguments);
+
+      const previousSetTimeout = window.setTimeout;
+      let restartTriggered = false;
+      window.setTimeout = function (fn, delay) {
+        if (!restartTriggered && fn === startCampaign && Number(delay) === 40) {
+          restartTriggered = true;
+          try { startCampaign(); }
+          catch (e) { forceCampaignRecovery(c, e); }
+          return 0;
+        }
+        return previousSetTimeout.apply(this, arguments);
+      };
+
+      try {
+        const out = baseHandleCombatEnd.apply(this, arguments);
+        if (!restartTriggered && (!combat || combat === c || combat.status !== "fight")) {
+          forceCampaignRecovery(c, "canonical restart missing");
+        }
+        return out;
+      } catch (e) {
+        try { console.error("campaign death settlement failed", e); } catch (_) {}
+        forceCampaignRecovery(c, e);
+        return undefined;
+      } finally {
+        window.setTimeout = previousSetTimeout;
+      }
+    };
+
+    try { window.handleCombatEnd = handleCombatEnd; } catch (_) {}
+    window.__srCampaignDeathRecoveryConfigV312 = {
+      synchronousRestart: true,
+      checkpointFallback: true,
+      wrapsCampaignLossOnly: true
+    };
+  }
+
   const IMPACT_DUR = { hit: 0.34, crit: 0.62, death: 0.90 };
   if (typeof addBurst === "function") {
     addBurst = function (c, kind, x, color) {
