@@ -2,7 +2,7 @@
 
 Working document for `LEAN_CODE_PLAN.md`. This file records facts discovered during L0 and subsequent lean-code iterations so developers and AI agents do not repeatedly rediscover stale runtime relationships.
 
-Current coordination baseline before Home V119 consolidation: `main` `b5c43fedc700ffebc5eba076189f36c20927d9ff`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership.
+Current coordination baseline for Accomplishments V121 shell consolidation: `main` `f79f9e620c94120d992680036505cffd4795c5cb`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership.
 
 ## Loader structure
 
@@ -52,7 +52,7 @@ BottomNav has one canonical runtime owner: `bottom-nav-layout-v183.js` owns fant
 
 Home now has one canonical loaded runtime owner: `home-layout-authority-v219.js`. The active V119 compatibility responsibilities were transferred into V219: Forge info-button accessibility/geometry, reward-feed compatibility styling, equipment-filter readability, Settings stat-card layout, and toast/tutorial positioning. `home-layout-fix-v119.js` remains in source history but is no longer requested at runtime. V219 retains Home geometry and the event-driven `sr:bottomnavrendered` + resize/orientation/startup lifecycle without wrapping `renderTabs`.
 
-### Accomplishments — STABLE / L2 SUBSTANTIALLY CLEANED
+### Accomplishments — STABLE / L3 CONSOLIDATING
 
 Loaded:
 
@@ -70,11 +70,13 @@ Completed L2/L3 findings:
 
 - V121/V126 no longer rely on perpetual render/polling ownership for the cleaned responsibilities; deterministic lifecycle hooks own those paths.
 - V138 no longer wraps `renderTabs`; it subscribes to canonical `sr:bottomnavrendered` lifecycle.
-- V139 no longer wraps global `openModal`; successful V121 claim refreshes route through canonical `ACT.accomplishments()` with its local legacy open path retained only as fallback.
-- The Settings-screen Accomplishments entry is now owned by canonical V139 rather than V121. V121 no longer wraps `scrParametres`, leaving its surviving responsibilities centered on legacy state/event compatibility and historical accomplishment tracking.
+- V139 no longer wraps global `openModal` and is the sole Accomplishments modal/UI action owner.
+- The Settings-screen Accomplishments entry is owned by canonical V139 rather than V121.
+- V121's duplicate historical reward table, reward formatter/granter, row/modal renderer and claim implementation were unreachable after the synchronous V139/V140 owners loaded and have been removed. V121 now contains only historical state normalization plus raid-win and highest-fused-familiar compatibility tracking.
+- V140 remains the canonical future reward/eligibility/claim payout owner; no reward values or claim semantics were changed by the V121 shell cleanup.
 - Migration/startup compatibility layers such as V127 and V141 remain loaded because historical-save responsibilities are still required.
 
-Do not reintroduce wrapper chains merely because older source contracts once expected them.
+Do not reintroduce UI/reward/claim ownership into V121 or remove migration layers merely because current saves commonly carry their processed markers.
 
 ### Tree — STABLE / EARLY CONSOLIDATION CANDIDATE
 
@@ -99,7 +101,7 @@ Social and bot-tester scripts are conditional. Do not classify absence from a no
 
 ## Prioritized investigation queue
 
-1. **Accomplishments:** major wrapper/poller targets have been cleaned; future work should focus on durable subsystem consolidation and migration separation, not recreating retired wrapper ownership.
+1. **Accomplishments:** V121 is now compatibility-only; next work may separate/centralize the remaining historical migrations without weakening old-save coverage.
 2. **Tree:** continue mapping wrappers/actions after the V116 polling/observer removal; prefer deterministic lifecycle hooks and the V216 mastery owner.
 3. **Shared helpers:** only after repeated helper implementations are confirmed across stable subsystems.
 4. **Forge/Familiars/Rebirth/combat progression:** postpone consolidation until active AI-driven feature work stops intersecting their owners.
