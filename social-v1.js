@@ -102,6 +102,7 @@
     if(!unlocked){if(existing)existing.remove();return;} if(existing){paintButton();return;}
     const b=document.createElement("button");b.id="srChatBtn";b.type="button";b.setAttribute("aria-label","Ouvrir le chat");b.onclick=()=>{open=true;unread=0;paintButton();render();};document.getElementById("app").appendChild(b);paintButton();dockSocialUI();
   }
+  function syncSocialLayout(){requestAnimationFrame(()=>{mountButton();dockSocialUI();});}
   function profileHTML(p){if(!p)return"";return `<div class="srProfile"><div style="display:flex;justify-content:space-between;gap:8px"><div><div style="font-weight:900;font-size:18px">${esc(p.name)}</div><div class="srStatus">${p.bot?"BOT DE TEST":"JOUEUR"}</div></div><button class="srClose" data-sr="profileClose">✕</button></div><div class="srGrid"><div class="srStat">Niveau<br><b>${p.level||1}</b></div><div class="srStat">Puissance<br><b>${Math.round(p.power||1).toLocaleString()}</b></div><div class="srStat">Record étage<br><b>${p.floor||1}</b></div><div class="srStat">Forge<br><b>${p.forge||1}</b></div></div>${p.name!==myProfile().name?'<button class="srAction" style="width:100%" data-sr="challenge">⚔️ Défier</button>':''}</div>`}
   function messageHTML(m){
     const type=m.type==="combat"?"combat":m.type==="announcement"?"announcement":"";
@@ -137,14 +138,12 @@
   });
   document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="srInput"){e.preventDefault();sendText(e.target.value);e.target.value="";render();}});
   if(channel)channel.onmessage=e=>{if(e&&e.data)push(e.data,false,false)};window.addEventListener("storage",e=>{if(e.key===KEY&&open)render()});
-  setInterval(()=>mountButton(),1000);setInterval(()=>{remotePull();if(now()-lastBotAt>60000+Math.random()*120000&&Math.random()<.28)botSpeak();},15000);
+  setInterval(()=>{remotePull();if(now()-lastBotAt>60000+Math.random()*120000&&Math.random()<.28)botSpeak();},15000);
   setInterval(()=>{if(!pendingChallenge)return;try{if(typeof arenaLiveResult!=="undefined"&&arenaLiveResult&&arenaLiveResult!==pendingChallenge.before){lastArenaResult={...arenaLiveResult,target:pendingChallenge.target};pendingChallenge=null;try{toast("Combat terminé · partage disponible dans le chat",true)}catch(_){ }}}catch(_){ }},800);
   seed();injectStyle();mountButton();remotePull();
 
   // CHAT_ARENA_OVERLAY_V48 docking: follow the Campaign arena without covering Forge.
   window.addEventListener("resize",dockSocialUI,{passive:true});
   window.addEventListener("orientationchange",()=>setTimeout(dockSocialUI,120),{passive:true});
-  const dockObserver=new MutationObserver(()=>requestAnimationFrame(()=>{mountButton();dockSocialUI();}));
-  const dockTarget=document.getElementById("screen")||document.getElementById("app");
-  if(dockTarget)dockObserver.observe(dockTarget,{childList:true,subtree:false});
+  window.addEventListener("sr:bottomnavrendered",syncSocialLayout);
 })();
