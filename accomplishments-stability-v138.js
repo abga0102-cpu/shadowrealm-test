@@ -55,5 +55,5 @@ function schedulePlace(){
    lifecycle event. V138 subscribes without wrapping renderTabs itself. The RAF
    + single retry remain bounded protection for WebKit render settling. */
 window.addEventListener('sr:bottomnavrendered',schedulePlace);
-schedulePlace();
+placeEntry();
 })();
