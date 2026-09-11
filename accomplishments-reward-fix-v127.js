@@ -119,12 +119,10 @@ if(nativeMigrate){
   };
 }
 
-/* Preserve the bounded startup reconciliation windows previously split across
-   V127 and V141. Persisted migration flags make every pass idempotent; there is
-   no recurring poller. */
+/* Run immediately because S is already initialized before V127 loads. Keep only
+   the two later bounded startup safety windows for delayed boot reconciliation;
+   imported saves remain covered by the deterministic migrate(...) lifecycle. */
 compensateCurrentState();
-setTimeout(compensateCurrentState,50);
-setTimeout(compensateCurrentState,80);
 setTimeout(compensateCurrentState,700);
 setTimeout(compensateCurrentState,1800);
 })();
