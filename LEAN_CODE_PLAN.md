@@ -61,7 +61,7 @@ Prefer these first when their behavior is already contract-locked:
 ### L0 — Runtime inventory and coordination
 Status: COMPLETE
 
-The exact loader inventory is maintained in `RUNTIME_INVENTORY.md`. The post-V310 baseline recorded 97 static script entries plus 9 deferred core scripts, for 106 JavaScript files in a normal non-Social session. BottomNav consolidation reduces the current normal runtime to 105 files while preserving the 97-script static count and lowering deferred core to 8. Social and Bot Tester scripts remain conditional and are inventoried separately.
+The exact loader inventory is maintained in `RUNTIME_INVENTORY.md`. The post-V310 baseline recorded 97 static script entries plus 9 deferred core scripts, for 106 JavaScript files in a normal non-Social session. BottomNav consolidation reduced that to 105; Home V119 consolidation reduces the current normal runtime to **104** files while preserving the 97-script static count and lowering deferred core to **7**. Social and Bot Tester scripts remain conditional and are inventoried separately.
 
 Completed:
 
@@ -83,7 +83,8 @@ Do not classify one-time save compensation/migration code as dead merely because
 Completed examples:
 
 - retired Accomplishments marker sources V135/V136/V137 removed after their responsibilities were already owned by V138/V139;
-- `bottom-nav-v53.js` unloaded after its active fantasy-decoration responsibility was absorbed into canonical V209 BottomNav ownership.
+- `bottom-nav-v53.js` unloaded after its active fantasy-decoration responsibility was absorbed into canonical V209 BottomNav ownership;
+- `home-layout-fix-v119.js` unloaded after its active compatibility styling/decorating responsibilities were absorbed into canonical Home V219 ownership.
 
 ### L2 — Wrapper-chain collapse
 Status: IN PROGRESS
@@ -108,15 +109,15 @@ Consolidate stable areas into durable modules instead of versioned patch chains.
 
 Completed so far:
 
-- BottomNav fantasy decoration from `bottom-nav-v53.js` was absorbed into `bottom-nav-layout-v183.js`, leaving one canonical BottomNav runtime owner for decoration, geometry and render lifecycle while `premium-ui-v209.js` remains visual polish only.
+- BottomNav fantasy decoration from `bottom-nav-v53.js` was absorbed into `bottom-nav-layout-v183.js`, leaving one canonical BottomNav runtime owner for decoration, geometry and render lifecycle while `premium-ui-v209.js` remains visual polish only;
+- Home compatibility decoration from `home-layout-fix-v119.js` was absorbed into `home-layout-authority-v219.js`, leaving one canonical loaded Home owner for geometry, lifecycle, Forge info accessibility, reward-feed compatibility, equipment-filter readability, Settings stat cards and toast/tutorial positioning.
 
 Remaining initial candidates:
 
-1. Home / remaining BottomNav compatibility only where proof supports it
-2. Accomplishments
-3. Tree
-4. Combat presentation/cadence
-5. Forge / progression only after active feature work settles
+1. Accomplishments durable consolidation / migration separation
+2. Tree
+3. Combat presentation/cadence
+4. Forge / progression only after active feature work settles
 
 ### L4 — Shared utilities
 Status: PLANNED
@@ -136,6 +137,6 @@ Prefer coherent, reviewable batches. Multiple provably dormant scripts in one su
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
 
-Current integration baseline before the BottomNav consolidation: `main` `2dadc3cd23b106792557d8cc7c6912aefb352353`. The current candidate loader inventory is 105 JavaScript files in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
+Current integration baseline for the Home V119 consolidation: `main` `b5c43fedc700ffebc5eba076189f36c20927d9ff`. The candidate loader inventory is **104 JavaScript files** in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
 V295 added `familiar-ladder-authority-v295.js`, confirming that Familiars remains feature-owner sensitive and should not be an early consolidation target unless current work is rechecked first.

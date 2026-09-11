@@ -10,8 +10,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | --- | --- | --- |
 | Bottom navigation decoration / geometry / render lifecycle | `bottom-nav-layout-v183.js` | Despite the historical filename, this file contains the V209 BottomNav authority. It owns fantasy icon markup/decoration, canonical geometry, the sole `renderTabs` lifecycle wrapper, and publishes the post-render `sr:bottomnavrendered` event for scoped subscribers. |
 | Premium interaction / BottomNav visual polish | `premium-ui-v209.js` | Visual/material styling only; also owns the final no-badge/no-halo recommendation presentation formerly layered by V243. Not the BottomNav geometry or render-lifecycle owner. |
-| Home geometry / render lifecycle | `home-layout-authority-v219.js` | Owns Home frame geometry and `srHomeFullArena`. Home lifecycle is a scoped subscriber to the canonical `sr:bottomnavrendered` post-render event plus resize/orientation/startup synchronization; it must not wrap `renderTabs`. |
-| Home compatibility decoration | `home-layout-fix-v119.js` | Decoration/compatibility only; must not own Home or BottomNav geometry. |
+| Home geometry / render lifecycle / compatibility decoration | `home-layout-authority-v219.js` | Sole loaded Home owner. Owns Home frame geometry, `srHomeFullArena`, Forge info accessibility/geometry, reward-feed compatibility, equipment-filter readability, Settings stat-card layout and toast/tutorial positioning. Lifecycle is a scoped subscriber to `sr:bottomnavrendered` plus resize/orientation/startup synchronization; it must not wrap `renderTabs`. |
 | Combat cadence / impact compatibility | `combat-consolidated-v156.js` | Active combat compatibility owner. |
 | Combat readability overlays | `combat-polish-v157.js` | Visual/readability responsibility only. |
 | Combat animation | `combat-animation-v169.js` | Locomotion, weapon choreography, `drawArena` animation wrapping. |
@@ -34,6 +33,7 @@ The following files may remain in source history, but must not regain active own
 - `social-forge-layout-v1.js` — dormant Home duplicate bundle; unloaded/non-executable.
 - `premium-recommendation-cleanup-v243.js` — recommendation visual override absorbed into `premium-ui-v209.js`; retired from runtime and source.
 - `bottom-nav-v53.js` — fantasy BottomNav decoration absorbed into canonical `bottom-nav-layout-v183.js`; source retained for history but unloaded from runtime.
+- `home-layout-fix-v119.js` — Home compatibility decoration absorbed into canonical `home-layout-authority-v219.js`; source retained for history but unloaded from runtime.
 - `accomplishments-titles-v133.js` — compatibility marker only; unloaded.
 - `accomplishments-overview-v135.js` — compatibility marker only; unloaded.
 - `accomplishments-home-scope-v136.js` — compatibility marker only; unloaded.
