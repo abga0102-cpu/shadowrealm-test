@@ -2,14 +2,14 @@
 
 Working document for `LEAN_CODE_PLAN.md`. This file records facts discovered during L0 and subsequent lean-code iterations so developers and AI agents do not repeatedly rediscover stale runtime relationships.
 
-Current coordination baseline: `main` `333c9b12e33e01e656856f08c5fe225b9b091257`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership.
+Current coordination baseline before BottomNav consolidation: `main` `2dadc3cd23b106792557d8cc7c6912aefb352353`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership.
 
 ## Loader structure
 
 `index.html` has two runtime-loading paths:
 
 1. static `<script src>` entries for the base game and most gameplay/authority layers;
-2. a deferred loader for Home, BottomNav/premium UI, Rebirth presentation, optional Social, and optional bot-testers.
+2. a deferred loader for Home, premium UI, Rebirth presentation, optional Social, and optional bot-testers.
 
 Any dead-load analysis must inspect both paths. Searching only literal script tags is insufficient.
 
@@ -48,7 +48,7 @@ This remains one of the largest eventual consolidation opportunities, but the cu
 
 ### Home / BottomNav / premium UI — STABLE ENOUGH FOR EARLY LEANING
 
-Deferred runtime includes active compatibility and canonical ownership layers. L0 corrected the architecture map so `bottom-nav-layout-v183.js` is the BottomNav geometry/render lifecycle owner and `premium-ui-v209.js` remains visual/material polish only.
+BottomNav now has one canonical runtime owner: `bottom-nav-layout-v183.js` owns fantasy icon decoration, geometry and the sole `renderTabs` lifecycle wrapper. It is loaded statically in the former V53 slot so initial mobile decoration timing is preserved. The deferred duplicate load was removed. `bottom-nav-v53.js` remains in source history but is no longer requested at runtime. `premium-ui-v209.js` remains visual/material polish only.
 
 `home-layout-fix-v119.js` has been re-audited after the Accomplishments cleanup and is not a dead load: it still supplies active Forge info-button accessibility/geometry, reward-feed compatibility styling, equipment-filter readability, Settings stat-card layout, and toast/tutorial positioning.
 
@@ -98,7 +98,7 @@ Social and bot-tester scripts are conditional. Do not classify absence from a no
 
 ## Prioritized investigation queue
 
-1. **Home/BottomNav:** continue proof-based checks for compatibility behavior that is genuinely duplicated by V219/V209 owners; do not unload `home-layout-fix-v119.js` based on naming alone.
+1. **Home/BottomNav:** BottomNav decoration/geometry/lifecycle are consolidated; continue proof-based checks only for remaining Home compatibility behavior and do not unload `home-layout-fix-v119.js` based on naming alone.
 2. **Accomplishments:** major wrapper/poller targets have been cleaned; future work should focus on durable subsystem consolidation and migration separation, not recreating retired wrapper ownership.
 3. **Tree:** continue mapping wrappers/actions after the V116 polling/observer removal; prefer deterministic lifecycle hooks and the V216 mastery owner.
 4. **Shared helpers:** only after repeated helper implementations are confirmed across stable subsystems.

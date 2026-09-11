@@ -1,18 +1,18 @@
 # Shadowreach runtime inventory
 
-This file records the scripts actually requested by `index.html` on the lean-code baseline after V310 and the Accomplishments lifecycle cleanup. It is the L0 loader inventory referenced by `LEAN_CODE_PLAN.md`.
+This file records the scripts actually requested by `index.html` on the current lean-code baseline. It is the L0 loader inventory referenced by `LEAN_CODE_PLAN.md`.
 
-Snapshot base: `main` at `2da269b6186a4f1f0cd7923c3056ca359ab1772a`.
+Snapshot base before the BottomNav consolidation: `main` at `2dadc3cd23b106792557d8cc7c6912aefb352353`.
 
 ## Loader totals
 
 - 97 scripts are loaded synchronously through static `<script src>` entries.
-- 9 additional core UI scripts are loaded after startup in the default non-Social session.
-- Default runtime total: **106 JavaScript files**.
-- Social adds `social-v1.js` and `social-p2p-v1.js`: **108** files when Social is enabled.
-- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **110** files in that optional mode.
+- 8 additional core UI scripts are loaded after startup in the default non-Social session.
+- Default runtime total: **105 JavaScript files**.
+- Social adds `social-v1.js` and `social-p2p-v1.js`: **107** files when Social is enabled.
+- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **109** files in that optional mode.
 
-The older 103-file figure belonged to the V306-era loader. V307, V308 and V309 each added one static progression/Familiar authority layer, bringing the current default total to 106.
+The V309-era baseline reached 106 files after V307, V308 and V309 each added one static progression/Familiar authority layer. The BottomNav consolidation then absorbed `bottom-nav-v53.js` into the canonical `bottom-nav-layout-v183.js` owner and removed one runtime request without changing the 97-script static count: the canonical owner moved from deferred loading into V53's former static slot while the deferred duplicate entry was removed.
 
 ## Static loader inventory
 
@@ -87,14 +87,14 @@ Reason: active Sanctuary/Forge presentation, migration, balance and equipment au
 
 ### Tree, core UI and guidance — 18
 
-Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Known retired Tree mastery shells are already unloaded; `runtime-tree-stability-v216.js` is the active mastery owner. Remaining compatibility utilities require behavior proof before any L1 unload.
+Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Known retired Tree mastery shells are already unloaded; `runtime-tree-stability-v216.js` is the active mastery owner. BottomNav decoration/geometry/lifecycle are now consolidated in one static canonical owner. Remaining compatibility utilities require behavior proof before any L1 unload.
 
 - `personal-tree-radial-v82.js`
 - `tree-safety-v83.js`
 - `weekly-mega-v71.js`
 - `hero-equipment-v1.js`
 - `audio-v26.js`
-- `bottom-nav-v53.js`
+- `bottom-nav-layout-v183.js`
 - `ui-stability-v83.js`
 - `tutorial-auto-v100.js`
 - `boss-gate-v101.js`
@@ -155,13 +155,12 @@ Reason: currently active progression, Rebirth, raid, dust, Forge, Familiar, skil
 - `progression-state-safety-v308.js`
 - `familiar-flat-ui-authority-v309.js`
 
-## Deferred default core — 9
+## Deferred default core — 8
 
-Reason: loaded after startup by the deferred `core` chain. These are active Home/BottomNav/Premium/mobile/Rebirth owners or compatibility layers, not unconditional dead loads.
+Reason: loaded after startup by the deferred `core` chain. These are active Home/Premium/mobile/Rebirth owners or compatibility layers, not unconditional dead loads.
 
 - `home-layout-fix-v119.js`
 - `home-layout-authority-v219.js`
-- `bottom-nav-layout-v183.js`
 - `premium-ui-v209.js`
 - `mobile-ui-stability-v210.js`
 - `rebirth-spectacle-v222.js`
@@ -171,14 +170,14 @@ Reason: loaded after startup by the deferred `core` chain. These are active Home
 
 ## Conditional optional loader entries — 4
 
-Reason: loaded only when their feature flag is enabled and therefore excluded from the 106-file normal-session total.
+Reason: loaded only when their feature flag is enabled and therefore excluded from the 105-file normal-session total.
 
 - Social: `social-v1.js`, `social-p2p-v1.js`
 - Bot Testers, only with Social: `social-bot-testers-v5.js`, `social-bot-ui-v1.js`
 
 ## Already retired/unloaded
 
-The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells, Tree mastery V120/V128, `social-forge-layout-v1.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
+The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells, Tree mastery V120/V128, `social-forge-layout-v1.js`, `bottom-nav-v53.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
 
 ## L0 conclusion
 
