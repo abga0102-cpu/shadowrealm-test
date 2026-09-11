@@ -18,6 +18,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Save import | `import-save-guard-v207.js` | Sole authoritative `ACT.importSave` owner. |
 | Forge item base power | `progression-overhaul-v283.js` | Current fixed-base equipment generation authority. |
 | Forge Divine pre-Ascension lock | `game-balance-v224.js` | Retains the Divine rarity gate only; not current base-power owner. |
+| Tree dedicated renderer / clearer gold labels | `tree-dedicated-v116.js` | Owns the dedicated branch renderer and the four clearer `Gain d’Or I–IV` labels formerly applied by V117. It subscribes to the canonical BottomNav post-render lifecycle and does not poll or observe the whole document. |
 | Tree mastery gating / deep requirements / popup synchronization | `runtime-tree-stability-v216.js` | Sole active mastery owner; legacy V149 source has been retired. |
 | Accomplishments Development entry lifecycle | `accomplishments-stability-v138.js` | Route-bound subscriber to V209's `sr:bottomnavrendered` lifecycle; no document-wide observer and no `renderTabs` wrapper. |
 | Accomplishments modal / title rendering + title interaction / Settings entry | `accomplishments-canonical-v139.js` | Canonical `ACT.accomplishments` renderer, title owner and Settings-screen Accomplishments entry owner. It opens the canonical modal directly and must not wrap the global `openModal` function. |
@@ -40,6 +41,7 @@ The following files may remain in source history, but must not regain active own
 - `accomplishments-floors-v137.js` — compatibility marker only; unloaded.
 - `accomplishments-ui-v123.js` — suppressed legacy UI; unloaded.
 - `accomplishments-floor-comp-v141.js` — floor compensation ownership absorbed into V127; source retained as an inert compatibility marker and unloaded from runtime.
+- `tree-labels-v117.js` — four naming-only gold labels absorbed into canonical dedicated renderer V116; source retained for history and unloaded.
 - `tree-mastery-v120.js` — compatibility marker only; unloaded.
 - `tree-mastery-ui-v128.js` — compatibility marker only; unloaded.
 - `tree-mastery-v149.js` — retired from runtime and source; V216 owns active mastery behavior.
