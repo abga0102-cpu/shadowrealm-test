@@ -110,7 +110,7 @@ Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Kno
 
 ### Accomplishments — 7
 
-Reason: stable lower-conflict subsystem with canonical rendering/claims plus explicit legacy-save migration layers. `accomplishments-reward-fix-v127.js` and `accomplishments-floor-comp-v141.js` are not dead loads: they still protect unprocessed historical saves. Future lean work should collapse stable runtime ownership without deleting required migrations.
+Reason: stable lower-conflict subsystem with canonical rendering/claims and one active legacy reward-migration owner. `accomplishments-reward-fix-v127.js` now owns both Raid 100 and floor25/floor50/floor75 historical make-goods through bounded startup reconciliation plus the deterministic `migrate(...)` import lifecycle. `accomplishments-floor-comp-v141.js` is an inert compatibility marker pending a later L1 unload; it no longer grants rewards or schedules retries.
 
 - `accomplishments-v121.js`
 - `accomplishments-reward-fix-v127.js`
@@ -118,7 +118,7 @@ Reason: stable lower-conflict subsystem with canonical rendering/claims plus exp
 - `accomplishments-stability-v138.js`
 - `accomplishments-canonical-v139.js`
 - `accomplishments-claim-v140.js`
-- `accomplishments-floor-comp-v141.js`
+- `accomplishments-floor-comp-v141.js` — inert marker, queued for unload after regression soak
 
 ### V276–V309 progression authority chain — 30
 
