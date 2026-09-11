@@ -6,8 +6,6 @@ const root = path.resolve(__dirname, '..');
 const src = file => fs.readFileSync(path.join(root, file), 'utf8');
 
 test.describe('Tree V116 startup lifecycle', () => {
-  test.skip(({ project }) => project.name !== 'chromium-desktop', 'source lifecycle contract is engine-independent');
-
   test('initial mode sync runs directly after the initial render without a bootstrap timer', () => {
     const tree = src('tree-dedicated-v116.js');
     expect(tree).toContain("window.addEventListener('sr:bottomnavrendered',scheduleModeSync)");
