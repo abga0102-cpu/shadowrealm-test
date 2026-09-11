@@ -48,6 +48,15 @@ function meaningful(value) {
   return Boolean(value) && !/^(?:n\/?a|none|no|not applicable)\b/i.test(value);
 }
 
+function resolveBody() {
+  const bodyFile = process.env.PR_BODY_FILE || '';
+  if (bodyFile) {
+    const resolved = path.resolve(bodyFile);
+    if (fs.existsSync(resolved)) return fs.readFileSync(resolved, 'utf8');
+  }
+  return process.env.PR_BODY || '';
+}
+
 const baseFiles = new Set(listFiles(baseDir).filter(isProductionJavaScript));
 const currentFiles = new Set(listFiles(currentDir).filter(isProductionJavaScript));
 const added = [...currentFiles].filter((file) => !baseFiles.has(file)).sort();
@@ -60,7 +69,9 @@ if (!added.length) {
 const errors = [];
 const architecture = read(currentDir, 'ARCHITECTURE.md');
 const baseArchitecture = read(baseDir, 'ARCHITECTURE.md');
-const body = process.env.PR_BODY || '';
+const body = resolveBody();
+const changeEvent = process.env.CHANGE_EVENT || '';
+const mergedViaPr = process.env.ARCH_MERGED_VIA_PR === '1';
 
 if (architecture === baseArchitecture) {
   errors.push('ARCHITECTURE.md must be updated when a new production JavaScript file is introduced.');
@@ -73,7 +84,13 @@ for (const file of added) {
 }
 
 if (!body.trim()) {
-  errors.push('New production JavaScript files must be introduced through a PR with the architecture/file-placement justification completed.');
+  if (changeEvent === 'push' && !mergedViaPr) {
+    errors.push('Direct pushes that introduce production JavaScript are forbidden; create a PR and complete the architecture/file-placement justification.');
+  } else if (changeEvent === 'push') {
+    errors.push('The merged PR associated with this push must contain the architecture/file-placement justification.');
+  } else {
+    errors.push('New production JavaScript files must be introduced through a PR with the architecture/file-placement justification completed.');
+  }
 } else {
   const considered = field(body, 'Existing canonical owner considered:');
   const declaredFiles = field(body, 'New production `.js` files:');
