@@ -11,7 +11,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Bottom navigation geometry / render lifecycle | `bottom-nav-layout-v183.js` | Despite the historical filename, this file contains the V209 BottomNav geometry authority and is the sole BottomNav `renderTabs` lifecycle wrapper. It invokes the fantasy decorator, applies canonical geometry, and publishes the post-render `sr:bottomnavrendered` event for scoped subscribers. |
 | Bottom navigation fantasy decoration | `bottom-nav-v53.js` | Owns fantasy icon markup and decoration only through `__srDecorateBottomNavPhase2A`; it no longer wraps `renderTabs`. |
 | Premium interaction / BottomNav visual polish | `premium-ui-v209.js` | Visual/material styling only; also owns the final no-badge/no-halo recommendation presentation formerly layered by V243. Not the BottomNav geometry or render-lifecycle owner. |
-| Home geometry / render lifecycle | `home-layout-authority-v219.js` | Owns Home frame geometry, `srHomeFullArena`, and Home render lifecycle. |
+| Home geometry / render lifecycle | `home-layout-authority-v219.js` | Owns Home frame geometry and `srHomeFullArena`. Home lifecycle is a scoped subscriber to the canonical `sr:bottomnavrendered` post-render event plus resize/orientation/startup synchronization; it must not wrap `renderTabs`. |
 | Home compatibility decoration | `home-layout-fix-v119.js` | Decoration/compatibility only; must not own Home or BottomNav geometry. |
 | Combat cadence / impact compatibility | `combat-consolidated-v156.js` | Active combat compatibility owner. |
 | Combat readability overlays | `combat-polish-v157.js` | Visual/readability responsibility only. |

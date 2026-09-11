@@ -1,7 +1,7 @@
 /* SHADOWREACH · Home layout authority V219 / V262 · Phase 4E
-   Sole Home geometry and render-lifecycle authority. V262 guarantees the Forge
-   box ends above bottom navigation. V119 now provides compatibility decoration only.
-   UI-only: no combat values, economy, progression or save data are changed. */
+   Sole Home geometry authority. V262 guarantees the Forge box ends above bottom navigation.
+   Home lifecycle now subscribes to the canonical BottomNav post-render event; V119 provides
+   compatibility decoration only. UI-only: no combat values, economy, progression or save data are changed. */
 (function(){
 'use strict';
 if(window.__srHomeLayoutAuthorityV219)return;
@@ -58,6 +58,6 @@ function sync(){
 }
 var queued=false;function schedule(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;sync();});}
 window.__srSyncHomeLayoutV219=sync;window.__srSyncHomeFramePhase2B=sync;
-if(typeof window.renderTabs==='function'){var baseRenderTabs=window.renderTabs;window.renderTabs=function(){var out=baseRenderTabs.apply(this,arguments);schedule();return out;};try{renderTabs=window.renderTabs;}catch(_){}}
+window.addEventListener('sr:bottomnavrendered',schedule);
 window.addEventListener('resize',schedule,{passive:true});window.addEventListener('orientationchange',schedule,{passive:true});schedule();
 })();

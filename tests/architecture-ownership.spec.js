@@ -87,6 +87,13 @@ test('BottomNav uses one render lifecycle owner while keeping decoration and vis
   expect(premium).not.toContain('__srApplyBottomNavGeometryV209');
 });
 
+test('Home lifecycle subscribes to canonical BottomNav post-render event without wrapping renderTabs', () => {
+  const home = read('home-layout-authority-v219.js');
+  expect(home).toContain('__srHomeLayoutAuthorityV219');
+  expect(home).toContain("addEventListener('sr:bottomnavrendered',schedule)");
+  expect(home).not.toMatch(/renderTabs\s*=|function\s+renderTabs\b/);
+});
+
 test('known duplicate ownership mechanisms do not return', () => {
   const v138 = read('accomplishments-stability-v138.js');
   const v127 = read('accomplishments-reward-fix-v127.js');

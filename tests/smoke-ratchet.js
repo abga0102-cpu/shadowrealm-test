@@ -87,7 +87,12 @@ async function readSmokeFailures(browser, rootDir, label) {
       throw new Error(`${label} smoke suite did not report a numeric result: ${text}`);
     }
 
+    const failureMessages = await page.locator('#out .r.ko .m').allTextContents();
     console.log(`${label} legacy smoke failures: ${failures}`);
+    if (failureMessages.length) {
+      console.log(`${label} legacy smoke failure details:`);
+      failureMessages.forEach((message) => console.log(`- ${message.trim()}`));
+    }
     return failures;
   } finally {
     await page.close();
