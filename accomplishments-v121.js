@@ -120,8 +120,4 @@
   ACT.accomplishments=()=>open();
   /* Canonical claim clicks are owned by accomplishments-claim-v140.js. Keep V121
      focused on legacy state/event compatibility instead of installing a second handler. */
-  /* Bouton non intrusif dans Reglages: preserve l'ecran existant. */
-  const oldSettings=scrParametres;
-  scrParametres=function(){const h=oldSettings();return h.replace('<div class="pad mt6">','<div class="pad mt6"><div class="card lit" data-act="accomplishments" style="cursor:pointer;margin-bottom:8px"><div class="between"><b>Accomplissements</b><span class="pill">Voir les recompenses</span></div></div>');};
-  SCREENS.parametres=scrParametres;
 })();
