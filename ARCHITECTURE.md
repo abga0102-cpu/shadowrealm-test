@@ -29,6 +29,24 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Accomplishments legacy reward migrations | `accomplishments-reward-fix-v127.js` | Sole active legacy reward-migration owner for Raid 100 and the floor25/floor50/floor75 make-good. It preserves persisted V127/V141 idempotency markers, runs bounded startup reconciliation, and chains the deterministic `migrate(...)` lifecycle for imported saves; no perpetual poller. |
 | Floating Social launcher policy | `social-v1.js` | Owns launcher creation/remount and suppression policy when Social is enabled. |
 
+## Architecture-first file placement
+
+The canonical owner map is also the default placement map for new work. **Existing owners are extended before new production modules are introduced.**
+
+Use this decision order for every production-code change:
+
+1. Identify the canonical owner for the requested responsibility from the table above and inspect that file first.
+2. Search adjacent active owners when the responsibility crosses a documented boundary such as lifecycle vs presentation, canonical behavior vs migration, or shared state vs UI.
+3. If the requested behavior belongs to an existing owner's responsibility, place it there. Do not create a sibling patch file merely to avoid editing the owner.
+4. If an owner has become too broad, refactor or transfer a coherent responsibility deliberately instead of stacking a wrapper/override layer.
+5. Admit a new production JavaScript file only when the responsibility is genuinely new, durable, and cannot fit an existing owner without breaking cohesion or creating worse coupling.
+
+A new production module is therefore an **architecture exception**, not the default implementation pattern. Its PR must name the existing owner(s) considered, explain why they are unsuitable, register the new file as a canonical owner here, and add/update ownership and behavior contracts. If the file is loaded at runtime, update `RUNTIME_INVENTORY.md` and the loader documentation as part of the same change.
+
+New version-suffixed patch files such as `*-v123.js` are prohibited by default. A versioned filename requires a concrete compatibility or external-versioning reason in the PR; “new iteration,” “safer patch,” or “easier than editing the owner” is not sufficient justification.
+
+`tests/architecture-file-placement-guard.js` enforces this admission rule in CI for newly added production JavaScript. Test, fixture, documentation, and CI/tooling files remain free to use their established directories because they are not runtime ownership modules.
+
 ## Retired / compatibility-only runtime layers
 
 The following files may remain in source history, but must not regain active ownership. Where listed as unloaded, they should not be requested by either static script tags or the deferred loader in `index.html`.
