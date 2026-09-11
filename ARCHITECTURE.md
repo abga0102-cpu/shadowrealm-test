@@ -37,8 +37,8 @@ The following files may remain in source history, but must not regain active own
 - `premium-recommendation-cleanup-v243.js` — recommendation visual override absorbed into `premium-ui-v209.js`; retired from runtime and source.
 - `bottom-nav-v53.js` — fantasy BottomNav decoration absorbed into canonical `bottom-nav-layout-v183.js`; source retained for history but unloaded from runtime.
 - `home-layout-fix-v119.js` — Home compatibility decoration absorbed into canonical `home-layout-authority-v219.js`; source retained for history but unloaded from runtime.
-- `hero-equipment-v1.js` — retired visual safety bridge that only cleaned obsolete Hero Equipment artifacts after `drawArena`; source retained for staged proof but unloaded from runtime. Active hero animation/weapon presentation remains owned by the base arena renderer plus `combat-animation-v169.js`.
-- `notification-compact-v105.js` — its six compact reward-notification overrides are absorbed into `style.css`; source retained for staged history but unloaded from runtime.
+- `hero-equipment-v1.js` — retired visual safety bridge formerly cleaning obsolete Hero Equipment artifacts after `drawArena`; retired from runtime and source after staged integration proof. Active hero animation/weapon presentation remains owned by the base arena renderer plus `combat-animation-v169.js`.
+- `notification-compact-v105.js` — its six compact reward-notification overrides are absorbed into `style.css`; retired from runtime and source after staged integration proof.
 - `accomplishments-titles-v133.js` — compatibility marker only; unloaded.
 - `accomplishments-overview-v135.js` — compatibility marker only; unloaded.
 - `accomplishments-home-scope-v136.js` — compatibility marker only; unloaded.

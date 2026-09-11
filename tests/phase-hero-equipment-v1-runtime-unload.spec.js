@@ -10,23 +10,20 @@ function scriptSources(html) {
     .map((match) => match[1].split('?')[0]);
 }
 
-test('retired Hero Equipment V1 bridge stays out of the runtime loader while its source remains staged', async ({}, testInfo) => {
+test('retired Hero Equipment V1 bridge source stays absent while canonical hero presentation remains', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   const index = source('index.html');
   const inventory = source('RUNTIME_INVENTORY.md');
-  const bridge = source('hero-equipment-v1.js');
 
+  expect(fs.existsSync(path.join(root, 'hero-equipment-v1.js'))).toBe(false);
   expect(scriptSources(index)).not.toContain('hero-equipment-v1.js');
+  expect(scriptSources(index)).toContain('combat-animation-v169.js');
   const staticCount = scriptSources(index).length;
   const core = index.match(/var core=\[([^\]]+)\]/)[1].match(/'[^']+'/g);
   expect(inventory).toContain(`- ${staticCount} scripts are loaded synchronously through static \`<script src>\` entries.`);
   expect(inventory).toContain(`Index-managed subtotal: **${staticCount + core.length} JavaScript files**.`);
-  expect(inventory).toContain('`hero-equipment-v1.js` (retired visual safety bridge, source retained for staged proof)');
-
-  expect(bridge).toContain('const originalDrawArena=drawArena');
-  expect(bridge).toContain('heroOriginalSprite');
-  expect(bridge).toContain('heroEqVisual');
+  expect(inventory).toContain('`hero-equipment-v1.js` (retired visual safety bridge; source retired after staged proof)');
 });
 
 test('campaign hero remains visible and free of retired Hero Equipment artifacts without V1 on Chromium and iPhone/WebKit', async ({ page }) => {
