@@ -25,6 +25,10 @@ test('Phase 4F keeps v138 as the sole route-driven Accomplishments Development-s
     expect(legacy).not.toContain('data-sr-accomplishments-entry');
   }
 
+  const sourceRetired = 'accomplishments-ui-v123.js';
+  expect(index, `${sourceRetired} must remain absent from the runtime loader`).not.toContain(sourceRetired);
+  expect(exists(sourceRetired), `${sourceRetired} completed L5 source retirement`).toBe(false);
+
   const stability = source('accomplishments-stability-v138.js');
   const canonicalScope = executable(stability);
   expect(stability).toContain('__srAccomplishmentsStabilityV138');
