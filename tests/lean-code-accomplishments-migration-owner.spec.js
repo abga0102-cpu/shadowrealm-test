@@ -8,12 +8,13 @@ function src(file) {
   return fs.readFileSync(path.join(root, file), 'utf8');
 }
 
-test.describe('Accomplishments legacy reward migration ownership', () => {
-  test.skip(({ project }) => project.name !== 'chromium-desktop', 'source ownership is engine-independent');
+function exists(file) {
+  return fs.existsSync(path.join(root, file));
+}
 
-  test('V127 owns Raid 100 and legacy floor migration while V141 stays retired and unloaded', () => {
+test.describe('Accomplishments legacy reward migration ownership', () => {
+  test('V127 owns Raid 100 and legacy floor migration while V141 stays source-retired', () => {
     const owner = src('accomplishments-reward-fix-v127.js');
-    const retired = src('accomplishments-floor-comp-v141.js');
     const loader = src('index.html');
 
     expect(owner).toContain("var LEGACY_FLOOR_IDS=['floor25','floor50','floor75']");
@@ -24,8 +25,7 @@ test.describe('Accomplishments legacy reward migration ownership', () => {
     expect(owner).toContain('compensateLegacyFloors(migrated)');
     expect(owner).not.toMatch(/setInterval\s*\(/);
 
-    expect(retired).toContain('__srFloorCompV141Retired=true');
-    expect(retired).not.toMatch(/grantLegacy|floor25'\]|setTimeout\s*\(|setInterval\s*\(|window\.migrate\s*=|\bupdate\s*\(/);
+    expect(exists('accomplishments-floor-comp-v141.js')).toBe(false);
     expect(loader).not.toContain('accomplishments-floor-comp-v141.js');
   });
 });

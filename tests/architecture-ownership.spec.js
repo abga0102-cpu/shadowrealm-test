@@ -23,6 +23,7 @@ const retiredUnloaded = [
   'accomplishments-home-scope-v136.js',
   'accomplishments-floors-v137.js',
   'accomplishments-ui-v123.js',
+  'accomplishments-floor-comp-v141.js',
   'tree-mastery-v120.js',
   'tree-mastery-ui-v128.js',
   'tree-mastery-v149.js',
