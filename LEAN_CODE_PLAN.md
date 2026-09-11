@@ -33,6 +33,8 @@ All developers and AI agents must first follow `AGENTS.md`, then apply these lea
 9. Merge only the exact head SHA that passed the moving smoke ratchet and full Chromium/WebKit regression gate.
 10. Update `ARCHITECTURE.md`, this roadmap, and relevant ownership tests whenever ownership changes.
 
+The dated remaining-work disposition is in `LEAN_CODE_REAUDIT.md`. It records concrete scopes, required compatibility proof and deferred owner-sensitive work; it does not mark the whole program complete.
+
 ## Workstream boundaries
 
 ### Feature-owner sensitive
@@ -128,7 +130,9 @@ Remaining initial candidates:
 4. Forge / progression only after active feature work settles
 
 ### L4 — Shared utilities
-Status: PLANNED
+Status: INVESTIGATION STARTED
+
+The initial audit found different null/apostrophe escaping and numeric-formatting semantics across owners. See `LEAN_CODE_REAUDIT.md`; no shared-helper production transfer is complete.
 
 Deduplicate non-domain helpers such as formatting, DOM helpers, notifications, safe persistence, modal helpers, and common lifecycle utilities where this actually reduces coupling.
 
@@ -142,6 +146,16 @@ Completed examples include the retired Accomplishments marker families, V135 bri
 ## Change-size policy
 
 Prefer coherent, reviewable batches. Multiple provably dormant scripts in one subsystem may be unloaded together when the ownership test and runtime regression suite cover the whole batch. Do not bundle unrelated active subsystems merely to reduce PR count.
+
+## Completion criteria for remaining phases
+
+- L1: every proposed unload has reachability and surviving-owner evidence; remaining active or conditional files have an explicit reason to stay loaded.
+- L2: each proposed timer/wrapper removal has equivalent startup, rerender and state-transition coverage, including old saves where applicable.
+- L3: canonical modules own each transferred responsibility without replacing required migration compatibility or crossing active feature ownership.
+- L4: helper candidates have agreed input/output semantics and a measurable reduction in duplication without extra coupling. Retaining intentionally different helpers is valid.
+- L5: staged retired sources have subsequent integration proof, no remaining executable/archive dependency, and active ownership guards before deletion.
+
+These phases remain open until their evidence is recorded. A source count or a green test run alone is not enough to declare the entire plan complete.
 
 ## Current baseline
 
