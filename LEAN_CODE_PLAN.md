@@ -61,7 +61,7 @@ Prefer these first when their behavior is already contract-locked:
 ### L0 — Runtime inventory and coordination
 Status: COMPLETE
 
-The exact loader inventory is maintained in `RUNTIME_INVENTORY.md`. The post-V310 baseline recorded 97 static script entries plus 9 deferred core scripts, for 106 JavaScript files in a normal non-Social session. BottomNav consolidation reduced that to 105; Home V119 consolidation reduced it to 104; unloading retired Accomplishments V141 reduced it to 103; unloading inert Tree V117 reduced it to 102; unloading the retired Hero Equipment bridge reduced it to 101; absorbing the V105 reward-notification CSS into `style.css` reduces the current normal runtime to **100** files with **93 static script entries** and 7 deferred core scripts. Social and Bot Tester scripts remain conditional and are inventoried separately.
+The exact loader inventory is maintained in `RUNTIME_INVENTORY.md`. The post-V310 baseline recorded 97 static script entries plus 9 deferred core scripts, for 106 JavaScript files in a normal non-Social session. BottomNav consolidation reduced that to 105; Home V119 consolidation reduced it to 104; unloading retired Accomplishments V141 reduced it to 103; unloading inert Tree V117 reduced it to 102; unloading the retired Hero Equipment bridge reduced it to 101; absorbing the V105 reward-notification CSS into `style.css` reduces the index-managed subtotal to **100** files with **93 static script entries** and 7 deferred core scripts. The older counts omitted ten active scripts loaded transitively by `familiars-noscr-v231.js`; the complete normal-session first-party runtime is **110**, down from **111** before V105. Social and Bot Tester scripts remain conditional and are inventoried separately.
 
 Completed:
 
@@ -147,6 +147,6 @@ Prefer coherent, reviewable batches. Multiple provably dormant scripts in one su
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
 
-Current candidate runtime after the V105 CSS consolidation is **100 JavaScript files** in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
+Current candidate first-party runtime after the V105 CSS consolidation is **110 JavaScript files** (100 index-managed + 10 transitively loaded) in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
 V295 added `familiar-ladder-authority-v295.js`, confirming that Familiars remains feature-owner sensitive and should not be an early consolidation target unless current work is rechecked first.

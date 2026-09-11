@@ -11,9 +11,9 @@ Current coordination baseline: this notification consolidation started from `mai
 1. static `<script src>` entries for the base game and most gameplay/authority layers;
 2. a deferred loader for Home, premium UI, Rebirth presentation, optional Social, and optional bot-testers.
 
-Any dead-load analysis must inspect both paths. Searching only literal script tags is insufficient.
+Any dead-load analysis must inspect both paths. Searching only literal script tags is insufficient. `familiars-noscr-v231.js` also loads ten active scripts transitively; they must be counted and protected from source retirement.
 
-The current inventory records 93 static scripts plus 7 deferred default-core scripts: **100 JavaScript files in the normal non-Social runtime**, 102 with Social, and 104 with Social + Bot Testers.
+The current inventory records 93 static scripts plus 7 deferred default-core scripts and 10 transitive Familiar/recycling scripts: **110 first-party JavaScript files in the normal non-Social runtime**, 112 with Social, and 114 with Social + Bot Testers. Earlier 100-file totals counted only index-managed scripts.
 
 ## Current subsystem classification
 
@@ -90,7 +90,7 @@ Loaded Tree runtime is inventoried in `RUNTIME_INVENTORY.md`. Current ownership 
 - legacy mastery shells are retired from runtime/source; do not treat them as active authority.
 - `tree-dedicated-v116.js` owns the dedicated Tree renderer/mode presentation and the four presentation-only `Gain d’Or I–IV` labels.
 - V116's duplicate permanent `setInterval(syncMode,500)` poller and document-wide `MutationObserver` were removed; canonical `sr:bottomnavrendered` lifecycle plus startup sync own mode synchronization.
-- `tree-labels-v117.js` completed its staged ownership transfer, passed the regression soak, and is now unloaded. The later V105 CSS consolidation reduces the normal non-Social runtime to 100 files.
+- `tree-labels-v117.js` completed its staged ownership transfer, passed the regression soak, and is now unloaded. The later V105 CSS consolidation reduces the normal non-Social index-managed subtotal to 100 files (110 including transitive dependencies).
 - historical renderer/bridge sources V88, V102, V87 and V92 were source-retired after V116 ownership was contract-locked.
 - the unloaded V90 simple renderer and V213 mastery/observer layer were source-retired after V116/V216 ownership was contract-locked; V216 keeps the historical V213 guard claimed so stale legacy code cannot reinstall its observer.
 - `tree-safety-v83.js` no longer wraps canonical Evolution `raidReward`; V290 owns that reward rule while V83 retains historical mastery-save restoration and audit behavior.
