@@ -4,7 +4,7 @@ test('campaign defeat returns to the previous checkpoint and starts a fresh play
   await page.route('**/npm/**', (route) => route.abort());
   await page.goto('/index.html?smoke=1');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
-  await page.waitForFunction(() => window.__smoke && typeof spawnCampaign === 'function' && typeof handleCombatEnd === 'function');
+  await page.waitForFunction(() => window.__smoke && typeof spawnCampaign === 'function' && typeof tick === 'function');
 
   const before = await page.evaluate(() => {
     const H = window.__smoke;
@@ -27,12 +27,19 @@ test('campaign defeat returns to the previous checkpoint and starts a fresh play
     const defeated = H.combat;
     defeated.heroHP = 0;
     defeated.status = 'lost';
+    defeated.endAt = Date.now() - 1;
+    defeated._ended = false;
     defeated.__deathRecoveryFixture = true;
-    handleCombatEnd(defeated);
+
+    // Exercise the real terminal-combat lifecycle. This is where a failed
+    // combat-end hook used to leave _ended=true forever on the dead combat.
+    tick();
+
     return {
       floor: H.S.floor,
       step: H.S.step,
       checkpoint: H.S.checkpoint,
+      terminalProcessed: defeated._ended === true,
       oldCombatStillInstalled: H.combat === defeated,
     };
   });
@@ -40,6 +47,7 @@ test('campaign defeat returns to the previous checkpoint and starts a fresh play
   expect(before.floor).toBe(5);
   expect(before.step).toBe(1);
   expect(before.checkpoint).toBe(5);
+  expect(before.terminalProcessed).toBe(true);
   expect(before.oldCombatStillInstalled).toBe(true);
 
   await expect.poll(async () => page.evaluate(() => {
