@@ -6,6 +6,10 @@
 if(window.__srTreeDedicatedV116)return;
 window.__srTreeDedicatedV116=true;
 if(typeof TREE_NODES==='undefined'||typeof treeLv!=='function'||typeof treeReqOk!=='function')return;
+/* V117 naming-only responsibility is canonical here so the extra runtime layer
+   can stay unloaded without changing any Tree mechanics. */
+var clearerGoldNames={n1_07:'Gain d’Or I',n2_07:'Gain d’Or II',n3_07:'Gain d’Or III',n4_07:'Gain d’Or IV'};
+TREE_NODES.forEach(function(n){var name=clearerGoldNames[n&&n.id];if(name){n.label=name;n.short=name;}});
 var branches=[
 {id:'familier',label:'Familier',sub:'Oeufs',icon:'🐾'},
 {id:'or',label:'Or',sub:'Autonomie',icon:'●'},
