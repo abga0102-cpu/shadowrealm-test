@@ -10,6 +10,7 @@ test('Accomplishments uses event/startup hooks instead of perpetual polling or g
 
   const v121 = source('accomplishments-v121.js');
   const v126 = source('accomplishments-merge-v126.js');
+  const v140 = source('accomplishments-claim-v140.js');
 
   expect(v121).not.toContain('setInterval(');
   expect(v121).not.toContain('oldRender=render');
@@ -18,6 +19,9 @@ test('Accomplishments uses event/startup hooks instead of perpetual polling or g
   expect(v121).toContain('oldShowRaidResult');
   expect(v121).toContain('seenRaidResults');
   expect(v121).toContain('raidWins++');
+  expect(v121).not.toContain("document.getElementById('app').addEventListener('click'");
+  expect(v140).toContain("closest('.srAch139 [data-ach]')");
+  expect(v140).toContain('stopImmediatePropagation');
 
   expect(v126).not.toContain('setInterval(');
   expect(v126).not.toContain('oldRender=render');

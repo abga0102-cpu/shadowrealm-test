@@ -118,7 +118,8 @@
   const oldFuse=ACT.fuse;
   ACT.fuse=(a)=>{const before=(S.pets||[]).map(p=>p.id);oldFuse(a);const after=(S.pets||[]).filter(p=>before.indexOf(p.id)<0);if(after.length){const best=Math.max.apply(null,after.map(p=>RANK[p.rarity]??-1));if(best>=0)update(s=>{const x=ensure(s);x.fusedPetRank=Math.max(x.fusedPetRank,best);});}};
   ACT.accomplishments=()=>open();
-  document.getElementById('app').addEventListener('click',e=>{const b=e.target.closest('[data-ach]');if(!b)return;e.stopPropagation();claim(b.dataset.ach,b.dataset.achChoice||'');});
+  /* Canonical claim clicks are owned by accomplishments-claim-v140.js. Keep V121
+     focused on legacy state/event compatibility instead of installing a second handler. */
   /* Bouton non intrusif dans Reglages: preserve l'ecran existant. */
   const oldSettings=scrParametres;
   scrParametres=function(){const h=oldSettings();return h.replace('<div class="pad mt6">','<div class="pad mt6"><div class="card lit" data-act="accomplishments" style="cursor:pointer;margin-bottom:8px"><div class="between"><b>Accomplissements</b><span class="pill">Voir les recompenses</span></div></div>');};
