@@ -27,22 +27,17 @@ async function activate(page, locator, testInfo) {
   }
 }
 
-test('Phase 2A fantasy decoration delegates render lifecycle ownership to V209', async ({}, testInfo) => {
+test('Phase 2A fantasy decoration is consolidated into the V209 BottomNav owner', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
-  const nav = fs.readFileSync(path.join(root, 'bottom-nav-v53.js'), 'utf8');
   const layout = fs.readFileSync(path.join(root, 'bottom-nav-layout-v183.js'), 'utf8');
-  const executableNav = nav
-    .split('\n')
-    .filter((line) => !line.trimStart().startsWith('//'))
-    .join('\n');
-  expect(nav).toContain('__srBottomNavPhase2A');
-  expect(nav).toContain('__srDecorateBottomNavPhase2A');
-  expect(executableNav).not.toContain('window.renderTabs=function');
-  expect(executableNav).not.toContain('nativeRenderTabs');
-  expect(executableNav).not.toContain('MutationObserver');
+  const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  expect(layout).toContain('__srBottomNavPhase2A');
+  expect(layout).toContain('__srDecorateBottomNavPhase2A');
+  expect(layout).toContain('fantasyNavStyleV65');
   expect(layout).toContain('nativeRenderTabs');
   expect(layout).toContain('window.renderTabs=function');
-  expect(layout).toContain('__srDecorateBottomNavPhase2A');
+  expect(index).not.toContain('bottom-nav-v53.js');
+  expect((index.match(/bottom-nav-layout-v183\.js/g) || []).length).toBe(1);
 });
 
 test('fantasy navigation remains singular and stable through repeated renders', async ({ page }, testInfo) => {
