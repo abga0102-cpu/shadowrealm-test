@@ -90,9 +90,10 @@ Completed examples:
 - `accomplishments-floor-comp-v141.js` unloaded after its exact historical floor-reward migration responsibility and V141 persisted markers were absorbed into V127;
 - `tree-labels-v117.js` unloaded after its four naming-only `Gain d’Or I–IV` labels were absorbed into V116 and the staged transfer passed both exact-head and post-merge regression gates;
 - `notification-compact-v105.js` unloaded after its six CSS-only reward-notification overrides were folded into the existing canonical selectors in `style.css`;
-- superseded Forge auto-batch gate sources V254/V258/V260/V261 retired after reference/history review proved loaded V266 owns the surviving unlock, sanitization, action-gating and picker-lock behavior.
+- superseded Forge auto-batch gate sources V254/V258/V260/V261 retired after reference/history review proved loaded V266 owns the surviving unlock, sanitization, action-gating and picker-lock behavior;
+- `rebirth-scroll-stability-v220.js` retired after loaded V221 was verified as its explicit replacement and sole Rebirth scroll-preservation owner.
 
-The corrected source-reference audit now has **23 remaining unloaded investigation candidates** after staged UI retirement and the four-file Forge auto-batch history retirement. Those 23 remain feature/save-sensitive and require family-specific proof before deletion.
+The corrected source-reference audit now has **22 remaining unloaded investigation candidates** after staged UI retirement, the four-file Forge auto-batch history retirement, and Rebirth V220 retirement. Those 22 remain feature/save-sensitive and require family-specific proof before deletion.
 
 ### L2 — Wrapper-chain collapse
 Status: IN PROGRESS
@@ -144,7 +145,7 @@ Status: IN PROGRESS
 
 After scripts have remained unloaded and regression-covered across subsequent versions, delete obsolete source files from the working tree. Git history remains the archive.
 
-Completed examples include the retired Accomplishments marker families, V135 bridge and V141 layer, BottomNav V53, Home V119, Tree renderer/bridge history through V90/V92/V102/V213, Power Integrity V255, Equipment V175, Hero Equipment V1, notification V105, and the superseded Forge auto-batch gate chain V254/V258/V260/V261. Hero Equipment V1 and notification V105 were deleted only after their unload survived the #136 exact-head integration gate and the subsequent #137 integration; the Forge gate history is retired only after loaded V266 was confirmed as the canonical surviving authority and the old files were proven absent from runtime loader paths.
+Completed examples include the retired Accomplishments marker families, V135 bridge and V141 layer, BottomNav V53, Home V119, Tree renderer/bridge history through V90/V92/V102/V213, Power Integrity V255, Equipment V175, Hero Equipment V1, notification V105, the superseded Forge auto-batch gate chain V254/V258/V260/V261, and Rebirth scroll stability V220. Hero Equipment V1 and notification V105 were deleted only after their unload survived the #136 exact-head integration gate and the subsequent #137 integration; the Forge gate history is retired only after loaded V266 was confirmed as the canonical surviving authority and the old files were proven absent from runtime loader paths. Rebirth V220 is retired only after loaded V221 was confirmed to explicitly replace and suppress it.
 
 ## Change-size policy
 
@@ -154,7 +155,7 @@ Prefer coherent, reviewable batches. Multiple provably dormant scripts in one su
 
 - L1: every proposed unload has reachability and surviving-owner evidence; remaining active or conditional files have an explicit reason to stay loaded.
 - L2: each proposed timer/wrapper removal has equivalent startup, rerender and state-transition coverage, including old saves where applicable.
-- L3: canonical modules own each transferred responsibility without replacing required migration compatibility or crossing active feature ownership.
+- L3: canonical modules own each transferred responsibilities without replacing required migration compatibility or crossing active feature ownership.
 - L4: helper candidates have agreed input/output semantics and a measurable reduction in duplication without extra coupling. Retaining intentionally different helpers is valid.
 - L5: staged retired sources have subsequent integration proof, no remaining executable/archive dependency, and active ownership guards before deletion.
 
