@@ -193,7 +193,7 @@ Reason: loaded only when their feature flag is enabled and therefore excluded fr
 
 ## Already retired/unloaded
 
-The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `hero-equipment-v1.js` (retired visual safety bridge, source retained for staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, `notification-compact-v105.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
+The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `hero-equipment-v1.js` (retired visual safety bridge; source retired after staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, `notification-compact-v105.js` (source retired after staged proof), and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
 
 ## L0 conclusion
 
