@@ -16,6 +16,7 @@ const countReferenced = (name) => referencedScripts.filter((s) => s === name).le
 const retiredUnloaded = [
   'social-forge-layout-v1.js',
   'premium-recommendation-cleanup-v243.js',
+  'bottom-nav-v53.js',
   'accomplishments-titles-v133.js',
   'accomplishments-overview-v135.js',
   'accomplishments-home-scope-v136.js',
@@ -27,7 +28,6 @@ const retiredUnloaded = [
 ];
 
 const canonicalReferencedOnce = [
-  'bottom-nav-v53.js',
   'bottom-nav-layout-v183.js',
   'premium-ui-v209.js',
   'home-layout-authority-v219.js',
@@ -67,22 +67,17 @@ test('canonical ownership layers are referenced exactly once by the runtime load
   }
 });
 
-test('BottomNav uses one render lifecycle owner while keeping decoration and visual polish separate', () => {
-  const decoration = read('bottom-nav-v53.js');
-  const geometry = read('bottom-nav-layout-v183.js');
+test('BottomNav uses one canonical runtime owner while keeping premium polish separate', () => {
+  const bottomNav = read('bottom-nav-layout-v183.js');
   const premium = read('premium-ui-v209.js');
-  const executableDecoration = decoration
-    .split('\n')
-    .filter((line) => !line.trimStart().startsWith('//'))
-    .join('\n');
 
-  expect(decoration).toContain('__srDecorateBottomNavPhase2A');
-  expect(executableDecoration).not.toContain('window.renderTabs=function');
-  expect(geometry).toContain('__srBottomNavGeometryV209');
-  expect(geometry).toContain('__srApplyBottomNavGeometryV209');
-  expect(geometry).toContain('__srDecorateBottomNavPhase2A');
-  expect(geometry).toContain('window.renderTabs=function');
-  expect(geometry).toContain("new Event('sr:bottomnavrendered')");
+  expect(bottomNav).toContain('__srBottomNavPhase2A');
+  expect(bottomNav).toContain('__srDecorateBottomNavPhase2A');
+  expect(bottomNav).toContain('fantasyNavStyleV65');
+  expect(bottomNav).toContain('__srBottomNavGeometryV209');
+  expect(bottomNav).toContain('__srApplyBottomNavGeometryV209');
+  expect(bottomNav).toContain('window.renderTabs=function');
+  expect(bottomNav).toContain("new Event('sr:bottomnavrendered')");
   expect(premium).toContain('__srPremiumUiV209');
   expect(premium).not.toContain('__srApplyBottomNavGeometryV209');
 });
