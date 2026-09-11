@@ -61,7 +61,7 @@ Prefer these first when their behavior is already contract-locked:
 ### L0 — Runtime inventory and coordination
 Status: COMPLETE
 
-The exact loader inventory is maintained in `RUNTIME_INVENTORY.md`. The post-V310 baseline recorded 97 static script entries plus 9 deferred core scripts, for 106 JavaScript files in a normal non-Social session. BottomNav consolidation reduced that to 105; Home V119 consolidation reduced it to 104; unloading retired Accomplishments V141 reduces the current normal runtime to **103** files with **96 static script entries** and 7 deferred core scripts. Social and Bot Tester scripts remain conditional and are inventoried separately.
+The exact loader inventory is maintained in `RUNTIME_INVENTORY.md`. The post-V310 baseline recorded 97 static script entries plus 9 deferred core scripts, for 106 JavaScript files in a normal non-Social session. BottomNav consolidation reduced that to 105; Home V119 consolidation reduced it to 104; unloading retired Accomplishments V141 reduced it to 103; unloading inert Tree V117 reduces the current normal runtime to **102** files with **95 static script entries** and 7 deferred core scripts. Social and Bot Tester scripts remain conditional and are inventoried separately.
 
 Completed:
 
@@ -85,11 +85,8 @@ Completed examples:
 - retired Accomplishments marker sources V135/V136/V137 removed after their responsibilities were already owned by V138/V139;
 - `bottom-nav-v53.js` unloaded after its active fantasy-decoration responsibility was absorbed into canonical V209 BottomNav ownership;
 - `home-layout-fix-v119.js` unloaded after its active compatibility styling/decorating responsibilities were absorbed into canonical Home V219 ownership;
-- `accomplishments-floor-comp-v141.js` unloaded after its exact historical floor-reward migration responsibility and V141 persisted markers were absorbed into V127.
-
-Queued next after regression soak:
-
-- unload inert `tree-labels-v117.js` only after the clearer `Gain d’Or I–IV` label ownership has been absorbed into V116 and the staged transfer passes the full regression gate.
+- `accomplishments-floor-comp-v141.js` unloaded after its exact historical floor-reward migration responsibility and V141 persisted markers were absorbed into V127;
+- `tree-labels-v117.js` unloaded after its four naming-only `Gain d’Or I–IV` labels were absorbed into V116 and the staged transfer passed both exact-head and post-merge regression gates.
 
 ### L2 — Wrapper-chain collapse
 Status: IN PROGRESS
@@ -119,7 +116,7 @@ Completed so far:
 - Home compatibility decoration from `home-layout-fix-v119.js` was absorbed into `home-layout-authority-v219.js`, leaving one canonical loaded Home owner for geometry, lifecycle, Forge info accessibility, reward-feed compatibility, equipment-filter readability, Settings stat cards and toast/tutorial positioning;
 - Accomplishments Settings entry injection moved from legacy V121 into canonical `accomplishments-canonical-v139.js`; V121's duplicate claim/payout path and legacy modal/reward renderer were then removed, leaving V121 with state migration plus raid/fusion event compatibility only while V139/V140 remain the sole UI and payout owners;
 - Accomplishments legacy floor25/floor50/floor75 make-good logic moved from standalone V141 into `accomplishments-reward-fix-v127.js`, preserving the exact V141 persisted idempotency markers and payout values while giving Raid 100 and floor compensation one durable boot/import migration owner. V141 is now unloaded from runtime;
-- Tree clearer gold-node labels from `tree-labels-v117.js` were absorbed into canonical dedicated renderer `tree-dedicated-v116.js`; V117 is retained as an inert loaded marker for a separate L1 unload after staged regression soak.
+- Tree clearer gold-node labels from `tree-labels-v117.js` were absorbed into canonical dedicated renderer `tree-dedicated-v116.js`; V117 has now been unloaded after staged regression soak.
 
 Remaining initial candidates:
 
@@ -146,6 +143,6 @@ Prefer coherent, reviewable batches. Multiple provably dormant scripts in one su
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
 
-Current runtime remains **103 JavaScript files** in the normal non-Social session during the staged V117 ownership transfer. Once the inert V117 marker is separately unloaded after regression soak, the candidate runtime becomes 102. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
+Current candidate runtime after the V117 unload is **102 JavaScript files** in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
 V295 added `familiar-ladder-authority-v295.js`, confirming that Familiars remains feature-owner sensitive and should not be an early consolidation target unless current work is rechecked first.
