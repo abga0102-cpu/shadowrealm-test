@@ -95,7 +95,7 @@ Completed so far:
 
 - Accomplishments V121/V126 converted away from recurring render/polling ownership for the cleaned responsibilities; deterministic lifecycle hooks own those paths;
 - Accomplishments V138 stopped wrapping `renderTabs` and now subscribes to canonical `sr:bottomnavrendered` lifecycle;
-- Accomplishments V139 stopped wrapping global `openModal`; V121 claim refresh routes through canonical `ACT.accomplishments()`;
+- Accomplishments V139 stopped wrapping global `openModal`; canonical V139 owns `ACT.accomplishments()`;
 - Tree V116 removed its duplicate permanent 500 ms `syncMode` poller and then its document-wide `MutationObserver`; Tree mode synchronization now subscribes to canonical `sr:bottomnavrendered` lifecycle while retaining startup sync;
 - Home V219 stopped wrapping `renderTabs` and now subscribes to the canonical `sr:bottomnavrendered` lifecycle while keeping resize/orientation/startup synchronization;
 - Boot V115 removed its redundant permanent 500 ms wave-display poller while retaining the DOM-driven synchronization path and startup sync.
@@ -111,11 +111,12 @@ Completed so far:
 
 - BottomNav fantasy decoration from `bottom-nav-v53.js` was absorbed into `bottom-nav-layout-v183.js`, leaving one canonical BottomNav runtime owner for decoration, geometry and render lifecycle while `premium-ui-v209.js` remains visual polish only;
 - Home compatibility decoration from `home-layout-fix-v119.js` was absorbed into `home-layout-authority-v219.js`, leaving one canonical loaded Home owner for geometry, lifecycle, Forge info accessibility, reward-feed compatibility, equipment-filter readability, Settings stat cards and toast/tutorial positioning;
-- Accomplishments Settings entry injection moved from legacy V121 into canonical `accomplishments-canonical-v139.js`, reducing V121 to state/event compatibility and reward-history responsibilities while preserving the same Settings entry behavior.
+- Accomplishments Settings entry injection moved from legacy V121 into canonical `accomplishments-canonical-v139.js`, preserving the same Settings entry behavior;
+- legacy V121 reward tables, claim implementation and modal renderer were removed after proving V139/V140 already own those runtime responsibilities; V121 is now a compatibility-only shell for historical state normalization plus raid/familiar progress signals.
 
 Remaining initial candidates:
 
-1. Accomplishments durable consolidation / migration separation
+1. Accomplishments migration separation / compatibility consolidation
 2. Tree
 3. Combat presentation/cadence
 4. Forge / progression only after active feature work settles
@@ -138,6 +139,6 @@ Prefer coherent, reviewable batches. Multiple provably dormant scripts in one su
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
 
-Current integration baseline for the Home V119 consolidation: `main` `b5c43fedc700ffebc5eba076189f36c20927d9ff`. The candidate loader inventory is **104 JavaScript files** in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
+Current integration baseline for Accomplishments V121 shell consolidation: `main` `f79f9e620c94120d992680036505cffd4795c5cb`. The loader inventory remains **104 JavaScript files** in the normal non-Social session because this step removes duplicate runtime responsibility inside V121 rather than unloading the compatibility shell. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
 V295 added `familiar-ladder-authority-v295.js`, confirming that Familiars remains feature-owner sensitive and should not be an early consolidation target unless current work is rechecked first.
