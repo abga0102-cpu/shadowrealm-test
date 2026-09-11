@@ -74,18 +74,20 @@ test('fantasy navigation remains singular and stable through repeated renders', 
 
 test('Phase 2B moves Home classification and compatibility off DOM mutation observers', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
-  const homeFrame = fs.readFileSync(path.join(root, 'social-forge-layout-v1.js'), 'utf8');
-  const compatibility = fs.readFileSync(path.join(root, 'home-layout-fix-v119.js'), 'utf8');
+  const homeAuthority = fs.readFileSync(path.join(root, 'home-layout-authority-v219.js'), 'utf8');
+  const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-  expect(homeFrame).toContain('__srHomeFramePhase2B');
-  expect(homeFrame).toContain('__srSyncHomeFramePhase2B');
-  expect(homeFrame).toContain('nativeRenderTabs');
-  expect(homeFrame).not.toContain('new MutationObserver');
-
-  expect(compatibility).toContain('__srHomeLayoutPhase2B');
-  expect(compatibility).toContain('__srSyncHomeFramePhase2B');
-  expect(compatibility).toContain('nativeRenderTabs');
-  expect(compatibility).not.toContain('new MutationObserver');
+  expect(fs.existsSync(path.join(root, 'social-forge-layout-v1.js'))).toBe(false);
+  expect(fs.existsSync(path.join(root, 'home-layout-fix-v119.js'))).toBe(false);
+  expect(index).not.toContain('social-forge-layout-v1.js');
+  expect(index).not.toContain('home-layout-fix-v119.js');
+  expect(homeAuthority).toContain('__srHomeFramePhase2B');
+  expect(homeAuthority).toContain('__srHomeLayoutPhase2B');
+  expect(homeAuthority).toContain('__srSyncHomeFramePhase2B');
+  expect(homeAuthority).toContain('__srHomeLayoutCompatV119');
+  expect(homeAuthority).toContain('__srApplyHomeCompatV119');
+  expect(homeAuthority).not.toContain('new MutationObserver');
+  expect(homeAuthority).not.toContain('window.renderTabs=function');
 });
 
 test('Home state follows the rendered route without stale observer timing', async ({ page }, testInfo) => {
