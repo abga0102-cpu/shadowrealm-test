@@ -94,7 +94,7 @@ Completed so far:
 - Accomplishments V121/V126 converted away from recurring render/polling ownership to deterministic lifecycle hooks;
 - Accomplishments V138 stopped wrapping `renderTabs` and now subscribes to canonical `sr:bottomnavrendered` lifecycle;
 - Accomplishments V139 stopped wrapping global `openModal`; V121 claim refresh routes through canonical `ACT.accomplishments()`;
-- Tree V116 removed its duplicate permanent 500 ms `syncMode` poller while retaining the existing body `MutationObserver` and startup sync;
+- Tree V116 removed its duplicate permanent 500 ms `syncMode` poller and then its document-wide `MutationObserver`; Tree mode synchronization now subscribes to canonical `sr:bottomnavrendered` lifecycle while retaining startup sync;
 - Home V219 stopped wrapping `renderTabs` and now subscribes to the canonical `sr:bottomnavrendered` lifecycle while keeping resize/orientation/startup synchronization.
 
 Continue with one behavior at a time. Do not remove migration/save compatibility responsibilities merely because their runtime path is infrequent.

@@ -40,7 +40,10 @@ style.textContent=[
 '.srRadialTree,.srTreeClear{display:none!important}'
 ].join('');
 document.head.appendChild(style);
-/* Body subtree changes cover route rerenders, so one observer plus the startup sync
-   is sufficient; avoid a permanent 500 ms poller doing duplicate work. */
-if(typeof MutationObserver!=='undefined')new MutationObserver(syncMode).observe(document.body,{childList:true,subtree:true});setTimeout(syncMode,0);try{if(typeof render==='function')render();}catch(_){}
+/* BottomNav's canonical post-render lifecycle covers route rerenders deterministically.
+   Keep startup sync for the initial DOM and avoid document-wide observation/polling. */
+var syncQueued=false;
+function scheduleModeSync(){if(syncQueued)return;syncQueued=true;requestAnimationFrame(function(){syncQueued=false;syncMode();});}
+window.addEventListener('sr:bottomnavrendered',scheduleModeSync);
+setTimeout(syncMode,0);try{if(typeof render==='function')render();}catch(_){}
 })();
