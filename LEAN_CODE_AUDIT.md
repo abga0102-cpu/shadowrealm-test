@@ -2,7 +2,7 @@
 
 Working document for `LEAN_CODE_PLAN.md`. This file records facts discovered during L0 and subsequent lean-code iterations so developers and AI agents do not repeatedly rediscover stale runtime relationships.
 
-Current coordination baseline for the staged Tree V117 ownership transfer: `main` `a121e495e7f6cd80f21c2f55a9812a57223a2a86`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership.
+Current coordination baseline for the staged Tree V117 ownership transfer: latest checked `main` `25828411d6841de065c791323693f5f8fab722e6`; the branch originated from the preceding fully green `a121e495e7f6cd80f21c2f55a9812a57223a2a86`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership.
 
 ## Loader structure
 
@@ -72,7 +72,7 @@ Completed L2/L3 findings:
 - V139 no longer wraps global `openModal`; successful claim refreshes route through canonical `ACT.accomplishments()`.
 - The Settings-screen Accomplishments entry is owned by canonical V139 rather than V121; V121 is reduced to historical state/event compatibility.
 - V127 remains loaded because its historical-save responsibilities are still required. V141's floor make-good responsibility was transferred into V127; after remaining unloaded and contract-covered, its inert working-tree marker was source-retired.
-- `accomplishments-ui-v123.js` and `accomplishments-titles-v133.js` remained unloaded and contract-covered across subsequent releases. Their obsolete working-tree sources were retired in the first Accomplishments L5 batch; V141 completes the known Accomplishments source-retirement set, and Git history remains the archive.
+- `accomplishments-ui-v123.js` and `accomplishments-titles-v133.js` remained unloaded and contract-covered across subsequent releases. Their obsolete working-tree sources were retired in the first Accomplishments L5 batch; V141 completed the known marker retirement set. The older, unloaded `accomplishments-merge-safe-v135.js` bridge was subsequently source-retired after its stale source assertion was redirected to canonical V126 merge synchronization and V212 legacy-rarity normalization. Git history remains the archive.
 
 Do not reintroduce wrapper chains merely because older source contracts once expected them.
 
@@ -85,7 +85,7 @@ Loaded Tree runtime is inventoried in `RUNTIME_INVENTORY.md`. Current ownership 
 - `tree-dedicated-v116.js` owns the dedicated Tree renderer/mode presentation. Its duplicate permanent `setInterval(syncMode,500)` poller and document-wide `MutationObserver` have both been removed; canonical `sr:bottomnavrendered` lifecycle plus startup sync own mode synchronization.
 - V116 now also owns the four presentation-only gold-node labels `Gain d’Or I–IV`, applied before its first renderer use without changing effects, requirements, costs, levels, timers or saves.
 - `tree-labels-v117.js` is now an inert compatibility marker during staged regression soak: it no longer mutates `TREE_BY_ID` or forces an extra `render()`. It remains loaded for this step and is a later L1 unload candidate only after the transfer is proven green.
-- `tree-safety-v83.js` no longer wraps the canonical Evolution `raidReward`; V290 owns that reward rule while V83 retains mastery-save restoration and audit behavior.
+- `tree-safety-v83.js` no longer wraps canonical Evolution `raidReward`; V290 owns that reward rule while V83 retains historical mastery-save restoration and audit behavior.
 - `tree-research-v122.js` still changes future research-time tables and therefore remains active gameplay configuration, not cleanup-only code.
 
 Continue Tree consolidation one responsibility at a time. Do not combine V117 ownership transfer and loader removal until the staged transfer has passed the full regression gate.
