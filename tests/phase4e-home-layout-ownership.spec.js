@@ -21,6 +21,19 @@ async function openCleanGame(page) {
   await page.goto('/index.html?smoke=1');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
+
+  // This test exercises repeated BottomNav routing and Home geometry, not the
+  // first-run tutorial. On WebKit/iPhone the tutorial can mount after the tabs
+  // become ready and intercept those route clicks, so settle that independent
+  // startup surface before exercising navigation. Assertions below are unchanged.
+  const tutorialConfirm = page.getByRole('button', { name: 'Compris' });
+  try {
+    await tutorialConfirm.waitFor({ state: 'visible', timeout: 2000 });
+    await tutorialConfirm.click();
+    await expect(tutorialConfirm).toHaveCount(0);
+  } catch (_) {
+    // No tutorial is expected for already-settled fixtures/projects.
+  }
 }
 
 test('Phase 4E leaves V219 as the sole Home frame lifecycle owner and V209 as BottomNav geometry owner', async ({}, testInfo) => {
