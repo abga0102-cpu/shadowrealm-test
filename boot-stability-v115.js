@@ -49,5 +49,5 @@ if(typeof MutationObserver!=='undefined'){
     requestAnimationFrame(function(){queued=false;syncWaveDisplay();});
   }).observe(document.body,{childList:true,subtree:true});
 }
-setTimeout(syncWaveDisplay,0);
+syncWaveDisplay();
 })();
