@@ -39,7 +39,7 @@ The following files may remain in source history, but must not regain active own
 - `accomplishments-home-scope-v136.js` — compatibility marker only; unloaded.
 - `accomplishments-floors-v137.js` — compatibility marker only; unloaded.
 - `accomplishments-ui-v123.js` — suppressed legacy UI; unloaded.
-- `accomplishments-floor-comp-v141.js` — floor compensation ownership absorbed into V127; temporarily retained as an inert compatibility marker pending a later L1 unload.
+- `accomplishments-floor-comp-v141.js` — floor compensation ownership absorbed into V127; source retained as an inert compatibility marker and unloaded from runtime.
 - `tree-mastery-v120.js` — compatibility marker only; unloaded.
 - `tree-mastery-ui-v128.js` — compatibility marker only; unloaded.
 - `tree-mastery-v149.js` — retired from runtime and source; V216 owns active mastery behavior.

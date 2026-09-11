@@ -6,13 +6,13 @@ Snapshot base before the Home V119 consolidation: `main` at `b5c43fedc700ffebc5e
 
 ## Loader totals
 
-- 97 scripts are loaded synchronously through static `<script src>` entries.
+- 96 scripts are loaded synchronously through static `<script src>` entries.
 - 7 additional core UI scripts are loaded after startup in the default non-Social session.
-- Default runtime total: **104 JavaScript files**.
-- Social adds `social-v1.js` and `social-p2p-v1.js`: **106** files when Social is enabled.
-- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **108** files in that optional mode.
+- Default runtime total: **103 JavaScript files**.
+- Social adds `social-v1.js` and `social-p2p-v1.js`: **105** files when Social is enabled.
+- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **107** files in that optional mode.
 
-The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation. Home V119 consolidation now absorbs `home-layout-fix-v119.js` into canonical `home-layout-authority-v219.js`, removing one deferred runtime request while preserving the 97-script static count.
+The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation. Unloading retired Accomplishments V141 now reduces the static runtime from 97 to 96 entries and the normal non-Social runtime to 103 files.
 
 ## Static loader inventory
 
@@ -108,9 +108,9 @@ Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Kno
 - `power-hint-v108.js`
 - `boot-stability-v115.js`
 
-### Accomplishments — 7
+### Accomplishments — 6
 
-Reason: stable lower-conflict subsystem with canonical rendering/claims and one active legacy reward-migration owner. `accomplishments-reward-fix-v127.js` now owns both Raid 100 and floor25/floor50/floor75 historical make-goods through bounded startup reconciliation plus the deterministic `migrate(...)` import lifecycle. `accomplishments-floor-comp-v141.js` is an inert compatibility marker pending a later L1 unload; it no longer grants rewards or schedules retries.
+Reason: stable lower-conflict subsystem with canonical rendering/claims and one active legacy reward-migration owner. `accomplishments-reward-fix-v127.js` owns both Raid 100 and floor25/floor50/floor75 historical make-goods through bounded startup reconciliation plus the deterministic `migrate(...)` import lifecycle. Retired V141 remains in source history only and is no longer requested by the runtime.
 
 - `accomplishments-v121.js`
 - `accomplishments-reward-fix-v127.js`
@@ -118,7 +118,6 @@ Reason: stable lower-conflict subsystem with canonical rendering/claims and one 
 - `accomplishments-stability-v138.js`
 - `accomplishments-canonical-v139.js`
 - `accomplishments-claim-v140.js`
-- `accomplishments-floor-comp-v141.js` — inert marker, queued for unload after regression soak
 
 ### V276–V309 progression authority chain — 30
 
@@ -169,15 +168,15 @@ Reason: loaded after startup by the deferred `core` chain. Home V219 is now the 
 
 ## Conditional optional loader entries — 4
 
-Reason: loaded only when their feature flag is enabled and therefore excluded from the 104-file normal-session total.
+Reason: loaded only when their feature flag is enabled and therefore excluded from the 103-file normal-session total.
 
 - Social: `social-v1.js`, `social-p2p-v1.js`
 - Bot Testers, only with Social: `social-bot-testers-v5.js`, `social-bot-ui-v1.js`
 
 ## Already retired/unloaded
 
-The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells, Tree mastery V120/V128, `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
+The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128, `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
 
 ## L0 conclusion
 
-Every script currently requested by `index.html` is now represented in this loader inventory as a foundational owner, active extension, compatibility/migration responsibility, feature-owner-sensitive layer, deferred core layer, or optional feature. L1 may therefore focus on **proof-based dead-load removal**, starting with lower-conflict stable areas. Historical save migrations are not dead code merely because most current saves have already processed them.
+Every script currently requested by `index.html` is now represented in this loader inventory as a foundational owner, active extension, compatibility/migration responsibility, feature-owner-sensitive layer, deferred core layer, or optional feature. L1 may therefore focus on **proof-based dead-load removal**. Historical save migrations are not dead code merely because most current saves have already processed them.
