@@ -53,6 +53,40 @@ test('retired Forge auto-batch gate history stays absent while V266 remains cano
   expect(canonical).toContain('#srAutoBatch266 .srBatch266');
 });
 
+test('retired Forge presentation history stays absent while V266 panel and V273 UX remain canonical', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
+
+  const root = path.join(__dirname, '..');
+  const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const retired = [
+    'forge-panel-compact-v259.js',
+    'forge-panel-authority-v260.js',
+    'forge-panel-authority-v261.js',
+    'forge-entry-animation-v263.js',
+    'forge-entry-animation-v264.js',
+  ];
+
+  for (const file of retired) {
+    expect(fs.existsSync(path.join(root, file))).toBe(false);
+    expect(index).not.toContain(file);
+  }
+
+  expect(index).toContain('forge-panel-authority-v266.js');
+  expect(index).toContain('forge-ux-v273.js');
+
+  const panel = fs.readFileSync(path.join(root, 'forge-panel-authority-v266.js'), 'utf8');
+  expect(panel).toContain('Canonical renderer-level Home Forge authority.');
+  expect(panel).toContain('SCREENS.accueil=function');
+  expect(panel).toContain('srForgeLootReserve266');
+  expect(panel).toContain('UI-only: no economy/progression/save changes.');
+
+  const ux = fs.readFileSync(path.join(root, 'forge-ux-v273.js'), 'utf8');
+  expect(ux).toContain('Event-driven Forge loot authority');
+  expect(ux).toContain('srForgeEntryAnimationV263Style');
+  expect(ux).toContain('srForgeEntryAnimationV264Style');
+  expect(ux).toContain('srForgeLoot273');
+});
+
 test('V283 owns current fixed-base Forge equipment power independently of Forge level', async ({ page }) => {
   await openCleanGame(page);
 
