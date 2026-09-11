@@ -4,32 +4,17 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const source = (name) => fs.readFileSync(path.join(root, name), 'utf8');
-const executable = (text) => text
-  .replace(/\/\*[\s\S]*?\*\//g, '')
-  .split('\n')
-  .filter((line) => !line.trimStart().startsWith('//'))
-  .join('\n');
 
 test('Phase 4D keeps v216 as the sole loaded tree mastery gating and popup owner', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
-  const legacyRule = source('tree-mastery-v120.js');
-  const legacyUi = source('tree-mastery-ui-v128.js');
   const canonical = source('runtime-tree-stability-v216.js');
   const index = source('index.html');
 
-  expect(legacyRule).toContain('__srTreeMasteryV120');
-  expect(legacyUi).toContain('__srTreeMasteryUIV128');
-
-  for (const legacy of [executable(legacyRule), executable(legacyUi)]) {
-    expect(legacy).not.toContain('treeReqOk=');
-    expect(legacy).not.toContain('showTreeNode=');
-    expect(legacy).not.toContain('new MutationObserver');
-    expect(legacy).not.toContain('setInterval(');
-    expect(legacy).not.toContain('querySelectorAll(');
-  }
-
+  expect(fs.existsSync(path.join(root, 'tree-mastery-v120.js'))).toBe(false);
+  expect(fs.existsSync(path.join(root, 'tree-mastery-ui-v128.js'))).toBe(false);
   expect(fs.existsSync(path.join(root, 'tree-mastery-v149.js'))).toBe(false);
+
   expect(canonical).toContain('__srRuntimeTreeStabilityV216');
   expect(canonical).toContain('var LEVEL=2,COST=100');
   expect(canonical).toContain('masteryLevelRequired=LEVEL');
