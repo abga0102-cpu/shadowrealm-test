@@ -1,12 +1,17 @@
 const { test, expect } = require('@playwright/test');
 
-test('campaign defeat returns to the previous checkpoint and starts a fresh playable fight', async ({ page }) => {
+test('campaign defeat synchronously returns to checkpoint and keeps the fresh fight playable', async ({ page }) => {
   await page.route('**/npm/**', (route) => route.abort());
   await page.goto('/index.html?smoke=1');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
-  await page.waitForFunction(() => window.__smoke && typeof spawnCampaign === 'function' && typeof tick === 'function');
+  await page.waitForFunction(() =>
+    window.__smoke &&
+    window.__srCampaignLossImmediateRestartV156 === true &&
+    typeof spawnCampaign === 'function' &&
+    typeof tick === 'function'
+  );
 
-  const before = await page.evaluate(() => {
+  const recovered = await page.evaluate(() => {
     const H = window.__smoke;
     update((st) => {
       st.level = 40;
@@ -24,6 +29,7 @@ test('campaign defeat returns to the previous checkpoint and starts a fresh play
     });
     H.D = computeDerived(H.S);
     H.combat = spawnCampaign(H.S);
+
     const defeated = H.combat;
     defeated.heroHP = 0;
     defeated.status = 'lost';
@@ -31,45 +37,51 @@ test('campaign defeat returns to the previous checkpoint and starts a fresh play
     defeated._ended = false;
     defeated.__deathRecoveryFixture = true;
 
-    // Exercise the real terminal-combat lifecycle. This is where a failed
-    // combat-end hook used to leave _ended=true forever on the dead combat.
+    // Exercise the real terminal-combat lifecycle. Recovery must be complete
+    // before this call returns; a later timer is not an acceptable dependency.
     tick();
+
+    const fresh = H.combat;
+    if (fresh) fresh.__deathRecoveryStableMarker = 'stable';
 
     return {
       floor: H.S.floor,
       step: H.S.step,
       checkpoint: H.S.checkpoint,
       terminalProcessed: defeated._ended === true,
-      oldCombatStillInstalled: H.combat === defeated,
+      oldCombatStillInstalled: fresh === defeated,
+      combatFloor: fresh && fresh.floor,
+      combatStep: fresh && fresh.step,
+      combatStatus: fresh && fresh.status,
+      fullHp: !!fresh && fresh.heroHP === fresh.heroMaxHP && fresh.heroHP > 0,
+      freshCombat: !!fresh && !fresh.__deathRecoveryFixture,
+      marker: fresh && fresh.__deathRecoveryStableMarker,
     };
   });
 
-  expect(before.floor).toBe(5);
-  expect(before.step).toBe(1);
-  expect(before.checkpoint).toBe(5);
-  expect(before.terminalProcessed).toBe(true);
-  expect(before.oldCombatStillInstalled).toBe(true);
-
-  await expect.poll(async () => page.evaluate(() => {
-    const H = window.__smoke;
-    return {
-      floor: H.S.floor,
-      step: H.S.step,
-      combatFloor: H.combat && H.combat.floor,
-      combatStep: H.combat && H.combat.step,
-      combatStatus: H.combat && H.combat.status,
-      fullHp: !!H.combat && H.combat.heroHP === H.combat.heroMaxHP && H.combat.heroHP > 0,
-      freshCombat: !!H.combat && !H.combat.__deathRecoveryFixture,
-    };
-  }), { timeout: 3000 }).toEqual({
+  expect(recovered).toEqual({
     floor: 5,
     step: 1,
+    checkpoint: 5,
+    terminalProcessed: true,
+    oldCombatStillInstalled: false,
     combatFloor: 5,
     combatStep: 1,
     combatStatus: 'fight',
     fullHp: true,
     freshCombat: true,
+    marker: 'stable',
   });
+
+  // Prove there is no stale 40 ms callback waiting to replace the fresh fight.
+  await page.waitForTimeout(100);
+  const stable = await page.evaluate(() => ({
+    marker: window.__smoke.combat && window.__smoke.combat.__deathRecoveryStableMarker,
+    status: window.__smoke.combat && window.__smoke.combat.status,
+    floor: window.__smoke.combat && window.__smoke.combat.floor,
+    step: window.__smoke.combat && window.__smoke.combat.step,
+  }));
+  expect(stable).toEqual({ marker: 'stable', status: 'fight', floor: 5, step: 1 });
 
   await expect(page.locator('#tabs .tab').first()).toBeVisible();
   await page.locator('#tabs .tab').nth(1).click();
