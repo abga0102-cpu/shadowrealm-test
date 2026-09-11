@@ -98,6 +98,7 @@ Completed so far:
 - Accomplishments V138 stopped wrapping `renderTabs` and now subscribes to canonical `sr:bottomnavrendered` lifecycle;
 - Accomplishments V139 stopped wrapping global `openModal`; canonical rendering routes through `ACT.accomplishments()`;
 - Tree V116 removed its duplicate permanent 500 ms `syncMode` poller and then its document-wide `MutationObserver`; Tree mode synchronization now subscribes to canonical `sr:bottomnavrendered` lifecycle while retaining startup sync;
+- Tree V83 stopped wrapping `raidReward` for Raid Évolution PE after V290 was confirmed as the later canonical owner with the identical 100 PE + 3/level rule; V83 retains only mastery-save restoration and audit behavior;
 - Home V219 stopped wrapping `renderTabs` and now subscribes to the canonical `sr:bottomnavrendered` lifecycle while keeping resize/orientation/startup synchronization;
 - Boot V115 removed its redundant permanent 500 ms wave-display poller while retaining the DOM-driven synchronization path and startup sync.
 
