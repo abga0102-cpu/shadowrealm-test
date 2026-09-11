@@ -1,20 +1,9 @@
 /* SHADOWREACH · radial tree safety/economy v83
-   - Raid Évolution: 100 PE au niveau 1, puis +3 par niveau (courbe active conservée).
-   - Préserve les nouvelles clés de maîtrise si la migration du moteur s'est exécutée
-     avant le module radial.
+   - Preserves the five mastery keys when legacy migration order would otherwise drop them.
+   - Raid Évolution PE reward ownership now lives solely in raid-pe-authority-v290.js.
 */
 (function(){
   'use strict';
-
-  /* La courbe réellement active avant cette mise à jour était 10 +3/niveau.
-     On change uniquement la base demandée: 100 +3/niveau. */
-  if (typeof raidReward === 'function') {
-    var oldRaidReward = raidReward;
-    raidReward = function(raid, level) {
-      if (raid === 'evolution') return 100 + 3 * Math.max(0, (Number(level) || 1) - 1);
-      return oldRaidReward(raid, level);
-    };
-  }
 
   var MASTERY_IDS = ['mk_familier','mk_or','mk_minerai','mk_pe','mk_competence'];
 
@@ -55,7 +44,8 @@
   }
   restoreMasteryProgress();
 
-  /* Audit léger, sans modifier la partie. Utile au smoke test et dans la console. */
+  /* Audit léger, sans modifier la partie. Le PE Raid Évolution est validé
+     contre l'autorité canonique V290 une fois le runtime chargé. */
   window.__srTreeAudit = function(){
     var issues = [];
     if (typeof TREE_BY_ID === 'undefined') issues.push('TREE_BY_ID absent');
