@@ -52,6 +52,5 @@ if(typeof MutationObserver!=='undefined'){
     requestAnimationFrame(function(){queued=false;syncWaveDisplay();});
   }).observe(document.body,{childList:true,subtree:true});
 }
-setInterval(syncWaveDisplay,500);
 setTimeout(syncWaveDisplay,0);
 })();
