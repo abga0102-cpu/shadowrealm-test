@@ -15,10 +15,13 @@ test('Accomplishments claims refresh through the canonical action without wrappi
 
   const legacy = executable(source('accomplishments-v121.js'));
   const canonical = executable(source('accomplishments-canonical-v139.js'));
+  const claims = executable(source('accomplishments-claim-v140.js'));
 
-  expect(legacy).toContain("typeof ACT.accomplishments==='function'");
-  expect(legacy).toContain('ACT.accomplishments()');
+  expect(legacy).not.toMatch(/ACT\.accomplishments\s*=/);
+  expect(legacy).toContain('V121 intentionally owns no Accomplishments renderer or payout path');
   expect(canonical).toContain('ACT.accomplishments=function()');
+  expect(claims).toContain("typeof ACT.accomplishments==='function'");
+  expect(claims).toContain('ACT.accomplishments()');
   expect(canonical).not.toMatch(/\bopenModal\s*=\s*function/);
   expect(canonical).not.toContain('baseOpen');
 });
