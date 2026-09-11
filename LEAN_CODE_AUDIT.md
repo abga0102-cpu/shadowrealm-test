@@ -2,7 +2,7 @@
 
 Working document for `LEAN_CODE_PLAN.md`. This file records facts discovered during L0 and subsequent lean-code iterations so developers and AI agents do not repeatedly rediscover stale runtime relationships.
 
-Current coordination baseline: post-PR #121 `main` is `c73edf866e40fde3891c02bf532c62aef28670b2`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership. The recent Tree/power retirement guards are now active in Phase 1 CI under the required `phase*.spec.js` match.
+Current coordination baseline: this notification consolidation started from `main` at `d83da74acda5112491745a6eda4d5bceb7fbeea6`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership. The recent Tree/power retirement guards are now active in Phase 1 CI under the required `phase*.spec.js` match.
 
 ## Loader structure
 
@@ -13,7 +13,7 @@ Current coordination baseline: post-PR #121 `main` is `c73edf866e40fde3891c02bf5
 
 Any dead-load analysis must inspect both paths. Searching only literal script tags is insufficient.
 
-The current inventory records 95 static scripts plus 7 deferred default-core scripts: **102 JavaScript files in the normal non-Social runtime**, 104 with Social, and 106 with Social + Bot Testers.
+The current inventory records 93 static scripts plus 7 deferred default-core scripts: **100 JavaScript files in the normal non-Social runtime**, 102 with Social, and 104 with Social + Bot Testers.
 
 ## Current subsystem classification
 
@@ -56,6 +56,10 @@ BottomNav has one canonical runtime owner: `bottom-nav-layout-v183.js` owns fant
 
 Home has one canonical loaded runtime owner: `home-layout-authority-v219.js`. The active V119 compatibility responsibilities were transferred into V219: Forge info-button accessibility/geometry, reward-feed compatibility styling, equipment-filter readability, Settings stat-card layout, and toast/tutorial positioning. After remaining unloaded and contract-covered, obsolete `home-layout-fix-v119.js` and dormant `social-forge-layout-v1.js` working-tree sources were retired. V219 retains Home geometry and the event-driven `sr:bottomnavrendered` + resize/orientation/startup lifecycle without wrapping `renderTabs`.
 
+### Reward notifications — STABLE / CSS CONSOLIDATED
+
+The six compact presentation overrides formerly injected by `notification-compact-v105.js` now live in the existing canonical `#rewardFeed` and `.rewardPop` selectors in `style.css`. V105 remains in source for staged history but is unloaded, so the computed base presentation is unchanged while one static runtime request and one style-injection execution are removed. Home-specific reward-feed geometry remains scoped to V219.
+
 ### Accomplishments — STABLE / L2 SUBSTANTIALLY CLEANED / L5 STARTED
 
 Loaded:
@@ -86,7 +90,7 @@ Loaded Tree runtime is inventoried in `RUNTIME_INVENTORY.md`. Current ownership 
 - legacy mastery shells are retired from runtime/source; do not treat them as active authority.
 - `tree-dedicated-v116.js` owns the dedicated Tree renderer/mode presentation and the four presentation-only `Gain d’Or I–IV` labels.
 - V116's duplicate permanent `setInterval(syncMode,500)` poller and document-wide `MutationObserver` were removed; canonical `sr:bottomnavrendered` lifecycle plus startup sync own mode synchronization.
-- `tree-labels-v117.js` completed its staged ownership transfer, passed the regression soak, and is now unloaded. The normal non-Social runtime therefore remains at 102 files.
+- `tree-labels-v117.js` completed its staged ownership transfer, passed the regression soak, and is now unloaded. The later V105 CSS consolidation reduces the normal non-Social runtime to 100 files.
 - historical renderer/bridge sources V88, V102, V87 and V92 were source-retired after V116 ownership was contract-locked.
 - the unloaded V90 simple renderer and V213 mastery/observer layer were source-retired after V116/V216 ownership was contract-locked; V216 keeps the historical V213 guard claimed so stale legacy code cannot reinstall its observer.
 - `tree-safety-v83.js` no longer wraps canonical Evolution `raidReward`; V290 owns that reward rule while V83 retains historical mastery-save restoration and audit behavior.

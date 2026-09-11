@@ -751,17 +751,18 @@ body{
   animation:slideIn .2s ease-out;max-width:360px;margin:0 auto;
 }
 @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-#rewardFeed{position:absolute;right:10px;top:76px;z-index:68;width:min(250px,72%);display:flex;flex-direction:column;gap:6px;pointer-events:none}
-.rewardPop{padding:8px 10px;border:1px solid #43587D99;border-radius:10px;background:linear-gradient(180deg,#18274178,#0b132366);box-shadow:0 2px 8px #0004;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:slideIn .18s ease-out;pointer-events:auto}
+/* Canonical compact reward-notification presentation (formerly V105). */
+#rewardFeed{position:absolute;right:8px;top:94px;z-index:68;width:min(210px,62%);display:flex;flex-direction:column;gap:4px;pointer-events:none}
+.rewardPop{padding:6px 8px;border:1px solid #43587D99;border-radius:9px;background:linear-gradient(180deg,#1827415c,#0b13234d);box-shadow:0 2px 6px #0003;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);animation:slideIn .18s ease-out;pointer-events:auto}
 .rewardPop.clickable{cursor:pointer;border-color:#4A90D9}
-.rewardPop.clickable::after{content:"Appuyer pour voir";display:block;margin-top:4px;font-size:9px;color:#78B7FF;font-weight:800}
-.rewardPop.boss{border-color:#E8B44ACC;background:linear-gradient(180deg,#332a168f,#17120a78);box-shadow:0 2px 9px #0004,0 0 12px #E8B44A20}
-.rewardPop .rpT{font-weight:900;font-size:11.5px;color:var(--text)}
+.rewardPop.clickable::after{content:"Appuyer pour voir";display:block;margin-top:3px;font-size:8px;color:#78B7FF;font-weight:800}
+.rewardPop.boss{border-color:#E8B44ACC;background:linear-gradient(180deg,#332a166e,#17120a5c);box-shadow:0 2px 7px #0003,0 0 9px #E8B44A18}
+.rewardPop .rpT{font-weight:900;font-size:10.5px;color:var(--text)}
 .rewardPop.gold .rpT{color:var(--goldLit)}
 .rewardPop.exp .rpT{color:#9C8CFF}
 .rewardPop.system .rpT{color:#78B7FF}
 .rewardPop.boss .rpT{color:var(--goldLit)}
-.rewardPop .rpS{font-size:10.5px;color:var(--textDim);margin-top:2px;line-height:1.3}
+.rewardPop .rpS{font-size:9.5px;color:var(--textDim);margin-top:2px;line-height:1.25}
 .powerDelta{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:9999;pointer-events:none;min-width:142px;text-align:center;padding:9px 15px;border-radius:13px;background:#08111e9c;border:1px solid #425576b0;box-shadow:0 5px 18px #0007,0 0 18px currentColor;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:powerDeltaPop 1.9s ease-out forwards;font-weight:1000;font-size:23px;letter-spacing:.3px;text-shadow:0 2px 0 #000}
 .powerDelta.up{color:#63E889;border-color:#3FB950aa}.powerDelta.down{color:#FF6B72;border-color:#E5484Daa}
 .powerDelta small{display:block;font-size:9.5px;letter-spacing:1px;margin-bottom:3px;color:#d8deea;text-transform:uppercase}
