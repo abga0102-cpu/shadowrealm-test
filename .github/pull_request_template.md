@@ -5,6 +5,17 @@
 - Files/owners touched:
 - Starting `main` SHA:
 
+## Architecture / file placement
+
+- Existing canonical owner considered:
+- Placement decision: existing owner / new module
+- New production `.js` files: none
+- Why existing owner cannot safely contain this code: n/a
+- `ARCHITECTURE.md` owner entry added/updated: n/a
+- Versioned filename exception: n/a
+
+> Default rule: put new behavior into the existing canonical owner. Create a production JavaScript file only when no existing owner can take the responsibility cleanly. New `*-vNNN.js` patch layers require an explicit exception rationale.
+
 ## Intent
 
 - Behavior intentionally changed:
