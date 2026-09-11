@@ -6,6 +6,12 @@
 if(window.__srTreeDedicatedV116)return;
 window.__srTreeDedicatedV116=true;
 if(typeof TREE_NODES==='undefined'||typeof treeLv!=='function'||typeof treeReqOk!=='function')return;
+/* V117's naming-only gold labels now live with the canonical dedicated Tree renderer.
+   This changes labels only; effects, requirements, costs, levels, timers and saves stay untouched. */
+if(typeof TREE_BY_ID!=='undefined'){
+  var clearerGoldLabels={n1_07:'Gain d’Or I',n2_07:'Gain d’Or II',n3_07:'Gain d’Or III',n4_07:'Gain d’Or IV'};
+  Object.keys(clearerGoldLabels).forEach(function(id){var n=TREE_BY_ID[id];if(n){n.label=clearerGoldLabels[id];n.short=clearerGoldLabels[id];}});
+}
 var branches=[
 {id:'familier',label:'Familier',sub:'Oeufs',icon:'🐾'},
 {id:'or',label:'Or',sub:'Autonomie',icon:'●'},
@@ -14,7 +20,7 @@ var branches=[
 {id:'competence',label:'Compétence',sub:'Équipement',icon:'✦'}
 ];
 var selected='familier';
-function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c];});}
 function branchId(n){var e=n.effect||'';if(n.masteryKey){if(n.raidTarget==='evolution')return'pe';return n.raidTarget||'pe';}if(e==='petDmg'||e==='petHp'||e==='eggFree'||e==='eggSlot'||e.indexOf('hatch_')===0)return'familier';if(e==='goldAll'||e==='afkGain'||e==='afkTime')return'or';if(e.indexOf('forge')===0)return'minerai';if(e==='peRaid'||e==='research'||e==='techCost')return'pe';if(e==='skillDmg'||e==='skillFree'||e==='skillCost'||e==='passDmg'||e==='passHp'||e.indexOf('eq_')===0)return'competence';return'pe';}
 function masteryProgress(n){var r=n.masteryReq||[],d=0;for(var i=0;i<r.length;i++)if(treeLv(S,r[i])>=2)d++;return d+'/'+r.length;}
 function nodeHTML(n,active,remain){var lv=treeLv(S,n.id),maxed=lv>=n.max,busy=active===n.id,open=treeReqOk(S,n),state=n.masteryKey?(lv?'OBTENUE':masteryProgress(n)):(lv+'/'+n.max);if(busy&&typeof fmtTime==='function')state=fmtTime(remain);return '<button class="srDNode '+(!open?'locked ':'')+(maxed?'maxed ':'')+(busy?'busy':'')+'" data-act="treeNode" data-arg="'+esc(n.id)+'"><span class="ico">'+(n.masteryKey?'🔑':'◆')+'</span><span class="txt"><b>'+esc(n.short||n.label||n.id)+'</b></span><strong>'+esc(state)+'</strong></button>';}
