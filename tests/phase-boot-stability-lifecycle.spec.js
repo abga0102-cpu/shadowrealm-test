@@ -11,11 +11,12 @@ const source = fs.readFileSync(path.join(root, 'boot-stability-v115.js'), 'utf8'
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const retiredWaveSource = path.join(root, 'wave-display-v112.js');
 
-test('Boot wave correction is observer-driven without a perpetual polling fallback', async ({}, testInfo) => {
+test('Boot wave correction keeps child-list lifecycle with direct startup reconciliation', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   expect(source).toContain("observe(document.body,{childList:true,subtree:true})");
-  expect(source).toContain('setTimeout(syncWaveDisplay,0)');
+  expect(source).toContain('syncWaveDisplay();');
+  expect(source).not.toMatch(/setTimeout\s*\(\s*syncWaveDisplay/);
   expect(source).not.toMatch(/setInterval\s*\(\s*syncWaveDisplay/);
 });
 
