@@ -1,6 +1,6 @@
 /* SHADOWREACH · Runtime tree stability V216
-   Additive runtime authority loaded before V212/V213.
-   - Preserves the V212/V213 tree rules and visuals in one consolidated layer.
+   Consolidated runtime authority for the former V212/V213 responsibilities.
+   - Preserves the intended V212/V213 tree rules and visuals in one layer.
    - Prevents the two legacy body-wide MutationObservers from installing.
    - Popup mastery text is refreshed only after tree interactions.
    - No save schema, economy, acquired bonuses or node coordinates are changed. */
@@ -9,8 +9,8 @@
 if(window.__srRuntimeTreeStabilityV216)return;
 window.__srRuntimeTreeStabilityV216=true;
 
-/* V212/V213 stay in the build, but their duplicate runtime observers/wrappers
-   must not install. V216 reproduces their intended behavior below. */
+/* Keep the historical guards claimed so stale/cached legacy sources cannot
+   reinstall their duplicate runtime observers or wrappers. */
 window.__srPersonalTreeSpectacleV212=true;
 window.__srPersonalTreeMasteryClarityV213=true;
 
