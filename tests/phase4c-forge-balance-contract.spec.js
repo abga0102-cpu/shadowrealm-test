@@ -28,6 +28,31 @@ test('Forge balance migrations load before V224 and the V283 progression authori
   expect(v283).toBeGreaterThan(v224);
 });
 
+test('retired Forge auto-batch gate history stays absent while V266 remains canonical', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
+
+  const root = path.join(__dirname, '..');
+  const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const retired = [
+    'forge-auto-batch-gate-v254.js',
+    'forge-auto-batch-gate-v258.js',
+    'forge-auto-batch-gate-v260.js',
+    'forge-auto-batch-gate-v261.js',
+  ];
+
+  for (const file of retired) {
+    expect(fs.existsSync(path.join(root, file))).toBe(false);
+    expect(index).not.toContain(file);
+  }
+
+  expect(index).toContain('forge-auto-batch-gate-v266.js');
+  const canonical = fs.readFileSync(path.join(root, 'forge-auto-batch-gate-v266.js'), 'utf8');
+  expect(canonical).toContain('Canonical progression authority. No dynamic loaders.');
+  expect(canonical).toContain('forgeBatch(S)');
+  expect(canonical).toContain('ACT.autoForgeBatch266');
+  expect(canonical).toContain('#srAutoBatch266 .srBatch266');
+});
+
 test('V283 owns current fixed-base Forge equipment power independently of Forge level', async ({ page }) => {
   await openCleanGame(page);
 
