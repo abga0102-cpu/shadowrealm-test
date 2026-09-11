@@ -1,62 +1,85 @@
 # Lean-code remaining-work audit
 
-Audit date: 2026-09-11. Integration base: `d83da74` (PR #134); notification V105 consolidation reviewed on top of that base. This is a disposition of remaining work, not a declaration that L1–L5 are complete.
+Audit date: 2026-09-11. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged).
 
-## Verified baseline
+This file records the disposition after the proof-based L1 source audit. **L1 is complete.** L2, L3, L4 and staged L5 work remain open.
 
-The notification candidate contains 93 static loader entries, 7 deferred core entries and 10 scripts loaded transitively by `familiars-noscr-v231.js`: **110 normal-session first-party JavaScript files**, 112 with Social, and 114 with Social + Bot Testers. Optional third-party Social modules are separate. Earlier counts omitted the transitive chain; 100 is only the index-managed subtotal. The notification change removes one request (111 → 110), not ten. A new browser contract verifies the complete set of successful first-party JS responses against the inventory.
+## Verified runtime baseline
 
-The source-reference audit excluded ten active nested dependencies from the initial 39-file scan. They must not be source-retired. The corrected investigation list originally contained 29 files. Hero Equipment V1 and notification V105 reduced it to 27, Forge auto-batch history to 23, Rebirth V220 to 22, PR #142 Forge panel/entry history to 17, and PR #143 later Forge UX history to **10**. The current early Forge loot-UX history candidate retires V252/V253/V258, leaving **7 investigation candidates** if merged.
+The default non-Social session remains **110 first-party JavaScript files**:
 
-## Completed work missing from the older roadmap narrative
+- 93 static loader entries;
+- 7 deferred core entries;
+- 10 scripts loaded transitively by `familiars-noscr-v231.js`.
 
-- PR #127: V127 retains immediate + 700/1800 ms legacy reconciliation; removed 50/80 ms passes. Imported-save migration remains deterministic.
-- PR #129: V116 renders initially, then synchronizes mode directly; no zero-delay startup timer.
-- PR #130: V216 popup synchronization runs directly at startup.
-- PR #131: Boot V115 calls its existing safe startup synchronization directly.
-- PR #132: Home V219 synchronizes directly at startup.
-- PR #133: Hero Equipment bridge unloaded; active hero presentation remains in the base arena and V169 animation owners.
-- PR #134: V138 places its entry directly at startup; bounded retry remains for an unavailable entry host.
-- PR #135: the other workstream merged the Power Hint combat-end lifecycle as `f274995`; its changes are disjoint from notification/inventory work.
-- PR #136: Hero Equipment V1 and notification V105 remained unloaded through the corrected runtime-inventory integration gate.
-- PR #137: remaining-work audit integrated after #136 without production changes, providing the subsequent integration proof required before staged source retirement.
-- PR #138: Hero Equipment V1 and notification V105 completed source retirement; ownership contracts now require source absence.
-- PR #140: Forge auto-batch history V254/V258/V260/V261 completed source retirement; loaded V266 remains the canonical batch-gate authority.
-- PR #141: Rebirth V220 completed source retirement; loaded V221 remains the sole scroll-preservation owner and explicitly suppresses V220.
-- PR #142: Forge panel history V259/V260/V261 and standalone entry-animation history V263/V264 completed source retirement; loaded panel V266 and Forge UX V273 remain the canonical presentation owners.
-- PR #143: later Forge UX history V261/V266/V268/V269/V270/V271/V272 completed source retirement after exact-head regression proof. Loaded V273 remains the event-driven loot authority with bounded/background-safe queueing, comparison-aware AUTO feedback and no permanent idle watcher.
-- Early Forge UX audit: V252 was a visual-only fixed/body loot popup. V253/V257 moved results into the Forge panel and carried the then-current V254 batch selector. V258 consolidated that inline result authority. Later V261→V273 revisions superseded the loot lifecycle, while loaded `forge-auto-batch-gate-v266.js` separately owns progression gating. V252/V253/V258 are therefore historical predecessors, not active compatibility owners.
+Social raises the first-party count to 112 and Social + Bot Testers to 114. Optional third-party Social modules remain outside those totals.
 
-## Remaining work and evidence required
+The final L1 source retirements did not reduce this runtime count because those sources were already absent from all normal/deferred/conditional/transitive loader paths before deletion. The loader inventory in `RUNTIME_INVENTORY.md` remains the authoritative loaded-file list.
 
-| Phase / responsibility | Current evidence | Next reviewable scope and exit condition |
+## L1 closure
+
+The original root-source investigation was corrected after discovering that ten scripts loaded transitively by `familiars-noscr-v231.js` were active dependencies rather than retirement candidates. The corrected queue was then reduced through staged, subsystem-specific ownership proof until no candidate remained.
+
+Final closure sequence:
+
+- PR #138: Hero Equipment V1 and notification V105 source retirement after integration proof;
+- PR #140: Forge auto-batch history V254/V258/V260/V261 retired; loaded V266 remains canonical;
+- PR #141: Rebirth V220 retired; loaded V221 remains the scroll-preservation owner;
+- PR #142: Forge panel/entry-animation history V259/V260/V261/V263/V264 retired; V266/V273 remain canonical;
+- PR #143: later Forge UX history V261/V266/V268/V269/V270/V271/V272 retired; loaded V273 remains event-driven loot authority;
+- subsequent early Forge loot-UX retirement removed V252/V253/V258 after V273 + batch-gate V266 replacement proof;
+- PR #146: Forge V148 power-feedback history retired;
+- PR #147: Forge V112/V135 UI-action history retired;
+- PR #148: Familiar V232 pagination history retired after integrated V234 runtime ownership was proven;
+- PR #149: import progression V298 retired after corrected V299 imported-state normalization was behavior-locked;
+- PR #150: historical progression-coherence V304 retired after its responsibilities were proven split between progression-stability V304 and progression-integration V305;
+- PR #151: equipment dust-refund V238 retired after loaded V239 was proven to reconstruct legacy successful investment and own the current 50% normal / 100% infused refund model independently.
+
+### Final candidate disposition
+
+| Family | Final historical candidate | Surviving proof | Status |
+| --- | --- | --- | --- |
+| Forge / equipment | V112/V135 UI history | loaded V145/V266/V273 ownership contracts | RETIRED |
+| Forge / equipment | V148 power feedback | current Forge power/presentation owners | RETIRED |
+| Forge / equipment | V238 dust refund | loaded V239 reconstructs investment and owns refund/catalyst behavior | RETIRED |
+| Familiars | V232 pagination | loaded V234 integrated pagination owner | RETIRED |
+| Progression / import | V298 import authority | loaded V299 uses imported-state Forge stars and deterministic normalization | RETIRED |
+| Progression / import | coherence V304 | stability V304 owns multipliers; V305 owns state-aware Familiar helper | RETIRED |
+
+**Remaining L1 investigation candidates: 0.**
+
+L1 completion means every script still requested in the current runtime inventory has an explicit active/compatibility/migration reason to remain loaded, while every unloaded root-level candidate from the corrected audit has received a proof-based disposition. It does not mean no source can ever become obsolete again; future removals require a fresh audit or a later ownership transfer.
+
+## Remaining Lean Code work
+
+| Phase / responsibility | Current evidence | Next reviewable scope / exit condition |
 | --- | --- | --- |
-| L1 / L5 historical source retirement | 7 root-level tracked JS investigation candidates remain if the current three-file early Forge UX-history retirement lands. Absence alone does not prove no other references or active work. | Audit references, archived workflows, tests and concurrent owner work per family; delete only proven obsolete sources and preserve active contracts. |
-| L2 Sanctuary reserve rendering | V126 retains a zero-delay `mountReserve` after `scrSanctuaire` returns HTML. | Prove a post-DOM-commit event covers initial entry, refill and rerender before transferring the mount. Calling it directly before HTML is inserted is not equivalent. |
-| L2 Accomplishments migration startup | V126 retains 50 ms startup synchronization; V127/V140 have later compensation passes. | Capture legacy pending pieces and compensation sequencing across fresh boot and import before removing a delay. Migration markers and reward conservation must stay locked. |
-| L2 power hints — MERGED ELSEWHERE | PR #135 replaced the 350 ms V108 poller with `handleCombatEnd` and landed as `f274995`. | Do not duplicate the implemented lifecycle transfer. Its current active tests cover installation and absence of polling; behavior-level threshold/reset coverage is a separate follow-up if that owner is changed again. |
-| L2 audio | V26 polls combat at 50 ms, runs a 520 ms music cadence after unlock, and also contains a V6 PE save migration and historical raid reward wrapper. | Separate audio observation from historical economy responsibilities with legacy-save contracts before lifecycle changes. Do not retire the file as an audio-only patch. |
-| L3 durable domain owners | Home/BottomNav are consolidated; Accomplishments still separates state/events, migration, reserve, modal and payout responsibilities. Forge presentation ownership is explicit between V266 panel rendering and V273 loot UX. | Consolidate only where module boundaries reduce coupling. Keep canonical future claims separate from old-save compensation. Feature-sensitive Forge/Familiars/combat work requires an owner check. |
-| L4 escaping helpers | Base `game-3.js` escape does not escape apostrophes and stringifies null; Tree helpers escape apostrophes and map null/undefined to empty text. Forge helpers have further differences. | First specify input/output semantics and HTML contexts; preserve those differences with explicit adapters or retain local helpers. Blindly replacing them with base `esc` changes behavior. |
-| L4 number formatting | Base and Forge formatters use different suffix, rounding and locale rules. | Obtain golden input/output cases and decide which differences are intentional before adopting a common implementation. |
-| L5 staged UI sources — COMPLETED | Hero Equipment V1 and notification V105 survived the #136 exact-head integration gate and the subsequent #137 integration while remaining unloaded. | Sources are retired and ownership contracts now require absence while continuing to verify the surviving canonical owners and runtime presentation. |
-| L1/L5 Forge auto-batch gate history — COMPLETED | V254/V258/V260/V261 were absent from all runtime loader paths and superseded by loaded V266; PR #140 retired their sources after exact-head regression proof. | Keep V266 loaded/canonical and the historical sources absent. |
-| L1/L5 Rebirth V220 scroll history — COMPLETED | V220 was absent from runtime loaders. Loaded V221 explicitly replaces/suppresses it and PR #141 passed exact-head regression before merge. | Keep V221 exactly once in the loader, V220 source absent, and the V221 replacement/suppression contract intact. |
-| L1/L5 Forge panel / entry-animation history — COMPLETED | V259/V260/V261 panel sources and V263/V264 entry-animation sources were absent from runtime loaders and active references. PR #142 retired them after V266/V273 surviving-owner proof and an exact-head regression gate. | Keep V266/V273 loaded and the five historical sources absent. |
-| L1/L5 later Forge UX history — COMPLETED | V261/V266/V268/V269/V270/V271/V272 were unloaded historical Forge loot-presentation predecessors. PR #143 retired them after exact-head proof while keeping V273 unchanged. | Keep V273 loaded exactly once and preserve its bounded/background-safe event-driven lifecycle. |
-| L1/L5 early Forge loot UX history — CANDIDATE | V252 is visual-only; V253/V257 and V258 are earlier inline Forge-result owners. Loaded V273 owns current loot presentation, while loaded batch-gate V266 owns the progression gating formerly coupled into the old selectors. | Retire V252/V253/V258, require source absence in the existing Forge contract, keep V273 + batch-gate V266 loaded exactly once, and pass the exact-head regression gate. |
+| L2 Sanctuary reserve rendering | V126 retains a zero-delay `mountReserve` after `scrSanctuaire` returns HTML. | Prove a deterministic post-DOM-commit lifecycle covers initial entry, refill and rerender. Calling the mount directly before returned HTML is committed is not equivalent. |
+| L2 Accomplishments migration startup | V126 retains a 50 ms startup synchronization; V127/V140 retain later compensation sequencing. | Lock legacy pending pieces, reward conservation and fresh-boot/import ordering before removing another delay. |
+| L2 Power Hint lifecycle | Earlier polling cleanup was corrected after campaign-death lifecycle interference; current owner must remain passive with respect to canonical combat-end recovery. | Do not re-wrap `handleCombatEnd`; preserve campaign death/checkpoint regression coverage for any future Power Hint lifecycle change. |
+| L2 audio | V26 polls combat at 50 ms, runs a 520 ms music cadence after unlock, and also contains historical PE/save compatibility behavior. | Separate audio observation from migration/economy responsibilities with legacy-save contracts before changing lifecycle ownership. |
+| L3 durable domain owners | Home/BottomNav are consolidated; Accomplishments still separates state/events, migration, reserve, modal and payout responsibilities. Forge presentation ownership is explicit between V266 panel rendering and V273 loot UX. | Consolidate only when module boundaries reduce coupling; keep future claims separate from old-save compensation. Feature-sensitive Forge/Familiars/combat work requires a fresh owner check. |
+| L4 escaping helpers | Base, Tree and Forge escaping helpers have different null/apostrophe semantics. | Specify input/output and HTML-context semantics first; preserve intentional differences with adapters or retain local helpers. |
+| L4 number formatting | Base and Forge formatters differ in suffix, rounding and locale behavior. | Establish golden input/output cases before adopting any shared formatter. |
+| L5 staged source retirement | The L1-derived retirement queue is exhausted. | New L5 candidates arise only after later L2/L3 ownership transfers have survived integration, or after a fresh source-reference audit identifies new obsolete source. |
 
-## Unloaded root-source inventory by family
+## L2 recommended starting point
 
-Counts and bytes below come from tracked root-level `.js` sources absent from the static/deferred/conditional and transitive Familiar loader strings. These are investigation candidates, not an automatic deletion list.
+The preferred next production scope is **Sanctuary reserve rendering**. It is narrower than audio and less migration-sensitive than the remaining Accomplishments startup sequencing. The work should:
 
-| Family | Files | Source bytes | Disposition |
-| --- | ---: | ---: | --- |
-| Forge / equipment | 4 | 14405 | V112/V135 UI-action history, V148 power-feedback kill-switch and V238 refund migration require separate proof |
-| Familiars | 1 | 5369 | Feature-owner and archived-reference audit required |
-| Progression / import | 2 | 6333 | Save-compatibility and authority audit required |
-| Rebirth | 0 | 0 | V220 source retired after explicit V221 replacement proof |
+1. identify the exact DOM-commit/rerender lifecycle available after `scrSanctuaire` output is installed;
+2. add behavior coverage for initial Sanctuary entry, reserve refill/state change and rerender;
+3. prove the reserve UI mounts once without a zero-delay timing dependency;
+4. remove only the redundant timer/lifecycle wrapper, without changing Sanctuary pricing, rarity, save state or merge behavior;
+5. pass the exact-head moving smoke ratchet and full Chromium/WebKit gate before merge.
 
-The remaining investigation total is **7 files** if the current three-file early Forge loot-UX retirement lands. That batch removes **36,052 bytes** of already-unloaded source history; the normal-session runtime count remains 110 because none of those files are currently requested.
+## Phase status after this audit
 
-L0 inventory correction is included in the notification batch; its browser guard prevents the ten nested dependencies from being omitted again. L1, L2, L3 and L5 remain in progress. L4 now has concrete investigation evidence but no shared-helper production consolidation is claimed complete. Each production scope must still pass the exact-head moving smoke ratchet and full Chromium/WebKit gate, followed by a fresh main intersection check.
+- **L0 — COMPLETE**
+- **L1 — COMPLETE**
+- **L2 — IN PROGRESS**
+- **L3 — IN PROGRESS**
+- **L4 — INVESTIGATION STARTED**
+- **L5 — IN PROGRESS (staged retirements only; no current L1-derived queue)**
+
+Every production scope continues to follow `AGENTS.md`: coherent local implementation, one meaningful preflight, no 10–30 second micro-polling, exact-head CI, fresh `main` intersection check, merge, then post-merge verification.

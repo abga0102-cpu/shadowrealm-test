@@ -76,26 +76,37 @@ Completed:
 Exit criteria met: every loaded script has a reason to exist or is explicitly queued for proof-based investigation.
 
 ### L1 — Dead-load removal
-Status: IN PROGRESS
+Status: COMPLETE
 
-Stop requesting scripts that are provably inert or fully superseded. Keep source files in Git history/repository initially. Each unload is behavior-preserving and independently testable.
+Stop requesting scripts that are provably inert or fully superseded, then retire their source only after surviving ownership is explicit and regression-locked. One-time save compensation/migration code is never classified as dead merely because most current saves already carry its marker; historical compatibility must be proven in a durable owner first.
 
-Do not classify one-time save compensation/migration code as dead merely because current saves commonly carry its processed marker. Required historical-save compatibility must first be transferred to a durable migration owner before such a loader entry can be removed.
+Completed examples include:
 
-Completed examples:
+- retired Accomplishments marker sources V135/V136/V137 after their responsibilities were already owned by V138/V139;
+- `bottom-nav-v53.js` after its fantasy-decoration responsibility moved into canonical BottomNav ownership;
+- `home-layout-fix-v119.js` after its compatibility styling/decorating responsibilities moved into Home V219;
+- `accomplishments-floor-comp-v141.js` after its historical floor-reward migration responsibility and persisted markers moved into V127;
+- `tree-labels-v117.js` after its naming-only labels moved into V116;
+- `notification-compact-v105.js` after its CSS-only reward-notification overrides moved into `style.css`;
+- Forge auto-batch history V254/V258/V260/V261 after loaded V266 was proven to own the surviving gate behavior;
+- Rebirth scroll history V220 after loaded V221 was proven to be its explicit replacement;
+- Forge panel/entry-animation history V259/V260/V261/V263/V264 after V266/V273 were proven to be the loaded presentation owners;
+- later Forge UX history V261/V266/V268–V272 after V273 was contract-locked as the event-driven loot authority;
+- early Forge loot UX history V252/V253/V258 after V273 and batch-gate V266 were proven to own the surviving presentation/gating behavior;
+- Forge V148 power-feedback history, V112/V135 UI-action history, Familiar V232 pagination history, import progression V298, progression-coherence V304, and equipment dust-refund V238 after each replacement chain was behavior-locked in dedicated regression contracts.
 
-- retired Accomplishments marker sources V135/V136/V137 removed after their responsibilities were already owned by V138/V139;
-- `bottom-nav-v53.js` unloaded after its active fantasy-decoration responsibility was absorbed into canonical V209 BottomNav ownership;
-- `home-layout-fix-v119.js` unloaded after its active compatibility styling/decorating responsibilities were absorbed into canonical Home V219 ownership;
-- `accomplishments-floor-comp-v141.js` unloaded after its exact historical floor-reward migration responsibility and V141 persisted markers were absorbed into V127;
-- `tree-labels-v117.js` unloaded after its four naming-only `Gain d’Or I–IV` labels were absorbed into V116 and the staged transfer passed both exact-head and post-merge regression gates;
-- `notification-compact-v105.js` unloaded after its six CSS-only reward-notification overrides were folded into the existing canonical selectors in `style.css`;
-- superseded Forge auto-batch gate sources V254/V258/V260/V261 retired after reference/history review proved loaded V266 owns the surviving unlock, sanitization, action-gating and picker-lock behavior;
-- `rebirth-scroll-stability-v220.js` retired after loaded V221 was verified as its explicit replacement and sole Rebirth scroll-preservation owner;
-- superseded Forge panel/entry-animation history V259/V260/V261/V263/V264 retired after V266/V273 were verified as the loaded canonical panel and loot-presentation owners;
-- superseded later Forge UX history V261/V266/V268–V272 retired in PR #143 after V273 was contract-locked as the loaded event-driven loot authority.
+Final closure sequence:
 
-The corrected source-reference audit has **10 remaining unloaded investigation candidates** after PR #143. The current three-file early Forge loot-UX candidate (V252/V253/V258) would reduce that pool to **7** while leaving loaded V273 and batch-gate V266 unchanged. The remaining candidates are feature/save-sensitive and require family-specific proof before deletion.
+- PR #146 retired Forge V148 power-feedback history;
+- PR #147 retired Forge V112/V135 UI history;
+- PR #148 retired Familiar V232 pagination history in favor of integrated V234;
+- PR #149 retired import progression V298 in favor of corrected V299 imported-state normalization;
+- PR #150 retired the historical progression-coherence V304 pack after multiplier ownership was proven in progression-stability V304 and Familiar helper ownership in V305;
+- PR #151 retired equipment dust-refund V238 after loaded V239 was proven to reconstruct legacy investment and own the current 50%/100% refund model independently.
+
+The corrected L1 source-reference investigation queue is now **zero**. Every normal, deferred, transitive and conditional runtime script in `RUNTIME_INVENTORY.md` has an explicit reason to remain loaded, and every previously queued unloaded root-level candidate has either been retired with surviving-owner proof or retained as an active owner. The final source retirements do not change the **110-file** normal-session runtime count because those files were already unloaded before deletion.
+
+L1 exit criteria are met. Any future dead-load/source-retirement work requires a new reachability audit or a later L2/L3 ownership transfer; it is not part of the completed L1 queue.
 
 ### L2 — Wrapper-chain collapse
 Status: IN PROGRESS
@@ -112,7 +123,7 @@ Completed so far:
 - Home V219 stopped wrapping `renderTabs` and now subscribes to the canonical `sr:bottomnavrendered` lifecycle while keeping resize/orientation/startup synchronization;
 - Boot V115 removed its redundant permanent 500 ms wave-display poller while retaining the DOM-driven synchronization path and startup sync.
 
-Continue with one behavior at a time. Do not remove migration/save compatibility responsibilities merely because their runtime path is infrequent.
+Continue with one behavior at a time. Do not remove migration/save compatibility responsibilities merely because their runtime path is infrequent. The current preferred next scope is Sanctuary reserve rendering, where V126 still uses a zero-delay mount after `scrSanctuaire` returns HTML; replace it only after proving an equivalent post-DOM-commit lifecycle for initial entry, refill and rerender.
 
 ### L3 — Subsystem consolidation
 Status: IN PROGRESS
@@ -123,11 +134,11 @@ Completed so far:
 
 - BottomNav fantasy decoration from `bottom-nav-v53.js` was absorbed into `bottom-nav-layout-v183.js`, leaving one canonical BottomNav runtime owner for decoration, geometry and render lifecycle while `premium-ui-v209.js` remains visual polish only;
 - Home compatibility decoration from `home-layout-fix-v119.js` was absorbed into `home-layout-authority-v219.js`, leaving one canonical loaded Home owner for geometry, lifecycle, Forge info accessibility, reward-feed compatibility, equipment-filter readability, Settings stat cards and toast/tutorial positioning;
-- Accomplishments Settings entry injection moved from legacy V121 into canonical `accomplishments-canonical-v139.js`; V121's duplicate claim/payout path and legacy modal/reward renderer were then removed, leaving V121 with state migration plus raid/fusion event compatibility only while V139/V140 remain the sole UI and payout owners;
-- Accomplishments legacy floor25/floor50/floor75 make-good logic moved from standalone V141 into `accomplishments-reward-fix-v127.js`, preserving the exact V141 persisted idempotency markers and payout values while giving Raid 100 and floor compensation one durable boot/import migration owner. V141 is now unloaded from runtime;
-- Tree clearer gold-node labels from `tree-labels-v117.js` were absorbed into canonical dedicated renderer `tree-dedicated-v116.js`; V117 has now been unloaded after staged regression soak;
-- compact reward-notification presentation from CSS-only `notification-compact-v105.js` was absorbed directly into the canonical `#rewardFeed` / `.rewardPop` rules in `style.css`, removing a runtime script request without changing computed presentation;
-- Forge presentation ownership is now explicit: `forge-panel-authority-v266.js` owns the Home panel renderer, `forge-ux-v273.js` owns current event-driven loot presentation and entry animation, and `forge-auto-batch-gate-v266.js` owns batch progression gating. The panel/entry-animation and later V261/V266/V268–V272 UX histories are source-retired; the earlier V252/V253/V258 loot-UX chain is the current retirement candidate.
+- Accomplishments Settings entry injection moved from legacy V121 into canonical `accomplishments-canonical-v139.js`; V121's duplicate claim/payout path and legacy modal/reward renderer were removed, leaving V121 with state migration plus raid/fusion event compatibility while V139/V140 remain the sole UI and payout owners;
+- Accomplishments legacy floor25/floor50/floor75 make-good logic moved from standalone V141 into `accomplishments-reward-fix-v127.js`, preserving the exact V141 persisted idempotency markers and payout values while giving Raid 100 and floor compensation one durable boot/import migration owner;
+- Tree clearer gold-node labels from `tree-labels-v117.js` were absorbed into canonical dedicated renderer `tree-dedicated-v116.js`;
+- compact reward-notification presentation from CSS-only `notification-compact-v105.js` was absorbed directly into the canonical `#rewardFeed` / `.rewardPop` rules in `style.css`;
+- Forge presentation ownership is explicit: `forge-panel-authority-v266.js` owns the Home panel renderer, `forge-ux-v273.js` owns current event-driven loot presentation and entry animation, and `forge-auto-batch-gate-v266.js` owns batch progression gating. Historical panel, entry-animation and loot-UX predecessors covered by the L1 audit are source-retired.
 
 Remaining initial candidates:
 
@@ -148,9 +159,9 @@ Status: IN PROGRESS
 
 After scripts have remained unloaded and regression-covered across subsequent versions, delete obsolete source files from the working tree. Git history remains the archive.
 
-Completed examples include the retired Accomplishments marker families, V135 bridge and V141 layer, BottomNav V53, Home V119, Tree renderer/bridge history through V90/V92/V102/V213, Power Integrity V255, Equipment V175, Hero Equipment V1, notification V105, the superseded Forge auto-batch gate chain V254/V258/V260/V261, Rebirth scroll stability V220, Forge panel/entry-animation history V259/V260/V261/V263/V264, and later Forge UX history V261/V266/V268–V272. These retirements were made only after surviving ownership was explicit and the exact-head regression gate was satisfied.
+Completed examples include the retired Accomplishments marker families, V135 bridge and V141 layer, BottomNav V53, Home V119, Tree renderer/bridge history through V90/V92/V102/V213, Power Integrity V255, Equipment V175, Hero Equipment V1, notification V105, the Forge auto-batch history, Rebirth V220, Forge panel/entry-animation history, later and early Forge loot-UX history, Forge V148, Forge V112/V135, Familiar V232, import V298, progression-coherence V304 and equipment-refund V238.
 
-Current candidate: retire `forge-loot-visual-v252.js`, `forge-ux-v253.js` (V257 compatibility path), and `forge-ux-v258.js` as the earlier unloaded loot-presentation chain. Loaded `forge-ux-v273.js` and `forge-auto-batch-gate-v266.js` remain unchanged as the surviving presentation and gating owners.
+There is **no current L1-derived source-retirement candidate**. Future L5 work starts only when a later L2/L3 ownership transfer has survived integration long enough to justify staged source deletion, or when a fresh audit finds new obsolete source.
 
 ## Change-size policy
 
@@ -158,18 +169,18 @@ Prefer coherent, reviewable batches. Multiple provably dormant scripts in one su
 
 ## Completion criteria for remaining phases
 
-- L1: every proposed unload has reachability and surviving-owner evidence; remaining active or conditional files have an explicit reason to stay loaded.
+- L1: **MET** — every proposed unload/source retirement has reachability and surviving-owner evidence; remaining active or conditional files have an explicit reason to stay loaded.
 - L2: each proposed timer/wrapper removal has equivalent startup, rerender and state-transition coverage, including old saves where applicable.
 - L3: canonical modules own each transferred responsibility without replacing required migration compatibility or crossing active feature ownership.
 - L4: helper candidates have agreed input/output semantics and a measurable reduction in duplication without extra coupling. Retaining intentionally different helpers is valid.
 - L5: staged retired sources have subsequent integration proof, no remaining executable/archive dependency, and active ownership guards before deletion.
 
-These phases remain open until their evidence is recorded. A source count or a green test run alone is not enough to declare the entire plan complete.
+These later phases remain open until their evidence is recorded. A source count or a green test run alone is not enough to declare the entire program complete.
 
 ## Current baseline
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
 
-Current candidate first-party runtime after the V105 CSS consolidation is **110 JavaScript files** (100 index-managed + 10 transitively loaded) in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
+Current first-party runtime remains **110 JavaScript files** (100 index-managed + 10 transitively loaded) in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
-V295 added `familiar-ladder-authority-v295.js`, confirming that Familiars remains feature-owner sensitive and should not be an early consolidation target unless current work is rechecked first.
+L1 is complete at `main` after PR #151 (`231a8c81aa70f00f37cb66c9a7b1ffe2145a2733`). Future lean-code production work should now prioritize L2 lifecycle/wrapper collapse, beginning with the lowest-risk deterministic lifecycle opportunities and continuing to respect current feature-owner reservations.
