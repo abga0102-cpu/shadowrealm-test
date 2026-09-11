@@ -14,7 +14,7 @@ var branches=[
 {id:'competence',label:'Compétence',sub:'Équipement',icon:'✦'}
 ];
 var selected='familier';
-function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c];});}
 function branchId(n){var e=n.effect||'';if(n.masteryKey){if(n.raidTarget==='evolution')return'pe';return n.raidTarget||'pe';}if(e==='petDmg'||e==='petHp'||e==='eggFree'||e==='eggSlot'||e.indexOf('hatch_')===0)return'familier';if(e==='goldAll'||e==='afkGain'||e==='afkTime')return'or';if(e.indexOf('forge')===0)return'minerai';if(e==='peRaid'||e==='research'||e==='techCost')return'pe';if(e==='skillDmg'||e==='skillFree'||e==='skillCost'||e==='passDmg'||e==='passHp'||e.indexOf('eq_')===0)return'competence';return'pe';}
 function masteryProgress(n){var r=n.masteryReq||[],d=0;for(var i=0;i<r.length;i++)if(treeLv(S,r[i])>=2)d++;return d+'/'+r.length;}
 function nodeHTML(n,active,remain){var lv=treeLv(S,n.id),maxed=lv>=n.max,busy=active===n.id,open=treeReqOk(S,n),state=n.masteryKey?(lv?'OBTENUE':masteryProgress(n)):(lv+'/'+n.max);if(busy&&typeof fmtTime==='function')state=fmtTime(remain);return '<button class="srDNode '+(!open?'locked ':'')+(maxed?'maxed ':'')+(busy?'busy':'')+'" data-act="treeNode" data-arg="'+esc(n.id)+'"><span class="ico">'+(n.masteryKey?'🔑':'◆')+'</span><span class="txt"><b>'+esc(n.short||n.label||n.id)+'</b></span><strong>'+esc(state)+'</strong></button>';}
@@ -40,7 +40,10 @@ style.textContent=[
 '.srRadialTree,.srTreeClear{display:none!important}'
 ].join('');
 document.head.appendChild(style);
-/* Body subtree changes cover route rerenders, so one observer plus the startup sync
-   is sufficient; avoid a permanent 500 ms poller doing duplicate work. */
-if(typeof MutationObserver!=='undefined')new MutationObserver(syncMode).observe(document.body,{childList:true,subtree:true});setTimeout(syncMode,0);try{if(typeof render==='function')render();}catch(_){}
+/* BottomNav's canonical post-render lifecycle covers route rerenders deterministically.
+   Keep startup sync for the initial DOM and avoid document-wide observation/polling. */
+var syncQueued=false;
+function scheduleModeSync(){if(syncQueued)return;syncQueued=true;requestAnimationFrame(function(){syncQueued=false;syncMode();});}
+window.addEventListener('sr:bottomnavrendered',scheduleModeSync);
+setTimeout(syncMode,0);try{if(typeof render==='function')render();}catch(_){}
 })();
