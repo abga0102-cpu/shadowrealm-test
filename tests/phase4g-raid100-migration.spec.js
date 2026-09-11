@@ -57,7 +57,10 @@ test('Phase 4G makes legacy Raid 100 compensation migration-driven instead of po
   expect(legacyFix).toContain('window.migrate=function()');
   expect(legacyFix).toContain('compensateRaid100(migrated)');
   expect(legacyFix).toContain('compensateCurrentState()');
-  expect(legacyFix).toContain('setTimeout(compensateCurrentState,50)');
+  expect(legacyFix).toContain('setTimeout(compensateCurrentState,700)');
+  expect(legacyFix).toContain('setTimeout(compensateCurrentState,1800)');
+  expect(legacyFix).not.toContain('setTimeout(compensateCurrentState,50)');
+  expect(legacyFix).not.toContain('setTimeout(compensateCurrentState,80)');
 
   expect(canonicalClaim).toContain('raid100:{gold:1500000,eclat:1000,essence:1000,merge:{RARE:50},validatedRaid100:true}');
   expect(canonicalClaim).toContain('raid100ValidatedV127=true');
