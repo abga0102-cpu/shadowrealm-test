@@ -66,6 +66,20 @@ async function readSmokeFailures(browser, rootDir, label) {
   const page = await browser.newPage();
 
   try {
+    // The legacy smoke suite exercises randomized combat, loot and item rolls.
+    // Baseline and current run in separate pages, so unseeded Math.random can
+    // make the ratchet compare two different simulations and invent a failure.
+    // Give every document/frame the same deterministic sequence before any game
+    // script executes. This keeps the contract strict while making the A/B
+    // comparison reproducible.
+    await page.addInitScript(() => {
+      let state = 0x5eed1234;
+      Math.random = function () {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return state / 0x100000000;
+      };
+    });
+
     await page.route('**/npm/**', (route) => route.abort());
     await page.goto(`${url}/smoke-test.html`, { waitUntil: 'domcontentloaded' });
 
