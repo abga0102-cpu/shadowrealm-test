@@ -5,15 +5,20 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const source = (name) => fs.readFileSync(path.join(root, name), 'utf8');
 
-test('Phase 4B keeps save import ownership out of Sanctuary pricing', async ({}, testInfo) => {
+test('Phase 4B keeps V207 as the sole save-import source owner', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   const pricing = source('sanctuary-pricing-v125.js');
   const importer = source('import-save-guard-v207.js');
+  const index = source('index.html');
 
   expect(pricing).not.toContain('ACT.importSave');
   expect(pricing).not.toContain('__srImportGuardV206');
   expect(pricing).not.toContain('IMPORT_GUARD_V206');
+
+  expect(fs.existsSync(path.join(root, 'import-save-guard-v204.js'))).toBe(false);
+  expect(index).not.toContain('import-save-guard-v204.js');
+  expect(index.match(/import-save-guard-v207\.js/g) || []).toHaveLength(1);
 
   expect(importer).toContain('Authoritative save import guard V207');
   expect(importer).toContain('ACT.importSave=function()');
