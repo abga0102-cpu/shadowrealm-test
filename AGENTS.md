@@ -36,6 +36,8 @@ Before creating any production `.js` file, every human or AI agent must follow t
 
 The CI architecture file-placement guard enforces this policy for newly added production JavaScript. A direct push that introduces a new production `.js` file without the same architectural evidence is also treated as a failure.
 
+**AI agents must never push production-code changes directly to `main`.** Use a branch and pull request so the architecture and regression gates run before merge.
+
 ## Fast local-first workflow
 
 1. Pull/materialize only the files needed for the task.
