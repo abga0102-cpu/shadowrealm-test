@@ -9,6 +9,7 @@ test.describe('Equipment stats V175 source retirement', () => {
   test('V175 stays retired while V176 remains the loaded collapse owner', async ({}, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-desktop', 'source ownership is engine-independent');
 
+    // Source-ownership contract: V175 stays gone; V176 remains the sole loaded implementation.
     expect(fs.existsSync(path.join(root, 'equipment-stats-collapse-v175.js'))).toBe(false);
     expect(fs.existsSync(path.join(root, 'equipment-stats-collapse-v176.js'))).toBe(true);
 
