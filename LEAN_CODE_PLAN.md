@@ -94,7 +94,7 @@ Completed examples:
 - `rebirth-scroll-stability-v220.js` retired after loaded V221 was verified as its explicit replacement and sole Rebirth scroll-preservation owner;
 - superseded Forge presentation sources `forge-panel-compact-v259.js`, panel authorities V260/V261 and entry animations V263/V264 retired after V266/V273 were verified as the loaded canonical panel and loot-presentation owners.
 
-The corrected source-reference audit now has **17 remaining unloaded investigation candidates** after staged UI retirement, Forge auto-batch history, Rebirth V220 and the five-file Forge presentation-history retirement. Those 17 remain feature/save-sensitive and require family-specific proof before deletion.
+The corrected source-reference audit has **17 remaining unloaded investigation candidates** after the merged five-file Forge presentation-history retirement. The current seven-file later Forge UX-history candidate would reduce that pool to **10** while leaving loaded `forge-ux-v273.js` unchanged. The remaining candidates are feature/save-sensitive and require family-specific proof before deletion.
 
 ### L2 — Wrapper-chain collapse
 Status: IN PROGRESS
@@ -126,7 +126,7 @@ Completed so far:
 - Accomplishments legacy floor25/floor50/floor75 make-good logic moved from standalone V141 into `accomplishments-reward-fix-v127.js`, preserving the exact V141 persisted idempotency markers and payout values while giving Raid 100 and floor compensation one durable boot/import migration owner. V141 is now unloaded from runtime;
 - Tree clearer gold-node labels from `tree-labels-v117.js` were absorbed into canonical dedicated renderer `tree-dedicated-v116.js`; V117 has now been unloaded after staged regression soak;
 - compact reward-notification presentation from CSS-only `notification-compact-v105.js` was absorbed directly into the canonical `#rewardFeed` / `.rewardPop` rules in `style.css`, removing a runtime script request without changing computed presentation;
-- Forge presentation ownership is now explicit: `forge-panel-authority-v266.js` owns the Home panel renderer while `forge-ux-v273.js` owns current event-driven loot presentation and entry animation; the superseded presentation history is source-retired.
+- Forge presentation ownership is now explicit: `forge-panel-authority-v266.js` owns the Home panel renderer while `forge-ux-v273.js` owns current event-driven loot presentation and entry animation; the superseded panel/entry-animation history is source-retired and the later V261/V266/V268–V272 UX lineage is the current retirement candidate behind V273.
 
 Remaining initial candidates:
 
@@ -147,7 +147,9 @@ Status: IN PROGRESS
 
 After scripts have remained unloaded and regression-covered across subsequent versions, delete obsolete source files from the working tree. Git history remains the archive.
 
-Completed examples include the retired Accomplishments marker families, V135 bridge and V141 layer, BottomNav V53, Home V119, Tree renderer/bridge history through V90/V92/V102/V213, Power Integrity V255, Equipment V175, Hero Equipment V1, notification V105, the superseded Forge auto-batch gate chain V254/V258/V260/V261, Rebirth scroll stability V220, and the Forge presentation-history sources V259/V260/V261/V263/V264. Hero Equipment V1 and notification V105 were deleted only after their unload survived the #136 exact-head integration gate and the subsequent #137 integration; the Forge gate history was retired only after loaded V266 was confirmed as the canonical surviving authority and the old files were proven absent from runtime loader paths. Rebirth V220 was retired only after loaded V221 was confirmed to explicitly replace and suppress it. Forge presentation history is retired only after the loaded V266 panel and V273 loot owners were verified and the old files were proven absent from active references.
+Completed examples include the retired Accomplishments marker families, V135 bridge and V141 layer, BottomNav V53, Home V119, Tree renderer/bridge history through V90/V92/V102/V213, Power Integrity V255, Equipment V175, Hero Equipment V1, notification V105, the superseded Forge auto-batch gate chain V254/V258/V260/V261, Rebirth scroll stability V220, and the Forge presentation-history sources V259/V260/V261/V263/V264. Hero Equipment V1 and notification V105 were deleted only after their unload survived the #136 exact-head integration gate and the subsequent #137 integration; the Forge gate history was retired only after loaded V266 was confirmed as the canonical surviving authority and the old files were proven absent from runtime loader paths. Rebirth V220 was retired only after loaded V221 was confirmed to explicitly replace and suppress it. Forge panel/entry-animation history was retired only after the loaded V266 panel and V273 loot owners were verified and the old files were proven absent from active references.
+
+Current candidate: retire `forge-ux-v261.js`, V266 and V268–V272 as the later unloaded UX lineage behind loaded V273. V253/V258 remain excluded until their older compatibility/AUTO coupling is separately proven safe.
 
 ## Change-size policy
 
