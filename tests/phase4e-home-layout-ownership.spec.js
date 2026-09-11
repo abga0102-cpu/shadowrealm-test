@@ -4,6 +4,7 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const source = (name) => fs.readFileSync(path.join(root, name), 'utf8');
+const exists = (name) => fs.existsSync(path.join(root, name));
 const executable = (text) => text
   .replace(/\/\*[\s\S]*?\*\//g, '')
   .split('\n')
@@ -39,21 +40,16 @@ async function openCleanGame(page) {
 test('Phase 4E leaves V219 as the sole Home frame lifecycle owner and V209 as BottomNav geometry owner', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
-  const compatibility = source('home-layout-fix-v119.js');
   const homeAuthority = source('home-layout-authority-v219.js');
   const navAuthority = source('bottom-nav-layout-v183.js');
-  const legacyExecutable = executable(compatibility);
   const homeExecutable = executable(homeAuthority);
 
-  expect(compatibility).toContain('__srHomeLayoutCompatV119');
-  expect(compatibility).toContain('__srApplyHomeCompatV119');
-  expect(legacyExecutable).not.toContain('window.renderTabs=function');
-  expect(legacyExecutable).not.toContain('normalizeHomeFrame');
-  expect(legacyExecutable).not.toContain('#app.srHomeFullArena>#tabs');
-  expect(legacyExecutable).not.toContain('grid-template-columns:repeat(4');
-  expect(legacyExecutable).not.toContain('#screen.fixed>.pad.mt4');
+  expect(exists('social-forge-layout-v1.js')).toBe(false);
+  expect(exists('home-layout-fix-v119.js')).toBe(false);
 
   expect(homeAuthority).toContain('__srHomeLayoutAuthorityV219');
+  expect(homeAuthority).toContain('__srHomeFramePhase2B');
+  expect(homeAuthority).toContain('__srHomeLayoutCompatV119');
   expect(homeAuthority).toContain('__srSyncHomeFramePhase2B');
   expect(homeExecutable).not.toContain('window.renderTabs=function');
   expect(homeExecutable).toContain("addEventListener('sr:bottomnavrendered',schedule)");
