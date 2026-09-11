@@ -6,13 +6,13 @@ Snapshot base before the Home V119 consolidation: `main` at `b5c43fedc700ffebc5e
 
 ## Loader totals
 
-- 96 scripts are loaded synchronously through static `<script src>` entries.
+- 95 scripts are loaded synchronously through static `<script src>` entries.
 - 7 additional core UI scripts are loaded after startup in the default non-Social session.
-- Default runtime total: **103 JavaScript files**.
-- Social adds `social-v1.js` and `social-p2p-v1.js`: **105** files when Social is enabled.
-- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **107** files in that optional mode.
+- Default runtime total: **102 JavaScript files**.
+- Social adds `social-v1.js` and `social-p2p-v1.js`: **104** files when Social is enabled.
+- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **106** files in that optional mode.
 
-The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation. Unloading retired Accomplishments V141 now reduces the static runtime from 97 to 96 entries and the normal non-Social runtime to 103 files.
+The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation, to 103 by unloading retired Accomplishments V141, and now to 102 by absorbing V117's four presentation-only Tree labels into the already-loaded V116 Tree presentation owner.
 
 ## Static loader inventory
 
@@ -85,9 +85,9 @@ Reason: active Sanctuary/Forge presentation, migration, balance and equipment au
 - `forge-panel-authority-v266.js`
 - `forge-auto-batch-gate-v266.js`
 
-### Tree, core UI and guidance — 18
+### Tree, core UI and guidance — 17
 
-Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Known retired Tree mastery shells are already unloaded; `runtime-tree-stability-v216.js` is the active mastery owner. BottomNav decoration/geometry/lifecycle are consolidated in one static canonical owner. Remaining compatibility utilities require behavior proof before any L1 unload.
+Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Known retired Tree mastery shells are already unloaded; `runtime-tree-stability-v216.js` is the active mastery owner. `tree-dedicated-v116.js` now also owns the presentation-only clearer gold-node labels formerly layered by V117. Remaining compatibility utilities require behavior proof before any L1 unload.
 
 - `personal-tree-radial-v82.js`
 - `tree-safety-v83.js`
@@ -100,7 +100,6 @@ Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Kno
 - `boss-gate-v101.js`
 - `tree-research-v122.js`
 - `tree-dedicated-v116.js`
-- `tree-labels-v117.js`
 - `runtime-tree-stability-v216.js`
 - `personal-tree-spectacle-v247.js`
 - `notification-compact-v105.js`
@@ -168,14 +167,14 @@ Reason: loaded after startup by the deferred `core` chain. Home V219 is now the 
 
 ## Conditional optional loader entries — 4
 
-Reason: loaded only when their feature flag is enabled and therefore excluded from the 103-file normal-session total.
+Reason: loaded only when their feature flag is enabled and therefore excluded from the 102-file normal-session total.
 
 - Social: `social-v1.js`, `social-p2p-v1.js`
 - Bot Testers, only with Social: `social-bot-testers-v5.js`, `social-bot-ui-v1.js`
 
 ## Already retired/unloaded
 
-The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128, `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
+The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128, Tree label V117, `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
 
 ## L0 conclusion
 
