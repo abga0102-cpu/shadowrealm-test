@@ -62,21 +62,6 @@
     if(r.choice)p.push('Choix : 500 Etincelles OU 500 Essences');
     return p.join(' + ');
   }
-  function grant(s,r,choice){
-    if(r.gold)s.gold=(s.gold||0)+r.gold;
-    if(r.minerai)s.minerai=(s.minerai||0)+r.minerai;
-    if(r.pr)s.rebirth.pr=(s.rebirth.pr||0)+r.pr;
-    if(r.essence)s.essence=(s.essence||0)+r.essence;
-    if(r.eclat)s.eclat=(s.eclat||0)+r.eclat;
-    if(r.apples)s.apples=(s.apples||0)+r.apples;
-    if(r.universal)s.universalKeys=(s.universalKeys||0)+r.universal;
-    if(r.raidKey){const rr=s.raids[r.raidKey];if(rr)rr.keys=(rr.keys||0)+(r.raidKeyQty||1);}
-    if(r.accel)Object.keys(r.accel).forEach(k=>s.accels[k]=(s.accels[k]||0)+r.accel[k]);
-    if(r.merge){const x=ensure(s);Object.keys(r.merge).forEach(k=>x.mergePieces[k]=(x.mergePieces[k]||0)+r.merge[k]);}
-    if(r.choice==='dummy'){}
-    if(choice==='eclat')s.eclat=(s.eclat||0)+500;
-    if(choice==='essence')s.essence=(s.essence||0)+500;
-  }
   function row(a){
     const x=ensure(S),done=a[3](S),claimed=!!x.claimed[a[0]],r=a[4];
     let action='';
@@ -89,14 +74,6 @@
   function open(){
     ensure(S);const cats=['Forge','Rebirth','Raids','Etages','Familiers'];
     openModal(cats.map(c=>'<div class="sect" style="margin:12px 0 6px">'+c+'</div>'+A.filter(a=>a[1]===c).map(row).join('')).join('')+'<div class="mt10"><button class="btn ghost" data-act="closeModal">Fermer</button></div>','Accomplissements');
-  }
-  function claim(id,choice){
-    const a=A.find(z=>z[0]===id);if(!a)return;const x=ensure(S);
-    if(x.claimed[id]||!a[3](S))return;
-    if(a[4].choice&&choice!=='eclat'&&choice!=='essence')return;
-    update(s=>{const y=ensure(s);grant(s,a[4],choice);y.claimed[id]=true;if(choice)y.choices=y.choices||{},y.choices[id]=choice;});
-    toast('Accomplissement recupere !',true);
-    if(typeof ACT!=='undefined'&&typeof ACT.accomplishments==='function')ACT.accomplishments();else open();
   }
   /* Initialize/migrate accomplishment state once at module startup. The state is
      also normalized at every accomplishments/event entry point, so V121 does not
@@ -118,6 +95,6 @@
   const oldFuse=ACT.fuse;
   ACT.fuse=(a)=>{const before=(S.pets||[]).map(p=>p.id);oldFuse(a);const after=(S.pets||[]).filter(p=>before.indexOf(p.id)<0);if(after.length){const best=Math.max.apply(null,after.map(p=>RANK[p.rarity]??-1));if(best>=0)update(s=>{const x=ensure(s);x.fusedPetRank=Math.max(x.fusedPetRank,best);});}};
   ACT.accomplishments=()=>open();
-  /* Canonical claim clicks are owned by accomplishments-claim-v140.js. Keep V121
-     focused on legacy state/event compatibility instead of installing a second handler. */
+  /* Canonical claim clicks and payout logic are owned by accomplishments-claim-v140.js.
+     V121 retains only legacy state/event compatibility plus its startup UI fallback. */
 })();
