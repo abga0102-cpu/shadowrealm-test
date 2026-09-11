@@ -102,13 +102,10 @@ function syncAndRenderHint(){
 }
 window.__srSyncAccomplishmentMergeV126=syncAndRenderHint;
 
-/* Reward claims are the event that creates pending merge pieces. This listener
-   is registered before the canonical V140 claim handler and schedules sync for
-   the end of the same click turn, after the claim has updated state. */
-document.addEventListener('click',function(e){
-  var b=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach]'):null;
-  if(b)setTimeout(syncAndRenderHint,0);
-},true);
+/* V140 publishes this event only after a successful claim updated state. Consume
+   that lifecycle directly instead of depending on click-listener order plus a
+   zero-delay timer. */
+window.addEventListener('sr:accomplishmentclaimed',syncAndRenderHint);
 
 /* Sanctuary rendering is the deterministic reserve-refill lifecycle. Sync before
    building the screen so newly available board slots are filled immediately,
