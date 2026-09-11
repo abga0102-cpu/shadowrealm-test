@@ -11,7 +11,6 @@ if(window.__srSecondaryHudSelectiveV279)return;window.__srSecondaryHudSelectiveV
 if(typeof renderHUD!=='function')return;
 
 var nativeRenderHUD=renderHUD;
-var overlayObserver=null;
 
 function secondary(){
   try{
@@ -36,28 +35,9 @@ renderHUD=function(){
 };
 try{window.renderHUD=renderHUD;}catch(_){}
 
-function observeOverlay(){
-  if(overlayObserver||typeof MutationObserver!=='function')return;
-  var app=document.getElementById('app');
-  if(!app)return;
-  overlayObserver=new MutationObserver(function(muts){
-    for(var i=0;i<muts.length;i++){
-      var m=muts[i];
-      if(m.type!=='childList')continue;
-      var changed=false;
-      for(var j=0;j<m.addedNodes.length;j++){
-        var a=m.addedNodes[j];
-        if(a&&a.nodeType===1&&a.id==='overlay'){changed=true;break;}
-      }
-      for(var k=0;k<m.removedNodes.length&&!changed;k++){
-        var r=m.removedNodes[k];
-        if(r&&r.nodeType===1&&r.id==='overlay'){changed=true;break;}
-      }
-      if(changed){sync();break;}
-    }
-  });
-  overlayObserver.observe(app,{childList:true,subtree:false});
-}
+/* The canonical modal owner publishes open/close state after each transition.
+   React to that lifecycle directly instead of observing #app child mutations. */
+window.addEventListener('sr:modal-state',sync);
 
 ['srSecondaryHudContextV276Style','srSecondaryHudSelectiveV277Style','srSecondaryHudSelectiveV278Style'].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});
 var st=document.createElement('style');
@@ -76,7 +56,6 @@ st.textContent='\
 ';
 document.head.appendChild(st);
 
-observeOverlay();
 sync();
 window.__srSecondaryHudSelectiveV279={version:279,sync:sync,isSecondary:secondary};
 })();
