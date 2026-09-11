@@ -6,13 +6,19 @@ Snapshot base before the Home V119 consolidation: `main` at `b5c43fedc700ffebc5e
 
 ## Loader totals
 
-- 94 scripts are loaded synchronously through static `<script src>` entries.
+- 93 scripts are loaded synchronously through static `<script src>` entries.
 - 7 additional core UI scripts are loaded after startup in the default non-Social session.
-- Default runtime total: **101 JavaScript files**.
-- Social adds `social-v1.js` and `social-p2p-v1.js`: **103** files when Social is enabled.
-- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **105** files in that optional mode.
+- Index-managed subtotal: **100 JavaScript files**.
+- 10 additional scripts are loaded transitively by `familiars-noscr-v231.js`.
+- Default first-party runtime total: **110 JavaScript files**.
+- Social adds `social-v1.js` and `social-p2p-v1.js`: **112** first-party files when Social is enabled.
+- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **114** first-party files in that optional mode.
 
 The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation, then to 103 by unloading retired Accomplishments V141. After the staged V117 ownership transfer passed PR and post-merge regression, unloading inert Tree V117 reduced the static runtime to 95 entries and the normal non-Social runtime to 102 files. Unloading the retired Hero Equipment visual bridge reduces the static runtime to 94 entries and the normal non-Social runtime to 101 files.
+
+Absorbing the V105 notification CSS into `style.css` then reduces the static runtime to 93 entries and the normal runtime to 100 files.
+
+The earlier totals above counted only scripts managed by `index.html`; they omitted the ten-script nested Familiar loader. The full current normal-session first-party count is 110, down from 111 before notification V105 was unloaded. Social may additionally import third-party network modules; those are not included in the first-party counts.
 
 ## Static loader inventory
 
@@ -85,7 +91,7 @@ Reason: active Sanctuary/Forge presentation, migration, balance and equipment au
 - `forge-panel-authority-v266.js`
 - `forge-auto-batch-gate-v266.js`
 
-### Tree, core UI and guidance — 16
+### Tree, core UI and guidance — 15
 
 Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Known retired Tree mastery shells are already unloaded; `runtime-tree-stability-v216.js` is the active mastery owner. `tree-dedicated-v116.js` owns the clearer `Gain d’Or I–IV` labels; the inert V117 marker is now unloaded. BottomNav decoration/geometry/lifecycle are consolidated in one static canonical owner.
 
@@ -101,7 +107,6 @@ Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Kno
 - `tree-dedicated-v116.js`
 - `runtime-tree-stability-v216.js`
 - `personal-tree-spectacle-v247.js`
-- `notification-compact-v105.js`
 - `raid-intro-balance-v107.js`
 - `power-hint-v108.js`
 - `boot-stability-v115.js`
@@ -164,16 +169,31 @@ Reason: loaded after startup by the deferred `core` chain. Home V219 is now the 
 - `rebirth-ui-cleanup-v224.js`
 - `rebirth-removal-authority-v281.js`
 
+## Transitive Familiar / recycling loader — 10
+
+`familiars-noscr-v231.js` loads these scripts sequentially during normal startup. They are active feature-sensitive dependencies, not unloaded source-retirement candidates.
+
+- `equipment-recycle-infusion-v239.js`
+- `familiars-rates-balance-v237.js`
+- `familiars-noscr-v234.js`
+- `familiars-compact-active-v235.js`
+- `familiars-rates-modal-v236.js`
+- `familiars-scroll-layout-v240.js`
+- `familiars-tabs-merge-v241.js`
+- `familiars-scroll-safearea-v242.js`
+- `familiars-scroll-viewport-v245.js`
+- `familiars-scroll-natural-v246.js`
+
 ## Conditional optional loader entries — 4
 
-Reason: loaded only when their feature flag is enabled and therefore excluded from the 101-file normal-session total.
+Reason: loaded only when their feature flag is enabled and therefore excluded from the 110-file first-party normal-session total.
 
 - Social: `social-v1.js`, `social-p2p-v1.js`
 - Bot Testers, only with Social: `social-bot-testers-v5.js`, `social-bot-ui-v1.js`
 
 ## Already retired/unloaded
 
-The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `hero-equipment-v1.js` (retired visual safety bridge, source retained for staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
+The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `hero-equipment-v1.js` (retired visual safety bridge, source retained for staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, `notification-compact-v105.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
 
 ## L0 conclusion
 

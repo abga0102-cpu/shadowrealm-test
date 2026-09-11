@@ -4,6 +4,7 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const style = fs.readFileSync(path.join(root, 'style.css'), 'utf8');
 const retired = 'ui-mobile-fix-v180.js';
 
 test('retired mobile UI V180 source stays absent from the production graph', async ({}, testInfo) => {
@@ -12,5 +13,6 @@ test('retired mobile UI V180 source stays absent from the production graph', asy
   expect(fs.existsSync(path.join(root, retired))).toBe(false);
   expect(index).not.toContain(retired);
   expect(index).toContain('home-layout-authority-v219.js');
-  expect(index).toContain('notification-compact-v105.js');
+  expect(index).not.toContain('notification-compact-v105.js');
+  expect(style).toContain('Canonical compact reward-notification presentation (formerly V105).');
 });

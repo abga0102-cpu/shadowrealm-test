@@ -18,8 +18,10 @@ test('retired Hero Equipment V1 bridge stays out of the runtime loader while its
   const bridge = source('hero-equipment-v1.js');
 
   expect(scriptSources(index)).not.toContain('hero-equipment-v1.js');
-  expect(inventory).toContain('- 94 scripts are loaded synchronously through static `<script src>` entries.');
-  expect(inventory).toContain('Default runtime total: **101 JavaScript files**.');
+  const staticCount = scriptSources(index).length;
+  const core = index.match(/var core=\[([^\]]+)\]/)[1].match(/'[^']+'/g);
+  expect(inventory).toContain(`- ${staticCount} scripts are loaded synchronously through static \`<script src>\` entries.`);
+  expect(inventory).toContain(`Index-managed subtotal: **${staticCount + core.length} JavaScript files**.`);
   expect(inventory).toContain('`hero-equipment-v1.js` (retired visual safety bridge, source retained for staged proof)');
 
   expect(bridge).toContain('const originalDrawArena=drawArena');
