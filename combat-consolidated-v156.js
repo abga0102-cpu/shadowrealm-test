@@ -3,6 +3,7 @@
    - Preserves smoother combat sampling and attack anticipation.
    - Preserves stronger hit/crit/death readability.
    - Aligns wave/floor pacing with 0.90s death readability.
+   - Makes campaign defeat recovery deterministic instead of timer-dependent.
    - No changes to damage, HP, rewards, enemy scaling, economy or progression.
 */
 (function () {
@@ -16,9 +17,29 @@
   }
 
   const nativeSetInterval = window.setInterval.bind(window);
+  const nativeSetTimeout = window.setTimeout.bind(window);
   const VISUAL_ATTACK_WINDOW = 0.28;
   let hooked = false;
   let lastRun = performance.now();
+
+  /* Core campaign loss handling already rolls state back to the checkpoint, then
+     asks for startCampaign() through a 40 ms timer. A throttled/dropped timer can
+     therefore leave the processed dead combat installed forever. Keep the same
+     settle/reward/state lifecycle, but make that one loss-only restart immediate.
+     Victories, Rebirth, raids and every other timeout keep native scheduling. */
+  window.setTimeout = function (fn, delay) {
+    const extra = Array.prototype.slice.call(arguments, 2);
+    try {
+      const lostCampaign = typeof combat !== "undefined" && combat &&
+        combat.ctx === "campaign" && combat.status === "lost";
+      if (lostCampaign && delay === 40 && typeof startCampaign === "function" && fn === startCampaign) {
+        fn.apply(window, extra);
+        return 0;
+      }
+    } catch (_) {}
+    return nativeSetTimeout.apply(window, [fn, delay].concat(extra));
+  };
+  window.__srCampaignLossImmediateRestartV156 = true;
 
   function heroCadenceBase(c) {
     try {
