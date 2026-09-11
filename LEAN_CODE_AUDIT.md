@@ -2,7 +2,7 @@
 
 Working document for `LEAN_CODE_PLAN.md`. This file records facts discovered during L0 and subsequent lean-code iterations so developers and AI agents do not repeatedly rediscover stale runtime relationships.
 
-Current coordination baseline before BottomNav consolidation: `main` `2dadc3cd23b106792557d8cc7c6912aefb352353`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership.
+Current coordination baseline before Home V119 consolidation: `main` `b5c43fedc700ffebc5eba076189f36c20927d9ff`. `RUNTIME_INVENTORY.md` is authoritative for the current loader list and `ARCHITECTURE.md` is authoritative for canonical ownership.
 
 ## Loader structure
 
@@ -46,11 +46,11 @@ The loaded Familiar chain remains explicitly excluded from early cleanup until c
 
 This remains one of the largest eventual consolidation opportunities, but the current progression/Forge authority chain is still feature-owner sensitive. Audit only until current/open work proves the area stable.
 
-### Home / BottomNav / premium UI — STABLE ENOUGH FOR EARLY LEANING
+### Home / BottomNav / premium UI — STABLE / CONSOLIDATED
 
-BottomNav now has one canonical runtime owner: `bottom-nav-layout-v183.js` owns fantasy icon decoration, geometry and the sole `renderTabs` lifecycle wrapper. It is loaded statically in the former V53 slot so initial mobile decoration timing is preserved. The deferred duplicate load was removed. `bottom-nav-v53.js` remains in source history but is no longer requested at runtime. `premium-ui-v209.js` remains visual/material polish only.
+BottomNav has one canonical runtime owner: `bottom-nav-layout-v183.js` owns fantasy icon decoration, geometry and the sole `renderTabs` lifecycle wrapper. It is loaded statically in the former V53 slot so initial mobile decoration timing is preserved. The deferred duplicate load was removed. `bottom-nav-v53.js` remains in source history but is no longer requested at runtime. `premium-ui-v209.js` remains visual/material polish only.
 
-`home-layout-fix-v119.js` has been re-audited after the Accomplishments cleanup and is not a dead load: it still supplies active Forge info-button accessibility/geometry, reward-feed compatibility styling, equipment-filter readability, Settings stat-card layout, and toast/tutorial positioning.
+Home now has one canonical loaded runtime owner: `home-layout-authority-v219.js`. The active V119 compatibility responsibilities were transferred into V219: Forge info-button accessibility/geometry, reward-feed compatibility styling, equipment-filter readability, Settings stat-card layout, and toast/tutorial positioning. `home-layout-fix-v119.js` remains in source history but is no longer requested at runtime. V219 retains Home geometry and the event-driven `sr:bottomnavrendered` + resize/orientation/startup lifecycle without wrapping `renderTabs`.
 
 ### Accomplishments — STABLE / L2 SUBSTANTIALLY CLEANED
 
@@ -98,11 +98,10 @@ Social and bot-tester scripts are conditional. Do not classify absence from a no
 
 ## Prioritized investigation queue
 
-1. **Home/BottomNav:** BottomNav decoration/geometry/lifecycle are consolidated; continue proof-based checks only for remaining Home compatibility behavior and do not unload `home-layout-fix-v119.js` based on naming alone.
-2. **Accomplishments:** major wrapper/poller targets have been cleaned; future work should focus on durable subsystem consolidation and migration separation, not recreating retired wrapper ownership.
-3. **Tree:** continue mapping wrappers/actions after the V116 polling/observer removal; prefer deterministic lifecycle hooks and the V216 mastery owner.
-4. **Shared helpers:** only after repeated helper implementations are confirmed across stable subsystems.
-5. **Forge/Familiars/Rebirth/combat progression:** postpone consolidation until active AI-driven feature work stops intersecting their owners.
+1. **Accomplishments:** major wrapper/poller targets have been cleaned; future work should focus on durable subsystem consolidation and migration separation, not recreating retired wrapper ownership.
+2. **Tree:** continue mapping wrappers/actions after the V116 polling/observer removal; prefer deterministic lifecycle hooks and the V216 mastery owner.
+3. **Shared helpers:** only after repeated helper implementations are confirmed across stable subsystems.
+4. **Forge/Familiars/Rebirth/combat progression:** postpone consolidation until active AI-driven feature work stops intersecting their owners.
 
 ## Safety rule for candidates
 

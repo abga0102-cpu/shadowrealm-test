@@ -17,6 +17,7 @@ const retiredUnloaded = [
   'social-forge-layout-v1.js',
   'premium-recommendation-cleanup-v243.js',
   'bottom-nav-v53.js',
+  'home-layout-fix-v119.js',
   'accomplishments-titles-v133.js',
   'accomplishments-overview-v135.js',
   'accomplishments-home-scope-v136.js',
@@ -31,7 +32,6 @@ const canonicalReferencedOnce = [
   'bottom-nav-layout-v183.js',
   'premium-ui-v209.js',
   'home-layout-authority-v219.js',
-  'home-layout-fix-v119.js',
   'combat-consolidated-v156.js',
   'combat-polish-v157.js',
   'combat-animation-v169.js',
@@ -82,9 +82,14 @@ test('BottomNav uses one canonical runtime owner while keeping premium polish se
   expect(premium).not.toContain('__srApplyBottomNavGeometryV209');
 });
 
-test('Home lifecycle subscribes to canonical BottomNav post-render event without wrapping renderTabs', () => {
+test('Home geometry, lifecycle and compatibility use one canonical runtime owner', () => {
   const home = read('home-layout-authority-v219.js');
   expect(home).toContain('__srHomeLayoutAuthorityV219');
+  expect(home).toContain('__srHomeLayoutCompatV119');
+  expect(home).toContain('__srApplyHomeCompatV119');
+  expect(home).toContain('equipFiltersCompat');
+  expect(home).toContain('settingsStatGridCompat');
+  expect(home).toContain("aria-label','Informations sur les raretés");
   expect(home).toContain("addEventListener('sr:bottomnavrendered',schedule)");
   expect(home).not.toMatch(/renderTabs\s*=|function\s+renderTabs\b/);
 });
@@ -92,14 +97,14 @@ test('Home lifecycle subscribes to canonical BottomNav post-render event without
 test('known duplicate ownership mechanisms do not return', () => {
   const v138 = read('accomplishments-stability-v138.js');
   const v127 = read('accomplishments-reward-fix-v127.js');
-  const v119 = read('home-layout-fix-v119.js');
+  const home = read('home-layout-authority-v219.js');
   const v125 = read('sanctuary-pricing-v125.js');
 
   expect(v138).not.toMatch(/new\s+MutationObserver\s*\(/);
   expect(v138).not.toMatch(/renderTabs\s*=|function\s+renderTabs\b/);
   expect(v138).toContain("addEventListener('sr:bottomnavrendered',schedulePlace)");
   expect(v127).not.toMatch(/setInterval\s*\([^,]+,\s*500\s*\)/s);
-  expect(v119).not.toMatch(/renderTabs\s*=|function\s+renderTabs\b/);
+  expect(home).not.toMatch(/renderTabs\s*=|function\s+renderTabs\b/);
   expect(v125).not.toContain('IMPORT_GUARD_V206');
 });
 
