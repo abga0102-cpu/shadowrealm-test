@@ -52,7 +52,7 @@ BottomNav has one canonical runtime owner: `bottom-nav-layout-v183.js` owns fant
 
 Home now has one canonical loaded runtime owner: `home-layout-authority-v219.js`. The active V119 compatibility responsibilities were transferred into V219: Forge info-button accessibility/geometry, reward-feed compatibility styling, equipment-filter readability, Settings stat-card layout, and toast/tutorial positioning. `home-layout-fix-v119.js` remains in source history but is no longer requested at runtime. V219 retains Home geometry and the event-driven `sr:bottomnavrendered` + resize/orientation/startup lifecycle without wrapping `renderTabs`.
 
-### Accomplishments — STABLE / L2 SUBSTANTIALLY CLEANED
+### Accomplishments — STABLE / L2 SUBSTANTIALLY CLEANED / L5 STARTED
 
 Loaded:
 
@@ -62,7 +62,6 @@ Loaded:
 - `accomplishments-stability-v138.js`
 - `accomplishments-canonical-v139.js`
 - `accomplishments-claim-v140.js`
-- `accomplishments-floor-comp-v141.js`
 
 Already retired/unloaded or source-retired examples are tracked in `ARCHITECTURE.md`.
 
@@ -72,7 +71,8 @@ Completed L2/L3 findings:
 - V138 no longer wraps `renderTabs`; it subscribes to canonical `sr:bottomnavrendered` lifecycle.
 - V139 no longer wraps global `openModal`; successful V121 claim refreshes route through canonical `ACT.accomplishments()` with its local legacy open path retained only as fallback.
 - The Settings-screen Accomplishments entry is now owned by canonical V139 rather than V121. V121 no longer wraps `scrParametres`, leaving its surviving responsibilities centered on legacy state/event compatibility and historical accomplishment tracking.
-- Migration/startup compatibility layers such as V127 and V141 remain loaded because historical-save responsibilities are still required.
+- V127 remains loaded because its historical-save responsibilities are still required. V141's floor make-good responsibility was transferred into V127 and V141 was then unloaded.
+- `accomplishments-ui-v123.js` and `accomplishments-titles-v133.js` remained unloaded and contract-covered across subsequent releases. Their obsolete working-tree sources are now retired as the first Accomplishments L5 batch; Git history remains the archive.
 
 Do not reintroduce wrapper chains merely because older source contracts once expected them.
 

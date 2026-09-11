@@ -5,29 +5,26 @@ const { touchCurrentLocator } = require('./helpers/render-stable-touch');
 
 const root = path.join(__dirname, '..');
 const source = (name) => fs.readFileSync(path.join(root, name), 'utf8');
+const exists = (name) => fs.existsSync(path.join(root, name));
 
-test('post-4G unloads dormant Accomplishments UI v123 behind the v138 lifecycle owner', async ({}, testInfo) => {
+test('post-4G source-retires dormant Accomplishments UI v123 behind the v138 lifecycle owner', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   const index = source('index.html');
-  const legacy = source('accomplishments-ui-v123.js');
   const stability = source('accomplishments-stability-v138.js');
 
   expect(index).not.toContain('accomplishments-ui-v123.js');
+  expect(exists('accomplishments-ui-v123.js')).toBe(false);
   expect(index.match(/accomplishments-stability-v138\.js/g) || []).toHaveLength(1);
   expect(index.match(/accomplishments-canonical-v139\.js/g) || []).toHaveLength(1);
-
-  // Keep the historical legacy source in-repo, but do not execute it.
-  expect(legacy).toContain('__srAccomplishmentsUIV124');
-  expect(legacy).toContain('new MutationObserver');
-  expect(legacy).toContain('setInterval(mount,700)');
 
   // Phase 4F v138 remains the deterministic Development-route owner and keeps
   // the legacy guard for compatibility with old bundles/saves.
   expect(stability).toContain('window.__srAccomplishmentsUIV124=true');
   expect(stability).toContain('__srAccomplishmentsStabilityV138');
-  expect(stability).toContain('window.renderTabs=function');
+  expect(stability).toContain("window.addEventListener('sr:bottomnavrendered',schedulePlace)");
   expect(stability).toContain('data-sr-accomplishments-v138');
+  expect(stability).not.toMatch(/renderTabs\s*=|function\s+renderTabs\b/);
   expect(stability).not.toContain('new MutationObserver');
   expect(stability).not.toContain('setInterval(');
 });
