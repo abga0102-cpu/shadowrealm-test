@@ -64,6 +64,13 @@ test('retired Forge presentation history stays absent while V266 panel and V273 
     'forge-panel-authority-v261.js',
     'forge-entry-animation-v263.js',
     'forge-entry-animation-v264.js',
+    'forge-ux-v261.js',
+    'forge-ux-v266.js',
+    'forge-ux-v268.js',
+    'forge-ux-v269.js',
+    'forge-ux-v270.js',
+    'forge-ux-v271.js',
+    'forge-ux-v272.js',
   ];
 
   for (const file of retired) {
@@ -71,8 +78,8 @@ test('retired Forge presentation history stays absent while V266 panel and V273 
     expect(index).not.toContain(file);
   }
 
-  expect(index).toContain('forge-panel-authority-v266.js');
-  expect(index).toContain('forge-ux-v273.js');
+  expect((index.match(/forge-panel-authority-v266\.js/g) || []).length).toBe(1);
+  expect((index.match(/forge-ux-v273\.js/g) || []).length).toBe(1);
 
   const panel = fs.readFileSync(path.join(root, 'forge-panel-authority-v266.js'), 'utf8');
   expect(panel).toContain('Canonical renderer-level Home Forge authority.');
@@ -82,8 +89,13 @@ test('retired Forge presentation history stays absent while V266 panel and V273 
 
   const ux = fs.readFileSync(path.join(root, 'forge-ux-v273.js'), 'utf8');
   expect(ux).toContain('Event-driven Forge loot authority');
+  expect(ux).toContain('comparison-aware AUTO feedback');
+  expect(ux).toContain('no permanent 140ms watcher while idle');
+  expect(ux).toContain('function needsFastWatch()');
+  expect(ux).toContain('if(watchTimer||document.hidden||!needsFastWatch())return;');
   expect(ux).toContain('srForgeEntryAnimationV263Style');
   expect(ux).toContain('srForgeEntryAnimationV264Style');
+  expect(ux).toContain('srForgeUX272Style');
   expect(ux).toContain('srForgeLoot273');
 });
 
