@@ -6,9 +6,9 @@ const root = path.resolve(__dirname, '..');
 const src = file => fs.readFileSync(path.join(root, file), 'utf8');
 
 test.describe('Accomplishments V127 bounded startup lifecycle', () => {
-  test.skip(({ project }) => project.name !== 'chromium-desktop', 'source lifecycle contract is engine-independent');
+  test('keeps deterministic migration ownership without redundant near-startup timers', async ({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'source lifecycle contract is engine-independent');
 
-  test('keeps deterministic migration ownership without redundant near-startup timers', () => {
     const code = src('accomplishments-reward-fix-v127.js');
 
     expect(code).toContain('window.migrate=function()');
