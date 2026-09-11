@@ -1,0 +1,28 @@
+const { test, expect } = require('@playwright/test');
+const fs = require('fs');
+const path = require('path');
+
+const root = path.join(__dirname, '..');
+const source = (name) => fs.readFileSync(path.join(root, name), 'utf8');
+const executable = (text) => text
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .split('\n')
+  .filter((line) => !line.trimStart().startsWith('//'))
+  .join('\n');
+
+test('Accomplishments claims refresh through the canonical action without wrapping openModal', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
+
+  const legacySource = source('accomplishments-v121.js');
+  const legacy = executable(legacySource);
+  const canonical = executable(source('accomplishments-canonical-v139.js'));
+  const claims = executable(source('accomplishments-claim-v140.js'));
+
+  expect(legacy).not.toMatch(/ACT\.accomplishments\s*=/);
+  expect(legacySource).toContain('V121 intentionally owns no Accomplishments renderer or payout path');
+  expect(canonical).toContain('ACT.accomplishments=function()');
+  expect(claims).toContain("typeof ACT.accomplishments==='function'");
+  expect(claims).toContain('ACT.accomplishments()');
+  expect(canonical).not.toMatch(/\bopenModal\s*=\s*function/);
+  expect(canonical).not.toContain('baseOpen');
+});
