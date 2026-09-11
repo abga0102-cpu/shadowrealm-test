@@ -6,13 +6,13 @@ Snapshot base before the Home V119 consolidation: `main` at `b5c43fedc700ffebc5e
 
 ## Loader totals
 
-- 95 scripts are loaded synchronously through static `<script src>` entries.
+- 94 scripts are loaded synchronously through static `<script src>` entries.
 - 7 additional core UI scripts are loaded after startup in the default non-Social session.
-- Default runtime total: **102 JavaScript files**.
-- Social adds `social-v1.js` and `social-p2p-v1.js`: **104** files when Social is enabled.
-- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **106** files in that optional mode.
+- Default runtime total: **101 JavaScript files**.
+- Social adds `social-v1.js` and `social-p2p-v1.js`: **103** files when Social is enabled.
+- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **105** files in that optional mode.
 
-The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation, then to 103 by unloading retired Accomplishments V141. After the staged V117 ownership transfer passed PR and post-merge regression, unloading inert Tree V117 reduces the static runtime to 95 entries and the normal non-Social runtime to 102 files.
+The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation, then to 103 by unloading retired Accomplishments V141. After the staged V117 ownership transfer passed PR and post-merge regression, unloading inert Tree V117 reduced the static runtime to 95 entries and the normal non-Social runtime to 102 files. Unloading the retired Hero Equipment visual bridge reduces the static runtime to 94 entries and the normal non-Social runtime to 101 files.
 
 ## Static loader inventory
 
@@ -85,14 +85,13 @@ Reason: active Sanctuary/Forge presentation, migration, balance and equipment au
 - `forge-panel-authority-v266.js`
 - `forge-auto-batch-gate-v266.js`
 
-### Tree, core UI and guidance — 17
+### Tree, core UI and guidance — 16
 
 Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Known retired Tree mastery shells are already unloaded; `runtime-tree-stability-v216.js` is the active mastery owner. `tree-dedicated-v116.js` owns the clearer `Gain d’Or I–IV` labels; the inert V117 marker is now unloaded. BottomNav decoration/geometry/lifecycle are consolidated in one static canonical owner.
 
 - `personal-tree-radial-v82.js`
 - `tree-safety-v83.js`
 - `weekly-mega-v71.js`
-- `hero-equipment-v1.js`
 - `audio-v26.js`
 - `bottom-nav-layout-v183.js`
 - `ui-stability-v83.js`
@@ -167,14 +166,14 @@ Reason: loaded after startup by the deferred `core` chain. Home V219 is now the 
 
 ## Conditional optional loader entries — 4
 
-Reason: loaded only when their feature flag is enabled and therefore excluded from the 102-file normal-session total.
+Reason: loaded only when their feature flag is enabled and therefore excluded from the 101-file normal-session total.
 
 - Social: `social-v1.js`, `social-p2p-v1.js`
 - Bot Testers, only with Social: `social-bot-testers-v5.js`, `social-bot-ui-v1.js`
 
 ## Already retired/unloaded
 
-The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
+The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `hero-equipment-v1.js` (retired visual safety bridge, source retained for staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, and the retired recommendation override. They must not silently re-enter either the static loader or deferred chains.
 
 ## L0 conclusion
 
