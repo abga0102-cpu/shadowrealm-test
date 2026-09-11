@@ -4,6 +4,7 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const source = (name) => fs.readFileSync(path.join(root, name), 'utf8');
+const exists = (name) => fs.existsSync(path.join(root, name));
 const executable = (text) => text
   .replace(/\/\*[\s\S]*?\*\//g, '')
   .split('\n')
@@ -20,10 +21,10 @@ async function openCleanGame(page) {
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-/* Accomplishment merge rewards are a queue. V135 maps legacy RARE to RARE_I,
-   delivers pieces to the Sanctuary board, and keeps overflow in its persistent
-   reserve. Count every live representation so the contract checks conservation
-   rather than assuming the source queue remains populated. */
+/* Accomplishment merge rewards are a queue. Canonical V126 delivers pieces to
+   the Sanctuary board/reserve and V212 normalizes legacy rarity names. Count
+   every persisted representation so the contract checks conservation rather
+   than assuming the source queue remains populated. */
 function rareInventoryExpression() {
   return `(() => {
     const st = (typeof sanctMergeState === 'function') ? sanctMergeState() : (S.sanctuary || {});
@@ -48,7 +49,8 @@ test('Phase 4G makes legacy Raid 100 compensation migration-driven instead of po
 
   const legacyFix = executable(source('accomplishments-reward-fix-v127.js'));
   const canonicalClaim = executable(source('accomplishments-claim-v140.js'));
-  const mergeBridge = executable(source('accomplishments-merge-safe-v135.js'));
+  const canonicalMerge = executable(source('accomplishments-merge-v126.js'));
+  const legacyNormalizer = executable(source('sanctuary-legacy-merge-fix-v212.js'));
 
   expect(legacyFix).not.toContain('setInterval');
   expect(legacyFix).toContain('nativeMigrate');
@@ -60,9 +62,12 @@ test('Phase 4G makes legacy Raid 100 compensation migration-driven instead of po
   expect(canonicalClaim).toContain('raid100:{gold:1500000,eclat:1000,essence:1000,merge:{RARE:50},validatedRaid100:true}');
   expect(canonicalClaim).toContain('raid100ValidatedV127=true');
 
-  expect(mergeBridge).toContain("var MAP={RARE:'RARE_I'");
-  expect(mergeBridge).toContain('p[old]=0');
-  expect(mergeBridge).toContain('accomplishmentReserveV135');
+  expect(canonicalMerge).toContain('__srSyncAccomplishmentMergeV126');
+  expect(canonicalMerge).toContain('pending[r]=0');
+  expect(canonicalMerge).toContain('st.mergeReserve[r]=(st.mergeReserve[r]||0)+1');
+  expect(canonicalMerge).not.toContain('setInterval');
+  expect(legacyNormalizer).toContain("RARE:'RARE_I'");
+  expect(exists('accomplishments-merge-safe-v135.js')).toBe(false);
 });
 
 test('live import of a legacy Raid 100 claim receives the exact one-time compensation', async ({ page }, testInfo) => {
