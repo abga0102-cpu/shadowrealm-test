@@ -21,10 +21,22 @@ function makeFixture() {
   return { temp, base, current };
 }
 
-function runGuard(base, current, body = '') {
+function runGuard(base, current, options = {}) {
+  const {
+    body = '',
+    event = 'pull_request',
+    mergedViaPr = false,
+    bodyFile = '',
+  } = options;
   return spawnSync(process.execPath, [guardPath, base, current], {
     encoding: 'utf8',
-    env: { ...process.env, PR_BODY: body },
+    env: {
+      ...process.env,
+      PR_BODY: body,
+      PR_BODY_FILE: bodyFile,
+      CHANGE_EVENT: event,
+      ARCH_MERGED_VIA_PR: mergedViaPr ? '1' : '0',
+    },
   });
 }
 
@@ -62,10 +74,14 @@ test('architecture-first production file placement remains mandatory and CI-enfo
   expect(template).toContain('- `ARCHITECTURE.md` owner entry added/updated: n/a');
   expect(template).toContain('- Versioned filename exception: n/a');
 
+  expect(workflow).toContain('pull-requests: read');
+  expect(workflow).toContain('- name: Resolve merged PR architecture context');
+  expect(workflow).toContain('commits/${GITHUB_SHA}/pulls');
+  expect(workflow).toContain('PR_BODY_FILE:');
   expect(workflow).toContain('- name: Enforce architecture-first file placement');
   expect(workflow).toContain('node tests/architecture-file-placement-guard.js .phase1-base .');
   expect(guard).toContain('ARCHITECTURE.md must register the new canonical owner');
-  expect(guard).toContain('New production JavaScript files must be introduced through a PR');
+  expect(guard).toContain('Direct pushes that introduce production JavaScript are forbidden');
   expect(guard).toContain('Versioned filename exception: yes — <reason>');
 });
 
@@ -88,7 +104,7 @@ test('file-placement guard admits a justified durable owner and rejects an unjus
   try {
     fs.writeFileSync(path.join(approved.current, 'durable-owner.js'), '// new durable owner\n');
     fs.appendFileSync(path.join(approved.current, 'ARCHITECTURE.md'), 'New area: `durable-owner.js`\n');
-    const result = runGuard(approved.base, approved.current, approvedBody('durable-owner.js'));
+    const result = runGuard(approved.base, approved.current, { body: approvedBody('durable-owner.js') });
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain('passed for: durable-owner.js');
   } finally {
@@ -99,10 +115,43 @@ test('file-placement guard admits a justified durable owner and rejects an unjus
   try {
     fs.writeFileSync(path.join(versioned.current, 'quick-fix-v999.js'), '// ad hoc patch\n');
     fs.appendFileSync(path.join(versioned.current, 'ARCHITECTURE.md'), 'Claimed area: `quick-fix-v999.js`\n');
-    const result = runGuard(versioned.base, versioned.current, approvedBody('quick-fix-v999.js'));
+    const result = runGuard(versioned.base, versioned.current, { body: approvedBody('quick-fix-v999.js') });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('Versioned filename exception: yes — <reason>');
   } finally {
     fs.rmSync(versioned.temp, { recursive: true, force: true });
+  }
+});
+
+test('file-placement guard revalidates merged PR context and blocks direct production pushes', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop', 'Repository policy is engine-independent.');
+
+  const fixture = makeFixture();
+  try {
+    fs.writeFileSync(path.join(fixture.current, 'durable-owner.js'), '// new durable owner\n');
+    fs.appendFileSync(path.join(fixture.current, 'ARCHITECTURE.md'), 'New area: `durable-owner.js`\n');
+    const bodyFile = path.join(fixture.temp, 'merged-pr-body.md');
+    fs.writeFileSync(bodyFile, approvedBody('durable-owner.js'));
+
+    const merged = runGuard(fixture.base, fixture.current, {
+      event: 'push',
+      mergedViaPr: true,
+      bodyFile,
+    });
+    expect(merged.status, merged.stderr).toBe(0);
+    expect(merged.stdout).toContain('passed for: durable-owner.js');
+
+    const missingMergedBody = runGuard(fixture.base, fixture.current, {
+      event: 'push',
+      mergedViaPr: true,
+    });
+    expect(missingMergedBody.status).toBe(1);
+    expect(missingMergedBody.stderr).toContain('merged PR associated with this push must contain');
+
+    const direct = runGuard(fixture.base, fixture.current, { event: 'push' });
+    expect(direct.status).toBe(1);
+    expect(direct.stderr).toContain('Direct pushes that introduce production JavaScript are forbidden');
+  } finally {
+    fs.rmSync(fixture.temp, { recursive: true, force: true });
   }
 });
