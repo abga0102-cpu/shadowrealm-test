@@ -64,8 +64,8 @@ test('V316 mini-track shows only encounters belonging to the current stage', asy
       return {
         dots:dots.length,
         links:t.content.querySelectorAll('i').length,
-        current:t.content.querySelectorAll('.cur').length,
-        completed:t.content.querySelectorAll('.on').length,
+        current:dots.filter((d)=>d.classList.contains('cur')).length,
+        completed:dots.filter((d)=>d.classList.contains('on')).length,
         elite:dots.map((d)=>d.classList.contains('elite')),
         boss:dots.map((d)=>d.classList.contains('boss')),
       };
