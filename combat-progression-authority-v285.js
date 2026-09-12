@@ -1,7 +1,9 @@
 /* SHADOWREACH V285 · Combat progression authority
    V314 extension: canonical 400-stage campaign structure.
-   Visible stages keep the approved chapter-stage notation 1-1 .. 40-10 while
-   the internal numeric index 1..400 remains stable for saves and balancing.
+   V316: each campaign stage owns its own compact encounter track instead of
+   showing the whole 10-stage chapter at once. The approved encounter pattern is
+   3,3,3,2,1,3,3,3,2,1 for stages 1..10; elite stage 5 and boss stage 10 are
+   single encounters. Internal floor ids remain unchanged for saves/balancing.
    Fixed campaign curve calibrated against weak/normal/max 0★/Ascension builds.
    Never scales enemies from current player power. */
 (function(){
@@ -9,6 +11,7 @@
 if(window.__srCombatProgressionV285)return;
 window.__srCombatProgressionV285=true;
 window.__srCampaign400V314=true;
+window.__srStageMiniProgressV316=true;
 
 var CAMPAIGN_MAX=400;
 var DIFFICULTIES=[
@@ -39,6 +42,54 @@ window.__srCampaignDifficulties=DIFFICULTIES.slice();
 window.__srCampaignMeta=campaignMeta;
 window.__srCampaignLabel=function(f){return campaignMeta(f).label;};
 window.__srCampaignStageLabel=function(f){return campaignMeta(f).stageCode;};
+
+/* Forge-Master-style encounter rhythm inside every 10-stage chapter.
+   A dot is a real campaign encounter/wave, not decorative chapter progress. */
+var STAGE_WAVE_PATTERN=[3,3,3,2,1,3,3,3,2,1];
+function stageWaveCount(floor){
+  var stage=campaignMeta(floor).stage;
+  return STAGE_WAVE_PATTERN[Math.max(0,Math.min(9,stage-1))]||1;
+}
+window.__srCampaignWavePatternV316=STAGE_WAVE_PATTERN.slice();
+window.__srCampaignWaveCountV316=stageWaveCount;
+try{
+  if(typeof campaignWaveCount==='function'){
+    campaignWaveCount=function(floor){return stageWaveCount(floor);};
+    campaignWaveCount.__srStageMiniProgressV316=true;
+  }
+}catch(_){ }
+
+/* Reuse the native arena track language, but make it represent only the current
+   stage's real encounters. 1-5 therefore shows one elite dot; 1-10 one boss dot. */
+function stageMiniTrack(floor){
+  floor=clampFloor(floor);
+  var total=stageWaveCount(floor),cur=1;
+  try{
+    if(typeof combat!=='undefined'&&combat&&Number(combat.floor)===floor&&(combat.ctx==='campaign'||combat.ctx==='mega')){
+      cur=Math.max(1,Math.min(total,Math.floor(Number(combat.step)||1)));
+    }
+  }catch(_){ }
+  var h='',boss=false,elite=false;
+  try{boss=typeof isBoss==='function'&&isBoss(floor);elite=!boss&&typeof isElite==='function'&&isElite(floor);}catch(_){ }
+  for(var i=1;i<=total;i++){
+    if(i>1)h+='<i class="'+(i<=cur?'on':'')+'"></i>';
+    var cls='sdot srStageMiniDot';
+    if(boss)cls+=' boss';else if(elite)cls+=' elite';
+    if(i<cur)cls+=' on';
+    if(i===cur)cls+=' cur';
+    var skull='';
+    try{if(boss&&typeof MINI_SKULL!=='undefined')skull=MINI_SKULL;}catch(_){ }
+    h+='<span class="'+cls+'" data-stage-step="'+i+'" data-stage-total="'+total+'">'+skull+'</span>';
+  }
+  return h;
+}
+window.__srStageMiniTrackV316=stageMiniTrack;
+try{
+  if(typeof floorTrack==='function'){
+    floorTrack=function(floor){return stageMiniTrack(floor);};
+    floorTrack.__srStageMiniProgressV316=true;
+  }
+}catch(_){ }
 
 /* Existing V285 anchors through Expert stay untouched. V314 extends only the
    missing Cauchemar -> Divin runway. Values are fixed world progression, never
@@ -107,8 +158,8 @@ function normalizeCampaignState(){
 normalizeCampaignState();
 
 /* Never let a completed Boss 40-10 (internal floor 400) advance to an undefined
-   stage 41-1. The final stage remains replayable; first-clear rewards still
-   remain one-time through the existing bossRewardsClaimed contract. */
+   stage 41-1. V316 also normalizes the legacy three-wave completion check so a
+   2-wave or 1-wave stage still gets its proper floor reward notice. */
 try{
   if(typeof startCampaign==='function'&&!startCampaign.__srCampaign400V314){
     var oldStartCampaign=startCampaign;
@@ -122,7 +173,15 @@ try{
     var oldHandleCombatEnd=handleCombatEnd;
     handleCombatEnd=function(c){
       var finalWin=!!(c&&c.ctx==='campaign'&&c.status==='won'&&Number(c.floor)>=CAMPAIGN_MAX);
+      var actualStep=null,stageFinished=false;
+      try{
+        stageFinished=!!(c&&c.ctx==='campaign'&&c.status==='won'&&Number(c.step)>=stageWaveCount(c.floor));
+        if(stageFinished&&typeof RULES!=='undefined'&&Number(c.step)<Number(RULES.STEPS_PER_FLOOR)){
+          actualStep=c.step;c.step=RULES.STEPS_PER_FLOOR;
+        }
+      }catch(_){ }
       var out=oldHandleCombatEnd.apply(this,arguments);
+      if(actualStep!==null)c.step=actualStep;
       if(finalWin){
         try{
           if(typeof S!=='undefined'&&S){
@@ -136,6 +195,7 @@ try{
       return out;
     };
     handleCombatEnd.__srCampaign400V314=true;
+    handleCombatEnd.__srStageMiniProgressV316=true;
     handleCombatEnd.__srPrevious=oldHandleCombatEnd;
   }
 }catch(_){ }
@@ -175,14 +235,25 @@ try{
 }catch(_){ }
 decorateArenaLabel();
 
-/* The legacy combat renderer still writes a numeric inter-floor flash. Rewrite
-   only that visual after the canonical draw so players always see 1-1, 1-2...
-   rather than the internal 1..400 index. */
+/* Keep the native status pills, but make the wave denominator match the real
+   per-stage encounter count. Also retain the V314 local stage flash rewrite. */
+function syncStageWavePill(){
+  try{
+    if(typeof combat==='undefined'||!combat||combat.ctx!=='campaign'||typeof arenaNodes==='undefined'||!arenaNodes||!arenaNodes.sub)return;
+    var pill=arenaNodes.sub.querySelector('.fPill');
+    if(!pill)return;
+    var wanted='Vague '+Math.max(1,Number(combat.step)||1)+'/'+stageWaveCount(combat.floor);
+    if(String(pill.textContent||'').trim()===wanted)return;
+    var icon='';try{if(typeof ic==='function')icon=ic('swords',10);}catch(_){ }
+    pill.innerHTML=icon+wanted;
+  }catch(_){ }
+}
 try{
   if(typeof drawArena==='function'&&!drawArena.__srCampaignStageNotationV314){
     var oldDrawArena=drawArena;
     drawArena=function(){
       var out=oldDrawArena.apply(this,arguments);
+      syncStageWavePill();
       try{
         if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign'&&typeof arenaNodes!=='undefined'&&arenaNodes&&arenaNodes.banner&&typeof floorFlash!=='undefined'&&floorFlash&&Date.now()<floorFlash.until&&combat.status!=='lost'){
           arenaNodes.banner.textContent='ÉTAGE '+campaignMeta(floorFlash.floor).stageCode;
@@ -191,12 +262,14 @@ try{
       return out;
     };
     drawArena.__srCampaignStageNotationV314=true;
+    drawArena.__srStageMiniProgressV316=true;
     drawArena.__srPrevious=oldDrawArena;
   }
 }catch(_){ }
 
 window.__srCombatProgressionConfigV285={
   bossHP:BOSS,normalHP:NORMAL,maxFloor:CAMPAIGN_MAX,difficulties:DIFFICULTIES,
-  chaptersPerDifficulty:5,floorsPerChapter:10,totalChapters:40,campaignMeta:campaignMeta
+  chaptersPerDifficulty:5,floorsPerChapter:10,totalChapters:40,campaignMeta:campaignMeta,
+  stageWavePattern:STAGE_WAVE_PATTERN.slice(),stageWaveCount:stageWaveCount
 };
 })();
