@@ -1,6 +1,6 @@
 # Lean-code remaining-work audit
 
-Audit date: 2026-09-11. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). L2 ledger refreshed through merged PRs #154, #155, #158 and the later-resolved PR #153 Sanctuary lifecycle work.
+Audit date: 2026-09-12. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). L2 ledger refreshed through merged PRs #153, #154, #155, #158 and #161.
 
 This file records the disposition after the proof-based L1 source audit and the subsequent L2 lifecycle passes. **L1 is complete.** L2, L3, L4 and staged L5 work remain open.
 
@@ -14,7 +14,7 @@ The default non-Social session remains **110 first-party JavaScript files**:
 
 Social raises the first-party count to 112 and Social + Bot Testers to 114. Optional third-party Social modules remain outside those totals.
 
-The final L1 source retirements did not reduce this runtime count because those sources were already absent from all normal/deferred/conditional/transitive loader paths before deletion. The L2 lifecycle cleanups through PRs #153/#154/#155/#158 also do not change the runtime file count; they remove redundant timers/observers and clarify lifecycle ownership inside still-required modules. The loader inventory in `RUNTIME_INVENTORY.md` remains the authoritative loaded-file list.
+The final L1 source retirements did not reduce this runtime count because those sources were already absent from all normal/deferred/conditional/transitive loader paths before deletion. The L2 lifecycle cleanups through PRs #153/#154/#155/#158/#161 also do not change the runtime file count; they remove redundant timers/observers and clarify lifecycle ownership inside still-required modules. The loader inventory in `RUNTIME_INVENTORY.md` remains the authoritative loaded-file list.
 
 ## L1 closure
 
@@ -57,7 +57,8 @@ The post-L1 passes continued the same evidence-first rule: remove only lifecycle
 - **PR #154 — Weekly Mega:** removed the permanent 1.2-second panel injection poller. The panel now follows canonical `sr:bottomnavrendered` and defers injection one animation frame because BottomNav publishes before core `render()` commits the new `#screen`. The separate 60-second weekly reward-grant cadence remains unchanged.
 - **PR #155 — Secondary HUD:** removed the modal-state `MutationObserver` and consumes canonical `sr:modal-state` instead. The existing HUD render wrapper remains; the PR did not broaden into a second ownership transfer.
 - **PR #158 — Social:** removed both the permanent 1-second launcher remount poller and the `#screen` `MutationObserver`. A single deferred `sr:bottomnavrendered` callback now runs `mountButton()` + `dockSocialUI()`. Startup, resize/orientation docking, the 15-second remote/bot cadence and the 800-ms arena-result cadence remain unchanged.
-- **PR #153 — Sanctuary reserve rendering:** replaced V126's zero-delay reserve mount after `scrSanctuaire()` with `queueMicrotask(mountReserve)`. The focused contract proves initial entry, refill-to-board, rerender idempotency and post-render rarity normalization while preserving the separate 50 ms legacy migration synchronization.
+- **PR #153 — Sanctuary reserve rendering:** replaced V126's zero-delay reserve mount after `scrSanctuaire()` with `queueMicrotask(mountReserve)`. The focused contract proves initial entry, refill-to-board, rerender idempotency and post-render rarity normalization.
+- **PR #161 — Accomplishments legacy migration synchronization:** removed V126's remaining 50 ms startup migration timer. Fresh boot now consumes the already-synchronous V127 compensation deterministically, while imported saves synchronize through the existing `migrate(...)` chain before the imported state becomes global. The focused Chromium/WebKit contract locks legacy pending-piece conservation, marker clearing and exact 50-piece board/reserve conservation across both fresh boot and import.
 
 These changes reduce active polling/observation work without changing runtime file count, gameplay values, saves or balance.
 
@@ -65,30 +66,30 @@ These changes reduce active polling/observation work without changing runtime fi
 
 | Phase / responsibility | Current evidence | Next reviewable scope / exit condition |
 | --- | --- | --- |
-| L2 Accomplishments migration startup | V126 still retains a 50 ms startup synchronization; V127/V140 retain later compensation sequencing. PR #153 proved the separate Sanctuary post-DOM mount no longer needs a zero-delay timer. | Lock legacy pending pieces, reward conservation and fresh-boot/import ordering before removing or transferring the 50 ms delay. This is the preferred next Accomplishments timing scope. |
-| L2 Power Hint lifecycle | Earlier polling cleanup was corrected after campaign-death lifecycle interference; current owner must remain passive with respect to canonical combat-end recovery. PR #157 has now merged deterministic campaign-death recovery. | Reassess only from fresh `main`. Do not re-wrap `handleCombatEnd`; any future lifecycle change must preserve the merged campaign-death/checkpoint regression suite. |
+| L2 Accomplishments lifecycle | V126's zero-delay Sanctuary mount and 50 ms migration synchronization are both removed under PRs #153/#161. V127 remains the durable historical reward-migration owner and V140 remains the future claim payout owner. | Do not force further consolidation merely to reduce files. Reassess only if a concrete duplicate wrapper/timer or ownership seam is found with equivalent old-save and lifecycle proof. |
+| L2 Power Hint lifecycle | Earlier polling cleanup was corrected after campaign-death lifecycle interference; current owner must remain passive with respect to canonical combat-end recovery. PR #157 merged deterministic campaign-death recovery. | Reassess only from fresh `main`. Do not re-wrap `handleCombatEnd`; any future lifecycle change must preserve the merged campaign-death/checkpoint regression suite and requires a deterministic combat lifecycle hook. |
 | L2 audio | V26 polls combat at 50 ms, runs a 520 ms music cadence after unlock, and also contains historical PE/save compatibility behavior. | Separate audio observation from migration/economy responsibilities with legacy-save contracts before changing lifecycle ownership. Do not treat the combat poller as an isolated UI timer. |
 | L2 central modal/campaign observer | `ui-stability-v83.js` still observes `#app`, but that observer coalesces modal-state publication, queued-modal draining, overlay persistence and campaign compact-mode tagging. | Do not replace it as a timer-style cleanup. First split or contract-lock the distinct responsibilities so a lifecycle transfer is reviewable behavior-by-behavior. |
-| L2 Boot wave observer | V115 retains a child-list observer for live campaign wave presentation after its permanent poller was removed. | Reassess only from fresh `main` after the campaign-death merge; require exact wave-transition coverage and preserve combat/death recovery behavior before any lifecycle transfer. |
-| L3 durable domain owners | Home/BottomNav are consolidated; Accomplishments still separates state/events, migration, reserve, modal and payout responsibilities. Forge presentation ownership is explicit between V266 panel rendering and V273 loot UX. | Consolidate only when module boundaries reduce coupling; keep future claims separate from old-save compensation. Feature-sensitive Forge/Familiars/combat work requires a fresh owner check. |
+| L2 Boot wave observer | V115 retains a child-list observer for live campaign wave presentation after its permanent poller was removed. | Require an explicit deterministic wave-transition lifecycle hook plus exact wave-transition and campaign-death recovery coverage before any observer removal. |
+| L3 durable domain owners | Home/BottomNav are consolidated; Accomplishments deliberately separates state/events, historical migrations, modal rendering and future payout responsibilities. Forge presentation ownership is explicit between V266 panel rendering and V273 loot UX. | Consolidate only when module boundaries reduce coupling; keep future claims separate from old-save compensation. Feature-sensitive Forge/Familiars/combat work requires a fresh owner check. |
 | L4 escaping helpers | Base, Tree and Forge escaping helpers have different null/apostrophe semantics. | Specify input/output and HTML-context semantics first; preserve intentional differences with adapters or retain local helpers. |
 | L4 number formatting | Base and Forge formatters differ in suffix, rounding and locale behavior. | Establish golden input/output cases before adopting any shared formatter. |
 | L5 staged source retirement | The L1-derived retirement queue is exhausted. | New L5 candidates arise only after later L2/L3 ownership transfers have survived integration, or after a fresh source-reference audit identifies new obsolete source. |
 
 ## L2 next-step rule
 
-Sanctuary reserve rendering is now complete under merged PR #153. The next safe scope should be selected from fresh `main` using this order:
+The Accomplishments V126 timer work is complete under merged PRs #153 and #161. The next safe scope should be selected from fresh `main` using this order:
 
-1. prefer V126's remaining 50 ms startup migration synchronization, but only after contract-locking legacy pending pieces, reward conservation and fresh-boot/import ordering;
-2. Power Hint and Boot wave lifecycle work may be reassessed now that PR #157 merged, but remain combat-sensitive and must preserve deterministic campaign-death/checkpoint recovery;
+1. prefer a newly discovered neutral UI lifecycle candidate when its replacement hook is deterministic and behavior-equivalent;
+2. Power Hint and Boot wave lifecycle work may be reassessed, but remain combat-sensitive and must preserve deterministic campaign-death/checkpoint recovery; do not manufacture a replacement hook by re-wrapping canonical combat functions;
 3. keep the audio combat poller deferred until its save/migration/economy responsibilities are separated and covered;
-4. prefer a newly discovered neutral UI lifecycle candidate when its replacement hook is deterministic and behavior-equivalent rather than forcing a risky combat-sensitive consolidation.
+4. if no production transfer is evidence-safe, keep ownership/roadmap documentation current rather than forcing a cleanup whose replacement lifecycle is weaker than the code being removed.
 
 ## Phase status after this audit refresh
 
 - **L0 — COMPLETE**
 - **L1 — COMPLETE**
-- **L2 — IN PROGRESS** — additional post-L1 lifecycle cleanups merged through PRs #153/#154/#155/#158
+- **L2 — IN PROGRESS** — additional post-L1 lifecycle cleanups merged through PRs #153/#154/#155/#158/#161
 - **L3 — IN PROGRESS**
 - **L4 — INVESTIGATION STARTED**
 - **L5 — IN PROGRESS (staged retirements only; no current L1-derived queue)**
