@@ -64,14 +64,19 @@
 
     // Légendaire : uniquement après au moins 1 Ascension Familier.
     var legendary=st>=1?Math.max(0,Number(legacy.LEGENDAIRE)||0):0;
+    // Ancestral : si une autorité plus récente est déjà active, préserver son taux
+    // au lieu de l'écraser lorsque ce module historique finit de charger en retard.
+    // Avant la maîtrise maximale, le palier reste strictement verrouillé à 0%.
+    var ancestral=actual>=50?Math.max(0,Number(legacy.ANCESTRAL)||0):0;
     // Divin : uniquement après l'Ascension personnage ; conserver ensuite la courbe déjà validée.
     var divine=(Number(ascension)||0)>0?Math.max(0,Number(legacy.DIVIN)||0):0;
-    var available=Math.max(0,100-legendary-divine);
+    var available=Math.max(0,100-legendary-ancestral-divine);
 
     // Les catégories autorisées absorbent proportionnellement l'espace restant.
     // Avant les seuils, Épique/Mythique à 0 ne peuvent donc jamais être tirés indirectement.
     var sum=BASE_KEYS.reduce(function(n,k){return n+Math.max(0,Number(out[k])||0);},0)||1;
     BASE_KEYS.forEach(function(k){out[k]=Math.max(0,out[k])*available/sum;});
+    out.ANCESTRAL=ancestral;
     out.LEGENDAIRE=legendary;
     out.DIVIN=divine;
 
