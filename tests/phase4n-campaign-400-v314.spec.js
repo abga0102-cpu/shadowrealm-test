@@ -14,7 +14,7 @@ async function openCleanGame(page) {
   await page.waitForFunction(() => window.__srCampaign400V314 === true);
 }
 
-test('V314 campaign is exactly 8 difficulties x 5 chapters x 10 floors', async ({ page }) => {
+test('V314 campaign is exactly 8 difficulties x 5 chapters x 10 stages with global 1-1 .. 40-10 notation', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
@@ -40,24 +40,24 @@ test('V314 campaign is exactly 8 difficulties x 5 chapters x 10 floors', async (
   expect(result.config).toEqual({ chaptersPerDifficulty: 5, floorsPerChapter: 10, totalChapters: 40 });
 
   const byFloor = Object.fromEntries(result.sample.map((m) => [m.floor, m]));
-  expect(byFloor[1]).toMatchObject({ difficulty: 'Normal', chapter: 1, stage: 1 });
-  expect(byFloor[10]).toMatchObject({ difficulty: 'Normal', chapter: 1, stage: 10, isBoss: true });
-  expect(byFloor[11]).toMatchObject({ difficulty: 'Normal', chapter: 2, stage: 1 });
-  expect(byFloor[50]).toMatchObject({ difficulty: 'Normal', chapter: 5, stage: 10, isBoss: true });
-  expect(byFloor[51]).toMatchObject({ difficulty: 'Difficile', chapter: 1, stage: 1 });
-  expect(byFloor[100]).toMatchObject({ difficulty: 'Difficile', chapter: 5, stage: 10, isBoss: true });
-  expect(byFloor[101]).toMatchObject({ difficulty: 'Expert', chapter: 1, stage: 1 });
-  expect(byFloor[150]).toMatchObject({ difficulty: 'Expert', chapter: 5, stage: 10, isBoss: true });
-  expect(byFloor[151]).toMatchObject({ difficulty: 'Cauchemar', chapter: 1, stage: 1 });
-  expect(byFloor[200]).toMatchObject({ difficulty: 'Cauchemar', chapter: 5, stage: 10, isBoss: true });
-  expect(byFloor[201]).toMatchObject({ difficulty: 'Infernal', chapter: 1, stage: 1 });
-  expect(byFloor[250]).toMatchObject({ difficulty: 'Infernal', chapter: 5, stage: 10, isBoss: true });
-  expect(byFloor[251]).toMatchObject({ difficulty: 'Abyssal', chapter: 1, stage: 1 });
-  expect(byFloor[300]).toMatchObject({ difficulty: 'Abyssal', chapter: 5, stage: 10, isBoss: true });
-  expect(byFloor[301]).toMatchObject({ difficulty: 'Immortel', chapter: 1, stage: 1 });
-  expect(byFloor[350]).toMatchObject({ difficulty: 'Immortel', chapter: 5, stage: 10, isBoss: true });
-  expect(byFloor[351]).toMatchObject({ difficulty: 'Divin', chapter: 1, stage: 1 });
-  expect(byFloor[400]).toMatchObject({ difficulty: 'Divin', chapter: 5, stage: 10, isBoss: true });
+  expect(byFloor[1]).toMatchObject({ difficulty: 'Normal', chapter: 1, difficultyChapter: 1, stage: 1, stageCode: '1-1' });
+  expect(byFloor[10]).toMatchObject({ difficulty: 'Normal', chapter: 1, difficultyChapter: 1, stage: 10, stageCode: '1-10', isBoss: true });
+  expect(byFloor[11]).toMatchObject({ difficulty: 'Normal', chapter: 2, difficultyChapter: 2, stage: 1, stageCode: '2-1' });
+  expect(byFloor[50]).toMatchObject({ difficulty: 'Normal', chapter: 5, difficultyChapter: 5, stage: 10, stageCode: '5-10', isBoss: true });
+  expect(byFloor[51]).toMatchObject({ difficulty: 'Difficile', chapter: 6, difficultyChapter: 1, stage: 1, stageCode: '6-1' });
+  expect(byFloor[100]).toMatchObject({ difficulty: 'Difficile', chapter: 10, difficultyChapter: 5, stage: 10, stageCode: '10-10', isBoss: true });
+  expect(byFloor[101]).toMatchObject({ difficulty: 'Expert', chapter: 11, difficultyChapter: 1, stage: 1, stageCode: '11-1' });
+  expect(byFloor[150]).toMatchObject({ difficulty: 'Expert', chapter: 15, difficultyChapter: 5, stage: 10, stageCode: '15-10', isBoss: true });
+  expect(byFloor[151]).toMatchObject({ difficulty: 'Cauchemar', chapter: 16, difficultyChapter: 1, stage: 1, stageCode: '16-1' });
+  expect(byFloor[200]).toMatchObject({ difficulty: 'Cauchemar', chapter: 20, difficultyChapter: 5, stage: 10, stageCode: '20-10', isBoss: true });
+  expect(byFloor[201]).toMatchObject({ difficulty: 'Infernal', chapter: 21, difficultyChapter: 1, stage: 1, stageCode: '21-1' });
+  expect(byFloor[250]).toMatchObject({ difficulty: 'Infernal', chapter: 25, difficultyChapter: 5, stage: 10, stageCode: '25-10', isBoss: true });
+  expect(byFloor[251]).toMatchObject({ difficulty: 'Abyssal', chapter: 26, difficultyChapter: 1, stage: 1, stageCode: '26-1' });
+  expect(byFloor[300]).toMatchObject({ difficulty: 'Abyssal', chapter: 30, difficultyChapter: 5, stage: 10, stageCode: '30-10', isBoss: true });
+  expect(byFloor[301]).toMatchObject({ difficulty: 'Immortel', chapter: 31, difficultyChapter: 1, stage: 1, stageCode: '31-1' });
+  expect(byFloor[350]).toMatchObject({ difficulty: 'Immortel', chapter: 35, difficultyChapter: 5, stage: 10, stageCode: '35-10', isBoss: true });
+  expect(byFloor[351]).toMatchObject({ difficulty: 'Divin', chapter: 36, difficultyChapter: 1, stage: 1, stageCode: '36-1' });
+  expect(byFloor[400]).toMatchObject({ difficulty: 'Divin', chapter: 40, difficultyChapter: 5, stage: 10, stageCode: '40-10', isBoss: true });
 });
 
 test('V314 keeps every approved 1..150 combat anchor and extends fixed curves to 400', async ({ page }) => {
@@ -116,7 +116,7 @@ test('V314 keeps every approved 1..150 combat anchor and extends fixed curves to
   expect(result.clamped.dmg401).toBe(2300000000);
 });
 
-test('V314 Boss 400 uses the final boss HP authority, not extrapolated legacy scaling', async ({ page }) => {
+test('V314 Boss 40-10 uses the final boss HP authority, not extrapolated legacy scaling', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
@@ -147,7 +147,7 @@ test('V314 Boss 400 uses the final boss HP authority, not extrapolated legacy sc
   expect(result.damage).toBeGreaterThan(0);
 });
 
-test('V314 Home arena shows difficulty, chapter and local floor instead of an ambiguous global floor only', async ({ page }) => {
+test('V314 Home arena shows difficulty plus canonical chapter-stage notation', async ({ page }) => {
   await openCleanGame(page);
 
   await page.evaluate(() => {
@@ -162,10 +162,10 @@ test('V314 Home arena shows difficulty, chapter and local floor instead of an am
     scheduleRender();
   });
 
-  await expect(page.locator('#aLabel')).toHaveText('Cauchemar · Chapitre 1 · 1/10', { timeout: 5000 });
+  await expect(page.locator('#aLabel')).toHaveText('Cauchemar · 16-1', { timeout: 5000 });
 });
 
-test('V314 final Boss completion cannot create floor 401 and keeps floor 400 replayable', async ({ page }) => {
+test('V314 final Boss completion cannot create 41-1 and keeps 40-10 replayable', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
@@ -192,6 +192,7 @@ test('V314 final Boss completion cannot create floor 401 and keeps floor 400 rep
       complete: S.campaignComplete400,
       boss400: !!S.bossClears['400'],
       label: __srCampaignLabel(S.floor),
+      stage: __srCampaignStageLabel(S.floor),
     };
   });
 
@@ -202,7 +203,8 @@ test('V314 final Boss completion cannot create floor 401 and keeps floor 400 rep
     checkpoint: 400,
     complete: true,
     boss400: true,
-    label: 'Divin · Chapitre 5 · 10/10',
+    label: 'Divin · 40-10',
+    stage: '40-10',
   });
 
   await page.waitForTimeout(100);
