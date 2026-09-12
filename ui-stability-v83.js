@@ -215,13 +215,6 @@
   window.addEventListener('sr:bottomnavrendered',scheduleCampaignCompact);
   syncCampaignCompact();
 
-  const app=document.getElementById('app');
-  if(app){
-    let queued=false;
-    const mark=function(){markOverlay();publishModalState();if(!overlay())drain();};
-    const schedule=function(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;mark();});};
-    new MutationObserver(schedule).observe(app,{childList:true,subtree:false});
-    mark();
-  }
+  markOverlay();
   publishModalState(true);
 })();
