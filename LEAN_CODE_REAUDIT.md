@@ -1,6 +1,6 @@
 # Lean-code remaining-work audit
 
-Audit date: 2026-09-12. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). L2 ledger refreshed through merged PRs #153, #154, #155, #158, #161, #163, #164, #166 and #168.
+Audit date: 2026-09-12. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). L2 ledger refreshed through merged PRs #153, #154, #155, #158, #161, #163, #164, #166, #168 and #171.
 
 This file records the disposition after the proof-based L1 source audit and the subsequent L2 lifecycle passes. **L1 is complete.** L2, L3, L4 and staged L5 work remain open.
 
@@ -14,7 +14,7 @@ The default non-Social session remains **110 first-party JavaScript files**:
 
 Social raises the first-party count to 112 and Social + Bot Testers to 114. Optional third-party Social modules remain outside those totals.
 
-The final L1 source retirements did not reduce this runtime count because those sources were already absent from all normal/deferred/conditional/transitive loader paths before deletion. The L2 lifecycle cleanups and proof work through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168 also do not change the runtime file count; they remove redundant timers/observers, contract-lock responsibilities and complete scoped transfers inside still-required modules. The loader inventory in `RUNTIME_INVENTORY.md` remains the authoritative loaded-file list.
+The final L1 source retirements did not reduce this runtime count because those sources were already absent from all normal/deferred/conditional/transitive loader paths before deletion. The L2 lifecycle cleanups and proof work through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168/#171 also do not change the runtime file count; they remove redundant timers/observers/wrappers, contract-lock responsibilities and complete scoped transfers inside still-required modules. The loader inventory in `RUNTIME_INVENTORY.md` remains the authoritative loaded-file list.
 
 ## L1 closure
 
@@ -55,7 +55,7 @@ L1 completion means every script still requested in the current runtime inventor
 The post-L1 passes continued the same evidence-first rule: remove only lifecycle machinery whose behavior is covered by a deterministic surviving hook.
 
 - **PR #154 — Weekly Mega:** removed the permanent 1.2-second panel injection poller. The panel now follows canonical `sr:bottomnavrendered` and defers injection one animation frame because BottomNav publishes before core `render()` commits the new `#screen`. The separate 60-second weekly reward-grant cadence remains unchanged.
-- **PR #155 — Secondary HUD:** removed the modal-state `MutationObserver` and consumes canonical `sr:modal-state` instead. The existing HUD render wrapper remains; the PR did not broaden into a second ownership transfer.
+- **PR #155 — Secondary HUD modal lifecycle:** removed the modal-state `MutationObserver` and consumes canonical `sr:modal-state` instead. Its separate `renderHUD` wrapper was intentionally left for a later isolated transfer and has since been retired by PR #171.
 - **PR #158 — Social:** removed both the permanent 1-second launcher remount poller and the `#screen` `MutationObserver`. A single deferred `sr:bottomnavrendered` callback now runs `mountButton()` + `dockSocialUI()`. Startup, resize/orientation docking, the 15-second remote/bot cadence and the 800-ms arena-result cadence remain unchanged.
 - **PR #153 — Sanctuary reserve rendering:** replaced V126's zero-delay reserve mount after `scrSanctuaire()` with `queueMicrotask(mountReserve)`. The focused contract proves initial entry, refill-to-board, rerender idempotency and post-render rarity normalization.
 - **PR #161 — Accomplishments legacy migration synchronization:** removed V126's remaining 50 ms startup migration timer. Fresh boot now consumes the already-synchronous V127 compensation deterministically, while imported saves synchronize through the existing `migrate(...)` chain before the imported state becomes global. The focused Chromium/WebKit contract locks legacy pending-piece conservation, marker clearing and exact 50-piece board/reserve conservation across both fresh boot and import.
@@ -63,14 +63,16 @@ The post-L1 passes continued the same evidence-first rule: remove only lifecycle
 - **PR #164 — V83 campaign lifecycle split:** moved campaign compact tagging off the broad `#app` observer and onto canonical `sr:bottomnavrendered` with one-frame deferral after the core screen commit. The observer now remains only for modal responsibilities. Chromium/WebKit coverage locks Home → Equipment → Home and the existing modal queue/state behavior.
 - **PR #166 — V83 observerless modal proof:** booted the real game with only the remaining V83 `#app` observer removed in-memory. Chromium/WebKit coverage proves overlay persistence tagging, canonical `sr:modal-state` publication, FIFO queued-modal draining and Home → Equipment → Home behavior before the production block is retired.
 - **PR #168 — V83 production observer retirement:** removed the remaining broad `#app` observer without adding a replacement wrapper, timer or observer. Guarded `openModal`/`closeModal` transitions and startup synchronization retain modal tagging, state publication and queue draining; the observerless proof now runs against production source and a static ownership contract protects the native overlay owner among directly loaded scripts.
+- **PR #171 — Secondary HUD route lifecycle:** removed V279's remaining `renderHUD` wrapper. Route-context synchronization now consumes canonical `sr:bottomnavrendered`, modal-context synchronization remains on canonical `sr:modal-state`, and the existing synchronous startup `sync()` remains. Focused Chromium/WebKit coverage locks Home, modal open/close, secondary-route entry and return Home, with no replacement observer, timer or wrapper.
 
-These changes reduce active polling/observation work without changing runtime file count, gameplay values, saves or balance.
+These changes reduce active polling/observation/wrapper work without changing runtime file count, gameplay values, saves or balance.
 
 ## Remaining Lean Code work
 
 | Phase / responsibility | Current evidence | Next reviewable scope / exit condition |
 | --- | --- | --- |
 | L2 Accomplishments lifecycle | V126's zero-delay Sanctuary mount and 50 ms migration synchronization are both removed under PRs #153/#161. V127 remains the durable historical reward-migration owner and V140 remains the future claim payout owner. | Do not force further consolidation merely to reduce files. Reassess only if a concrete duplicate wrapper/timer or ownership seam is found with equivalent old-save and lifecycle proof. |
+| L2 Secondary HUD lifecycle | COMPLETE under PRs #155/#171. V279 has no app observer and no `renderHUD` wrapper; route state follows `sr:bottomnavrendered`, modal state follows `sr:modal-state`, and startup synchronizes directly. | No current V279 lifecycle scope remains. Preserve the focused contract and reassess only if a concrete new ownership seam appears. |
 | L2 Power Hint lifecycle | Earlier polling cleanup was corrected after campaign-death lifecycle interference; current owner must remain passive with respect to canonical combat-end recovery. PR #157 merged deterministic campaign-death recovery. | Reassess only from fresh `main`. Do not re-wrap `handleCombatEnd`; any future lifecycle change must preserve the merged campaign-death/checkpoint regression suite and requires a deterministic combat lifecycle hook. |
 | L2 audio | V26 polls combat at 50 ms, runs a 520 ms music cadence after unlock, and also contains historical PE/save compatibility behavior. | Separate audio observation from migration/economy responsibilities with legacy-save contracts before changing lifecycle ownership. Do not treat the combat poller as an isolated UI timer. |
 | L2 central modal observer | COMPLETE under PR #168. The broad `#app` observer is absent; guarded modal transitions and startup synchronization own overlay tagging, `sr:modal-state` publication and FIFO queue draining, while campaign compact tagging remains on `sr:bottomnavrendered`. | No current V83 observer scope remains. Preserve the #163/#164/#166/#168 contracts and reassess only if a concrete new ownership seam or direct overlay mutation appears. |
@@ -82,18 +84,20 @@ These changes reduce active polling/observation work without changing runtime fi
 
 ## L2 next-step rule
 
-The Accomplishments V126 timer work is complete under merged PRs #153 and #161, and V83's broad observer cleanup is complete through #168. The next safe scope should be selected from fresh `main` using this order:
+The Accomplishments V126 timer work is complete under merged PRs #153 and #161, V83's broad observer cleanup is complete through #168, and Secondary HUD V279's observer/wrapper cleanup is complete through #171. The next safe scope should be selected from fresh `main` using this order:
 
 1. prefer another newly discovered neutral UI lifecycle candidate when its replacement hook is deterministic and behavior-equivalent;
 2. Power Hint and Boot wave lifecycle work may be reassessed, but remain combat-sensitive and must preserve deterministic campaign-death/checkpoint recovery; do not manufacture a replacement hook by re-wrapping canonical combat functions;
 3. keep the audio combat poller deferred until its save/migration/economy responsibilities are separated and covered;
 4. if no production transfer is evidence-safe, keep ownership/roadmap documentation current rather than forcing a cleanup whose replacement lifecycle is weaker than the code being removed.
 
+The fresh post-#171 scan found no second neutral production transfer worth forcing: Tutorial's remaining timers encode deliberate modal sequencing, Mobile UI crosses feature-sensitive Familiars/Rebirth ownership, and Boss Gate/Runtime Performance cross the combat boundary. Those remain evidence-gated rather than being treated as opportunistic cleanup.
+
 ## Phase status after this audit refresh
 
 - **L0 — COMPLETE**
 - **L1 — COMPLETE**
-- **L2 — IN PROGRESS** — additional post-L1 lifecycle cleanups and the completed V83 observer retirement merged through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168
+- **L2 — IN PROGRESS** — additional post-L1 lifecycle cleanups and the completed V83/Secondary HUD transfers merged through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168/#171
 - **L3 — IN PROGRESS**
 - **L4 — INVESTIGATION STARTED**
 - **L5 — IN PROGRESS (staged retirements only; no current L1-derived queue)**
