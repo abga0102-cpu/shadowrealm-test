@@ -9,10 +9,11 @@ const source = fs.readFileSync(path.join(root, 'secondary-hud-selective-v279.js'
   .filter((line) => !line.trimStart().startsWith('//'))
   .join('\n');
 
-test('Secondary HUD consumes canonical modal lifecycle without observing app mutations', async ({ page }) => {
+test('Secondary HUD consumes canonical route and modal lifecycles without wrapping renderHUD', async ({ page }) => {
+  expect(source).toContain("window.addEventListener('sr:bottomnavrendered',sync)");
   expect(source).toContain("window.addEventListener('sr:modal-state',sync)");
   expect(source).not.toMatch(/new\s+MutationObserver\s*\(/);
-  expect(source).toMatch(/renderHUD\s*=\s*function\s*\(/);
+  expect(source).not.toMatch(/renderHUD\s*=\s*function\s*\(/);
 
   await page.goto('/index.html');
   await page.waitForFunction(() => window.__srSecondaryHudSelectiveV279 && document.getElementById('app') && document.getElementById('hud'));
@@ -44,8 +45,15 @@ test('Secondary HUD consumes canonical modal lifecycle without observing app mut
 
   await page.evaluate(() => {
     route = 'raid';
-    window.dispatchEvent(new CustomEvent('sr:modal-state', { detail: { open: false } }));
+    window.dispatchEvent(new Event('sr:bottomnavrendered'));
   });
   await expect(page.locator('#app')).toHaveClass(/srSecondaryContext279/);
   await expect(page.locator('#hud')).toHaveClass(/srSecondaryHud279/);
+
+  await page.evaluate(() => {
+    route = 'accueil';
+    window.dispatchEvent(new Event('sr:bottomnavrendered'));
+  });
+  await expect(page.locator('#app')).not.toHaveClass(/srSecondaryContext279/);
+  await expect(page.locator('#hud')).not.toHaveClass(/srSecondaryHud279/);
 });
