@@ -42,7 +42,10 @@ function retireGuidance(){
     }
   }catch(_){}
   try{
-    if(typeof nextUnlockGoal==='function'&&!nextUnlockGoal.__srNoRebirthAuthorityV281){
+    /* This file is the final dynamic authority. Re-apply nextUnlockGoal even when
+       an earlier retirement layer already tagged the function, otherwise its
+       legacy raw internal floor label ("Boss 50") can survive into the UI. */
+    if(typeof nextUnlockGoal==='function'){
       nextUnlockGoal=function(st){
         var mega=st&&st.megaBossClears?Object.keys(st.megaBossClears).some(function(k){return st.megaBossClears[k];}):false;
         var megaUnlocked=false;try{megaUnlocked=typeof megaRaidUnlocked==='function'&&megaRaidUnlocked(st);}catch(_){}
