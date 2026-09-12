@@ -1,7 +1,8 @@
 /* SHADOWREACH · Rebirth removal authority V281
    Final authority loaded after the dynamic UI stack. Removes every remaining
    Rebirth entry point and prevents late legacy layers from restoring it.
-   Legacy save fields stay inert for compatibility. */
+   Legacy save fields stay inert for compatibility.
+   V314 also removes retired Rebirth recommendations from progression guidance. */
 (function(){
 'use strict';
 if(window.__srRebirthRemovalAuthorityV281)return;
@@ -15,6 +16,40 @@ function retireEngine(){
   try{if(typeof doRebirth==='function')doRebirth=function(){return 0;};}catch(_){}
   try{if(typeof buyRebirth==='function')buyRebirth=function(){return false;};}catch(_){}
   try{if(typeof REBIRTH_UPGRADES!=='undefined'&&Array.isArray(REBIRTH_UPGRADES))REBIRTH_UPGRADES.splice(0,REBIRTH_UPGRADES.length);}catch(_){}
+}
+function retireGuidance(){
+  try{
+    if(typeof progressionGoals==='function'&&!progressionGoals.__srNoRebirthAuthorityV281){
+      var oldProgressionGoals=progressionGoals;
+      progressionGoals=function(st){
+        var out=oldProgressionGoals.apply(this,arguments);
+        if(!Array.isArray(out))return out;
+        return out.filter(function(g){return !(g&&/^rebirth/i.test(String(g.id||'')));}).map(function(g){
+          if(g&&g.id==='floor25'){
+            g=Object.assign({},g,{why:'Franchis un premier cap majeur de campagne et prépare la suite de ta progression.'});
+          }
+          return g;
+        });
+      };
+      progressionGoals.__srNoRebirthAuthorityV281=true;
+      progressionGoals.__srPrevious=oldProgressionGoals;
+    }
+  }catch(_){}
+  try{
+    if(typeof nextUnlockGoal==='function'&&!nextUnlockGoal.__srNoRebirthAuthorityV281){
+      nextUnlockGoal=function(st){
+        var mega=st&&st.megaBossClears?Object.keys(st.megaBossClears).some(function(k){return st.megaBossClears[k];}):false;
+        var megaUnlocked=false;try{megaUnlocked=typeof megaRaidUnlocked==='function'&&megaRaidUnlocked(st);}catch(_){}
+        var candidates=[
+          {title:'Méga-Boss',note:'Vaincre le Boss 50',detail:'Affronte des versions extrêmes des Boss et ouvre la voie au Sanctuaire.',now:megaUnlocked?1:0,max:1,done:megaUnlocked,go:'mega'},
+          {title:'Sanctuaire',note:'Vaincre un Méga-Boss',detail:'Fusionne tes ressources pour découvrir des recettes spéciales.',now:mega?1:0,max:1,done:mega,go:'sanctuaire'}
+        ];
+        for(var i=0;i<candidates.length;i++)if(!candidates[i].done)return candidates[i];
+        return null;
+      };
+      nextUnlockGoal.__srNoRebirthAuthorityV281=true;
+    }
+  }catch(_){}
 }
 function removeVisible(root){
   if(!root||!root.querySelectorAll)return;
@@ -42,6 +77,7 @@ function wrap(key){
 }
 function install(){
   retireEngine();
+  retireGuidance();
   try{
     if(typeof SCREENS!=='undefined'&&SCREENS){
       wrap('accueil');wrap('progression');wrap('classement');wrap('parametres');
