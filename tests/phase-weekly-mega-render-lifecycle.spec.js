@@ -30,6 +30,13 @@ test('Weekly Mega panel follows canonical render lifecycle without a UI poller',
   await page.evaluate(() => nav('accueil'));
   await expect(page.locator('#megaWeeklyV117')).toHaveCount(0);
 
-  await page.evaluate(() => nav('mega'));
+  await page.evaluate(() => new Promise((resolve) => {
+    nav('mega');
+    // V117 intentionally injects on the next animation frame because the
+    // BottomNav event is published before the core screen DOM is committed.
+    // Register this callback after nav() so the owned injection frame settles
+    // before Playwright starts its final assertion under a busy WebKit runner.
+    requestAnimationFrame(() => resolve());
+  }));
   await expect(page.locator('#megaWeeklyV117')).toHaveCount(1);
 });
