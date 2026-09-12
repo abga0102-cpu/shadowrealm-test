@@ -65,7 +65,7 @@ The exact locale grouping character for the sub-1,000 branch is delegated to the
 
 **Do not replace either formatter with the other.** Their current contracts are observably different. A future shared formatter is only safe if it exposes explicit modes/adapters and each caller is deliberately assigned to the correct semantics.
 
-`tests/l4-formatting-semantics.spec.js` is the golden contract for these differences. It is intentionally source-based so Forge's local helper does not need to be exposed globally merely for testing.
+`tests/phase-l4-formatting-semantics.spec.js` is the golden contract for these differences. It is intentionally source-based so Forge's local helper does not need to be exposed globally merely for testing.
 
 ## Escaping helpers
 
