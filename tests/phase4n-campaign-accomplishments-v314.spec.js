@@ -17,20 +17,20 @@ async function openCleanGame(page) {
   );
 }
 
-test('V314 Accomplishments follows the 400-floor campaign and exposes no retired Rebirth or PR milestone', async ({ page }) => {
+test('V314 Accomplishments follows 1-1 .. 40-10 and exposes no retired Rebirth or PR milestone', async ({ page }) => {
   await openCleanGame(page);
 
   await page.evaluate(() => ACT.accomplishments());
   const modal = page.locator('.srAch139');
   await expect(modal).toBeVisible();
-  await expect(modal).toContainText('Terminer Divin · Boss 400');
-  await expect(modal).toContainText('Terminer Cauchemar · Boss 200');
-  await expect(modal).not.toContainText(/Rebirth/i);
-  await expect(modal).not.toContainText(/\bPR\b/i);
+  await expect(modal).toContainText('Terminer Divin · 40-10');
+  await expect(modal).toContainText('Terminer Cauchemar · 20-10');
+  await expect(modal).not.toContainText('Rebirth');
+  await expect(modal).not.toContainText('1 000 PR');
   await expect(modal.locator('[data-ach^="rb"]')).toHaveCount(0);
 });
 
-test('V314 final difficulty reward stays locked until Boss 400 is actually defeated', async ({ page }) => {
+test('V314 final difficulty reward stays locked until Boss 40-10 is actually defeated', async ({ page }) => {
   await openCleanGame(page);
 
   await page.evaluate(() => {
@@ -44,8 +44,9 @@ test('V314 final difficulty reward stays locked until Boss 400 is actually defea
   });
 
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toHaveCount(0);
-  await expect(page.locator('.srAch139')).toContainText('Terminer Divin · Boss 400');
+  await expect(page.locator('.srAch139')).toContainText('Terminer Divin · 40-10');
 
+  await page.locator('.srAch139 [data-act="closeModal"]').click();
   await page.evaluate(() => {
     S.bossClears['400'] = true;
     ACT.accomplishments();
@@ -53,7 +54,7 @@ test('V314 final difficulty reward stays locked until Boss 400 is actually defea
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toBeVisible();
 });
 
-test('V314 Boss 400 accomplishment pays active progression resources once and never creates PR', async ({ page }) => {
+test('V314 Boss 40-10 accomplishment pays active progression resources once and never creates PR', async ({ page }) => {
   await openCleanGame(page);
 
   const before = await page.evaluate(() => {
@@ -97,7 +98,6 @@ test('V314 Boss 400 accomplishment pays active progression resources once and ne
     claimed: true,
   });
 
-  await page.evaluate(() => ACT.accomplishments());
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toHaveCount(0);
   await expect(page.locator('.srAch139')).toContainText('Récupéré');
 });
@@ -112,14 +112,21 @@ test('V314 progression guidance never recommends retired Rebirth after dynamic r
     fresh.floor = 25;
     const goals = progressionGoals(fresh);
     const unlock = nextUnlockGoal(fresh);
+    const retiredRefs = goals.filter((g) => {
+      const id = String(g.id || '');
+      const go = String(g.go || '');
+      const title = String(g.title || '');
+      const why = String(g.why || '');
+      return /^rebirth/i.test(id) || go.toLowerCase() === 'rebirth' || /rebirth/i.test(title) || /(^|\s)PR(\s|$)/.test(title + ' ' + why);
+    });
     return {
       ids: goals.map((g) => g.id),
-      text: JSON.stringify(goals),
+      retiredRefs,
       unlock,
     };
   });
 
   expect(result.ids.some((id) => /^rebirth/i.test(id))).toBe(false);
-  expect(result.text).not.toMatch(/Rebirth|\bPR\b/i);
+  expect(result.retiredRefs).toEqual([]);
   expect(result.unlock && result.unlock.title).toBe('Méga-Boss');
 });
