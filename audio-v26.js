@@ -19,18 +19,13 @@
   setInterval(poll,50);
 })();
 
-/* PE economy rebase v6: Raid Evolution = 50 PE at level 1, then +3/level.
+/* PE economy rebase v6 migration only.
+   Raid Évolution reward authority now lives exclusively in raid-pe-authority-v290.js.
    Old saves that never received v5 get the intended +40 PE per provable win.
    Saves that already received the temporary +90 v5 credit are corrected by
    removing at most the +50-per-win excess still present in their PE wallet.
    We never create negative PE or undo tree purchases already made. */
 (() => {
-  if (typeof raidReward !== "function") return;
-  const previousRaidReward = raidReward;
-  raidReward = function raidRewardRebalanced(raid, level) {
-    if (raid === "evolution") return 50 + 3 * Math.max(0, level - 1);
-    return previousRaidReward(raid, level);
-  };
   if (typeof S !== "object" || !S || typeof update !== "function") return;
   if (Object.prototype.hasOwnProperty.call(S, "economyRebaseV6")) return;
   update((st) => {
