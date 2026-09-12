@@ -1,13 +1,13 @@
 /* SHADOWREACH V289 · Enemy damage authority
-   Floor-based only. Calibrated against the approved weak / normal / max-0★ /
-   Ascension profiles so survivability gates line up with the HP progression.
-   No player-power scaling. Bosses keep V288's boss multiplier path; Mega Bosses
-   still multiply the resulting normal boss damage by x10. */
+   V314 extension: survivability curve through the canonical 400-floor campaign.
+   Floor-based only. No player-power scaling. Bosses keep V288's boss multiplier
+   path; Mega Bosses still multiply the resulting normal boss damage by x10. */
 (function(){
   'use strict';
   if(window.__srEnemyDamageV289)return;
   window.__srEnemyDamageV289=true;
 
+  /* Existing 1..150 values stay exact. New anchors begin only after Expert. */
   var DAMAGE={
     1:2,
     10:50,
@@ -24,12 +24,20 @@
     120:26000000,
     130:32000000,
     140:38000000,
-    150:38000000
+    150:38000000,
+    200:90000000,
+    250:210000000,
+    300:480000000,
+    350:1050000000,
+    400:2300000000
   };
 
+  function maxFloor(){
+    try{return Math.max(1,Number(window.__srCampaignMaxFloor)||400);}catch(_){return 400;}
+  }
   function logInterp(table,f){
     var keys=Object.keys(table).map(Number).sort(function(a,b){return a-b;});
-    f=Math.max(1,Number(f)||1);
+    f=Math.max(1,Math.min(maxFloor(),Number(f)||1));
     if(f<=keys[0])return table[keys[0]];
     for(var i=1;i<keys.length;i++){
       if(f<=keys[i]){
@@ -37,19 +45,18 @@
         return Math.max(1,Math.round(Math.exp(Math.log(table[a])+(Math.log(table[b])-Math.log(table[a]))*t)));
       }
     }
-    var a=keys[keys.length-2],b=keys[keys.length-1];
-    var g=Math.log(table[b]/table[a])/(b-a);
-    return Math.max(1,Math.round(table[b]*Math.exp(g*(f-b))));
+    return table[keys[keys.length-1]];
   }
 
   window.__srV289EnemyDamage=function(f){return logInterp(DAMAGE,f);};
   try{if(typeof enemyDamage==='function')enemyDamage=window.__srV289EnemyDamage;}catch(_){ }
 
-  /* QA reference only; does not affect gameplay. Approximate gates assume the
-     existing boss attack multiplier/cadence and are intentionally stored for
-     future regression checks rather than coupled to the player's live stats. */
   window.__srEnemyDamageConfigV289={
     anchors:DAMAGE,
-    expectedGates:{weak:'35-45',normal:'50-60',max0:'70-80',ascended:'100-150+'}
+    maxFloor:400,
+    expectedGates:{
+      weak:'35-45',normal:'50-60',max0:'70-80',ascended:'100-150+',
+      nightmare:'151-200',infernal:'201-250',abyssal:'251-300',immortal:'301-350',divine:'351-400'
+    }
   };
 })();
