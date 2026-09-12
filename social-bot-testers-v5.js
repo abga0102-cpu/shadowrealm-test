@@ -3,10 +3,11 @@
    of an arbitrary floor failure probability. This is a balance probe, not a
    second combat renderer. */
 (()=>{"use strict";
-const STORE="shadowreach.social.v1.messages",STATE="shadowreach.social.bottest.v5",MAX=160;
+const messageStore=window.__srSocialMessageStoreV1;
+const STORE=messageStore.key,STATE="shadowreach.social.bottest.v5";
 const P=[{name:"Kael",activity:100,style:"optimiseur",floor:81,forge:24,power:42000},{name:"Nyx",activity:85,style:"progression",floor:62,forge:17,power:18000},{name:"Rook",activity:70,style:"avance",floor:103,forge:31,power:86000},{name:"Mira",activity:45,style:"casual",floor:49,forge:12,power:9700}];
 const N=()=>Date.now(),by=Object.fromEntries(P.map(x=>[x.name.toLowerCase(),x]));
-function rd(){try{let a=JSON.parse(localStorage.getItem(STORE)||"[]");return Array.isArray(a)?a.slice(-MAX):[]}catch(_){return[]}}function wr(a){localStorage.setItem(STORE,JSON.stringify(a.slice(-MAX)));try{window.dispatchEvent(new StorageEvent("storage",{key:STORE,newValue:JSON.stringify(a)}))}catch(_){window.dispatchEvent(new Event("storage"))}}
+const rd=messageStore.read;function wr(a){localStorage.setItem(STORE,messageStore.serialize(a));try{window.dispatchEvent(new StorageEvent("storage",{key:STORE,newValue:JSON.stringify(a)}))}catch(_){window.dispatchEvent(new Event("storage"))}}
 function load(){let s={};try{s=JSON.parse(localStorage.getItem(STATE)||"{}")||{}}catch(_){}s.b=s.b||{};s.done=s.done||{};s.ctx=s.ctx||{};for(const p of P)if(!s.b[p.name])s.b[p.name]={floor:p.floor,forge:p.forge,power:p.power,pe:60,keys:2,tests:{},actions:0};return s}function save(s){localStorage.setItem(STATE,JSON.stringify(s))}
 function bossStats(f){try{const d=bossFor(f),t=Object.assign({},ENEMY_TYPES[1],{id:d.id,name:d.name,img:d.img,ranged:!!d.ranged,proj:d.proj||"magic"}),e=makeEnemy("campaign",{type:t,name:d.name,tier:d.tier,floor:f,boss:true,abils:d.abils,x:AW-46});return{name:d.name,hp:e.maxHP,dmg:e.dmg,abils:d.abils||[]}}catch(_){return{name:"Boss "+f,hp:Math.round(160*Math.pow(1.105,f)),dmg:Math.round(12*Math.pow(1.075,f)),abils:[]}}}
 function abilityLoad(ids){let ehp=1,pressure=1;for(const id of ids||[]){if(/bouclier|carapace|orbes|envol|cristal/.test(id))ehp+=.18;if(/regen|esprits|fee/.test(id))ehp+=.14;if(/souffle|pietinement|saignee|braise|intimidation|sismique/.test(id))pressure+=.14}return{ehp,pressure}}

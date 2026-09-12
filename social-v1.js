@@ -27,7 +27,9 @@
     catch(_){return {name:"Héros",level:1,power:1,floor:1,forge:1,bot:false};}
   }
   function read(){try{const a=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(a)?a.slice(-MAX):[]}catch(_){return[]}}
-  function write(list){try{localStorage.setItem(KEY,JSON.stringify(list.slice(-MAX)))}catch(_){}}
+  function serialize(list){return JSON.stringify(list.slice(-MAX))}
+  function write(list){try{localStorage.setItem(KEY,serialize(list))}catch(_){}}
+  window.__srSocialMessageStoreV1={key:KEY,max:MAX,read,serialize};
   function push(msg,broadcast=true,relay=broadcast){
     if(!msg||!msg.id)return; msg.channel=msgChannel(msg);
     const list=read(); if(list.some(x=>x&&x.id===msg.id))return;
