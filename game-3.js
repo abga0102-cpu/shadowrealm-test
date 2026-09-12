@@ -453,7 +453,7 @@ function drawArena() {
   const total = c.enemies.length + c.pending;
   let sub;
   if (c.ctx === "campaign") {
-    sub = '<span class="fPill">' + ic("swords", 10) + "Vague " + c.step + "/" + RULES.STEPS_PER_FLOOR + "</span>" +
+    sub = '<span class="fPill">' + ic("swords", 10) + "Vague " + c.step + "/" + campaignWaveCount(c.floor) + "</span>" +
       '<span class="fPill">Ennemis ' + (total - alive) + "/" + total + "</span>" +
       (c.boss ? '<span class="fPill boss">' + ic("skull", 10) + "BOSS</span>"
         : c.elite ? '<span class="fPill elite">' + ic("crown", 10) + "ÉLITE</span>" : "");
@@ -769,7 +769,7 @@ function bar(pct, color, h) {
 /* labelled meter used by the pity / mastery readouts (sheet §14) */
 function meter(pct, color, label) {
   return '<div class="meter"><i style="width:' + Math.max(0, Math.min(100, pct)) +
-    "%;background:linear-gradient(180deg," + shade(color, 16) + "," + color + ')"></i>' +
+    "%;background:linear-gradient(180deg," + shade(color, 16) + "," + color + '"></i>' +
     (label ? "<span>" + label + "</span>" : "") + "</div>";
 }
 function btn(label, opts) {
@@ -1017,7 +1017,7 @@ function harvestModalHTML() {
       '<div class="card flex1 center" style="padding:8px 6px">' +
         '<div class="mute tiny b">EFFICACITÉ</div>' +
         '<div class="bb" style="font-size:15px;color:#8FEFF4">+' + eff + "%</div>" +
-        '<div class="mute tiny">quantité produite</div></div>' +
+        '<div class="mute tiny">quantité produite</div></div>" +
     "</div>" +
 
     '<div class="sect" style="margin:0 0 8px">Ressources accumulées</div>' +
