@@ -45,6 +45,24 @@ async function openGameWithEventDrivenDecisionHierarchy(page) {
   await page.goto('/index.html?smoke=1');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
+
+  // This proof is about route/modal lifecycle, not first-run onboarding. A clean
+  // save intentionally opens the tutorial, whose own scheduled checks can race
+  // the route proof on WebKit. Mark every current tutorial step as seen and
+  // remove any already-mounted guide without adding sleeps or changing runtime.
+  await page.evaluate(() => {
+    if (!window.__smoke || !window.__smoke.S || !window.__smoke.S.tutorial) {
+      throw new Error('Smoke state is unavailable while isolating tutorial lifecycle');
+    }
+    const tutorial = window.__smoke.S.tutorial;
+    const seen = tutorial.seen || (tutorial.seen = {});
+    ['combat', 'equipement', 'competence', 'familier', 'forge', 'raid', 'rebirth', 'megaBoss', 'tree']
+      .forEach((key) => { seen[key] = true; });
+    const card = document.getElementById('tutorialCard');
+    if (card) card.remove();
+    if (typeof clearTutorialGuide === 'function') clearTutorialGuide();
+  });
+  await expect(page.locator('#tutorialCard')).toHaveCount(0);
 }
 
 test('Decision Hierarchy keeps route and modal semantics without MutationObserver', async ({ page }) => {
