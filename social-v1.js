@@ -11,7 +11,7 @@
   const tabs={world:"Monde",clan:"Clan",announcements:"Annonces"};
   const bots=[
     {name:"Nyx",level:34,power:18000,floor:62,forge:17,bot:true},
-    {name:"Kael",level:48,power:42000,floor:81,forge:24,power:42000,bot:true},
+    {name:"Kael",level:48,power:42000,floor:81,forge:24,bot:true},
     {name:"Mira",level:27,power:9700,floor:49,forge:12,bot:true},
     {name:"Rook",level:61,power:86000,floor:103,forge:31,bot:true},
   ];
