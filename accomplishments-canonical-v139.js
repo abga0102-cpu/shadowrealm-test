@@ -1,6 +1,6 @@
 /* SHADOWREACH · Accomplishments canonical mobile UI v139 · Fusion milestones V202
-   V314: campaign milestones now follow the canonical 1–400 campaign and retired
-   Rebirth/PR accomplishments are no longer surfaced. */
+   V314: campaign milestones follow the canonical 1-1 .. 40-10 campaign and
+   retired Rebirth/PR accomplishments are no longer surfaced. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsCanonicalV139)return;
@@ -11,6 +11,7 @@ function raids(){return n(S.accomplishments&&S.accomplishments.raidWins);}
 function forge(){return n(S.forge&&S.forge.level);}
 function floor(){return n(S.recordFloor);}
 function floorDone(target){target=Math.max(1,Math.floor(Number(target)||1));if(target%50===0)return !!(S.bossClears&&S.bossClears[String(target)]);return floor()>=target;}
+function stageLabel(target){target=Math.max(1,Math.min(400,Math.floor(Number(target)||1)));try{if(typeof window.__srCampaignStageLabel==='function')return window.__srCampaignStageLabel(target);}catch(_){}return (Math.floor((target-1)/10)+1)+'-'+(((target-1)%10)+1);}
 function fusions(){var st=S.sanctuary||{},a=S.accomplishments||{};return Math.max(n(st.mergeCrafts),n(st.fusions),n(a.fusionCount));}
 function ensureTitles(){S.titles=S.titles&&typeof S.titles==='object'?S.titles:{};if(typeof S.equippedTitle!=='string')S.equippedTitle='';}
 function divineUnlocked(){ensureTitles();var st=S.sanctuary||{};return !!(st.divineTitleUnlocked||S.titles.divin);}
@@ -51,21 +52,21 @@ var ITEMS={
   ['raid100',100,'100 Raids accomplis','1 500 000 Or + 1 000 Étincelles + 1 000 Essences + 50 Pièces de fusion Rares']
  ],
  Etages:[
-  ['floor25',25,'Atteindre l’étage 25','250 Essences'],
-  ['floor50',50,'Terminer Normal · Boss 50','2 000 Minerais + 5 000 Or'],
-  ['floor75',75,'Atteindre l’étage 75','500 Étincelles + 30 Pièces de fusion Communes'],
-  ['floor100',100,'Terminer Difficile · Boss 100','500 Étincelles + 500 Essences + 30 Pièces de fusion Communes'],
-  ['floor150',150,'Terminer Expert · Boss 150','750 Étincelles + 750 Essences + 15 Pièces de fusion Rares'],
-  ['floor200',200,'Terminer Cauchemar · Boss 200','1 000 Étincelles + 1 000 Essences + 20 Pièces de fusion Rares'],
-  ['floor250',250,'Terminer Infernal · Boss 250','1 250 Étincelles + 1 250 Essences + 10 Pièces de fusion Épiques'],
-  ['floor300',300,'Terminer Abyssal · Boss 300','1 500 Étincelles + 1 500 Essences + 15 Pièces de fusion Épiques'],
-  ['floor350',350,'Terminer Immortel · Boss 350','2 000 Étincelles + 2 000 Essences + 10 Pièces de fusion Mythiques'],
-  ['floor400',400,'Terminer Divin · Boss 400','2 500 Étincelles + 2 500 Essences + 20 Pièces de fusion Mythiques + 1 Clé universelle']
+  ['floor25',25,'Atteindre 3-5','250 Essences'],
+  ['floor50',50,'Terminer Normal · 5-10','2 000 Minerais + 5 000 Or'],
+  ['floor75',75,'Atteindre 8-5','500 Étincelles + 30 Pièces de fusion Communes'],
+  ['floor100',100,'Terminer Difficile · 10-10','500 Étincelles + 500 Essences + 30 Pièces de fusion Communes'],
+  ['floor150',150,'Terminer Expert · 15-10','750 Étincelles + 750 Essences + 15 Pièces de fusion Rares'],
+  ['floor200',200,'Terminer Cauchemar · 20-10','1 000 Étincelles + 1 000 Essences + 20 Pièces de fusion Rares'],
+  ['floor250',250,'Terminer Infernal · 25-10','1 250 Étincelles + 1 250 Essences + 10 Pièces de fusion Épiques'],
+  ['floor300',300,'Terminer Abyssal · 30-10','1 500 Étincelles + 1 500 Essences + 15 Pièces de fusion Épiques'],
+  ['floor350',350,'Terminer Immortel · 35-10','2 000 Étincelles + 2 000 Essences + 10 Pièces de fusion Mythiques'],
+  ['floor400',400,'Terminer Divin · 40-10','2 500 Étincelles + 2 500 Essences + 20 Pièces de fusion Mythiques + 1 Clé universelle']
  ]
 };
 function value(cat){return cat==='Forge'?forge():cat==='Fusions'?fusions():cat==='Raids'?raids():floor();}
 function itemDone(cat,x){return cat==='Etages'?floorDone(x[1]):value(cat)>=x[1];}
-function status(cat){var v=value(cat),list=ITEMS[cat],done=0,next=null;for(var i=0;i<list.length;i++){if(itemDone(cat,list[i]))done++;else if(next===null)next=list[i][1];}var fin=done===list.length;return '<div class="card frame"'+(cat==='Etages'?' data-ach-floor-overview-v138="1" data-ach-floor-overview-v137="1"':'')+' style="margin:6px 0;width:100%;box-sizing:border-box"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0"><div style="min-width:0;flex:1"><div class="b">'+(cat==='Etages'?'Étages':cat)+'</div><div class="mute tiny">'+(fin?done+' / '+list.length+' jalons atteints':'Prochain jalon : '+next+' · '+done+' / '+list.length+' atteints')+'</div></div><span class="pill" style="flex:0 0 auto'+(fin?';color:var(--greenLit);border-color:#3FB950':'')+'">'+(fin?'Terminé':v+' / '+next)+'</span></div></div>';}
+function status(cat){var v=value(cat),list=ITEMS[cat],done=0,next=null;for(var i=0;i<list.length;i++){if(itemDone(cat,list[i]))done++;else if(next===null)next=list[i];}var fin=done===list.length;var nextText=next?(cat==='Etages'?next[2]:next[1]):'';var pill=fin?'Terminé':(cat==='Etages'?stageLabel(v)+' → '+stageLabel(next[1]):v+' / '+next[1]);return '<div class="card frame"'+(cat==='Etages'?' data-ach-floor-overview-v138="1" data-ach-floor-overview-v137="1"':'')+' style="margin:6px 0;width:100%;box-sizing:border-box"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0"><div style="min-width:0;flex:1"><div class="b">'+(cat==='Etages'?'Étages':cat)+'</div><div class="mute tiny">'+(fin?done+' / '+list.length+' jalons atteints':'Prochain jalon : '+nextText+' · '+done+' / '+list.length+' atteints')+'</div></div><span class="pill" style="flex:0 0 auto'+(fin?';color:var(--greenLit);border-color:#3FB950':'')+'">'+pill+'</span></div></div>';}
 function action(x,done){if(claimed(x[0]))return '<span class="pill" style="color:var(--greenLit);border-color:#3FB950;flex:0 0 auto">Récupéré</span>';if(!done)return '<span class="pill" style="flex:0 0 auto">En cours</span>';if(x[4]==='choice')return '<div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm blue" data-ach="'+x[0]+'" data-ach-choice="eclat">500 Étincelles</button><button class="btn sm purple" data-ach="'+x[0]+'" data-ach-choice="essence">500 Essences</button></div>';return '<button class="btn sm green" data-ach="'+x[0]+'" style="flex:0 0 auto">Récupérer</button>';}
 function section(cat){var attrs=cat==='Etages'?' data-ach-floors-v138="1" data-ach-floors-v137-safe="1"':'';return '<div'+attrs+' style="width:100%;min-width:0;box-sizing:border-box"><div class="sect" style="margin:14px 0 6px">'+(cat==='Etages'?'Étages':cat)+'</div>'+ITEMS[cat].map(function(x){return '<div class="itemRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;min-width:0;box-sizing:border-box"><div style="flex:1 1 180px;min-width:0"><div class="b small">'+x[2]+'</div><div class="mute tiny" style="overflow-wrap:anywhere">'+x[3]+'</div></div>'+action(x,itemDone(cat,x))+'</div>';}).join('')+'</div>';}
 function titleSection(){ensureTitles();var unlocked=divineUnlocked(),eq=S.equippedTitle==='divin';return '<div data-ach-titles-v134="1" style="width:100%;min-width:0;box-sizing:border-box"><div class="sect" style="margin:14px 0 6px">Titres</div><div class="card frame" style="margin-bottom:7px;width:100%;box-sizing:border-box"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div style="min-width:0"><div class="b">Vue d’ensemble des titres</div><div class="mute tiny">Débloqués : '+(unlocked?1:0)+' / 1</div></div><span class="pill">'+(unlocked?'1 / 1':'0 / 1')+'</span></div></div><div class="itemRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;min-width:0;box-sizing:border-box"><div style="flex:1 1 180px;min-width:0"><div class="b small" style="color:#FFB52E">Divin</div><div class="mute tiny">Sacrifier un Divin · '+(unlocked?'1 / 1':'0 / 1')+'</div></div>'+(unlocked?'<button class="btn sm '+(eq?'dark':'gold')+'" data-ach-title="divin">'+(eq?'Équipé':'Équiper')+'</button>':'<span class="pill">Verrouillé</span>')+'</div></div>';}
