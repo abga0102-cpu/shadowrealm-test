@@ -5,9 +5,10 @@ const vm = require('vm');
 
 const root = path.join(__dirname, '..');
 const audio = fs.readFileSync(path.join(root, 'audio-v26.js'), 'utf8');
+const raidPEAuthority = fs.readFileSync(path.join(root, 'raid-pe-authority-v290.js'), 'utf8');
 
 function migrationSource() {
-  const marker = '/* PE economy rebase v6:';
+  const marker = '/* PE economy rebase v6 migration only.';
   const start = audio.indexOf(marker);
   if (start < 0) throw new Error('audio-v26 legacy migration marker missing');
   return audio.slice(start);
@@ -17,11 +18,10 @@ function runMigration(state, { raidMaxLevel = 50 } = {}) {
   const sandbox = {
     S: state,
     RULES: { RAID_MAX_LEVEL: raidMaxLevel },
-    raidReward: (raid, level) => (raid === 'evolution' ? 10 + level : 7),
     update: (mutator) => mutator(state),
   };
   vm.runInNewContext(migrationSource(), sandbox, { filename: 'audio-v26-migration.js' });
-  return { state, raidReward: sandbox.raidReward };
+  return { state };
 }
 
 test('audio v26 legacy migration credits +40 PE per provable pre-v5 Evolution win exactly once', async ({}, testInfo) => {
@@ -81,12 +81,16 @@ test('audio v26 legacy migration preserves historical win reconstruction across 
   expect(migrated.pe).toBe(4090);
 });
 
-test('audio v26 still contains distinct audio cadence and legacy migration responsibilities pending separation', async ({}, testInfo) => {
+test('audio v26 keeps audio cadence and historical migration but no longer owns Evolution raid rewards', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   expect(audio).toContain('setInterval(poll,50)');
   expect(audio).toContain('setInterval(musicTick,520)');
   expect(audio).toContain('economyRebaseV6');
   expect(audio).toContain('economyRebaseNoticeV6');
-  expect(audio).toContain('raidReward = function raidRewardRebalanced');
+  expect(audio).not.toContain('raidReward = function raidRewardRebalanced');
+  expect(audio).not.toContain('previousRaidReward');
+
+  expect(raidPEAuthority).toContain("if(raid==='evolution') return peReward(level)");
+  expect(raidPEAuthority).toContain('return 100+3*(level-1)');
 });
