@@ -62,37 +62,41 @@ test('post-screen lifecycle closes the Decision Hierarchy route ordering gap', a
 
   const lifecycleState = await page.evaluate(async () => {
     const seen = [];
+    let confirm = null;
+    let back = null;
     const onRendered = () => {
       const screen = document.getElementById('screen');
+      if (!screen) return;
+
+      confirm = document.createElement('button');
+      confirm.setAttribute('data-act', 'proofConfirm');
+      confirm.textContent = 'Confirmer';
+      confirm.style.cssText = 'position:fixed;top:80px;left:8px;width:120px;height:40px;z-index:9999';
+      back = document.createElement('button');
+      back.setAttribute('data-act', 'proofBack');
+      back.textContent = 'Retour';
+      back.style.cssText = 'position:fixed;top:126px;left:8px;width:120px;height:40px;z-index:9999';
+      screen.append(confirm, back);
+
       seen.push({
         route,
-        hasScreenContent: !!(screen && screen.children.length),
-        onSecondaryRoute: !!(screen && !screen.querySelector('.campaignWorld')),
+        hasScreenContent: !!screen.children.length,
+        onSecondaryRoute: !screen.querySelector('.campaignWorld'),
       });
     };
     window.addEventListener('sr:screenrendered', onRendered);
 
     nav('equipement');
 
-    const screen = document.getElementById('screen');
-    const confirm = document.createElement('button');
-    confirm.setAttribute('data-act', 'proofConfirm');
-    confirm.textContent = 'Confirmer';
-    confirm.style.cssText = 'position:fixed;top:80px;left:8px;width:120px;height:40px;z-index:9999';
-    const back = document.createElement('button');
-    back.setAttribute('data-act', 'proofBack');
-    back.textContent = 'Retour';
-    back.style.cssText = 'position:fixed;top:126px;left:8px;width:120px;height:40px;z-index:9999';
-    screen.append(confirm, back);
-
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     window.removeEventListener('sr:screenrendered', onRendered);
 
     return {
       event: seen[seen.length - 1] || null,
-      probesStillConnected: confirm.isConnected && back.isConnected,
-      primary: confirm.getAttribute('data-primary-action'),
-      secondary: back.getAttribute('data-secondary-action'),
+      probesStillConnected: !!(confirm && back && confirm.isConnected && back.isConnected),
+      primary: confirm && confirm.getAttribute('data-primary-action'),
+      secondary: back && back.getAttribute('data-secondary-action'),
+      renderEvents: seen.length,
       routeAfterFrames: route,
     };
   });
@@ -102,6 +106,7 @@ test('post-screen lifecycle closes the Decision Hierarchy route ordering gap', a
     probesStillConnected: true,
     primary: 'true',
     secondary: 'true',
+    renderEvents: expect.any(Number),
     routeAfterFrames: 'equipement',
   });
 
