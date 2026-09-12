@@ -1,8 +1,8 @@
 # Lean-code remaining-work audit
 
-Audit date: 2026-09-12. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). L2 ledger refreshed through merged PRs #153, #154, #155, #158, #161, #163, #164, #166, #168 and #171.
+Audit date: 2026-09-12. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). L2 ledger refreshed through merged PRs #153, #154, #155, #158, #161, #163, #164, #166, #168 and #171. L4 ledger refreshed through merged PRs #179 and #180.
 
-This file records the disposition after the proof-based L1 source audit and the subsequent L2 lifecycle passes. **L1 is complete.** L2, L3, L4 and staged L5 work remain open.
+This file records the disposition after the proof-based L1 source audit and the subsequent L2/L4 passes. **L1 is complete.** L2, L3, L4 and staged L5 work remain open. L4 now has one validated production ownership transfer; retaining local helpers where consolidation would add coupling or change semantics remains an intentional outcome.
 
 ## Verified runtime baseline
 
@@ -14,7 +14,7 @@ The default non-Social session remains **110 first-party JavaScript files**:
 
 Social raises the first-party count to 112 and Social + Bot Testers to 114. Optional third-party Social modules remain outside those totals.
 
-The final L1 source retirements did not reduce this runtime count because those sources were already absent from all normal/deferred/conditional/transitive loader paths before deletion. The L2 lifecycle cleanups and proof work through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168/#171 also do not change the runtime file count; they remove redundant timers/observers/wrappers, contract-lock responsibilities and complete scoped transfers inside still-required modules. The loader inventory in `RUNTIME_INVENTORY.md` remains the authoritative loaded-file list.
+The final L1 source retirements did not reduce this runtime count because those sources were already absent from all normal/deferred/conditional/transitive loader paths before deletion. The L2 lifecycle cleanups and proof work through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168/#171 also do not change the runtime file count; they remove redundant timers/observers/wrappers, contract-lock responsibilities and complete scoped transfers inside still-required modules. PR #180 also leaves file count unchanged because it centralizes an existing conditional Social storage policy inside `social-v1.js` rather than adding or removing a runtime module. The loader inventory in `RUNTIME_INVENTORY.md` remains the authoritative loaded-file list.
 
 ## L1 closure
 
@@ -67,6 +67,23 @@ The post-L1 passes continued the same evidence-first rule: remove only lifecycle
 
 These changes reduce active polling/observation/wrapper work without changing runtime file count, gameplay values, saves or balance.
 
+## L4 shared-utility disposition after PR #180
+
+L4 now has one production transfer that satisfies the phase criterion and several explicit retained-local decisions.
+
+- **PR #179 — lifecycle scheduling contract:** Home V219 and V83 both use coalesced one-frame scheduling, but sharing their tiny schedulers would add a production utility or cross-owner dependency. Weekly Mega is deliberately non-coalesced and Social uses trigger-specific scheduling. The four contracts remain local and are regression-locked.
+- **PR #180 — Social message-store ownership:** `social-v1.js` is the canonical owner of the `shadowreach.social.v1.messages` key, 160-message retention, malformed/non-array read fallback and capped serialization. `social-p2p-v1.js`, `social-bot-testers-v5.js` and `social-bot-ui-v1.js` consume that contract while retaining their owner-specific write/error and same-tab notification behavior. No new utility module or loader dependency was introduced.
+- **Formatting and escaping:** Base, Forge and Tree behavior remains intentionally different and is contract-locked in `L4_HELPER_SEMANTICS.md`; no mode-heavy shared abstraction is justified.
+
+A fresh post-#180 neutral-owner scan then rechecked Tutorial V100, Boot V115, Secondary HUD V279 and Weekly Mega V71. It found no second production transfer that meets L4's reduction-without-extra-coupling rule:
+
+- Tutorial's 180/220/300 ms scheduling encodes deliberate modal/tutorial sequencing rather than a generic timeout helper;
+- Boot's queued animation-frame work is tied to a campaign-wave DOM observer and remains combat-lifecycle sensitive;
+- Secondary HUD already uses direct canonical lifecycle subscriptions plus one local `sync()` and has no meaningful duplicate helper family to extract;
+- Weekly Mega's one-frame injection is deliberately non-coalesced, while its remaining timer is the 60-second reward-grant cadence and therefore domain/economy behavior rather than a generic lifecycle utility.
+
+**Current L4 disposition:** keep the Social store transfer, keep the contract-locked local helpers, and do not manufacture a generic utility layer. Reopen a production L4 transfer only when a newly discovered helper family has genuinely identical semantics and an existing natural owner/load-order relationship, or when a broader canonical owner emerges from later L2/L3 consolidation.
+
 ## Remaining Lean Code work
 
 | Phase / responsibility | Current evidence | Next reviewable scope / exit condition |
@@ -78,20 +95,21 @@ These changes reduce active polling/observation/wrapper work without changing ru
 | L2 central modal observer | COMPLETE under PR #168. The broad `#app` observer is absent; guarded modal transitions and startup synchronization own overlay tagging, `sr:modal-state` publication and FIFO queue draining, while campaign compact tagging remains on `sr:bottomnavrendered`. | No current V83 observer scope remains. Preserve the #163/#164/#166/#168 contracts and reassess only if a concrete new ownership seam or direct overlay mutation appears. |
 | L2 Boot wave observer | V115 retains a child-list observer for live campaign wave presentation after its permanent poller was removed. | Require an explicit deterministic wave-transition lifecycle hook plus exact wave-transition and campaign-death recovery coverage before any observer removal. |
 | L3 durable domain owners | Home/BottomNav are consolidated; Accomplishments deliberately separates state/events, historical migrations, modal rendering and future payout responsibilities. Forge presentation ownership is explicit between V266 panel rendering and V273 loot UX. | Consolidate only when module boundaries reduce coupling; keep future claims separate from old-save compensation. Feature-sensitive Forge/Familiars/combat work requires a fresh owner check. |
-| L4 escaping helpers | Base, Tree and Forge escaping helpers have different null/apostrophe semantics. | Specify input/output and HTML-context semantics first; preserve intentional differences with adapters or retain local helpers. |
-| L4 number formatting | Base and Forge formatters differ in suffix, rounding and locale behavior. | Establish golden input/output cases before adopting any shared formatter. |
+| L4 Social message store | COMPLETE transfer under PR #180. `social-v1.js` owns key/retention/read/serialization policy; P2P, Bot Testers and Bot UI consume it. | Preserve the ownership contract. Revisit only if Social storage semantics themselves change. |
+| L4 escaping / formatting / lifecycle helpers | Golden contracts prove semantic/timing differences or an unfavorable coupling tradeoff. | Retain local helpers. Reassess only when a broader natural owner emerges or a new family has identical semantics without a new runtime dependency. |
+| L4 neutral follow-up | Post-#180 scan of Tutorial, Boot, Secondary HUD and Weekly Mega found no second safe transfer. | Do not force a utility layer. Resume only from a concrete new duplicate-helper family with measurable reduction. |
 | L5 staged source retirement | The L1-derived retirement queue is exhausted. | New L5 candidates arise only after later L2/L3 ownership transfers have survived integration, or after a fresh source-reference audit identifies new obsolete source. |
 
-## L2 next-step rule
+## Next-step rule
 
-The Accomplishments V126 timer work is complete under merged PRs #153 and #161, V83's broad observer cleanup is complete through #168, and Secondary HUD V279's observer/wrapper cleanup is complete through #171. The next safe scope should be selected from fresh `main` using this order:
+The Accomplishments V126 timer work is complete under merged PRs #153 and #161, V83's broad observer cleanup is complete through #168, Secondary HUD V279's observer/wrapper cleanup is complete through #171, and the first L4 production transfer is complete under #180. The next safe scope should be selected from fresh `main` using this order:
 
-1. prefer another newly discovered neutral UI lifecycle candidate when its replacement hook is deterministic and behavior-equivalent;
+1. prefer a newly discovered neutral UI/lifecycle/helper candidate only when the surviving hook/owner is deterministic and behavior-equivalent;
 2. Power Hint and Boot wave lifecycle work may be reassessed, but remain combat-sensitive and must preserve deterministic campaign-death/checkpoint recovery; do not manufacture a replacement hook by re-wrapping canonical combat functions;
 3. keep the audio combat poller deferred until its save/migration/economy responsibilities are separated and covered;
-4. if no production transfer is evidence-safe, keep ownership/roadmap documentation current rather than forcing a cleanup whose replacement lifecycle is weaker than the code being removed.
+4. if no production transfer is evidence-safe, keep ownership/roadmap documentation current rather than forcing a cleanup whose replacement architecture is weaker than the code being removed.
 
-The fresh post-#171 scan found no second neutral production transfer worth forcing: Tutorial's remaining timers encode deliberate modal sequencing, Mobile UI crosses feature-sensitive Familiars/Rebirth ownership, and Boss Gate/Runtime Performance cross the combat boundary. Those remain evidence-gated rather than being treated as opportunistic cleanup.
+The fresh post-#180 scan found no second neutral production transfer worth forcing. Tutorial timing is deliberate modal sequencing, Boot remains tied to campaign-wave observation, Secondary HUD is already lifecycle-direct with no meaningful extractable helper, and Weekly Mega's remaining timing is either deliberately non-coalesced rendering or domain reward cadence. Mobile UI remains feature-sensitive across Familiars/Rebirth, while Boss Gate and Runtime Performance cross the combat boundary.
 
 ## Phase status after this audit refresh
 
@@ -99,7 +117,7 @@ The fresh post-#171 scan found no second neutral production transfer worth forci
 - **L1 — COMPLETE**
 - **L2 — IN PROGRESS** — additional post-L1 lifecycle cleanups and the completed V83/Secondary HUD transfers merged through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168/#171
 - **L3 — IN PROGRESS**
-- **L4 — INVESTIGATION STARTED**
+- **L4 — IN PROGRESS** — first production ownership transfer merged under #180; current neutral follow-up scan has no second safe transfer to force
 - **L5 — IN PROGRESS (staged retirements only; no current L1-derived queue)**
 
 Every production scope continues to follow `AGENTS.md`: coherent local implementation, one meaningful preflight, no 10–30 second micro-polling, exact-head CI, fresh `main` intersection check, merge, then post-merge verification.
