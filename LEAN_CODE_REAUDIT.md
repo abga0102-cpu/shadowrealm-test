@@ -1,6 +1,6 @@
 # Lean-code remaining-work audit
 
-Audit date: 2026-09-12. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). L2 ledger refreshed through merged PRs #153, #154, #155, #158, #161, #163, #164, #166, #168 and #171. L4 ledger refreshed through merged PRs #179 and #180.
+Audit date: 2026-09-12. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). L2 ledger refreshed through merged PRs #153, #154, #155, #158, #161, #163, #164, #166, #168, #171, #187, #188 and #189. L4 ledger refreshed through merged PRs #179 and #180.
 
 This file records the disposition after the proof-based L1 source audit and the subsequent L2/L4 passes. **L1 is complete.** L2, L3, L4 and staged L5 work remain open. L4 now has one validated production ownership transfer; retaining local helpers where consolidation would add coupling or change semantics remains an intentional outcome.
 
@@ -14,7 +14,7 @@ The default non-Social session remains **110 first-party JavaScript files**:
 
 Social raises the first-party count to 112 and Social + Bot Testers to 114. Optional third-party Social modules remain outside those totals.
 
-The final L1 source retirements did not reduce this runtime count because those sources were already absent from all normal/deferred/conditional/transitive loader paths before deletion. The L2 lifecycle cleanups and proof work through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168/#171 also do not change the runtime file count; they remove redundant timers/observers/wrappers, contract-lock responsibilities and complete scoped transfers inside still-required modules. PR #180 also leaves file count unchanged because it centralizes an existing conditional Social storage policy inside `social-v1.js` rather than adding or removing a runtime module. The loader inventory in `RUNTIME_INVENTORY.md` remains the authoritative loaded-file list.
+The final L1 source retirements did not reduce this runtime count because those sources were already absent from all normal/deferred/conditional/transitive loader paths before deletion. The L2 lifecycle cleanups and proof work through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168/#171/#187/#188/#189 also do not change the runtime file count; they remove redundant timers/observers/wrappers, contract-lock responsibilities and complete scoped transfers inside still-required modules. PR #180 also leaves file count unchanged because it centralizes an existing conditional Social storage policy inside `social-v1.js` rather than adding or removing a runtime module. The loader inventory in `RUNTIME_INVENTORY.md` remains the authoritative loaded-file list.
 
 ## L1 closure
 
@@ -64,8 +64,13 @@ The post-L1 passes continued the same evidence-first rule: remove only lifecycle
 - **PR #166 — V83 observerless modal proof:** booted the real game with only the remaining V83 `#app` observer removed in-memory. Chromium/WebKit coverage proves overlay persistence tagging, canonical `sr:modal-state` publication, FIFO queued-modal draining and Home → Equipment → Home behavior before the production block is retired.
 - **PR #168 — V83 production observer retirement:** removed the remaining broad `#app` observer without adding a replacement wrapper, timer or observer. Guarded `openModal`/`closeModal` transitions and startup synchronization retain modal tagging, state publication and queue draining; the observerless proof now runs against production source and a static ownership contract protects the native overlay owner among directly loaded scripts.
 - **PR #171 — Secondary HUD route lifecycle:** removed V279's remaining `renderHUD` wrapper. Route-context synchronization now consumes canonical `sr:bottomnavrendered`, modal-context synchronization remains on canonical `sr:modal-state`, and the existing synchronous startup `sync()` remains. Focused Chromium/WebKit coverage locks Home, modal open/close, secondary-route entry and return Home, with no replacement observer, timer or wrapper.
+- **PR #187 — Audio V26 legacy migration contract:** locked the historical Evolution PE V5/V6 save migration before any lifecycle transfer. The contract preserves +40 PE per provable pre-V5 win, capped V5 excess removal, completed-star reconstruction and idempotency.
+- **PR #188 — Audio V26 reward-ownership cleanup:** removed V26's obsolete Evolution `raidReward` wrapper after V290 was proven to be the sole current 100 + 3/level PE reward authority. The historical V6 migration and both audio cadences remain unchanged.
+- **PR #189 — Audio V26 observation-edge contract:** locked the 50 ms observer's actual semantics before attempting removal: hero/enemy attack edges, ranged/melee selection, once-per-active-skill-id SFX, fight-result transitions and combat-disappearance reset behavior.
 
-These changes reduce active polling/observation/wrapper work without changing runtime file count, gameplay values, saves or balance.
+The Audio proof sequence narrows the remaining problem but does **not** justify deleting the 50 ms observer yet. Current `combat-consolidated-v156.js` owns cadence/impact compatibility but publishes no deterministic lifecycle carrying the same attack-edge, skill-edge and combat-result information. Replacing the poller now would require introducing or wrapping a new combat hook, which is weaker than the evidence-backed current behavior and conflicts with the roadmap rule against manufacturing replacement hooks. The historical V6 migration also remains physically co-located in `audio-v26.js`; moving it merely for file purity would change startup/load ordering without a demonstrated benefit or a clearly superior canonical migration owner.
+
+These changes reduce active polling/observation/wrapper work where equivalent hooks exist, while preserving the remaining evidence-gated machinery when no equivalent deterministic owner exists.
 
 ## L4 shared-utility disposition after PR #180
 
@@ -91,7 +96,7 @@ A fresh post-#180 neutral-owner scan then rechecked Tutorial V100, Boot V115, Se
 | L2 Accomplishments lifecycle | V126's zero-delay Sanctuary mount and 50 ms migration synchronization are both removed under PRs #153/#161. V127 remains the durable historical reward-migration owner and V140 remains the future claim payout owner. | Do not force further consolidation merely to reduce files. Reassess only if a concrete duplicate wrapper/timer or ownership seam is found with equivalent old-save and lifecycle proof. |
 | L2 Secondary HUD lifecycle | COMPLETE under PRs #155/#171. V279 has no app observer and no `renderHUD` wrapper; route state follows `sr:bottomnavrendered`, modal state follows `sr:modal-state`, and startup synchronizes directly. | No current V279 lifecycle scope remains. Preserve the focused contract and reassess only if a concrete new ownership seam appears. |
 | L2 Power Hint lifecycle | Earlier polling cleanup was corrected after campaign-death lifecycle interference; current owner must remain passive with respect to canonical combat-end recovery. PR #157 merged deterministic campaign-death recovery. | Reassess only from fresh `main`. Do not re-wrap `handleCombatEnd`; any future lifecycle change must preserve the merged campaign-death/checkpoint regression suite and requires a deterministic combat lifecycle hook. |
-| L2 audio | V26 polls combat at 50 ms, runs a 520 ms music cadence after unlock, and also contains historical PE/save compatibility behavior. | Separate audio observation from migration/economy responsibilities with legacy-save contracts before changing lifecycle ownership. Do not treat the combat poller as an isolated UI timer. |
+| L2 audio | PR #187 locks the historical V5/V6 PE migration, PR #188 removes V26's obsolete Evolution reward wrapper, and PR #189 locks the combat-observation edge semantics. V26 still owns the 50 ms combat observer, 520 ms music cadence and historical V6 migration block. | Keep the 50 ms observer until an existing canonical combat owner exposes deterministic attack/skill/result lifecycle information with equivalent ordering. Do not invent a wrapper solely to remove polling. Move the historical migration only when a clearly superior canonical migration owner can preserve boot/import ordering; file purity alone is insufficient. |
 | L2 central modal observer | COMPLETE under PR #168. The broad `#app` observer is absent; guarded modal transitions and startup synchronization own overlay tagging, `sr:modal-state` publication and FIFO queue draining, while campaign compact tagging remains on `sr:bottomnavrendered`. | No current V83 observer scope remains. Preserve the #163/#164/#166/#168 contracts and reassess only if a concrete new ownership seam or direct overlay mutation appears. |
 | L2 Boot wave observer | V115 retains a child-list observer for live campaign wave presentation after its permanent poller was removed. | Require an explicit deterministic wave-transition lifecycle hook plus exact wave-transition and campaign-death recovery coverage before any observer removal. |
 | L3 durable domain owners | Home/BottomNav are consolidated; Accomplishments deliberately separates state/events, historical migrations, modal rendering and future payout responsibilities. Forge presentation ownership is explicit between V266 panel rendering and V273 loot UX. | Consolidate only when module boundaries reduce coupling; keep future claims separate from old-save compensation. Feature-sensitive Forge/Familiars/combat work requires a fresh owner check. |
@@ -102,20 +107,21 @@ A fresh post-#180 neutral-owner scan then rechecked Tutorial V100, Boot V115, Se
 
 ## Next-step rule
 
-The Accomplishments V126 timer work is complete under merged PRs #153 and #161, V83's broad observer cleanup is complete through #168, Secondary HUD V279's observer/wrapper cleanup is complete through #171, and the first L4 production transfer is complete under #180. The next safe scope should be selected from fresh `main` using this order:
+The Accomplishments V126 timer work is complete under merged PRs #153 and #161, V83's broad observer cleanup is complete through #168, Secondary HUD V279's observer/wrapper cleanup is complete through #171, the first L4 production transfer is complete under #180, and Audio's migration/reward/observation responsibilities are now contract-locked through #187/#188/#189. The next safe scope should be selected from fresh `main` using this order:
 
 1. prefer a newly discovered neutral UI/lifecycle/helper candidate only when the surviving hook/owner is deterministic and behavior-equivalent;
 2. Power Hint and Boot wave lifecycle work may be reassessed, but remain combat-sensitive and must preserve deterministic campaign-death/checkpoint recovery; do not manufacture a replacement hook by re-wrapping canonical combat functions;
-3. keep the audio combat poller deferred until its save/migration/economy responsibilities are separated and covered;
-4. if no production transfer is evidence-safe, keep ownership/roadmap documentation current rather than forcing a cleanup whose replacement architecture is weaker than the code being removed.
+3. keep the Audio 50 ms combat observer deferred until an existing canonical combat owner exposes deterministic attack/skill/result lifecycle information; do not introduce a new wrapper merely to satisfy L2;
+4. retain the historical Audio V6 migration in its proven startup location until a clearly better migration owner can preserve old-save and load-order semantics;
+5. if no production transfer is evidence-safe, keep ownership/roadmap documentation current rather than forcing a cleanup whose replacement architecture is weaker than the code being removed.
 
-The fresh post-#180 scan found no second neutral production transfer worth forcing. Tutorial timing is deliberate modal sequencing, Boot remains tied to campaign-wave observation, Secondary HUD is already lifecycle-direct with no meaningful extractable helper, and Weekly Mega's remaining timing is either deliberately non-coalesced rendering or domain reward cadence. Mobile UI remains feature-sensitive across Familiars/Rebirth, while Boss Gate and Runtime Performance cross the combat boundary.
+The fresh post-#189 review found no new neutral production transfer worth forcing. Tutorial timing is deliberate modal sequencing, Boot remains tied to campaign-wave observation, Secondary HUD is already lifecycle-direct with no meaningful extractable helper, Weekly Mega's remaining timing is either deliberately non-coalesced rendering or domain reward cadence, and Audio lacks an equivalent deterministic combat lifecycle hook. Mobile UI remains feature-sensitive across Familiars/Rebirth, while Boss Gate and Runtime Performance cross the combat boundary.
 
 ## Phase status after this audit refresh
 
 - **L0 — COMPLETE**
 - **L1 — COMPLETE**
-- **L2 — IN PROGRESS** — additional post-L1 lifecycle cleanups and the completed V83/Secondary HUD transfers merged through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168/#171
+- **L2 — IN PROGRESS** — additional post-L1 lifecycle cleanups and evidence passes merged through PRs #153/#154/#155/#158/#161/#163/#164/#166/#168/#171/#187/#188/#189
 - **L3 — IN PROGRESS**
 - **L4 — IN PROGRESS** — first production ownership transfer merged under #180; current neutral follow-up scan has no second safe transfer to force
 - **L5 — IN PROGRESS (staged retirements only; no current L1-derived queue)**
