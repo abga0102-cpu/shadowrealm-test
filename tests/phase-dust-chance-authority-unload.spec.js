@@ -4,27 +4,20 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
+const exists = name => fs.existsSync(path.join(root, name));
 
 const index = read('index.html');
-const v292 = read('dust-chance-floor-v292.js');
-const v300 = read('dust-chance-authority-v300.js');
 const v301 = read('dust-chance-floor-v301.js');
 
-test('V301 is the sole loaded Dust chance authority while superseded sources remain preserved', async ({ page }) => {
+test('V301 is the sole Dust chance authority and superseded V292/V300 sources are retired', async ({ page }) => {
   expect(index).not.toContain('src="dust-chance-floor-v292.js');
   expect(index).not.toContain('src="dust-chance-authority-v300.js');
   expect(index).toContain('src="dust-chance-floor-v301.js');
 
-  // Preserve source history until the unload has survived the full regression gate.
-  expect(v292).toContain('window.__srV292UpgradeChance=chance');
-  expect(v300).toContain('window.__srV300UpgradeChance=chance');
+  expect(exists('dust-chance-floor-v292.js')).toBe(false);
+  expect(exists('dust-chance-authority-v300.js')).toBe(false);
   expect(v301).toContain('window.__srV301UpgradeChance=chance');
-
-  // V301 restores the same approved 5% floor semantics originally introduced
-  // by V292, while V300's temporary 0% authority is intentionally not loaded.
-  expect(v292).toMatch(/return Math\.max\(5,95-5\*Math\.floor\(\(level-70\)\/2\)\)/);
   expect(v301).toMatch(/return Math\.max\(5,95-5\*Math\.floor\(\(level-70\)\/2\)\)/);
-  expect(v300).toMatch(/return Math\.max\(0,95-5\*Math\.floor\(\(level-70\)\/2\)\)/);
 
   await page.goto('/index.html?smoke=1');
   await page.waitForFunction(() => typeof itemUpgradeChance === 'function' && window.__srDustChanceFloorV301 === true);

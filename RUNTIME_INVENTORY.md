@@ -16,7 +16,7 @@ Snapshot base before the Home V119 consolidation: `main` at `b5c43fedc700ffebc5e
 
 The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation, then to 103 by unloading retired Accomplishments V141. After the staged V117 ownership transfer passed PR and post-merge regression, unloading inert Tree V117 reduced the static runtime to 95 entries and the normal non-Social runtime to 102 files. Unloading the retired Hero Equipment visual bridge reduces the static runtime to 94 entries and the normal non-Social runtime to 101 files.
 
-Absorbing the V105 notification CSS into `style.css` then reduces the static runtime to 93 entries and the normal runtime to 100 index-managed files. Unloading superseded Dust chance authorities V292 and V300 leaves V301 as the sole loaded chance owner, reducing the static runtime again to 91 entries and the index-managed normal runtime to 98 files.
+Absorbing the V105 notification CSS into `style.css` then reduces the static runtime to 93 entries and the normal runtime to 100 index-managed files. Unloading superseded Dust chance authorities V292 and V300 leaves V301 as the sole loaded chance owner, reducing the static runtime again to 91 entries and the index-managed normal runtime to 98 files. Their obsolete source files were subsequently retired after the V301-only runtime passed the full regression gate.
 
 The earlier totals above counted only scripts managed by `index.html`; they omitted the ten-script nested Familiar loader. The full current normal-session first-party count is therefore 108. Social may additionally import third-party network modules; those are not included in the first-party counts.
 
@@ -124,7 +124,7 @@ Reason: stable lower-conflict subsystem with canonical rendering/claims and one 
 
 ### V276–V309 progression authority chain — 28
 
-Reason: currently active progression, Rebirth, raid, dust, Forge, Familiar, skill and QA authority layers. V301 is now the sole loaded Dust upgrade-chance authority; superseded V292 and temporary V300 remain preserved in source history but are no longer requested. The remaining files are loaded intentionally while the recently stabilized progression work remains feature-owner sensitive.
+Reason: currently active progression, Rebirth, raid, dust, Forge, Familiar, skill and QA authority layers. V301 is now the sole loaded Dust upgrade-chance authority; superseded V292 and temporary V300 are retired from both runtime and source after the V301-only contract passed the full regression gate. The remaining files are loaded intentionally while the recently stabilized progression work remains feature-owner sensitive.
 
 - `secondary-hud-selective-v279.js`
 - `rebirth-removal-v276.js`
@@ -191,7 +191,7 @@ Reason: loaded only when their feature flag is enabled and therefore excluded fr
 
 ## Already retired/unloaded
 
-The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `hero-equipment-v1.js` (retired visual safety bridge; source retired after staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, `notification-compact-v105.js` (source retired after staged proof), the retired recommendation override, and the superseded Dust chance layers `dust-chance-floor-v292.js` / `dust-chance-authority-v300.js` (sources preserved pending staged retirement proof). They must not silently re-enter either the static loader or deferred chains.
+The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `hero-equipment-v1.js` (retired visual safety bridge; source retired after staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, `notification-compact-v105.js` (source retired after staged proof), the retired recommendation override, and the superseded Dust chance layers V292/V300 (both runtime loads and source files retired after V301-only regression proof). They must not silently re-enter either the static loader or deferred chains.
 
 ## L0 conclusion
 
