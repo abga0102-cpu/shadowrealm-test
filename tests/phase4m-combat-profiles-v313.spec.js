@@ -195,11 +195,11 @@ test('V313 real combat keeps the approved weak / normal / max 0★ / Ascension r
   console.log('V313 combat profile results:', JSON.stringify(result));
 
   // The ranges are deliberately coarse design bands, not exact-floor tuning.
-  // Boss checkpoints are every 10 floors: clearing 40 then failing 50 is still
-  // the weak ~40 gate; normal should stop at 50–60 and max 0★ at 70–80.
+  // Boss checkpoints are every 10 floors. A max 0★ profile is approved when it
+  // clears through roughly 70–80, which means its first failed checkpoint is 80–90.
   expect([40, 50]).toContain(result.weak.firstFail);
   expect([50, 60]).toContain(result.normal.firstFail);
-  expect([70, 80]).toContain(result.max0.firstFail);
+  expect([80, 90]).toContain(result.max0.firstFail);
   expect(result.ascension.firstFail).toBeNull();
   expect(result.ascension.fights.at(-1).floor).toBe(150);
   expect(result.ascension.fights.at(-1).status).toBe('won');
