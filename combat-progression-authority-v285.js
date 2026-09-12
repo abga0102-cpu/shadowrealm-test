@@ -1,8 +1,9 @@
 /* SHADOWREACH V285 · Combat progression authority
    V314 extension: canonical 400-stage campaign structure.
-   V315 display correction: visible chapters reset to 1-1 .. 5-10 inside each
-   difficulty while the internal numeric index 1..400 stays stable for saves,
-   balancing and compatibility.
+   V315 display correction: visible chapters reset inside each difficulty, but
+   chapter numbering is derived from that difficulty's real length and is not
+   capped at 5. A longer difficulty can naturally reach 10-1, 10-10 and beyond
+   while the internal numeric index stays stable for saves and balancing.
    Fixed campaign curve calibrated against weak/normal/max 0★/Ascension builds.
    Never scales enemies from current player power. */
 (function(){
@@ -25,10 +26,14 @@ var DIFFICULTIES=[
 ];
 
 function clampFloor(f){f=Math.floor(Number(f)||1);return Math.max(1,Math.min(CAMPAIGN_MAX,f));}
+function difficultyIndexForFloor(floor){
+  for(var i=0;i<DIFFICULTIES.length;i++)if(floor>=DIFFICULTIES[i].start&&floor<=DIFFICULTIES[i].end)return i;
+  return Math.max(0,DIFFICULTIES.length-1);
+}
 function campaignMeta(f){
-  var floor=clampFloor(f),di=Math.min(DIFFICULTIES.length-1,Math.floor((floor-1)/50));
-  var diff=DIFFICULTIES[di],within=floor-di*50;
-  var globalChapter=Math.floor((floor-1)/10)+1,stage=(floor-1)%10+1;
+  var floor=clampFloor(f),di=difficultyIndexForFloor(floor);
+  var diff=DIFFICULTIES[di],within=floor-diff.start+1;
+  var globalChapter=Math.floor((floor-1)/10)+1,stage=(within-1)%10+1;
   var difficultyChapter=Math.floor((within-1)/10)+1,stageCode=difficultyChapter+'-'+stage;
   return {
     floor:floor,maxFloor:CAMPAIGN_MAX,difficultyIndex:di,difficultyId:diff.id,difficulty:diff.label,
@@ -108,9 +113,11 @@ function normalizeCampaignState(){
 }
 normalizeCampaignState();
 
-/* Never let a completed final Divin boss (internal floor 400, visible 5-10)
-   advance to an undefined stage. The final stage remains replayable; first-clear
-   rewards still remain one-time through the existing bossRewardsClaimed contract. */
+/* Never let a completed final Divin boss (internal floor 400; currently visible
+   5-10 because Divin currently contains 50 stages) advance to an undefined stage.
+   If a difficulty grows later, visible chapter numbering grows with it automatically.
+   The final stage remains replayable; first-clear rewards remain one-time through
+   the existing bossRewardsClaimed contract. */
 try{
   if(typeof startCampaign==='function'&&!startCampaign.__srCampaign400V314){
     var oldStartCampaign=startCampaign;
@@ -178,8 +185,8 @@ try{
 decorateArenaLabel();
 
 /* The legacy combat renderer still writes a numeric inter-floor flash. Rewrite
-   only that visual after the canonical draw so players always see local 1-1 ..
-   5-10 notation for the current difficulty rather than the internal index. */
+   only that visual after the canonical draw so players always see local chapter-
+   stage notation for the current difficulty rather than the internal index. */
 try{
   if(typeof drawArena==='function'&&!drawArena.__srCampaignStageNotationV314){
     var oldDrawArena=drawArena;
@@ -197,8 +204,10 @@ try{
   }
 }catch(_){ }
 
+var CHAPTER_COUNTS=DIFFICULTIES.map(function(d){return Math.ceil(Math.max(0,d.end-d.start+1)/10);});
 window.__srCombatProgressionConfigV285={
   bossHP:BOSS,normalHP:NORMAL,maxFloor:CAMPAIGN_MAX,difficulties:DIFFICULTIES,
-  chaptersPerDifficulty:5,floorsPerChapter:10,totalChapters:40,campaignMeta:campaignMeta
+  chaptersPerDifficulty:CHAPTER_COUNTS[0],chapterCounts:CHAPTER_COUNTS,
+  floorsPerChapter:10,totalChapters:Math.ceil(CAMPAIGN_MAX/10),campaignMeta:campaignMeta
 };
 })();
