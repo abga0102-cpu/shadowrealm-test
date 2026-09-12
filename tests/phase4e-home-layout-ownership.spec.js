@@ -83,6 +83,14 @@ test('Phase 4E preserves Home header alignment and unique V119 compatibility aft
     await expect(page.locator('#app')).toHaveClass(/srHomeFullArena/);
   }
 
+  // srHomeFullArena may still be present from the preceding Home frame while
+  // V219's canonical BottomNav RAF is decorating the newly rendered controls.
+  // Wait for that owned lifecycle result before taking the synchronous snapshot.
+  await expect(page.locator('.homeForge .iBtn')).toHaveAttribute(
+    'aria-label',
+    'Informations sur les raretés'
+  );
+
   const result = await page.evaluate(() => {
     const hud = document.getElementById('hud');
     const hero = hud && hud.querySelector(':scope > .pbox');

@@ -143,14 +143,49 @@ test.describe('Accomplishments V126 Sanctuary reserve lifecycle', () => {
       return JSON.stringify(x);
     });
 
-    const chooserPromise = page.waitForEvent('filechooser');
-    await page.evaluate(() => ACT.importSave());
-    const chooser = await chooserPromise;
-    await chooser.setFiles({
-      name: 'legacy-accomplishments.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(raw),
-    });
+    // Exercise the production V207 import handler directly. Waiting for the
+    // browser-level filechooser is unrelated to the migrate-ordering contract
+    // and can be dropped by a busy Chromium runner before Playwright observes it.
+    await page.evaluate(async (json) => {
+      const nativeCreate = document.createElement;
+      const NativeFileReader = window.FileReader;
+      let finishRead;
+      const readFinished = new Promise((resolve) => { finishRead = resolve; });
+
+      document.createElement = function(tagName, options) {
+        const el = nativeCreate.call(document, tagName, options);
+        if (String(tagName).toLowerCase() === 'input') {
+          Object.defineProperty(el, 'files', {
+            configurable: true,
+            value: [{ name: 'legacy-accomplishments.json', type: 'application/json' }],
+          });
+          el.click = function() {
+            if (typeof this.onchange === 'function') this.onchange();
+          };
+        }
+        return el;
+      };
+      window.FileReader = class {
+        readAsText() {
+          this.result = json;
+          Promise.resolve().then(() => {
+            try {
+              if (typeof this.onload === 'function') this.onload();
+            } finally {
+              finishRead();
+            }
+          });
+        }
+      };
+
+      try {
+        ACT.importSave();
+        await readFinished;
+      } finally {
+        document.createElement = nativeCreate;
+        window.FileReader = NativeFileReader;
+      }
+    }, raw);
 
     await page.waitForFunction(() =>
       S && S.sanctuary &&
