@@ -6,20 +6,8 @@ const { touchCurrentLocator } = require('./helpers/render-stable-touch');
 const root = path.join(__dirname, '..');
 const v83Path = path.join(root, 'ui-stability-v83.js');
 
-function sourceWithoutAppObserver() {
-  const source = fs.readFileSync(v83Path, 'utf8');
-  const observerBlock = /\n  const app=document\.getElementById\('app'\);\n  if\(app\)\{\n    let queued=false;\n    const mark=function\(\)\{markOverlay\(\);publishModalState\(\);if\(!overlay\(\)\)drain\(\);\};\n    const schedule=function\(\)\{if\(queued\)return;queued=true;requestAnimationFrame\(function\(\)\{queued=false;mark\(\);\}\);\};\n    new MutationObserver\(schedule\)\.observe\(app,\{childList:true,subtree:false\}\);\n    mark\(\);\n  \}\n/;
-  const stripped = source.replace(observerBlock, '\n  markOverlay();\n');
-  if (stripped === source) throw new Error('Expected V83 #app observer block was not found');
-  return stripped;
-}
-
-async function openGameWithoutObserver(page) {
-  const stripped = sourceWithoutAppObserver();
+async function openObserverlessGame(page) {
   await page.route('**/npm/**', (route) => route.abort());
-  await page.route('**/ui-stability-v83.js*', async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/javascript', body: stripped });
-  });
   await page.addInitScript(() => {
     try {
       localStorage.removeItem('shadowreach.save.local');
@@ -34,14 +22,24 @@ async function openGameWithoutObserver(page) {
 
 async function activate(page, locator, testInfo) {
   if (testInfo.project.name === 'webkit-iphone') {
-    await touchCurrentLocator(page, locator, { label: 'V83 observer-removal proof action' });
+    await touchCurrentLocator(page, locator, { label: 'V83 observerless lifecycle action' });
   } else {
     await locator.click();
   }
 }
 
-test('V83 modal lifecycle remains complete with the broad #app observer removed', async ({ page }, testInfo) => {
-  await openGameWithoutObserver(page);
+test('V83 production source has no broad #app modal observer', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
+  const source = fs.readFileSync(v83Path, 'utf8');
+  expect(source).not.toContain('new MutationObserver(schedule).observe(app,{childList:true,subtree:false})');
+  expect(source).not.toContain("const app=document.getElementById('app');");
+  expect(source).toContain('function nativeOpenSafe(ctx,args)');
+  expect(source).toContain('function nativeCloseSafe(ctx,args)');
+  expect(source).toContain('markOverlay();\n  publishModalState(true);');
+});
+
+test('V83 modal lifecycle remains complete without the broad #app observer', async ({ page }, testInfo) => {
+  await openObserverlessGame(page);
 
   await page.evaluate(() => {
     window.__leanV83ObserverlessStates = [];

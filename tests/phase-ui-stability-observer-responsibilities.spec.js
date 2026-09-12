@@ -27,7 +27,12 @@ async function activate(page, locator, testInfo) {
   }
 }
 
-test('V83 keeps modal observer duties separate from campaign render lifecycle', async ({}, testInfo) => {
+function activeRuntimeScripts() {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  return [...new Set([...html.matchAll(/["']([A-Za-z0-9._-]+\.js)(?:\?[^"']*)?["']/g)].map((m) => m[1]))];
+}
+
+test('V83 uses deterministic modal and campaign lifecycles without a broad app observer', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   const source = fs.readFileSync(path.join(root, 'ui-stability-v83.js'), 'utf8');
@@ -36,8 +41,53 @@ test('V83 keeps modal observer duties separate from campaign render lifecycle', 
   expect(source).toContain("CustomEvent('sr:modal-state'");
   expect(source).toContain("classList.toggle('srHomeCompact'");
   expect(source).toContain("window.addEventListener('sr:bottomnavrendered',scheduleCampaignCompact)");
-  expect(source).toContain("const mark=function(){markOverlay();publishModalState();if(!overlay())drain();};");
-  expect(source).toContain('new MutationObserver(schedule).observe(app,{childList:true,subtree:false})');
+  expect(source).toContain('function nativeOpenSafe(ctx,args)');
+  expect(source).toContain('function nativeCloseSafe(ctx,args)');
+  expect(source).toContain('markOverlay();\n  publishModalState(true);');
+  expect(source).not.toContain('new MutationObserver(schedule).observe(app,{childList:true,subtree:false})');
+  expect(source).not.toContain("const app=document.getElementById('app');");
+});
+
+test('active runtime keeps direct overlay creation and removal in the native modal owner', async ({}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
+
+  const scripts = activeRuntimeScripts();
+  expect(scripts).toContain('game-3.js');
+  const core = fs.readFileSync(path.join(root, 'game-3.js'), 'utf8');
+  expect(core).toContain('ov.id = "overlay";');
+  expect(core).toContain('document.getElementById("app").appendChild(ov);');
+  expect(core).toContain('if (ov) ov.remove();');
+
+  const offenders = [];
+  for (const file of scripts) {
+    if (file === 'game-3.js') continue;
+    const filePath = path.join(root, file);
+    if (!fs.existsSync(filePath)) continue;
+    const source = fs.readFileSync(filePath, 'utf8');
+    const directPatterns = [
+      [/\.id\s*=\s*["']overlay["']/, 'assigns #overlay id'],
+      [/setAttribute\(\s*["']id["']\s*,\s*["']overlay["']/, 'sets #overlay id'],
+      [/id\s*=\s*\\?["']overlay\\?["']/, 'embeds a new #overlay element'],
+      [/getElementById\(\s*["']overlay["']\s*\)\s*\??\.\s*(?:remove|replaceWith)\s*\(/, 'removes/replaces #overlay directly'],
+      [/querySelector\(\s*["']#overlay["']\s*\)\s*\??\.\s*(?:remove|replaceWith)\s*\(/, 'removes/replaces #overlay directly'],
+    ];
+    for (const [pattern, label] of directPatterns) {
+      if (pattern.test(source)) offenders.push(`${file}: ${label}`);
+    }
+
+    const binding = /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*document\.getElementById\(\s*["']overlay["']\s*\)/g;
+    let match;
+    while ((match = binding.exec(source))) {
+      const name = match[1].replace(/[$]/g, '\\$&');
+      const nearby = source.slice(match.index, match.index + 700);
+      const mutation = new RegExp(`\\b${name}\\s*\\.\\s*(?:remove|replaceWith)\\s*\\(`);
+      const parentRemoval = new RegExp(`removeChild\\s*\\(\\s*${name}\\s*\\)`);
+      if (mutation.test(nearby) || parentRemoval.test(nearby)) {
+        offenders.push(`${file}: mutates #overlay through local binding ${match[1]}`);
+      }
+    }
+  }
+  expect(offenders).toEqual([]);
 });
 
 test('V83 preserves overlay tagging, modal-state publication and queued-modal draining', async ({ page }, testInfo) => {
