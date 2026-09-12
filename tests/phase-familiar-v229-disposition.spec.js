@@ -15,14 +15,15 @@ function indexOfScript(name) {
   return index.indexOf(`src="${name}`);
 }
 
-test('Familiar V229 is a superseded pre-registry renderer, not the final screen owner', async ({ page }) => {
+test('Familiar V229 stays unloaded while the V240+ registry chain owns the final screen', async ({ page }) => {
   const v229Pos = indexOfScript('familiars-ui-v229.js');
   const v231Pos = indexOfScript('familiars-noscr-v231.js');
 
-  expect(v229Pos).toBeGreaterThanOrEqual(0);
-  expect(v231Pos).toBeGreaterThan(v229Pos);
+  expect(v229Pos).toBe(-1);
+  expect(v231Pos).toBeGreaterThanOrEqual(0);
   expect(v231).toContain("load('familiars-noscr-v234.js");
 
+  // Retained source documents the superseded renderer, but it must not regain runtime ownership.
   expect(v229).toContain('scrFamiliers = renderFamiliarsV229');
   expect(v229).not.toContain('SCREENS.familiers=renderFamiliarsV229');
   expect(v234).toContain('SCREENS.familiers=renderV234');
@@ -45,12 +46,12 @@ test('Familiar V229 is a superseded pre-registry renderer, not the final screen 
     const finalHtml = typeof SCREENS !== 'undefined' && SCREENS && typeof SCREENS.familiers === 'function'
       ? SCREENS.familiers()
       : '';
-    const staleHtml = typeof scrFamiliers === 'function' ? scrFamiliers() : '';
+    const legacyHtml = typeof scrFamiliers === 'function' ? scrFamiliers() : '';
 
     return {
       finalUsesV240: finalHtml.includes('famScroll240'),
       finalUsesV229: finalHtml.includes('famV229') || finalHtml.includes('data-fam-jump'),
-      staleLegacyUsesV229: staleHtml.includes('famV229') || staleHtml.includes('data-fam-jump'),
+      legacyUsesV229: legacyHtml.includes('famV229') || legacyHtml.includes('data-fam-jump'),
       v229StylePresent: !!document.getElementById('sr-familiars-v229-style'),
     };
   });
@@ -58,7 +59,7 @@ test('Familiar V229 is a superseded pre-registry renderer, not the final screen 
   expect(ownership).toEqual({
     finalUsesV240: true,
     finalUsesV229: false,
-    staleLegacyUsesV229: true,
-    v229StylePresent: true,
+    legacyUsesV229: false,
+    v229StylePresent: false,
   });
 });
