@@ -4,10 +4,11 @@
    chat status work on every DOM mutation. */
 (() => {
   "use strict";
-  const STORE="shadowreach.social.v1.messages",MAX=160,APP_ID="shadowreach-testers-social-2026-v1",ROOM_ID="shadowreach-testers-global-v1",CDN="https://esm.run/trystero@0.25.4";
+  const messageStore=window.__srSocialMessageStoreV1;
+  const STORE=messageStore.key,APP_ID="shadowreach-testers-social-2026-v1",ROOM_ID="shadowreach-testers-global-v1",CDN="https://esm.run/trystero@0.25.4";
   const seen=new Set();let action=null,room=null,peerCount=0,ready=false,lastSnapshot="";
-  function read(){try{const a=JSON.parse(localStorage.getItem(STORE)||"[]");return Array.isArray(a)?a.slice(-MAX):[]}catch(_){return[]}}
-  function write(a){try{localStorage.setItem(STORE,JSON.stringify(a.slice(-MAX)))}catch(_){}}
+  const read=messageStore.read;
+  function write(a){try{localStorage.setItem(STORE,messageStore.serialize(a))}catch(_){}}
   function safeChannel(v){return v==="clan"||v==="announcements"?v:"world"}
   function ingest(msg){
     if(!msg||typeof msg!=="object"||!msg.id||seen.has(msg.id))return false;
