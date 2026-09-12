@@ -6,19 +6,19 @@ Snapshot base before the Home V119 consolidation: `main` at `b5c43fedc700ffebc5e
 
 ## Loader totals
 
-- 91 scripts are loaded synchronously through static `<script src>` entries.
+- 90 scripts are loaded synchronously through static `<script src>` entries.
 - 7 additional core UI scripts are loaded after startup in the default non-Social session.
-- Index-managed subtotal: **98 JavaScript files**.
+- Index-managed subtotal: **97 JavaScript files**.
 - 10 additional scripts are loaded transitively by `familiars-noscr-v231.js`.
-- Default first-party runtime total: **108 JavaScript files**.
-- Social adds `social-v1.js` and `social-p2p-v1.js`: **110** first-party files when Social is enabled.
-- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **112** first-party files in that optional mode.
+- Default first-party runtime total: **107 JavaScript files**.
+- Social adds `social-v1.js` and `social-p2p-v1.js`: **109** first-party files when Social is enabled.
+- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **111** first-party files in that optional mode.
 
 The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation, then to 103 by unloading retired Accomplishments V141. After the staged V117 ownership transfer passed PR and post-merge regression, unloading inert Tree V117 reduced the static runtime to 95 entries and the normal non-Social runtime to 102 files. Unloading the retired Hero Equipment visual bridge reduces the static runtime to 94 entries and the normal non-Social runtime to 101 files.
 
-Absorbing the V105 notification CSS into `style.css` then reduces the static runtime to 93 entries and the normal runtime to 100 index-managed files. Unloading superseded Dust chance authorities V292 and V300 leaves V301 as the sole loaded chance owner, reducing the static runtime again to 91 entries and the index-managed normal runtime to 98 files. Their obsolete source files were subsequently retired after the V301-only runtime passed the full regression gate.
+Absorbing the V105 notification CSS into `style.css` then reduces the static runtime to 93 entries and the normal runtime to 100 index-managed files. Unloading superseded Dust chance authorities V292 and V300 leaves V301 as the sole loaded chance owner, reducing the static runtime again to 91 entries and the index-managed normal runtime to 98 files. Their obsolete source files were subsequently retired after the V301-only runtime passed the full regression gate. Unloading the superseded Familiar stock bridge V274 leaves V275 as the sole loaded stock/summon authority and reduces the static runtime to 90 entries and the index-managed normal runtime to 97 files.
 
-The earlier totals above counted only scripts managed by `index.html`; they omitted the ten-script nested Familiar loader. The full current normal-session first-party count is therefore 108. Social may additionally import third-party network modules; those are not included in the first-party counts.
+The earlier totals above counted only scripts managed by `index.html`; they omitted the ten-script nested Familiar loader. The full current normal-session first-party count is therefore 107. Social may additionally import third-party network modules; those are not included in the first-party counts.
 
 ## Static loader inventory
 
@@ -43,14 +43,13 @@ Reason: active canonical/extension responsibilities already mapped in `ARCHITECT
 - `combat-animation-v169.js`
 - `runtime-performance-v217.js`
 
-### Familiars pre-authority chain — 5
+### Familiars pre-authority chain — 4
 
-Reason: active Familiar UI/stock compatibility and authority layers. Familiars is feature-owner sensitive, so these are explicitly queued for later consolidation rather than blind unloading.
+Reason: active Familiar UI/stock compatibility and authority layers. V275 waits for the final V240/V241 renderer chain and owns stock ordering plus summon placement there. Superseded V274 is staged out of the loader while its source remains preserved until the V275-only runtime passes the full regression gate.
 
 - `familiars-ui-v229.js`
 - `familiars-qa-v230.js`
 - `familiars-noscr-v231.js`
-- `familiars-stock-v274.js`
 - `familiars-stock-authority-v275.js`
 
 ### Rebirth and save import — 3
@@ -184,14 +183,14 @@ Reason: loaded after startup by the deferred `core` chain. Home V219 is now the 
 
 ## Conditional optional loader entries — 4
 
-Reason: loaded only when their feature flag is enabled and therefore excluded from the 108-file first-party normal-session total.
+Reason: loaded only when their feature flag is enabled and therefore excluded from the 107-file first-party normal-session total.
 
 - Social: `social-v1.js`, `social-p2p-v1.js`
 - Bot Testers, only with Social: `social-bot-testers-v5.js`, `social-bot-ui-v1.js`
 
 ## Already retired/unloaded
 
-The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `hero-equipment-v1.js` (retired visual safety bridge; source retired after staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, `notification-compact-v105.js` (source retired after staged proof), the retired recommendation override, and the superseded Dust chance layers V292/V300 (both runtime loads and source files retired after V301-only regression proof). They must not silently re-enter either the static loader or deferred chains.
+The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `hero-equipment-v1.js` (retired visual safety bridge; source retired after staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, `notification-compact-v105.js` (source retired after staged proof), the retired recommendation override, the superseded Dust chance layers V292/V300 (both runtime loads and source files retired after V301-only regression proof), and `familiars-stock-v274.js` (runtime load retired; source preserved pending staged V275-only proof). They must not silently re-enter either the static loader or deferred chains.
 
 ## L0 conclusion
 
