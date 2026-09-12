@@ -10,8 +10,6 @@
 if(window.__srSecondaryHudSelectiveV279)return;window.__srSecondaryHudSelectiveV279=true;
 if(typeof renderHUD!=='function')return;
 
-var nativeRenderHUD=renderHUD;
-
 function secondary(){
   try{
     if(document.getElementById('overlay'))return true;
@@ -28,15 +26,9 @@ function sync(){
   hud.removeAttribute('aria-hidden');
 }
 
-renderHUD=function(){
-  var out=nativeRenderHUD.apply(this,arguments);
-  sync();
-  return out;
-};
-try{window.renderHUD=renderHUD;}catch(_){}
-
-/* The canonical modal owner publishes open/close state after each transition.
-   React to that lifecycle directly instead of observing #app child mutations. */
+/* Route context follows the canonical BottomNav render lifecycle; modal context
+   follows the canonical modal lifecycle. Startup remains synchronized below. */
+window.addEventListener('sr:bottomnavrendered',sync);
 window.addEventListener('sr:modal-state',sync);
 
 ['srSecondaryHudContextV276Style','srSecondaryHudSelectiveV277Style','srSecondaryHudSelectiveV278Style'].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});
