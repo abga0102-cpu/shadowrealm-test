@@ -1,7 +1,8 @@
 /* SHADOWREACH V285 · Combat progression authority
    V314 extension: canonical 400-stage campaign structure.
-   Visible stages keep the approved chapter-stage notation 1-1 .. 40-10 while
-   the internal numeric index 1..400 remains stable for saves and balancing.
+   V315 display correction: visible chapters reset to 1-1 .. 5-10 inside each
+   difficulty while the internal numeric index 1..400 stays stable for saves,
+   balancing and compatibility.
    Fixed campaign curve calibrated against weak/normal/max 0★/Ascension builds.
    Never scales enemies from current player power. */
 (function(){
@@ -9,6 +10,7 @@
 if(window.__srCombatProgressionV285)return;
 window.__srCombatProgressionV285=true;
 window.__srCampaign400V314=true;
+window.__srLocalStageNotationV315=true;
 
 var CAMPAIGN_MAX=400;
 var DIFFICULTIES=[
@@ -26,12 +28,12 @@ function clampFloor(f){f=Math.floor(Number(f)||1);return Math.max(1,Math.min(CAM
 function campaignMeta(f){
   var floor=clampFloor(f),di=Math.min(DIFFICULTIES.length-1,Math.floor((floor-1)/50));
   var diff=DIFFICULTIES[di],within=floor-di*50;
-  var chapter=Math.floor((floor-1)/10)+1,stage=(floor-1)%10+1;
-  var difficultyChapter=Math.floor((within-1)/10)+1,stageCode=chapter+'-'+stage;
+  var globalChapter=Math.floor((floor-1)/10)+1,stage=(floor-1)%10+1;
+  var difficultyChapter=Math.floor((within-1)/10)+1,stageCode=difficultyChapter+'-'+stage;
   return {
     floor:floor,maxFloor:CAMPAIGN_MAX,difficultyIndex:di,difficultyId:diff.id,difficulty:diff.label,
-    difficultyFloor:within,difficultyChapter:difficultyChapter,chapter:chapter,stage:stage,stageCode:stageCode,isBoss:stage===10,
-    label:diff.label+' · '+stageCode
+    difficultyFloor:within,difficultyChapter:difficultyChapter,chapter:difficultyChapter,globalChapter:globalChapter,
+    stage:stage,stageCode:stageCode,isBoss:stage===10,label:diff.label+' · '+stageCode
   };
 }
 window.__srCampaignMaxFloor=CAMPAIGN_MAX;
@@ -106,9 +108,9 @@ function normalizeCampaignState(){
 }
 normalizeCampaignState();
 
-/* Never let a completed Boss 40-10 (internal floor 400) advance to an undefined
-   stage 41-1. The final stage remains replayable; first-clear rewards still
-   remain one-time through the existing bossRewardsClaimed contract. */
+/* Never let a completed final Divin boss (internal floor 400, visible 5-10)
+   advance to an undefined stage. The final stage remains replayable; first-clear
+   rewards still remain one-time through the existing bossRewardsClaimed contract. */
 try{
   if(typeof startCampaign==='function'&&!startCampaign.__srCampaign400V314){
     var oldStartCampaign=startCampaign;
@@ -142,7 +144,7 @@ try{
 
 /* Native arena label without adding another runtime script. drawArena compares
    against the raw label every frame, so the proxy remembers that raw value while
-   the actual DOM node receives the approved difficulty + chapter-stage label. */
+   the actual DOM node receives the approved difficulty + local chapter-stage label. */
 function decorateArenaLabel(){
   try{
     if(typeof arenaNodes==='undefined'||!arenaNodes||!arenaNodes.label||arenaNodes.label.__srCampaign400Proxy)return;
@@ -176,8 +178,8 @@ try{
 decorateArenaLabel();
 
 /* The legacy combat renderer still writes a numeric inter-floor flash. Rewrite
-   only that visual after the canonical draw so players always see 1-1, 1-2...
-   rather than the internal 1..400 index. */
+   only that visual after the canonical draw so players always see local 1-1 ..
+   5-10 notation for the current difficulty rather than the internal index. */
 try{
   if(typeof drawArena==='function'&&!drawArena.__srCampaignStageNotationV314){
     var oldDrawArena=drawArena;
