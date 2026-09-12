@@ -27,7 +27,7 @@ async function activate(page, locator, testInfo) {
   }
 }
 
-test('V83 observer responsibilities stay explicit before lifecycle splitting', async ({}, testInfo) => {
+test('V83 keeps modal observer duties separate from campaign render lifecycle', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Source ownership is engine-independent.');
 
   const source = fs.readFileSync(path.join(root, 'ui-stability-v83.js'), 'utf8');
@@ -35,7 +35,8 @@ test('V83 observer responsibilities stay explicit before lifecycle splitting', a
   expect(source).toContain("setAttribute('data-sr-persistent','1')");
   expect(source).toContain("CustomEvent('sr:modal-state'");
   expect(source).toContain("classList.toggle('srHomeCompact'");
-  expect(source).toContain('if(!overlay())drain()');
+  expect(source).toContain("window.addEventListener('sr:bottomnavrendered',scheduleCampaignCompact)");
+  expect(source).toContain("const mark=function(){markOverlay();publishModalState();if(!overlay())drain();};");
   expect(source).toContain('new MutationObserver(schedule).observe(app,{childList:true,subtree:false})');
 });
 
