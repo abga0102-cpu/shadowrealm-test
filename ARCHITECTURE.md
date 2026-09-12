@@ -33,7 +33,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Accomplishments merge reward / reserve synchronization | `accomplishments-merge-v126.js` | Event-driven owner: claim completion and Sanctuary screen lifecycle synchronize pending pieces/reserve; no global `render` wrapper or perpetual poller. |
 | Accomplishments legacy reward migrations | `accomplishments-reward-fix-v127.js` | Sole active legacy reward-migration owner for Raid 100 and the floor25/floor50/floor75 make-good. It preserves persisted V127/V141 idempotency markers, runs bounded startup reconciliation, and chains the deterministic `migrate(...)` lifecycle for imported saves; no perpetual poller. |
 | Floating Social launcher policy | `social-v1.js` | Owns launcher creation/remount and suppression policy when Social is enabled. |
-| Social message-store policy | `social-v1.js` | Canonical owner of the `shadowreach.social.v1.messages` key, 160-message retention, malformed/non-array read fallback, and capped serialization. `social-p2p-v1.js` and `social-bot-testers-v5.js` consume this contract while retaining their own write-error and same-tab `storage` notification behavior. |
+| Social message-store policy | `social-v1.js` | Canonical owner of the `shadowreach.social.v1.messages` key, 160-message retention, malformed/non-array read fallback, and capped serialization. `social-p2p-v1.js`, `social-bot-testers-v5.js`, and `social-bot-ui-v1.js` consume this contract while retaining their own write-error and same-tab notification behavior where applicable. |
 
 ## Architecture-first file placement
 
