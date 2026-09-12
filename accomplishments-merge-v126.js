@@ -108,8 +108,10 @@ window.__srSyncAccomplishmentMergeV126=syncAndRenderHint;
 window.addEventListener('sr:accomplishmentclaimed',syncAndRenderHint);
 
 /* Sanctuary rendering is the deterministic reserve-refill lifecycle. Sync before
-   building the screen so newly available board slots are filled immediately,
-   then mount the reserve summary after the returned HTML is committed. */
+   building the screen so newly available board slots are filled immediately.
+   The core renderer commits the returned HTML synchronously before the current
+   JavaScript turn ends, so the microtask mounts the reserve after that DOM commit
+   without a zero-delay timer. */
 if(typeof scrSanctuaire==='function'){
   var oldScrSanctuaire=scrSanctuaire;
   scrSanctuaire=function(){
@@ -118,7 +120,7 @@ if(typeof scrSanctuaire==='function'){
       try{if(typeof dirty!=='undefined')dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}
     }
     var out=oldScrSanctuaire.apply(this,arguments);
-    setTimeout(mountReserve,0);
+    queueMicrotask(mountReserve);
     return out;
   };
   try{if(typeof SCREENS!=='undefined'&&SCREENS)SCREENS.sanctuaire=scrSanctuaire;}catch(_){}
