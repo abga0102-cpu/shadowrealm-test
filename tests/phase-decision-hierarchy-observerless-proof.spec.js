@@ -50,29 +50,50 @@ async function openGameWithEventDrivenDecisionHierarchy(page) {
 test('Decision Hierarchy keeps route and modal semantics without MutationObserver', async ({ page }) => {
   await openGameWithEventDrivenDecisionHierarchy(page);
 
-  // BottomNav publishes before core render commits #screen. The replacement
-  // lifecycle must therefore defer through the existing rAF queue and still
-  // classify the freshly committed controls without DOM observation.
-  await page.evaluate(() => {
+  // Use a real route transition. BottomNav publishes before core render commits
+  // the new #screen, so the existing rAF queue must classify controls appended
+  // immediately after nav() returns without relying on DOM observation.
+  const routeState = await page.evaluate(async () => {
+    nav('equipement');
     const screen = document.getElementById('screen');
-    window.dispatchEvent(new Event('sr:bottomnavrendered'));
-    screen.innerHTML = '<button data-act="proofConfirm">Confirmer</button>' +
-      '<button data-act="proofBack">Retour</button>';
-  });
-  await expect(page.locator('#screen [data-act="proofConfirm"]')).toHaveAttribute('data-primary-action', 'true');
-  await expect(page.locator('#screen [data-act="proofBack"]')).toHaveAttribute('data-secondary-action', 'true');
+    const confirm = document.createElement('button');
+    confirm.setAttribute('data-act', 'proofConfirm');
+    confirm.textContent = 'Confirmer';
+    confirm.style.cssText = 'position:fixed;top:80px;left:8px;width:120px;height:40px;z-index:9999';
+    const back = document.createElement('button');
+    back.setAttribute('data-act', 'proofBack');
+    back.textContent = 'Retour';
+    back.style.cssText = 'position:fixed;top:126px;left:8px;width:120px;height:40px;z-index:9999';
+    screen.append(confirm, back);
 
-  // Modal ownership already publishes sr:modal-state. Opening a real modal must
-  // refresh the hierarchy through that canonical lifecycle, again with no observer.
-  await page.evaluate(() => {
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return {
+      primary: confirm.getAttribute('data-primary-action'),
+      secondary: back.getAttribute('data-secondary-action'),
+      onSecondaryRoute: !screen.querySelector('.campaignWorld'),
+    };
+  });
+  expect(routeState).toEqual({ primary: 'true', secondary: 'true', onSecondaryRoute: true });
+
+  // Modal ownership already publishes sr:modal-state after the native overlay
+  // is committed. Capture the attributes after the queued frame so a later game
+  // render cannot turn this into a synthetic-DOM timing race.
+  const modalState = await page.evaluate(async () => {
     openModal(
       '<button class="btn" data-act="closeModal">Fermer</button>' +
       '<button class="btn" data-act="proofConfirmModal">Confirmer</button>',
       'Decision hierarchy proof'
     );
+    const overlay = document.getElementById('overlay');
+    const confirm = overlay.querySelector('[data-act="proofConfirmModal"]');
+    const close = overlay.querySelector('button[data-act="closeModal"]');
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return {
+      primary: confirm && confirm.getAttribute('data-primary-action'),
+      secondary: close && close.getAttribute('data-secondary-action'),
+    };
   });
-  await expect(page.locator('#overlay [data-act="proofConfirmModal"]')).toHaveAttribute('data-primary-action', 'true');
-  await expect(page.locator('#overlay [data-act="closeModal"]')).toHaveAttribute('data-secondary-action', 'true');
+  expect(modalState).toEqual({ primary: 'true', secondary: 'true' });
 
   await page.evaluate(() => closeModal());
   await expect(page.locator('#overlay')).toHaveCount(0, { timeout: 3000 });
