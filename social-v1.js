@@ -11,7 +11,7 @@
   const tabs={world:"Monde",clan:"Clan",announcements:"Annonces"};
   const bots=[
     {name:"Nyx",level:34,power:18000,floor:62,forge:17,bot:true},
-    {name:"Kael",level:48,power:42000,floor:81,forge:24,bot:true},
+    {name:"Kael",level:48,power:42000,floor:81,forge:24,power:42000,bot:true},
     {name:"Mira",level:27,power:9700,floor:49,forge:12,bot:true},
     {name:"Rook",level:61,power:86000,floor:103,forge:31,bot:true},
   ];
@@ -27,7 +27,9 @@
     catch(_){return {name:"Héros",level:1,power:1,floor:1,forge:1,bot:false};}
   }
   function read(){try{const a=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(a)?a.slice(-MAX):[]}catch(_){return[]}}
-  function write(list){try{localStorage.setItem(KEY,JSON.stringify(list.slice(-MAX)))}catch(_){}}
+  function serialize(list){return JSON.stringify(list.slice(-MAX))}
+  function write(list){try{localStorage.setItem(KEY,serialize(list))}catch(_){}}
+  window.__srSocialMessageStoreV1={key:KEY,max:MAX,read,serialize};
   function push(msg,broadcast=true,relay=broadcast){
     if(!msg||!msg.id)return; msg.channel=msgChannel(msg);
     const list=read(); if(list.some(x=>x&&x.id===msg.id))return;
