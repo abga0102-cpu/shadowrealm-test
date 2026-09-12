@@ -2,13 +2,15 @@
    Final authority loaded after the dynamic UI stack. Removes every remaining
    Rebirth entry point and prevents late legacy layers from restoring it.
    Legacy save fields stay inert for compatibility.
-   V314 also removes retired Rebirth recommendations from progression guidance. */
+   V314 also removes retired Rebirth recommendations and aligns campaign guidance
+   with the canonical 1-1 .. 40-10 stage notation. */
 (function(){
 'use strict';
 if(window.__srRebirthRemovalAuthorityV281)return;
 window.__srRebirthRemovalAuthorityV281=true;
 
 function norm(v){try{return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}catch(_){return String(v||'').toLowerCase();}}
+function stageLabel(target){target=Math.max(1,Math.min(400,Math.floor(Number(target)||1)));try{if(typeof window.__srCampaignStageLabel==='function')return window.__srCampaignStageLabel(target);}catch(_){}return (Math.floor((target-1)/10)+1)+'-'+(((target-1)%10)+1);}
 function retireEngine(){
   try{if(typeof rb==='function')rb=function(){return 0;};}catch(_){}
   try{if(typeof prFromFloor==='function')prFromFloor=function(){return 0;};}catch(_){}
@@ -25,9 +27,13 @@ function retireGuidance(){
         var out=oldProgressionGoals.apply(this,arguments);
         if(!Array.isArray(out))return out;
         return out.filter(function(g){return !(g&&/^rebirth/i.test(String(g.id||'')));}).map(function(g){
-          if(g&&g.id==='floor25'){
-            g=Object.assign({},g,{why:'Franchis un premier cap majeur de campagne et prépare la suite de ta progression.'});
+          if(!g)return g;
+          var id=String(g.id||''),m=id.match(/^floor(\d+)$/i);
+          if(m){
+            var target=Math.max(1,Number(m[1])||1),title=target===10?'Vaincre le Boss '+stageLabel(target):'Atteindre '+stageLabel(target);
+            g=Object.assign({},g,{title:title});
           }
+          if(id==='floor25')g=Object.assign({},g,{why:'Franchis un premier cap majeur de campagne et prépare la suite de ta progression.'});
           return g;
         });
       };
@@ -41,7 +47,7 @@ function retireGuidance(){
         var mega=st&&st.megaBossClears?Object.keys(st.megaBossClears).some(function(k){return st.megaBossClears[k];}):false;
         var megaUnlocked=false;try{megaUnlocked=typeof megaRaidUnlocked==='function'&&megaRaidUnlocked(st);}catch(_){}
         var candidates=[
-          {title:'Méga-Boss',note:'Vaincre le Boss 50',detail:'Affronte des versions extrêmes des Boss et ouvre la voie au Sanctuaire.',now:megaUnlocked?1:0,max:1,done:megaUnlocked,go:'mega'},
+          {title:'Méga-Boss',note:'Vaincre le Boss '+stageLabel(50),detail:'Affronte des versions extrêmes des Boss et ouvre la voie au Sanctuaire.',now:megaUnlocked?1:0,max:1,done:megaUnlocked,go:'mega'},
           {title:'Sanctuaire',note:'Vaincre un Méga-Boss',detail:'Fusionne tes ressources pour découvrir des recettes spéciales.',now:mega?1:0,max:1,done:mega,go:'sanctuaire'}
         ];
         for(var i=0;i<candidates.length;i++)if(!candidates[i].done)return candidates[i];
