@@ -102,6 +102,18 @@ function syncAndRenderHint(){
 }
 window.__srSyncAccomplishmentMergeV126=syncAndRenderHint;
 
+/* V127 already chains the canonical migrate(...) lifecycle before V126 loads.
+   Extend that same deterministic import path so legacy/compensation merge pieces
+   are conserved into the Sanctuary before the imported state becomes global. */
+var nativeMigrate=typeof window.migrate==='function'?window.migrate:null;
+if(nativeMigrate){
+  window.migrate=function(){
+    var migrated=nativeMigrate.apply(this,arguments);
+    try{syncRewards(migrated);}catch(_){}
+    return migrated;
+  };
+}
+
 /* V140 publishes this event only after a successful claim updated state. Consume
    that lifecycle directly instead of depending on click-listener order plus a
    zero-delay timer. */
@@ -126,7 +138,8 @@ if(typeof scrSanctuaire==='function'){
   try{if(typeof SCREENS!=='undefined'&&SCREENS)SCREENS.sanctuaire=scrSanctuaire;}catch(_){}
 }
 
-/* Startup migration catches legacy/compensation pieces without a permanent
-   render wrapper or polling loop. */
-setTimeout(syncAndRenderHint,50);
+/* V127 runs its boot compensation synchronously before V126 in index.html, so
+   any legacy pending pieces already exist when this module loads. Reconcile them
+   now instead of waiting on a timer; imports are handled by the migrate chain. */
+syncAndRenderHint();
 })();
