@@ -1,5 +1,7 @@
 /* SHADOWREACH V285 · Combat progression authority
-   V314 extension: canonical 400-floor campaign structure.
+   V314 extension: canonical 400-stage campaign structure.
+   Visible stages keep the approved chapter-stage notation 1-1 .. 40-10 while
+   the internal numeric index 1..400 remains stable for saves and balancing.
    Fixed campaign curve calibrated against weak/normal/max 0★/Ascension builds.
    Never scales enemies from current player power. */
 (function(){
@@ -23,17 +25,20 @@ var DIFFICULTIES=[
 function clampFloor(f){f=Math.floor(Number(f)||1);return Math.max(1,Math.min(CAMPAIGN_MAX,f));}
 function campaignMeta(f){
   var floor=clampFloor(f),di=Math.min(DIFFICULTIES.length-1,Math.floor((floor-1)/50));
-  var diff=DIFFICULTIES[di],within=floor-di*50,chapter=Math.floor((within-1)/10)+1,stage=(within-1)%10+1;
+  var diff=DIFFICULTIES[di],within=floor-di*50;
+  var chapter=Math.floor((floor-1)/10)+1,stage=(floor-1)%10+1;
+  var difficultyChapter=Math.floor((within-1)/10)+1,stageCode=chapter+'-'+stage;
   return {
     floor:floor,maxFloor:CAMPAIGN_MAX,difficultyIndex:di,difficultyId:diff.id,difficulty:diff.label,
-    difficultyFloor:within,chapter:chapter,stage:stage,isBoss:stage===10,
-    label:diff.label+' · Chapitre '+chapter+' · '+stage+'/10'
+    difficultyFloor:within,difficultyChapter:difficultyChapter,chapter:chapter,stage:stage,stageCode:stageCode,isBoss:stage===10,
+    label:diff.label+' · '+stageCode
   };
 }
 window.__srCampaignMaxFloor=CAMPAIGN_MAX;
 window.__srCampaignDifficulties=DIFFICULTIES.slice();
 window.__srCampaignMeta=campaignMeta;
 window.__srCampaignLabel=function(f){return campaignMeta(f).label;};
+window.__srCampaignStageLabel=function(f){return campaignMeta(f).stageCode;};
 
 /* Existing V285 anchors through Expert stay untouched. V314 extends only the
    missing Cauchemar -> Divin runway. Values are fixed world progression, never
@@ -101,9 +106,9 @@ function normalizeCampaignState(){
 }
 normalizeCampaignState();
 
-/* Never let a completed Boss 400 advance to an undefined floor 401. The final
-   floor remains replayable; first-clear rewards still remain one-time through
-   the existing bossRewardsClaimed contract. */
+/* Never let a completed Boss 40-10 (internal floor 400) advance to an undefined
+   stage 41-1. The final stage remains replayable; first-clear rewards still
+   remain one-time through the existing bossRewardsClaimed contract. */
 try{
   if(typeof startCampaign==='function'&&!startCampaign.__srCampaign400V314){
     var oldStartCampaign=startCampaign;
@@ -137,7 +142,7 @@ try{
 
 /* Native arena label without adding another runtime script. drawArena compares
    against the raw label every frame, so the proxy remembers that raw value while
-   the actual DOM node receives the structured difficulty/chapter label. */
+   the actual DOM node receives the approved difficulty + chapter-stage label. */
 function decorateArenaLabel(){
   try{
     if(typeof arenaNodes==='undefined'||!arenaNodes||!arenaNodes.label||arenaNodes.label.__srCampaign400Proxy)return;
@@ -169,6 +174,26 @@ try{
   }
 }catch(_){ }
 decorateArenaLabel();
+
+/* The legacy combat renderer still writes a numeric inter-floor flash. Rewrite
+   only that visual after the canonical draw so players always see 1-1, 1-2...
+   rather than the internal 1..400 index. */
+try{
+  if(typeof drawArena==='function'&&!drawArena.__srCampaignStageNotationV314){
+    var oldDrawArena=drawArena;
+    drawArena=function(){
+      var out=oldDrawArena.apply(this,arguments);
+      try{
+        if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign'&&typeof arenaNodes!=='undefined'&&arenaNodes&&arenaNodes.banner&&typeof floorFlash!=='undefined'&&floorFlash&&Date.now()<floorFlash.until&&combat.status!=='lost'){
+          arenaNodes.banner.textContent='ÉTAGE '+campaignMeta(floorFlash.floor).stageCode;
+        }
+      }catch(_){ }
+      return out;
+    };
+    drawArena.__srCampaignStageNotationV314=true;
+    drawArena.__srPrevious=oldDrawArena;
+  }
+}catch(_){ }
 
 window.__srCombatProgressionConfigV285={
   bossHP:BOSS,normalHP:NORMAL,maxFloor:CAMPAIGN_MAX,difficulties:DIFFICULTIES,
