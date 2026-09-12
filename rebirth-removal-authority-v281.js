@@ -6,8 +6,8 @@
    inside each difficulty. */
 (function(){
 'use strict';
-if(window.__srRebirthRemovalAuthorityV281)return;
-window.__srRebirthRemovalAuthorityV281=true;
+if(window.__srRebirthRemovalAuthorityV281Loading)return;
+window.__srRebirthRemovalAuthorityV281Loading=true;
 
 function norm(v){try{return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}catch(_){return String(v||'').toLowerCase();}}
 function stageLabel(target){target=Math.max(1,Math.min(400,Math.floor(Number(target)||1)));try{if(typeof window.__srCampaignStageLabel==='function')return window.__srCampaignStageLabel(target);}catch(_){}var within=((target-1)%50)+1;return (Math.floor((within-1)/10)+1)+'-'+(((within-1)%10)+1);}
@@ -103,6 +103,15 @@ function install(){
   try{if(typeof scheduleRender==='function')scheduleRender();}catch(_){}
 }
 install();
+/* Some legacy UI helpers finish their own deferred setup just after this dynamic
+   authority is downloaded. Re-assert the final guidance once that queue settles,
+   and expose the public ready marker only after the final pass. */
+setTimeout(function(){
+  retireEngine();
+  retireGuidance();
+  removeVisible(document);
+  window.__srRebirthRemovalAuthorityV281=true;
+},500);
 /* Late render layers can rebuild Home after this file executes. Observe only the
    two rendered roots and remove a Rebirth entry synchronously when inserted. */
 try{
