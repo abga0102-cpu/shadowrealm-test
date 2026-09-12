@@ -38,6 +38,7 @@ function retireGuidance(){
         });
       };
       progressionGoals.__srNoRebirthAuthorityV281=true;
+      progressionGoals.__srNoRebirthV276=true;
       progressionGoals.__srPrevious=oldProgressionGoals;
     }
   }catch(_){}
@@ -56,6 +57,7 @@ function retireGuidance(){
         return null;
       };
       nextUnlockGoal.__srNoRebirthAuthorityV281=true;
+      nextUnlockGoal.__srNoRebirthV276=true;
     }
   }catch(_){}
 }
