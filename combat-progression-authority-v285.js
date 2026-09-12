@@ -4,6 +4,8 @@
    chapter numbering is derived from that difficulty's real length and is not
    capped at 5. A longer difficulty can naturally reach 10-1, 10-10 and beyond
    while the internal numeric index stays stable for saves and balancing.
+   V315 compact stage flow: each visible stage owns its own short encounter track
+   instead of displaying the whole ten-stage chapter at once.
    Fixed campaign curve calibrated against weak/normal/max 0★/Ascension builds.
    Never scales enemies from current player power. */
 (function(){
@@ -12,6 +14,7 @@ if(window.__srCombatProgressionV285)return;
 window.__srCombatProgressionV285=true;
 window.__srCampaign400V314=true;
 window.__srLocalStageNotationV315=true;
+window.__srCompactStageTrackV315=true;
 
 var CAMPAIGN_MAX=400;
 var DIFFICULTIES=[
@@ -46,6 +49,50 @@ window.__srCampaignDifficulties=DIFFICULTIES.slice();
 window.__srCampaignMeta=campaignMeta;
 window.__srCampaignLabel=function(f){return campaignMeta(f).label;};
 window.__srCampaignStageLabel=function(f){return campaignMeta(f).stageCode;};
+
+/* Forge-Master-like cadence approved for each ten-stage chapter:
+   1/2/3 = 3 encounters, 4 = 2, 5 = 1, 6/7/8 = 3, 9 = 2, 10 = 1.
+   The pattern repeats for every chapter and every difficulty. */
+var STAGE_WAVES=[3,3,3,2,1,3,3,3,2,1];
+function stageWaveCount(f){
+  var stage=campaignMeta(f).stage;
+  return STAGE_WAVES[Math.max(0,Math.min(9,stage-1))]||1;
+}
+window.__srCampaignWavePatternV315=STAGE_WAVES.slice();
+window.__srCampaignWaveCountV315=stageWaveCount;
+try{
+  if(typeof campaignWaveCount==='function'){
+    campaignWaveCount=function(f){return stageWaveCount(f);};
+    campaignWaveCount.__srCompactStageTrackV315=true;
+  }
+}catch(_){ }
+
+/* Reuse the native arena dot language, but represent only the CURRENT visible
+   stage. This replaces the former 10-stage strip with 1, 2 or 3 encounter dots. */
+function compactStageTrack(floor){
+  var count=stageWaveCount(floor),step=1;
+  try{if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign'&&Number(combat.floor)===Number(floor))step=Math.floor(Number(combat.step)||1);}catch(_){ }
+  step=Math.max(1,Math.min(count,step));
+  var boss=campaignMeta(floor).stage===10,elite=false;
+  try{elite=!boss&&typeof isElite==='function'&&isElite(floor);}catch(_){ }
+  var h='';
+  for(var i=1;i<=count;i++){
+    if(i>1)h+='<i class="'+(i<=step?'on':'')+'"></i>';
+    var cls='sdot';
+    if(boss)cls+=' boss';else if(elite)cls+=' elite';
+    if(i<step)cls+=' on';
+    if(i===step)cls+=' cur';
+    h+='<span class="'+cls+'"></span>';
+  }
+  return h;
+}
+window.__srCompactStageTrackHTMLV315=compactStageTrack;
+try{
+  if(typeof floorTrack==='function'){
+    floorTrack=function(floor){return compactStageTrack(floor);};
+    floorTrack.__srCompactStageTrackV315=true;
+  }
+}catch(_){ }
 
 /* Existing V285 anchors through Expert stay untouched. V314 extends only the
    missing Cauchemar -> Divin runway. Values are fixed world progression, never
@@ -109,6 +156,7 @@ function normalizeCampaignState(){
     if((Number(S.recordFloor)||1)>CAMPAIGN_MAX)S.recordFloor=CAMPAIGN_MAX;
     if((Number(S.checkpoint)||1)>CAMPAIGN_MAX)S.checkpoint=CAMPAIGN_MAX;
     if((Number(S.pendingBossFloor)||0)>CAMPAIGN_MAX)S.pendingBossFloor=0;
+    if((Number(S.step)||1)>stageWaveCount(S.floor))S.step=stageWaveCount(S.floor);
   }catch(_){ }
 }
 normalizeCampaignState();
@@ -130,8 +178,22 @@ try{
   if(typeof handleCombatEnd==='function'&&!handleCombatEnd.__srCampaign400V314){
     var oldHandleCombatEnd=handleCombatEnd;
     handleCombatEnd=function(c){
-      var finalWin=!!(c&&c.ctx==='campaign'&&c.status==='won'&&Number(c.floor)>=CAMPAIGN_MAX);
+      var won=!!(c&&c.ctx==='campaign'&&c.status==='won');
+      var waveCount=won?stageWaveCount(c.floor):0;
+      var shortFloorFinished=!!(won&&Number(c.step)>=waveCount&&waveCount<3);
+      var finalWin=!!(won&&Number(c.floor)>=CAMPAIGN_MAX);
       var out=oldHandleCombatEnd.apply(this,arguments);
+      /* Legacy reward feedback assumed every stage had three waves. For the
+         approved 1/2-wave stages, drain the already-paid floor accumulator here
+         so the completion reward appears once just like a 3-wave stage. */
+      if(shortFloorFinished){
+        try{
+          if(typeof takePaidFloorRewards==='function'){
+            var paid=takePaidFloorRewards(c.floor);
+            if(typeof rewardNotice!=='undefined')rewardNotice={gold:paid.gold,exp:paid.exp,boss:!!c.boss,floor:c.floor};
+          }
+        }catch(_){ }
+      }
       if(finalWin){
         try{
           if(typeof S!=='undefined'&&S){
@@ -208,6 +270,7 @@ var CHAPTER_COUNTS=DIFFICULTIES.map(function(d){return Math.ceil(Math.max(0,d.en
 window.__srCombatProgressionConfigV285={
   bossHP:BOSS,normalHP:NORMAL,maxFloor:CAMPAIGN_MAX,difficulties:DIFFICULTIES,
   chaptersPerDifficulty:CHAPTER_COUNTS[0],chapterCounts:CHAPTER_COUNTS,
-  floorsPerChapter:10,totalChapters:Math.ceil(CAMPAIGN_MAX/10),campaignMeta:campaignMeta
+  floorsPerChapter:10,totalChapters:Math.ceil(CAMPAIGN_MAX/10),campaignMeta:campaignMeta,
+  stageWavePattern:STAGE_WAVES.slice(),stageWaveCount:stageWaveCount
 };
 })();
