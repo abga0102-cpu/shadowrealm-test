@@ -12,6 +12,7 @@ test('L4: Social owns the shared message-store policy for its extensions', async
   const social = source('social-v1.js');
   const p2p = source('social-p2p-v1.js');
   const bots = source('social-bot-testers-v5.js');
+  const botUi = source('social-bot-ui-v1.js');
 
   expect(index).toContain("chain(['social-v1.js','social-p2p-v1.js'].concat(core)");
   expect(index.indexOf("chain(['social-v1.js','social-p2p-v1.js']")).toBeLessThan(index.indexOf("chain(['social-bot-testers-v5.js','social-bot-ui-v1.js']"));
@@ -32,6 +33,12 @@ test('L4: Social owns the shared message-store policy for its extensions', async
   expect(bots).not.toContain('JSON.parse(localStorage.getItem(STORE)||"[]")');
   expect(bots).not.toContain('MAX=160');
   expect(bots).toContain('newValue:JSON.stringify(a)');
+
+  expect(botUi).toContain('const messageStore=window.__srSocialMessageStoreV1;');
+  expect(botUi).toContain('const read=messageStore.read;');
+  expect(botUi).toContain('messageStore.serialize(b)');
+  expect(botUi).not.toContain('JSON.parse(localStorage.getItem(STORE)||"[]")');
+  expect(botUi).not.toContain('MAX=160');
 });
 
 test('L4: Social message-store API preserves malformed-input and 160-message retention semantics', async ({ page }) => {
