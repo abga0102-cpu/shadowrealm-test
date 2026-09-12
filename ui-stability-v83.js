@@ -202,10 +202,23 @@
     const out=nativeCloseSafe(this,arguments);drain();return out;
   };
 
+  let campaignCompactQueued=false;
+  function syncCampaignCompact(){
+    const sc=document.getElementById('screen');
+    if(sc)sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));
+  }
+  function scheduleCampaignCompact(){
+    if(campaignCompactQueued)return;
+    campaignCompactQueued=true;
+    requestAnimationFrame(function(){campaignCompactQueued=false;syncCampaignCompact();});
+  }
+  window.addEventListener('sr:bottomnavrendered',scheduleCampaignCompact);
+  syncCampaignCompact();
+
   const app=document.getElementById('app');
   if(app){
     let queued=false;
-    const mark=function(){const sc=document.getElementById('screen');if(sc)sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));markOverlay();publishModalState();if(!overlay())drain();};
+    const mark=function(){markOverlay();publishModalState();if(!overlay())drain();};
     const schedule=function(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;mark();});};
     new MutationObserver(schedule).observe(app,{childList:true,subtree:false});
     mark();
