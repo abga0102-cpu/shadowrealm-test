@@ -158,11 +158,13 @@ Remaining initial candidates:
 4. Forge / progression only after active feature work settles
 
 ### L4 — Shared utilities
-Status: INVESTIGATION STARTED
+Status: IN PROGRESS
 
-The initial audit found different null/apostrophe escaping and numeric-formatting semantics across owners. See `LEAN_CODE_REAUDIT.md`; no shared-helper production transfer is complete.
+The formatting, escaping and lifecycle-scheduling audits found intentionally different semantics or an unfavorable coupling tradeoff, so those helpers remain local and are contract-locked in `L4_HELPER_SEMANTICS.md`.
 
-Deduplicate non-domain helpers such as formatting, DOM helpers, notifications, safe persistence, modal helpers, and common lifecycle utilities where this actually reduces coupling.
+The first production transfer is the Social message-store policy: `social-v1.js` owns the message key, 160-message retention, malformed/non-array read fallback and capped serialization, while `social-p2p-v1.js` and `social-bot-testers-v5.js` reuse that contract and retain their owner-specific write/error and same-tab notification behavior. This uses an existing feature-owner/load-order relationship rather than introducing a generic utility module.
+
+Continue deduplicating non-domain helpers such as formatting, DOM helpers, notifications, safe persistence, modal helpers, and common lifecycle utilities only where semantic agreement is proven and the transfer measurably reduces duplication without extra coupling. Retaining intentionally different helpers remains a valid L4 outcome.
 
 ### L5 — Source retirement
 Status: IN PROGRESS
@@ -193,4 +195,4 @@ Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program s
 
 Current first-party runtime remains **110 JavaScript files** (100 index-managed + 10 transitively loaded) in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
-L1 is complete at `main` after PR #151 (`231a8c81aa70f00f37cb66c9a7b1ffe2145a2733`). The L2 completion ledger now includes PRs #153, #154, #155, #158, #161, #163, #164, #166, #168 and #171. Future lean-code production work should continue from fresh `main`; V83's broad observer cleanup and Secondary HUD V279's wrapper cleanup are complete, while Power Hint, Boot wave and audio still require their existing combat/save protections.
+L1 is complete at `main` after PR #151 (`231a8c81aa70f00f37cb66c9a7b1ffe2145a2733`). The L2 completion ledger now includes PRs #153, #154, #155, #158, #161, #163, #164, #166, #168 and #171. L4 now has its first production ownership transfer in the Social message-store family, with formatting, escaping and lifecycle helpers retained locally where consolidation would change semantics or increase coupling. Future lean-code production work should continue from fresh `main`; V83's broad observer cleanup and Secondary HUD V279's wrapper cleanup are complete, while Power Hint, Boot wave and audio still require their existing combat/save protections.
