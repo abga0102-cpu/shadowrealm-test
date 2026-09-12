@@ -38,8 +38,8 @@ test('V313 real combat keeps the approved weak / normal / max 0★ / Ascension r
       });
     }
 
-    function equipDeterministic(rarity, forgeLevel, stars) {
-      const rng = seeded(31300 + rarity.length * 97 + stars * 997);
+    function equipDeterministic(rarity, forgeLevel, stars, itemLevel) {
+      const rng = seeded(31300 + rarity.length * 97 + stars * 997 + itemLevel * 17);
       Math.random = rng;
       H.SLOTS.forEach((slot) => {
         const item = makeItem(slot, rarity, forgeLevel);
@@ -47,28 +47,44 @@ test('V313 real combat keeps the approved weak / normal / max 0★ / Ascension r
         // bonus layer, so strip them to keep the profile stable across engines.
         item.affixes = [];
         if (slot === 'arme') item.weaponType = 'epee';
+
+        // V287 owns Poussiere growth: +2% of the item's base stat per level.
+        // Apply that canonical result directly so +20/+50/+100 reference
+        // profiles do not depend on upgrade RNG or currency during the test.
+        const lv = Math.max(0, Number(itemLevel) || 0);
+        const growth = 1 + 0.02 * lv;
+        item.level = lv;
+        if (Number(item.baseDamage) > 0) item.damage = Math.round(item.baseDamage * growth * 100) / 100;
+        if (Number(item.baseHp) > 0) item.hp = Math.round(item.baseHp * growth * 100) / 100;
+        item.power = Math.round(((Number(item.damage) || 0) + (Number(item.hp) || 0)) * 100) / 100;
         H.S.equipped[slot] = item;
       });
       Math.random = originalRandom;
     }
 
     const profiles = {
+      // Approved pre-Ascension reference profiles: Legendary equipment and
+      // Legendary Familiars are not available before their first system star.
       weak: {
-        gear: 'ARTEFACT', pet: 'RARE', stars: 0, skillLevel: 10,
+        gear: 'RARE', forgeLevel: 35, itemLevel: 20,
+        pet: 'RARE', stars: 0, skillLevel: 10,
         skills: ['taillade', 'chaine', 'soin'], maxBoss: 60,
       },
       normal: {
-        gear: 'LEGENDAIRE', pet: 'EPIQUE', stars: 0, skillLevel: 25,
+        gear: 'MYTHIQUE', forgeLevel: 50, itemLevel: 50,
+        pet: 'MYTHIQUE', stars: 0, skillLevel: 25,
         skills: ['frappe', 'force', 'benediction'], maxBoss: 80,
       },
       max0: {
-        gear: 'IMMORTEL', pet: 'LEGENDAIRE', stars: 0, skillLevel: 50,
+        gear: 'ARTEFACT', forgeLevel: 50, itemLevel: 100,
+        pet: 'ANCESTRAL', stars: 0, skillLevel: 50,
         // Legendary skills require Skill 1★. Kameha is the strongest offensive
         // skill that a genuine 0★ profile can own at mastery 50.
         skills: ['kameha', 'meteore', 'regeneration'], maxBoss: 100,
       },
       ascension: {
-        gear: 'DIVIN', pet: 'DIVIN', stars: 1, skillLevel: 50,
+        gear: 'DIVIN', forgeLevel: 50, itemLevel: 0,
+        pet: 'DIVIN', stars: 1, skillLevel: 50,
         skills: ['cataclysme', 'force', 'rempart'], maxBoss: 150,
       },
     };
@@ -77,7 +93,7 @@ test('V313 real combat keeps the approved weak / normal / max 0★ / Ascension r
       resetState();
       update((st) => {
         st.level = 100;
-        st.forge.level = 50;
+        st.forge.level = profile.forgeLevel;
         st.stats = { sante: 50, degats: 50, crit: 0, critred: 0 };
         st.stars = { pet: profile.stars, forge: profile.stars, skill: profile.stars };
         st.skills = {};
@@ -97,7 +113,7 @@ test('V313 real combat keeps the approved weak / normal / max 0★ / Ascension r
         st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
         st.inventory = [];
       });
-      equipDeterministic(profile.gear, 50, profile.stars);
+      equipDeterministic(profile.gear, profile.forgeLevel, profile.stars, profile.itemLevel);
       H.D = computeDerived(H.S);
       return {
         damage: H.D.damage,
@@ -105,6 +121,8 @@ test('V313 real combat keeps the approved weak / normal / max 0★ / Ascension r
         attackSpeed: H.D.attackSpeed,
         power: computePower(H.S),
         gear: profile.gear,
+        forgeLevel: profile.forgeLevel,
+        itemLevel: profile.itemLevel,
         pet: profile.pet,
         stars: profile.stars,
         skills: profile.skills.slice(),
