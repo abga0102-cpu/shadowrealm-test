@@ -43,13 +43,13 @@ The CI architecture file-placement guard enforces this policy for newly added pr
 1. Pull/materialize only the files needed for the task.
 2. Make and debug changes locally. Avoid iterative GitHub commits while still exploring.
 3. Run the fastest relevant checks after meaningful edits: syntax/static checks first, then focused subsystem tests.
-4. Before publishing, run a local preflight: relevant ownership/contracts, relevant browser/runtime tests where available, and final diff review for unrelated changes.
+4. Before publishing, run a local preflight: relevant ownership/contracts, focused runtime/browser coverage when the change can affect runtime behavior, and final diff review for unrelated changes.
 5. Re-fetch `main` once before publishing.
    - If `main` is unchanged: publish.
    - If it moved only in unrelated files/owners: continue without unnecessary rework.
    - If it intersects the task: integrate the intersecting delta locally and rerun affected tests.
 6. Publish one coherent branch with one clean commit where practical. Open the PR only when the change is ready for CI.
-7. GitHub CI is the final integration gate: moving smoke ratchet plus the full Chromium/WebKit regression suite.
+7. GitHub CI is the final integration gate for production/runtime-affecting changes: moving smoke ratchet plus the required Chromium/WebKit regression suite.
 8. If CI fails:
    - reproduce and fix real regressions locally before republishing;
    - if the failure is clearly unrelated/nondeterministic, rerun the exact same head once before changing code;
@@ -57,12 +57,71 @@ The CI architecture file-placement guard enforces this policy for newly added pr
 9. Immediately before merge, fetch `main` again and compare only the delta since the PR base.
 10. Merge only the exact tested head SHA. After merge, verify the resulting `main` commit.
 
+## Fast-path decision matrix — mandatory
+
+Use the lightest validation path that still proves the change. Do not make every change pay the cost of the most expensive production gate.
+
+### A. Documentation-only / comments-only changes
+
+Use when the diff cannot affect executable code, tests, loaders, generated assets, CI behavior, or runtime configuration.
+
+- No Chromium/WebKit browser suite.
+- No smoke ratchet merely for prose changes.
+- Perform a current-`main` consistency check and diff review.
+- Direct updates to shared process documentation such as `AGENTS.md` are allowed when they contain no production/runtime change and the repository permissions permit it.
+- Prefer batching roadmap/status/inventory prose updates into the next meaningful documentation refresh instead of opening a PR solely to record that a candidate is blocked.
+
+Target elapsed work: roughly 1–3 minutes, excluding external service latency.
+
+### B. Test-only stabilization / CI-tooling changes
+
+Use when production/runtime files are unchanged but the change affects how behavior is validated.
+
+- Run the changed/focused test or static contract first.
+- Run only the broader CI coverage needed to prove that the test/tooling change itself is sound.
+- Do not automatically run unrelated browser coverage if the change cannot alter application behavior.
+- If the test change modifies a gate used by production PRs, prove that it still detects the behavior it is intended to protect; do not weaken assertions for speed.
+
+### C. Low-risk runtime unload / obvious superseded layer
+
+Use when a later loaded owner demonstrably overwrites an earlier synchronous layer and there is no save migration, state transfer, event registration, timer, side effect, or externally referenced API that must survive.
+
+- Prove final-owner equivalence with a focused regression contract.
+- It is acceptable to unload and retire the obsolete source in one PR **when the equivalence and absence of side effects are directly demonstrated**.
+- Use staged `unload -> prove -> delete source later` only when compatibility risk, uncertain references, migration behavior, or side effects justify the extra step.
+- Do not create an extra PR merely because staged retirement was historically the default.
+
+### D. Production/runtime behavior changes
+
+Use for JavaScript/CSS/HTML loaders, ownership transfers, save handling, combat/progression/rewards, lifecycle timing, or any change that can alter user-visible/runtime behavior.
+
+- Focused tests/contracts first.
+- Full required integration gate once for the meaningful candidate head.
+- Latest-`main` intersection check immediately before merge.
+- Merge only the exact green head SHA.
+- Verify post-merge `main`.
+
+## Lean Code execution optimization
+
+For Lean Code work, optimize for **proof per minute**, not process volume.
+
+1. Scan the actually loaded runtime and current ownership map; do not rely only on an old candidate list.
+2. Rank candidates by expected payoff, isolation, and proofability. Prefer duplicate/superseded owners that can be proven with a narrow contract.
+3. Check concurrent ownership once at task start and once immediately before merge. Recheck sooner only when a known intersecting PR changes.
+4. Do not repeatedly rescan unrelated PRs during a stable implementation batch.
+5. Do not open PRs whose only purpose is to document that a cleanup cannot currently be performed. Record the conclusion in the next meaningful roadmap refresh.
+6. Batch routine roadmap/runtime-inventory prose updates when several small cleanups are landing close together, unless a count or ownership statement is required for correctness of the current PR.
+7. Use focused/local validation for development. Avoid running the complete browser suite locally **and** remotely by default when GitHub CI is already the authoritative full gate. Run broad local browser coverage only when it materially improves diagnosis or confidence before publication.
+8. Prefer one meaningful candidate head over multiple tiny commits and repeated CI runs.
+9. Preserve exact-head CI, latest-`main` reconciliation, and post-merge verification for every production/runtime-affecting PR. These are the safety checks that must not be optimized away.
+10. After a merge, rescan for the next evidence-safe ownership seam rather than spending an iteration merely restating blocked areas.
+
 ## Single-batch execution and CI polling discipline
 
 The default operating mode is **one coherent execution batch per scoped task**, not a sequence of tiny GitHub actions separated by repeated status checks.
 
 1. Implement the complete scoped change locally before publishing whenever practical.
-2. Consolidate local validation into one meaningful preflight: syntax/static checks, focused subsystem/contracts, required local browser/runtime coverage, and diff review.
+2. Consolidate local validation into one meaningful preflight: syntax/static checks, focused subsystem/contracts, only the local browser/runtime coverage justified by the fast-path decision matrix, and diff review.
 3. Push/update the branch once per meaningful implementation state. Do not create a stream of exploratory commits or PR updates for minor intermediate edits.
 4. Trigger the required GitHub CI once for that meaningful head and treat that exact SHA as the candidate merge head.
 5. Do **not** poll GitHub every 10–30 seconds while CI is merely running. Avoid repeated short waits followed by status-only checks.
@@ -71,11 +130,15 @@ The default operating mode is **one coherent execution batch per scoped task**, 
 8. If CI is still running at a recheck, do not enter a tight polling loop. Keep the current candidate head unchanged unless new evidence requires action.
 9. If CI passes, verify the exact tested head and current `main`, then proceed directly to merge in the same work session when safe.
 10. If CI fails, inspect the concrete failure before taking action. Fix the cause locally, publish one new meaningful head, and run the gate again.
-11. Never skip the exact-head CI gate merely to make the workflow feel like a one-shot operation. The optimization is fewer unnecessary interactions, **not** less validation.
+11. Never skip the exact-head CI gate for a production/runtime-affecting change merely to make the workflow feel like a one-shot operation. The optimization is fewer unnecessary interactions, **not** less relevant validation.
 
-Preferred flow:
+Preferred production flow:
 
-`complete scoped implementation -> local preflight -> one push/PR update -> one CI gate -> verify exact head + latest main -> merge -> verify post-merge main`
+`refresh -> analyze/prove -> complete scoped implementation -> focused preflight -> one push/PR -> one full CI gate -> verify exact head + latest main -> merge -> verify post-merge main`
+
+Preferred docs-only flow:
+
+`refresh -> edit -> consistency/diff check -> publish -> verify`
 
 Avoid this pattern:
 
@@ -85,7 +148,7 @@ Avoid this pattern:
 
 - **One active owner per responsibility.** Use `ARCHITECTURE.md` as the source of truth for canonical runtime ownership.
 - **Avoid file overlap by design.** Prefer separate subsystems, tests, docs, and modules rather than both agents editing the same files.
-- **PR body = workstream declaration.** Every PR must state subsystem, files/owners touched, starting `main` SHA, behavior intentionally changed, behavior explicitly not changed, tests run, and known concurrent work checked.
+- **PR body = workstream declaration.** Every production/runtime PR must state subsystem, files/owners touched, starting `main` SHA, behavior intentionally changed, behavior explicitly not changed, tests run, and known concurrent work checked.
 - **Do not restart for unrelated commits.** If another developer moves `main`, inspect the delta. Rebase/rebuild only when the delta intersects the files or ownership touched by your branch.
 - **Feature-sensitive areas require extra care.** Familiars, Forge/equipment/progression, Rebirth, combat progression, boss/enemy authority, save schema/migrations, and other areas marked sensitive in roadmaps should not be consolidated while another active branch is changing the same owner.
 - **No mixed-purpose PRs.** Do not combine cleanup, balance, feature work, save migration, and unrelated UI changes unless they are inseparable.
@@ -98,24 +161,26 @@ Every production-code PR must, at minimum:
 
 - pass relevant focused tests for the changed subsystem;
 - preserve or intentionally update ownership/architecture contracts;
-- pass the moving legacy smoke ratchet;
-- pass the full Chromium + WebKit regression suite;
+- pass the moving legacy smoke ratchet when applicable to executable runtime behavior;
+- pass the required Chromium + WebKit regression suite when the change can affect runtime behavior;
 - be tested at the exact PR head that is merged.
 
-Docs-only changes may skip browser testing when they cannot affect runtime or test behavior, but must still be reviewed for consistency with the current architecture and workflow.
+Docs-only changes skip browser testing when they cannot affect runtime or test behavior, but must still be reviewed for consistency with the current architecture and workflow.
+
+Test-only/tooling changes use the fast-path decision matrix rather than automatically inheriting every production browser gate.
 
 ## Debugging standard
 
 Classify failures before fixing them:
 
-1. **Real regression caused by the branch** → reproduce locally, fix, rerun focused tests, then full gate.
-2. **Stale contract/test after an intentional ownership transfer** → update the contract to assert the new architecture without weakening behavior coverage.
-3. **Unrelated flaky/nondeterministic failure** → rerun the exact same commit once; do not change production code without evidence.
-4. **Concurrent change conflict** → integrate only the intersecting delta, then rerun affected tests and the final gate.
+1. **Real regression caused by the branch** -> reproduce locally, fix, rerun focused tests, then the required final gate.
+2. **Stale contract/test after an intentional ownership transfer** -> update the contract to assert the new architecture without weakening behavior coverage.
+3. **Unrelated flaky/nondeterministic failure** -> rerun the exact same commit once; do not change production code without evidence.
+4. **Concurrent change conflict** -> integrate only the intersecting delta, then rerun affected tests and the final gate.
 
 ## Shipment standard
 
-A change is shipped only when:
+A production/runtime-affecting change is shipped only when:
 
 - its PR scope is coherent and documented;
 - the exact head SHA passed the required CI gate;
@@ -123,6 +188,8 @@ A change is shipped only when:
 - any intersecting concurrent changes were reconciled and retested;
 - the exact tested head SHA was used for merge protection;
 - post-merge `main` was verified.
+
+Documentation-only work follows the lighter docs fast path and does not need an artificial browser-CI/PR cycle unless repository protections require one.
 
 ## Communication standard
 
