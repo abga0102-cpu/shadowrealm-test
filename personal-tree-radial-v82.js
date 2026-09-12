@@ -55,9 +55,6 @@
   var oldTreeReqOk = treeReqOk;
   treeReqOk = function(s,node){
     if (node && node.deprecatedKey) return false;
-    if (node && node.masteryKey) {
-      return (node.masteryReq || []).every(function(id){ return treeLv(s,id) >= 2; });
-    }
     if (node && node.bridgeAny) {
       return (node.req || []).some(function(id){ return treeLv(s,id) >= 1; });
     }
