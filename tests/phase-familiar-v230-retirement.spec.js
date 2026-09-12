@@ -11,7 +11,8 @@ const index = read('index.html');
 test('obsolete Familiar V230 QA stub is retired without affecting the active Familiar chain', async ({ page }) => {
   expect(index).not.toContain('src="familiars-qa-v230.js');
   expect(exists('familiars-qa-v230.js')).toBe(false);
-  expect(index).toContain('src="familiars-ui-v229.js');
+  expect(index).not.toContain('src="familiars-ui-v229.js');
+  expect(exists('familiars-ui-v229.js')).toBe(true);
   expect(index).toContain('src="familiars-noscr-v231.js');
   expect(index).toContain('src="familiars-stock-authority-v275.js');
 
