@@ -73,3 +73,23 @@ test('V83 preserves overlay tagging, modal-state publication and queued-modal dr
   expect(states[states.length - 1]).toBe(false);
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
+
+test('V83 campaign compact tagging follows real bottom-nav navigation', async ({ page }, testInfo) => {
+  await openCleanGame(page);
+
+  const homeTab = page.locator('#tabs .tab').first();
+  const equipmentTab = page.locator('#tabs .tab').nth(1);
+
+  await activate(page, homeTab, testInfo);
+  await expect(page.locator('#screen .campaignWorld')).toHaveCount(1, { timeout: 5000 });
+  await expect(page.locator('#screen')).toHaveClass(/srHomeCompact/);
+
+  await activate(page, equipmentTab, testInfo);
+  await expect(page.locator('#screen .campaignWorld')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.locator('#screen')).not.toHaveClass(/srHomeCompact/);
+
+  await activate(page, homeTab, testInfo);
+  await expect(page.locator('#screen .campaignWorld')).toHaveCount(1, { timeout: 5000 });
+  await expect(page.locator('#screen')).toHaveClass(/srHomeCompact/);
+  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
+});
