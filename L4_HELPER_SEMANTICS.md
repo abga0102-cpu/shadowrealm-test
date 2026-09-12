@@ -126,3 +126,16 @@ Representative outputs:
 A future shared helper is only safe after each caller is deliberately assigned to an explicit HTML context and nullish policy. The current evidence covers text nodes and double-quoted attributes; it does not authorize using these helpers as a generic sanitizer for URLs, CSS, JavaScript, raw HTML, or single-quoted attribute contexts.
 
 `tests/phase-l4-escaping-semantics.spec.js` is the golden behavior contract. It also verifies that the currently loaded Tree helpers remain semantically aligned without exposing any of them globally for testing.
+
+## First-pass L4 disposition
+
+The formatting and escaping candidates are now contract-locked, but neither currently satisfies L4's production-transfer criterion of a measurable duplication reduction **without extra coupling**.
+
+- Base and Forge number formatters intentionally differ in invalid-input handling, rounding, suffix vocabulary, locale behavior and negative-value precision. A mode-based shared formatter would add configuration/adapter surface before it removes meaningful complexity.
+- Base, Forge and Tree escaping intentionally differ in nullish and apostrophe behavior. Treating one as a generic replacement would change observable output or silently broaden its HTML-context contract.
+- The three Tree escaping helpers are behaviorally aligned, but their current runtime order matters: `personal-tree-radial-v82.js` loads before `tree-dedicated-v116.js` and `runtime-tree-stability-v216.js`. Making one of those feature owners the shared escaping authority would create a new cross-owner load-order dependency solely to remove three tiny local functions.
+- Introducing a new production utility module for these helpers would increase runtime/module surface and contradict the architecture-first rule unless it owned a broader, durable shared responsibility.
+
+**Decision:** retain the current local helpers for this first L4 pass. This is an intentional Lean Code outcome, not an unfinished deduplication: the evidence shows that consolidating these helpers now would increase coupling or change semantics. Revisit only if a broader shared-utility owner emerges naturally from future consolidation, or if a newly discovered helper family has identical semantics and can be reduced without adding a runtime dependency.
+
+The next L4 investigation should therefore prefer another neutral helper family (for example a genuinely identical DOM/persistence/lifecycle utility) rather than forcing formatting or escaping into a shared abstraction.
