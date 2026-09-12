@@ -1,6 +1,6 @@
 /* SHADOWREACH · Accomplishments canonical mobile UI v139 · Fusion milestones V202
-   V314: campaign milestones follow the canonical 1-1 .. 40-10 campaign and
-   retired Rebirth/PR accomplishments are no longer surfaced. */
+   V315: campaign milestones use local 1-1 .. 5-10 notation inside each
+   difficulty; retired Rebirth/PR accomplishments remain hidden. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsCanonicalV139)return;
@@ -11,7 +11,7 @@ function raids(){return n(S.accomplishments&&S.accomplishments.raidWins);}
 function forge(){return n(S.forge&&S.forge.level);}
 function floor(){return n(S.recordFloor);}
 function floorDone(target){target=Math.max(1,Math.floor(Number(target)||1));if(target%50===0)return !!(S.bossClears&&S.bossClears[String(target)]);return floor()>=target;}
-function stageLabel(target){target=Math.max(1,Math.min(400,Math.floor(Number(target)||1)));try{if(typeof window.__srCampaignStageLabel==='function')return window.__srCampaignStageLabel(target);}catch(_){}return (Math.floor((target-1)/10)+1)+'-'+(((target-1)%10)+1);}
+function stageLabel(target){target=Math.max(1,Math.min(400,Math.floor(Number(target)||1)));try{if(typeof window.__srCampaignStageLabel==='function')return window.__srCampaignStageLabel(target);}catch(_){}var within=((target-1)%50)+1;return (Math.floor((within-1)/10)+1)+'-'+(((within-1)%10)+1);}
 function fusions(){var st=S.sanctuary||{},a=S.accomplishments||{};return Math.max(n(st.mergeCrafts),n(st.fusions),n(a.fusionCount));}
 function ensureTitles(){S.titles=S.titles&&typeof S.titles==='object'?S.titles:{};if(typeof S.equippedTitle!=='string')S.equippedTitle='';}
 function divineUnlocked(){ensureTitles();var st=S.sanctuary||{};return !!(st.divineTitleUnlocked||S.titles.divin);}
@@ -52,16 +52,16 @@ var ITEMS={
   ['raid100',100,'100 Raids accomplis','1 500 000 Or + 1 000 Étincelles + 1 000 Essences + 50 Pièces de fusion Rares']
  ],
  Etages:[
-  ['floor25',25,'Atteindre 3-5','250 Essences'],
+  ['floor25',25,'Atteindre Normal · 3-5','250 Essences'],
   ['floor50',50,'Terminer Normal · 5-10','2 000 Minerais + 5 000 Or'],
-  ['floor75',75,'Atteindre 8-5','500 Étincelles + 30 Pièces de fusion Communes'],
-  ['floor100',100,'Terminer Difficile · 10-10','500 Étincelles + 500 Essences + 30 Pièces de fusion Communes'],
-  ['floor150',150,'Terminer Expert · 15-10','750 Étincelles + 750 Essences + 15 Pièces de fusion Rares'],
-  ['floor200',200,'Terminer Cauchemar · 20-10','1 000 Étincelles + 1 000 Essences + 20 Pièces de fusion Rares'],
-  ['floor250',250,'Terminer Infernal · 25-10','1 250 Étincelles + 1 250 Essences + 10 Pièces de fusion Épiques'],
-  ['floor300',300,'Terminer Abyssal · 30-10','1 500 Étincelles + 1 500 Essences + 15 Pièces de fusion Épiques'],
-  ['floor350',350,'Terminer Immortel · 35-10','2 000 Étincelles + 2 000 Essences + 10 Pièces de fusion Mythiques'],
-  ['floor400',400,'Terminer Divin · 40-10','2 500 Étincelles + 2 500 Essences + 20 Pièces de fusion Mythiques + 1 Clé universelle']
+  ['floor75',75,'Atteindre Difficile · 3-5','500 Étincelles + 30 Pièces de fusion Communes'],
+  ['floor100',100,'Terminer Difficile · 5-10','500 Étincelles + 500 Essences + 30 Pièces de fusion Communes'],
+  ['floor150',150,'Terminer Expert · 5-10','750 Étincelles + 750 Essences + 15 Pièces de fusion Rares'],
+  ['floor200',200,'Terminer Cauchemar · 5-10','1 000 Étincelles + 1 000 Essences + 20 Pièces de fusion Rares'],
+  ['floor250',250,'Terminer Infernal · 5-10','1 250 Étincelles + 1 250 Essences + 10 Pièces de fusion Épiques'],
+  ['floor300',300,'Terminer Abyssal · 5-10','1 500 Étincelles + 1 500 Essences + 15 Pièces de fusion Épiques'],
+  ['floor350',350,'Terminer Immortel · 5-10','2 000 Étincelles + 2 000 Essences + 10 Pièces de fusion Mythiques'],
+  ['floor400',400,'Terminer Divin · 5-10','2 500 Étincelles + 2 500 Essences + 20 Pièces de fusion Mythiques + 1 Clé universelle']
  ]
 };
 function value(cat){return cat==='Forge'?forge():cat==='Fusions'?fusions():cat==='Raids'?raids():floor();}
