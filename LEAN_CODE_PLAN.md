@@ -121,9 +121,13 @@ Completed so far:
 - Tree V116 removed its duplicate permanent 500 ms `syncMode` poller and then its document-wide `MutationObserver`; Tree mode synchronization now subscribes to canonical `sr:bottomnavrendered` lifecycle while retaining startup sync;
 - Tree V83 stopped wrapping `raidReward` for Raid Évolution PE after V290 was confirmed as the later canonical owner with the identical 100 PE + 3/level rule; V83 retains only mastery-save restoration and audit behavior;
 - Home V219 stopped wrapping `renderTabs` and now subscribes to the canonical `sr:bottomnavrendered` lifecycle while keeping resize/orientation/startup synchronization;
-- Boot V115 removed its redundant permanent 500 ms wave-display poller while retaining the DOM-driven synchronization path and startup sync.
+- Boot V115 removed its redundant permanent 500 ms wave-display poller while retaining the DOM-driven synchronization path and startup sync;
+- PR #154 removed Weekly Mega's permanent 1.2-second panel injection poller; the panel now follows `sr:bottomnavrendered` with one-frame deferral to respect core render ordering, while its separate 60-second reward-grant cadence remains unchanged;
+- PR #155 removed Secondary HUD's modal-state `MutationObserver`; it now consumes canonical `sr:modal-state`, while the existing HUD render wrapper remains intentionally separate;
+- PR #158 removed Social's permanent 1-second launcher remount poller and `#screen` `MutationObserver`; one deferred `sr:bottomnavrendered` callback now owns launcher remount/docking, while startup, resize/orientation, remote/bot and arena-result cadences remain unchanged;
+- PR #153 replaced V126's zero-delay Sanctuary reserve mount with a deterministic microtask checkpoint after the synchronous screen DOM commit, while preserving reserve/refill semantics and the separate 50 ms legacy migration synchronization.
 
-Continue with one behavior at a time. Do not remove migration/save compatibility responsibilities merely because their runtime path is infrequent. The current preferred next scope is Sanctuary reserve rendering, where V126 still uses a zero-delay mount after `scrSanctuaire` returns HTML; replace it only after proving an equivalent post-DOM-commit lifecycle for initial entry, refill and rerender.
+Continue with one behavior at a time. Do not remove migration/save compatibility responsibilities merely because their runtime path is infrequent. The preferred next Accomplishments scope is V126's remaining 50 ms startup migration synchronization, but only after old-save pending pieces, reward conservation and fresh-boot/import ordering are contract-locked. Campaign-death recovery is now deterministic under merged PR #157; future Power Hint, Boot wave or audio lifecycle work must preserve that regression coverage and still requires a fresh owner check before touching combat-sensitive behavior.
 
 ### L3 — Subsystem consolidation
 Status: IN PROGRESS
@@ -183,4 +187,4 @@ Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program s
 
 Current first-party runtime remains **110 JavaScript files** (100 index-managed + 10 transitively loaded) in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
-L1 is complete at `main` after PR #151 (`231a8c81aa70f00f37cb66c9a7b1ffe2145a2733`). Future lean-code production work should now prioritize L2 lifecycle/wrapper collapse, beginning with the lowest-risk deterministic lifecycle opportunities and continuing to respect current feature-owner reservations.
+L1 is complete at `main` after PR #151 (`231a8c81aa70f00f37cb66c9a7b1ffe2145a2733`). The L2 completion ledger now includes PRs #154, #155, #158 and the later-merged #153 Sanctuary lifecycle cleanup. Future lean-code production work should continue from fresh `main`, prioritize V126 migration-startup proof before further Accomplishments timing cleanup, and preserve merged campaign-death recovery behavior when reassessing combat-sensitive lifecycle owners.
