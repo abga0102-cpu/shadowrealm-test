@@ -17,20 +17,22 @@ async function openCleanGame(page) {
   );
 }
 
-test('V314 Accomplishments follows 1-1 .. 40-10 and exposes no retired Rebirth or PR milestone', async ({ page }) => {
+test('V315 Accomplishments follows local 1-1 .. 5-10 notation and exposes no retired Rebirth or PR milestone', async ({ page }) => {
   await openCleanGame(page);
 
   await page.evaluate(() => ACT.accomplishments());
   const modal = page.locator('.srAch139');
   await expect(modal).toBeVisible();
-  await expect(modal).toContainText('Terminer Divin · 40-10');
-  await expect(modal).toContainText('Terminer Cauchemar · 20-10');
+  await expect(modal).toContainText('Terminer Divin · 5-10');
+  await expect(modal).toContainText('Terminer Cauchemar · 5-10');
+  await expect(modal).toContainText('Atteindre Difficile · 3-5');
+  await expect(modal).not.toContainText('40-10');
   await expect(modal).not.toContainText('Rebirth');
   await expect(modal).not.toContainText('1 000 PR');
   await expect(modal.locator('[data-ach^="rb"]')).toHaveCount(0);
 });
 
-test('V314 final difficulty reward stays locked until Boss 40-10 is actually defeated', async ({ page }) => {
+test('V315 final difficulty reward stays locked until Divin Boss 5-10 is actually defeated', async ({ page }) => {
   await openCleanGame(page);
 
   await page.evaluate(() => {
@@ -44,7 +46,7 @@ test('V314 final difficulty reward stays locked until Boss 40-10 is actually def
   });
 
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toHaveCount(0);
-  await expect(page.locator('.srAch139')).toContainText('Terminer Divin · 40-10');
+  await expect(page.locator('.srAch139')).toContainText('Terminer Divin · 5-10');
 
   await page.locator('.srAch139 [data-act="closeModal"]').click();
   await page.evaluate(() => {
@@ -54,7 +56,7 @@ test('V314 final difficulty reward stays locked until Boss 40-10 is actually def
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toBeVisible();
 });
 
-test('V314 Boss 40-10 accomplishment pays active progression resources once and never creates PR', async ({ page }) => {
+test('V315 Divin Boss 5-10 accomplishment pays active progression resources once and never creates PR', async ({ page }) => {
   await openCleanGame(page);
 
   const before = await page.evaluate(() => {
@@ -129,4 +131,5 @@ test('V314 progression guidance never recommends retired Rebirth after dynamic r
   expect(result.ids.some((id) => /^rebirth/i.test(id))).toBe(false);
   expect(result.retiredRefs).toEqual([]);
   expect(result.unlock && result.unlock.title).toBe('Méga-Boss');
+  expect(result.unlock && result.unlock.note).toBe('Vaincre le Boss 5-10');
 });
