@@ -96,8 +96,11 @@ test.describe('Accomplishments V126 Sanctuary reserve lifecycle', () => {
   });
 
   test('conserves V127 legacy merge rewards on fresh boot without a startup timer', async ({ page }) => {
-    await page.goto('/?smoke=1');
+    // Smoke mode intentionally disables saveNow()/loadSave(), so use the real
+    // persistence path for this reload contract while keeping the other tests isolated.
+    await page.goto('/');
     await page.waitForFunction(() => window.__srAccomplishmentsMergeV126 === true && typeof saveNow === 'function');
+    await page.evaluate(() => localStorage.removeItem('shadowreach.save.local'));
 
     await page.evaluate(prepareLegacyRewardState);
     await page.evaluate(() => saveNow());
