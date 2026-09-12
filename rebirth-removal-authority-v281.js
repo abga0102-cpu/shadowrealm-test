@@ -2,15 +2,15 @@
    Final authority loaded after the dynamic UI stack. Removes every remaining
    Rebirth entry point and prevents late legacy layers from restoring it.
    Legacy save fields stay inert for compatibility.
-   V314 also removes retired Rebirth recommendations and aligns campaign guidance
-   with the canonical 1-1 .. 40-10 stage notation. */
+   V315 keeps progression guidance aligned with local 1-1 .. 5-10 notation
+   inside each difficulty. */
 (function(){
 'use strict';
 if(window.__srRebirthRemovalAuthorityV281)return;
 window.__srRebirthRemovalAuthorityV281=true;
 
 function norm(v){try{return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}catch(_){return String(v||'').toLowerCase();}}
-function stageLabel(target){target=Math.max(1,Math.min(400,Math.floor(Number(target)||1)));try{if(typeof window.__srCampaignStageLabel==='function')return window.__srCampaignStageLabel(target);}catch(_){}return (Math.floor((target-1)/10)+1)+'-'+(((target-1)%10)+1);}
+function stageLabel(target){target=Math.max(1,Math.min(400,Math.floor(Number(target)||1)));try{if(typeof window.__srCampaignStageLabel==='function')return window.__srCampaignStageLabel(target);}catch(_){}var within=((target-1)%50)+1;return (Math.floor((within-1)/10)+1)+'-'+(((within-1)%10)+1);}
 function retireEngine(){
   try{if(typeof rb==='function')rb=function(){return 0;};}catch(_){}
   try{if(typeof prFromFloor==='function')prFromFloor=function(){return 0;};}catch(_){}
