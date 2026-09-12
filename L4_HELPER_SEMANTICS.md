@@ -139,3 +139,54 @@ The formatting and escaping candidates are now contract-locked, but neither curr
 **Decision:** retain the current local helpers for this first L4 pass. This is an intentional Lean Code outcome, not an unfinished deduplication: the evidence shows that consolidating these helpers now would increase coupling or change semantics. Revisit only if a broader shared-utility owner emerges naturally from future consolidation, or if a newly discovered helper family has identical semantics and can be reduced without adding a runtime dependency.
 
 The next L4 investigation should therefore prefer another neutral helper family (for example a genuinely identical DOM/persistence/lifecycle utility) rather than forcing formatting or escaping into a shared abstraction.
+
+## Lifecycle scheduling helpers
+
+The second L4 pass inspected the small scheduling helpers around the canonical `sr:bottomnavrendered` lifecycle. These helpers look similar because they all defer UI work, but their trigger and coalescing contracts are not identical.
+
+### Home layout — `home-layout-authority-v219.js`
+
+Home uses a single queued animation-frame scheduler for three triggers: `sr:bottomnavrendered`, `resize` and `orientationchange`.
+
+- Repeated triggers before the next animation frame are coalesced into one `sync()` call.
+- The queued flag is cleared immediately before `sync()` runs, so a new trigger during/after that sync may schedule the following frame.
+- Startup synchronization is immediate through `sync()` rather than animation-frame deferred.
+
+### Campaign compact tagging — `ui-stability-v83.js`
+
+V83 uses the same one-frame coalescing pattern for campaign compact tagging, but only for `sr:bottomnavrendered`.
+
+- Repeated BottomNav lifecycle events before the next frame are coalesced.
+- Startup synchronization is immediate through `syncCampaignCompact()`.
+- This helper belongs to the modal/campaign stability owner and does not own Home resize/orientation geometry.
+
+### Weekly Mega injection — `weekly-mega-v71.js`
+
+Weekly Mega intentionally uses a simpler one-frame deferral: `queueInject()` always calls `requestAnimationFrame(inject)` and does not keep a queued flag.
+
+- Multiple lifecycle events may therefore schedule multiple callbacks.
+- `inject()` is independently idempotent for an already-mounted `#megaWeeklyV117` box.
+- Boot still performs its own direct `inject()` once state is ready.
+
+### Social docking — `social-v1.js`
+
+Social uses different scheduling semantics per trigger.
+
+- `sr:bottomnavrendered` defers `mountButton()` and `dockSocialUI()` by one animation frame.
+- `resize` docks immediately.
+- `orientationchange` uses a 120 ms timeout before docking.
+- Startup mounts and docks directly through the existing boot path.
+
+### Lifecycle scheduling consolidation decision
+
+**Do not replace these owner-local schedulers with one shared helper in the current L4 pass.** Weekly Mega and Social are observably different from the coalesced Home/V83 contract. Home and V83 are algorithmically aligned, but sharing the tiny queued-frame helper would require either a new production utility module or a cross-owner dependency solely to remove two local flags/functions. Both options add more architecture surface than they remove.
+
+The earlier post-screen lifecycle proofs also showed that inventing a broader shared render-complete event is not yet justified: later route ownership can still replace screen DOM after an earlier core render commit. L4 should therefore preserve the existing canonical `sr:bottomnavrendered` subscriber contracts rather than manufacture a new lifecycle abstraction from helper similarity alone.
+
+`tests/phase-l4-lifecycle-scheduling-semantics.spec.js` locks the current trigger/coalescing contracts without exposing new globals or modifying production runtime behavior.
+
+## Second-pass L4 disposition
+
+The lifecycle scheduling family does not currently satisfy the production-transfer criterion either. This is another intentional no-transfer result: similarity exists, but a shared abstraction would either change scheduling semantics or introduce a dependency whose cost is larger than the duplicated code.
+
+**Decision:** keep Home, V83, Weekly Mega and Social scheduling local to their canonical owners. The next L4 investigation should prefer persistence or genuinely identical DOM helpers with no feature-sensitive timing semantics. If no such helper family yields a net reduction, L4 can be considered complete with documented retained locals rather than forcing a utility layer.
