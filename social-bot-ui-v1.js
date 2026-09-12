@@ -4,9 +4,10 @@
    while the chat exists. */
 (() => {
   "use strict";
-  const STORE="shadowreach.social.v1.messages",MAX=160;
+  const messageStore=window.__srSocialMessageStoreV1;
+  const STORE=messageStore.key;
   const activities={Kael:100,Nyx:85,Rook:70,Mira:45};
-  function read(){try{const a=JSON.parse(localStorage.getItem(STORE)||"[]");return Array.isArray(a)?a.slice(-MAX):[]}catch(_){return[]}}
+  const read=messageStore.read;
   function cleanLegacy(){
     const a=read();let changed=false;
     const b=a.filter(m=>{
@@ -16,7 +17,7 @@
       if(/^b\d/.test(String(m.id||""))){changed=true;return false}
       return true;
     });
-    if(changed)try{localStorage.setItem(STORE,JSON.stringify(b.slice(-MAX)))}catch(_){ }
+    if(changed)try{localStorage.setItem(STORE,messageStore.serialize(b))}catch(_){ }
   }
   function removeStraySocial(){
     document.querySelectorAll('[data-bot-test-output],[id*="botTestOutput"],[class*="botTestOutput"]').forEach(el=>el.remove());
