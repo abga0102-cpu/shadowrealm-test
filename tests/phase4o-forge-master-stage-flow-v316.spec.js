@@ -88,7 +88,9 @@ test('V316 live Home counter uses each stage real encounter total', async ({ pag
       update((st)=>{st.floor=floor;st.step=step;st.pendingBossFloor=0;st.recordFloor=Math.max(Number(st.recordFloor)||1,floor);});
       combat=spawnCampaign(S);nav('accueil');scheduleRender();
     }, {floor,step});
-    await expect(page.locator('#aTrack .srStageMiniDot')).toHaveCount(await page.evaluate((f)=>campaignWaveCount(f),floor));
+    const total=await page.evaluate((f)=>campaignWaveCount(f),floor);
+    await expect(page.locator('#aTrack .srStageMiniDot')).toHaveCount(total);
+    await expect(page.locator('#aSub')).toContainText(`Vague ${step}/${total}`);
     return (await page.locator('#aSub').innerText()).replace(/\s+/g,' ');
   }
   expect(await show(1,1)).toContain('Vague 1/3');
