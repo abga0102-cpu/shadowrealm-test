@@ -61,7 +61,7 @@ Representative outputs:
 
 The exact locale grouping character for the sub-1,000 branch is delegated to the runtime's `fr-FR` implementation; the regression contract compares against `toLocaleString('fr-FR')` rather than hard-coding a whitespace glyph.
 
-## Consolidation decision
+## Number formatting consolidation decision
 
 **Do not replace either formatter with the other.** Their current contracts are observably different. A future shared formatter is only safe if it exposes explicit modes/adapters and each caller is deliberately assigned to the correct semantics.
 
@@ -69,4 +69,60 @@ The exact locale grouping character for the sub-1,000 branch is delegated to the
 
 ## Escaping helpers
 
-Escaping remains a separate L4 investigation. Tree's local `esc(...)` already demonstrates null-to-empty-string and apostrophe escaping semantics; the remaining Base/Forge call-site contracts must be enumerated before any shared HTML-escaping helper is proposed. No production transfer is authorized by this document.
+The loaded escaping helpers have overlapping purposes but different input contracts. Those differences are now explicit before any shared HTML-escaping helper is proposed.
+
+### Base `esc` — `game-3.js`
+
+Base `esc(s)` first applies `String(s)`, then escapes `&`, `<`, `>` and the double quote `"`.
+
+Current semantics:
+
+- `null` becomes the literal text `"null"`.
+- `undefined` becomes the literal text `"undefined"`.
+- Numbers and booleans are stringified normally.
+- Apostrophes remain unchanged.
+- Existing call sites include ordinary HTML text plus `data-arg` / `data-arg2` values inside double-quoted attributes.
+
+### Forge `esc2` — `forge-panel-authority-v266.js`
+
+Forge `esc2(s)` normalizes nullish input with `s == null ? '' : s`, then escapes the same four characters as Base.
+
+Current semantics:
+
+- `null` and `undefined` become the empty string.
+- Numbers and booleans are stringified normally.
+- Apostrophes remain unchanged.
+- Current V266 call sites cover accelerator labels and filter text, plus accelerator keys inserted into double-quoted `data-arg` attributes.
+
+### Tree escaping — `tree-dedicated-v116.js`, `runtime-tree-stability-v216.js`, `personal-tree-radial-v82.js`
+
+The active Tree layers currently share the stricter nullish/apostrophe contract. The dedicated renderer and runtime stability layer expose local `esc(...)` functions, while the radial layer uses `escSvg(...)` with the same behavior.
+
+Current semantics:
+
+- `null` and `undefined` become the empty string.
+- Numbers and booleans are stringified normally.
+- `&`, `<`, `>`, `"` and `'` are escaped.
+- Apostrophes become `&#39;`.
+- Current uses include Tree/SVG text content and double-quoted `data-arg` values.
+
+Representative outputs:
+
+| Input | Base `esc` | Forge `esc2` | Tree escaping |
+| --- | --- | --- | --- |
+| `null` | `null` | empty | empty |
+| `undefined` | `undefined` | empty | empty |
+| `0` | `0` | `0` | `0` |
+| `false` | `false` | `false` | `false` |
+| `A&B` | `A&amp;B` | `A&amp;B` | `A&amp;B` |
+| `<b>` | `&lt;b&gt;` | `&lt;b&gt;` | `&lt;b&gt;` |
+| `a"b` | `a&quot;b` | `a&quot;b` | `a&quot;b` |
+| `O'Reilly` | `O'Reilly` | `O'Reilly` | `O&#39;Reilly` |
+
+### Escaping consolidation decision
+
+**Do not replace Base, Forge or Tree escaping helpers with one another yet.** Base has different nullish semantics, and Tree has stricter apostrophe escaping than both Base and Forge.
+
+A future shared helper is only safe after each caller is deliberately assigned to an explicit HTML context and nullish policy. The current evidence covers text nodes and double-quoted attributes; it does not authorize using these helpers as a generic sanitizer for URLs, CSS, JavaScript, raw HTML, or single-quoted attribute contexts.
+
+`tests/phase-l4-escaping-semantics.spec.js` is the golden behavior contract. It also verifies that the currently loaded Tree helpers remain semantically aligned without exposing any of them globally for testing.
