@@ -4,17 +4,15 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
+const exists = name => fs.existsSync(path.join(root, name));
 const index = read('index.html');
-const v274 = read('familiars-stock-v274.js');
 const v275 = read('familiars-stock-authority-v275.js');
 
-test('V274 is unloaded while V275 remains the sole loaded Familiar stock authority', async ({ page }) => {
+test('V274 source is retired while V275 remains the sole loaded Familiar stock authority', async ({ page }) => {
   expect(index).not.toContain('src="familiars-stock-v274.js');
   expect(index).toContain('src="familiars-stock-authority-v275.js');
+  expect(exists('familiars-stock-v274.js')).toBe(false);
 
-  // Preserve V274 source history until this staged unload survives the full gate.
-  expect(v274).toContain('window.__srFamiliarsStockV274=true');
-  expect(v274).toContain('new MutationObserver(sortDom)');
   expect(v275).toContain('window.__srFamStockAuthorityV275=true');
   expect(v275).toContain('window.__srFamScrollLayoutV240');
   expect(v275).toContain('window.__srFamTabsMergeV241');
