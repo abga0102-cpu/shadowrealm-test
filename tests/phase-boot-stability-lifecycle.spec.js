@@ -50,14 +50,15 @@ test('canonical campaign wave totals cover standard, elite and boss floors witho
       standard: renderFloor(standard),
       elite: renderFloor(elite),
       boss: renderFloor(boss),
+      stepsPerFloor: RULES.STEPS_PER_FLOOR,
       bootLoaded: !!document.querySelector('script[src*="boot-stability-v115.js"]'),
     };
     shell.remove();
     return values;
   });
 
-  expect(result.standard.expected).toBe(RULES_STEPS_FALLBACK(result.standard.expected));
-  expect(result.standard.text).toContain(`Vague 1/${result.standard.expected}`);
+  expect(result.standard.expected).toBe(result.stepsPerFloor);
+  expect(result.standard.text).toContain(`Vague 1/${result.stepsPerFloor}`);
   expect(result.elite.expected).toBe(2);
   expect(result.elite.text).toContain('Vague 1/2');
   expect(result.boss.expected).toBe(1);
@@ -71,7 +72,3 @@ test('retired V112 wave-display source stays absent from source and loader owner
   expect(fs.existsSync(retiredWaveSource)).toBe(false);
   expect(index).not.toContain('wave-display-v112.js');
 });
-
-function RULES_STEPS_FALLBACK(value) {
-  return value;
-}
