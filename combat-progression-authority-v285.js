@@ -1,14 +1,19 @@
 /* SHADOWREACH V285 · Combat progression authority
-   V314 extension: canonical 400-stage campaign structure.
-   Visible stages keep the approved chapter-stage notation 1-1 .. 40-10 while
-   the internal numeric index 1..400 remains stable for saves and balancing.
-   Fixed campaign curve calibrated against weak/normal/max 0★/Ascension builds.
-   Never scales enemies from current player power. */
+   V316 campaign structure: canonical 400-stage campaign with local visible
+   chapter numbering per difficulty and Forge-Master-like encounter pacing.
+   Visible chapter numbers are derived from each difficulty's real length and
+   are not capped at 5. Internal floor ids 1..400 remain stable for saves and
+   balancing. Every 10-stage chapter uses the approved rhythm:
+   N/N/N, N/N/N, N/N/N, N/Elite, Boss, then repeat for stages 6..10.
+   Fixed enemy scaling never derives from current player power. */
 (function(){
 'use strict';
 if(window.__srCombatProgressionV285)return;
 window.__srCombatProgressionV285=true;
 window.__srCampaign400V314=true;
+window.__srLocalStageNotationV315=true;
+window.__srCompactStageTrackV315=true;
+window.__srForgeMasterStageFlowV316=true;
 
 var CAMPAIGN_MAX=400;
 var DIFFICULTIES=[
@@ -23,14 +28,26 @@ var DIFFICULTIES=[
 ];
 
 function clampFloor(f){f=Math.floor(Number(f)||1);return Math.max(1,Math.min(CAMPAIGN_MAX,f));}
+function difficultyIndexForFloor(floor){
+  for(var i=0;i<DIFFICULTIES.length;i++)if(floor>=DIFFICULTIES[i].start&&floor<=DIFFICULTIES[i].end)return i;
+  return Math.max(0,DIFFICULTIES.length-1);
+}
+function stageKindFromStage(stage){
+  stage=Math.max(1,Math.min(10,Math.floor(Number(stage)||1)));
+  if(stage===5||stage===10)return 'boss';
+  if(stage===4||stage===9)return 'elite';
+  return 'normal';
+}
 function campaignMeta(f){
-  var floor=clampFloor(f),di=Math.min(DIFFICULTIES.length-1,Math.floor((floor-1)/50));
-  var diff=DIFFICULTIES[di],within=floor-di*50;
-  var chapter=Math.floor((floor-1)/10)+1,stage=(floor-1)%10+1;
-  var difficultyChapter=Math.floor((within-1)/10)+1,stageCode=chapter+'-'+stage;
+  var floor=clampFloor(f),di=difficultyIndexForFloor(floor);
+  var diff=DIFFICULTIES[di],within=floor-diff.start+1;
+  var globalChapter=Math.floor((floor-1)/10)+1,stage=(within-1)%10+1;
+  var difficultyChapter=Math.floor((within-1)/10)+1,stageCode=difficultyChapter+'-'+stage;
+  var kind=stageKindFromStage(stage);
   return {
     floor:floor,maxFloor:CAMPAIGN_MAX,difficultyIndex:di,difficultyId:diff.id,difficulty:diff.label,
-    difficultyFloor:within,difficultyChapter:difficultyChapter,chapter:chapter,stage:stage,stageCode:stageCode,isBoss:stage===10,
+    difficultyFloor:within,difficultyChapter:difficultyChapter,chapter:difficultyChapter,globalChapter:globalChapter,
+    stage:stage,stageCode:stageCode,kind:kind,isBoss:kind==='boss',isElite:kind==='elite',
     label:diff.label+' · '+stageCode
   };
 }
@@ -39,12 +56,79 @@ window.__srCampaignDifficulties=DIFFICULTIES.slice();
 window.__srCampaignMeta=campaignMeta;
 window.__srCampaignLabel=function(f){return campaignMeta(f).label;};
 window.__srCampaignStageLabel=function(f){return campaignMeta(f).stageCode;};
+window.__srCampaignStageKindV316=function(f){return campaignMeta(f).kind;};
 
-/* Existing V285 anchors through Expert stay untouched. V314 extends only the
-   missing Cauchemar -> Divin runway. Values are fixed world progression, never
-   derived from the current player's power. */
+/* Real encounter authority. A chapter is two identical five-stage beats:
+   1/2/3 normal x3, 4 normal+elite, 5 boss; then 6/7/8, 9, 10. */
+var STAGE_WAVES=[3,3,3,2,1,3,3,3,2,1];
+function stageWaveCount(f){
+  var stage=campaignMeta(f).stage;
+  return STAGE_WAVES[Math.max(0,Math.min(9,stage-1))]||1;
+}
+function campaignIsBoss(f){return campaignMeta(f).kind==='boss';}
+function campaignIsElite(f){return campaignMeta(f).kind==='elite';}
+function encounterIndex(f,kind){
+  var floor=clampFloor(f),n=0;
+  for(var i=1;i<=floor;i++)if(campaignMeta(i).kind===kind)n++;
+  return Math.max(0,n-1);
+}
+window.__srCampaignWavePatternV315=STAGE_WAVES.slice();
+window.__srCampaignWaveCountV315=stageWaveCount;
+window.__srCampaignWavePatternV316=STAGE_WAVES.slice();
+window.__srCampaignWaveCountV316=stageWaveCount;
+
+/* Replace legacy 5/10 classification with the approved local-stage cadence.
+   RULES.BOSS_EVERY remains 10 because it still defines chapter length elsewhere. */
+try{if(typeof isBoss==='function')isBoss=function(f){return campaignIsBoss(f);};}catch(_){ }
+try{if(typeof isElite==='function')isElite=function(f){return campaignIsElite(f);};}catch(_){ }
+try{
+  if(typeof eliteIndex==='function')eliteIndex=function(f){return encounterIndex(f,'elite');};
+  if(typeof eliteFor==='function'&&typeof ELITE_DEFS!=='undefined')eliteFor=function(f){return ELITE_DEFS[encounterIndex(f,'elite')%ELITE_DEFS.length];};
+  if(typeof bossFor==='function'&&typeof BOSS_DEFS!=='undefined')bossFor=function(f){return BOSS_DEFS[encounterIndex(f,'boss')%BOSS_DEFS.length];};
+}catch(_){ }
+try{
+  if(typeof campaignWaveCount==='function'){
+    campaignWaveCount=function(f){return stageWaveCount(f);};
+    campaignWaveCount.__srCompactStageTrackV315=true;
+    campaignWaveCount.__srForgeMasterStageFlowV316=true;
+  }
+}catch(_){ }
+
+/* Current-stage track only: normal stages = 3 normal dots; elite stages =
+   normal dot then elite dot; boss stages = one boss dot. */
+function compactStageTrack(floor){
+  floor=clampFloor(floor);
+  var meta=campaignMeta(floor),count=stageWaveCount(floor),step=1;
+  try{if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign'&&Number(combat.floor)===floor)step=Math.floor(Number(combat.step)||1);}catch(_){ }
+  step=Math.max(1,Math.min(count,step));
+  var h='';
+  for(var i=1;i<=count;i++){
+    if(i>1)h+='<i class="'+(i<=step?'on':'')+'"></i>';
+    var cls='sdot srStageMiniDot';
+    if(meta.isBoss)cls+=' boss';
+    else if(meta.isElite&&i===count)cls+=' elite';
+    if(i<step)cls+=' on';
+    if(i===step)cls+=' cur';
+    var icon='';
+    try{if(meta.isBoss&&typeof MINI_SKULL!=='undefined')icon=MINI_SKULL;}catch(_){ }
+    h+='<span class="'+cls+'" data-stage-step="'+i+'" data-stage-total="'+count+'">'+icon+'</span>';
+  }
+  return h;
+}
+window.__srCompactStageTrackHTMLV315=compactStageTrack;
+window.__srStageMiniTrackV316=compactStageTrack;
+try{
+  if(typeof floorTrack==='function'){
+    floorTrack=function(floor){return compactStageTrack(floor);};
+    floorTrack.__srCompactStageTrackV315=true;
+    floorTrack.__srForgeMasterStageFlowV316=true;
+  }
+}catch(_){ }
+
+/* Existing progression anchors stay intact; a first mid-chapter Boss anchor is
+   added at internal floor 5 so the new first Boss does not inherit floor-10 HP. */
 var BOSS={
-  10:2000,20:20000,30:180000,40:3000000,50:20000000,
+  5:500,10:2000,20:20000,30:180000,40:3000000,50:20000000,
   60:80000000,70:180000000,80:350000000,90:600000000,
   100:800000000,110:1000000000,120:1200000000,130:2200000000,
   140:4000000000,150:7000000000,
@@ -73,8 +157,6 @@ window.__srV285EnemyHP=function(f){return logInterp(NORMAL,clampFloor(f));};
 window.__srV285BossHP=function(f){f=clampFloor(f);return logInterp(BOSS,f);};
 try{if(typeof enemyHP==='function')enemyHP=window.__srV285EnemyHP;}catch(_){ }
 
-/* Campaign bosses are built through the legacy multiplier path. Keep the exact
-   V285/V314 target HP as its authority without coupling it to player power. */
 try{
   if(typeof campaignBossStatMul==='function'){
     var oldBossStatMul=campaignBossStatMul;
@@ -91,8 +173,8 @@ try{
   }
 }catch(_){ }
 
-/* Preserve a record from the former endless campaign instead of silently
-   discarding it, then normalize the active campaign into the new 1..400 world. */
+/* Preserve old saves and clamp a former 3-wave step when that save now lands on
+   a 1- or 2-encounter stage. No floor, record or reward history is erased. */
 function normalizeCampaignState(){
   try{
     if(typeof S==='undefined'||!S)return;
@@ -102,13 +184,12 @@ function normalizeCampaignState(){
     if((Number(S.recordFloor)||1)>CAMPAIGN_MAX)S.recordFloor=CAMPAIGN_MAX;
     if((Number(S.checkpoint)||1)>CAMPAIGN_MAX)S.checkpoint=CAMPAIGN_MAX;
     if((Number(S.pendingBossFloor)||0)>CAMPAIGN_MAX)S.pendingBossFloor=0;
+    var maxStep=stageWaveCount(S.floor);
+    if((Number(S.step)||1)>maxStep)S.step=maxStep;
   }catch(_){ }
 }
 normalizeCampaignState();
 
-/* Never let a completed Boss 40-10 (internal floor 400) advance to an undefined
-   stage 41-1. The final stage remains replayable; first-clear rewards still
-   remain one-time through the existing bossRewardsClaimed contract. */
 try{
   if(typeof startCampaign==='function'&&!startCampaign.__srCampaign400V314){
     var oldStartCampaign=startCampaign;
@@ -121,8 +202,16 @@ try{
   if(typeof handleCombatEnd==='function'&&!handleCombatEnd.__srCampaign400V314){
     var oldHandleCombatEnd=handleCombatEnd;
     handleCombatEnd=function(c){
-      var finalWin=!!(c&&c.ctx==='campaign'&&c.status==='won'&&Number(c.floor)>=CAMPAIGN_MAX);
+      var won=!!(c&&c.ctx==='campaign'&&c.status==='won');
+      var actualStep=null;
+      try{
+        if(won&&Number(c.step)>=stageWaveCount(c.floor)&&Number(c.step)<Number(RULES.STEPS_PER_FLOOR)){
+          actualStep=c.step;c.step=RULES.STEPS_PER_FLOOR;
+        }
+      }catch(_){ }
+      var finalWin=!!(won&&Number(c.floor)>=CAMPAIGN_MAX);
       var out=oldHandleCombatEnd.apply(this,arguments);
+      if(actualStep!==null)c.step=actualStep;
       if(finalWin){
         try{
           if(typeof S!=='undefined'&&S){
@@ -136,13 +225,11 @@ try{
       return out;
     };
     handleCombatEnd.__srCampaign400V314=true;
+    handleCombatEnd.__srForgeMasterStageFlowV316=true;
     handleCombatEnd.__srPrevious=oldHandleCombatEnd;
   }
 }catch(_){ }
 
-/* Native arena label without adding another runtime script. drawArena compares
-   against the raw label every frame, so the proxy remembers that raw value while
-   the actual DOM node receives the approved difficulty + chapter-stage label. */
 function decorateArenaLabel(){
   try{
     if(typeof arenaNodes==='undefined'||!arenaNodes||!arenaNodes.label||arenaNodes.label.__srCampaign400Proxy)return;
@@ -155,10 +242,7 @@ function decorateArenaLabel(){
       get:function(){return raw;},
       set:function(v){
         raw=String(v==null?'':v);
-        try{
-          if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')node.textContent=campaignMeta(combat.floor).label;
-          else node.textContent=raw;
-        }catch(_){node.textContent=raw;}
+        try{if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')node.textContent=campaignMeta(combat.floor).label;else node.textContent=raw;}catch(_){node.textContent=raw;}
       }
     });
     arenaNodes.label=proxy;
@@ -175,14 +259,23 @@ try{
 }catch(_){ }
 decorateArenaLabel();
 
-/* The legacy combat renderer still writes a numeric inter-floor flash. Rewrite
-   only that visual after the canonical draw so players always see 1-1, 1-2...
-   rather than the internal 1..400 index. */
+function syncStageWavePill(){
+  try{
+    if(typeof combat==='undefined'||!combat||combat.ctx!=='campaign'||typeof arenaNodes==='undefined'||!arenaNodes||!arenaNodes.sub)return;
+    var pill=arenaNodes.sub.querySelector('.fPill');
+    if(!pill)return;
+    var wanted='Vague '+Math.max(1,Number(combat.step)||1)+'/'+stageWaveCount(combat.floor);
+    if(String(pill.textContent||'').trim()===wanted)return;
+    var icon='';try{if(typeof ic==='function')icon=ic('swords',10);}catch(_){ }
+    pill.innerHTML=icon+wanted;
+  }catch(_){ }
+}
 try{
   if(typeof drawArena==='function'&&!drawArena.__srCampaignStageNotationV314){
     var oldDrawArena=drawArena;
     drawArena=function(){
       var out=oldDrawArena.apply(this,arguments);
+      syncStageWavePill();
       try{
         if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign'&&typeof arenaNodes!=='undefined'&&arenaNodes&&arenaNodes.banner&&typeof floorFlash!=='undefined'&&floorFlash&&Date.now()<floorFlash.until&&combat.status!=='lost'){
           arenaNodes.banner.textContent='ÉTAGE '+campaignMeta(floorFlash.floor).stageCode;
@@ -191,12 +284,16 @@ try{
       return out;
     };
     drawArena.__srCampaignStageNotationV314=true;
+    drawArena.__srForgeMasterStageFlowV316=true;
     drawArena.__srPrevious=oldDrawArena;
   }
 }catch(_){ }
 
+var CHAPTER_COUNTS=DIFFICULTIES.map(function(d){return Math.ceil(Math.max(0,d.end-d.start+1)/10);});
 window.__srCombatProgressionConfigV285={
   bossHP:BOSS,normalHP:NORMAL,maxFloor:CAMPAIGN_MAX,difficulties:DIFFICULTIES,
-  chaptersPerDifficulty:5,floorsPerChapter:10,totalChapters:40,campaignMeta:campaignMeta
+  chaptersPerDifficulty:CHAPTER_COUNTS[0],chapterCounts:CHAPTER_COUNTS,
+  floorsPerChapter:10,totalChapters:Math.ceil(CAMPAIGN_MAX/10),campaignMeta:campaignMeta,
+  stageWavePattern:STAGE_WAVES.slice(),stageWaveCount:stageWaveCount
 };
 })();
