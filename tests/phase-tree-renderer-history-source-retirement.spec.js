@@ -27,6 +27,7 @@ test.describe('Tree renderer historical source retirement', () => {
     expect(topology).toContain('applyTreeLevel = function');
     expect(topology).toContain("bridge('n2_15','n2_09')");
     expect(topology).not.toContain('treeGraph=function');
+    expect(topology).not.toContain('function escSvg');
     expect(topology).not.toContain('.srRadialTree');
     expect(topology).not.toContain("document.createElement('style')");
 

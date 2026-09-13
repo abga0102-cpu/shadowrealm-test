@@ -47,11 +47,10 @@ test('L4: Forge escaping semantics remain explicit', () => {
   expect(esc2('a"b\'c')).toBe('a&quot;b\'c');
 });
 
-test('L4: Tree escaping helpers share the stricter contract', () => {
+test('L4: active Tree escaping helpers share the stricter contract', () => {
   const helpers = [
     loadFunction('tree-dedicated-v116.js', 'esc'),
     loadFunction('runtime-tree-stability-v216.js', 'esc'),
-    loadFunction('personal-tree-radial-v82.js', 'escSvg'),
   ];
 
   helpers.forEach((esc) => {
