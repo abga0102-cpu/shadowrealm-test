@@ -1,48 +1,11 @@
 /* SHADOWREACH · radial tree safety/economy v83
-   - Preserves the five mastery keys when legacy migration order would otherwise drop them.
-   - Raid Évolution PE reward ownership now lives solely in raid-pe-authority-v290.js.
+   - Audits the five mastery-key definitions after V82 owns their legacy-save restoration.
+   - Raid Évolution PE reward ownership lives solely in raid-pe-authority-v290.js.
 */
 (function(){
   'use strict';
 
   var MASTERY_IDS = ['mk_familier','mk_or','mk_minerai','mk_pe','mk_competence'];
-
-  /* game-2 peut charger/migrer avant personal-tree-radial-v82.js. La migration
-     supprime normalement les ids qu'elle ne connaît pas encore. On relit donc
-     uniquement les cinq ids officiels depuis le JSON brut et on les restaure.
-     Aucun autre champ de sauvegarde n'est réécrit ici. */
-  function restoreMasteryProgress(){
-    if (typeof S === 'undefined' || !S || !S.tree || typeof localStorage === 'undefined') return;
-    try {
-      var rawText = localStorage.getItem('shadowreach.save.local');
-      if (!rawText) return;
-      var raw = JSON.parse(rawText);
-      var rt = raw && raw.tree;
-      if (!rt) return;
-      var levels = rt.levels || {};
-      S.tree.levels = S.tree.levels || {};
-      MASTERY_IDS.forEach(function(id){
-        var saved = Number(levels[id] || 0);
-        if (saved > 0 && typeof TREE_BY_ID !== 'undefined' && TREE_BY_ID[id]) {
-          S.tree.levels[id] = Math.min(1, saved);
-        }
-      });
-
-      /* Une recherche de clé en cours doit elle aussi survivre au redémarrage. */
-      if (!S.tree.active && MASTERY_IDS.indexOf(rt.active) >= 0 &&
-          typeof TREE_BY_ID !== 'undefined' && TREE_BY_ID[rt.active]) {
-        var end = Number(rt.activeEnd || 0);
-        if (end > 0) {
-          S.tree.active = rt.active;
-          S.tree.activeLevel = 1;
-          S.tree.activeEnd = end;
-        }
-      }
-    } catch(e) {
-      console.warn('radial mastery restore skipped', e);
-    }
-  }
-  restoreMasteryProgress();
 
   /* Audit léger, sans modifier la partie. Le PE Raid Évolution est validé
      contre l'autorité canonique V290 une fois le runtime chargé. */

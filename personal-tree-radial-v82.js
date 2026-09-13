@@ -50,6 +50,39 @@
   }
   KEY_DEFS.forEach(addMasteryKey);
 
+  /* Legacy saves may have been migrated by game-2 before these mastery-key ids
+     existed in TREE_BY_ID. Restore only the five official keys from the raw save
+     once their definitions are present; do not rewrite any unrelated save state. */
+  function restoreMasteryProgress(){
+    if (typeof S === 'undefined' || !S || !S.tree || typeof localStorage === 'undefined') return;
+    try {
+      var rawText = localStorage.getItem('shadowreach.save.local');
+      if (!rawText) return;
+      var raw = JSON.parse(rawText);
+      var rt = raw && raw.tree;
+      if (!rt) return;
+      var levels = rt.levels || {};
+      var masteryIds = ['mk_familier','mk_or','mk_minerai','mk_pe','mk_competence'];
+      S.tree.levels = S.tree.levels || {};
+      masteryIds.forEach(function(id){
+        var saved = Number(levels[id] || 0);
+        if (saved > 0 && TREE_BY_ID[id]) S.tree.levels[id] = Math.min(1, saved);
+      });
+
+      if (!S.tree.active && masteryIds.indexOf(rt.active) >= 0 && TREE_BY_ID[rt.active]) {
+        var end = Number(rt.activeEnd || 0);
+        if (end > 0) {
+          S.tree.active = rt.active;
+          S.tree.activeLevel = 1;
+          S.tree.activeEnd = end;
+        }
+      }
+    } catch(e) {
+      console.warn('radial mastery restore skipped', e);
+    }
+  }
+  restoreMasteryProgress();
+
   var oldTreeReqOk = treeReqOk;
   treeReqOk = function(s,node){
     if (node && node.deprecatedKey) return false;
