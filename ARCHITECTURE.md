@@ -70,14 +70,14 @@ The following files may remain in source history, but must not regain active own
 - `forge-ux-v261.js`, `forge-ux-v266.js`, `forge-ux-v268.js`, `forge-ux-v269.js`, `forge-ux-v270.js`, `forge-ux-v271.js`, `forge-ux-v272.js` — superseded later Forge loot-presentation lineage retired from source; loaded `forge-ux-v273.js` is the current event-driven owner.
 - `rebirth-scroll-stability-v220.js` — superseded Rebirth scroll-preservation layer retired from runtime and source; loaded `rebirth-scroll-natural-v221.js` explicitly replaces and suppresses V220.
 - `accomplishments-titles-v133.js` — compatibility marker only; retired from runtime and source.
-- `accomplishments-overview-v135.js` — compatibility marker only; unloaded.
-- `accomplishments-home-scope-v136.js` — compatibility marker only; unloaded.
-- `accomplishments-floors-v137.js` — compatibility marker only; unloaded.
-- `accomplishments-ui-v123.js` — suppressed legacy UI; unloaded.
+- `accomplishments-overview-v135.js` — compatibility marker only; retired from runtime and source.
+- `accomplishments-home-scope-v136.js` — compatibility marker only; retired from runtime and source.
+- `accomplishments-floors-v137.js` — compatibility marker only; retired from runtime and source.
+- `accomplishments-ui-v123.js` — suppressed legacy UI; retired from runtime and source.
 - `accomplishments-floor-comp-v141.js` — floor compensation ownership absorbed into V127; retired from runtime and source after migration ownership moved to V127.
 - `tree-labels-v117.js` — clearer gold-node label ownership absorbed into V116; retired from runtime and source.
 - `tree-mastery-v120.js` — compatibility marker only; retired from runtime and source.
-- `tree-mastery-ui-v128.js` — compatibility marker only; unloaded.
+- `tree-mastery-ui-v128.js` — compatibility marker only; retired from runtime and source.
 - `tree-mastery-v149.js` — retired from runtime and source; V216 owns active mastery behavior.
 - `tree-simple-v90.js` — unloaded historical simple renderer retired from source; V116 remains the sole dedicated Tree renderer.
 - `personal-tree-mastery-clarity-v213.js` — unloaded legacy mastery/observer layer retired from source; V216 owns its surviving mastery gating, visuals and popup synchronization.
