@@ -17,7 +17,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Combat readability overlays | `combat-polish-v157.js` | Visual/readability responsibility only. |
 | Combat animation | `combat-animation-v169.js` | Locomotion, weapon choreography, `drawArena` animation wrapping. |
 | Campaign combat progression | `combat-progression-authority-v285.js` | Current enemy/boss HP progression authority. |
-| Raid Évolution PE reward | `raid-pe-authority-v290.js` | Sole canonical Evolution raid PE reward owner: 100 PE at level 1, then +3 PE per raid level. `tree-safety-v83.js` only audits the final runtime value and must not wrap `raidReward`. |
+| Raid Évolution PE reward | `raid-pe-authority-v290.js` | Sole canonical Evolution raid PE reward owner: 100 PE at level 1, then +3 PE per raid level. Historical Tree auditing now lives in `personal-tree-radial-v82.js` and must remain observational; unloaded `tree-safety-v83.js` must not regain `raidReward` ownership. |
 | Save import | `import-save-guard-v207.js` | Sole authoritative `ACT.importSave` owner. |
 | Forge item base power | `progression-overhaul-v283.js` | Current fixed-base equipment generation authority. |
 | Forge Divine pre-Ascension lock | `game-balance-v224.js` | Retains the Divine rarity gate only; not current base-power owner. |
@@ -25,7 +25,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Forge Home panel presentation | `forge-panel-authority-v266.js` | Canonical renderer-level Home Forge owner for panel structure, accelerator presentation, loot reserve, Forge actions/AUTO state, filter placement and mobile geometry. Historical compact/panel V259/V260/V261 sources are retired. |
 | Forge loot presentation / entry animation | `forge-ux-v273.js` | Current event-driven Forge loot authority. Owns the live loot zone, bounded/background-safe transient and kept-result lifecycle, comparison-aware AUTO feedback and idle watcher shutdown. Early V252/V253/V258, entry-animation V263/V264 and later V261/V266/V268–V272 presentation predecessors are retired. |
 | Rebirth scroll preservation | `rebirth-scroll-natural-v221.js` | Sole loaded Rebirth scroll-preservation owner. V221 explicitly replaces V220 with continuous position preservation and suppresses the older V220 layer if it is ever encountered. |
-| Tree topology / mastery-key compatibility | `personal-tree-radial-v82.js` | Owns Tree route topology rewriting, mastery-key node construction, deprecated historical key save compatibility, bridge requirements and mastery-key acquisition compatibility. PRs #213/#214 removed V82's duplicate renderer, renderer helpers, injected presentation CSS and renderer-only angle metadata; rendering remains owned by V116 and live mastery gating/popup synchronization by V216. |
+| Tree topology / mastery-key compatibility | `personal-tree-radial-v82.js` | Owns Tree route topology rewriting, mastery-key node construction, deprecated historical key save compatibility, bridge requirements, mastery-key acquisition compatibility, raw-save restoration for the five official mastery keys, and the historical observational `__srTreeAudit` API. PRs #213/#214 removed V82's duplicate renderer, renderer helpers, injected presentation CSS and renderer-only angle metadata; rendering remains owned by V116 and live mastery gating/popup synchronization by V216. |
 | Tree dedicated renderer / clearer gold-node labels | `tree-dedicated-v116.js` | Canonical dedicated Tree renderer and owner of the four clearer `Gain d’Or I–IV` labels formerly applied by V117. V117 is now unloaded. |
 | Tree mastery gating / deep requirements / popup synchronization | `runtime-tree-stability-v216.js` | Sole active mastery owner; legacy V149 source has been retired. |
 | Accomplishments Development entry lifecycle | `accomplishments-stability-v138.js` | Route-bound subscriber to V209's `sr:bottomnavrendered` lifecycle; no document-wide observer and no `renderTabs` wrapper. |
@@ -76,6 +76,7 @@ The following files may remain in source history, but must not regain active own
 - `accomplishments-floors-v137.js` — compatibility marker only; retired from runtime and source.
 - `accomplishments-ui-v123.js` — suppressed legacy UI; retired from runtime and source.
 - `accomplishments-floor-comp-v141.js` — floor compensation ownership absorbed into V127; retired from runtime and source after migration ownership moved to V127.
+- `tree-safety-v83.js` — inert compatibility marker; unloaded after V82 absorbed mastery-key raw-save restoration and the historical `__srTreeAudit` API. Source is retained only for staged L5 retirement proof and must not regain runtime ownership.
 - `tree-labels-v117.js` — clearer gold-node label ownership absorbed into V116; retired from runtime and source.
 - `tree-mastery-v120.js` — compatibility marker only; retired from runtime and source.
 - `tree-mastery-ui-v128.js` — compatibility marker only; retired from runtime and source.
