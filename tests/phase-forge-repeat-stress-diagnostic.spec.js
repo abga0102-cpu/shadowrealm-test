@@ -70,11 +70,22 @@ async function assertStillInteractive(page) {
   await expect.poll(() => page.evaluate(() => route)).toBe('equipement');
 }
 
-test('diagnostic: repeated Forge clicks with no Minerai stay interactive', async ({ page }) => {
+function observerSummary(state) {
+  return state.observers.map((o, i) => ({
+    i,
+    calls: o.calls,
+    records: o.records,
+    source: /forge-worn-details-v145/.test(o.stack) ? 'forge-worn-details-v145' :
+      /forge-ux-v273/.test(o.stack) ? 'forge-ux-v273' :
+      /boot-stability-v115/.test(o.stack) ? 'boot-stability-v115' : 'other'
+  }));
+}
+
+test.only('diagnostic: repeated Forge clicks with no Minerai stay interactive', async ({ page }, testInfo) => {
   await openInstrumentedGame(page);
   const clicks = await spamRealForge(page, 0, 4000);
   const state = await snapshot(page);
-  console.log('FORGE_DIAG_EMPTY', JSON.stringify({ clicks, state }));
+  console.log('FORGE_DIAG_EMPTY', JSON.stringify({ project:testInfo.project.name, clicks, state:{...state, observers:observerSummary(state)} }));
   expect(state.homeForge).toBe(1);
   expect(state.toast).toBeLessThanOrEqual(1);
   expect(state.errors).toEqual([]);
@@ -82,14 +93,14 @@ test('diagnostic: repeated Forge clicks with no Minerai stay interactive', async
   await assertStillInteractive(page);
 });
 
-test('diagnostic: repeated Forge clicks with abundant Minerai stay bounded and interactive', async ({ page }) => {
+test.only('diagnostic: repeated Forge clicks with abundant Minerai stay bounded and interactive', async ({ page }, testInfo) => {
   test.setTimeout(30000);
   await openInstrumentedGame(page);
   const before = await snapshot(page);
   const clicks = await spamRealForge(page, 1e12, 9000);
   await page.waitForTimeout(2300);
   const after = await snapshot(page);
-  console.log('FORGE_DIAG_RICH', JSON.stringify({ clicks, before, after }));
+  console.log('FORGE_DIAG_RICH', JSON.stringify({ project:testInfo.project.name, clicks, before:{...before, observers:observerSummary(before)}, after:{...after, observers:observerSummary(after)} }));
   expect(after.homeForge).toBe(1);
   expect(after.errors).toEqual([]);
   expect(after.bootErrors).toEqual([]);
