@@ -119,7 +119,7 @@ Completed so far:
 - Accomplishments V138 stopped wrapping `renderTabs` and now subscribes to canonical `sr:bottomnavrendered` lifecycle;
 - Accomplishments V139 stopped wrapping global `openModal`; canonical rendering routes through `ACT.accomplishments()`;
 - Tree V116 removed its duplicate permanent 500 ms `syncMode` poller and then its document-wide `MutationObserver`; Tree mode synchronization now subscribes to canonical `sr:bottomnavrendered` lifecycle while retaining startup sync;
-- Tree V83 stopped wrapping `raidReward` for Raid Évolution PE after V290 was confirmed as the later canonical owner with the identical 100 PE + 3/level rule; V83 retains only mastery-save restoration and audit behavior;
+- Tree V83 stopped wrapping `raidReward` after V290 became the canonical Raid Évolution PE owner; subsequent Tree consolidation moved V83's remaining mastery-key raw-save restoration and historical `__srTreeAudit` API into V82, leaving V83 inert and eligible for staged runtime unload;
 - Home V219 stopped wrapping `renderTabs` and now subscribes to the canonical `sr:bottomnavrendered` lifecycle while keeping resize/orientation/startup synchronization;
 - Boot V115 removed its redundant permanent 500 ms wave-display poller while retaining the DOM-driven synchronization path and startup sync;
 - PR #154 removed Weekly Mega's permanent 1.2-second panel injection poller; the panel now follows `sr:bottomnavrendered` with one-frame deferral to respect core render ordering, while its separate 60-second reward-grant cadence remains unchanged;
@@ -133,7 +133,7 @@ Completed so far:
 - PR #168 removed the remaining broad V83 `#app` observer from production without adding a replacement hook. Guarded modal transitions and startup synchronization retain the surviving behavior, the #166 proof now runs against production source, and a static contract keeps direct overlay creation/removal in the native modal owner among directly loaded runtime scripts;
 - PR #171 removed Secondary HUD V279's remaining `renderHUD` wrapper. Route context now follows canonical `sr:bottomnavrendered`, modal context remains on `sr:modal-state`, and startup still synchronizes immediately. No replacement observer, timer or wrapper was added.
 
-Continue with one behavior at a time. Do not remove migration/save compatibility responsibilities merely because their runtime path is infrequent. V83's central observer cleanup and Secondary HUD's V279 lifecycle cleanup are complete through #168/#171; do not manufacture more work in those owners without a concrete new ownership seam. Prefer a newly discovered neutral UI lifecycle candidate with an existing deterministic hook. Power Hint, Boot wave and audio remain evidence-gated because their current behavior intersects combat/death or historical save responsibilities.
+Continue with one behavior at a time. Do not remove migration/save compatibility responsibilities merely because their runtime path is infrequent. V83's active responsibilities have been transferred into durable owners and its runtime marker is now staged for unload; Secondary HUD's V279 lifecycle cleanup is complete through #171. Prefer a newly discovered neutral UI lifecycle candidate with an existing deterministic hook. Power Hint, Boot wave and audio remain evidence-gated because their current behavior intersects combat/death or historical save responsibilities.
 
 ### L3 — Subsystem consolidation
 Status: IN PROGRESS
@@ -147,6 +147,7 @@ Completed so far:
 - Accomplishments Settings entry injection moved from legacy V121 into canonical `accomplishments-canonical-v139.js`; V121's duplicate claim/payout path and legacy modal/reward renderer were removed, leaving V121 with state migration plus raid/fusion event compatibility while V139/V140 remain the sole UI and payout owners;
 - Accomplishments legacy floor25/floor50/floor75 make-good logic moved from standalone V141 into `accomplishments-reward-fix-v127.js`, preserving the exact V141 persisted idempotency markers and payout values while giving Raid 100 and floor compensation one durable boot/import migration owner;
 - Tree clearer gold-node labels from `tree-labels-v117.js` were absorbed into canonical dedicated renderer `tree-dedicated-v116.js`;
+- Tree mastery-key raw-save restoration and the historical observational `__srTreeAudit` API were consolidated into `personal-tree-radial-v82.js`, leaving `tree-safety-v83.js` behavior-free before its staged runtime unload;
 - compact reward-notification presentation from CSS-only `notification-compact-v105.js` was absorbed directly into the canonical `#rewardFeed` / `.rewardPop` rules in `style.css`;
 - Forge presentation ownership is explicit: `forge-panel-authority-v266.js` owns the Home panel renderer, `forge-ux-v273.js` owns current event-driven loot presentation and entry animation, and `forge-auto-batch-gate-v266.js` owns batch progression gating. Historical panel, entry-animation and loot-UX predecessors covered by the L1 audit are source-retired.
 
@@ -173,6 +174,8 @@ After scripts have remained unloaded and regression-covered across subsequent ve
 
 Completed examples include the retired Accomplishments marker families, V135 bridge and V141 layer, BottomNav V53, Home V119, Tree renderer/bridge history through V90/V92/V102/V213, Power Integrity V255, Equipment V175, Hero Equipment V1, notification V105, the Forge auto-batch history, Rebirth V220, Forge panel/entry-animation history, later and early Forge loot-UX history, Forge V148, Forge V112/V135, Familiar V232, import V298, progression-coherence V304 and equipment-refund V238.
 
+`tree-safety-v83.js` is the current staged L5 candidate: its runtime request is removed only after V82 owns its final compatibility/audit behavior, while the inert source remains until the unload has survived exact-head and subsequent integration proof.
+
 There is **no current L1-derived source-retirement candidate**. Future L5 work starts only when a later L2/L3 ownership transfer has survived integration long enough to justify staged source deletion, or when a fresh audit finds new obsolete source.
 
 ## Change-size policy
@@ -193,6 +196,6 @@ These later phases remain open until their evidence is recorded. A source count 
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
 
-Current first-party runtime is **105 JavaScript files** (95 index-managed + 10 transitively loaded) in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
+Current first-party runtime is **104 JavaScript files** (94 index-managed + 10 transitively loaded) in the normal non-Social session with the staged Tree V83 unload. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
-L1 is complete at `main` after PR #151 (`231a8c81aa70f00f37cb66c9a7b1ffe2145a2733`). The L2 completion ledger now includes PRs #153, #154, #155, #158, #161, #163, #164, #166, #168 and #171. L4 now has its first production ownership transfer in the Social message-store family, with formatting, escaping and lifecycle helpers retained locally where consolidation would change semantics or increase coupling. Future lean-code production work should continue from fresh `main`; V83's broad observer cleanup and Secondary HUD V279's wrapper cleanup are complete, while Power Hint, Boot wave and audio still require their existing combat/save protections.
+L1 is complete at `main` after PR #151 (`231a8c81aa70f00f37cb66c9a7b1ffe2145a2733`). The L2 completion ledger includes PRs #153, #154, #155, #158, #161, #163, #164, #166, #168 and #171, with later Tree consolidation moving V83's final compatibility/audit behavior into V82 before the staged runtime unload. L4 has its first production ownership transfer in the Social message-store family, with formatting, escaping and lifecycle helpers retained locally where consolidation would change semantics or increase coupling. Future lean-code production work should continue from fresh `main`; Power Hint, Boot wave and audio still require their existing combat/save protections.
