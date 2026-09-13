@@ -18,8 +18,8 @@ test.describe('duplicate-free permanent navigation', () => {
     expect(nav).toContain("SCREENS.developpement=function()");
     expect(nav).toContain("SCREENS.parametres=function()");
     expect(nav).toContain("if(item.route&&typeof SCREENS[item.route]!=='function')return false");
-    expect(nav).toContain('#app.srHomeFullArena .worldDev,#app.srHomeFullArena .worldDefis,#app.srHomeFullArena .worldMenu{display:none!important}');
-    expect(nav).toContain('#app.srHomeFullArena .worldRebirth:not(:has(.worldDot)){display:none!important}');
+    expect(nav).toContain('#app.srHomeFullArena #screen .worldNavLayer>.worldDev,#app.srHomeFullArena #screen .worldNavLayer>.worldDefis,#app.srHomeFullArena #screen .worldNavLayer>.worldMenu,#app.srHomeFullArena #screen .worldNavLayer>.worldRebirth{display:none!important}');
+    expect(nav).not.toContain("{label:'Rebirth',route:'rebirth'");
 
     expect(accomplishments).toContain("var oldProgress=SCREENS.developpement");
     expect(accomplishments).toContain("SCREENS.developpement=function()");
@@ -47,16 +47,18 @@ test.describe('duplicate-free permanent navigation', () => {
       return {
         development: visible('#app.srHomeFullArena .worldDev'),
         challenges: visible('#app.srHomeFullArena .worldDefis'),
-        menu: visible('#app.srHomeFullArena .worldMenu')
+        menu: visible('#app.srHomeFullArena .worldMenu'),
+        rebirth: visible('#app.srHomeFullArena .worldRebirth')
       };
     });
-    expect(homePermanent).toEqual({ development: 0, challenges: 0, menu: 0 });
+    expect(homePermanent).toEqual({ development: 0, challenges: 0, menu: 0, rebirth: 0 });
 
     await page.locator('#tabs > .tab[data-arg="developpement"]').click();
     await expect(page.locator('#topbar .title')).toHaveText('Progression');
     await expect(page.locator('[data-act="accomplishments"]')).toHaveCount(1);
+    await expect(page.locator('[data-act="go"][data-arg="rebirth"]')).toHaveCount(0);
 
-    for (const route of ['arbre', 'familiers', 'competences', 'defis', 'rebirth', 'ascension']) {
+    for (const route of ['arbre', 'familiers', 'competences', 'defis', 'ascension']) {
       expect(await page.locator(`[data-act="go"][data-arg="${route}"]`).count()).toBeLessThanOrEqual(1);
     }
 
