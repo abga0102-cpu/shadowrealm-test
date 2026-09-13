@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 
 test('Forge comparison surface does not block the game behind it', async ({ page }) => {
   await page.goto('/index.html?smoke=1');
-  await page.waitForFunction(() => !!document.getElementById('srForgeInteractionRecoveryV317Style'));
 
   await page.evaluate(() => {
     window.__forgeBehindClicks = 0;
@@ -17,7 +16,7 @@ test('Forge comparison surface does not block the game behind it', async ({ page
 
     const root = document.createElement('div');
     root.id = 'srForgeArenaPreview146';
-    root.style.cssText = 'position:fixed;left:20px;top:20px;width:120px;height:44px;z-index:8800;background:transparent';
+    root.style.cssText = 'position:fixed;left:20px;top:20px;width:120px;height:44px;z-index:8800;background:transparent;pointer-events:auto';
     root.innerHTML = '<div style="width:100%;height:100%"></div>';
     document.body.appendChild(root);
   });

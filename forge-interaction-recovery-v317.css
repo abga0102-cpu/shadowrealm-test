@@ -1,0 +1,22 @@
+/* Forge interaction recovery V317
+   Fixed comparison surfaces stay visually on top without swallowing taps meant
+   for the game underneath. Their own controls remain interactive. */
+#srForgeArenaPreview142,
+#srForgeArenaPreview143,
+#srForgeArenaPreview145,
+#srForgeArenaPreview146 {
+  pointer-events: none !important;
+  touch-action: auto !important;
+}
+
+#srForgeArenaPreview142 button,
+#srForgeArenaPreview142 [data-sr-fp],
+#srForgeArenaPreview143 button,
+#srForgeArenaPreview143 [data-sr-fp143],
+#srForgeArenaPreview145 button,
+#srForgeArenaPreview145 [data-sr-fp145],
+#srForgeArenaPreview146 button,
+#srForgeArenaPreview146 [data-sr-fp146] {
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
