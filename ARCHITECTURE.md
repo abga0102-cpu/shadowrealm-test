@@ -57,10 +57,10 @@ New version-suffixed patch files such as `*-v123.js` are prohibited by default. 
 
 The following files may remain in source history, but must not regain active ownership. Where listed as unloaded, they should not be requested by either static script tags or the deferred loader in `index.html`.
 
-- `social-forge-layout-v1.js` — dormant Home duplicate bundle; unloaded/non-executable.
+- `social-forge-layout-v1.js` — dormant Home duplicate bundle; retired from runtime and source.
 - `premium-recommendation-cleanup-v243.js` — recommendation visual override absorbed into `premium-ui-v209.js`; retired from runtime and source.
-- `bottom-nav-v53.js` — fantasy BottomNav decoration absorbed into canonical `bottom-nav-layout-v183.js`; source retained for history but unloaded from runtime.
-- `home-layout-fix-v119.js` — Home compatibility decoration absorbed into canonical `home-layout-authority-v219.js`; source retained for history but unloaded from runtime.
+- `bottom-nav-v53.js` — fantasy BottomNav decoration absorbed into canonical `bottom-nav-layout-v183.js`; retired from runtime and source.
+- `home-layout-fix-v119.js` — Home compatibility decoration absorbed into canonical `home-layout-authority-v219.js`; retired from runtime and source.
 - `hero-equipment-v1.js` — retired visual safety bridge formerly cleaning obsolete Hero Equipment artifacts after `drawArena`; retired from runtime and source after staged integration proof. Active hero animation/weapon presentation remains owned by the base arena renderer plus `combat-animation-v169.js`.
 - `notification-compact-v105.js` — its six compact reward-notification overrides are absorbed into `style.css`; retired from runtime and source after staged integration proof.
 - `forge-auto-batch-gate-v254.js`, `forge-auto-batch-gate-v258.js`, `forge-auto-batch-gate-v260.js`, `forge-auto-batch-gate-v261.js` — superseded Forge auto-batch gate chain retired from runtime and source; `forge-auto-batch-gate-v266.js` is the sole loaded gate owner.
@@ -69,14 +69,14 @@ The following files may remain in source history, but must not regain active own
 - `forge-entry-animation-v263.js`, `forge-entry-animation-v264.js` — superseded standalone Forge loot-entry animation history retired from runtime and source; `forge-ux-v273.js` owns current loot presentation and explicitly clears their historical style IDs.
 - `forge-ux-v261.js`, `forge-ux-v266.js`, `forge-ux-v268.js`, `forge-ux-v269.js`, `forge-ux-v270.js`, `forge-ux-v271.js`, `forge-ux-v272.js` — superseded later Forge loot-presentation lineage retired from source; loaded `forge-ux-v273.js` is the current event-driven owner.
 - `rebirth-scroll-stability-v220.js` — superseded Rebirth scroll-preservation layer retired from runtime and source; loaded `rebirth-scroll-natural-v221.js` explicitly replaces and suppresses V220.
-- `accomplishments-titles-v133.js` — compatibility marker only; unloaded.
+- `accomplishments-titles-v133.js` — compatibility marker only; retired from runtime and source.
 - `accomplishments-overview-v135.js` — compatibility marker only; unloaded.
 - `accomplishments-home-scope-v136.js` — compatibility marker only; unloaded.
 - `accomplishments-floors-v137.js` — compatibility marker only; unloaded.
 - `accomplishments-ui-v123.js` — suppressed legacy UI; unloaded.
-- `accomplishments-floor-comp-v141.js` — floor compensation ownership absorbed into V127; source retained as an inert compatibility marker and unloaded from runtime.
-- `tree-labels-v117.js` — clearer gold-node label ownership absorbed into V116; inert source retained for history but unloaded from runtime.
-- `tree-mastery-v120.js` — compatibility marker only; unloaded.
+- `accomplishments-floor-comp-v141.js` — floor compensation ownership absorbed into V127; retired from runtime and source after migration ownership moved to V127.
+- `tree-labels-v117.js` — clearer gold-node label ownership absorbed into V116; retired from runtime and source.
+- `tree-mastery-v120.js` — compatibility marker only; retired from runtime and source.
 - `tree-mastery-ui-v128.js` — compatibility marker only; unloaded.
 - `tree-mastery-v149.js` — retired from runtime and source; V216 owns active mastery behavior.
 - `tree-simple-v90.js` — unloaded historical simple renderer retired from source; V116 remains the sole dedicated Tree renderer.
