@@ -193,6 +193,6 @@ These later phases remain open until their evidence is recorded. A source count 
 
 Program baseline: V295 (`0344193a490a0f12d017a9a9ce1696de0dea487b`) at program start.
 
-Current first-party runtime remains **110 JavaScript files** (100 index-managed + 10 transitively loaded) in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
+Current first-party runtime is **105 JavaScript files** (95 index-managed + 10 transitively loaded) in the normal non-Social session. See `RUNTIME_INVENTORY.md` for the exhaustive loader list and conditional modes.
 
 L1 is complete at `main` after PR #151 (`231a8c81aa70f00f37cb66c9a7b1ffe2145a2733`). The L2 completion ledger now includes PRs #153, #154, #155, #158, #161, #163, #164, #166, #168 and #171. L4 now has its first production ownership transfer in the Social message-store family, with formatting, escaping and lifecycle helpers retained locally where consolidation would change semantics or increase coupling. Future lean-code production work should continue from fresh `main`; V83's broad observer cleanup and Secondary HUD V279's wrapper cleanup are complete, while Power Hint, Boot wave and audio still require their existing combat/save protections.
