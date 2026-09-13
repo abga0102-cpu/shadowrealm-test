@@ -27,6 +27,7 @@
     { id:'mk_competence', label:'Clé Raid Compétence', short:'Clé Compétence', raid:'competence',
       mastery:['n1_09','n1_12','n2_09','n2_12'] }
   ];
+  var MASTERY_IDS = KEY_DEFS.map(function(k){ return k.id; });
 
   TREE_NODES.forEach(function(n){
     if (n.effect === 'raidKey' && /^sp_key/.test(n.id)) {
@@ -62,14 +63,13 @@
       var rt = raw && raw.tree;
       if (!rt) return;
       var levels = rt.levels || {};
-      var masteryIds = ['mk_familier','mk_or','mk_minerai','mk_pe','mk_competence'];
       S.tree.levels = S.tree.levels || {};
-      masteryIds.forEach(function(id){
+      MASTERY_IDS.forEach(function(id){
         var saved = Number(levels[id] || 0);
         if (saved > 0 && TREE_BY_ID[id]) S.tree.levels[id] = Math.min(1, saved);
       });
 
-      if (!S.tree.active && masteryIds.indexOf(rt.active) >= 0 && TREE_BY_ID[rt.active]) {
+      if (!S.tree.active && MASTERY_IDS.indexOf(rt.active) >= 0 && TREE_BY_ID[rt.active]) {
         var end = Number(rt.activeEnd || 0);
         if (end > 0) {
           S.tree.active = rt.active;
@@ -82,6 +82,25 @@
     }
   }
   restoreMasteryProgress();
+
+  /* Keep the historical diagnostic API beside the mastery definitions it audits.
+     Raid reward ownership remains in V290; this function only observes it. */
+  window.__srTreeAudit = function(){
+    var issues = [];
+    MASTERY_IDS.forEach(function(id){
+      var n = TREE_BY_ID[id];
+      if (!n) { issues.push(id + ': absent'); return; }
+      if (!n.masteryKey || n.max !== 1) issues.push(id + ': définition invalide');
+      if (!Array.isArray(n.masteryReq) || !n.masteryReq.length) issues.push(id + ': prérequis absents');
+      (n.masteryReq || []).forEach(function(req){ if (!TREE_BY_ID[req]) issues.push(id + ': prérequis inconnu ' + req); });
+      if (!Array.isArray(n.times) || n.times[0] !== KEY_BASE_SECONDS) issues.push(id + ': durée base != 7 jours');
+    });
+    var pe1 = typeof raidReward === 'function' ? raidReward('evolution',1) : null;
+    var pe2 = typeof raidReward === 'function' ? raidReward('evolution',2) : null;
+    if (pe1 !== 100) issues.push('PE Raid Evolution niv1=' + pe1);
+    if (pe2 !== 103) issues.push('PE Raid Evolution niv2=' + pe2);
+    return { ok: issues.length === 0, issues: issues, peEvolution:[pe1,pe2] };
+  };
 
   var oldTreeReqOk = treeReqOk;
   treeReqOk = function(s,node){
