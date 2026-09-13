@@ -57,11 +57,20 @@ function clarify(root){
   equip.title='Équipe le nouvel objet et remet automatiquement l’ancien dans l’inventaire.';
  }
 }
+
+/* V151 used to observe the entire document.body forever and rerun two global
+   selectors after every child-list mutation. Forge/Home rendering is mutation-
+   heavy, so repeated forging amplified that observer until the browser main
+   thread became unresponsive. The comparison UI has a deterministic owner:
+   showForgeResult. Clarify exactly after that owner renders instead. */
 clarify(document);
-var observer=new MutationObserver(function(muts){
- for(var i=0;i<muts.length;i++){
-  if(muts[i].addedNodes&&muts[i].addedNodes.length){clarify(document);break;}
- }
-});
-try{observer.observe(document.body,{childList:true,subtree:true});}catch(_){}
+if(typeof showForgeResult==='function'){
+ var originalShowForgeResult=showForgeResult;
+ showForgeResult=function(){
+  var out=originalShowForgeResult.apply(this,arguments);
+  clarify(document);
+  return out;
+ };
+ try{window.showForgeResult=showForgeResult;}catch(_){}
+}
 })();
