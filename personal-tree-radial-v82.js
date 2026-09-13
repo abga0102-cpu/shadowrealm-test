@@ -10,21 +10,21 @@
   var KEY_BASE_SECONDS = 7 * 24 * 60 * 60;
   var KEY_COLOR = '#FFD65E';
   var KEY_DEFS = [
-    { id:'mk_familier', label:'Clé Raid Familier', short:'Clé Familier', raid:'familier', angle:-90,
+    { id:'mk_familier', label:'Clé Raid Familier', short:'Clé Familier', raid:'familier',
       mastery:['n1_13','n1_14','n2_13','n2_14'] },
-    { id:'mk_or', label:'Clé Raid Or', short:'Clé Or', raid:'or', angle:-18,
+    { id:'mk_or', label:'Clé Raid Or', short:'Clé Or', raid:'or',
       mastery:['n1_06','n1_07','n2_06','n2_07'] },
     /* Le jeu n'a pas de bonus Minerai direct dans cet arbre. La Forge reste donc
        la maîtrise Minerais par nécessité économique, mais son placement reste
        celui d'un satellite afin de ne pas prétendre que Forge = Minerais. */
-    { id:'mk_minerai', label:'Clé Raid Minerais', short:'Clé Minerais', raid:'minerai', angle:54,
+    { id:'mk_minerai', label:'Clé Raid Minerais', short:'Clé Minerais', raid:'minerai',
       mastery:['n1_01','n1_02','n2_01','n2_02'] },
     /* PE possède moins de familles réelles que les autres spécialisations. On
        utilise donc ses trois occurrences réelles I-II-III plutôt que d'imposer
        un satellite Recherche qui rendrait cette route artificiellement obligatoire. */
-    { id:'mk_pe', label:'Clé Raid PE', short:'Clé PE', raid:'evolution', angle:126,
+    { id:'mk_pe', label:'Clé Raid PE', short:'Clé PE', raid:'evolution',
       mastery:['n1_30','n2_30','n3_30'] },
-    { id:'mk_competence', label:'Clé Raid Compétence', short:'Clé Compétence', raid:'competence', angle:198,
+    { id:'mk_competence', label:'Clé Raid Compétence', short:'Clé Compétence', raid:'competence',
       mastery:['n1_09','n1_12','n2_09','n2_12'] }
   ];
 

@@ -30,6 +30,7 @@ test.describe('Tree renderer historical source retirement', () => {
     expect(topology).not.toContain('function escSvg');
     expect(topology).not.toContain('.srRadialTree');
     expect(topology).not.toContain("document.createElement('style')");
+    expect(topology).not.toMatch(/\bangle\s*:/);
 
     expect(owner).toContain('__srTreeDedicatedV116');
     expect(owner).toContain('treeGraph=dedicatedGraph');
