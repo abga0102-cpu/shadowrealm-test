@@ -11,8 +11,9 @@ function src(file) {
 test.describe('Accomplishments V121 ownership', () => {
   test.skip(({ project }) => project.name !== 'chromium-desktop', 'source ownership is engine-independent');
 
-  test('V139/V140 own UI and claims while V121 keeps state/event compatibility only', () => {
+  test('V139/V140 own UI and claims, V127 owns migration, and V121 keeps event compatibility only', () => {
     const legacy = src('accomplishments-v121.js');
+    const migrations = src('accomplishments-reward-fix-v127.js');
     const ui = src('accomplishments-canonical-v139.js');
     const claims = src('accomplishments-claim-v140.js');
 
@@ -22,10 +23,14 @@ test.describe('Accomplishments V121 ownership', () => {
     expect(legacy).not.toMatch(/function\s+row\s*\(/);
     expect(legacy).not.toMatch(/function\s+rewardText\s*\(/);
     expect(legacy).not.toMatch(/ACT\.accomplishments\s*=/);
-    expect(legacy).toContain('V121 intentionally owns no Accomplishments renderer or payout path');
+    expect(legacy).not.toContain('v121Migrated');
+    expect(legacy).not.toContain('Object.values(s.raids||{})');
+    expect(legacy).toContain('V121 intentionally owns no Accomplishments renderer, payout, or save migration path');
     expect(legacy).toContain('showRaidResult=function');
     expect(legacy).toContain('ACT.fuse=');
 
+    expect(migrations).toContain('function normalizeLegacyProgress(s){');
+    expect(migrations).toContain('normalizeLegacyProgress(migrated)');
     expect(ui).toContain('ACT.accomplishments=function()');
     expect(ui).toContain('installSettingsEntry');
     expect(claims).toMatch(/function\s+grant\s*\(/);
