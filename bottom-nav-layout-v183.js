@@ -83,7 +83,6 @@
         {label:'Familiers',route:'familiers',icon:'crown'},
         {label:'Compétences',route:'competences',icon:'bolt'},
         {label:'Défis',route:'defis',icon:'flame'},
-        {label:'Rebirth',route:'rebirth',icon:'cycle'},
         {label:'Ascension',route:'ascension',icon:'star'}
       ]);};
     }
@@ -113,8 +112,7 @@
     .srNavHubGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
     .srNavHubItem{width:100%!important;justify-content:flex-start!important;text-align:left!important;min-height:36px!important}
     .srNavHubSection{margin:9px 0 6px!important}
-    #app.srHomeFullArena .worldDev,#app.srHomeFullArena .worldDefis,#app.srHomeFullArena .worldMenu{display:none!important}
-    #app.srHomeFullArena .worldRebirth:not(:has(.worldDot)){display:none!important}
+    #app.srHomeFullArena #screen .worldNavLayer>.worldDev,#app.srHomeFullArena #screen .worldNavLayer>.worldDefis,#app.srHomeFullArena #screen .worldNavLayer>.worldMenu,#app.srHomeFullArena #screen .worldNavLayer>.worldRebirth{display:none!important}
   `;
   document.head.appendChild(fantasyStyle);
   window.__srDecorateBottomNavPhase2A=decorate;
