@@ -78,12 +78,14 @@ test('V82 restores an in-progress mastery-key research only when the migrated st
   expect(occupied.tree.activeEnd).toBe(987);
 });
 
-test('V82 owns legacy mastery restoration while V83 remains audit-only', async ({}, testInfo) => {
+test('V82 owns mastery compatibility and audit while V83 is inert pending loader retirement', async ({}, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Ownership contract is engine-independent.');
 
   expect(v82).toContain("localStorage.getItem('shadowreach.save.local')");
   expect(v82).toContain('function restoreMasteryProgress(){');
+  expect(v82).toContain('window.__srTreeAudit = function(){');
   expect(v83).not.toContain('restoreMasteryProgress');
   expect(v83).not.toContain('localStorage.getItem');
-  expect(v83).toContain('window.__srTreeAudit = function(){');
+  expect(v83).not.toContain('window.__srTreeAudit = function(){');
+  expect(v83).toContain('Compatibility marker only');
 });
