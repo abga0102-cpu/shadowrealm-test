@@ -17,6 +17,13 @@ test('Weekly Mega panel follows canonical render lifecycle without a UI poller',
 
   await page.goto('/index.html');
   await page.waitForFunction(() => typeof S !== 'undefined' && S && typeof S === 'object' && typeof nav === 'function');
+  await page.evaluate(() => {
+    if (typeof clearTutorialGuide === 'function') clearTutorialGuide();
+    const card = document.getElementById('tutorialCard');
+    if (card) card.remove();
+    S.tutorial = null;
+  });
+  await expect(page.locator('#tutorialCard')).toHaveCount(0);
 
   await page.evaluate(() => nav('mega'));
   await expect(page.locator('#megaWeeklyV117')).toHaveCount(1);

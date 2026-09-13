@@ -12,6 +12,13 @@ async function openCleanGame(page) {
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
   await page.waitForFunction(() => window.__srForgeMasterStageFlowV316 === true);
+  await page.evaluate(() => {
+    if (typeof clearTutorialGuide === 'function') clearTutorialGuide();
+    const card = document.getElementById('tutorialCard');
+    if (card) card.remove();
+    S.tutorial = null;
+  });
+  await expect(page.locator('#tutorialCard')).toHaveCount(0);
 }
 
 test('V316 campaign keeps 400 internal stages with local visible chapter notation', async ({ page }) => {
