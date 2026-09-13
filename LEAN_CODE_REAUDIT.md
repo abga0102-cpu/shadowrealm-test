@@ -1,6 +1,6 @@
 # Lean-code remaining-work audit
 
-Audit refreshed: 2026-09-13. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `dd73f29902fe45a061adf7f4bee07247aad684cc` (PR #209 merged).
+Audit refreshed: 2026-09-13. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `b6daf686fc437ad694f9c525e165df709f2cb28e` (PR #214 merged).
 
 This file records the current remaining-work disposition after the proof-based L1 audit and subsequent L2/L3/L4/L5 passes. **L1 is complete.** L2, L3, L4 and staged L5 remain open and evidence-driven.
 
@@ -52,6 +52,8 @@ Stable ownership already consolidated includes:
 - reward notification base styling in `style.css`;
 - Forge presentation split explicitly between V266 panel/batch owners and V273 loot UX.
 
+Tree ownership was narrowed further under PRs #213/#214: `personal-tree-radial-v82.js` no longer owns a duplicate renderer, renderer helper family, injected presentation CSS, or renderer-only angle metadata. Its surviving responsibility is now explicit topology/mastery-key compatibility, while V116 remains the renderer and V216 remains the live mastery-gating/popup authority.
+
 Do not collapse durable boundaries merely to reduce file count. In particular, keep future Accomplishments payouts separate from old-save compensation and avoid Forge/Familiar/combat ownership transfers while active feature work is changing the same owners.
 
 ## L4 shared-utility disposition
@@ -83,6 +85,7 @@ The proposed V247 production consolidation stays deferred while #204 owns the lo
 | L2 Power Hint lifecycle | Campaign-death recovery is deterministic; the owner must remain passive with respect to canonical combat-end recovery. | Require an existing deterministic combat lifecycle; do not re-wrap `handleCombatEnd`. |
 | L2 Audio | Migration/reward/edge semantics are contract-locked; 50 ms combat observer remains. | Remove only when an existing canonical combat owner exposes equivalent attack/skill/result events and ordering. |
 | L2 Boot wave observer | Child-list observation still supplies live wave presentation. | Require explicit deterministic wave-transition lifecycle plus wave/death recovery coverage. |
+| L3 Tree topology | PRs #213/#214 removed V82's duplicate renderer and renderer-only metadata; V82 now has an explicit topology/mastery-key compatibility boundary. | Preserve V82 while that compatibility/topology responsibility remains live; do not force file-count consolidation across V116/V216 boundaries. |
 | L3 Tree presentation | V247 is presentation-only and has a proof PR, but loader removal intersects active #204. | Reassess after #204 resolves; then require focused ownership proof plus the production runtime gate. |
 | L3 Forge/progression | Active PRs #204/#205 own this surface. | Defer until feature work settles, then refresh ownership from latest `main`. |
 | L4 shared helpers | Social store transfer is complete; other audited helpers intentionally differ. | Reopen only for a genuinely identical helper family with measurable reduction and no new coupling. |
