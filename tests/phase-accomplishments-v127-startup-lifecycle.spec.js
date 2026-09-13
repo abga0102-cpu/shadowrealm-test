@@ -12,6 +12,8 @@ test.describe('Accomplishments V127 bounded startup lifecycle', () => {
     const code = src('accomplishments-reward-fix-v127.js');
 
     expect(code).toContain('window.migrate=function()');
+    expect(code).toContain('normalizeLegacyProgress(S);');
+    expect(code).toContain('normalizeLegacyProgress(migrated)');
     expect(code).toContain('compensateRaid100(migrated)');
     expect(code).toContain('compensateLegacyFloors(migrated)');
     expect(code).toContain('compensateCurrentState();');
