@@ -278,6 +278,7 @@ try{
       if(!had){try{delete s.onboardingV317;}catch(_){ }}
       v317Apply(s);return s;
     };
+    if(oldMigrateV317.__srV299)migrate.__srV299=oldMigrateV317.__srV299;
     migrate.__srV317=true;migrate.__srPrevious=oldMigrateV317;
   }
 }catch(_){ }
