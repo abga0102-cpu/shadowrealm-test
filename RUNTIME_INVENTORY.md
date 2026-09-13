@@ -6,19 +6,19 @@ Snapshot base before the Home V119 consolidation: `main` at `b5c43fedc700ffebc5e
 
 ## Loader totals
 
-- 87 scripts are loaded synchronously through static `<script src>` entries.
+- 86 scripts are loaded synchronously through static `<script src>` entries.
 - 7 additional core UI scripts are loaded after startup in the default non-Social session.
-- Index-managed subtotal: **94 JavaScript files**.
+- Index-managed subtotal: **93 JavaScript files**.
 - 10 additional scripts are loaded transitively by `familiars-noscr-v231.js`.
-- Default first-party runtime total: **104 JavaScript files**.
-- Social adds `social-v1.js` and `social-p2p-v1.js`: **106** first-party files when Social is enabled.
-- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **108** first-party files in that optional mode.
+- Default first-party runtime total: **103 JavaScript files**.
+- Social adds `social-v1.js` and `social-p2p-v1.js`: **105** first-party files when Social is enabled.
+- Bot Testers adds `social-bot-testers-v5.js` and `social-bot-ui-v1.js` on top of Social: **107** first-party files in that optional mode.
 
 The older 106-file V309-era baseline was reduced to 105 by BottomNav consolidation, then to 104 by Home V119 consolidation, then to 103 by unloading retired Accomplishments V141. After the staged V117 ownership transfer passed PR and post-merge regression, unloading inert Tree V117 reduced the static runtime to 95 entries and the normal non-Social runtime to 102 files. Unloading the retired Hero Equipment visual bridge reduces the static runtime to 94 entries and the normal non-Social runtime to 101 files.
 
-Absorbing the V105 notification CSS into `style.css` then reduces the static runtime to 93 entries and the normal runtime to 100 index-managed files. Unloading superseded Dust chance authorities V292 and V300 leaves V301 as the sole loaded chance owner, reducing the static runtime again to 91 entries and the index-managed normal runtime to 98 files. Their obsolete source files were subsequently retired after the V301-only runtime passed the full regression gate. Unloading the superseded Familiar stock bridge V274 leaves V275 as the sole loaded stock/summon authority and reduces the static runtime to 90 entries and the index-managed normal runtime to 97 files. The obsolete V274 source was then retired after the V275-only runtime passed its full regression gate. Retiring the inert Familiar V230 QA stub reduces the static runtime to 89 entries and the index-managed normal runtime to 96 files. Unloading the superseded Familiar V229 renderer reduces the static runtime to 88 entries and the index-managed normal runtime to 95 files; the live Familiar screen remains on the V240+ `SCREENS.familiers` chain. Its obsolete source was subsequently retired after the V240+-only runtime passed the exact-head regression gate. Unloading the inert Tree V83 compatibility marker reduces the static runtime to **87 entries**, the index-managed normal runtime to **94 files**, and the complete normal-session first-party runtime to **104 files**; V82 already owns mastery-key definitions, legacy-save restoration and the historical `__srTreeAudit` API.
+Absorbing the V105 notification CSS into `style.css` then reduces the static runtime to 93 entries and the normal runtime to 100 index-managed files. Unloading superseded Dust chance authorities V292 and V300 leaves V301 as the sole loaded chance owner, reducing the static runtime again to 91 entries and the index-managed normal runtime to 98 files. Their obsolete source files were subsequently retired after the V301-only runtime passed the full regression gate. Unloading the superseded Familiar stock bridge V274 leaves V275 as the sole loaded stock/summon authority and reduces the static runtime to 90 entries and the index-managed normal runtime to 97 files. The obsolete V274 source was then retired after the V275-only runtime passed its full regression gate. Retiring the inert Familiar V230 QA stub reduces the static runtime to 89 entries and the index-managed normal runtime to 96 files. Unloading the superseded Familiar V229 renderer reduces the static runtime to 88 entries and the index-managed normal runtime to 95 files; the live Familiar screen remains on the V240+ `SCREENS.familiers` chain. Its obsolete source was subsequently retired after the V240+-only runtime passed the exact-head regression gate. Unloading the inert Tree V83 compatibility marker reduces the static runtime to **87 entries**, the index-managed normal runtime to **94 files**, and the complete normal-session first-party runtime to **104 files**; V82 already owns mastery-key definitions, legacy-save restoration and the historical `__srTreeAudit` API. Folding the presentation-only V247/V250 spectacle CSS into canonical `tree-dedicated-v116.js` and unloading `personal-tree-spectacle-v247.js` reduces the static runtime to **86 entries**, the index-managed normal runtime to **93 files**, and the complete normal-session first-party runtime to **103 files**.
 
-The earlier totals above counted only scripts managed by `index.html`; they omitted the ten-script nested Familiar loader. The full current normal-session first-party count is therefore 104. Social may additionally import third-party network modules; those are not included in the first-party counts.
+The earlier totals above counted only scripts managed by `index.html`; they omitted the ten-script nested Familiar loader. The full current normal-session first-party count is therefore 103. Social may additionally import third-party network modules; those are not included in the first-party counts.
 
 ## Static loader inventory
 
@@ -88,9 +88,9 @@ Reason: active Sanctuary/Forge presentation, migration, balance and equipment au
 - `forge-panel-authority-v266.js`
 - `forge-auto-batch-gate-v266.js`
 
-### Tree, core UI and guidance — 14
+### Tree, core UI and guidance — 13
 
-Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Known retired Tree mastery shells are already unloaded; `runtime-tree-stability-v216.js` is the active mastery owner. `tree-dedicated-v116.js` owns the clearer `Gain d’Or I–IV` labels; the inert V117 marker is unloaded. Tree V83 is also unloaded after V82 absorbed its final mastery-save/audit responsibilities and the source became behavior-free.
+Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Known retired Tree mastery shells are already unloaded; `runtime-tree-stability-v216.js` is the active mastery owner. `tree-dedicated-v116.js` owns the clearer `Gain d’Or I–IV` labels and the V247/V250 spectacle presentation; the inert V117 marker, Tree V83 and standalone V247 presentation layer are unloaded.
 
 - `personal-tree-radial-v82.js`
 - `weekly-mega-v71.js`
@@ -102,7 +102,6 @@ Reason: active Tree/UI/tutorial/notification/raid guidance responsibilities. Kno
 - `tree-research-v122.js`
 - `tree-dedicated-v116.js`
 - `runtime-tree-stability-v216.js`
-- `personal-tree-spectacle-v247.js`
 - `raid-intro-balance-v107.js`
 - `power-hint-v108.js`
 - `boot-stability-v115.js`
@@ -180,14 +179,14 @@ Reason: loaded after startup by the deferred `core` chain. Home V219 is now the 
 
 ## Conditional optional loader entries — 4
 
-Reason: loaded only when their feature flag is enabled and therefore excluded from the 104-file first-party normal-session total.
+Reason: loaded only when their feature flag is enabled and therefore excluded from the 103-file first-party normal-session total.
 
 - Social: `social-v1.js`, `social-p2p-v1.js`
 - Bot Testers, only with Social: `social-bot-testers-v5.js`, `social-bot-ui-v1.js`
 
 ## Already retired/unloaded
 
-The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `tree-safety-v83.js` (inert compatibility marker; runtime unloaded after V82 absorbed its final mastery-save/audit responsibilities, with source retained pending staged retirement proof), `hero-equipment-v1.js` (retired visual safety bridge; source retired after staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, `notification-compact-v105.js` (source retired after staged proof), the retired recommendation override, the superseded Dust chance layers V292/V300 (both runtime loads and source files retired after V301-only regression proof), the superseded Familiar stock layer V274 (both runtime load and source file retired after V275-only regression proof), `familiars-qa-v230.js` (inert QA marker stub; runtime and source retired), and `familiars-ui-v229.js` (superseded renderer; runtime and source retired after V240+-only regression proof). They must not silently re-enter either the static loader or deferred chains.
+The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded examples include Accomplishments legacy shells including V141, Tree mastery V120/V128/V213, Tree labels V117, the historical V90 renderer, `tree-safety-v83.js` (inert compatibility marker; runtime unloaded after V82 absorbed its final mastery-save/audit responsibilities, with source retained pending staged retirement proof), `personal-tree-spectacle-v247.js` (presentation-only V247/V250 layer; runtime ownership absorbed into V116, with source retained pending staged L5 retirement proof), `hero-equipment-v1.js` (retired visual safety bridge; source retired after staged proof), `social-forge-layout-v1.js`, `bottom-nav-v53.js`, `home-layout-fix-v119.js`, `notification-compact-v105.js` (source retired after staged proof), the retired recommendation override, the superseded Dust chance layers V292/V300 (both runtime loads and source files retired after V301-only regression proof), the superseded Familiar stock layer V274 (both runtime load and source file retired after V275-only regression proof), `familiars-qa-v230.js` (inert QA marker stub; runtime and source retired), and `familiars-ui-v229.js` (superseded renderer; runtime and source retired after V240+-only regression proof). They must not silently re-enter either the static loader or deferred chains.
 
 ## L0 conclusion
 
