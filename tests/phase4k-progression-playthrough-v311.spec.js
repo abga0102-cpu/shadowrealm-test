@@ -35,9 +35,9 @@ test('V311 fresh save has a usable progression runway without retired systems', 
   });
 
   expect(result.level).toBe(1);
-  expect(result.minerai).toBe(400);
+  expect(result.minerai).toBe(250);
   expect(result.forgeCraftCost).toBe(10);
-  expect(result.starterForgeCrafts).toBe(40);
+  expect(result.starterForgeCrafts).toBe(25);
   expect(result.skillSlots).toBe(3);
   expect(result.eggSlots).toBe(2);
   expect(result.raidUnlockLevel).toBe(5);

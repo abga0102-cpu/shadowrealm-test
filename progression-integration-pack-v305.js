@@ -3,8 +3,9 @@
    - retired Familiar Apple progression must not create Apple refunds through fusion/Ascension;
    - retired Rebirth must never appear as a tutorial step;
    - exported Familiar stat previews/tests must read the state being evaluated, not live S;
-   - V316 progression gates: Forge unlocks at hero level 3, Skills at hero level 4.
-   No rarity curve, resource cost, owned equipment stat, floor balance or save schema is changed. */
+   - V316 progression gates: Forge unlocks at hero level 3, Skills at hero level 4;
+   - V317 preserves those gates and makes the first Forge -> Raid resource loop explicit.
+   No rarity curve, owned equipment stat or floor balance is changed. */
 (function(){'use strict';
 if(window.__srProgressionIntegrationV305)return;window.__srProgressionIntegrationV305=true;
 
@@ -211,6 +212,119 @@ try{window.addEventListener('load',function(){requestAnimationFrame(decorateUnlo
 setTimeout(decorateUnlocks,0);
 window.__srProgressionUnlocksV316={forge:FORGE_UNLOCK_LEVEL,skills:SKILL_UNLOCK_LEVEL,forgeUnlocked:forgeUnlocked,skillsUnlocked:skillsUnlocked};
 
+/* ---------- V317 Forge -> Raid onboarding ---------- */
+var V317_START_MINERAI=250,V317_LEGACY_START=400,V317_FRESH_MS=5*60*1000;
+var V317_LEGACY_RAID_LEVEL=(typeof RULES!=='undefined'&&Number(RULES.RAID_UNLOCK_LEVEL))||5;
+function v317HeroLevel(s){return Math.max(1,Math.floor(Number(s&&s.level)||1));}
+function v317CraftCost(s){try{return Math.max(1,Number(forgeCost(s&&s.forge?s.forge.level:1))||10);}catch(_){return 10;}}
+function v317NoEquipmentProgress(s){
+  try{if((s.inventory||[]).length)return false;return !Object.keys(s.equipped||{}).some(function(k){return !!s.equipped[k];});}catch(_){return false;}
+}
+function v317BrandNewLegacyDefault(s){
+  if(!s)return false;
+  var age=Date.now()-(Number(s.firstSeen)||0);
+  return age>=0&&age<=V317_FRESH_MS&&v317HeroLevel(s)===1&&Number(s.floor||1)===1&&
+    Number(s.exp||0)===0&&Number(s.statPoints||0)===0&&Number(s.minerai||0)===V317_LEGACY_START&&
+    Number(s.forge&&s.forge.summonCount||0)===0&&v317NoEquipmentProgress(s);
+}
+function v317HasRaidHistory(s){
+  try{
+    if(s.tutorial&&s.tutorial.seen&&s.tutorial.seen.raid)return true;
+    var ids=(typeof RAID_IDS!=='undefined'&&RAID_IDS)||Object.keys(s.raids||{});
+    return ids.some(function(id){var r=s.raids&&s.raids[id];return !!r&&(Number(r.record||0)>0||Number(r.level||1)>1||Number(r.stars||0)>0);});
+  }catch(_){return false;}
+}
+function v317RaidUnlockedRaw(s){return !!(s&&s.onboardingV317&&s.onboardingV317.raidUnlocked);}
+function v317SyncRaidGate(s){
+  try{if(typeof RULES!=='undefined'&&RULES)RULES.RAID_UNLOCK_LEVEL=v317RaidUnlockedRaw(s)?1:V317_LEGACY_RAID_LEVEL;}catch(_){ }
+}
+function v317Apply(s){
+  if(!s)return false;
+  var changed=false;
+  if(!s.onboardingV317||typeof s.onboardingV317!=='object'){
+    var legacy=v317HeroLevel(s)>=V317_LEGACY_RAID_LEVEL||v317HasRaidHistory(s);
+    s.onboardingV317={startMineralsApplied:false,raidUnlocked:!!legacy,raidUnlockedReason:legacy?'legacy':''};
+    changed=true;
+  }
+  var o=s.onboardingV317;
+  if(!o.startMineralsApplied&&v317BrandNewLegacyDefault(s)){
+    s.minerai=V317_START_MINERAI;o.startMineralsApplied=true;changed=true;
+  }
+  if(!o.startMineralsApplied&&Number(s.minerai||0)===V317_START_MINERAI&&v317HeroLevel(s)===1&&
+      Number(s.floor||1)===1&&Number(s.forge&&s.forge.summonCount||0)===0&&
+      Date.now()-(Number(s.firstSeen)||0)<=V317_FRESH_MS){o.startMineralsApplied=true;changed=true;}
+  if(!o.raidUnlocked&&v317HeroLevel(s)>=FORGE_UNLOCK_LEVEL&&Number(s.minerai||0)<v317CraftCost(s)){
+    o.raidUnlocked=true;o.raidUnlockedReason='minerai';o.raidUnlockedAt=Date.now();changed=true;
+  }
+  try{if(typeof S!=='undefined'&&s===S)v317SyncRaidGate(s);}catch(_){ }
+  return changed;
+}
+function v317RaidUnlocked(s){v317Apply(s);return v317RaidUnlockedRaw(s);}
+function v317RaidTutorial(){return {key:'raid',title:'Raids débloqués',sub:"Tu n’as plus assez de Minerai pour forger. Ouvre Défis, puis Raids et lance le Raid Minerai pour refaire tes réserves."};}
+
+try{
+  if(typeof defaultState==='function'&&!defaultState.__srV317){
+    var oldDefaultStateV317=defaultState;
+    defaultState=function(){var s=oldDefaultStateV317.apply(this,arguments);s.minerai=V317_START_MINERAI;s.onboardingV317={startMineralsApplied:true,raidUnlocked:false,raidUnlockedReason:''};return s;};
+    defaultState.__srV317=true;defaultState.__srPrevious=oldDefaultStateV317;
+  }
+}catch(_){ }
+try{
+  if(typeof migrate==='function'&&!migrate.__srV317){
+    var oldMigrateV317=migrate;
+    migrate=function(){
+      var raw=arguments[0],had=!!(raw&&raw.onboardingV317&&typeof raw.onboardingV317==='object');
+      var s=oldMigrateV317.apply(this,arguments);
+      if(!had){try{delete s.onboardingV317;}catch(_){ }}
+      v317Apply(s);return s;
+    };
+    if(oldMigrateV317.__srV299)migrate.__srV299=oldMigrateV317.__srV299;
+    migrate.__srV317=true;migrate.__srPrevious=oldMigrateV317;
+  }
+}catch(_){ }
+try{
+  if(typeof loadSave==='function'&&!loadSave.__srV317){
+    var oldLoadSaveV317=loadSave;
+    loadSave=function(){var s=oldLoadSaveV317.apply(this,arguments);if(s)v317Apply(s);return s;};
+    loadSave.__srV317=true;loadSave.__srPrevious=oldLoadSaveV317;
+  }
+}catch(_){ }
+try{
+  if(typeof forgeSummon==='function'&&!forgeSummon.__srV317){
+    var oldForgeSummonV317=forgeSummon;
+    forgeSummon=function(){
+      var wasUnlocked=false;try{wasUnlocked=typeof S!=='undefined'&&S?v317RaidUnlockedRaw(S):false;}catch(_){ }
+      var out=oldForgeSummonV317.apply(this,arguments),changed=false;
+      try{if(typeof S!=='undefined'&&S)changed=v317Apply(S);}catch(_){ }
+      if(changed){try{if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}catch(_){ }}
+      if(!wasUnlocked&&typeof S!=='undefined'&&S&&v317RaidUnlockedRaw(S)){try{if(typeof checkTutorial==='function')setTimeout(checkTutorial,180);}catch(_){ }}
+      return out;
+    };
+    forgeSummon.__srV317=true;forgeSummon.__srPrevious=oldForgeSummonV317;
+  }
+}catch(_){ }
+try{
+  if(typeof pendingTutorialStep==='function'&&!pendingTutorialStep.__srV317){
+    var oldPendingTutorialV317=pendingTutorialStep;
+    pendingTutorialStep=function(){
+      v317Apply(S);
+      var step=oldPendingTutorialV317.apply(this,arguments),unlocked=v317RaidUnlockedRaw(S);
+      if(step&&step.key==='raid'){
+        if(!unlocked)return null;
+        return S.onboardingV317.raidUnlockedReason==='minerai'?v317RaidTutorial():step;
+      }
+      if(step)return step;
+      var seen=S.tutorial&&S.tutorial.seen;
+      if(unlocked&&seen&&!seen.raid&&S.onboardingV317.raidUnlockedReason==='minerai')return v317RaidTutorial();
+      return null;
+    };
+    pendingTutorialStep.__srV317=true;pendingTutorialStep.__srPrevious=oldPendingTutorialV317;
+  }
+}catch(_){ }
+window.__srV317EnsureOnboarding=function(s){v317Apply(s);return s;};
+window.__srV317RaidUnlocked=v317RaidUnlocked;
+window.__srForgeRaidOnboardingConfigV317={startMinerai:V317_START_MINERAI,craftCost:10,paidCraftsBeforeRaid:25,forgeUnlockLevel:FORGE_UNLOCK_LEVEL,legacyRaidLevel:V317_LEGACY_RAID_LEVEL};
+
 /* ---------- State-aware Familiar stat helper ---------- */
 var PET_BASE={COMMUN:[1500,12000],PEU_COMMUN:[5000,40000],RARE:[20000,160000],EPIQUE:[120000,960000],MYTHIQUE:[900000,7200000],ANCESTRAL:[7000000,56000000],LEGENDAIRE:[70000000,560000000],DIVIN:[544000000,4350000000]};
 var PET_SPEC={loup:[1.40,.65],felin:[1.20,.85],dragonnet:[1,1],oiseau:[.70,1.40]};
@@ -230,10 +344,11 @@ window.__srV286PetStats=petStats;
 
 try{
   if(typeof S!=='undefined'&&S){
+    var onboardingChanged=v317Apply(S);
     S.progressionIntegrationVersion=305;
     if(typeof computePower==='function')S.power=computePower(S);
     if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);
-    if(typeof saveNow==='function')saveNow();
+    if(typeof saveNow==='function'&&onboardingChanged)saveNow();
     if(typeof scheduleRender==='function')scheduleRender();
   }
 }catch(_){ }
@@ -243,7 +358,9 @@ window.__srProgressionIntegrationConfigV305={
   rebirthTutorial:false,
   stateAwareFamiliarPreview:true,
   unlocks:{forge:FORGE_UNLOCK_LEVEL,skills:SKILL_UNLOCK_LEVEL},
+  forgeRaidOnboardingV317:true,
+  startMinerai:V317_START_MINERAI,
   destructiveMigration:false,
-  saveSchemaChanged:false
+  saveSchemaChanged:true
 };
 })();
