@@ -1,8 +1,9 @@
-/* Shadowreach v127 - Accomplishment legacy reward migrations · Lean L3
+/* Shadowreach v127 - Accomplishment legacy migrations · Lean L3
+   - Owns historical Accomplishments state normalization formerly split with V121.
    - Adds the missing 10-minute accelerator definition so rb50 rewards are usable.
    - Compensates legacy Raid 100 claims to the validated total without double-paying.
    - Owns the legacy floor25/floor50/floor75 make-good formerly implemented by V141.
-   - Applies legacy compensation at boot and whenever migrate(...) processes a save.
+   - Applies legacy normalization/compensation at boot and whenever migrate(...) processes a save.
    Canonical future claims are owned by accomplishments-claim-v140.js. */
 (function(){
 'use strict';
@@ -24,6 +25,22 @@ function ensureAcc(s){
   var a=s.accomplishments;
   if(!a.claimed||typeof a.claimed!=='object')a.claimed={};
   if(!a.mergePieces||typeof a.mergePieces!=='object')a.mergePieces={};
+  return a;
+}
+
+/* V121 historically reconstructed these progress fields before installing its
+   live event hooks. Keep the exact conservative defaults, but place durable
+   old-save normalization beside the other Accomplishments boot/import migrations. */
+function normalizeLegacyProgress(s){
+  if(!s)return null;
+  var a=ensureAcc(s);
+  if(typeof a.raidWins!=='number'){
+    a.raidWins=Object.values(s.raids||{}).reduce(function(n,r){
+      return n+Math.max(0,Number(r&&r.record)||0);
+    },0);
+  }
+  if(typeof a.fusedPetRank!=='number')a.fusedPetRank=-1;
+  if(!a.v121Migrated)a.v121Migrated=true;
   return a;
 }
 
@@ -88,6 +105,7 @@ function compensateLegacyFloors(s){
 function compensateCurrentState(){
   try{
     if(typeof S==='undefined'||!S)return false;
+    normalizeLegacyProgress(S);
     var raidChanged=compensateRaid100(S);
     var floors=compensateLegacyFloors(S);
     var changed=raidChanged||floors.changed;
@@ -107,12 +125,13 @@ function compensateCurrentState(){
 }
 
 /* Save import V207 resolves the global migrate(...) function when a file is
-   processed. Chaining that deterministic lifecycle gives both historical reward
-   migrations the same durable import path without separate runtime wrappers. */
+   processed. Chaining that deterministic lifecycle gives historical progress
+   normalization and reward migrations the same durable import path. */
 var nativeMigrate=typeof window.migrate==='function'?window.migrate:null;
 if(nativeMigrate){
   window.migrate=function(){
     var migrated=nativeMigrate.apply(this,arguments);
+    try{normalizeLegacyProgress(migrated);}catch(_){}
     try{compensateRaid100(migrated);}catch(_){}
     try{compensateLegacyFloors(migrated);}catch(_){}
     return migrated;
