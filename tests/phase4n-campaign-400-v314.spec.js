@@ -13,9 +13,10 @@ async function openCleanGame(page) {
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
   await page.waitForFunction(() => window.__srForgeMasterStageFlowV316 === true);
   await page.evaluate(() => {
-    S.settings = S.settings || {};
-    S.settings.tutorials = false;
-    if (typeof checkTutorial === 'function') checkTutorial();
+    if (typeof clearTutorialGuide === 'function') clearTutorialGuide();
+    const card = document.getElementById('tutorialCard');
+    if (card) card.remove();
+    S.tutorial = null;
   });
   await expect(page.locator('#tutorialCard')).toHaveCount(0);
 }
