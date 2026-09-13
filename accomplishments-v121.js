@@ -24,5 +24,6 @@
   }
   const oldFuse=ACT.fuse;
   ACT.fuse=(a)=>{const before=(S.pets||[]).map(p=>p.id);oldFuse(a);const after=(S.pets||[]).filter(p=>before.indexOf(p.id)<0);if(after.length){const best=Math.max.apply(null,after.map(p=>RANK[p.rarity]??-1));if(best>=0)update(s=>{const x=acc(s);const current=typeof x.fusedPetRank==='number'?x.fusedPetRank:-1;x.fusedPetRank=Math.max(current,best);});}};
-  /* V121 intentionally owns no Accomplishments renderer, payout, or save migration path. */
+  /* V121 intentionally owns no Accomplishments renderer or payout path.
+     Durable save migration is owned by V127; V121 has no save migration path. */
 })();

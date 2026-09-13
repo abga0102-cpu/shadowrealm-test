@@ -25,7 +25,8 @@ test.describe('Accomplishments V121 ownership', () => {
     expect(legacy).not.toMatch(/ACT\.accomplishments\s*=/);
     expect(legacy).not.toContain('v121Migrated');
     expect(legacy).not.toContain('Object.values(s.raids||{})');
-    expect(legacy).toContain('V121 intentionally owns no Accomplishments renderer, payout, or save migration path');
+    expect(legacy).toContain('V121 intentionally owns no Accomplishments renderer or payout path');
+    expect(legacy).toContain('V121 has no save migration path');
     expect(legacy).toContain('showRaidResult=function');
     expect(legacy).toContain('ACT.fuse=');
 
