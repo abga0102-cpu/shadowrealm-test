@@ -43,25 +43,42 @@ equipItem=function(id){
 };
 try{window.equipItem=equipItem;}catch(_){}
 
+var COMPARE_ROOT='srForgeArenaPreview146';
+function setText(el,text){if(el&&el.textContent!==text)el.textContent=text;}
+function setTitle(el,text){if(el&&el.getAttribute('title')!==text)el.setAttribute('title',text);}
 function clarify(root){
  root=root||document;
- var keep=root.querySelector&&root.querySelector('#srForgeArenaPreview146 [data-sr-fp146="keep"]');
- var equip=root.querySelector&&root.querySelector('#srForgeArenaPreview146 [data-sr-fp146="equip"]');
+ var panel=root&&root.id===COMPARE_ROOT?root:(root.querySelector?root.querySelector('#'+COMPARE_ROOT):null);
+ if(!panel)return;
+ var keep=panel.querySelector('[data-sr-fp146="keep"]');
+ var equip=panel.querySelector('[data-sr-fp146="equip"]');
  if(keep){
   var more=/SUIVANT/i.test(keep.textContent||'');
-  keep.textContent=more?'GARDER LE NOUVEAU · SUIVANT':'GARDER LE NOUVEAU';
-  keep.title='Conserve le nouvel équipement dans l’inventaire sans changer l’équipement porté.';
+  setText(keep,more?'GARDER LE NOUVEAU · SUIVANT':'GARDER LE NOUVEAU');
+  setTitle(keep,'Conserve le nouvel équipement dans l’inventaire sans changer l’équipement porté.');
  }
  if(equip){
-  equip.textContent='ÉQUIPER · ANCIEN CONSERVÉ';
-  equip.title='Équipe le nouvel objet et remet automatiquement l’ancien dans l’inventaire.';
+  setText(equip,'ÉQUIPER · ANCIEN CONSERVÉ');
+  setTitle(equip,'Équipe le nouvel objet et remet automatiquement l’ancien dans l’inventaire.');
  }
 }
 clarify(document);
+
+/* V146 appends its comparison panel directly to <body>. Observe only those
+   direct additions instead of every mutation in the application. The previous
+   subtree observer rewrote button text from inside its own callback; each
+   textContent write created another child-list mutation and could starve the
+   event loop after a successful Forge result. */
 var observer=new MutationObserver(function(muts){
  for(var i=0;i<muts.length;i++){
-  if(muts[i].addedNodes&&muts[i].addedNodes.length){clarify(document);break;}
+  var added=muts[i].addedNodes||[];
+  for(var j=0;j<added.length;j++){
+   var node=added[j];
+   if(!node||node.nodeType!==1)continue;
+   var panel=node.id===COMPARE_ROOT?node:(node.querySelector?node.querySelector('#'+COMPARE_ROOT):null);
+   if(panel){clarify(panel);return;}
+  }
  }
 });
-try{observer.observe(document.body,{childList:true,subtree:true});}catch(_){}
+try{observer.observe(document.body,{childList:true});}catch(_){}
 })();
