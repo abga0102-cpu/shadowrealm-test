@@ -6,7 +6,6 @@ const root = path.join(__dirname, '..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
 
 const index = read('index.html');
-const v229 = read('familiars-ui-v229.js');
 const v231 = read('familiars-noscr-v231.js');
 const v234 = read('familiars-noscr-v234.js');
 const v240 = read('familiars-scroll-layout-v240.js');
@@ -15,17 +14,15 @@ function indexOfScript(name) {
   return index.indexOf(`src="${name}`);
 }
 
-test('Familiar V229 stays unloaded while the V240+ registry chain owns the final screen', async ({ page }) => {
+test('Familiar V229 stays retired while the V240+ registry chain owns the final screen', async ({ page }) => {
   const v229Pos = indexOfScript('familiars-ui-v229.js');
   const v231Pos = indexOfScript('familiars-noscr-v231.js');
 
   expect(v229Pos).toBe(-1);
+  expect(fs.existsSync(path.join(root, 'familiars-ui-v229.js'))).toBe(false);
   expect(v231Pos).toBeGreaterThanOrEqual(0);
   expect(v231).toContain("load('familiars-noscr-v234.js");
 
-  // Retained source documents the superseded renderer, but it must not regain runtime ownership.
-  expect(v229).toContain('scrFamiliers = renderFamiliarsV229');
-  expect(v229).not.toContain('SCREENS.familiers=renderFamiliarsV229');
   expect(v234).toContain('SCREENS.familiers=renderV234');
   expect(v240).toContain('SCREENS.familiers=renderV240');
 
