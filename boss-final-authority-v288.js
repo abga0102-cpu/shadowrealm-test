@@ -1,13 +1,18 @@
 /* SHADOWREACH V288 · Boss final authority
-   Campaign boss HP anchors are FINAL post-spawn values. V316 adds the approved
-   mid-chapter Boss at local stage 5 while preserving the historical floor-based
-   damage curve. Mega Bosses still inherit the exact normal boss then apply their
-   existing x10 HP / x10 damage in makeMegaBossEnemy. */
+   Campaign boss HP anchors are FINAL post-spawn values. V322 stretches the
+   historical 1..400 boss curve across the 1..800 Campaign while preserving
+   the approved 5-stage Boss cadence. Mega Bosses still inherit the exact
+   normal Campaign Boss then apply their existing x10 HP / x10 damage in
+   makeMegaBossEnemy. */
 (function(){
   'use strict';
   if(window.__srBossFinalV288)return;
   window.__srBossFinalV288=true;
 
+  /* Legacy anchors stay documented here for compatibility/fallback. The active
+     V322 authority is __srV285BossHP, which maps 1..800 onto these historical
+     balance bands instead of letting raw floor numbers jump ahead on the old
+     curve (for example the new Facile 3-10 / internal 50). */
   var BOSS_HP={
     5:500,10:2000,20:20000,30:180000,40:3000000,50:20000000,
     60:80000000,70:180000000,80:350000000,90:600000000,
@@ -17,16 +22,23 @@
 
   function bossHP(floor){
     floor=Math.floor(Number(floor)||0);
-    if(BOSS_HP[floor]!=null)return BOSS_HP[floor];
     if(typeof window.__srV285BossHP==='function')return window.__srV285BossHP(floor);
+    if(BOSS_HP[floor]!=null)return BOSS_HP[floor];
     return null;
   }
 
-  /* Keep boss damage tied to world depth, not to the newly doubled number of
-     boss encounters. This avoids an accidental damage inflation after V316. */
+  function semanticLegacyFloor(floor){
+    var f=Math.max(1,Math.min(800,Number(floor)||1));
+    return 1+(f-1)*399/799;
+  }
+
+  /* Boss damage stays tied to the same semantic world depth as V322 HP/damage,
+     not to the doubled number of internal stages. This preserves the historical
+     boss pressure while allowing twice as many Campaign encounters. */
   function legacyBossDamageStatMul(floor){
     var every=(typeof RULES!=='undefined'&&RULES.BOSS_EVERY)||10;
-    var bossNo=Math.max(1,Math.min(10,Math.floor((Number(floor)||10)/every)));
+    var semantic=semanticLegacyFloor(floor);
+    var bossNo=Math.max(1,Math.min(10,Math.floor(semantic/every)));
     return 1+0.06*(bossNo-1);
   }
 
@@ -59,5 +71,5 @@
     }
   }catch(_){ }
 
-  window.__srBossFinalConfigV288={bossHP:BOSS_HP,damageStatMul:legacyBossDamageStatMul};
+  window.__srBossFinalConfigV288={bossHP:BOSS_HP,damageStatMul:legacyBossDamageStatMul,semanticLegacyFloor:semanticLegacyFloor};
 })();

@@ -11,19 +11,19 @@ async function openCleanGame(page) {
   await page.goto('/index.html?smoke=1');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
   await page.waitForFunction(() =>
-    window.__srForgeMasterStageFlowV316 === true &&
+    window.__srCampaign800V322 === true &&
     window.__srAccomplishmentsCanonicalV139 === true &&
     window.__srAccomplishmentsClaimV140 === true
   );
 }
 
-test('V316 Accomplishments uses local notation and boss-stage milestone wording', async ({ page }) => {
+test('V322 Accomplishments uses 20-stage local notation and preserved milestone rewards', async ({ page }) => {
   await openCleanGame(page);
   await page.evaluate(() => ACT.accomplishments());
   const modal = page.locator('.srAch139');
   await expect(modal).toBeVisible();
-  await expect(modal).toContainText('Terminer Divin · 5-10');
-  await expect(modal).toContainText('Terminer Cauchemar · 5-10');
+  await expect(modal).toContainText('Terminer Divin · 5-20');
+  await expect(modal).toContainText('Terminer Cauchemar · 5-20');
   await expect(modal).toContainText('Vaincre Difficile · 3-5');
   await expect(modal).not.toContainText('40-10');
   await expect(modal).not.toContainText('Rebirth');
@@ -31,12 +31,12 @@ test('V316 Accomplishments uses local notation and boss-stage milestone wording'
   await expect(modal.locator('[data-ach^="rb"]')).toHaveCount(0);
 });
 
-test('V316 stage-5 accomplishment stays locked until that Boss is actually defeated', async ({ page }) => {
+test('V322 first boss accomplishment stays locked until the mapped Boss is actually defeated', async ({ page }) => {
   await openCleanGame(page);
   await page.evaluate(() => {
-    S.recordFloor = 25;
+    S.recordFloor = 45;
     S.bossClears = S.bossClears || {};
-    delete S.bossClears['25'];
+    delete S.bossClears['45'];
     S.accomplishments = S.accomplishments || {};
     S.accomplishments.claimed = S.accomplishments.claimed || {};
     delete S.accomplishments.claimed.floor25;
@@ -44,34 +44,34 @@ test('V316 stage-5 accomplishment stays locked until that Boss is actually defea
   });
   await expect(page.locator('.srAch139 [data-ach="floor25"]')).toHaveCount(0);
   await page.locator('.srAch139 [data-act="closeModal"]').click();
-  await page.evaluate(() => { S.bossClears['25'] = true; ACT.accomplishments(); });
+  await page.evaluate(() => { S.bossClears['45'] = true; ACT.accomplishments(); });
   await expect(page.locator('.srAch139 [data-ach="floor25"]')).toBeVisible();
 });
 
-test('V316 final difficulty reward stays locked until Divin Boss 5-10 is actually defeated', async ({ page }) => {
+test('V322 final difficulty reward stays locked until Divin Boss 5-20 is actually defeated', async ({ page }) => {
   await openCleanGame(page);
   await page.evaluate(() => {
-    S.recordFloor = 400;
+    S.recordFloor = 800;
     S.bossClears = S.bossClears || {};
-    delete S.bossClears['400'];
+    delete S.bossClears['800'];
     S.accomplishments = S.accomplishments || {};
     S.accomplishments.claimed = S.accomplishments.claimed || {};
     delete S.accomplishments.claimed.floor400;
     ACT.accomplishments();
   });
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toHaveCount(0);
-  await expect(page.locator('.srAch139')).toContainText('Terminer Divin · 5-10');
+  await expect(page.locator('.srAch139')).toContainText('Terminer Divin · 5-20');
   await page.locator('.srAch139 [data-act="closeModal"]').click();
-  await page.evaluate(() => { S.bossClears['400'] = true; ACT.accomplishments(); });
+  await page.evaluate(() => { S.bossClears['800'] = true; ACT.accomplishments(); });
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toBeVisible();
 });
 
-test('V316 Divin Boss accomplishment pays active progression resources once and never creates PR', async ({ page }) => {
+test('V322 Divin Boss accomplishment pays the same active progression resources once and never creates PR', async ({ page }) => {
   await openCleanGame(page);
   const before = await page.evaluate(() => {
-    S.recordFloor = 400;
+    S.recordFloor = 800;
     S.bossClears = S.bossClears || {};
-    S.bossClears['400'] = true;
+    S.bossClears['800'] = true;
     S.accomplishments = S.accomplishments || {};
     S.accomplishments.claimed = S.accomplishments.claimed || {};
     delete S.accomplishments.claimed.floor400;
@@ -90,11 +90,11 @@ test('V316 Divin Boss accomplishment pays active progression resources once and 
   await expect(page.locator('.srAch139')).toContainText('Récupéré');
 });
 
-test('V316 progression guidance never recommends retired Rebirth and uses local Mega Boss gate', async ({ page }) => {
+test('V322 progression guidance preserves the Mega Boss floor-50 gate under new notation', async ({ page }) => {
   await openCleanGame(page);
   await page.waitForFunction(() => window.__srRebirthRemovalAuthorityV281 === true);
   const result = await page.evaluate(() => {
-    const fresh = defaultState('QA V316');
+    const fresh = defaultState('QA V322');
     fresh.recordFloor = 25; fresh.floor = 25;
     const goals = progressionGoals(fresh);
     const unlock = nextUnlockGoal(fresh);
@@ -106,7 +106,7 @@ test('V316 progression guidance never recommends retired Rebirth and uses local 
   });
   expect(result.ids.some((id) => /^rebirth/i.test(id))).toBe(false);
   expect(result.retiredRefs).toEqual([]);
-  expect(result.titles.some((t) => /Boss 3-5/.test(String(t)))).toBe(true);
+  expect(result.titles.some((t) => /Boss 2-5/.test(String(t)) || /Boss 3-5/.test(String(t)))).toBe(true);
   expect(result.unlock && result.unlock.title).toBe('Méga-Boss');
-  expect(result.unlock && result.unlock.note).toBe('Vaincre le Boss 5-10');
+  expect(result.unlock && result.unlock.note).toBe('Vaincre le Boss 3-10');
 });

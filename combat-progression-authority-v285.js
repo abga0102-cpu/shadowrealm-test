@@ -1,35 +1,34 @@
 /* SHADOWREACH V285 · Combat progression authority
-   V316 campaign structure: canonical 400-stage campaign with local visible
-   chapter numbering per difficulty and Forge-Master-like encounter pacing.
-   V321 adds one onboarding-only loss at stage 1-2 before the first Forge craft,
-   then restores the exact normal campaign balance after the player forges once.
-   Visible chapter numbers are derived from each difficulty's real length and
-   are not capped at 5. Internal floor ids 1..400 remain stable for saves and
-   balancing. Every 10-stage chapter uses the approved rhythm:
-   N/N/N, N/N/N, N/N/N, N/Elite, Boss, then repeat for stages 6..10.
-   Fixed enemy scaling never derives from current player power outside the
-   isolated V321 teaching encounter. */
+   V322 campaign structure: 8 difficulties × 5 chapters × 20 stages = 800
+   internal stages. Stage labels restart at 1-1 for each difficulty and the
+   first difficulty is now Facile while keeping compatibility id `normal`.
+   V321 keeps its onboarding-only loss at visible stage 1-2 before the first
+   Forge craft, then restores the exact normal campaign balance after crafting.
+   The validated former 1..400 power curve is stretched semantically over
+   1..800, preserving endgame strength while smoothing campaign pacing. */
 (function(){
 'use strict';
 if(window.__srCombatProgressionV285)return;
 window.__srCombatProgressionV285=true;
-window.__srCampaign400V314=true;
+window.__srCampaign400V314=true; /* compatibility marker retained for old contracts */
+window.__srCampaign800V322=true;
 window.__srLocalStageNotationV315=true;
 window.__srCompactStageTrackV315=true;
 window.__srForgeMasterStageFlowV316=true;
 window.__srForgeIntroCombatV321=true;
 
-var CAMPAIGN_MAX=400;
+var CAMPAIGN_MAX=800;
+var LEGACY_CAMPAIGN_MAX=400;
 var FORGE_INTRO_FLOOR_V321=2;
 var DIFFICULTIES=[
-  {id:'normal',label:'Normal',start:1,end:50},
-  {id:'difficile',label:'Difficile',start:51,end:100},
-  {id:'expert',label:'Expert',start:101,end:150},
-  {id:'cauchemar',label:'Cauchemar',start:151,end:200},
-  {id:'infernal',label:'Infernal',start:201,end:250},
-  {id:'abyssal',label:'Abyssal',start:251,end:300},
-  {id:'immortel',label:'Immortel',start:301,end:350},
-  {id:'divin',label:'Divin',start:351,end:400}
+  {id:'normal',label:'Facile',start:1,end:100},
+  {id:'difficile',label:'Difficile',start:101,end:200},
+  {id:'expert',label:'Expert',start:201,end:300},
+  {id:'cauchemar',label:'Cauchemar',start:301,end:400},
+  {id:'infernal',label:'Infernal',start:401,end:500},
+  {id:'abyssal',label:'Abyssal',start:501,end:600},
+  {id:'immortel',label:'Immortel',start:601,end:700},
+  {id:'divin',label:'Divin',start:701,end:800}
 ];
 
 function clampFloor(f){f=Math.floor(Number(f)||1);return Math.max(1,Math.min(CAMPAIGN_MAX,f));}
@@ -38,16 +37,17 @@ function difficultyIndexForFloor(floor){
   return Math.max(0,DIFFICULTIES.length-1);
 }
 function stageKindFromStage(stage){
-  stage=Math.max(1,Math.min(10,Math.floor(Number(stage)||1)));
-  if(stage===5||stage===10)return 'boss';
-  if(stage===4||stage===9)return 'elite';
+  stage=Math.max(1,Math.min(20,Math.floor(Number(stage)||1)));
+  var beat=((stage-1)%5)+1;
+  if(beat===5)return 'boss';
+  if(beat===4)return 'elite';
   return 'normal';
 }
 function campaignMeta(f){
   var floor=clampFloor(f),di=difficultyIndexForFloor(floor);
   var diff=DIFFICULTIES[di],within=floor-diff.start+1;
-  var globalChapter=Math.floor((floor-1)/10)+1,stage=(within-1)%10+1;
-  var difficultyChapter=Math.floor((within-1)/10)+1,stageCode=difficultyChapter+'-'+stage;
+  var globalChapter=Math.floor((floor-1)/20)+1,stage=(within-1)%20+1;
+  var difficultyChapter=Math.floor((within-1)/20)+1,stageCode=difficultyChapter+'-'+stage;
   var kind=stageKindFromStage(stage);
   return {
     floor:floor,maxFloor:CAMPAIGN_MAX,difficultyIndex:di,difficultyId:diff.id,difficulty:diff.label,
@@ -62,13 +62,14 @@ window.__srCampaignMeta=campaignMeta;
 window.__srCampaignLabel=function(f){return campaignMeta(f).label;};
 window.__srCampaignStageLabel=function(f){return campaignMeta(f).stageCode;};
 window.__srCampaignStageKindV316=function(f){return campaignMeta(f).kind;};
+window.__srCampaignStageKindV322=function(f){return campaignMeta(f).kind;};
 
-/* Real encounter authority. A chapter is two identical five-stage beats:
-   1/2/3 normal x3, 4 normal+elite, 5 boss; then 6/7/8, 9, 10. */
-var STAGE_WAVES=[3,3,3,2,1,3,3,3,2,1];
+/* Twenty-stage chapters preserve the approved five-stage encounter beat four
+   times: N/N/N, N/Elite, Boss. */
+var STAGE_WAVES=[3,3,3,2,1,3,3,3,2,1,3,3,3,2,1,3,3,3,2,1];
 function stageWaveCount(f){
   var stage=campaignMeta(f).stage;
-  return STAGE_WAVES[Math.max(0,Math.min(9,stage-1))]||1;
+  return STAGE_WAVES[Math.max(0,Math.min(19,stage-1))]||1;
 }
 function campaignIsBoss(f){return campaignMeta(f).kind==='boss';}
 function campaignIsElite(f){return campaignMeta(f).kind==='elite';}
@@ -81,9 +82,9 @@ window.__srCampaignWavePatternV315=STAGE_WAVES.slice();
 window.__srCampaignWaveCountV315=stageWaveCount;
 window.__srCampaignWavePatternV316=STAGE_WAVES.slice();
 window.__srCampaignWaveCountV316=stageWaveCount;
+window.__srCampaignWavePatternV322=STAGE_WAVES.slice();
+window.__srCampaignWaveCountV322=stageWaveCount;
 
-/* Replace legacy 5/10 classification with the approved local-stage cadence.
-   RULES.BOSS_EVERY remains 10 because it still defines chapter length elsewhere. */
 try{if(typeof isBoss==='function')isBoss=function(f){return campaignIsBoss(f);};}catch(_){ }
 try{if(typeof isElite==='function')isElite=function(f){return campaignIsElite(f);};}catch(_){ }
 try{
@@ -96,11 +97,10 @@ try{
     campaignWaveCount=function(f){return stageWaveCount(f);};
     campaignWaveCount.__srCompactStageTrackV315=true;
     campaignWaveCount.__srForgeMasterStageFlowV316=true;
+    campaignWaveCount.__srCampaign800V322=true;
   }
 }catch(_){ }
 
-/* Current-stage track only: normal stages = 3 normal dots; elite stages =
-   normal dot then elite dot; boss stages = one boss dot. */
 function compactStageTrack(floor){
   floor=clampFloor(floor);
   var meta=campaignMeta(floor),count=stageWaveCount(floor),step=1;
@@ -121,17 +121,19 @@ function compactStageTrack(floor){
   return h;
 }
 window.__srCompactStageTrackHTMLV315=compactStageTrack;
+window.__srCompactStageTrackHTMLV322=compactStageTrack;
 window.__srStageMiniTrackV316=compactStageTrack;
 try{
   if(typeof floorTrack==='function'){
     floorTrack=function(floor){return compactStageTrack(floor);};
     floorTrack.__srCompactStageTrackV315=true;
     floorTrack.__srForgeMasterStageFlowV316=true;
+    floorTrack.__srCampaign800V322=true;
   }
 }catch(_){ }
 
-/* Existing progression anchors stay intact; a first mid-chapter Boss anchor is
-   added at internal floor 5 so the new first Boss does not inherit floor-10 HP. */
+/* Existing 1..400 anchors are the semantic balance authority. Mapping 1..800
+   onto that curve preserves the old endpoint and every difficulty power band. */
 var BOSS={
   5:500,10:2000,20:20000,30:180000,40:3000000,50:20000000,
   60:80000000,70:180000000,80:350000000,90:600000000,
@@ -147,6 +149,7 @@ var NORMAL={
   200:2200000000,250:8000000000,300:28000000000,
   350:95000000000,400:320000000000
 };
+function semanticLegacyFloor(f){return 1+(clampFloor(f)-1)*(LEGACY_CAMPAIGN_MAX-1)/(CAMPAIGN_MAX-1);}
 function logInterp(table,f){
   var ks=Object.keys(table).map(Number).sort(function(a,b){return a-b;});
   if(f<=ks[0])return table[ks[0]];
@@ -158,8 +161,8 @@ function logInterp(table,f){
   }
   return table[ks[ks.length-1]];
 }
-window.__srV285EnemyHP=function(f){return logInterp(NORMAL,clampFloor(f));};
-window.__srV285BossHP=function(f){f=clampFloor(f);return logInterp(BOSS,f);};
+window.__srV285EnemyHP=function(f){return logInterp(NORMAL,semanticLegacyFloor(f));};
+window.__srV285BossHP=function(f){return logInterp(BOSS,semanticLegacyFloor(f));};
 try{if(typeof enemyHP==='function')enemyHP=window.__srV285EnemyHP;}catch(_){ }
 
 try{
@@ -178,9 +181,6 @@ try{
   }
 }catch(_){ }
 
-/* V321 Forge teaching encounter. This is deliberately isolated to a fresh
-   pre-Forge visit to internal floor 2 / visible 1-2. After any successful
-   Forge craft, the exact normal floor-2 balance is used forever. */
 function forgeIntroCraftedV321(s){try{return Math.max(0,Number(s&&s.forge&&s.forge.summonCount)||0)>0;}catch(_){return false;}}
 function forgeIntroEligibleV321(s){
   if(!s||forgeIntroCraftedV321(s))return false;
@@ -206,11 +206,30 @@ window.__srNeedsForgeIntroV321=forgeIntroEligibleV321;
 window.__srApplyForgeIntroCombatV321=applyForgeIntroCombatV321;
 window.__srForgeIntroCombatConfigV321={floor:FORGE_INTRO_FLOOR_V321,stage:'1-2',hpVsHero:1000,damageVsHero:20};
 
-/* Preserve old saves and clamp a former 3-wave step when that save now lands on
-   a 1- or 2-encounter stage. No floor, record or reward history is erased. */
+/* One-time migration preserves each legacy difficulty and position within it:
+   legacy 1..50 becomes the same difficulty's odd positions 1..99. Completed
+   400-stage saves become fully completed 800-stage saves. */
+function migrateLegacyFloor(v){
+  v=Math.max(1,Math.floor(Number(v)||1));
+  if(v>LEGACY_CAMPAIGN_MAX)return Math.min(CAMPAIGN_MAX,v);
+  var di=Math.min(7,Math.floor((v-1)/50)),within=((v-1)%50)+1;
+  return di*100+Math.min(100,((within-1)*2)+1);
+}
 function normalizeCampaignState(){
   try{
     if(typeof S==='undefined'||!S)return;
+    S.migrations=S.migrations||{};
+    if(!S.migrations.campaign800V322){
+      var legacyComplete=!!S.campaignComplete400;
+      ['floor','recordFloor','checkpoint'].forEach(function(k){if(Number(S[k])>0)S[k]=migrateLegacyFloor(S[k]);});
+      if(Number(S.pendingBossFloor)>0)S.pendingBossFloor=migrateLegacyFloor(S.pendingBossFloor);
+      if(legacyComplete){
+        S.floor=CAMPAIGN_MAX;S.recordFloor=CAMPAIGN_MAX;S.checkpoint=CAMPAIGN_MAX;S.pendingBossFloor=0;
+        S.campaignComplete800=true;S.campaignCompletedAt800=S.campaignCompletedAt800||S.campaignCompletedAt||Date.now();
+      }
+      S.migrations.campaign800V322=true;
+      try{if(typeof saveNow==='function')saveNow();}catch(_){ }
+    }
     var highest=Math.max(Number(S.floor)||1,Number(S.recordFloor)||1,Number(S.checkpoint)||1);
     if(highest>CAMPAIGN_MAX)S.legacyCampaignRecord=Math.max(Number(S.legacyCampaignRecord)||0,highest);
     if((Number(S.floor)||1)>CAMPAIGN_MAX)S.floor=CAMPAIGN_MAX;
@@ -224,7 +243,7 @@ function normalizeCampaignState(){
 normalizeCampaignState();
 
 try{
-  if(typeof startCampaign==='function'&&!startCampaign.__srCampaign400V314){
+  if(typeof startCampaign==='function'&&!startCampaign.__srCampaign800V322){
     var oldStartCampaign=startCampaign;
     startCampaign=function(){
       normalizeCampaignState();
@@ -233,12 +252,13 @@ try{
       return out;
     };
     startCampaign.__srCampaign400V314=true;
+    startCampaign.__srCampaign800V322=true;
     startCampaign.__srForgeIntroV321=true;
     startCampaign.__srPrevious=oldStartCampaign;
   }
 }catch(_){ }
 try{
-  if(typeof handleCombatEnd==='function'&&!handleCombatEnd.__srCampaign400V314){
+  if(typeof handleCombatEnd==='function'&&!handleCombatEnd.__srCampaign800V322){
     var oldHandleCombatEnd=handleCombatEnd;
     handleCombatEnd=function(c){
       var won=!!(c&&c.ctx==='campaign'&&c.status==='won');
@@ -247,8 +267,7 @@ try{
       if(forgeIntroLoss){
         try{
           if(typeof S!=='undefined'&&S){
-            S.tutorial=S.tutorial||{};
-            S.tutorial.seen=S.tutorial.seen||{};
+            S.tutorial=S.tutorial||{};S.tutorial.seen=S.tutorial.seen||{};
             S.tutorial.forgeIntroReadyV321=true;
             S.tutorial.forgeIntroDefeatsV321=Math.max(0,Number(S.tutorial.forgeIntroDefeatsV321)||0)+1;
             if(typeof saveNow==='function')saveNow();
@@ -267,7 +286,7 @@ try{
         try{
           if(typeof S!=='undefined'&&S){
             S.floor=CAMPAIGN_MAX;S.step=1;S.recordFloor=CAMPAIGN_MAX;S.checkpoint=CAMPAIGN_MAX;S.pendingBossFloor=0;
-            S.campaignComplete400=true;S.campaignCompletedAt=S.campaignCompletedAt||Date.now();
+            S.campaignComplete800=true;S.campaignCompletedAt800=S.campaignCompletedAt800||Date.now();
             if(typeof saveNow==='function')saveNow();
             if(typeof scheduleRender==='function')scheduleRender();
           }
@@ -277,6 +296,7 @@ try{
       return out;
     };
     handleCombatEnd.__srCampaign400V314=true;
+    handleCombatEnd.__srCampaign800V322=true;
     handleCombatEnd.__srForgeMasterStageFlowV316=true;
     handleCombatEnd.__srForgeIntroV321=true;
     handleCombatEnd.__srPrevious=oldHandleCombatEnd;
@@ -286,28 +306,16 @@ try{
 function decorateArenaLabel(){
   try{
     if(typeof arenaNodes==='undefined'||!arenaNodes||!arenaNodes.label||arenaNodes.label.__srCampaign400Proxy)return;
-    var node=arenaNodes.label;
-    if(!node||!node.nodeType)return;
-    var raw=String(node.textContent||'');
-    var proxy={__srCampaign400Proxy:true};
-    Object.defineProperty(proxy,'textContent',{
-      configurable:false,enumerable:true,
-      get:function(){return raw;},
-      set:function(v){
-        raw=String(v==null?'':v);
-        try{if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')node.textContent=campaignMeta(combat.floor).label;else node.textContent=raw;}catch(_){node.textContent=raw;}
-      }
-    });
-    arenaNodes.label=proxy;
-    if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')node.textContent=campaignMeta(combat.floor).label;
+    var node=arenaNodes.label;if(!node||!node.nodeType)return;var raw=String(node.textContent||'');var proxy={__srCampaign400Proxy:true};
+    Object.defineProperty(proxy,'textContent',{configurable:false,enumerable:true,get:function(){return raw;},set:function(v){raw=String(v==null?'':v);try{if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')node.textContent=campaignMeta(combat.floor).label;else node.textContent=raw;}catch(_){node.textContent=raw;}}});
+    arenaNodes.label=proxy;if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')node.textContent=campaignMeta(combat.floor).label;
   }catch(_){ }
 }
 try{
-  if(typeof mountArena==='function'&&!mountArena.__srCampaign400V314){
+  if(typeof mountArena==='function'&&!mountArena.__srCampaign800V322){
     var oldMountArena=mountArena;
     mountArena=function(){var out=oldMountArena.apply(this,arguments);decorateArenaLabel();return out;};
-    mountArena.__srCampaign400V314=true;
-    mountArena.__srPrevious=oldMountArena;
+    mountArena.__srCampaign400V314=true;mountArena.__srCampaign800V322=true;mountArena.__srPrevious=oldMountArena;
   }
 }catch(_){ }
 decorateArenaLabel();
@@ -315,8 +323,7 @@ decorateArenaLabel();
 function syncStageWavePill(){
   try{
     if(typeof combat==='undefined'||!combat||combat.ctx!=='campaign'||typeof arenaNodes==='undefined'||!arenaNodes||!arenaNodes.sub)return;
-    var pill=arenaNodes.sub.querySelector('.fPill');
-    if(!pill)return;
+    var pill=arenaNodes.sub.querySelector('.fPill');if(!pill)return;
     var wanted='Vague '+Math.max(1,Number(combat.step)||1)+'/'+stageWaveCount(combat.floor);
     if(String(pill.textContent||'').trim()===wanted)return;
     var icon='';try{if(typeof ic==='function')icon=ic('swords',10);}catch(_){ }
@@ -324,30 +331,23 @@ function syncStageWavePill(){
   }catch(_){ }
 }
 try{
-  if(typeof drawArena==='function'&&!drawArena.__srCampaignStageNotationV314){
+  if(typeof drawArena==='function'&&!drawArena.__srCampaignStageNotationV322){
     var oldDrawArena=drawArena;
     drawArena=function(){
-      var out=oldDrawArena.apply(this,arguments);
-      syncStageWavePill();
-      try{
-        if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign'&&typeof arenaNodes!=='undefined'&&arenaNodes&&arenaNodes.banner&&typeof floorFlash!=='undefined'&&floorFlash&&Date.now()<floorFlash.until&&combat.status!=='lost'){
-          arenaNodes.banner.textContent='ÉTAGE '+campaignMeta(floorFlash.floor).stageCode;
-        }
-      }catch(_){ }
+      var out=oldDrawArena.apply(this,arguments);syncStageWavePill();
+      try{if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign'&&typeof arenaNodes!=='undefined'&&arenaNodes&&arenaNodes.banner&&typeof floorFlash!=='undefined'&&floorFlash&&Date.now()<floorFlash.until&&combat.status!=='lost')arenaNodes.banner.textContent='ÉTAGE '+campaignMeta(floorFlash.floor).stageCode;}catch(_){ }
       return out;
     };
-    drawArena.__srCampaignStageNotationV314=true;
-    drawArena.__srForgeMasterStageFlowV316=true;
-    drawArena.__srPrevious=oldDrawArena;
+    drawArena.__srCampaignStageNotationV314=true;drawArena.__srCampaignStageNotationV322=true;drawArena.__srForgeMasterStageFlowV316=true;drawArena.__srPrevious=oldDrawArena;
   }
 }catch(_){ }
 
-var CHAPTER_COUNTS=DIFFICULTIES.map(function(d){return Math.ceil(Math.max(0,d.end-d.start+1)/10);});
+var CHAPTER_COUNTS=DIFFICULTIES.map(function(d){return Math.ceil(Math.max(0,d.end-d.start+1)/20);});
 window.__srCombatProgressionConfigV285={
   bossHP:BOSS,normalHP:NORMAL,maxFloor:CAMPAIGN_MAX,difficulties:DIFFICULTIES,
-  chaptersPerDifficulty:CHAPTER_COUNTS[0],chapterCounts:CHAPTER_COUNTS,
-  floorsPerChapter:10,totalChapters:Math.ceil(CAMPAIGN_MAX/10),campaignMeta:campaignMeta,
-  stageWavePattern:STAGE_WAVES.slice(),stageWaveCount:stageWaveCount,
-  forgeIntroV321:window.__srForgeIntroCombatConfigV321
+  chaptersPerDifficulty:5,chapterCounts:CHAPTER_COUNTS,floorsPerChapter:20,totalChapters:40,
+  campaignMeta:campaignMeta,stageWavePattern:STAGE_WAVES.slice(),stageWaveCount:stageWaveCount,
+  legacyMaxFloor:LEGACY_CAMPAIGN_MAX,migrateLegacyFloor:migrateLegacyFloor,forgeIntroV321:window.__srForgeIntroCombatConfigV321
 };
+window.__srProgressionCampaignConfigV322={maxFloor:800,difficulties:DIFFICULTIES,chaptersPerDifficulty:5,stagesPerChapter:20,totalStages:800,firstDifficultyLabel:'Facile',legacyMigration:true};
 })();

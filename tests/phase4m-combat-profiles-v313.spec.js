@@ -13,7 +13,7 @@ async function openCleanGame(page) {
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
 }
 
-test('V313 real combat keeps the approved weak / normal / max 0★ / Ascension runway', async ({ page }) => {
+test('V313/V322 real combat keeps the approved semantic runway after the 400→800 stretch', async ({ page }) => {
   test.setTimeout(120000);
   await openCleanGame(page);
 
@@ -63,29 +63,30 @@ test('V313 real combat keeps the approved weak / normal / max 0★ / Ascension r
     }
 
     const profiles = {
-      // Approved pre-Ascension reference profiles: Legendary equipment and
-      // Legendary Familiars are not available before their first system star.
+      // V322 doubles internal campaign length while preserving the old power
+      // endpoints semantically. These scan ceilings therefore map 60→120,
+      // 80→160, 100→200 and 150→300 from the original V313 contract.
       weak: {
         gear: 'RARE', forgeLevel: 35, itemLevel: 20,
         pet: 'RARE', stars: 0, skillLevel: 10,
-        skills: ['taillade', 'chaine', 'soin'], maxBoss: 60,
+        skills: ['taillade', 'chaine', 'soin'], maxBoss: 120,
       },
       normal: {
         gear: 'MYTHIQUE', forgeLevel: 50, itemLevel: 50,
         pet: 'MYTHIQUE', stars: 0, skillLevel: 25,
-        skills: ['frappe', 'force', 'benediction'], maxBoss: 80,
+        skills: ['frappe', 'force', 'benediction'], maxBoss: 160,
       },
       max0: {
         gear: 'ARTEFACT', forgeLevel: 50, itemLevel: 100,
         pet: 'ANCESTRAL', stars: 0, skillLevel: 50,
         // Legendary skills require Skill 1★. Kameha is the strongest offensive
         // skill that a genuine 0★ profile can own at mastery 50.
-        skills: ['kameha', 'meteore', 'regeneration'], maxBoss: 100,
+        skills: ['kameha', 'meteore', 'regeneration'], maxBoss: 200,
       },
       ascension: {
         gear: 'DIVIN', forgeLevel: 50, itemLevel: 0,
         pet: 'DIVIN', stars: 1, skillLevel: 50,
-        skills: ['cataclysme', 'force', 'rempart'], maxBoss: 150,
+        skills: ['cataclysme', 'force', 'rempart'], maxBoss: 300,
       },
     };
 
@@ -169,7 +170,9 @@ test('V313 real combat keeps the approved weak / normal / max 0★ / Ascension r
       const derived = loadProfile(name, profile);
       const fights = [];
       let firstFail = null;
-      for (let floor = 10; floor <= profile.maxBoss; floor += 10) {
+      // V313 sampled old 10-floor Boss checkpoints. V322 maps those semantic
+      // positions to every 20 internal stages after the 400→800 stretch.
+      for (let floor = 20; floor <= profile.maxBoss; floor += 20) {
         const one = fightBoss(floor, 313000 + name.length * 1000 + floor);
         fights.push(one);
         if (one.status !== 'won') {
@@ -192,16 +195,15 @@ test('V313 real combat keeps the approved weak / normal / max 0★ / Ascension r
     return out;
   });
 
-  console.log('V313 combat profile results:', JSON.stringify(result));
+  console.log('V313/V322 combat profile results:', JSON.stringify(result));
 
-  // The ranges are deliberately coarse design bands, not exact-floor tuning.
-  // Boss checkpoints are every 10 floors. A max 0★ profile is approved when it
-  // clears through roughly 70–80, which means its first failed checkpoint is 80–90.
-  expect([40, 50]).toContain(result.weak.firstFail);
-  expect([50, 60]).toContain(result.normal.firstFail);
-  expect([80, 90]).toContain(result.max0.firstFail);
+  // Preserve the original semantic design bands under doubled internal floors:
+  // weak 40–50 → 80–100, normal 50–60 → 100–120, max 0★ 80–90 → 160–180.
+  expect([80, 100]).toContain(result.weak.firstFail);
+  expect([100, 120]).toContain(result.normal.firstFail);
+  expect([160, 180]).toContain(result.max0.firstFail);
   expect(result.ascension.firstFail).toBeNull();
-  expect(result.ascension.fights.at(-1).floor).toBe(150);
+  expect(result.ascension.fights.at(-1).floor).toBe(300);
   expect(result.ascension.fights.at(-1).status).toBe('won');
 
   // Progression systems must produce a strictly stronger real combat profile.

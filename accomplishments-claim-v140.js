@@ -1,6 +1,6 @@
 /* SHADOWREACH · Accomplishments claim reliability v140 · Fusion milestones V208
-   V316: campaign milestone payouts remain inert to Rebirth/PR and every milestone
-   that now lands on a real Boss stage requires that Boss clear. */
+   V322: campaign milestone payouts remain inert to Rebirth/PR and every mapped
+   campaign milestone that lands on a Boss stage requires that actual Boss clear. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsClaimV140)return;
@@ -26,7 +26,7 @@ var NEED={
  forge5:function(){return Number(S.forge&&S.forge.level)>=5;},forge10:function(){return Number(S.forge&&S.forge.level)>=10;},forge15:function(){return Number(S.forge&&S.forge.level)>=15;},forge20:function(){return Number(S.forge&&S.forge.level)>=20;},forge30:function(){return Number(S.forge&&S.forge.level)>=30;},forge35:function(){return Number(S.forge&&S.forge.level)>=35;},forge40:function(){return Number(S.forge&&S.forge.level)>=40;},forge50:function(){return Number(S.forge&&S.forge.level)>=50;},
  fusion50:function(){return fusionCount()>=50;},fusion150:function(){return fusionCount()>=150;},fusion250:function(){return fusionCount()>=250;},fusion350:function(){return fusionCount()>=350;},fusion500:function(){return fusionCount()>=500;},fusion1000:function(){return fusionCount()>=1000;},fusion1500:function(){return fusionCount()>=1500;},
  raid10:function(){return Number(S.accomplishments&&S.accomplishments.raidWins)>=10;},raid20:function(){return Number(S.accomplishments&&S.accomplishments.raidWins)>=20;},raid50:function(){return Number(S.accomplishments&&S.accomplishments.raidWins)>=50;},raid100:function(){return Number(S.accomplishments&&S.accomplishments.raidWins)>=100;},
- floor25:function(){return bossClear(25);},floor50:function(){return bossClear(50);},floor75:function(){return bossClear(75);},floor100:function(){return bossClear(100);},floor150:function(){return bossClear(150);},floor200:function(){return bossClear(200);},floor250:function(){return bossClear(250);},floor300:function(){return bossClear(300);},floor350:function(){return bossClear(350);},floor400:function(){return bossClear(400);}
+ floor25:function(){return bossClear(45);},floor50:function(){return bossClear(100);},floor75:function(){return bossClear(145);},floor100:function(){return bossClear(200);},floor150:function(){return bossClear(300);},floor200:function(){return bossClear(400);},floor250:function(){return bossClear(500);},floor300:function(){return bossClear(600);},floor350:function(){return bossClear(700);},floor400:function(){return bossClear(800);}
 };
 function ensure(s){if(!s.accomplishments||typeof s.accomplishments!=='object')s.accomplishments={};var a=s.accomplishments;if(!a.claimed||typeof a.claimed!=='object')a.claimed={};if(!a.mergePieces||typeof a.mergePieces!=='object')a.mergePieces={};if(!a.choices||typeof a.choices!=='object')a.choices={};return a;}
 function grant(s,r,choice){
