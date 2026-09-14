@@ -1,6 +1,6 @@
 # Lean-code remaining-work audit
 
-Audit refreshed: 2026-09-14. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `14c5b285af518ba7022c298e3d9f16e15dd9a578` (latest `main` after PR #249 visual interaction refinement).
+Audit refreshed: 2026-09-15. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `f5e7fa0813188402b0fb06ef224f7c53e5f16bc4` (latest `main` after PR #258 V322E canonical Familiar summon-cost alignment).
 
 This file records the current remaining-work disposition after the proof-based L1 audit and subsequent L2/L3/L4/L5 passes. **L1 is complete.** L2, L3, L4 and staged L5 remain evidence-driven.
 
@@ -58,7 +58,7 @@ Do not collapse V121 into payout/UI owners merely to reduce file count. Reassess
 
 PR #232 completed the main arcade-clean visual pass in existing canonical `premium-ui-v209.js`: flatter/quieter cards, restrained tactile controls, semantic CTA hierarchy, quieter HUD/navigation presentation and simpler interaction feedback while retaining the dark-navy/burnished-gold RPG identity. PR #248 then aligned the remaining compact info/close controls with that shared silhouette/material language, and PR #249 added restrained hover/press feedback to segmented controls and toggles. Both follow-up refinements stayed inside the same canonical visual owner and added no patch-layer file or runtime authority.
 
-Future visual work should continue to extend existing canonical owners and should be driven by concrete visual inconsistencies rather than adding versioned overlay files. The current source-level scan found no additional neutral visual-ownership seam that justifies another visual batch while campaign/Forge/index work is active.
+Future visual work should continue to extend existing canonical owners and should be driven by concrete visual inconsistencies rather than adding versioned overlay files. The current source-level scan found no additional neutral visual-ownership seam that justifies another visual batch while Forge, campaign/combat, onboarding and Raid-balance work are active.
 
 ## L4 shared-utility disposition
 
@@ -75,16 +75,18 @@ No additional staged L5 source is currently evidence-ready. Rescan only after an
 
 ## Current concurrent-work constraints
 
-At this refresh, four open pull requests own feature-sensitive surfaces:
+At this refresh, six open pull requests own feature-sensitive or adjacent validation surfaces:
 
-- **#242** owns `index.html` for the Familiar summon cache-bust;
-- **#243** owns campaign combat progression, enemy damage and campaign Accomplishments expansion;
 - **#245** owns Forge rarity/progression balance and stability;
-- **#246** is actively investigating the campaign stage 5-4 stall with regression-first evidence.
+- **#246** remains an active regression-first campaign stage 5-4 investigation;
+- **#253** owns the current V322 stage 5-4 stall reproduction/diagnosis;
+- **#255** owns contextual onboarding and progression teaching behavior;
+- **#257** owns Raid Minerai reward balance;
+- **#259** owns early campaign monster HP balance in `combat-progression-authority-v285.js`.
 
-Do not use Lean Code work to modify those active owners or adjacent gameplay semantics until their work settles and `main` is refreshed again. In particular, Forge/equipment/progression and campaign/combat remain feature-owner sensitive, and `index.html` should not be touched by a cleanup batch while #242 is active.
+The earlier V322 campaign/index constraints have settled: #243 merged the canonical 800-stage campaign, #242 was superseded, and #258 has now merged the canonical 50-Essence Familiar summon cost plus its cache/build alignment. That settlement does **not** create an immediate Lean Code seam because the active PRs above still occupy Forge, campaign/combat, onboarding and Raid-economy responsibilities.
 
-The current neutral scan found no evidence-ready production transfer outside those active surfaces. Audio V26, Power Hint and Boot wave synchronization remain blocked on stronger deterministic lifecycle evidence, and there is no additional staged L5 source-retirement candidate.
+Do not use Lean Code work to modify those active owners or adjacent gameplay semantics until their work settles and `main` is refreshed again. The current neutral scan found no evidence-ready production transfer outside those active surfaces. Audio V26, Power Hint and Boot wave synchronization remain blocked on stronger deterministic lifecycle evidence, and there is no additional staged L5 source-retirement candidate.
 
 ## Remaining Lean Code work
 
@@ -98,7 +100,7 @@ The current neutral scan found no evidence-ready production transfer outside tho
 | L3 Tree topology/compatibility | V82/V116/V216 own topology/compatibility, renderer/presentation and live mastery respectively. | Preserve these durable boundaries. |
 | L3 Tree V83 | Runtime unload and source retirement complete. | No current scope; keep retired-owner contracts. |
 | L3 Tree V247 presentation | V247/V250 presentation is in V116; runtime and source retirement are complete. | No current scope; preserve the V116 presentation and source-absence contract. |
-| L3 Forge/progression | PR #245 is actively changing Forge rarity/progression while #243/#246 touch adjacent campaign progression. | Re-audit from latest `main` only after intersecting feature work settles; require a narrow, proven ownership seam. |
+| L3 Forge/progression | PR #245 is actively changing Forge rarity/progression while #246/#253/#255/#259 touch adjacent campaign/progression behavior; #257 changes Raid economy. | Re-audit from latest `main` only after intersecting feature work settles; require a narrow, proven ownership seam. |
 | L4 shared helpers | Social store transfer complete; other audited helpers intentionally differ. | Reopen only for genuinely identical semantics with measurable reduction and no new coupling. |
 | L5 staged source retirement | V83 and V247 are complete; no additional staged source is evidence-ready. | Rescan after the next proven L2/L3 ownership transfer or fresh reachability audit. |
 
