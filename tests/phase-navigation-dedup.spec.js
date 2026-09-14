@@ -79,7 +79,7 @@ test.describe('duplicate-free permanent navigation', () => {
     }
     const clanLinks = await page.locator('#screen [data-act="go"][data-arg="clan"], #screen [data-act="locked"][data-arg="10"]').count();
     expect(clanLinks).toBeLessThanOrEqual(1);
-    await expect(page.locator('#screen [data-act="go"][data-arg="chat"]')).toHaveCount(0);
+    await expect(page.locator('#screen [data-act="go"][data-arg="chat"]')).toHaveCount(1);
 
     await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
   });

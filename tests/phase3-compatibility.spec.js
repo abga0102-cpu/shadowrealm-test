@@ -13,6 +13,13 @@ async function openCleanGame(page) {
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
   await expect.poll(() => page.evaluate(() => !!window.__srBottomNavPhase2A)).toBe(true);
+  await page.evaluate(() => {
+    if (typeof clearTutorialGuide === 'function') clearTutorialGuide();
+    const card = document.getElementById('tutorialCard');
+    if (card) card.remove();
+    S.tutorial = null;
+  });
+  await expect(page.locator('#tutorialCard')).toHaveCount(0);
 }
 
 async function activateBottomNav(page, locator, testInfo) {
