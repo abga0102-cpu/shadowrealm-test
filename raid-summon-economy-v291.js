@@ -10,7 +10,6 @@
   if(window.__srRaidSummonEconomyV291)return;
   window.__srRaidSummonEconomyV291=true;
 
-  var LEGACY_FAMILIAR_SUMMON_COST=25;
   var FAMILIAR_SUMMON_COST_V322A=50;
 
   function summonReward(level){
@@ -32,10 +31,10 @@
   }catch(_){ }
 
   /* Keep the original summon implementation as the single owner of rarity,
-     mastery, storage and Double Œuf. We only restrict how many paid summons are
-     affordable at 50 Essence, then charge the 25-Essence delta once per PAID
-     summon. petMastery.count advances once per paid summon and never for the
-     free Tree egg, making it the safest accounting source. */
+     mastery, storage and Double Œuf. V322A only guarantees that each PAID
+     summon consumes exactly 50 Essence. The core still charges its legacy
+     amount, so we measure what it actually consumed and top up only the
+     missing delta. This also stays safe if the core cost is raised later. */
   try{
     if(typeof summonEgg==='function'&&!summonEgg.__srV322A){
       var previousSummonEgg=summonEgg;
@@ -48,14 +47,27 @@
         var requested=Math.min(n,affordable);
         if(requested<=0)return [];
 
-        var before=0;
-        try{before=Math.max(0,Number(S&&S.petMastery&&S.petMastery.count)||0);}catch(_){ }
+        var masteryBefore=0;
+        try{masteryBefore=Math.max(0,Number(S&&S.petMastery&&S.petMastery.count)||0);}catch(_){ }
         var results=previousSummonEgg.call(this,requested);
-        var after=before;
-        try{after=Math.max(before,Number(S&&S.petMastery&&S.petMastery.count)||0);}catch(_){ }
-        var paid=Math.max(0,after-before);
-        var extraPerPaid=FAMILIAR_SUMMON_COST_V322A-LEGACY_FAMILIAR_SUMMON_COST;
-        var surcharge=paid*Math.max(0,extraPerPaid);
+        var essenceAfterOriginal=available;
+        try{essenceAfterOriginal=Math.max(0,Number(S&&S.essence)||0);}catch(_){ }
+        var masteryAfter=masteryBefore;
+        try{masteryAfter=Math.max(masteryBefore,Number(S&&S.petMastery&&S.petMastery.count)||0);}catch(_){ }
+
+        var paidFromMastery=Math.max(0,masteryAfter-masteryBefore);
+        var paidFromResults=0;
+        try{
+          if(Array.isArray(results)){
+            for(var i=0;i<results.length;i++)if(!results[i]||results[i].free!==true)paidFromResults+=1;
+          }
+        }catch(_){ }
+        var paid=Math.max(paidFromMastery,Math.min(requested,paidFromResults));
+        if(paid<=0&&Array.isArray(results)&&results.length>0)paid=Math.min(requested,results.length);
+
+        var alreadyCharged=Math.max(0,available-essenceAfterOriginal);
+        var targetCharge=paid*FAMILIAR_SUMMON_COST_V322A;
+        var surcharge=Math.max(0,targetCharge-alreadyCharged);
         if(surcharge>0){
           try{
             if(typeof update==='function')update(function(st){st.essence=Math.max(0,(Number(st.essence)||0)-surcharge);});
