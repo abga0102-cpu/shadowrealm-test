@@ -21,12 +21,14 @@ test('V322 stays inside canonical campaign owners and never duplicates V322A Fam
   expect(fs.existsSync(path.join(ROOT, 'progression-campaign-v322.js'))).toBe(false);
   const combat = src('combat-progression-authority-v285.js');
   const damage = src('enemy-damage-authority-v289.js');
+  const boss = src('boss-final-authority-v288.js');
   const ach = src('accomplishments-canonical-v139.js');
   expect(combat).toContain('var CAMPAIGN_MAX=800;');
   expect(combat).toContain("{id:'normal',label:'Facile',start:1,end:100}");
   expect(combat).toContain('chaptersPerDifficulty:5');
   expect(combat).toContain('floorsPerChapter:20');
   expect(damage).toContain('maxFloor:800');
+  expect(boss).toContain('damageCfg.baseDamage');
   expect(ach).toContain("['floor400',800,'Terminer Divin · 5-20'");
   expect(combat).not.toContain('PAID_FAMILIAR_COST');
   expect(damage).not.toContain('PAID_FAMILIAR_COST');
@@ -88,15 +90,23 @@ test('V322 stretches HP and damage while preserving former endgame anchors', asy
 test('Early monster resistance ends at 2-9 without overtaking later stages', async ({ page }) => {
   await openCleanGame(page);
   const r = await page.evaluate(() => {
-    const cfg = window.__srCombatProgressionConfigV285.earlyResistance;
+    const hpCfg = window.__srCombatProgressionConfigV285.earlyResistance;
+    const dmgCfg = window.__srEnemyDamageConfigV289.earlyResistance;
     return {
-      endFloor: cfg.endFloor,
-      endStage: cfg.endStage,
-      startMul: cfg.startMul,
-      endMul: cfg.endMul,
-      mul26: cfg.multiplier(26),
-      mul29: cfg.multiplier(29),
-      mul30: cfg.multiplier(30),
+      hpEndFloor: hpCfg.endFloor,
+      hpEndStage: hpCfg.endStage,
+      hpStartMul: hpCfg.startMul,
+      hpEndMul: hpCfg.endMul,
+      hpMul26: hpCfg.multiplier(26),
+      hpMul29: hpCfg.multiplier(29),
+      hpMul30: hpCfg.multiplier(30),
+      dmgEndFloor: dmgCfg.endFloor,
+      dmgEndStage: dmgCfg.endStage,
+      dmgStartMul: dmgCfg.startMul,
+      dmgEndMul: dmgCfg.endMul,
+      dmgMul26: dmgCfg.multiplier(26),
+      dmgMul29: dmgCfg.multiplier(29),
+      dmgMul30: dmgCfg.multiplier(30),
       stage26: window.__srCampaignMeta(26).stageCode,
       stage29: window.__srCampaignMeta(29).stageCode,
       stage31: window.__srCampaignMeta(31).stageCode,
@@ -104,20 +114,36 @@ test('Early monster resistance ends at 2-9 without overtaking later stages', asy
       hp29: window.__srV285EnemyHP(29),
       hp30: window.__srV285EnemyHP(30),
       hp31: window.__srV285EnemyHP(31),
+      dmg26: window.__srV289EnemyDamage(26),
+      dmg29: window.__srV289EnemyDamage(29),
+      dmg30: window.__srV289EnemyDamage(30),
+      dmg31: window.__srV289EnemyDamage(31),
+      baseDmg20: window.__srEnemyDamageConfigV289.baseDamage(20),
+      boostedDmg20: window.__srV289EnemyDamage(20),
     };
   });
-  expect(r.endFloor).toBe(29);
-  expect(r.endStage).toBe('2-9');
-  expect(r.startMul).toBeCloseTo(1.08, 8);
-  expect(r.endMul).toBeCloseTo(1.10, 8);
+  expect(r.hpEndFloor).toBe(29);
+  expect(r.hpEndStage).toBe('2-9');
+  expect(r.hpStartMul).toBeCloseTo(1.08, 8);
+  expect(r.hpEndMul).toBeCloseTo(1.10, 8);
+  expect(r.dmgEndFloor).toBe(29);
+  expect(r.dmgEndStage).toBe('2-9');
+  expect(r.dmgStartMul).toBeCloseTo(1.08, 8);
+  expect(r.dmgEndMul).toBeCloseTo(1.10, 8);
   expect(r.stage26).toBe('2-6');
   expect(r.stage29).toBe('2-9');
   expect(r.stage31).toBe('2-11');
-  expect(r.mul26).toBeGreaterThan(1);
-  expect(r.mul29).toBeCloseTo(1.10, 8);
-  expect(r.mul30).toBe(1);
+  expect(r.hpMul26).toBeGreaterThan(1);
+  expect(r.hpMul29).toBeCloseTo(1.10, 8);
+  expect(r.hpMul30).toBe(1);
+  expect(r.dmgMul26).toBeGreaterThan(1);
+  expect(r.dmgMul29).toBeCloseTo(1.10, 8);
+  expect(r.dmgMul30).toBe(1);
   expect(r.hp26).toBeLessThan(r.hp31);
   expect(r.hp29).toBeLessThan(r.hp30);
+  expect(r.dmg26).toBeLessThan(r.dmg31);
+  expect(r.dmg29).toBeLessThan(r.dmg30);
+  expect(r.boostedDmg20).toBeGreaterThan(r.baseDmg20);
 });
 
 test('V322 old-save migration preserves difficulty position and completed campaign', async ({ page }) => {
