@@ -13,7 +13,7 @@ async function openCleanGame(page) {
   await page.waitForFunction(() => window.__srForgeMasterStageFlowV316 === true);
 }
 
-test('V316 repeats the exact Normal/Elite/Boss composition every ten visible stages', async ({ page }) => {
+test('V322 repeats the approved Normal/Elite/Boss composition every five internal stages', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => {
     function wave(floor, step) {
@@ -116,7 +116,7 @@ test('V316 normalizes old three-wave saves on shortened Elite and Boss stages', 
   expect(result.boss).toMatchObject({floor:5,step:1,combatFloor:5,combatStep:1,waves:1,boss:true});
 });
 
-test('V316 Boss 1-5 is a real boss and advances to 1-6 after victory', async ({ page }) => {
+test('V322 Boss 1-5 is a real boss and advances to Facile 1-6 after victory', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => {
     S.floor=5;S.step=1;S.pendingBossFloor=0;S.bossClears=S.bossClears||{};delete S.bossClears['5'];
@@ -126,5 +126,5 @@ test('V316 Boss 1-5 is a real boss and advances to 1-6 after victory', async ({ 
     handleCombatEnd(c);
     return {wasBoss:!!c.boss,hp,floor:S.floor,step:S.step,cleared:!!S.bossClears['5'],nextLabel:__srCampaignLabel(S.floor)};
   });
-  expect(result).toEqual({wasBoss:true,hp:500,floor:6,step:1,cleared:true,nextLabel:'Normal · 1-6'});
+  expect(result).toEqual({wasBoss:true,hp:500,floor:6,step:1,cleared:true,nextLabel:'Facile · 1-6'});
 });
