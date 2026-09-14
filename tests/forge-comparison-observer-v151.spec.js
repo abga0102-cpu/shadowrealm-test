@@ -22,11 +22,11 @@ test('V151 Forge comparison clarification stays bounded and interactive', async 
 
   const panel = page.locator('#srForgeArenaPreview146');
   await expect(panel).toHaveCount(1, { timeout: 3000 });
-  await expect(panel.locator('[data-sr-fp146="keep"]')).toContainText('GARDER LE NOUVEAU');
+  await expect(panel.locator('[data-sr-fp146="keep"]')).toContainText('GARDER DANS L’INVENTAIRE');
 
   const equip = panel.locator('[data-sr-fp146="equip"]');
   if (await equip.count()) {
-    await expect(equip).toContainText('ÉQUIPER · ANCIEN CONSERVÉ');
+    await expect(equip).toContainText('ÉQUIPER LE NOUVEAU');
   }
 
   // An unrelated subtree mutation must not make V151 rescan/rewrite the popup,
