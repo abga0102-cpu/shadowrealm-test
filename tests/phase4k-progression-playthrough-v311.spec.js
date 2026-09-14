@@ -168,16 +168,15 @@ test('V311 personal Tree remains fully reachable with hybrid paths and finite PE
   expect(result.totalPe).toBeGreaterThan(0);
 });
 
-test('V311 Mega Boss unlock is exactly Boss 50 and combat power is x10 on both axes', async ({ page }) => {
+test('V311/V318 Mega Boss unlock is level 18 and combat power remains x10 on both axes', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
     const before = defaultState('QA');
-    before.recordFloor = 50;
-    before.floor = 50;
-    before.bossClears = { '10': true, '20': true, '30': true, '40': true };
+    before.level = 17;
+    before.bossClears = { '10': true, '20': true, '30': true, '40': true, '50': true };
     const after = structuredClone(before);
-    after.bossClears['50'] = true;
+    after.level = 18;
 
     const floor = 50;
     const def = bossFor(floor);
@@ -201,8 +200,8 @@ test('V311 Mega Boss unlock is exactly Boss 50 and combat power is x10 on both a
     const mega = makeMegaBossEnemy(floor);
 
     return {
-      beforeClear50: megaRaidUnlocked(before),
-      afterClear50: megaRaidUnlocked(after),
+      before18: megaRaidUnlocked(before),
+      at18: megaRaidUnlocked(after),
       hpReference: normalReference.maxHP,
       hpMega: mega.maxHP,
       dmgReference: normalReference.dmg,
@@ -211,8 +210,8 @@ test('V311 Mega Boss unlock is exactly Boss 50 and combat power is x10 on both a
     };
   });
 
-  expect(result.beforeClear50).toBe(false);
-  expect(result.afterClear50).toBe(true);
+  expect(result.before18).toBe(false);
+  expect(result.at18).toBe(true);
   expect(result.megaFlag).toBe(true);
   expect(result.hpMega).toBe(result.hpReference * 10);
   expect(result.dmgMega).toBe(result.dmgReference * 10);
