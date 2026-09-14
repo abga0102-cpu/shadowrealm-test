@@ -1,6 +1,6 @@
 # Lean-code remaining-work audit
 
-Audit refreshed: 2026-09-14. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `9be965296808fef7bf4686198323a4f287211f0d` (latest `main` after PR #244 roadmap synchronization).
+Audit refreshed: 2026-09-14. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `14c5b285af518ba7022c298e3d9f16e15dd9a578` (latest `main` after PR #249 visual interaction refinement).
 
 This file records the current remaining-work disposition after the proof-based L1 audit and subsequent L2/L3/L4/L5 passes. **L1 is complete.** L2, L3, L4 and staged L5 remain evidence-driven.
 
@@ -56,9 +56,9 @@ Do not collapse V121 into payout/UI owners merely to reduce file count. Reassess
 
 ## Visual ownership
 
-PR #232 completed the requested arcade-clean visual pass in existing canonical `premium-ui-v209.js`: flatter/quieter cards, restrained tactile controls, semantic CTA hierarchy, quieter HUD/navigation presentation and simpler interaction feedback while retaining the dark-navy/burnished-gold RPG identity. This was visual-only and introduced no new runtime owner or patch layer.
+PR #232 completed the main arcade-clean visual pass in existing canonical `premium-ui-v209.js`: flatter/quieter cards, restrained tactile controls, semantic CTA hierarchy, quieter HUD/navigation presentation and simpler interaction feedback while retaining the dark-navy/burnished-gold RPG identity. PR #248 then aligned the remaining compact info/close controls with that shared silhouette/material language, and PR #249 added restrained hover/press feedback to segmented controls and toggles. Both follow-up refinements stayed inside the same canonical visual owner and added no patch-layer file or runtime authority.
 
-Future visual work should extend existing canonical owners and should be driven by concrete visual inconsistencies rather than adding versioned overlay files. This source-level refresh found no new neutral visual-ownership seam that justifies another visual patch while campaign/Forge/index work is active.
+Future visual work should continue to extend existing canonical owners and should be driven by concrete visual inconsistencies rather than adding versioned overlay files. The current source-level scan found no additional neutral visual-ownership seam that justifies another visual batch while campaign/Forge/index work is active.
 
 ## L4 shared-utility disposition
 
