@@ -1,15 +1,17 @@
 /* SHADOWREACH V291 · Skill/Familiar summon economy authority
-   QA result: current 125 +5/level rewards only fund ~10 summons/day at Raid 1
-   with the two native daily keys, while the validated progression target is
-   ~20 summons/day at level 1 and ~59/day at level 50.
-   Authority:
+   Raid summon rewards remain on the validated V291 curve:
    - Raid Compétence: 250 at lvl1, +10 per level.
    - Raid Familier:   250 at lvl1, +10 per level.
-   Costs, key cadence, tree reductions and every other raid remain unchanged. */
+   V322A changes only the PAID Familiar invocation price from 25 to 50 Essence.
+   Tree Double Œuf stays a free extra result and never pays a second 50 Essence.
+   Skill costs, raid keys, reward curves and all other raids remain unchanged. */
 (function(){
   'use strict';
   if(window.__srRaidSummonEconomyV291)return;
   window.__srRaidSummonEconomyV291=true;
+
+  var LEGACY_FAMILIAR_SUMMON_COST=25;
+  var FAMILIAR_SUMMON_COST_V322A=50;
 
   function summonReward(level){
     level=Math.max(1,Math.floor(Number(level)||1));
@@ -19,19 +21,91 @@
   try{
     if(typeof raidReward==='function'&&!raidReward.__srV291){
       var previousRaidReward=raidReward;
-      var wrapped=function(type,level){
+      var wrappedReward=function(type,level){
         if(type==='competence'||type==='familier')return summonReward(level);
         return previousRaidReward.apply(this,arguments);
       };
-      wrapped.__srV291=true;
-      wrapped.__srPrevious=previousRaidReward;
-      raidReward=wrapped;
+      wrappedReward.__srV291=true;
+      wrappedReward.__srPrevious=previousRaidReward;
+      raidReward=wrappedReward;
     }
   }catch(_){ }
 
+  /* Keep the original summon implementation as the single owner of rarity,
+     mastery, storage and Double Œuf. We only restrict how many paid summons are
+     affordable at 50 Essence, then charge the 25-Essence delta once per PAID
+     summon. petMastery.count advances once per paid summon and never for the
+     free Tree egg, making it the safest accounting source. */
+  try{
+    if(typeof summonEgg==='function'&&!summonEgg.__srV322A){
+      var previousSummonEgg=summonEgg;
+      var wrappedSummonEgg=function(n){
+        n=Math.max(0,Math.floor(Number(n)||0));
+        if(!n)return [];
+        var available=0;
+        try{available=Math.max(0,Number(S&&S.essence)||0);}catch(_){ }
+        var affordable=Math.floor(available/FAMILIAR_SUMMON_COST_V322A);
+        var requested=Math.min(n,affordable);
+        if(requested<=0)return [];
+
+        var before=0;
+        try{before=Math.max(0,Number(S&&S.petMastery&&S.petMastery.count)||0);}catch(_){ }
+        var results=previousSummonEgg.call(this,requested);
+        var after=before;
+        try{after=Math.max(before,Number(S&&S.petMastery&&S.petMastery.count)||0);}catch(_){ }
+        var paid=Math.max(0,after-before);
+        var extraPerPaid=FAMILIAR_SUMMON_COST_V322A-LEGACY_FAMILIAR_SUMMON_COST;
+        var surcharge=paid*Math.max(0,extraPerPaid);
+        if(surcharge>0){
+          try{
+            if(typeof update==='function')update(function(st){st.essence=Math.max(0,(Number(st.essence)||0)-surcharge);});
+            else if(typeof S!=='undefined'&&S)S.essence=Math.max(0,(Number(S.essence)||0)-surcharge);
+          }catch(_){ }
+        }
+        return results;
+      };
+      wrappedSummonEgg.__srV322A=true;
+      wrappedSummonEgg.__srPrevious=previousSummonEgg;
+      summonEgg=wrappedSummonEgg;
+    }
+  }catch(_){ }
+
+  /* The Familiar screen was authored against the legacy lexical constant.
+     Patch only the rendered price/disabled state while keeping its canonical
+     layout and controls intact. */
+  try{
+    if(typeof scrFamiliers==='function'&&!scrFamiliers.__srV322A){
+      var previousScrFamiliers=scrFamiliers;
+      var wrappedScrFamiliers=function(){
+        var html=String(previousScrFamiliers.apply(this,arguments));
+        html=html.replace(/Invoquer · 25/g,'Invoquer · 50').replace(/x10 · 250/g,'x10 · 500');
+        var essence=0;try{essence=Math.max(0,Number(S&&S.essence)||0);}catch(_){ }
+        html=html.replace(/<button([^>]*data-act="summonEgg"[^>]*)>/g,function(full,attrs){
+          var m=attrs.match(/data-arg="(\d+)"/),qty=m?Math.max(1,Number(m[1])||1):1;
+          if(essence>=FAMILIAR_SUMMON_COST_V322A*qty||/\sdisabled(?:\s|=|$)/.test(attrs))return full;
+          return '<button'+attrs+' disabled>';
+        });
+        return html;
+      };
+      wrappedScrFamiliers.__srV322A=true;
+      wrappedScrFamiliers.__srPrevious=previousScrFamiliers;
+      scrFamiliers=wrappedScrFamiliers;
+      try{if(typeof SCREENS!=='undefined'&&SCREENS&&typeof SCREENS.familiers==='function')SCREENS.familiers=wrappedScrFamiliers;}catch(_){ }
+    }
+  }catch(_){ }
+
+  try{
+    if(typeof RESOURCE_INFO!=='undefined'&&RESOURCE_INFO&&RESOURCE_INFO.essence){
+      RESOURCE_INFO.essence.desc='Sert à invoquer des œufs de Familier. Une invocation coûte 50 Essence.'+
+        ((typeof S!=='undefined'&&S&&S.economyDebt&&S.economyDebt.essence)?
+          ' Rééquilibrage en cours : les prochaines Essences remboursent d’abord '+fmt(S.economyDebt.essence)+' Essences historiques.':'');
+    }
+  }catch(_){ }
+
+  window.__srFamiliarSummonCostV322A=FAMILIAR_SUMMON_COST_V322A;
   window.__srRaidSummonEconomyConfigV291={
     competence:{base:250,perLevel:10},
-    familier:{base:250,perLevel:10},
-    expectedDailySummonsAtBaseCost:{level1:20,level50:59.2}
+    familier:{base:250,perLevel:10,paidSummonCost:FAMILIAR_SUMMON_COST_V322A},
+    expectedPaidSummonsPerBaseRaidWin:{level1:5,level50:14.8}
   };
 })();
