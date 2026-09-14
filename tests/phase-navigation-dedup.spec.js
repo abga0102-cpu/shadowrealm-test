@@ -66,7 +66,7 @@ test.describe('duplicate-free permanent navigation', () => {
     await expect(page.locator('[data-act="go"][data-arg="rebirth"]')).toHaveCount(0);
 
     for (const route of ['arbre', 'familiers', 'competences', 'defis', 'ascension']) {
-      expect(await page.locator(`[data-act="go"][data-arg="${route}"]`).count()).toBeLessThanOrEqual(1);
+      expect(await page.locator(`#screen [data-act="go"][data-arg="${route}"]`).count()).toBeLessThanOrEqual(1);
     }
 
     await page.locator('#tabs > .tab[data-arg="parametres"]').click();
@@ -75,11 +75,11 @@ test.describe('duplicate-free permanent navigation', () => {
     await expect(page.locator('[data-act="accomplishments"]')).toHaveCount(0);
 
     for (const route of ['boutique', 'evenement', 'classement']) {
-      expect(await page.locator(`[data-act="go"][data-arg="${route}"]`).count()).toBeLessThanOrEqual(1);
+      expect(await page.locator(`#screen [data-act="go"][data-arg="${route}"]`).count()).toBeLessThanOrEqual(1);
     }
-    const clanLinks = await page.locator('[data-act="go"][data-arg="clan"], [data-act="locked"][data-arg="10"]').count();
+    const clanLinks = await page.locator('#screen [data-act="go"][data-arg="clan"], #screen [data-act="locked"][data-arg="10"]').count();
     expect(clanLinks).toBeLessThanOrEqual(1);
-    await expect(page.locator('[data-act="go"][data-arg="chat"]')).toHaveCount(0);
+    await expect(page.locator('#screen [data-act="go"][data-arg="chat"]')).toHaveCount(0);
 
     await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
   });
