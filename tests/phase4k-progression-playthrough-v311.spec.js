@@ -82,13 +82,13 @@ test('V311 dedicated Raid economy funds the approved PE and summon loops at prog
   });
 
   expect(result.skillCost).toBe(25);
-  expect(result.petCost).toBe(25);
+  expect(result.petCost).toBe(50);
   expect(result.keys).toBe(2);
   expect(result.rows).toEqual([
-    { level: 1, pe: 100, skill: 250, pet: 250, dailyPe: 200, dailySkillSummons: 20, dailyPetSummons: 20 },
-    { level: 10, pe: 127, skill: 340, pet: 340, dailyPe: 254, dailySkillSummons: 27, dailyPetSummons: 27 },
-    { level: 25, pe: 172, skill: 490, pet: 490, dailyPe: 344, dailySkillSummons: 39, dailyPetSummons: 39 },
-    { level: 50, pe: 247, skill: 740, pet: 740, dailyPe: 494, dailySkillSummons: 59, dailyPetSummons: 59 },
+    { level: 1, pe: 100, skill: 250, pet: 250, dailyPe: 200, dailySkillSummons: 20, dailyPetSummons: 10 },
+    { level: 10, pe: 127, skill: 340, pet: 340, dailyPe: 254, dailySkillSummons: 27, dailyPetSummons: 13 },
+    { level: 25, pe: 172, skill: 490, pet: 490, dailyPe: 344, dailySkillSummons: 39, dailyPetSummons: 19 },
+    { level: 50, pe: 247, skill: 740, pet: 740, dailyPe: 494, dailySkillSummons: 59, dailyPetSummons: 29 },
   ]);
 });
 
