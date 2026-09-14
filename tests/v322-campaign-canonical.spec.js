@@ -77,12 +77,47 @@ test('V322 stretches HP and damage while preserving former endgame anchors', asy
     dmg1: window.__srV289EnemyDamage(1), dmg800: window.__srV289EnemyDamage(800),
     dmgCfg: window.__srEnemyDamageConfigV289,
   }));
-  expect(r.hp1).toBe(22);
+  expect(r.hp1).toBe(24);
   expect(r.hp800).toBe(320000000000);
   expect(r.boss800).toBe(6000000000000);
   expect(r.dmg1).toBe(2);
   expect(r.dmg800).toBe(2300000000);
   expect(r.dmgCfg.maxFloor).toBe(800);
+});
+
+test('Early monster resistance ends at 2-9 without overtaking later stages', async ({ page }) => {
+  await openCleanGame(page);
+  const r = await page.evaluate(() => {
+    const cfg = window.__srCombatProgressionConfigV285.earlyResistance;
+    return {
+      endFloor: cfg.endFloor,
+      endStage: cfg.endStage,
+      startMul: cfg.startMul,
+      endMul: cfg.endMul,
+      mul26: cfg.multiplier(26),
+      mul29: cfg.multiplier(29),
+      mul30: cfg.multiplier(30),
+      stage26: window.__srCampaignMeta(26).stageCode,
+      stage29: window.__srCampaignMeta(29).stageCode,
+      stage31: window.__srCampaignMeta(31).stageCode,
+      hp26: window.__srV285EnemyHP(26),
+      hp29: window.__srV285EnemyHP(29),
+      hp30: window.__srV285EnemyHP(30),
+      hp31: window.__srV285EnemyHP(31),
+    };
+  });
+  expect(r.endFloor).toBe(29);
+  expect(r.endStage).toBe('2-9');
+  expect(r.startMul).toBeCloseTo(1.08, 8);
+  expect(r.endMul).toBeCloseTo(1.10, 8);
+  expect(r.stage26).toBe('2-6');
+  expect(r.stage29).toBe('2-9');
+  expect(r.stage31).toBe('2-11');
+  expect(r.mul26).toBeGreaterThan(1);
+  expect(r.mul29).toBeCloseTo(1.10, 8);
+  expect(r.mul30).toBe(1);
+  expect(r.hp26).toBeLessThan(r.hp31);
+  expect(r.hp29).toBeLessThan(r.hp30);
 });
 
 test('V322 old-save migration preserves difficulty position and completed campaign', async ({ page }) => {
