@@ -77,7 +77,21 @@ function installProgressEntry(){
  if(typeof SCREENS==='undefined'||!SCREENS||typeof SCREENS.developpement!=='function')return;
  window.__srAccomplishmentsProgressEntryV139=true;
  var oldProgress=SCREENS.developpement;
- SCREENS.developpement=function(){var h=oldProgress();return h.replace('<div class="pad mt6">','<div class="pad mt6"><div class="card lit" data-act="accomplishments" style="cursor:pointer;margin-bottom:8px"><div class="between"><b>Accomplissements</b><span class="pill">Voir les récompenses</span></div></div>');};
+ SCREENS.developpement=function(){
+  var h=oldProgress();
+  try{
+   var box=document.createElement('div');box.innerHTML=h;
+   var pad=box.querySelector('.pad.mt6,.pad.mt8,.pad');
+   if(!pad||pad.querySelector('[data-act="accomplishments"]'))return box.innerHTML;
+   var entry=document.createElement('div');
+   entry.className='card lit';
+   entry.dataset.act='accomplishments';
+   entry.style.cssText='cursor:pointer;margin-bottom:8px';
+   entry.innerHTML='<div class="between"><b>Accomplissements</b><span class="pill">Voir les récompenses</span></div>';
+   pad.insertBefore(entry,pad.firstChild);
+   return box.innerHTML;
+  }catch(_){return h;}
+ };
 }
 function install(){if(typeof S==='undefined'||typeof ACT==='undefined'||typeof openModal!=='function')return;ACT.accomplishments=function(){openModal(html(),'Accomplissements');};installTitleInteraction();installProgressEntry();}
 install();
