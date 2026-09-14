@@ -1,0 +1,72 @@
+name: Familiar canonical cost hotfix
+
+on:
+  push:
+    branches:
+      - hotfix/familiar-canonical-cost-50-v322e
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: hotfix/familiar-canonical-cost-50-v322e
+          fetch-depth: 0
+
+      - name: Patch canonical Familiar cost and cache key
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          game = Path('game-1.js')
+          text = game.read_text(encoding='utf-8')
+          old = 'const PET_SUMMON_COST = 25;    // fixed cost per Familier egg invocation'
+          new = 'const PET_SUMMON_COST = 50;    // fixed cost per Familier egg invocation'
+          if old in text:
+              if text.count(old) != 1:
+                  raise SystemExit(f'Expected exactly one canonical Familiar cost, found {text.count(old)}')
+              text = text.replace(old, new, 1)
+              game.write_text(text, encoding='utf-8')
+          elif new not in text:
+              raise SystemExit('Canonical Familiar cost line not found')
+
+          index = Path('index.html')
+          html = index.read_text(encoding='utf-8')
+          replacements = {
+              'content="2026.09.14.322d"': 'content="2026.09.14.322e"',
+              'game-1.js?v=2026.09.08.172': 'game-1.js?v=2026.09.14.322e',
+          }
+          for old_i, new_i in replacements.items():
+              if old_i in html:
+                  html = html.replace(old_i, new_i, 1)
+              elif new_i not in html:
+                  raise SystemExit(f'Expected index marker not found: {old_i}')
+          index.write_text(html, encoding='utf-8')
+          PY
+
+          node --check game-1.js
+          grep -F 'const PET_SUMMON_COST = 50;' game-1.js
+          grep -F 'game-1.js?v=2026.09.14.322e' index.html
+          git diff --check
+
+      - name: Commit exact hotfix if needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- game-1.js index.html; then
+            echo 'Hotfix already applied.'
+            exit 0
+          fi
+          changed="$(git diff --name-only -- game-1.js index.html)"
+          test "$changed" = $'game-1.js\nindex.html' || { echo "Unexpected changed files: $changed"; exit 1; }
+          git config user.name 'shadowreach-hotfix'
+          git config user.email 'actions@users.noreply.github.com'
+          git add game-1.js index.html
+          git commit -m 'V322E: set canonical Familiar summon cost to 50'
+          git push origin HEAD:hotfix/familiar-canonical-cost-50-v322e
