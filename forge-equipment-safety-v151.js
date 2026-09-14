@@ -2,7 +2,8 @@
    Global equipment safety layer.
    Guarantees that replacing an equipped item never destroys the previous item:
    the old item must remain equipped or return to inventory. Also clarifies Forge
-   comparison actions so GARDER means keeping the new drop without equipping it. */
+   comparison actions so keeping means storing the new drop without equipping it.
+   V320: action labels match the explicit replacement-power comparison flow. */
 (function(){
 'use strict';
 if(window.__srForgeEquipmentSafetyV151)return;
@@ -54,11 +55,11 @@ function clarify(root){
  var equip=panel.querySelector('[data-sr-fp146="equip"]');
  if(keep){
   var more=/SUIVANT/i.test(keep.textContent||'');
-  setText(keep,more?'GARDER LE NOUVEAU · SUIVANT':'GARDER LE NOUVEAU');
+  setText(keep,more?'GARDER DANS L’INVENTAIRE · SUIVANT':'GARDER DANS L’INVENTAIRE');
   setTitle(keep,'Conserve le nouvel équipement dans l’inventaire sans changer l’équipement porté.');
  }
  if(equip){
-  setText(equip,'ÉQUIPER · ANCIEN CONSERVÉ');
+  setText(equip,'ÉQUIPER LE NOUVEAU');
   setTitle(equip,'Équipe le nouvel objet et remet automatiquement l’ancien dans l’inventaire.');
  }
 }
