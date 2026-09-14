@@ -37,7 +37,7 @@ function difficultyIndexForFloor(floor){
   return Math.max(0,DIFFICULTIES.length-1);
 }
 function stageKindFromStage(stage){
-  stage=Math.max(1,Math.min(20,Math.floor(Number(stage)||1));
+  stage=Math.max(1,Math.min(20,Math.floor(Number(stage)||1)));
   var beat=((stage-1)%5)+1;
   if(beat===5)return 'boss';
   if(beat===4)return 'elite';
