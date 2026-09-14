@@ -16,7 +16,6 @@ async function openCleanGame(page) {
 test('visible stage 5-4 clears after its Elite wave and advances to 5-5', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => {
-    // Current 400-stage campaign: Normal 5-4 is internal floor 44.
     S.floor = 44;
     S.step = 2;
     S.pendingBossFloor = 0;
@@ -45,4 +44,50 @@ test('visible stage 5-4 clears after its Elite wave and advances to 5-5', async 
   expect(result.floor).toBe(45);
   expect(result.step).toBe(1);
   expect(result.nextLabel).toBe('Normal · 5-5');
+});
+
+test('real settle path restarts campaign on 5-5 after winning Elite 5-4', async ({ page }) => {
+  await openCleanGame(page);
+
+  const before = await page.evaluate(() => {
+    S.floor = 44;
+    S.step = 2;
+    S.pendingBossFloor = 0;
+    S.recordFloor = Math.max(Number(S.recordFloor) || 1, 44);
+    combat = spawnCampaign(S);
+    combat.status = 'won';
+    combat.endAt = Date.now() - 1;
+    combat._ended = false;
+    return {
+      floor: S.floor,
+      step: S.step,
+      combatFloor: combat.floor,
+      combatStep: combat.step,
+      elite: !!combat.elite,
+      waves: campaignWaveCount(combat.floor),
+    };
+  });
+
+  expect(before).toMatchObject({ floor: 44, step: 2, combatFloor: 44, combatStep: 2, elite: true, waves: 2 });
+
+  await page.evaluate(() => tick());
+  await page.waitForFunction(() => S.floor === 45 && S.step === 1 && combat && combat.floor === 45 && combat.step === 1);
+
+  const after = await page.evaluate(() => ({
+    floor: S.floor,
+    step: S.step,
+    label: __srCampaignLabel(S.floor),
+    combatFloor: combat && combat.floor,
+    combatStep: combat && combat.step,
+    status: combat && combat.status,
+  }));
+
+  expect(after).toMatchObject({
+    floor: 45,
+    step: 1,
+    label: 'Normal · 5-5',
+    combatFloor: 45,
+    combatStep: 1,
+    status: 'fight',
+  });
 });
