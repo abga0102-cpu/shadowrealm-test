@@ -37,7 +37,7 @@ function difficultyIndexForFloor(floor){
   return Math.max(0,DIFFICULTIES.length-1);
 }
 function stageKindFromStage(stage){
-  stage=Math.max(1,Math.min(20,Math.floor(Number(stage)||1)));
+  stage=Math.max(1,Math.min(20,Math.floor(Number(stage)||1));
   var beat=((stage-1)%5)+1;
   if(beat===5)return 'boss';
   if(beat===4)return 'elite';
@@ -161,7 +161,21 @@ function logInterp(table,f){
   }
   return table[ks[ks.length-1]];
 }
-window.__srV285EnemyHP=function(f){return logInterp(NORMAL,semanticLegacyFloor(f));};
+
+/* Early Facile should feel slightly more resistant without becoming a wall.
+   The bonus rises gently from +8% at 1-1 to +10% at 2-9, then hands back to
+   the untouched semantic curve. Boss targets remain on their dedicated curve. */
+var EARLY_RESISTANCE_END_FLOOR=29;
+var EARLY_RESISTANCE_START_MUL=1.08;
+var EARLY_RESISTANCE_END_MUL=1.10;
+function earlyResistanceMul(f){
+  f=clampFloor(f);
+  if(f>EARLY_RESISTANCE_END_FLOOR)return 1;
+  var t=(f-1)/Math.max(1,EARLY_RESISTANCE_END_FLOOR-1);
+  return EARLY_RESISTANCE_START_MUL+(EARLY_RESISTANCE_END_MUL-EARLY_RESISTANCE_START_MUL)*t;
+}
+function baseEnemyHP(f){return logInterp(NORMAL,semanticLegacyFloor(f));}
+window.__srV285EnemyHP=function(f){return Math.round(baseEnemyHP(f)*earlyResistanceMul(f));};
 window.__srV285BossHP=function(f){return logInterp(BOSS,semanticLegacyFloor(f));};
 try{if(typeof enemyHP==='function')enemyHP=window.__srV285EnemyHP;}catch(_){ }
 
@@ -347,7 +361,8 @@ window.__srCombatProgressionConfigV285={
   bossHP:BOSS,normalHP:NORMAL,maxFloor:CAMPAIGN_MAX,difficulties:DIFFICULTIES,
   chaptersPerDifficulty:5,chapterCounts:CHAPTER_COUNTS,floorsPerChapter:20,totalChapters:40,
   campaignMeta:campaignMeta,stageWavePattern:STAGE_WAVES.slice(),stageWaveCount:stageWaveCount,
-  legacyMaxFloor:LEGACY_CAMPAIGN_MAX,migrateLegacyFloor:migrateLegacyFloor,forgeIntroV321:window.__srForgeIntroCombatConfigV321
+  legacyMaxFloor:LEGACY_CAMPAIGN_MAX,migrateLegacyFloor:migrateLegacyFloor,forgeIntroV321:window.__srForgeIntroCombatConfigV321,
+  earlyResistance:{endFloor:EARLY_RESISTANCE_END_FLOOR,endStage:'2-9',startMul:EARLY_RESISTANCE_START_MUL,endMul:EARLY_RESISTANCE_END_MUL,multiplier:earlyResistanceMul}
 };
 window.__srProgressionCampaignConfigV322={maxFloor:800,difficulties:DIFFICULTIES,chaptersPerDifficulty:5,stagesPerChapter:20,totalStages:800,firstDifficultyLabel:'Facile',legacyMigration:true};
 })();
