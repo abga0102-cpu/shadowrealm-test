@@ -1,6 +1,6 @@
 # Lean-code remaining-work audit
 
-Audit refreshed: 2026-09-14. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `3fcb9968127bf2b12a83f145ba624133c29354e9` (latest `main` after PR #244 roadmap synchronization).
+Audit refreshed: 2026-09-14. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `9be965296808fef7bf4686198323a4f287211f0d` (latest `main` after PR #244 roadmap synchronization).
 
 This file records the current remaining-work disposition after the proof-based L1 audit and subsequent L2/L3/L4/L5 passes. **L1 is complete.** L2, L3, L4 and staged L5 remain evidence-driven.
 
