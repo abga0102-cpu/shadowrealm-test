@@ -154,7 +154,7 @@ a:focus-visible{
 .seg>span{
   background:#172132!important;color:#98A6B9!important;
   border-right:1px solid #0B111C!important;
-  transition:background .11s,color .11s,filter .11s!important;
+  transition:background .11s,color .11s,filter .11s,transform .11s!important;
 }
 .seg>span.on{
   background:#9A782F!important;
@@ -169,6 +169,11 @@ a:focus-visible{
 }
 .tgl>i{border-width:1px!important;box-shadow:0 1px 2px rgba(0,0,0,.30)!important}
 .tgl.on{background:#2F6F43!important;color:#F1FFF4!important;text-shadow:none!important}
+@media(hover:hover){
+  .seg>span:hover:not(.on){background:#1D2B40!important;color:#C4CEDC!important}
+  .tgl:hover{filter:brightness(1.07)!important}
+}
+.seg>span:active,.tgl:active{transform:translateY(1px) scale(.98)!important;filter:brightness(.95)!important}
 
 /* Progress bars: high contrast, low ornament. */
 .pbar>.trk,.bar{box-shadow:inset 0 1px 2px rgba(0,0,0,.65)!important}
