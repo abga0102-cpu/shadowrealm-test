@@ -26,7 +26,7 @@ function currentSeen(overrides = {}) {
   }, overrides);
 }
 
-test('V312 tutorial runway follows current progression and never revives retired Rebirth or Apple guidance', async ({ page }) => {
+test('V312/V318 tutorial runway follows current progression and never revives retired Rebirth or Apple guidance', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
@@ -49,9 +49,7 @@ test('V312 tutorial runway follows current progression and never revives retired
     const raid = pendingTutorialStep();
 
     setSeen({ megaBoss: false });
-    S.bossClears = Object.assign({}, S.bossClears, { '50': true });
-    S.recordFloor = Math.max(Number(S.recordFloor) || 1, 50);
-    S.floor = Math.max(Number(S.floor) || 1, 50);
+    S.level = Math.max(Number(S.level) || 1, 18);
     const mega = pendingTutorialStep();
 
     setSeen({ tree: false });
