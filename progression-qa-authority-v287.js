@@ -29,20 +29,93 @@ try{if(typeof applyDamageToEnemy==='function'&&!applyDamageToEnemy.__srV287){var
 
 /* ---------- Familiar legacy UI cleanup ---------- */
 try{if(typeof scrFamiliers==='function'&&!scrFamiliers.__srV287){var oldFam=scrFamiliers;scrFamiliers=function(){var h=String(oldFam()||''),p=(S.pets||[]).find(function(x){return x&&x.id===S.activePetId;})||null,st=(window.__srV286PetStats&&p)?window.__srV286PetStats(p,S):{damage:0,hp:0};
-  /* active card */
   h=h.replace(/<span class="pill">Niv\. [^<]*<\/span>/g,'');
   h=h.replace(/\+0% dégâts/g,'+'+fmt(st.damage)+' DGT').replace(/\+0% PV/g,'+'+fmt(st.hp)+' PV');
-  /* collection/mini-cards */
   h=h.replace(/Niv\. \d+(?:\/\d+)?\s*·\s*/g,'');
-  /* old active upgrade control is either Apple button or NIV. MAX */
   h=h.replace(/<button[^>]*data-act="upgradePet"[\s\S]*?<\/button>/g,'');
   h=h.replace(/<span class="pill center"[^>]*>NIV\. MAX<\/span>/g,'');
-  /* percentage-based comparison is obsolete: species are situational, not a single-score ladder */
   h=h.replace(/<div class="card famCompare mt8">[\s\S]*?<\/div><\/div>/,'');
   h=h.replace('Le familier le plus avancé conserve son niveau, son espèce, son élément et ses Pommes investies.','Le familier utilisé comme noyau conserve son espèce et son élément.');
   h=h.replace(/Pommes[^<]*/g,'Progression par fusion');
   return h;};scrFamiliers.__srV287=true;}
 var style=document.createElement('style');style.id='sr-v287-familiar-clean';style.textContent='.famV229 .famHeroActions{grid-template-columns:1fr}.famV229 .famTileLv{font-size:8px}.famV229 .famTileLv:empty{display:none}';document.head.appendChild(style);}catch(_){ }
+
+/* ---------- V323 onboarding authority ---------- */
+(function(){
+  var REWARD=250;
+  function early(s){
+    if(!s)return false;
+    var crafted=!!(s.forge&&Number(s.forge.summonCount)>0);
+    var high=Math.max(Number(s.floor)||1,Number(s.recordFloor)||1,Number(s.checkpoint)||1);
+    return !crafted&&high<=2;
+  }
+  function tut(s){s.tutorial=s.tutorial||{};s.tutorial.seen=s.tutorial.seen||{};return s.tutorial;}
+  try{
+    if(typeof S!=='undefined'&&S){
+      S.autoSkills=true;
+      var t=tut(S);
+      if(early(S)&&!t.forgeIntroMineralGrantV323&&Number(S.minerai)===400)S.minerai=0;
+    }
+  }catch(_){ }
+  try{
+    if(typeof startCampaign==='function'&&!startCampaign.__srOnboardingV323){
+      var oldStart=startCampaign;
+      startCampaign=function(){
+        try{if(typeof S!=='undefined'&&S)S.autoSkills=true;}catch(_){ }
+        var out=oldStart.apply(this,arguments);
+        try{
+          if(typeof S!=='undefined'&&S&&early(S)&&typeof combat!=='undefined'&&combat&&combat.ctx==='campaign'){
+            var hp=Math.max(1,Number(combat.heroMaxHP)||Number(combat.heroHP)||1);
+            if(Number(combat.floor)===1&&Number(combat.step)===3){
+              (combat.enemies||[]).forEach(function(e){
+                if(!e)return;
+                e.maxHP=Math.max(Number(e.maxHP)||1,Math.ceil((Number(D&&D.damage)||1)*5));
+                e.hp=e.maxHP;
+                e.dmg=Math.max(Number(e.dmg)||1,Math.ceil(hp*.16));
+                e.__srPreludeV323=true;
+              });
+              combat.__srPreludeV323=true;
+            }
+            if(Number(combat.floor)===2&&combat.__srForgeIntroV321){
+              combat.heroHP=Math.max(1,Math.ceil(hp*.58));
+            }
+          }
+        }catch(_){ }
+        return out;
+      };
+      startCampaign.__srOnboardingV323=true;
+      startCampaign.__srPrevious=oldStart;
+    }
+  }catch(_){ }
+  try{
+    if(typeof handleCombatEnd==='function'&&!handleCombatEnd.__srOnboardingV323){
+      var oldEnd=handleCombatEnd;
+      handleCombatEnd=function(c){
+        var introLoss=!!(c&&c.__srForgeIntroV321&&c.ctx==='campaign'&&c.status==='lost'&&Number(c.floor)===2);
+        var out=oldEnd.apply(this,arguments);
+        if(introLoss){
+          try{
+            if(typeof S!=='undefined'&&S){
+              var t=tut(S);
+              if(!t.forgeIntroMineralGrantV323){
+                S.minerai=Math.max(0,Number(S.minerai)||0)+REWARD;
+                t.forgeIntroMineralGrantV323=true;
+              }
+              S.autoSkills=true;
+              if(typeof saveNow==='function')saveNow();
+              if(typeof scheduleRender==='function')scheduleRender();
+            }
+          }catch(_){ }
+        }
+        return out;
+      };
+      handleCombatEnd.__srOnboardingV323=true;
+      handleCombatEnd.__srPrevious=oldEnd;
+    }
+  }catch(_){ }
+  window.__srOnboardingV323=true;
+  window.__srOnboardingConfigV323={mineraiBeforeDefeat:0,mineraiReward:REWARD,autoSkillsFromStart:true,preludeFloor:1,killerFloor:2,killerStartHpRatio:.58,preludeDamageRatio:.16};
+})();
 
 /* Recompute after save migration + authority installation. */
 try{if(typeof S!=='undefined'&&S){S.progressionQAVersion=287;if(typeof computePower==='function')S.power=computePower(S);if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}}catch(_){ }
