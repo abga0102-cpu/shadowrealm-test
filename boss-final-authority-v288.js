@@ -60,7 +60,9 @@
           if(!isFinite(typeMul)||typeMul<=0)typeMul=1;
           var mulD=(Number(opts.floor)===40)?1.7:1.8;
           var firstBossMul=(Number(opts.floor)===5&&!opts.noFastback)?0.80:1;
-          var base=(typeof enemyDamage==='function')?Number(enemyDamage(opts.floor)):NaN;
+          var damageCfg=window.__srEnemyDamageConfigV289||{};
+          var damageFn=(typeof damageCfg.baseDamage==='function')?damageCfg.baseDamage:enemyDamage;
+          var base=(typeof damageFn==='function')?Number(damageFn(opts.floor)):NaN;
           if(isFinite(base)&&base>0){
             enemy.dmg=Math.max(1,Math.floor(base*typeMul*mulD*legacyBossDamageStatMul(opts.floor)*firstBossMul));
           }
