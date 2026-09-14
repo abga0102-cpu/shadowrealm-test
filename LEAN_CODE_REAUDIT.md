@@ -1,6 +1,6 @@
 # Lean-code remaining-work audit
 
-Audit refreshed: 2026-09-14. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `14c5b285af518ba7022c298e3d9f16e15dd9a578` (latest `main` after PR #249 visual interaction refinement).
+Audit refreshed: 2026-09-14. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `22b1ffa1f05a21c7f01fd56b79c04502f082d80c` (latest `main` after the merged V322 800-stage campaign rollout in PR #243 and V322B cache-coherence fix in PR #251).
 
 This file records the current remaining-work disposition after the proof-based L1 audit and subsequent L2/L3/L4/L5 passes. **L1 is complete.** L2, L3, L4 and staged L5 remain evidence-driven.
 
@@ -52,13 +52,15 @@ PR #222 moved the remaining historical Accomplishments progress normalization (`
 
 PR #231 consolidated permanent navigation and action hierarchy on current `main`: BottomNav owns the permanent `Accueil / Équipement / Progression / Menu` taxonomy and duplicate-free Progression/Menu hubs, Home suppresses redundant permanent shortcuts, and V139 now owns the Accomplishments entry under Progression rather than Settings. No save, balance or progression semantics changed.
 
+PR #243 subsequently expanded the canonical campaign to 800 stages while keeping campaign Accomplishments work inside existing V139/V140 ownership. That feature work does not create a new neutral Accomplishments lifecycle seam: V121 still owns only raid-result/fusion event compatibility, and V127 remains the durable migration owner.
+
 Do not collapse V121 into payout/UI owners merely to reduce file count. Reassess only if an evidence-backed event-lifecycle consolidation produces a clearer durable owner without changing progression semantics.
 
 ## Visual ownership
 
 PR #232 completed the main arcade-clean visual pass in existing canonical `premium-ui-v209.js`: flatter/quieter cards, restrained tactile controls, semantic CTA hierarchy, quieter HUD/navigation presentation and simpler interaction feedback while retaining the dark-navy/burnished-gold RPG identity. PR #248 then aligned the remaining compact info/close controls with that shared silhouette/material language, and PR #249 added restrained hover/press feedback to segmented controls and toggles. Both follow-up refinements stayed inside the same canonical visual owner and added no patch-layer file or runtime authority.
 
-Future visual work should continue to extend existing canonical owners and should be driven by concrete visual inconsistencies rather than adding versioned overlay files. The current source-level scan found no additional neutral visual-ownership seam that justifies another visual batch while campaign/Forge/index work is active.
+Future visual work should continue to extend existing canonical owners and should be driven by concrete visual inconsistencies rather than adding versioned overlay files. The latest source-level scan found no additional neutral visual-ownership seam that justifies another visual batch while Forge progression and campaign-regression work remain active.
 
 ## L4 shared-utility disposition
 
@@ -75,22 +77,20 @@ No additional staged L5 source is currently evidence-ready. Rescan only after an
 
 ## Current concurrent-work constraints
 
-At this refresh, four open pull requests own feature-sensitive surfaces:
+The V322 campaign rollout is now settled on `main`: PR #243 merged the canonical 800-stage campaign, PR #251 merged the live cache-coherence fix, and obsolete PR #242 was closed as superseded. Two open pull requests still occupy feature-sensitive surfaces:
 
-- **#242** owns `index.html` for the Familiar summon cache-bust;
-- **#243** owns campaign combat progression, enemy damage and campaign Accomplishments expansion;
 - **#245** owns Forge rarity/progression balance and stability;
-- **#246** is actively investigating the campaign stage 5-4 stall with regression-first evidence.
+- **#246** continues the campaign stage 5-4 investigation with regression-first evidence and must remain separate from Lean Code cleanup around combat/progression.
 
-Do not use Lean Code work to modify those active owners or adjacent gameplay semantics until their work settles and `main` is refreshed again. In particular, Forge/equipment/progression and campaign/combat remain feature-owner sensitive, and `index.html` should not be touched by a cleanup batch while #242 is active.
+Do not use Lean Code work to modify those active owners or adjacent gameplay semantics until their work settles and `main` is refreshed again. In particular, Forge/equipment/progression remains feature-owner sensitive, and campaign/combat should not be consolidated while #246 is still validating progression behavior.
 
-The current neutral scan found no evidence-ready production transfer outside those active surfaces. Audio V26, Power Hint and Boot wave synchronization remain blocked on stronger deterministic lifecycle evidence, and there is no additional staged L5 source-retirement candidate.
+The fresh neutral scan from post-V322 `main` still found no evidence-ready production transfer outside those active surfaces. Audio V26, Power Hint and Boot wave synchronization remain blocked on stronger deterministic lifecycle evidence, Accomplishments V121 still lacks an equivalent existing event lifecycle for its raid-result/fusion compatibility, and there is no additional staged L5 source-retirement candidate.
 
 ## Remaining Lean Code work
 
 | Phase / responsibility | Current evidence | Next reviewable scope / exit condition |
 | --- | --- | --- |
-| L2 Accomplishments lifecycle | Timer/observer cleanup and durable migration separation are complete through #222. | Reassess only if a concrete duplicate wrapper/event seam appears with save/lifecycle proof. |
+| L2 Accomplishments lifecycle | Timer/observer cleanup and durable migration separation are complete through #222; V322 campaign work stayed inside canonical V139/V140 owners. | Reassess only if a concrete duplicate wrapper/event seam appears with save/lifecycle proof. |
 | L2 Secondary HUD lifecycle | Complete under PRs #155/#171. | No current scope; preserve contracts. |
 | L2 Power Hint lifecycle | Campaign-death recovery is deterministic; current owner must remain passive. | Require an existing deterministic combat lifecycle; do not re-wrap `handleCombatEnd`. |
 | L2 Audio | Migration/reward/edge semantics are locked; 50 ms combat observer remains. | Remove only when an existing canonical combat owner exposes equivalent attack/skill/result events and ordering. |
@@ -98,7 +98,7 @@ The current neutral scan found no evidence-ready production transfer outside tho
 | L3 Tree topology/compatibility | V82/V116/V216 own topology/compatibility, renderer/presentation and live mastery respectively. | Preserve these durable boundaries. |
 | L3 Tree V83 | Runtime unload and source retirement complete. | No current scope; keep retired-owner contracts. |
 | L3 Tree V247 presentation | V247/V250 presentation is in V116; runtime and source retirement are complete. | No current scope; preserve the V116 presentation and source-absence contract. |
-| L3 Forge/progression | PR #245 is actively changing Forge rarity/progression while #243/#246 touch adjacent campaign progression. | Re-audit from latest `main` only after intersecting feature work settles; require a narrow, proven ownership seam. |
+| L3 Forge/progression | PR #245 is actively changing Forge rarity/progression; campaign V322 is merged, but #246 still validates adjacent combat/progression behavior. | Re-audit from latest `main` after #245/#246 settle; require a narrow, proven ownership seam. |
 | L4 shared helpers | Social store transfer complete; other audited helpers intentionally differ. | Reopen only for genuinely identical semantics with measurable reduction and no new coupling. |
 | L5 staged source retirement | V83 and V247 are complete; no additional staged source is evidence-ready. | Rescan after the next proven L2/L3 ownership transfer or fresh reachability audit. |
 
@@ -109,7 +109,7 @@ Select each new batch from fresh `main` in this order:
 1. finish a staged unload/source retirement when canonical ownership and subsequent integration proof are already present;
 2. prefer a newly discovered neutral UI/lifecycle/helper candidate only when the surviving owner/hook is deterministic and behavior-equivalent;
 3. keep Power Hint, Boot wave and Audio deferred until their required deterministic lifecycle evidence exists;
-4. re-audit Forge/equipment/progression and campaign/combat from latest `main` after current feature work settles before touching those feature-sensitive surfaces;
+4. re-audit Forge/equipment/progression and campaign/combat from latest `main` after #245/#246 settle before touching those feature-sensitive surfaces;
 5. if no production transfer is evidence-safe, synchronize ownership/roadmap documentation rather than forcing a weaker architecture.
 
 ## Phase status
