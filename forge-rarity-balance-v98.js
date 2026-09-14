@@ -1,6 +1,6 @@
 // FORGE_RARITY_BALANCE_V98
 // Courbe forte validée : chaque rareté doit représenter un vrai saut de puissance.
-// Aucun changement des taux de drop, coûts, niveaux de Forge ou bonus secondaires.
+// V322B ci-dessous fixe uniquement le taux Épique de la Forge à 0,25 %.
 (function(){
   'use strict';
 
@@ -50,4 +50,64 @@
   migrateExisting();
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',migrateExisting,{once:true});
   else setTimeout(migrateExisting,0);
+})();
+
+// V322B · Forge Épique = 0,25 % réel à partir du déblocage Forge 6.
+// L'écart retiré d'Épique retourne à Commun afin de conserver une somme exacte
+// de 100 % sans modifier les chances des autres raretés.
+(function(){
+  'use strict';
+  if(window.__srForgeEpicRateV322B)return;
+  window.__srForgeEpicRateV322B=true;
+  var EPIC_RATE=0.25;
+
+  try{
+    if(typeof gateForgeRates==='function'&&!gateForgeRates.__srEpicRateV322B){
+      var previousGateForgeRates=gateForgeRates;
+      gateForgeRates=function(rates,forgeLevel){
+        var out=previousGateForgeRates.apply(this,arguments);
+        if(!out||Number(forgeLevel)<6)return out;
+        out=Object.assign({},out);
+        var current=Math.max(0,Number(out.EPIQUE)||0);
+        var delta=current-EPIC_RATE;
+        out.EPIQUE=EPIC_RATE;
+        out.COMMUN=Math.max(0,(Number(out.COMMUN)||0)+delta);
+        return out;
+      };
+      gateForgeRates.__srEpicRateV322B=true;
+      gateForgeRates.__srPrevious=previousGateForgeRates;
+    }
+  }catch(_){ }
+
+  function patchEpicRateText(){
+    try{
+      var rows=document.querySelectorAll('.itemRow');
+      for(var i=0;i<rows.length;i++){
+        var row=rows[i],txt=String(row.textContent||'');
+        if(txt.indexOf('Épique')<0||txt.indexOf('Forge 6+')<0)continue;
+        var pill=row.querySelector('.pill');
+        if(pill&&String(pill.textContent||'').indexOf('Débloqué')<0)pill.textContent='0,25 %';
+        var sub=row.querySelector('.mute.tiny.b');
+        if(sub&&String(sub.textContent||'').indexOf('par forge')>=0){
+          sub.textContent=String(sub.textContent||'').replace(/[0-9]+(?:[.,][0-9]+)?\s*%\s*par forge/,'0,25 % par forge');
+        }
+      }
+    }catch(_){ }
+  }
+
+  try{
+    if(typeof showRarityInfo==='function'&&!showRarityInfo.__srEpicRateV322B){
+      var previousShowRarityInfo=showRarityInfo;
+      showRarityInfo=function(){
+        var out=previousShowRarityInfo.apply(this,arguments);
+        patchEpicRateText();
+        setTimeout(patchEpicRateText,0);
+        return out;
+      };
+      showRarityInfo.__srEpicRateV322B=true;
+      showRarityInfo.__srPrevious=previousShowRarityInfo;
+    }
+  }catch(_){ }
+
+  window.__srForgeEpicRateConfigV322B={unlockForgeLevel:6,epicRate:EPIC_RATE,redistributeTo:'COMMUN'};
 })();
