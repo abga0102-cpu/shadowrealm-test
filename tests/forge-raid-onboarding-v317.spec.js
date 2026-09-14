@@ -11,7 +11,7 @@ async function openCleanGame(page) {
   );
 }
 
-test('V317 keeps the V316 Forge level-3 gate, then unlocks Raid when 250 Minerai are exhausted', async ({ page }) => {
+test('V321 moves Forge to 1-2 but keeps the V317 Raid level-3 depletion gate', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
@@ -34,10 +34,15 @@ test('V317 keeps the V316 Forge level-3 gate, then unlocks Raid when 250 Minerai
     };
 
     S.level = 3;
+    S.floor = 2;
+    S.recordFloor = Math.max(Number(S.recordFloor) || 1, 2);
+    S.tutorial = S.tutorial || {};
+    S.tutorial.forgeIntroReadyV321 = true;
     S.power = computePower(S);
     D = computeDerived(S);
     const beforeDepletion = {
       forgeUnlocked: __srProgressionUnlocksV316.forgeUnlocked(),
+      forgeStage: __srProgressionUnlocksV316.forgeStage,
       raidUnlocked: __srV317RaidUnlocked(S),
       raidGate: RULES.RAID_UNLOCK_LEVEL,
       raidScreen: scrRaid(),
@@ -78,11 +83,13 @@ test('V317 keeps the V316 Forge level-3 gate, then unlocks Raid when 250 Minerai
     delete oldRaidPlayer.onboardingV317;
     __srV317EnsureOnboarding(oldRaidPlayer);
 
-    const underForgeGate = defaultState('Under gate');
-    underForgeGate.level = 1;
-    underForgeGate.minerai = 0;
-    delete underForgeGate.onboardingV317;
-    __srV317EnsureOnboarding(underForgeGate);
+    const underRaidDepletionGate = defaultState('Under Raid gate');
+    underRaidDepletionGate.level = 1;
+    underRaidDepletionGate.floor = 2;
+    underRaidDepletionGate.recordFloor = 2;
+    underRaidDepletionGate.minerai = 0;
+    delete underRaidDepletionGate.onboardingV317;
+    __srV317EnsureOnboarding(underRaidDepletionGate);
 
     return {
       start,
@@ -99,9 +106,10 @@ test('V317 keeps the V316 Forge level-3 gate, then unlocks Raid when 250 Minerai
         raidUnlocked: __srV317RaidUnlocked(oldRaidPlayer),
         reason: oldRaidPlayer.onboardingV317.raidUnlockedReason,
       },
-      underForgeGate: {
-        raidUnlocked: __srV317RaidUnlocked(underForgeGate),
+      underRaidDepletionGate: {
+        raidUnlocked: __srV317RaidUnlocked(underRaidDepletionGate),
       },
+      config: __srForgeRaidOnboardingConfigV317,
     };
   });
 
@@ -122,6 +130,7 @@ test('V317 keeps the V316 Forge level-3 gate, then unlocks Raid when 250 Minerai
   });
 
   expect(result.beforeDepletion.forgeUnlocked).toBe(true);
+  expect(result.beforeDepletion.forgeStage).toBe('1-2');
   expect(result.beforeDepletion.raidUnlocked).toBe(false);
   expect(result.beforeDepletion.raidGate).toBe(5);
   expect(result.beforeDepletion.raidScreen).toContain('Niveau 5');
@@ -140,5 +149,11 @@ test('V317 keeps the V316 Forge level-3 gate, then unlocks Raid when 250 Minerai
 
   expect(result.oldEarly).toEqual({ minerai: 400, raidUnlocked: false });
   expect(result.oldRaidPlayer).toMatchObject({ minerai: 400, raidUnlocked: true, reason: 'legacy' });
-  expect(result.underForgeGate.raidUnlocked).toBe(false);
+  expect(result.underRaidDepletionGate.raidUnlocked).toBe(false);
+  expect(result.config).toMatchObject({
+    forgeUnlockLevel: 3,
+    raidDepletionMinHeroLevel: 3,
+    actualForgeUnlockFloor: 2,
+    actualForgeUnlockStage: '1-2',
+  });
 });

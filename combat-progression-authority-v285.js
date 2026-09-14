@@ -1,11 +1,14 @@
 /* SHADOWREACH V285 · Combat progression authority
    V316 campaign structure: canonical 400-stage campaign with local visible
    chapter numbering per difficulty and Forge-Master-like encounter pacing.
+   V321 adds one onboarding-only loss at stage 1-2 before the first Forge craft,
+   then restores the exact normal campaign balance after the player forges once.
    Visible chapter numbers are derived from each difficulty's real length and
    are not capped at 5. Internal floor ids 1..400 remain stable for saves and
    balancing. Every 10-stage chapter uses the approved rhythm:
    N/N/N, N/N/N, N/N/N, N/Elite, Boss, then repeat for stages 6..10.
-   Fixed enemy scaling never derives from current player power. */
+   Fixed enemy scaling never derives from current player power outside the
+   isolated V321 teaching encounter. */
 (function(){
 'use strict';
 if(window.__srCombatProgressionV285)return;
@@ -14,8 +17,10 @@ window.__srCampaign400V314=true;
 window.__srLocalStageNotationV315=true;
 window.__srCompactStageTrackV315=true;
 window.__srForgeMasterStageFlowV316=true;
+window.__srForgeIntroCombatV321=true;
 
 var CAMPAIGN_MAX=400;
+var FORGE_INTRO_FLOOR_V321=2;
 var DIFFICULTIES=[
   {id:'normal',label:'Normal',start:1,end:50},
   {id:'difficile',label:'Difficile',start:51,end:100},
@@ -173,6 +178,34 @@ try{
   }
 }catch(_){ }
 
+/* V321 Forge teaching encounter. This is deliberately isolated to a fresh
+   pre-Forge visit to internal floor 2 / visible 1-2. After any successful
+   Forge craft, the exact normal floor-2 balance is used forever. */
+function forgeIntroCraftedV321(s){try{return Math.max(0,Number(s&&s.forge&&s.forge.summonCount)||0)>0;}catch(_){return false;}}
+function forgeIntroEligibleV321(s){
+  if(!s||forgeIntroCraftedV321(s))return false;
+  var highest=Math.max(Number(s.floor)||1,Number(s.recordFloor)||1,Number(s.checkpoint)||1);
+  return highest<=FORGE_INTRO_FLOOR_V321;
+}
+function applyForgeIntroCombatV321(c){
+  if(!c||c.ctx!=='campaign'||Number(c.floor)!==FORGE_INTRO_FLOOR_V321)return false;
+  var s=null;try{s=typeof S!=='undefined'?S:null;}catch(_){ }
+  if(!forgeIntroEligibleV321(s))return false;
+  var heroHP=Math.max(1,Number(c.heroMaxHP)||Number(c.heroHP)||1),enemies=Array.isArray(c.enemies)?c.enemies:[];
+  c.__srForgeIntroV321=true;
+  enemies.forEach(function(e){
+    if(!e)return;
+    e.maxHP=Math.max(Number(e.maxHP)||1,Math.ceil(heroHP*1000));
+    e.hp=e.maxHP;
+    e.dmg=Math.max(Number(e.dmg)||1,Math.ceil(heroHP*20));
+    e.__srForgeIntroV321=true;
+  });
+  return enemies.length>0;
+}
+window.__srNeedsForgeIntroV321=forgeIntroEligibleV321;
+window.__srApplyForgeIntroCombatV321=applyForgeIntroCombatV321;
+window.__srForgeIntroCombatConfigV321={floor:FORGE_INTRO_FLOOR_V321,stage:'1-2',hpVsHero:1000,damageVsHero:20};
+
 /* Preserve old saves and clamp a former 3-wave step when that save now lands on
    a 1- or 2-encounter stage. No floor, record or reward history is erased. */
 function normalizeCampaignState(){
@@ -193,8 +226,14 @@ normalizeCampaignState();
 try{
   if(typeof startCampaign==='function'&&!startCampaign.__srCampaign400V314){
     var oldStartCampaign=startCampaign;
-    startCampaign=function(){normalizeCampaignState();return oldStartCampaign.apply(this,arguments);};
+    startCampaign=function(){
+      normalizeCampaignState();
+      var out=oldStartCampaign.apply(this,arguments);
+      try{if(typeof combat!=='undefined'&&applyForgeIntroCombatV321(combat)&&typeof drawArena==='function')drawArena();}catch(_){ }
+      return out;
+    };
     startCampaign.__srCampaign400V314=true;
+    startCampaign.__srForgeIntroV321=true;
     startCampaign.__srPrevious=oldStartCampaign;
   }
 }catch(_){ }
@@ -203,7 +242,19 @@ try{
     var oldHandleCombatEnd=handleCombatEnd;
     handleCombatEnd=function(c){
       var won=!!(c&&c.ctx==='campaign'&&c.status==='won');
+      var forgeIntroLoss=!!(c&&c.__srForgeIntroV321&&c.ctx==='campaign'&&c.status==='lost');
       var actualStep=null;
+      if(forgeIntroLoss){
+        try{
+          if(typeof S!=='undefined'&&S){
+            S.tutorial=S.tutorial||{};
+            S.tutorial.seen=S.tutorial.seen||{};
+            S.tutorial.forgeIntroReadyV321=true;
+            S.tutorial.forgeIntroDefeatsV321=Math.max(0,Number(S.tutorial.forgeIntroDefeatsV321)||0)+1;
+            if(typeof saveNow==='function')saveNow();
+          }
+        }catch(_){ }
+      }
       try{
         if(won&&Number(c.step)>=stageWaveCount(c.floor)&&Number(c.step)<Number(RULES.STEPS_PER_FLOOR)){
           actualStep=c.step;c.step=RULES.STEPS_PER_FLOOR;
@@ -222,10 +273,12 @@ try{
           }
         }catch(_){ }
       }
+      if(forgeIntroLoss){try{if(typeof checkTutorial==='function')setTimeout(checkTutorial,90);}catch(_){ }}
       return out;
     };
     handleCombatEnd.__srCampaign400V314=true;
     handleCombatEnd.__srForgeMasterStageFlowV316=true;
+    handleCombatEnd.__srForgeIntroV321=true;
     handleCombatEnd.__srPrevious=oldHandleCombatEnd;
   }
 }catch(_){ }
@@ -294,6 +347,7 @@ window.__srCombatProgressionConfigV285={
   bossHP:BOSS,normalHP:NORMAL,maxFloor:CAMPAIGN_MAX,difficulties:DIFFICULTIES,
   chaptersPerDifficulty:CHAPTER_COUNTS[0],chapterCounts:CHAPTER_COUNTS,
   floorsPerChapter:10,totalChapters:Math.ceil(CAMPAIGN_MAX/10),campaignMeta:campaignMeta,
-  stageWavePattern:STAGE_WAVES.slice(),stageWaveCount:stageWaveCount
+  stageWavePattern:STAGE_WAVES.slice(),stageWaveCount:stageWaveCount,
+  forgeIntroV321:window.__srForgeIntroCombatConfigV321
 };
 })();

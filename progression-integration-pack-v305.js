@@ -3,9 +3,9 @@
    - retired Familiar Apple progression must not create Apple refunds through fusion/Ascension;
    - retired Rebirth must never appear as a tutorial step;
    - exported Familiar stat previews/tests must read the state being evaluated, not live S;
-   - V316 progression gates: Forge unlocks at hero level 3, Skills at hero level 4;
-   - V317 preserves those gates and makes the first Forge -> Raid resource loop explicit.
-   No rarity curve, owned equipment stat or floor balance is changed. */
+   - V321 progression gates: Forge unlocks at campaign stage 1-2, Skills at hero level 4;
+   - V317 Forge -> Raid onboarding keeps its original hero-level-3 depletion guard.
+   No rarity curve, owned equipment stat or later progression balance is changed. */
 (function(){'use strict';
 if(window.__srProgressionIntegrationV305)return;window.__srProgressionIntegrationV305=true;
 
@@ -58,25 +58,39 @@ try{
   }
 }catch(_){ }
 
-/* ---------- Rebirth tutorial retirement ---------- */
+/* ---------- Rebirth retirement + V321 Forge teaching step ---------- */
 try{if(typeof TUTORIAL_FLOWS!=='undefined'&&TUTORIAL_FLOWS)delete TUTORIAL_FLOWS.rebirth;}catch(_){ }
+function forgeIntroReadyV321(){
+  try{return !!(S&&S.tutorial&&S.tutorial.forgeIntroReadyV321)&&Math.max(0,Number(S.forge&&S.forge.summonCount)||0)===0;}catch(_){return false;}
+}
+function forgeIntroTutorialV321(){
+  return {key:'forge',title:'Forge ton équipement',sub:"L’ennemi de l’étage 1-2 est trop puissant avec ton équipement actuel. Forge une pièce puis équipe-la : ta Puissance augmente immédiatement."};
+}
 try{
   if(typeof pendingTutorialStep==='function'&&!pendingTutorialStep.__srV305){
     var oldPendingTutorialStep=pendingTutorialStep;
     pendingTutorialStep=function(){
+      try{
+        if(forgeIntroReadyV321()){
+          var forgeSeen=S.tutorial&&S.tutorial.seen;
+          if(forgeSeen&&!forgeSeen.forge)return forgeIntroTutorialV321();
+        }
+      }catch(_){ }
       var step=oldPendingTutorialStep.apply(this,arguments);
-      if(!step||step.key!=='rebirth')return step;
+      var suppress=[];
+      if(step&&step.key==='rebirth')suppress.push('rebirth');
+      if(step&&step.key==='forge'&&!forgeIntroReadyV321())suppress.push('forge');
+      if(!suppress.length)return step;
       try{
         if(typeof S==='undefined'||!S||!S.tutorial)return null;
-        var seen=S.tutorial.seen||(S.tutorial.seen={});
-        var had=Object.prototype.hasOwnProperty.call(seen,'rebirth'),old=seen.rebirth;
-        seen.rebirth=true;
+        var seen=S.tutorial.seen||(S.tutorial.seen={}),saved={};
+        suppress.forEach(function(key){saved[key]={had:Object.prototype.hasOwnProperty.call(seen,key),value:seen[key]};seen[key]=true;});
         var next=oldPendingTutorialStep.apply(this,arguments);
-        if(had)seen.rebirth=old;else delete seen.rebirth;
-        return next&&next.key==='rebirth'?null:next;
+        suppress.forEach(function(key){if(saved[key].had)seen[key]=saved[key].value;else delete seen[key];});
+        return next&&suppress.indexOf(next.key)>=0?null:next;
       }catch(_){return null;}
     };
-    pendingTutorialStep.__srV305=true;pendingTutorialStep.__srPrevious=oldPendingTutorialStep;
+    pendingTutorialStep.__srV305=true;pendingTutorialStep.__srForgeIntroV321=true;pendingTutorialStep.__srPrevious=oldPendingTutorialStep;
   }
 }catch(_){ }
 try{
@@ -91,32 +105,34 @@ try{
   }
 }catch(_){ }
 
-/* ---------- V316 early-system unlock gates ---------- */
-var FORGE_UNLOCK_LEVEL=3,SKILL_UNLOCK_LEVEL=4;
+/* ---------- V321 early-system unlock gates ---------- */
+var FORGE_UNLOCK_FLOOR=2,V317_RAID_FORGE_LEVEL=3,SKILL_UNLOCK_LEVEL=4;
 function heroLevel(){try{return Math.max(1,Math.floor(Number(S&&S.level)||1));}catch(_){return 1;}}
-function forgeUnlocked(){return heroLevel()>=FORGE_UNLOCK_LEVEL;}
+function campaignProgress(){try{return Math.max(1,Math.floor(Number(S&&S.floor)||1),Math.floor(Number(S&&S.recordFloor)||1),Math.floor(Number(S&&S.checkpoint)||1));}catch(_){return 1;}}
+function forgeUnlocked(){return campaignProgress()>=FORGE_UNLOCK_FLOOR;}
 function skillsUnlocked(){return heroLevel()>=SKILL_UNLOCK_LEVEL;}
+function forgeLockedToast(){try{if(typeof toast==='function')toast('Forge débloquée à l’étage 1-2',false);}catch(_){ }}
 function lockedToast(level,label){try{if(typeof toast==='function')toast(label+' débloqué'+(label==='Forge'?'e':'')+' au niveau '+level,false);}catch(_){ }}
 
 try{
   if(typeof startForgeBatch==='function'&&!startForgeBatch.__srV316Unlock){
     var oldStartForgeBatch=startForgeBatch;
-    startForgeBatch=function(){if(!forgeUnlocked()){lockedToast(FORGE_UNLOCK_LEVEL,'Forge');return false;}return oldStartForgeBatch.apply(this,arguments);};
-    startForgeBatch.__srV316Unlock=true;startForgeBatch.__srPrevious=oldStartForgeBatch;
+    startForgeBatch=function(){if(!forgeUnlocked()){forgeLockedToast();return false;}return oldStartForgeBatch.apply(this,arguments);};
+    startForgeBatch.__srV316Unlock=true;startForgeBatch.__srForgeIntroV321=true;startForgeBatch.__srPrevious=oldStartForgeBatch;
   }
 }catch(_){ }
 try{
   if(typeof forgeSummon==='function'&&!forgeSummon.__srV316Unlock){
     var oldForgeSummon=forgeSummon;
-    forgeSummon=function(){if(!forgeUnlocked()){lockedToast(FORGE_UNLOCK_LEVEL,'Forge');return [];}return oldForgeSummon.apply(this,arguments);};
-    forgeSummon.__srV316Unlock=true;forgeSummon.__srPrevious=oldForgeSummon;
+    forgeSummon=function(){if(!forgeUnlocked()){forgeLockedToast();return [];}return oldForgeSummon.apply(this,arguments);};
+    forgeSummon.__srV316Unlock=true;forgeSummon.__srForgeIntroV321=true;forgeSummon.__srPrevious=oldForgeSummon;
   }
 }catch(_){ }
 try{
   if(typeof upgradeForge==='function'&&!upgradeForge.__srV316Unlock){
     var oldUpgradeForge=upgradeForge;
-    upgradeForge=function(){if(!forgeUnlocked()){lockedToast(FORGE_UNLOCK_LEVEL,'Forge');return false;}return oldUpgradeForge.apply(this,arguments);};
-    upgradeForge.__srV316Unlock=true;upgradeForge.__srPrevious=oldUpgradeForge;
+    upgradeForge=function(){if(!forgeUnlocked()){forgeLockedToast();return false;}return oldUpgradeForge.apply(this,arguments);};
+    upgradeForge.__srV316Unlock=true;upgradeForge.__srForgeIntroV321=true;upgradeForge.__srPrevious=oldUpgradeForge;
   }
 }catch(_){ }
 try{
@@ -196,8 +212,8 @@ function decorateUnlocks(){
       forge.classList.toggle('srFeatureLocked',!forgeUnlocked());
       var old=forge.querySelector('.srFeatureLock');if(old)old.remove();
       if(!forgeUnlocked()){
-        var lock=document.createElement('div');lock.className='srFeatureLock';lock.setAttribute('data-act','locked');lock.setAttribute('data-arg',String(FORGE_UNLOCK_LEVEL));
-        lock.innerHTML=(typeof ic==='function'?ic('lock',26):'🔒')+'<b>FORGE · NIV.'+FORGE_UNLOCK_LEVEL+'</b><span>Continue à monter ton héros pour débloquer la Forge.</span>';
+        var lock=document.createElement('div');lock.className='srFeatureLock';
+        lock.innerHTML=(typeof ic==='function'?ic('lock',26):'🔒')+'<b>FORGE · ÉTAGE 1-2</b><span>Atteins l’étage 1-2 pour débloquer la Forge.</span>';
         forge.appendChild(lock);
       }
     }
@@ -210,7 +226,9 @@ function decorateUnlocks(){
 try{window.addEventListener('sr:bottomnavrendered',function(){requestAnimationFrame(decorateUnlocks);});}catch(_){ }
 try{window.addEventListener('load',function(){requestAnimationFrame(decorateUnlocks);},{once:true});}catch(_){ }
 setTimeout(decorateUnlocks,0);
-window.__srProgressionUnlocksV316={forge:FORGE_UNLOCK_LEVEL,skills:SKILL_UNLOCK_LEVEL,forgeUnlocked:forgeUnlocked,skillsUnlocked:skillsUnlocked};
+window.__srProgressionUnlocksV316={forge:FORGE_UNLOCK_FLOOR,forgeFloor:FORGE_UNLOCK_FLOOR,forgeStage:'1-2',skills:SKILL_UNLOCK_LEVEL,forgeUnlocked:forgeUnlocked,skillsUnlocked:skillsUnlocked};
+window.__srProgressionUnlocksV321=window.__srProgressionUnlocksV316;
+window.__srForgeIntroTutorialV321=forgeIntroTutorialV321;
 
 /* ---------- V317 Forge -> Raid onboarding ---------- */
 var V317_START_MINERAI=250,V317_LEGACY_START=400,V317_FRESH_MS=5*60*1000;
@@ -253,7 +271,7 @@ function v317Apply(s){
   if(!o.startMineralsApplied&&Number(s.minerai||0)===V317_START_MINERAI&&v317HeroLevel(s)===1&&
       Number(s.floor||1)===1&&Number(s.forge&&s.forge.summonCount||0)===0&&
       Date.now()-(Number(s.firstSeen)||0)<=V317_FRESH_MS){o.startMineralsApplied=true;changed=true;}
-  if(!o.raidUnlocked&&v317HeroLevel(s)>=FORGE_UNLOCK_LEVEL&&Number(s.minerai||0)<v317CraftCost(s)){
+  if(!o.raidUnlocked&&v317HeroLevel(s)>=V317_RAID_FORGE_LEVEL&&Number(s.minerai||0)<v317CraftCost(s)){
     o.raidUnlocked=true;o.raidUnlockedReason='minerai';o.raidUnlockedAt=Date.now();changed=true;
   }
   try{if(typeof S!=='undefined'&&s===S)v317SyncRaidGate(s);}catch(_){ }
@@ -294,13 +312,21 @@ try{
     var oldForgeSummonV317=forgeSummon;
     forgeSummon=function(){
       var wasUnlocked=false;try{wasUnlocked=typeof S!=='undefined'&&S?v317RaidUnlockedRaw(S):false;}catch(_){ }
-      var out=oldForgeSummonV317.apply(this,arguments),changed=false;
-      try{if(typeof S!=='undefined'&&S)changed=v317Apply(S);}catch(_){ }
+      var out=oldForgeSummonV317.apply(this,arguments),changed=false,forgeIntroCompleted=false;
+      try{
+        if(typeof S!=='undefined'&&S){
+          changed=v317Apply(S);
+          if(Array.isArray(out)&&out.length&&S.tutorial&&S.tutorial.forgeIntroReadyV321&&Math.max(0,Number(S.forge&&S.forge.summonCount)||0)>0){
+            S.tutorial.seen=S.tutorial.seen||{};S.tutorial.seen.forge=true;S.tutorial.forgeIntroReadyV321=false;S.tutorial.forgeIntroCompletedV321=true;forgeIntroCompleted=true;changed=true;
+          }
+        }
+      }catch(_){ }
       if(changed){try{if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}catch(_){ }}
+      if(forgeIntroCompleted){try{if(typeof clearTutorialGuide==='function')clearTutorialGuide();var card=document.getElementById('tutorialCard');if(card)card.remove();}catch(_){ }}
       if(!wasUnlocked&&typeof S!=='undefined'&&S&&v317RaidUnlockedRaw(S)){try{if(typeof checkTutorial==='function')setTimeout(checkTutorial,180);}catch(_){ }}
       return out;
     };
-    forgeSummon.__srV317=true;forgeSummon.__srPrevious=oldForgeSummonV317;
+    forgeSummon.__srV317=true;forgeSummon.__srForgeIntroV321=true;forgeSummon.__srPrevious=oldForgeSummonV317;
   }
 }catch(_){ }
 try{
@@ -323,7 +349,7 @@ try{
 }catch(_){ }
 window.__srV317EnsureOnboarding=function(s){v317Apply(s);return s;};
 window.__srV317RaidUnlocked=v317RaidUnlocked;
-window.__srForgeRaidOnboardingConfigV317={startMinerai:V317_START_MINERAI,craftCost:10,paidCraftsBeforeRaid:25,forgeUnlockLevel:FORGE_UNLOCK_LEVEL,legacyRaidLevel:V317_LEGACY_RAID_LEVEL};
+window.__srForgeRaidOnboardingConfigV317={startMinerai:V317_START_MINERAI,craftCost:10,paidCraftsBeforeRaid:25,forgeUnlockLevel:V317_RAID_FORGE_LEVEL,raidDepletionMinHeroLevel:V317_RAID_FORGE_LEVEL,actualForgeUnlockFloor:FORGE_UNLOCK_FLOOR,actualForgeUnlockStage:'1-2',legacyRaidLevel:V317_LEGACY_RAID_LEVEL};
 
 /* ---------- State-aware Familiar stat helper ---------- */
 var PET_BASE={COMMUN:[1500,12000],PEU_COMMUN:[5000,40000],RARE:[20000,160000],EPIQUE:[120000,960000],MYTHIQUE:[900000,7200000],ANCESTRAL:[7000000,56000000],LEGENDAIRE:[70000000,560000000],DIVIN:[544000000,4350000000]};
@@ -357,7 +383,8 @@ window.__srProgressionIntegrationConfigV305={
   familiarAppleRefunds:false,
   rebirthTutorial:false,
   stateAwareFamiliarPreview:true,
-  unlocks:{forge:FORGE_UNLOCK_LEVEL,skills:SKILL_UNLOCK_LEVEL},
+  unlocks:{forgeFloor:FORGE_UNLOCK_FLOOR,forgeStage:'1-2',skills:SKILL_UNLOCK_LEVEL},
+  forgeIntroV321:true,
   forgeRaidOnboardingV317:true,
   startMinerai:V317_START_MINERAI,
   destructiveMigration:false,
