@@ -260,7 +260,7 @@ function v317Apply(s){
   return changed;
 }
 function v317RaidUnlocked(s){v317Apply(s);return v317RaidUnlockedRaw(s);}
-function v317RaidTutorial(){return {key:'raid',title:'Raids débloqués',sub:"Tu n’as plus assez de Minerai pour forger. Ouvre Défis, puis Raids et lance le Raid Minerai pour refaire tes réserves."};}
+function v317RaidTutorial(){return {key:'raid',title:'Raids débloqués',sub:"Tu n’as plus assez de Minerai pour forger. Ouvre Progression, puis Défis, puis Raids et lance le Raid Minerai pour refaire tes réserves."};}
 
 try{
   if(typeof defaultState==='function'&&!defaultState.__srV317){
