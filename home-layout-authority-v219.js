@@ -31,7 +31,7 @@ style.textContent=`
 #app.srHomeFullArena .worldAction,#app.srHomeFullArena .worldMenu{pointer-events:auto!important}
 #app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{left:10px!important;right:auto!important;width:82px!important;height:34px!important;min-width:0!important;padding:2px 5px!important;border-radius:9px!important;box-shadow:0 2px 0 #0A1020,0 3px 7px #0007!important}
 #app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 58px)!important;bottom:auto!important}
-#app.srHomeFullArena .worldDefis{display:flex!important;top:calc(var(--srHudH) + 108px)!important;bottom:auto!important}
+#app.srHomeFullArena .worldDefis{display:none!important;top:calc(var(--srHudH) + 108px)!important;bottom:auto!important}
 #app.srHomeFullArena .worldRebirth img,#app.srHomeFullArena .worldDefis img{width:18px!important;height:18px!important;object-fit:contain!important}
 #app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:8px!important;line-height:1!important;white-space:nowrap!important}
 #app.srHomeFullArena .worldRebirth .worldDot,#app.srHomeFullArena .worldDefis .worldDot{width:7px!important;height:7px!important;top:1px!important;right:1px!important}

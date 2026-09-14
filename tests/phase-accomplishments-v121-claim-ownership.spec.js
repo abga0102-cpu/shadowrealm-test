@@ -27,7 +27,8 @@ test.describe('Accomplishments V121 ownership', () => {
     expect(legacy).toContain('ACT.fuse=');
 
     expect(ui).toContain('ACT.accomplishments=function()');
-    expect(ui).toContain('installSettingsEntry');
+    expect(ui).toContain('installProgressEntry');
+    expect(ui).not.toContain('installSettingsEntry');
     expect(claims).toMatch(/function\s+grant\s*\(/);
     expect(claims).toMatch(/function\s+claim\s*\(/);
     expect(claims).toContain("closest('.srAch139 [data-ach]')");

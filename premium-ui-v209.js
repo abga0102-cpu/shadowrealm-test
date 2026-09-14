@@ -187,6 +187,18 @@ a:focus-visible{
 }
 .recommendedKicker{display:none!important}
 
+/* Semantic action hierarchy: one primary language, one normal language, red only for danger. */
+.btn.green,.btn.blue,.btn.purple,.btn.teal,.btn.orange{
+  --bA:#34445D;--bB:#222E42;--bS:#141D2B;--bE:#71819B;--bT:#E2E8F2;--bSh:0 1px 1px #0A101B;
+}
+.btn[data-primary-action="true"]:not(.red),
+.btn[data-primary="true"]:not(.red){
+  --bA:#D7B35C;--bB:#A87A27;--bS:#6D4B12;--bE:#F0D991;--bT:#211705;--bSh:0 1px 0 rgba(255,246,206,.34);
+}
+.btn.red{
+  --bA:#C45D61;--bB:#833238;--bS:#511D22;--bE:#E9A1A4;--bT:#FFF7F7;--bSh:0 1px 1px #351015;
+}
+
 @media(prefers-reduced-motion:reduce){
   .btn,.hudBtn,.menuBtn,.iBtn,.recommendedClose,.seg>span,.tgl,#tabs>.tab,#tabs>.tab .fantasyNavIcon{transition:none!important}
 }
