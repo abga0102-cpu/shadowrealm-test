@@ -125,9 +125,9 @@ a:focus-visible{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 2px 5px rgba(0,0,0,.24)!important;
   transition:transform .11s cubic-bezier(.2,.75,.2,1),filter .11s ease,border-color .11s ease,background .11s ease,color .11s ease!important;
 }
-.hudBtn,.menuBtn{border-radius:8px!important}
+.hudBtn,.menuBtn,.iBtn,.recommendedClose{border-radius:8px!important}
 .hudBtn.ready,.iBtn{border-color:rgba(215,174,88,.55)!important;color:var(--premium-gold-lit)!important}
-.iBtn{background:#191B20!important;box-shadow:inset 0 1px 0 rgba(255,236,181,.06),0 2px 5px rgba(0,0,0,.24)!important}
+.iBtn{background:#172132!important}
 .recommendedClose{color:#AAB5C4!important}
 @media(hover:hover){
   .hudBtn:hover,.menuBtn:hover,.iBtn:hover,.recommendedClose:hover{
@@ -154,7 +154,7 @@ a:focus-visible{
 .seg>span{
   background:#172132!important;color:#98A6B9!important;
   border-right:1px solid #0B111C!important;
-  transition:background .11s,color .11s,filter .11s!important;
+  transition:background .11s,color .11s,filter .11s,transform .11s!important;
 }
 .seg>span.on{
   background:#9A782F!important;
@@ -169,6 +169,11 @@ a:focus-visible{
 }
 .tgl>i{border-width:1px!important;box-shadow:0 1px 2px rgba(0,0,0,.30)!important}
 .tgl.on{background:#2F6F43!important;color:#F1FFF4!important;text-shadow:none!important}
+@media(hover:hover){
+  .seg>span:hover:not(.on){background:#1D2B40!important;color:#C4CEDC!important}
+  .tgl:hover{filter:brightness(1.07)!important}
+}
+.seg>span:active,.tgl:active{transform:translateY(1px) scale(.98)!important;filter:brightness(.95)!important}
 
 /* Progress bars: high contrast, low ornament. */
 .pbar>.trk,.bar{box-shadow:inset 0 1px 2px rgba(0,0,0,.65)!important}
