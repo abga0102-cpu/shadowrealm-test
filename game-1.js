@@ -463,7 +463,7 @@ const STATS = {
 };
 const CRIT_CHANCE_CAP = 60, CRIT_RED_CAP = 80;
 const SKILL_SUMMON_COST = 25;  // base cost per Compétence invocation; Tree reductions apply afterwards
-const PET_SUMMON_COST = 25;    // fixed cost per Familier egg invocation
+const PET_SUMMON_COST = 50;    // fixed cost per Familier egg invocation
 /* "Compétence Invoquer Coût" reduces the 25-Éclat base price. The tree is capped at 60%, so the absolute floor is 10 Éclats. */
 function skillSummonCost(s) {
   return Math.max(1, Math.round(SKILL_SUMMON_COST *
