@@ -77,7 +77,7 @@ The following files may remain in source history, but must not regain active own
 - `accomplishments-ui-v123.js` — suppressed legacy UI; retired from runtime and source.
 - `accomplishments-floor-comp-v141.js` — floor compensation ownership absorbed into V127; retired from runtime and source after migration ownership moved to V127.
 - `tree-safety-v83.js` — inert compatibility marker whose final mastery-save/audit responsibilities moved into V82; retired from runtime and source after staged unload/integration proof. It must not regain runtime ownership.
-- `personal-tree-spectacle-v247.js` — presentation-only V247/V250 spectacle layer absorbed into canonical V116; retired from runtime and source after the fresh-main #230 consolidation passed the full gate.
+- `personal-tree-spectacle-v247.js` — presentation-only V247/V250 spectacle layer absorbed into canonical V116 and unloaded under #230; source retired in the subsequent staged L5 cleanup after #232 supplied post-unload integration proof.
 - `tree-labels-v117.js` — clearer gold-node label ownership absorbed into V116; retired from runtime and source.
 - `tree-mastery-v120.js` — compatibility marker only; retired from runtime and source.
 - `tree-mastery-ui-v128.js` — compatibility marker only; retired from runtime and source.
