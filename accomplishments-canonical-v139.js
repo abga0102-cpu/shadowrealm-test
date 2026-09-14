@@ -12,7 +12,7 @@ function forge(){return n(S.forge&&S.forge.level);}
 function floor(){return n(S.recordFloor);}
 function targetIsBoss(target){try{if(typeof isBoss==='function')return !!isBoss(target);}catch(_){}var stage=((Math.max(1,Number(target)||1)-1)%20)+1;return stage%5===0;}
 function floorDone(target){target=Math.max(1,Math.floor(Number(target)||1));if(targetIsBoss(target))return !!(S.bossClears&&S.bossClears[String(target)]);return floor()>=target;}
-function stageLabel(target){target=Math.max(1,Math.min(800,Math.floor(Number(target)||1));try{if(typeof window.__srCampaignStageLabel==='function')return window.__srCampaignStageLabel(target);}catch(_){}var within=((target-1)%100)+1;return (Math.floor((within-1)/20)+1)+'-'+(((within-1)%20)+1);}
+function stageLabel(target){target=Math.max(1,Math.min(800,Math.floor(Number(target)||1)));try{if(typeof window.__srCampaignStageLabel==='function')return window.__srCampaignStageLabel(target);}catch(_){}var within=((target-1)%100)+1;return (Math.floor((within-1)/20)+1)+'-'+(((within-1)%20)+1);}
 function fusions(){var st=S.sanctuary||{},a=S.accomplishments||{};return Math.max(n(st.mergeCrafts),n(st.fusions),n(a.fusionCount));}
 function ensureTitles(){S.titles=S.titles&&typeof S.titles==='object'?S.titles:{};if(typeof S.equippedTitle!=='string')S.equippedTitle='';}
 function divineUnlocked(){ensureTitles();var st=S.sanctuary||{};return !!(st.divineTitleUnlocked||S.titles.divin);}
@@ -72,7 +72,18 @@ function installProgressEntry(){
  var oldProgress=SCREENS.developpement;
  SCREENS.developpement=function(){
   var h=oldProgress();
-  try{var box=document.createElement('div');box.innerHTML=h;var pad=box.querySelector('.pad.mt6,.pad.mt8,.pad');if(!pad||pad.querySelector('[data-act="accomplishments"]'))return box.innerHTML;var entry=document.createElement('div');entry.className='card lit';entry.dataset.act='accomplishments';entry.style.cssText='cursor:pointer;margin-bottom:8px';entry.innerHTML='<div class="between"><b>Accomplissements</b><span class="pill">Voir les récompenses</span></div>';pad.insertBefore(entry,pad.firstChild);return box.innerHTML;}catch(_){return h;}
+  try{
+   var box=document.createElement('div');box.innerHTML=h;
+   var pad=box.querySelector('.pad.mt6,.pad.mt8,.pad');
+   if(!pad||pad.querySelector('[data-act="accomplishments"]'))return box.innerHTML;
+   var entry=document.createElement('div');
+   entry.className='card lit';
+   entry.dataset.act='accomplishments';
+   entry.style.cssText='cursor:pointer;margin-bottom:8px';
+   entry.innerHTML='<div class="between"><b>Accomplissements</b><span class="pill">Voir les récompenses</span></div>';
+   pad.insertBefore(entry,pad.firstChild);
+   return box.innerHTML;
+  }catch(_){return h;}
  };
 }
 function install(){if(typeof S==='undefined'||typeof ACT==='undefined'||typeof openModal!=='function')return;ACT.accomplishments=function(){openModal(html(),'Accomplissements');};installTitleInteraction();installProgressEntry();}
