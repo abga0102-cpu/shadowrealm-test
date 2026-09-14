@@ -27,6 +27,8 @@ test('V322 stays inside canonical campaign owners and never duplicates V322A Fam
   expect(combat).toContain('chaptersPerDifficulty:5');
   expect(combat).toContain('floorsPerChapter:20');
   expect(damage).toContain('maxFloor:800');
+  expect(damage).toContain('TARGET_HITS_TO_KILL=3.6');
+  expect(damage).toContain("scaling:'floor-only-no-player-rubber-band'");
   expect(ach).toContain("['floor400',800,'Terminer Divin · 5-20'");
   expect(combat).not.toContain('PAID_FAMILIAR_COST');
   expect(damage).not.toContain('PAID_FAMILIAR_COST');
@@ -69,55 +71,54 @@ test('V322 exposes exactly 8 x 5 x 20 campaign structure and local notation', as
   expect(state.waves20).toBe(1);
 });
 
-test('V322 stretches HP and damage while preserving former endgame anchors', async ({ page }) => {
+test('V323 campaign balance uses one floor-only reference for enemy HP and damage', async ({ page }) => {
   await openCleanGame(page);
   const r = await page.evaluate(() => ({
     hp1: window.__srV285EnemyHP(1), hp800: window.__srV285EnemyHP(800),
     boss800: window.__srV285BossHP(800),
     dmg1: window.__srV289EnemyDamage(1), dmg800: window.__srV289EnemyDamage(800),
-    dmgCfg: window.__srEnemyDamageConfigV289,
+    cfg: window.__srEnemyDamageConfigV289,
+    marker: window.__srCampaignReferenceBalanceV323,
   }));
-  expect(r.hp1).toBe(24);
-  expect(r.hp800).toBe(320000000000);
+  expect(r.marker).toBe(true);
+  expect(r.hp1).toBe(43);
+  expect(r.hp800).toBe(522000000000);
   expect(r.boss800).toBe(6000000000000);
-  expect(r.dmg1).toBe(2);
-  expect(r.dmg800).toBe(2300000000);
-  expect(r.dmgCfg.maxFloor).toBe(800);
+  expect(r.dmg1).toBe(13);
+  expect(r.dmg800).toBe(2875000000);
+  expect(r.cfg.maxFloor).toBe(800);
+  expect(r.cfg.targetHitsToKill).toBeCloseTo(3.6, 8);
+  expect(r.cfg.targetHitsToDefeatReference).toBe(8);
+  expect(r.cfg.scaling).toBe('floor-only-no-player-rubber-band');
 });
 
-test('Early monster resistance ends at 2-9 without overtaking later stages', async ({ page }) => {
+test('V323 reference model stays independent from the live player build', async ({ page }) => {
   await openCleanGame(page);
   const r = await page.evaluate(() => {
-    const cfg = window.__srCombatProgressionConfigV285.earlyResistance;
-    return {
-      endFloor: cfg.endFloor,
-      endStage: cfg.endStage,
-      startMul: cfg.startMul,
-      endMul: cfg.endMul,
-      mul26: cfg.multiplier(26),
-      mul29: cfg.multiplier(29),
-      mul30: cfg.multiplier(30),
-      stage26: window.__srCampaignMeta(26).stageCode,
-      stage29: window.__srCampaignMeta(29).stageCode,
-      stage31: window.__srCampaignMeta(31).stageCode,
-      hp26: window.__srV285EnemyHP(26),
-      hp29: window.__srV285EnemyHP(29),
-      hp30: window.__srV285EnemyHP(30),
-      hp31: window.__srV285EnemyHP(31),
+    const floor = 40;
+    const before = {
+      hp: __srV285EnemyHP(floor),
+      dmg: __srV289EnemyDamage(floor),
+      refDmg: __srV323ExpectedPlayerDamage(floor),
+      refHp: __srV323ExpectedPlayerHP(floor),
     };
+    const oldD = D;
+    const oldPower = S.power;
+    D = Object.assign({}, D, { damage: 999999999999, hp: 999999999999 });
+    S.power = 999999999999999;
+    const after = {
+      hp: __srV285EnemyHP(floor),
+      dmg: __srV289EnemyDamage(floor),
+      refDmg: __srV323ExpectedPlayerDamage(floor),
+      refHp: __srV323ExpectedPlayerHP(floor),
+    };
+    D = oldD;
+    S.power = oldPower;
+    return { before, after };
   });
-  expect(r.endFloor).toBe(29);
-  expect(r.endStage).toBe('2-9');
-  expect(r.startMul).toBeCloseTo(1.08, 8);
-  expect(r.endMul).toBeCloseTo(1.10, 8);
-  expect(r.stage26).toBe('2-6');
-  expect(r.stage29).toBe('2-9');
-  expect(r.stage31).toBe('2-11');
-  expect(r.mul26).toBeGreaterThan(1);
-  expect(r.mul29).toBeCloseTo(1.10, 8);
-  expect(r.mul30).toBe(1);
-  expect(r.hp26).toBeLessThan(r.hp31);
-  expect(r.hp29).toBeLessThan(r.hp30);
+  expect(r.after).toEqual(r.before);
+  expect(r.before.hp).toBe(Math.round(r.before.refDmg * 3.6));
+  expect(r.before.dmg).toBe(Math.round(r.before.refHp / 8));
 });
 
 test('V322 old-save migration preserves difficulty position and completed campaign', async ({ page }) => {
