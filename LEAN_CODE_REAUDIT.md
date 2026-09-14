@@ -1,6 +1,6 @@
 # Lean-code remaining-work audit
 
-Audit refreshed: 2026-09-14. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `b9072248db9331486c0dd77065aa5c0085be2689` (latest `main` before this V247 retirement rebuild).
+Audit refreshed: 2026-09-14. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `9be965296808fef7bf4686198323a4f287211f0d` (latest `main` after PR #244 roadmap synchronization).
 
 This file records the current remaining-work disposition after the proof-based L1 audit and subsequent L2/L3/L4/L5 passes. **L1 is complete.** L2, L3, L4 and staged L5 remain evidence-driven.
 
@@ -36,7 +36,7 @@ Stable consolidated ownership includes BottomNav, Home, Accomplishments UI/claim
 
 PRs #213/#214 removed V82's duplicate renderer, renderer helpers, injected presentation CSS and renderer-only angle metadata. PR #216 moved mastery-key raw-save restoration into V82. PR #219 moved the historical `window.__srTreeAudit` diagnostic into V82, leaving V83 inert. PR #226 then completed V83 source retirement after its staged unload/integration proof.
 
-PR #230 rebuilt the V247 consolidation from fresh `main`, folded the presentation-only V247/V250 spectacle CSS into canonical `tree-dedicated-v116.js`, unloaded V247 from `index.html`, and passed the moving smoke ratchet plus the full Chromium/WebKit regression gate. PR #232 subsequently passed the same full gate on top of that mainline, providing the required post-unload integration proof for staged L5 source retirement. The current V247 retirement removes only that already-unloaded historical source and keeps an ownership contract requiring both source absence and the surviving V116 presentation tokens.
+PR #230 rebuilt the V247 consolidation from fresh `main`, folded the presentation-only V247/V250 spectacle CSS into canonical `tree-dedicated-v116.js`, unloaded V247 from `index.html`, and passed the moving smoke ratchet plus the full Chromium/WebKit regression gate. PR #232 subsequently passed the same full gate on top of that mainline, providing the required post-unload integration proof. PR #237 then completed staged V247 source retirement while keeping the surviving V116 presentation contract locked.
 
 Current Tree boundaries are therefore:
 
@@ -58,7 +58,7 @@ Do not collapse V121 into payout/UI owners merely to reduce file count. Reassess
 
 PR #232 completed the requested arcade-clean visual pass in existing canonical `premium-ui-v209.js`: flatter/quieter cards, restrained tactile controls, semantic CTA hierarchy, quieter HUD/navigation presentation and simpler interaction feedback while retaining the dark-navy/burnished-gold RPG identity. This was visual-only and introduced no new runtime owner or patch layer.
 
-Future visual work should extend existing canonical owners and should be driven by concrete visual inconsistencies rather than adding versioned overlay files.
+Future visual work should extend existing canonical owners and should be driven by concrete visual inconsistencies rather than adding versioned overlay files. This source-level refresh found no new neutral visual-ownership seam that justifies another visual patch while campaign/Forge/index work is active.
 
 ## L4 shared-utility disposition
 
@@ -69,17 +69,22 @@ The Social message-store policy transfer remains the validated L4 production con
 There is no standing L1-derived deletion queue. New source retirement begins only after a later L2/L3 transfer survives integration or a fresh audit proves a source obsolete.
 
 - `tree-safety-v83.js` completed staged L5 retirement under PR #226 and is absent from source.
-- `personal-tree-spectacle-v247.js` has completed the staged retirement sequence in this batch: runtime unload under #230, subsequent full-gate integration proof under #232, and source deletion while V116 retains the presentation contract.
+- `personal-tree-spectacle-v247.js` completed staged retirement under PR #237 after runtime unload under #230 and subsequent full-gate integration proof under #232; V116 retains the presentation contract.
 
 No additional staged L5 source is currently evidence-ready. Rescan only after another L2/L3 ownership transfer or a fresh reachability audit creates a proven candidate.
 
 ## Current concurrent-work constraints
 
-At this refresh there are no other open pull requests. `main` has nevertheless advanced through recent Weekly Mega and Forge/progression work, including the V321 Forge onboarding change at `b9072248db9331486c0dd77065aa5c0085be2689`.
+At this refresh, four open pull requests own feature-sensitive surfaces:
 
-Forge/equipment/progression remains feature-owner sensitive even without an open PR. Any future consolidation there must begin from fresh `main`, inspect the newly landed owners and avoid changing campaign unlock/reward semantics without dedicated proof.
+- **#242** owns `index.html` for the Familiar summon cache-bust;
+- **#243** owns campaign combat progression, enemy damage and campaign Accomplishments expansion;
+- **#245** owns Forge rarity/progression balance and stability;
+- **#246** is actively investigating the campaign stage 5-4 stall with regression-first evidence.
 
-The current Tree V247 source-retirement batch is disjoint from those intervening commits: the delta since its prior base touches only `combat-progression-authority-v285.js`, `progression-integration-pack-v305.js`, and Forge onboarding tests, while this batch is limited to the retired Tree source, its ownership contract, and ownership/inventory documentation.
+Do not use Lean Code work to modify those active owners or adjacent gameplay semantics until their work settles and `main` is refreshed again. In particular, Forge/equipment/progression and campaign/combat remain feature-owner sensitive, and `index.html` should not be touched by a cleanup batch while #242 is active.
+
+The current neutral scan found no evidence-ready production transfer outside those active surfaces. Audio V26, Power Hint and Boot wave synchronization remain blocked on stronger deterministic lifecycle evidence, and there is no additional staged L5 source-retirement candidate.
 
 ## Remaining Lean Code work
 
@@ -93,7 +98,7 @@ The current Tree V247 source-retirement batch is disjoint from those intervening
 | L3 Tree topology/compatibility | V82/V116/V216 own topology/compatibility, renderer/presentation and live mastery respectively. | Preserve these durable boundaries. |
 | L3 Tree V83 | Runtime unload and source retirement complete. | No current scope; keep retired-owner contracts. |
 | L3 Tree V247 presentation | V247/V250 presentation is in V116; runtime and source retirement are complete. | No current scope; preserve the V116 presentation and source-absence contract. |
-| L3 Forge/progression | Recent V321 work changed this surface on `main`; it remains feature-sensitive. | Re-audit from latest main before any consolidation; require a narrow, proven ownership seam. |
+| L3 Forge/progression | PR #245 is actively changing Forge rarity/progression while #243/#246 touch adjacent campaign progression. | Re-audit from latest `main` only after intersecting feature work settles; require a narrow, proven ownership seam. |
 | L4 shared helpers | Social store transfer complete; other audited helpers intentionally differ. | Reopen only for genuinely identical semantics with measurable reduction and no new coupling. |
 | L5 staged source retirement | V83 and V247 are complete; no additional staged source is evidence-ready. | Rescan after the next proven L2/L3 ownership transfer or fresh reachability audit. |
 
@@ -104,7 +109,7 @@ Select each new batch from fresh `main` in this order:
 1. finish a staged unload/source retirement when canonical ownership and subsequent integration proof are already present;
 2. prefer a newly discovered neutral UI/lifecycle/helper candidate only when the surviving owner/hook is deterministic and behavior-equivalent;
 3. keep Power Hint, Boot wave and Audio deferred until their required deterministic lifecycle evidence exists;
-4. re-audit Forge/equipment/progression from latest `main` before touching that feature-sensitive surface;
+4. re-audit Forge/equipment/progression and campaign/combat from latest `main` after current feature work settles before touching those feature-sensitive surfaces;
 5. if no production transfer is evidence-safe, synchronize ownership/roadmap documentation rather than forcing a weaker architecture.
 
 ## Phase status
