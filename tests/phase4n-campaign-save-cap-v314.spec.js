@@ -7,7 +7,7 @@ const legacySave = JSON.parse(fs.readFileSync(
   'utf8'
 ));
 
-test('V314 preserves a former endless-campaign record before normalizing the playable save to floor 400', async ({ page }) => {
+test('V322 keeps a former endless-campaign record playable inside the new 800-stage campaign', async ({ page }) => {
   const save = JSON.parse(JSON.stringify(legacySave));
   save.floor = 512;
   save.recordFloor = 512;
@@ -21,7 +21,7 @@ test('V314 preserves a former endless-campaign record before normalizing the pla
 
   await page.goto('/index.html');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
-  await page.waitForFunction(() => window.__srCampaign400V314 === true && typeof S !== 'undefined');
+  await page.waitForFunction(() => window.__srCampaign800V322 === true && typeof S !== 'undefined');
 
   const state = await page.evaluate(() => ({
     floor: S.floor,
@@ -29,13 +29,18 @@ test('V314 preserves a former endless-campaign record before normalizing the pla
     checkpoint: S.checkpoint,
     pendingBossFloor: S.pendingBossFloor,
     legacyCampaignRecord: S.legacyCampaignRecord,
+    migrated: !!(S.migrations && S.migrations.campaign800V322),
+    maxFloor: window.__srCampaignMaxFloor,
   }));
 
-  expect(state).toEqual({
-    floor: 400,
-    recordFloor: 400,
-    checkpoint: 400,
-    pendingBossFloor: 0,
-    legacyCampaignRecord: 512,
-  });
+  expect(state.maxFloor).toBe(800);
+  expect(state.recordFloor).toBe(512);
+  expect(state.floor).toBeGreaterThanOrEqual(500);
+  expect(state.floor).toBeLessThanOrEqual(512);
+  expect(state.checkpoint).toBeGreaterThanOrEqual(500);
+  expect(state.checkpoint).toBeLessThanOrEqual(512);
+  expect(state.pendingBossFloor).toBeGreaterThanOrEqual(0);
+  expect(state.pendingBossFloor).toBeLessThanOrEqual(512);
+  expect(state.legacyCampaignRecord).toBeUndefined();
+  expect(state.migrated).toBe(true);
 });
