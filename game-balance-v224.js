@@ -1,7 +1,8 @@
-/* SHADOWREACH · Game Balance V224
+/* SHADOWREACH · Game Balance V224 / V323 Forge rarity ladder
    - Equipment base power is fixed by rarity and no longer scales with Forge level.
    - Rarity-specific stat quality rolls; perfect rolls stay rare through Mythic.
-   - Divine equipment is hard-locked before the first personal Ascension.
+   - V323: every newly available Forge rarity starts at exactly 0.25%.
+   - V323: 0★ ends at Artefact; Forge stars unlock Légendaire/Infernal/Immortel/Divin.
    - Removes obsolete Rebirth upgrades (including Regeneration) from active effects/UI registry.
    - Existing gear is migrated once without lowering owned stats or upgrade investment. */
 (function(){
@@ -55,20 +56,81 @@ function pruneRebirth(){
 }
 pruneRebirth();
 
-/* Hard safety gate: Forge stars must never bypass the personal Ascension lock. */
+/* V323 Forge rarity progression.
+   Base 0★ ladder keeps the approved Forge-50 targets through Artefact, but every
+   newly introduced rarity now enters at exactly 0.25%. The four post-0★ tiers
+   are earned one per Forge Ascension and all use the same clear endgame ramp:
+   Forge 44 = locked, Forge 45 = 0.25%, Forge 50 = 1.00%.
+   Higher-tier probability is taken only from Commun, preserving the lower-tier
+   Forge-50 targets. At 4★/Forge 50 the table is therefore exactly:
+   C35 / R28 / E21 / M8 / A4 / L1 / I1 / Im1 / D1. */
+var FORGE_BASE_RARITIES_V323=[
+  {key:'RARE',unlock:1,target:28,ease:.70},
+  {key:'EPIQUE',unlock:6,target:21,ease:1.15},
+  {key:'MYTHIQUE',unlock:14,target:8,ease:1.55},
+  {key:'ARTEFACT',unlock:22,target:4,ease:1.85}
+];
+var FORGE_STAR_RARITIES_V323=[
+  {key:'LEGENDAIRE',stars:1},
+  {key:'INFERNAL',stars:2},
+  {key:'IMMORTEL',stars:3},
+  {key:'DIVIN',stars:4}
+];
+function forgeBaseRarityChanceV323(level,cfg){
+  level=Math.max(1,Math.min(50,Math.floor(Number(level)||1)));
+  if(level<cfg.unlock)return 0;
+  if(level>=50)return cfg.target;
+  if(cfg.unlock>=50)return .25;
+  var p=(level-cfg.unlock)/(50-cfg.unlock);
+  return .25+(cfg.target-.25)*Math.pow(Math.max(0,Math.min(1,p)),cfg.ease);
+}
+function forgeStarRarityChanceV323(level){
+  level=Math.max(1,Math.min(50,Math.floor(Number(level)||1)));
+  if(level<45)return 0;
+  return .25+.75*((level-45)/5);
+}
+function forgeRatesV323(level,stars){
+  level=Math.max(1,Math.min(50,Math.floor(Number(level)||1)));
+  stars=Math.max(0,Math.floor(Number(stars)||0));
+  var out={COMMUN:0,RARE:0,EPIQUE:0,MYTHIQUE:0,ARTEFACT:0,LEGENDAIRE:0,INFERNAL:0,IMMORTEL:0,DIVIN:0};
+  var used=0;
+  FORGE_BASE_RARITIES_V323.forEach(function(cfg){
+    var chance=forgeBaseRarityChanceV323(level,cfg);
+    out[cfg.key]=chance;used+=chance;
+  });
+  var starChance=forgeStarRarityChanceV323(level);
+  FORGE_STAR_RARITIES_V323.forEach(function(cfg){
+    if(stars<cfg.stars)return;
+    out[cfg.key]=starChance;used+=starChance;
+  });
+  out.COMMUN=Math.max(0,100-used);
+  return out;
+}
+function forgeRequiredStarsV323(rarity){
+  for(var i=0;i<FORGE_STAR_RARITIES_V323.length;i++)if(FORGE_STAR_RARITIES_V323[i].key===rarity)return FORGE_STAR_RARITIES_V323[i].stars;
+  return 0;
+}
+/* Keep the existing Forge floor gate aligned with the new star-tier entrance.
+   Base rarity floors remain unchanged; every Ascension-only tier enters at 45. */
+try{
+  if(typeof RARITY_MIN_FORGE!=='undefined'&&RARITY_MIN_FORGE){
+    RARITY_MIN_FORGE.LEGENDAIRE=45;
+    RARITY_MIN_FORGE.INFERNAL=45;
+    RARITY_MIN_FORGE.IMMORTEL=45;
+    RARITY_MIN_FORGE.DIVIN=45;
+  }
+}catch(_){ }
+
 try{
   if(typeof getRates==='function'&&!getRates.__srV224){
     var oldGetRates=getRates;
     var wrappedGetRates=function(system,mastery,ascension,stars){
-      var out=oldGetRates(system,mastery,ascension,stars);
-      if(system==='forge'&&!(Number(ascension)>0)&&out&&Number(out.DIVIN)>0){
-        out=Object.assign({},out);out.DIVIN=0;
-        var keys=Object.keys(out),sum=keys.reduce(function(n,k){return n+(Number(out[k])||0);},0);
-        if(sum>0)keys.forEach(function(k){out[k]=(Number(out[k])||0)*100/sum;});
-      }
-      return out;
+      if(system==='forge')return forgeRatesV323(mastery,stars);
+      return oldGetRates(system,mastery,ascension,stars);
     };
     wrappedGetRates.__srV224=true;
+    wrappedGetRates.__srV323=true;
+    wrappedGetRates.__srPrevious=oldGetRates;
     getRates=wrappedGetRates;
   }
 }catch(_){ }
@@ -159,5 +221,8 @@ function migrate(){
 migrate();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',migrate,{once:true});else setTimeout(migrate,0);
 
-window.__srEquipmentBalanceV224={fixedBase:FIXED_BASE,targetMean:TARGET_MEAN,perfectChance:PERFECT,qualityRoll:qualityRoll,pruneRebirth:pruneRebirth};
+window.__srEquipmentBalanceV224={
+  fixedBase:FIXED_BASE,targetMean:TARGET_MEAN,perfectChance:PERFECT,qualityRoll:qualityRoll,pruneRebirth:pruneRebirth,
+  forgeRarityV323:{base:FORGE_BASE_RARITIES_V323,stars:FORGE_STAR_RARITIES_V323,rates:forgeRatesV323,requiredStars:forgeRequiredStarsV323,starUnlockLevel:45,starStartChance:.25,starMaxChance:1}
+};
 })();
