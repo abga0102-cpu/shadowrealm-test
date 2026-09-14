@@ -125,9 +125,9 @@ a:focus-visible{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 2px 5px rgba(0,0,0,.24)!important;
   transition:transform .11s cubic-bezier(.2,.75,.2,1),filter .11s ease,border-color .11s ease,background .11s ease,color .11s ease!important;
 }
-.hudBtn,.menuBtn{border-radius:8px!important}
+.hudBtn,.menuBtn,.iBtn,.recommendedClose{border-radius:8px!important}
 .hudBtn.ready,.iBtn{border-color:rgba(215,174,88,.55)!important;color:var(--premium-gold-lit)!important}
-.iBtn{background:#191B20!important;box-shadow:inset 0 1px 0 rgba(255,236,181,.06),0 2px 5px rgba(0,0,0,.24)!important}
+.iBtn{background:#172132!important}
 .recommendedClose{color:#AAB5C4!important}
 @media(hover:hover){
   .hudBtn:hover,.menuBtn:hover,.iBtn:hover,.recommendedClose:hover{
