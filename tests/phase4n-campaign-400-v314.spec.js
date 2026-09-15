@@ -97,3 +97,30 @@ test('V322 final Divin boss uses final boss HP authority', async ({ page }) => {
   expect(result.hp).toBe(6000000000000);
   expect(result.damage).toBeGreaterThan(0);
 });
+
+test('V322 Home arena shows difficulty plus local 20-stage chapter notation', async ({ page }) => {
+  await openCleanGame(page);
+  await page.evaluate(() => {
+    update((st) => { st.floor=301; st.step=1; st.recordFloor=Math.max(Number(st.recordFloor)||1,301); st.pendingBossFloor=0; });
+    combat=spawnCampaign(S); nav('accueil'); scheduleRender();
+  });
+  await expect(page.locator('#aLabel')).toHaveText('Cauchemar · 1-1', { timeout: 5000 });
+});
+
+test('V322 final Boss completion stays on replayable Divin 5-20 without creating stage 801', async ({ page }) => {
+  await openCleanGame(page);
+  const result = await page.evaluate(() => {
+    update((st) => {
+      st.migrations = st.migrations || {}; st.migrations.campaign800V322 = true;
+      st.floor=800; st.step=1; st.recordFloor=799; st.checkpoint=795; st.pendingBossFloor=0;
+      st.bossClears=st.bossClears||{}; st.bossRewardsClaimed=st.bossRewardsClaimed||{};
+    });
+    const c=spawnCampaign(S); c.ctx='campaign'; c.floor=800; c.boss=true; c.status='won'; handleCombatEnd(c);
+    return { floor:S.floor, step:S.step, recordFloor:S.recordFloor, checkpoint:S.checkpoint, complete:S.campaignComplete800, boss800:!!S.bossClears['800'], label:__srCampaignLabel(S.floor), stage:__srCampaignStageLabel(S.floor) };
+  });
+  expect(result).toEqual({ floor:800, step:1, recordFloor:800, checkpoint:800, complete:true, boss800:true, label:'Divin · 5-20', stage:'5-20' });
+  await page.waitForTimeout(100);
+  const stable=await page.evaluate(() => ({ floor:S.floor, combatFloor:combat&&combat.floor }));
+  expect(stable.floor).toBe(800);
+  expect(stable.combatFloor).toBe(800);
+});
