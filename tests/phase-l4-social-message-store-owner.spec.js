@@ -30,8 +30,8 @@ test('L4: Social owns the shared message-store policy for its extensions', async
 
   expect(bots).toContain('const messageStore=window.__srSocialMessageStoreV1;');
   expect(bots).toContain('const rd=messageStore.read;');
-  expect(bots).toContain('messageStore.serialize(a)');
-  expect(bots).toContain('localStorage.setItem(STORE,messageStore.serialize(a))');
+  expect(bots.includes('messageStore.serialize(a)')).toBe(true);
+  expect(bots.includes('localStorage.setItem(STORE,messageStore.serialize(a))')).toBe(true);
   expect(bots).not.toContain('JSON.parse(localStorage.getItem(STORE)||"[]")');
   expect(bots).not.toContain('MAX=160');
   expect(bots).toContain('newValue:JSON.stringify(a)');
