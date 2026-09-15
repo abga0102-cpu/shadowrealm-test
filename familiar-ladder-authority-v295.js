@@ -34,3 +34,29 @@ try{if(typeof S!=='undefined'&&S){S.familiarLadderVersion=295;if(typeof saveNow=
 window.__srNormalizeFamiliarLadderV295=normalizeFamiliarLadder;
 window.__srFamiliarLadderConfigV295={order:APPROVED_ORDER.slice(),fusion:{COMMUN:4,PEU_COMMUN:4,RARE:5,EPIQUE:5,MYTHIQUE:5,ANCESTRAL:6},ancestralDirectSummon:false,rateOwner:'V296'};
 })();
+
+/* V335 · Gold economy balance
+   Gold Autonomy base: 25% -> 15% of Raid Or reward per hour.
+   Gain/Or Autonomy nodes stay +1.25% per level.
+   Global Gold nodes rise slightly from +1% to +1.25% per level. */
+(function(){'use strict';
+if(window.__srGoldEconomyBalanceV335)return;window.__srGoldEconomyBalanceV335=true;
+var AUTO=['n1_07','n2_07','n3_07','n4_07'];
+var GLOBAL=['n1_06','n2_06','n3_06','n4_06'];
+var R={n1_07:'I',n2_07:'II',n3_07:'III',n4_07:'IV'};
+try{
+  if(typeof TREE_BY_ID!=='undefined'&&TREE_BY_ID){
+    AUTO.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=1.25;n.label='Or d’Autonomie '+R[id];n.short='Or Auton. '+R[id];n.note='+1,25 % d’or d’Autonomie par niveau · Max +6,25 %';});
+    GLOBAL.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=1.25;n.note='+1,25 % d’or global par niveau · Max +6,25 %';});
+  }
+}catch(_){ }
+try{
+  if(typeof harvestRates==='function'&&!harvestRates.__srGoldEconomyV335){
+    var oldHarvestRates=harvestRates;
+    harvestRates=function(s){var r=oldHarvestRates(s);if(r&&isFinite(Number(r.gold)))r.gold=Number(r.gold)*0.60;return r;};
+    harvestRates.__srGoldEconomyV335=true;
+  }
+}catch(_){ }
+window.__srGoldEconomyConfigV335={autonomyBaseRaidSharePerHour:15,autonomyNodePerLevelPct:1.25,autonomyBranchMaxPct:25,autonomyEffectiveRaidShareAtMaxPct:18.75,globalGoldPerLevelPct:1.25,globalGoldBranchMaxPct:25};
+try{if(typeof scheduleRender==='function')scheduleRender();}catch(_){ }
+})();
