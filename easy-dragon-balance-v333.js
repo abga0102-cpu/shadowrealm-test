@@ -8,8 +8,8 @@
   window.__srEasyDragonBalanceV333=true;
 
   var TARGET_FLOOR=75;
-  var HP_MUL=0.80;
-  var BASE_DMG_MUL=0.90;
+  var HP_MUL=0.76;
+  var BASE_DMG_MUL=0.88;
 
   function isTargetCombat(c){
     return !!(c&&c.ctx==='campaign'&&Number(c.floor)===TARGET_FLOOR);
@@ -45,7 +45,7 @@
           if(e.breathWind>0){
             e.breathWind=Math.max(0,e.breathWind-dt);
             if(e.breathWind>0)return;
-            var raw=Math.floor(c.heroMaxHP*0.35);
+            var raw=Math.floor(c.heroMaxHP*0.33);
             var d=Math.max(1,Math.floor(raw*(1-heroDmgRed(c)/100)));
             c.heroHP-=d;c.heroHit=0.3;
             addShake(c,10);addBurst(c,'crit',c.heroX,'#FF7A3D');
@@ -97,7 +97,7 @@
 
   window.__srEasyDragonBalanceConfigV333={
     floor:TARGET_FLOOR,stage:'Facile 4-15',hpMul:HP_MUL,baseDamageMul:BASE_DMG_MUL,
-    breathMaxHpPct:35,breathCooldown:18,flightSeconds:3,flightCooldown:22,
+    breathMaxHpPct:33,breathCooldown:18,flightSeconds:3,flightCooldown:22,
     meleeDamageDuringFlightPct:40,intimidationPct:20,intimidationSeconds:6,intimidationCooldown:20
   };
 })();
