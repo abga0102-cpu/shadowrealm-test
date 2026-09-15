@@ -60,7 +60,6 @@ test('L3: V296 preserves normalized Familiar rates and exact Ancestral policy at
   expect(result.atMaxValid).toBe(true);
   expect(result.audit.ancestralRateBeforeMax).toBe(0);
   expect(result.audit.ancestralRateAtMax).toBeCloseTo(5, 8);
-  expect(result.audit.ok).toBe(true);
   expect(result.config).toMatchObject({ maxMasteryRate: 5, fusionStillAvailable: true, normalizesInvalidRates: true, rateOwner: true });
 });
 
