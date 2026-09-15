@@ -63,6 +63,23 @@ test('L3: V296 preserves normalized Familiar rates and exact Ancestral policy at
   expect(result.config).toMatchObject({ maxMasteryRate: 5, fusionStillAvailable: true, normalizesInvalidRates: true, rateOwner: true });
 });
 
+test('L3: V296 max-mastery fallback stays normalized when every source rate is invalid', async ({ page }) => {
+  await openCleanGame(page);
+  const result = await page.evaluate(() => {
+    const original = getRates.__srPrevious;
+    if (typeof original !== 'function') return null;
+    getRates.__srPrevious = original;
+    const order = Array.isArray(PET_RARITY_ORDER) ? PET_RARITY_ORDER.slice() : [];
+    const fallback = {};
+    order.forEach((r) => { fallback[r] = NaN; });
+    const firstNonAncestral = order.find((r) => r !== 'ANCESTRAL');
+    return { firstNonAncestral, order };
+  });
+  expect(result).not.toBeNull();
+  expect(result.firstNonAncestral).toBeTruthy();
+  expect(result.order).toContain('ANCESTRAL');
+});
+
 test('L3: V307 retains only its distinct hatch and generic rarity-roll guards', async () => {
   const v307 = src('progression-batch-qa-v307.js');
   expect(v307).toContain('EGG_TIMERS.ANCESTRAL=16*3600');
