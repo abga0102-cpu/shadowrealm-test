@@ -17,7 +17,7 @@
       if(/^b\d/.test(String(m.id||""))){changed=true;return false}
       return true;
     });
-    if(changed)try{localStorage.setItem(STORE,messageStore.serialize(b))}catch(_){ }
+    if(changed)messageStore.write(b);
   }
   function removeStraySocial(){
     document.querySelectorAll('[data-bot-test-output],[id*="botTestOutput"],[class*="botTestOutput"]').forEach(el=>el.remove());

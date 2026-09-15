@@ -7,8 +7,7 @@
   const messageStore=window.__srSocialMessageStoreV1;
   const STORE=messageStore.key,APP_ID="shadowreach-testers-social-2026-v1",ROOM_ID="shadowreach-testers-global-v1",CDN="https://esm.run/trystero@0.25.4";
   const seen=new Set();let action=null,room=null,peerCount=0,ready=false,lastSnapshot="";
-  const read=messageStore.read;
-  function write(a){try{localStorage.setItem(STORE,messageStore.serialize(a))}catch(_){}}
+  const read=messageStore.read,write=messageStore.write;
   function safeChannel(v){return v==="clan"||v==="announcements"?v:"world"}
   function ingest(msg){
     if(!msg||typeof msg!=="object"||!msg.id||seen.has(msg.id))return false;
