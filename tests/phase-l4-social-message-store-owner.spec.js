@@ -18,11 +18,12 @@ test('L4: Social owns the shared message-store policy for its extensions', async
   expect(index.indexOf("chain(['social-v1.js','social-p2p-v1.js']")).toBeLessThan(index.indexOf("chain(['social-bot-testers-v5.js','social-bot-ui-v1.js']"));
 
   expect(social).toContain('function serialize(list){return JSON.stringify(list.slice(-MAX))}');
-  expect(social).toContain('window.__srSocialMessageStoreV1={key:KEY,max:MAX,read,serialize};');
+  expect(social).toContain('function write(list){try{localStorage.setItem(KEY,serialize(list))}catch(_){}}');
+  expect(social).toContain('window.__srSocialMessageStoreV1={key:KEY,max:MAX,read,serialize,write};');
 
   expect(p2p).toContain('const messageStore=window.__srSocialMessageStoreV1;');
-  expect(p2p).toContain('const read=messageStore.read;');
-  expect(p2p).toContain('messageStore.serialize(a)');
+  expect(p2p).toContain('const read=messageStore.read,write=messageStore.write;');
+  expect(p2p).not.toContain('localStorage.setItem(STORE,messageStore.serialize(a))');
   expect(p2p).not.toContain('JSON.parse(localStorage.getItem(STORE)||"[]")');
   expect(p2p).not.toContain('MAX=160');
   expect(p2p).toContain('newValue:JSON.stringify(list)');
@@ -30,6 +31,7 @@ test('L4: Social owns the shared message-store policy for its extensions', async
   expect(bots).toContain('const messageStore=window.__srSocialMessageStoreV1;');
   expect(bots).toContain('const rd=messageStore.read;');
   expect(bots).toContain('messageStore.serialize(a)');
+  expect(bots).toContain('localStorage.setItem(STORE,messageStore.serialize(a))');
   expect(bots).not.toContain('JSON.parse(localStorage.getItem(STORE)||"[]")');
   expect(bots).not.toContain('MAX=160');
   expect(bots).toContain('newValue:JSON.stringify(a)');
@@ -55,6 +57,9 @@ test('L4: Social message-store API preserves malformed-input and 160-message ret
       const serialized = store.serialize(sample);
       localStorage.setItem(store.key, serialized);
       const readBack = store.read();
+      localStorage.setItem(store.key, JSON.stringify([{ id: 'before-write' }]));
+      store.write(sample);
+      const written = JSON.parse(localStorage.getItem(store.key));
       return {
         key: store.key,
         max: store.max,
@@ -63,6 +68,8 @@ test('L4: Social message-store API preserves malformed-input and 160-message ret
         firstSerializedId: JSON.parse(serialized)[0].id,
         readLength: readBack.length,
         firstReadId: readBack[0].id,
+        writtenLength: written.length,
+        firstWrittenId: written[0].id,
       };
     } finally {
       if (previous === null) localStorage.removeItem(store.key);
@@ -78,5 +85,7 @@ test('L4: Social message-store API preserves malformed-input and 160-message ret
     firstSerializedId: 'm5',
     readLength: 160,
     firstReadId: 'm5',
+    writtenLength: 160,
+    firstWrittenId: 'm5',
   });
 });

@@ -29,7 +29,7 @@
   function read(){try{const a=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(a)?a.slice(-MAX):[]}catch(_){return[]}}
   function serialize(list){return JSON.stringify(list.slice(-MAX))}
   function write(list){try{localStorage.setItem(KEY,serialize(list))}catch(_){}}
-  window.__srSocialMessageStoreV1={key:KEY,max:MAX,read,serialize};
+  window.__srSocialMessageStoreV1={key:KEY,max:MAX,read,serialize,write};
   function push(msg,broadcast=true,relay=broadcast){
     if(!msg||!msg.id)return; msg.channel=msgChannel(msg);
     const list=read(); if(list.some(x=>x&&x.id===msg.id))return;
