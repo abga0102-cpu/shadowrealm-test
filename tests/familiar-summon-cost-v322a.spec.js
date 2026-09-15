@@ -132,7 +132,7 @@ test('V322A Familiar UI and resource help show 50 / 500 and enforce the new thre
   expect(thresholds).toEqual({ oneAt50Disabled: false, tenAt50Disabled: true, tenAt500Disabled: false });
 });
 
-test('V322A leaves Skill/Familiar Raid reward curves unchanged', async ({ page }) => {
+test('V322A keeps Skill Raid and summon cost unchanged while V335 owns Familiar Raid rewards', async ({ page }) => {
   await openCleanGame(page);
   const rewards = await page.evaluate(() => ({
     competence1: raidReward('competence', 1),
@@ -141,5 +141,5 @@ test('V322A leaves Skill/Familiar Raid reward curves unchanged', async ({ page }
     familiar10: raidReward('familier', 10),
     configCost: __srRaidSummonEconomyConfigV291.familier.paidSummonCost,
   }));
-  expect(rewards).toEqual({ competence1: 250, competence10: 340, familiar1: 250, familiar10: 340, configCost: 50 });
+  expect(rewards).toEqual({ competence1: 250, competence10: 340, familiar1: 350, familiar10: 395, configCost: 50 });
 });

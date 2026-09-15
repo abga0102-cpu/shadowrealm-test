@@ -25,8 +25,8 @@ test('V307 consolidated progression audit remains valid', async ({ page }) => {
   expect(audit.raidEvolution50).toBe(247);
   expect(audit.raidSkill1).toBe(250);
   expect(audit.raidSkill50).toBe(740);
-  expect(audit.raidPet1).toBe(250);
-  expect(audit.raidPet50).toBe(740);
+  expect(audit.raidPet1).toBe(350);
+  expect(audit.raidPet50).toBe(595);
   expect(audit.dustChanceHigh).toBe(5);
   expect(audit.dustCost0).toBe(60);
   expect(audit.forgeStar1).toBe(2);

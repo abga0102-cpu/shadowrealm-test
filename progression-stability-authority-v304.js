@@ -5,7 +5,8 @@
      Skill x1.5 at 1★, Familiar x1 / x1.5 / x2.1 / x3.
    - V323 extends Forge Ascension to 4★ only for the rarity ladder:
      ★ Légendaire, ★★ Infernal, ★★★ Immortel, ★★★★ Divin.
-   - Raid rewards keep the approved V290/V291 curves.
+   - Raid Évolution and Compétence keep their approved curves; V335 changes
+     only Raid Familier to 350 Essence at level 1, then +5 per level.
    - Dust upgrade keeps the approved V301 5% minimum and V283 cost curve.
    This layer changes no save schema and performs no destructive migration. */
 (function(){'use strict';
@@ -66,13 +67,15 @@ try{
 }catch(_){ }
 
 function peReward(level){level=Math.max(1,Math.floor(Number(level)||1));return 100+3*(level-1);}
-function summonReward(level){level=Math.max(1,Math.floor(Number(level)||1));return 250+10*(level-1);}
+function skillRaidReward(level){level=Math.max(1,Math.floor(Number(level)||1));return 250+10*(level-1);}
+function familiarRaidRewardV335(level){level=Math.max(1,Math.floor(Number(level)||1));return 350+5*(level-1);}
 try{
   if(typeof raidReward==='function'&&!raidReward.__srV304){
     var oldRaidReward=raidReward;
     raidReward=function(type,level){
       if(type==='evolution')return peReward(level);
-      if(type==='competence'||type==='familier')return summonReward(level);
+      if(type==='competence')return skillRaidReward(level);
+      if(type==='familier')return familiarRaidRewardV335(level);
       return oldRaidReward.apply(this,arguments);
     };
     raidReward.__srV304=true;raidReward.__srPrevious=oldRaidReward;
@@ -97,7 +100,7 @@ try{
 window.__srProgressionStabilityConfigV304={
   stars:{forge:FORGE_STAR,skill:SKILL_STAR,pet:PET_STAR},
   forgeRarityAscensionV323:{maxStars:FORGE_ASCEND_MAX_STARS_V323,rarityByStar:FORGE_RARITY_BY_STAR_V323,powerStopsGrowingAfterStar:1},
-  raids:{evolution:{base:100,perLevel:3},competence:{base:250,perLevel:10},familier:{base:250,perLevel:10}},
+  raids:{evolution:{base:100,perLevel:3},competence:{base:250,perLevel:10},familier:{base:350,perLevel:5}},
   dust:{minimumChance:5,costBase:60,costPerLevel:36},
   destructiveMigration:false
 };
