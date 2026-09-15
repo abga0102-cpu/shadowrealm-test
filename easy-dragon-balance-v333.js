@@ -72,11 +72,11 @@
         };
         if(typeof oldFlyFilter==='function'){
           BOSS_ABIL.envol.filter=function(c,e,dmg,src){
-            var out=oldFlyFilter.apply(this,arguments);
-            if(!isTargetCombat(c)||!(e&&e.flying>0))return out;
-            if(src!=='weapon')return out;
-            var floor=Math.max(1,Math.floor(Number(dmg||0)*0.40));
-            return Math.max(Number(out)||0,floor);
+            if(!isTargetCombat(c)||!(e&&e.flying>0))return oldFlyFilter.apply(this,arguments);
+            if(src!=='weapon'||RANGED_IDS.indexOf(D.weapon)>=0)return dmg;
+            var glancing=Math.max(1,Math.floor(Number(dmg||0)*0.40));
+            c.floats.push({id:rid(),x:e.x,val:glancing,crit:false,color:'#B15CF6',born:Date.now(),text:'ENVOL · 40%'});
+            return glancing;
           };
         }
       }
