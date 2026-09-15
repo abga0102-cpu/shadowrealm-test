@@ -24,6 +24,8 @@
   var TARGET_HITS_TO_DEFEAT_REFERENCE=8;
   var INTRO_FLOOR_HP=65;
   var INTRO_FLOOR_DAMAGE=6;
+  var RAID_HP_MUL=1.35;
+  var RAID_DAMAGE_MUL=1.25;
 
   var REFERENCE_DAMAGE={
     1:30,3:80,5:150,10:350,15:800,20:2500,30:23000,40:180000,50:900000,
@@ -82,6 +84,24 @@
   try{if(typeof enemyHP==='function')enemyHP=campaignEnemyHP;}catch(_){ }
   try{if(typeof enemyDamage==='function')enemyDamage=campaignEnemyDamage;}catch(_){ }
 
+  /* V324 raid-only difficulty increase. Campaign formulas above stay unchanged.
+     Applying the multiplier at the final enemy-construction boundary preserves
+     every existing raid curve, boss identity, escort ratio and special mechanic. */
+  try{
+    if(typeof makeEnemy==='function'){
+      var makeEnemyBeforeRaidV324=makeEnemy;
+      makeEnemy=function(mode,opts){
+        var enemy=makeEnemyBeforeRaidV324(mode,opts);
+        if(mode==='raid' && enemy){
+          enemy.hp=enemy.maxHP=Math.max(1,Math.floor(enemy.maxHP*RAID_HP_MUL));
+          enemy.dmg=Math.max(1,Math.floor(enemy.dmg*RAID_DAMAGE_MUL));
+        }
+        return enemy;
+      };
+      window.__srRaidPowerV324=true;
+    }
+  }catch(_){ }
+
   window.__srEnemyDamageConfigV289={
     version:325,maxFloor:800,legacyMaxFloor:400,semanticLegacyFloor:semanticLegacyFloor,
     referenceDamage:REFERENCE_DAMAGE,referenceHP:REFERENCE_HP,
@@ -92,6 +112,7 @@
     scaling:'floor-only-no-player-rubber-band',
     earlyCampaign:'1-1-onboarding-then-gear-pressure',
     introFloor:{floor:1,hp:INTRO_FLOOR_HP,damage:INTRO_FLOOR_DAMAGE},
+    raidPowerV324:{hpMul:RAID_HP_MUL,damageMul:RAID_DAMAGE_MUL,campaignUnchanged:true},
     expectedGates:{
       weak:'69-89',normal:'99-119',max0:'139-159',ascended:'199-299+',
       nightmare:'301-400',infernal:'401-500',abyssal:'501-600',immortal:'601-700',divine:'701-800'
