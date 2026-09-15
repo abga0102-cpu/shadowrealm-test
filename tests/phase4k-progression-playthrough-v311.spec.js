@@ -48,7 +48,7 @@ test('V311 fresh save has a usable progression runway without retired systems', 
   expect(result.rebirthTutorialPresent).toBe(false);
 });
 
-test('V311 dedicated Raid economy funds the approved PE and summon loops at progression milestones', async ({ page }) => {
+test('V311/V335 dedicated Raid economy funds the approved PE and summon loops at progression milestones', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
@@ -85,10 +85,10 @@ test('V311 dedicated Raid economy funds the approved PE and summon loops at prog
   expect(result.petCost).toBe(50);
   expect(result.keys).toBe(2);
   expect(result.rows).toEqual([
-    { level: 1, pe: 100, skill: 250, pet: 250, dailyPe: 200, dailySkillSummons: 20, dailyPetSummons: 10 },
-    { level: 10, pe: 127, skill: 340, pet: 340, dailyPe: 254, dailySkillSummons: 27, dailyPetSummons: 13 },
-    { level: 25, pe: 172, skill: 490, pet: 490, dailyPe: 344, dailySkillSummons: 39, dailyPetSummons: 19 },
-    { level: 50, pe: 247, skill: 740, pet: 740, dailyPe: 494, dailySkillSummons: 59, dailyPetSummons: 29 },
+    { level: 1, pe: 100, skill: 250, pet: 350, dailyPe: 200, dailySkillSummons: 20, dailyPetSummons: 14 },
+    { level: 10, pe: 127, skill: 340, pet: 395, dailyPe: 254, dailySkillSummons: 27, dailyPetSummons: 15 },
+    { level: 25, pe: 172, skill: 490, pet: 470, dailyPe: 344, dailySkillSummons: 39, dailyPetSummons: 18 },
+    { level: 50, pe: 247, skill: 740, pet: 595, dailyPe: 494, dailySkillSummons: 59, dailyPetSummons: 23 },
   ]);
 });
 
