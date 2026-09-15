@@ -1,8 +1,8 @@
 /* SHADOWREACH V296 · Familiar summon-rate authority
    Durable Familiar rate owner. It keeps Ancestral at 0% before max mastery,
    enables exactly 5% direct Ancestral summons at max mastery, and sanitizes
-   non-finite/negative Familiar rates before normalizing them to 100%.
-   Fusion availability and non-Familiar rate systems are unchanged. */
+   non-finite/negative Familiar rates before normalizing them to 100% when the
+   rate table requires repair. Fusion and non-Familiar rate systems are unchanged. */
 (function(){'use strict';
 if(window.__srFamiliarAncestralRateV296)return;window.__srFamiliarAncestralRateV296=true;
 
@@ -22,12 +22,15 @@ function normalizeTable(src,order){
 function withAncestralPolicy(src,order,mastery){
   var clean=normalizeTable(src,order),max=petMasteryMax();
   var target=Math.max(0,Number(mastery)||0)>=max?5:0;
-  var others=(order||[]).filter(function(r){return r!=='ANCESTRAL';});
-  var otherSum=others.reduce(function(n,r){return n+finiteRate(clean[r]);},0);
-  var available=Math.max(0,100-target);
-  if(otherSum>0)others.forEach(function(r){clean[r]=finiteRate(clean[r])/otherSum*available;});
-  else if(others.length)clean[others[0]]=available;
-  clean.ANCESTRAL=target;
+  var current=finiteRate(clean.ANCESTRAL);
+  if(Math.abs(current-target)>1e-9){
+    var others=(order||[]).filter(function(r){return r!=='ANCESTRAL';});
+    var otherSum=others.reduce(function(n,r){return n+finiteRate(clean[r]);},0);
+    var available=Math.max(0,100-target);
+    if(otherSum>0)others.forEach(function(r){clean[r]=finiteRate(clean[r])/otherSum*available;});
+    else if(others.length)clean[others[0]]=available;
+    clean.ANCESTRAL=target;
+  }
   return clean;
 }
 try{if(typeof getRates==='function'&&!getRates.__srV296){
