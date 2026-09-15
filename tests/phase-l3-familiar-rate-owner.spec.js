@@ -24,7 +24,7 @@ test('L3: V296 is the single durable Familiar getRates policy owner', async () =
   expect(v296).toContain("target=Math.max(0,Number(mastery)||0)>=max?5:0");
   expect(v296).toContain('function normalizeTable(src,order)');
   expect(v296).toContain('normalizesInvalidRates:true');
-  expect(v307).not.toContain("getRates=function(system,mastery,ascension,stars)");
+  expect(v307).not.toContain('getRates=function(');
   expect(v307).not.toContain('function normalizeTable(src,order)');
   expect(v307).toContain("familiarRateOwner:'V296'");
 });
