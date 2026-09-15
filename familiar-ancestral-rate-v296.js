@@ -1,8 +1,8 @@
 /* SHADOWREACH V296 · Familiar summon-rate authority
    Durable Familiar rate owner. It keeps Ancestral at 0% before max mastery,
-   enables exactly 5% direct Ancestral summons at max mastery, and sanitizes
-   non-finite/negative Familiar rates before normalizing them to 100% when the
-   rate table requires repair. Fusion and non-Familiar rate systems are unchanged. */
+   enables exactly 5% direct Ancestral summons at max mastery, and repairs
+   invalid Familiar rate tables before applying that policy. Fusion and
+   non-Familiar rate systems are unchanged. */
 (function(){'use strict';
 if(window.__srFamiliarAncestralRateV296)return;window.__srFamiliarAncestralRateV296=true;
 
@@ -12,6 +12,15 @@ function petMasteryMax(){
   try{return Math.max(0,Number(RULES&&RULES.MASTERY_MAX)||0);}catch(_){ }
   return 50;
 }
+function rateTableNeedsRepair(src,order){
+  var total=0;
+  for(var i=0;i<(order||[]).length;i++){
+    var raw=Number(src&&src[order[i]]);
+    if(!isFinite(raw)||raw<0)return true;
+    total+=raw;
+  }
+  return !(total>0);
+}
 function normalizeTable(src,order){
   var out={},sum=0;
   (order||[]).forEach(function(r){var v=finiteRate(src&&src[r]);out[r]=v;sum+=v;});
@@ -20,9 +29,18 @@ function normalizeTable(src,order){
   return out;
 }
 function withAncestralPolicy(src,order,mastery){
-  var clean=normalizeTable(src,order),max=petMasteryMax();
-  var target=Math.max(0,Number(mastery)||0)>=max?5:0;
-  var current=finiteRate(clean.ANCESTRAL);
+  var max=petMasteryMax(),target=Math.max(0,Number(mastery)||0)>=max?5:0;
+  if(target===0&&!rateTableNeedsRepair(src,order)){
+    if(src.ANCESTRAL==null)src.ANCESTRAL=0;
+    else if(finiteRate(src.ANCESTRAL)!==0){
+      var pre=normalizeTable(src,order),preOthers=(order||[]).filter(function(r){return r!=='ANCESTRAL';});
+      var preSum=preOthers.reduce(function(n,r){return n+finiteRate(pre[r]);},0);
+      if(preSum>0)preOthers.forEach(function(r){pre[r]=finiteRate(pre[r])/preSum*100;});
+      pre.ANCESTRAL=0;return pre;
+    }
+    return src;
+  }
+  var clean=normalizeTable(src,order),current=finiteRate(clean.ANCESTRAL);
   if(Math.abs(current-target)>1e-9){
     var others=(order||[]).filter(function(r){return r!=='ANCESTRAL';});
     var otherSum=others.reduce(function(n,r){return n+finiteRate(clean[r]);},0);
