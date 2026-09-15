@@ -108,7 +108,7 @@ var audit={
 audit.ok=!!(
   audit.ancestralHatchSeconds===57600&&audit.ancestralRateBeforeMax===0&&Math.abs(audit.ancestralRateAtMax-5)<1e-6&&
   audit.raidEvolution1===100&&audit.raidEvolution50===247&&audit.raidSkill1===250&&audit.raidSkill50===740&&
-  audit.raidPet1===250&&audit.raidPet50===740&&audit.dustChanceHigh===5&&audit.dustCost0===60&&
+  audit.raidPet1===350&&audit.raidPet50===595&&audit.dustChanceHigh===5&&audit.dustCost0===60&&
   audit.forgeStar1===2&&audit.skillStar1===1.5&&Array.isArray(audit.petStars)&&audit.petStars[0]===1.5&&audit.petStars[1]===2.1&&audit.petStars[2]===3
 );
 window.__srProgressionAuditV307=audit;
