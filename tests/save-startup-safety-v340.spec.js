@@ -26,7 +26,11 @@ test('V340 gates per-save compensation until canonical boot and keeps backups', 
   expect(safety).toContain('saveNow=safeSaveNow;');
 
   await page.goto('/index.html?smoke=1');
-  await page.waitForFunction(() => window.__srSaveSafetyV340 && window.__srStageGoldCompensationStartupSafeV340);
+  await page.waitForFunction(() =>
+    document.readyState === 'complete' &&
+    window.__srSaveSafetyV340 &&
+    window.__srStageGoldCompensationStartupSafeV340
+  );
   const state = await page.evaluate(() => ({
     ready: document.readyState,
     backupSlots: window.__srSaveSafetyV340.backupSlots,
