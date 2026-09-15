@@ -1,97 +1,62 @@
-# Lean-code remaining-work audit
+# Lean Code final audit
 
-Audit refreshed: 2026-09-15. Current refresh base: `1b0c0f166419e57b38f059361ff90fb5025b2219` (latest `main`, V339 campaign gold compensation loader state).
+**Finalized: 2026-09-15. Initiative status: COMPLETE.**
 
-This file records the current remaining-work disposition after the proof-based L1 audit and subsequent L2/L3/L4/L5 passes. **L1 is complete.** L2, L3, L4 and staged L5 remain evidence-driven.
+Final evidence base before closure: V339-era `main`, with the Lean Code status refresh at `fe7e609e442d803dba53114d6c9be52c4fa4007e`. The formal closure documentation follows that audit and makes no executable/runtime change.
 
-## Verified runtime baseline
+## Final runtime baseline
 
-`RUNTIME_INVENTORY.md` remains authoritative. The default non-Social session loads **103 first-party JavaScript files**. Future removals require a fresh reachability audit or a proven L2/L3 ownership transfer.
+`RUNTIME_INVENTORY.md` remains authoritative. The final audited normal non-Social session baseline is **103 first-party JavaScript files**: **93 index-managed + 10 transitively loaded**. File count is no longer a Lean Code target; remaining runtime files are treated as legitimate owners unless future evidence proves otherwise.
 
-## L2 lifecycle consolidation
+## Final disposition
 
-Completed lifecycle work includes Accomplishments deterministic reserve synchronization, Weekly Mega panel-poller removal, Social launcher lifecycle transfer, V83 modal/campaign observer retirement, Secondary HUD observer/wrapper retirement, and the Audio V26 migration/reward/edge proof sequence.
+### L0 — COMPLETE
 
-The remaining evidence-gated lifecycle areas are unchanged:
+Runtime inventory and coordination are complete. Loaded/conditional runtime responsibilities are documented and architecture guards prevent retired owners from silently returning.
 
-- **Audio V26:** retain the 50 ms combat observer until an existing canonical combat owner exposes equivalent attack/skill/result lifecycle ordering.
-- **Power Hint:** require an already-existing deterministic combat lifecycle that preserves campaign-death recovery before removing passive observation.
-- **Boot wave synchronization:** require an explicit deterministic wave-transition lifecycle plus death/recovery coverage before removing the remaining DOM-driven observation path.
+### L1 — COMPLETE
 
-The V331/V332 Progression Pass presentation changes and the current V339 campaign-gold compensation loader state do not add the missing combat/wave lifecycle evidence and therefore do not unblock any of these removals.
+The dead-load/source-reference queue is zero. Evidence-backed retirements were completed across Accomplishments, BottomNav, Home, Tree, Forge, Rebirth, Equipment, Familiar, notifications and progression/import compatibility. No standing L1 deletion queue remains.
 
-## L3 subsystem consolidation
+### L2 — COMPLETE FOR CURRENT ARCHITECTURE
 
-Stable consolidated ownership includes BottomNav, Home, Accomplishments, Tree, reward notifications and the documented Forge presentation split.
+Evidence-safe lifecycle cleanup is complete. The program removed or transferred broad observers, permanent pollers and wrappers where deterministic lifecycle equivalence existed, including Accomplishments, Tree, Home, Weekly Mega, Social, modal stability and Secondary HUD work.
 
-### Familiar rates
+Three mechanisms are intentionally retained:
 
-PR #269 completed the Familiar rate-policy consolidation. `familiar-ancestral-rate-v296.js` is now the single durable Familiar `getRates()` policy owner: it preserves valid pre-max tables, repairs invalid tables when necessary, keeps Ancestral at 0% before max mastery, and applies exactly 5% direct Ancestral summons at max mastery. The competing Familiar rate wrappers were removed from V295 and V307. V307 retains only its distinct hatch timer, invalid egg guard, generic rarity-roll fallback, Tree diagnostic and QA snapshot responsibilities.
+- **Audio V26:** the 50 ms combat observer remains because no current canonical combat owner exposes equivalent attack/skill/result ordering.
+- **Power Hint:** passive observation remains because no current deterministic combat lifecycle proves campaign-death recovery equivalence.
+- **Boot wave synchronization:** the remaining DOM-driven path remains because there is no explicit wave-transition lifecycle with equivalent death/recovery coverage.
 
-This transfer does **not** create an L5 retirement candidate: V295 and V307 still own distinct live responsibilities.
+These are accepted architectural constraints, not unfinished Lean Code tasks. Removing them without new lifecycle evidence would weaken behavior safety.
 
-### Forge/progression
+### L3 — COMPLETE FOR CURRENT ARCHITECTURE
 
-PR #245 settled the Forge rarity/progression surface on `main`. The durable split is:
+Stable subsystem responsibilities have durable owners. Key settled boundaries include BottomNav, Home, Accomplishments, Tree, reward notifications, Forge presentation, Familiar rate policy and Forge/progression authority. Distinct live owners remain separate where consolidation would mix responsibilities or change behavior.
 
-- `game-balance-v224.js` owns Forge rarity-rate progression and star-aware rarity availability;
-- `progression-stability-authority-v304.js` owns Forge Ascension availability/preview plus the stable progression multipliers and Raid/Dust stability rules;
-- later Forge presentation owners remain presentation-only and should not acquire rate/economy authority.
+### L4 — COMPLETE FOR CURRENT ARCHITECTURE
 
-The approved Forge behavior is explicit: 0★ ends at Artefact; stars 1–4 unlock Légendaire, Infernal, Immortel and Divin; Forge power reaches ×2 at the first star and later stars unlock rarity access rather than adding hidden power.
+The Social message-store policy is the validated production utility transfer. Other audited formatting, escaping and lifecycle-scheduling helpers remain intentionally local where semantics differ or a shared abstraction would create more coupling than it removes.
 
-A fresh ownership scan after #245 found no second Forge `getRates()` policy wrapper that can be safely deleted immediately. Do not force V224 and V304 together: their responsibilities are rate/equipment balance versus cross-system Ascension/progression stability.
+### L5 — COMPLETE FOR CURRENT ARCHITECTURE
 
-### Tree
+All evidence-ready staged source retirements are complete. Tree V83/V247 and the other documented superseded families remain retired. There is no evidence-ready staged source candidate and no deletion queue at closure.
 
-Tree boundaries remain stable: V82 owns topology/compatibility/raw-save restoration/audit, V116 owns rendering/presentation, and V216 owns live mastery gating/popup synchronization. V83 and V247 remain retired.
+## Concurrent work at closure
 
-## L4 shared-utility disposition
+Feature and visual branches active around the final V339 audit remain independent workstreams. Lean Code does not claim their owners and closure does not alter gameplay, saves, balance, progression, loaders, tests, or visual behavior. Future feature merges should continue to follow `AGENTS.md` and `ARCHITECTURE.md` rather than reopening Lean Code automatically.
 
-The Social message-store policy transfer remains the validated L4 production consolidation. Formatting, escaping and lifecycle-scheduling helpers remain local where semantics differ or a shared abstraction would increase coupling. Retaining intentionally different helpers is a valid L4 outcome.
+## Closure rule
 
-No new identical-semantics helper with a measurable net reduction was exposed by the latest presentation/balance changes.
+Lean Code is formally closed because every remaining known candidate is either:
 
-## L5 source retirement
+1. already consolidated/retired;
+2. a distinct legitimate owner;
+3. intentionally local because semantics differ; or
+4. blocked by missing deterministic lifecycle evidence where removal would create regression risk.
 
-V83 and V247 remain fully retired. The Familiar consolidation does not make V295/V307 obsolete, and the Forge settlement does not make V224/V304 obsolete. There is therefore no new evidence-ready source deletion from these transfers.
+Future evidence may justify ordinary architecture cleanup. In particular, a later deterministic combat/wave event model could make Audio V26, Power Hint or Boot synchronization removable. Such work should be opened as a new architecture/refactor batch with fresh-main analysis and exact-head regression proof.
 
-## Current concurrent-work constraints
+## Successor recommendation
 
-Current open work includes multiple hero-equipment/combat-presentation branches, including #288 and #289, both modifying canonical `combat-animation-v169.js` and related loader/test surfaces. Do not use that owner as a Lean Code lifecycle consolidation vehicle while those branches remain active. Their equipment-rendering work is presentation-only and does not by itself provide the deterministic attack/skill/result lifecycle required to retire Audio V26 observation.
-
-Other open feature work must likewise be treated as owner-sensitive when it intersects Familiar, onboarding, campaign/progression, combat, loaders, or save/economy responsibilities. Re-fetch current `main` and the relevant open PR immediately before selecting or merging any such batch.
-
-V339 on `main` updates campaign gold compensation loading. It does not create a proven Lean Code retirement/lifecycle candidate by itself. No additional visual cleanup is justified without a concrete inconsistency; avoid cosmetic churn while active combat-equipment presentation work is already in flight.
-
-## Remaining Lean Code work
-
-| Phase / responsibility | Current evidence | Next reviewable scope / exit condition |
-| --- | --- | --- |
-| L2 Power Hint lifecycle | Current owner must remain passive. | Require deterministic combat lifecycle preserving campaign-death recovery. |
-| L2 Audio | Edge semantics are locked; 50 ms observer remains. | Remove only when canonical combat exposes equivalent attack/skill/result ordering. |
-| L2 Boot wave observation | DOM synchronization still supplies live wave presentation. | Require explicit wave-transition lifecycle plus death/recovery coverage. |
-| L3 Familiar rates | Consolidated in V296 under #269. | Preserve single rate owner; V295/V307 remain for distinct responsibilities; avoid active overlapping Familiar work. |
-| L3 Forge/progression | #245 settled rarity/Ascension ownership in V224/V304. | Reopen only for a concrete duplicate authority seam; do not collapse distinct rate and progression owners. |
-| L3 Tree | Durable V82/V116/V216 boundaries; V83/V247 retired. | Preserve boundaries. |
-| L4 shared helpers | Social transfer complete; other audited helpers intentionally differ. | Reopen only for genuinely identical semantics with measurable reduction. |
-| L5 staged retirement | V83/V247 complete; no new candidate from Familiar/Forge transfers. | Rescan after the next proven ownership transfer. |
-
-## Next-step rule
-
-Select each new batch from fresh `main` in this order:
-
-1. finish a staged unload/source retirement when canonical ownership and integration proof already exist;
-2. prefer a newly discovered lifecycle/helper/authority seam only when the surviving owner is deterministic and behavior-equivalent;
-3. keep Power Hint, Boot wave and Audio deferred until their deterministic lifecycle evidence exists;
-4. reconcile active feature branches independently, then re-audit their settled owners;
-5. if no production transfer is evidence-safe, update ownership documentation rather than manufacturing a deletion.
-
-## Phase status
-
-- **L0 — COMPLETE**
-- **L1 — COMPLETE**
-- **L2 — IN PROGRESS / evidence-gated**
-- **L3 — ADVANCED; Familiar rates and Forge progression consolidated**
-- **L4 — ADVANCED; targeted transfers only**
-- **L5 — ADVANCED; staged retirements only**
+Further material reduction in browser runtime requests should come from a separate modernization program: stable feature modules, explicit imports/exports and lifecycle events, followed by incremental bundling/build tooling. That work should preserve the canonical-owner discipline established by Lean Code and avoid new version-suffixed patch layers.
