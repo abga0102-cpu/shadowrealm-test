@@ -67,18 +67,56 @@ jobs:
           PR_BODY_FILE: ${{ github.event_name == 'push' && '.phase1-associated-pr-body.txt' || '' }}
         run: node tests/architecture-file-placement-guard.js .phase1-base .
 
+      - name: Classify PR regression risk
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" > .phase1-changed-files.txt
+          echo "Changed files:"
+          cat .phase1-changed-files.txt
+
+          # Full cross-browser coverage is reserved for changes that can affect
+          # boot/runtime loading, gameplay state/balance, shared infrastructure,
+          # browser configuration, or the CI policy itself. Narrow owner/UI/test/
+          # documentation changes use Chromium as the fast PR regression lane.
+          if grep -Eq '^(index\.html|package(-lock)?\.json|tests/playwright\.config\.js|\.github/workflows/|.*(save|combat|enemy|boss|raid|forge|progress|migration|storage|audio|boot|authority).*\.js$)' .phase1-changed-files.txt; then
+            echo "PHASE1_FULL_BROWSER=1" >> "$GITHUB_ENV"
+            echo "Regression lane: full Chromium + WebKit"
+          else
+            echo "PHASE1_FULL_BROWSER=0" >> "$GITHUB_ENV"
+            echo "Regression lane: fast Chromium"
+          fi
+
       - name: Install development test tooling
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Install browser engines
+      - name: Install Chromium for fast PR lane
+        if: github.event_name == 'pull_request' && env.PHASE1_FULL_BROWSER != '1'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install full browser engines
+        if: github.event_name != 'pull_request' || env.PHASE1_FULL_BROWSER == '1'
         run: npx playwright install --with-deps chromium webkit
 
       - name: Enforce moving legacy smoke ratchet
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
         run: node tests/smoke-ratchet.js .phase1-base .
 
-      - name: Run static localhost regression tests after ratchet
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+      - name: Run fast Chromium PR regression
+        if: github.event_name == 'pull_request' && env.PHASE1_FULL_BROWSER != '1'
+        env:
+          PHASE1_SMOKE_RATCHET_DONE: '1'
+        run: npm run test:e2e -- --project=chromium-desktop
+
+      - name: Run full PR regression after ratchet
+        if: github.event_name == 'pull_request' && env.PHASE1_FULL_BROWSER == '1'
+        env:
+          PHASE1_SMOKE_RATCHET_DONE: '1'
+        run: npm run test:e2e
+
+      - name: Run full post-merge regression
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
         env:
           PHASE1_SMOKE_RATCHET_DONE: '1'
         run: npm run test:e2e
