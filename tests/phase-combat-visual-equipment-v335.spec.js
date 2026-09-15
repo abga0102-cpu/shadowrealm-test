@@ -25,6 +25,7 @@ test('all eight equipped slots are represented on the live hero without replacin
   await page.waitForFunction(() => window.__smoke && typeof spawnCampaign === 'function' && typeof drawArena === 'function');
 
   const result = await page.evaluate((gear) => {
+    const H = window.__smoke;
     update((st) => {
       st.level = 40;
       st.floor = 20;
@@ -37,10 +38,10 @@ test('all eight equipped slots are represented on the live hero without replacin
       st.pets = [];
       st.activePetId = null;
     });
-    refreshDerived();
+    H.D = computeDerived(H.S);
     nav('accueil');
     render();
-    window.__smoke.combat = spawnCampaign(window.__smoke.S);
+    H.combat = spawnCampaign(H.S);
     drawArena();
 
     const hero = document.querySelector('#aLayer > .unit');
@@ -83,16 +84,17 @@ test('hero presentation exposes hit and defeat states without changing combat ow
   await page.waitForFunction(() => window.__smoke && typeof spawnCampaign === 'function' && typeof drawArena === 'function');
 
   const state = await page.evaluate(() => {
+    const H = window.__smoke;
     nav('accueil');
     render();
-    window.__smoke.combat = spawnCampaign(window.__smoke.S);
-    window.__smoke.combat.heroHit = 0.15;
+    H.combat = spawnCampaign(H.S);
+    H.combat.heroHit = 0.15;
     drawArena();
     const first = document.querySelector('#aLayer > .unit');
     const hit = !!(first && first.classList.contains('srHeroHit169'));
 
-    window.__smoke.combat.heroHP = 0;
-    window.__smoke.combat.status = 'lost';
+    H.combat.heroHP = 0;
+    H.combat.status = 'lost';
     drawArena();
     const second = document.querySelector('#aLayer > .unit');
     return {
