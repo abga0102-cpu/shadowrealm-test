@@ -1,126 +1,89 @@
 # Lean-code remaining-work audit
 
-Audit refreshed: 2026-09-15. L1 closure base: `231a8c81aa70f00f37cb66c9a7b1ffe2145a2733` (PR #151 merged). Current refresh base: `f5e7fa0813188402b0fb06ef224f7c53e5f16bc4` (latest `main` after PR #258 V322E canonical Familiar summon-cost alignment).
+Audit refreshed: 2026-09-15. Current refresh base: `e3ca2fa56b88e033de3d7a39f745062a2190981d` (latest `main` after Familiar rate ownership #269 and Forge rarity/progression #245).
 
 This file records the current remaining-work disposition after the proof-based L1 audit and subsequent L2/L3/L4/L5 passes. **L1 is complete.** L2, L3, L4 and staged L5 remain evidence-driven.
 
 ## Verified runtime baseline
 
-`RUNTIME_INVENTORY.md` remains authoritative. The default non-Social session loads **103 first-party JavaScript files**:
-
-- 86 static loader entries;
-- 7 deferred core entries;
-- 10 scripts loaded transitively by `familiars-noscr-v231.js`.
-
-Index-managed subtotal: **93** files. Social raises the first-party total to **105** and Social + Bot Testers to **107**. Optional third-party Social modules remain outside those totals.
-
-## L1 closure
-
-The corrected L1 source-reference investigation queue remains **zero**. Every currently loaded script has an explicit active, compatibility, migration or feature-owner-sensitive reason to remain. Future removals require a fresh reachability audit or a later L2/L3 ownership transfer.
+`RUNTIME_INVENTORY.md` remains authoritative. The default non-Social session loads **103 first-party JavaScript files**. Future removals require a fresh reachability audit or a proven L2/L3 ownership transfer.
 
 ## L2 lifecycle consolidation
 
-Completed lifecycle work includes Accomplishments V126 deterministic reserve synchronization, Weekly Mega panel-poller removal, Social launcher lifecycle transfer, V83 modal/campaign observer retirement, Secondary HUD observer/wrapper retirement, and the Audio V26 migration/reward/edge proof sequence.
+Completed lifecycle work includes Accomplishments deterministic reserve synchronization, Weekly Mega panel-poller removal, Social launcher lifecycle transfer, V83 modal/campaign observer retirement, Secondary HUD observer/wrapper retirement, and the Audio V26 migration/reward/edge proof sequence.
 
 The remaining evidence-gated lifecycle areas are unchanged:
 
-- **Audio V26:** retain the 50 ms combat observer until an existing canonical combat owner exposes equivalent attack/skill/result lifecycle ordering. The 520 ms music cadence and historical migration remain compatibility behavior.
-- **Power Hint:** do not re-wrap combat-end behavior merely to remove passive observation; require an already-existing deterministic lifecycle that preserves campaign-death recovery.
+- **Audio V26:** retain the 50 ms combat observer until an existing canonical combat owner exposes equivalent attack/skill/result lifecycle ordering.
+- **Power Hint:** require an already-existing deterministic combat lifecycle that preserves campaign-death recovery before removing passive observation.
 - **Boot wave synchronization:** require an explicit deterministic wave-transition lifecycle plus death/recovery coverage before removing the remaining DOM-driven observation path.
 
 ## L3 subsystem consolidation
 
-Stable consolidated ownership includes BottomNav, Home, Accomplishments UI/claims/migrations, Tree rendering/mastery/presentation boundaries, reward-notification base styling, and the documented Forge presentation split.
+Stable consolidated ownership includes BottomNav, Home, Accomplishments, Tree, reward notifications and the documented Forge presentation split.
+
+### Familiar rates
+
+PR #269 completed the Familiar rate-policy consolidation. `familiar-ancestral-rate-v296.js` is now the single durable Familiar `getRates()` policy owner: it preserves valid pre-max tables, repairs invalid tables when necessary, keeps Ancestral at 0% before max mastery, and applies exactly 5% direct Ancestral summons at max mastery. The competing Familiar rate wrappers were removed from V295 and V307. V307 retains only its distinct hatch timer, invalid egg guard, generic rarity-roll fallback, Tree diagnostic and QA snapshot responsibilities.
+
+This transfer does **not** create an L5 retirement candidate: V295 and V307 still own distinct live responsibilities.
+
+### Forge/progression
+
+PR #245 has now settled the previously blocked Forge rarity/progression surface on `main`. The durable split is:
+
+- `game-balance-v224.js` owns Forge rarity-rate progression and star-aware rarity availability;
+- `progression-stability-authority-v304.js` owns Forge Ascension availability/preview plus the stable progression multipliers and Raid/Dust stability rules;
+- later Forge presentation owners remain presentation-only and should not acquire rate/economy authority.
+
+The approved Forge behavior is now explicit: 0★ ends at Artefact; stars 1–4 unlock Légendaire, Infernal, Immortel and Divin; Forge power reaches ×2 at the first star and later stars unlock rarity access rather than adding hidden power.
+
+A fresh ownership scan after #245 found no second Forge `getRates()` policy wrapper that can be safely deleted immediately. Do not force V224 and V304 together: their responsibilities are rate/equipment balance versus cross-system Ascension/progression stability.
 
 ### Tree
 
-PRs #213/#214 removed V82's duplicate renderer, renderer helpers, injected presentation CSS and renderer-only angle metadata. PR #216 moved mastery-key raw-save restoration into V82. PR #219 moved the historical `window.__srTreeAudit` diagnostic into V82, leaving V83 inert. PR #226 then completed V83 source retirement after its staged unload/integration proof.
-
-PR #230 rebuilt the V247 consolidation from fresh `main`, folded the presentation-only V247/V250 spectacle CSS into canonical `tree-dedicated-v116.js`, unloaded V247 from `index.html`, and passed the moving smoke ratchet plus the full Chromium/WebKit regression gate. PR #232 subsequently passed the same full gate on top of that mainline, providing the required post-unload integration proof. PR #237 then completed staged V247 source retirement while keeping the surviving V116 presentation contract locked.
-
-Current Tree boundaries are therefore:
-
-- `personal-tree-radial-v82.js` — topology, mastery-key construction/acquisition, deprecated-key compatibility, raw-save mastery restoration and the historical audit API;
-- `tree-dedicated-v116.js` — canonical Tree rendering, clearer gold-node labels and V247/V250 spectacle presentation;
-- `runtime-tree-stability-v216.js` — live mastery gating and popup synchronization;
-- V83 — retired from runtime and source;
-- V247 — retired from runtime and source; presentation remains contract-locked in V116.
-
-### Accomplishments / navigation
-
-PR #222 moved the remaining historical Accomplishments progress normalization (`raidWins`, `fusedPetRank`, `v121Migrated`) from V121 into the durable V127 boot/import migration owner. V121 remains event-compatibility-only for raid-result and fusion progression tracking; V139/V140 remain canonical UI/claim owners.
-
-PR #231 consolidated permanent navigation and action hierarchy on current `main`: BottomNav owns the permanent `Accueil / Équipement / Progression / Menu` taxonomy and duplicate-free Progression/Menu hubs, Home suppresses redundant permanent shortcuts, and V139 now owns the Accomplishments entry under Progression rather than Settings. No save, balance or progression semantics changed.
-
-Do not collapse V121 into payout/UI owners merely to reduce file count. Reassess only if an evidence-backed event-lifecycle consolidation produces a clearer durable owner without changing progression semantics.
-
-## Visual ownership
-
-PR #232 completed the main arcade-clean visual pass in existing canonical `premium-ui-v209.js`: flatter/quieter cards, restrained tactile controls, semantic CTA hierarchy, quieter HUD/navigation presentation and simpler interaction feedback while retaining the dark-navy/burnished-gold RPG identity. PR #248 then aligned the remaining compact info/close controls with that shared silhouette/material language, and PR #249 added restrained hover/press feedback to segmented controls and toggles. Both follow-up refinements stayed inside the same canonical visual owner and added no patch-layer file or runtime authority.
-
-Future visual work should continue to extend existing canonical owners and should be driven by concrete visual inconsistencies rather than adding versioned overlay files. The current source-level scan found no additional neutral visual-ownership seam that justifies another visual batch while Forge, campaign/combat, onboarding and Raid-balance work are active.
+Tree boundaries remain stable: V82 owns topology/compatibility/raw-save restoration/audit, V116 owns rendering/presentation, and V216 owns live mastery gating/popup synchronization. V83 and V247 remain retired.
 
 ## L4 shared-utility disposition
 
-The Social message-store policy transfer remains the validated L4 production consolidation. Formatting, escaping and lifecycle-scheduling helpers remain local where their semantics differ or a shared abstraction would increase coupling. Retaining intentionally different helpers is a valid L4 outcome.
+The Social message-store policy transfer remains the validated L4 production consolidation. Formatting, escaping and lifecycle-scheduling helpers remain local where semantics differ or a shared abstraction would increase coupling. Retaining intentionally different helpers is a valid L4 outcome.
 
 ## L5 source retirement
 
-There is no standing L1-derived deletion queue. New source retirement begins only after a later L2/L3 transfer survives integration or a fresh audit proves a source obsolete.
-
-- `tree-safety-v83.js` completed staged L5 retirement under PR #226 and is absent from source.
-- `personal-tree-spectacle-v247.js` completed staged retirement under PR #237 after runtime unload under #230 and subsequent full-gate integration proof under #232; V116 retains the presentation contract.
-
-No additional staged L5 source is currently evidence-ready. Rescan only after another L2/L3 ownership transfer or a fresh reachability audit creates a proven candidate.
+V83 and V247 remain fully retired. The Familiar consolidation does not make V295/V307 obsolete, and the Forge settlement does not make V224/V304 obsolete. There is therefore no new evidence-ready source deletion from these two transfers.
 
 ## Current concurrent-work constraints
 
-At this refresh, six open pull requests own feature-sensitive or adjacent validation surfaces:
-
-- **#245** owns Forge rarity/progression balance and stability;
-- **#246** remains an active regression-first campaign stage 5-4 investigation;
-- **#253** owns the current V322 stage 5-4 stall reproduction/diagnosis;
-- **#255** owns contextual onboarding and progression teaching behavior;
-- **#257** owns Raid Minerai reward balance;
-- **#259** owns early campaign monster HP balance in `combat-progression-authority-v285.js`.
-
-The earlier V322 campaign/index constraints have settled: #243 merged the canonical 800-stage campaign, #242 was superseded, and #258 has now merged the canonical 50-Essence Familiar summon cost plus its cache/build alignment. That settlement does **not** create an immediate Lean Code seam because the active PRs above still occupy Forge, campaign/combat, onboarding and Raid-economy responsibilities.
-
-Do not use Lean Code work to modify those active owners or adjacent gameplay semantics until their work settles and `main` is refreshed again. The current neutral scan found no evidence-ready production transfer outside those active surfaces. Audio V26, Power Hint and Boot wave synchronization remain blocked on stronger deterministic lifecycle evidence, and there is no additional staged L5 source-retirement candidate.
+After #245 and #269 merged, Forge rarity progression and Familiar rate ownership are no longer blockers. Remaining open feature work still occupies campaign/onboarding/Raid balance and the Familiar presentation surface. Those branches should be reconciled separately rather than used as a reason to create new Lean patch layers.
 
 ## Remaining Lean Code work
 
 | Phase / responsibility | Current evidence | Next reviewable scope / exit condition |
 | --- | --- | --- |
-| L2 Accomplishments lifecycle | Timer/observer cleanup and durable migration separation are complete through #222. | Reassess only if a concrete duplicate wrapper/event seam appears with save/lifecycle proof. |
-| L2 Secondary HUD lifecycle | Complete under PRs #155/#171. | No current scope; preserve contracts. |
-| L2 Power Hint lifecycle | Campaign-death recovery is deterministic; current owner must remain passive. | Require an existing deterministic combat lifecycle; do not re-wrap `handleCombatEnd`. |
-| L2 Audio | Migration/reward/edge semantics are locked; 50 ms combat observer remains. | Remove only when an existing canonical combat owner exposes equivalent attack/skill/result events and ordering. |
-| L2 Boot wave observation | DOM-driven synchronization still supplies live wave presentation. | Require explicit deterministic wave-transition lifecycle plus wave/death recovery coverage. |
-| L3 Tree topology/compatibility | V82/V116/V216 own topology/compatibility, renderer/presentation and live mastery respectively. | Preserve these durable boundaries. |
-| L3 Tree V83 | Runtime unload and source retirement complete. | No current scope; keep retired-owner contracts. |
-| L3 Tree V247 presentation | V247/V250 presentation is in V116; runtime and source retirement are complete. | No current scope; preserve the V116 presentation and source-absence contract. |
-| L3 Forge/progression | PR #245 is actively changing Forge rarity/progression while #246/#253/#255/#259 touch adjacent campaign/progression behavior; #257 changes Raid economy. | Re-audit from latest `main` only after intersecting feature work settles; require a narrow, proven ownership seam. |
-| L4 shared helpers | Social store transfer complete; other audited helpers intentionally differ. | Reopen only for genuinely identical semantics with measurable reduction and no new coupling. |
-| L5 staged source retirement | V83 and V247 are complete; no additional staged source is evidence-ready. | Rescan after the next proven L2/L3 ownership transfer or fresh reachability audit. |
+| L2 Power Hint lifecycle | Current owner must remain passive. | Require deterministic combat lifecycle preserving campaign-death recovery. |
+| L2 Audio | Edge semantics are locked; 50 ms observer remains. | Remove only when canonical combat exposes equivalent attack/skill/result ordering. |
+| L2 Boot wave observation | DOM synchronization still supplies live wave presentation. | Require explicit wave-transition lifecycle plus death/recovery coverage. |
+| L3 Familiar rates | Consolidated in V296 under #269. | Preserve single rate owner; V295/V307 remain for distinct responsibilities. |
+| L3 Forge/progression | #245 settled rarity/Ascension ownership in V224/V304. | Reopen only for a concrete duplicate authority seam; do not collapse distinct rate and progression owners. |
+| L3 Tree | Durable V82/V116/V216 boundaries; V83/V247 retired. | Preserve boundaries. |
+| L4 shared helpers | Social transfer complete; other audited helpers intentionally differ. | Reopen only for genuinely identical semantics with measurable reduction. |
+| L5 staged retirement | V83/V247 complete; no new candidate from Familiar/Forge transfers. | Rescan after the next proven ownership transfer. |
 
 ## Next-step rule
 
 Select each new batch from fresh `main` in this order:
 
-1. finish a staged unload/source retirement when canonical ownership and subsequent integration proof are already present;
-2. prefer a newly discovered neutral UI/lifecycle/helper candidate only when the surviving owner/hook is deterministic and behavior-equivalent;
-3. keep Power Hint, Boot wave and Audio deferred until their required deterministic lifecycle evidence exists;
-4. re-audit Forge/equipment/progression and campaign/combat from latest `main` after current feature work settles before touching those feature-sensitive surfaces;
-5. if no production transfer is evidence-safe, synchronize ownership/roadmap documentation rather than forcing a weaker architecture.
+1. finish a staged unload/source retirement when canonical ownership and integration proof already exist;
+2. prefer a newly discovered lifecycle/helper/authority seam only when the surviving owner is deterministic and behavior-equivalent;
+3. keep Power Hint, Boot wave and Audio deferred until their deterministic lifecycle evidence exists;
+4. reconcile remaining campaign/onboarding/Raid/Familiar-presentation feature branches independently, then re-audit their settled owners;
+5. if no production transfer is evidence-safe, update ownership documentation rather than manufacturing a deletion.
 
 ## Phase status
 
 - **L0 — COMPLETE**
 - **L1 — COMPLETE**
-- **L2 — IN PROGRESS**
-- **L3 — IN PROGRESS**
-- **L4 — IN PROGRESS** — one validated production transfer; retained-local decisions are valid outcomes
-- **L5 — IN PROGRESS** — staged retirements only; V83/V247 complete and no current evidence-ready candidate
-
-Every production/runtime batch continues to follow `AGENTS.md`: fresh-main start, coherent scoped implementation, focused preflight, one meaningful publication state, exact-head CI, latest-main intersection check, exact-head merge and post-merge verification. Documentation-only corrections use the documented fast path and do not incur artificial browser CI.
+- **L2 — IN PROGRESS / evidence-gated**
+- **L3 — ADVANCED; Familiar rates and Forge progression newly consolidated**
+- **L4 — ADVANCED; targeted transfers only**
+- **L5 — ADVANCED; staged retirements only**
