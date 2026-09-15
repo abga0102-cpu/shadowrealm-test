@@ -33,7 +33,7 @@ function launcherState(){
 }
 function ensureStyle(){
  if(document.getElementById('srAchLauncherV138Style'))return;
- var st=document.createElement('style');st.id='srAchLauncherV138Style';st.textContent='\
+ var st=document.createElement('style');st.id='srAchLauncherV138Style';st.innerHTML='\
 #srAchArenaLauncher138{position:fixed;right:max(8px,env(safe-area-inset-right));top:42%;transform:translateY(-50%);z-index:54;width:52px;min-height:70px;padding:7px 5px;border-radius:13px 0 0 13px;border:1px solid rgba(215,174,88,.54);border-right:0;background:linear-gradient(180deg,#1a2940,#0d1624);color:#f3dfaa;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 5px 16px rgba(0,0,0,.38);font:700 9px/1.1 system-ui,-apple-system,sans-serif;letter-spacing:.55px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}\
 #srAchArenaLauncher138 .srAchLaunchMark{display:grid;place-items:center;width:28px;height:28px;margin:0 auto 5px;border-radius:9px;background:linear-gradient(180deg,#d8b45c,#9f7727);color:#1b1407;font-size:17px;box-shadow:inset 0 1px 0 rgba(255,255,255,.42),0 2px 7px rgba(0,0,0,.32)}\
 #srAchArenaLauncher138 .srAchLaunchLabel{display:block;font-size:8px;color:#e8d398}\
@@ -44,7 +44,7 @@ function ensureStyle(){
 @media(prefers-reduced-motion:reduce){#srAchArenaLauncher138{transition:none!important}}';
  document.head.appendChild(st);
 }
-function placeDevelopmentEntry(){
+function placeEntry(){
  try{
   var s=document.getElementById('screen');if(!s)return;
   var old=s.querySelectorAll('[data-sr-accomplishments-entry]');for(var i=0;i<old.length;i++)old[i].remove();
@@ -70,16 +70,16 @@ function placeArenaLauncher(){
  }catch(_){}
 }
 var q=false,retry=0;
-function sync(){placeDevelopmentEntry();placeArenaLauncher();}
 function schedulePlace(){
- if(!q){q=true;requestAnimationFrame(function(){q=false;sync();});}
- clearTimeout(retry);retry=setTimeout(sync,120);
+ if(!q){q=true;requestAnimationFrame(function(){q=false;placeEntry();placeArenaLauncher();});}
+ clearTimeout(retry);retry=setTimeout(placeEntry,120);
 }
 
 /* V209 is the sole BottomNav renderTabs owner. V83 owns modal lifecycle. */
-window.addEventListener('sr:bottomnavrendered',schedulePlace);
 window.addEventListener('sr:modal-state',schedulePlace);
 window.addEventListener('sr:accomplishments-ready',schedulePlace);
 window.addEventListener('sr:accomplishmentclaimed',schedulePlace);
-sync();
+placeArenaLauncher();
+window.addEventListener('sr:bottomnavrendered',schedulePlace);
+placeEntry();
 })();
