@@ -2,7 +2,21 @@ const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
   testDir: __dirname,
-  testMatch: 'phase*.spec.js',
+  // The core suite historically uses the phase* prefix. Keep that stable, but
+  // explicitly include the still-current post-V316 regression files that were
+  // added under feature-oriented names so they are not silently skipped.
+  testMatch: [
+    'phase*.spec.js',
+    'release-stability-legacy-save.spec.js',
+    'forge-raid-onboarding-v317.spec.js',
+    'forge-raid-navigation-v319.spec.js',
+    'forge-power-replacement-v320.spec.js',
+    'forge-intro-v321.spec.js',
+    'familiar-summon-cost-v322a.spec.js',
+    'v322-campaign-canonical.spec.js',
+    'forge-rarity-ascension-v323.spec.js',
+    'raid-minerai-v323-owner.spec.js'
+  ],
   fullyParallel: false,
   timeout: 45000,
   expect: { timeout: 7000 },
