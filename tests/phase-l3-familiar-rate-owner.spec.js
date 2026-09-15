@@ -19,10 +19,14 @@ async function openCleanGame(page) {
 
 test('L3: V296 is the single durable Familiar getRates policy owner', async () => {
   const index = src('index.html');
+  const v295 = src('familiar-ladder-authority-v295.js');
   const v296 = src('familiar-ancestral-rate-v296.js');
   const v307 = src('progression-batch-qa-v307.js');
-  expect(index.indexOf('familiar-ancestral-rate-v296.js')).toBeGreaterThan(-1);
+  expect(index.indexOf('familiar-ladder-authority-v295.js')).toBeGreaterThan(-1);
+  expect(index.indexOf('familiar-ancestral-rate-v296.js')).toBeGreaterThan(index.indexOf('familiar-ladder-authority-v295.js'));
   expect(index.indexOf('progression-batch-qa-v307.js')).toBeGreaterThan(index.indexOf('familiar-ancestral-rate-v296.js'));
+  expect(v295).not.toContain('getRates=function(');
+  expect(v295).toContain("rateOwner:'V296'");
   expect(v296).toContain('getRates=function(system,m,a,s)');
   expect(v296).toContain('target=Math.max(0,Number(mastery)||0)>=max?5:0');
   expect(v296).toContain('function normalizeTable(src,order)');
