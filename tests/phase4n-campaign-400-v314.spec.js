@@ -62,7 +62,7 @@ test('V322 campaign keeps 800 internal stages with five 20-stage chapters per di
   expect(byFloor[800]).toMatchObject({ difficulty: 'Divin', chapter: 5, globalChapter: 40, stageCode: '5-20', isBoss: true });
 });
 
-test('V323 uses the floor-reference balance endpoints across the 800-stage campaign', async ({ page }) => {
+test('V324 uses the floor-reference balance endpoints across the 800-stage campaign', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => ({
     first: { hp: __srV285EnemyHP(1), dmg: __srV289EnemyDamage(1) },
@@ -70,10 +70,12 @@ test('V323 uses the floor-reference balance endpoints across the 800-stage campa
     mid: { hp: __srV285EnemyHP(400), boss: __srV285BossHP(400), dmg: __srV289EnemyDamage(400) },
     cfg: __srEnemyDamageConfigV289,
   }));
-  expect(result.first).toEqual({ hp: 43, dmg: 13 });
+  expect(result.first).toEqual({ hp: 108, dmg: 13 });
   expect(result.final).toEqual({ hp: 522000000000, boss: 6000000000000, dmg: 2875000000 });
+  expect(result.cfg.version).toBe(324);
   expect(result.cfg.targetHitsToKill).toBeCloseTo(3.6, 8);
   expect(result.cfg.targetHitsToDefeatReference).toBe(8);
+  expect(result.cfg.earlyCampaign).toBe('gear-required-1-50');
   expect(result.mid.hp).toBeGreaterThan(result.first.hp);
   expect(result.mid.hp).toBeLessThan(result.final.hp);
   expect(result.mid.boss).toBeGreaterThan(result.mid.hp);
