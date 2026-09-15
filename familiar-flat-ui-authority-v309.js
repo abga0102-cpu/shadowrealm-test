@@ -1,18 +1,21 @@
-/* SHADOWREACH V309 · Familiar flat-stat UI authority
-   QA/UX correction for the already-approved V286/V305 Familiar model.
+/* SHADOWREACH V309 · Familiar presentation authority
+   Keeps the approved flat-stat Familiar model while owning the final visual pass.
 
-   The late Familiar UI stack (V234/V240/V241...) can finish loading after the
-   static progression authorities. Those renderers still expose the retired
-   Apple/level model and calculate visible bonuses through petBonus(), which V286
-   intentionally neutralized to 0. The gameplay stats are correct; the screen can
-   therefore show 0% / 0%, Niv. 0 and an Apple resource that no longer exists.
+   The late Familiar UI stack (V234/V240/V241/V275...) can finish loading after
+   the static progression authorities. V309 therefore remains the final bounded
+   presentation wrapper and now gives the live Familiar screen one coherent,
+   premium layout without changing gameplay or replacing existing actions.
 
-   V309 changes presentation only:
-   - removes every live Apple control/counter from the Familiar screen;
-   - removes inert Familiar levels from the live UI;
+   Presentation responsibilities:
+   - removes every retired Apple control/counter and inert Familiar level;
    - displays the authoritative flat DGT/PV contribution from V305;
-   - tolerates the asynchronous Familiar renderer chain by re-wrapping only when
-     SCREENS.familiers ownership actually changes, including during a render.
+   - exposes the Familiar's existing elemental effect (including attack speed);
+   - keeps Collection, Eggs, Progression, summon, hatch, accelerator, fusion,
+     rates and equip actions intact while reorganising them visually;
+   - adapts the three-panel desktop composition to a natural mobile layout;
+   - tolerates the asynchronous Familiar renderer chain and reclaims final
+     presentation ownership only when SCREENS.familiers actually changes.
+
    No economy, save schema, owned Familiar, rarity, fusion or combat value changes. */
 (function(){'use strict';
 if(window.__srFamiliarFlatUIV309)return;
@@ -36,15 +39,27 @@ function compact(n){
   try{if(typeof fmt==='function')return fmt(n);}catch(_){ }
   try{return new Intl.NumberFormat('fr-FR').format(n);}catch(_){return String(n);}
 }
-function rarityLabel(p){
-  try{return RARITY[p.rarity].label;}catch(_){return String((p&&p.rarity)||'');}
+function safeText(v){
+  try{if(typeof esc==='function')return esc(String(v==null?'':v));}catch(_){ }
+  return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});
 }
+function rarityInfo(p){
+  try{return RARITY[p.rarity]||{label:String((p&&p.rarity)||''),c:'#9fb0c8'};}catch(_){return {label:String((p&&p.rarity)||''),c:'#9fb0c8'};}
+}
+function rarityLabel(p){return rarityInfo(p).label;}
 function petById(id){
   try{return (S.pets||[]).find(function(p){return p&&p.id===id;})||null;}catch(_){return null;}
 }
 function starsLabel(){
   var st=0;try{st=Math.max(0,Math.floor(Number(S.stars&&S.stars.pet)||0));}catch(_){ }
   return st>0?' · '+st+'★':'';
+}
+function sortedPets(){
+  try{return (S.pets||[]).slice().sort(function(a,b){
+    var ar=typeof PET_RARITY_ORDER!=='undefined'?PET_RARITY_ORDER.indexOf(a.rarity):-1;
+    var br=typeof PET_RARITY_ORDER!=='undefined'?PET_RARITY_ORDER.indexOf(b.rarity):-1;
+    return br-ar;
+  });}catch(_){return [];}
 }
 function markStats(node,ps,mode){
   if(!node)return;
@@ -61,6 +76,106 @@ function markStats(node,ps,mode){
 function rewriteLevelNode(node,p){
   if(!node||!p)return;
   node.textContent=rarityLabel(p)+starsLabel();
+}
+function elementInfo(p){
+  try{return petElement(p)||{id:'normal',label:'Normal',c:'#9fb0c8',icon:'paw',desc:''};}catch(_){return {id:'normal',label:'Normal',c:'#9fb0c8',icon:'paw',desc:''};}
+}
+function elementIcon(el,size){
+  try{return ic(el.icon||'paw',size||14);}catch(_){return '◆';}
+}
+function infoCard(p,ps){
+  if(!p)return '<section class="famV325InfoCard empty"><b>Aucun familier équipé</b><span>Équipe un familier depuis ta collection.</span></section>';
+  var r=rarityInfo(p),el=elementInfo(p),species='Familier';
+  try{species=petSpecies(p).label||species;}catch(_){ }
+  return '<section class="famV325InfoCard">'+
+    '<div class="famV325InfoHead"><div><small>FAMILIER ACTIF</small><b>'+safeText(species)+'</b></div><span style="--rc:'+r.c+'">'+safeText(r.label)+starsLabel()+'</span></div>'+
+    '<div class="famV325StatGrid">'+
+      '<div><span>'+ic('sword',13)+' Dégâts</span><b>+'+compact(ps.damage)+' DGT</b></div>'+
+      '<div><span>'+ic('heart',13)+' Santé</span><b>+'+compact(ps.hp)+' PV</b></div>'+
+    '</div>'+
+    '<div class="famV325Element" style="--ec:'+el.c+'"><i>'+elementIcon(el,17)+'</i><div><small>EFFET ÉLÉMENTAIRE · '+safeText(el.label)+'</small><b>'+safeText(el.desc||'Aucun effet supplémentaire')+'</b></div></div>'+
+  '</section>';
+}
+function rosterMarkup(active){
+  var pets=sortedPets();
+  if(!pets.length)return '<div class="famV325RosterEmpty">Aucun familier.</div>';
+  return pets.map(function(p){
+    var r=rarityInfo(p),el=elementInfo(p),on=!!(active&&p.id===active.id),art='';
+    try{art=petArt(p)||'';}catch(_){ }
+    var species='Familier';try{species=petSpecies(p).label||species;}catch(_){ }
+    return '<button class="famV325Pet '+(on?'active':'')+'" data-act="setPet" data-arg="'+safeText(p.id)+'" style="--rc:'+r.c+';--ec:'+el.c+'" aria-label="Équiper '+safeText(species)+'">'+
+      '<span class="famV325PetArt">'+(art?'<img src="'+safeText(art)+'" alt="">':'')+'</span>'+
+      '<b>'+safeText(species)+'</b><small><i></i>'+safeText(r.label)+'</small></button>';
+  }).join('');
+}
+function addCycleButtons(hero,active){
+  if(!hero||!active)return;
+  var pets=sortedPets();
+  if(pets.length<2)return;
+  var idx=pets.findIndex(function(p){return p.id===active.id;});
+  if(idx<0)return;
+  var prev=pets[(idx+pets.length-1)%pets.length],next=pets[(idx+1)%pets.length];
+  var a=document.createElement('button');
+  a.className='famV325Cycle prev';a.setAttribute('data-act','setPet');a.setAttribute('data-arg',prev.id);a.setAttribute('aria-label','Familier précédent');a.textContent='‹';
+  var b=document.createElement('button');
+  b.className='famV325Cycle next';b.setAttribute('data-act','setPet');b.setAttribute('data-arg',next.id);b.setAttribute('aria-label','Familier suivant');b.textContent='›';
+  hero.appendChild(a);hero.appendChild(b);
+}
+function decorateTabs(tabs){
+  if(!tabs)return;
+  var defs={collection:['paw','Infos'],eggs:['egg','Œufs'],progress:['sparkle','Progression']};
+  Object.keys(defs).forEach(function(id){
+    var btn=tabs.querySelector('[data-fam240-tab="'+id+'"]');if(!btn)return;
+    btn.innerHTML='<span class="famV325TabIcon">'+ic(defs[id][0],14)+'</span><b>'+defs[id][1]+'</b>';
+  });
+}
+function applyPremiumLayout(content,active,ps){
+  var shell=content.querySelector('.famScroll240');
+  if(!shell||shell.classList.contains('famV325'))return;
+  var hero=shell.querySelector('.fam240Hero');
+  var hatch=shell.querySelector('.fam240Hatching');
+  var tabs=shell.querySelector('.fam240Tabs');
+  var body=shell.querySelector('.fam240Body');
+  if(!hero||!tabs||!body)return;
+
+  shell.classList.add('famV325');
+  decorateTabs(tabs);
+
+  if(active){
+    var el=elementInfo(active),info=hero.querySelector('.fam240HeroInfo');
+    if(info&&!info.querySelector('.famV325HeroElement')){
+      var badge=document.createElement('span');badge.className='famV325HeroElement';badge.style.setProperty('--ec',el.c);
+      badge.innerHTML=elementIcon(el,12)+' '+safeText(el.label);
+      info.appendChild(badge);
+    }
+    addCycleButtons(hero,active);
+  }
+
+  var current=tabs.querySelector('.fam240Tab.on');
+  var id=current&&current.getAttribute('data-fam240-tab');
+  if(id==='collection'){
+    var scroll=body.querySelector('.fam240Scroll');
+    var grid=scroll&&scroll.querySelector('.fam240Grid');
+    if(grid)grid.remove();
+    if(scroll){
+      var holder=document.createElement('div');holder.innerHTML=infoCard(active,ps);
+      if(holder.firstElementChild)scroll.insertBefore(holder.firstElementChild,scroll.firstChild);
+    }
+  }
+
+  var roster=document.createElement('aside');roster.className='famV325Roster';
+  roster.innerHTML='<div class="famV325RosterHead"><div><small>COLLECTION</small><b>Mes familiers</b></div><span>'+sortedPets().length+'</span></div><div class="famV325RosterGrid">'+rosterMarkup(active)+'</div>';
+
+  var center=document.createElement('section');center.className='famV325Center';
+  center.appendChild(hero);if(hatch)center.appendChild(hatch);
+
+  var right=document.createElement('aside');right.className='famV325Right';
+  right.appendChild(tabs);right.appendChild(body);
+
+  var layout=document.createElement('div');layout.className='famV325Layout';
+  layout.appendChild(roster);layout.appendChild(center);layout.appendChild(right);
+  while(shell.firstChild)shell.removeChild(shell.firstChild);
+  shell.appendChild(layout);
 }
 function modernize(html){
   if(typeof html!=='string')return html;
@@ -111,11 +226,46 @@ function modernize(html){
     if(lv)lv.remove();
   });
 
+  applyPremiumLayout(root,active,ps);
   return tpl.innerHTML;
+}
+
+function installStyles(){
+  var existing=document.getElementById('famPremiumVisualV325Style');
+  if(existing){document.head.appendChild(existing);return;}
+  var st=document.createElement('style');st.id='famPremiumVisualV325Style';st.textContent=`
+#screen:has(.famV325){position:relative;display:block!important;overflow-y:auto!important;overflow-x:hidden!important;background:
+  radial-gradient(circle at 51% 21%,rgba(61,135,255,.17),transparent 31%),
+  radial-gradient(circle at 78% 84%,rgba(33,96,180,.10),transparent 31%),
+  linear-gradient(155deg,#07101d 0%,#091526 48%,#050a13 100%)!important}
+#screen:has(.famV325)::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  linear-gradient(90deg,rgba(7,13,24,.34),transparent 32%,transparent 68%,rgba(7,13,24,.44)),
+  radial-gradient(circle at 50% 50%,transparent 36%,rgba(0,0,0,.28) 100%);z-index:0}
+#screen:has(.famV325)>#topbar{position:relative;z-index:3;background:rgba(7,14,26,.76)!important;border-bottom:1px solid rgba(88,150,229,.22);backdrop-filter:blur(14px)}
+#screen:has(.famV325) .famV325{position:relative;z-index:1;display:block!important;height:auto!important;max-height:none!important;min-height:0!important;padding:8px 10px calc(82px + env(safe-area-inset-bottom,0px))!important;overflow:visible!important}
+.famV325Layout{height:calc(100dvh - 155px);min-height:520px;max-height:720px;display:grid;grid-template-columns:minmax(190px,240px) minmax(290px,1fr) minmax(290px,380px);gap:10px}
+.famV325Roster,.famV325Center,.famV325Right{min-width:0;min-height:0;border:1px solid rgba(79,132,200,.43);border-radius:15px;background:linear-gradient(180deg,rgba(14,27,47,.92),rgba(7,16,29,.94));box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 14px 32px rgba(0,0,0,.20);overflow:hidden}
+.famV325Roster{display:flex;flex-direction:column;padding:10px}.famV325RosterHead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 2px 9px;border-bottom:1px solid rgba(98,145,204,.19)}.famV325RosterHead div{display:flex;flex-direction:column}.famV325RosterHead small{font-size:7px;font-weight:900;letter-spacing:1.25px;color:#7faee8}.famV325RosterHead b{font:900 13px var(--fd);color:#f5f8ff;margin-top:2px}.famV325RosterHead>span{min-width:27px;height:23px;padding:0 7px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#111f35;border:1px solid #365b88;color:#9fc9ff;font-size:8px;font-weight:900}
+.famV325RosterGrid{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(96px,1fr);gap:7px;padding:9px 1px 2px;scrollbar-width:thin}.famV325RosterEmpty{grid-column:1/-1;align-self:center;text-align:center;color:var(--textMute);font-size:9px}.famV325Pet{position:relative;min-width:0;border:1px solid color-mix(in srgb,var(--rc) 56%,#26364d);border-radius:11px;background:linear-gradient(160deg,rgba(26,43,68,.92),rgba(8,17,31,.98));padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease}.famV325Pet:active{transform:scale(.97)}.famV325Pet.active{border-color:#f2bd4f;box-shadow:0 0 0 1px rgba(242,189,79,.62),0 0 18px rgba(242,189,79,.18)}.famV325PetArt{width:58px;height:58px;display:flex;align-items:center;justify-content:center}.famV325PetArt img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 9px rgba(0,0,0,.35))}.famV325Pet>b{max-width:100%;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:900 9px var(--fd)}.famV325Pet small{display:flex;align-items:center;gap:4px;margin-top:2px;max-width:100%;font-size:6.7px;color:#9eafc5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.famV325Pet small i{width:5px;height:5px;flex:0 0 5px;border-radius:50%;background:var(--ec);box-shadow:0 0 7px var(--ec)}
+.famV325Center{position:relative;display:flex;flex-direction:column;background:
+  radial-gradient(circle at 50% 44%,rgba(39,123,232,.25),transparent 29%),
+  radial-gradient(circle at 50% 74%,rgba(44,101,180,.14),transparent 38%),
+  linear-gradient(180deg,rgba(12,29,51,.84),rgba(5,14,26,.96))}.famV325Center::before{content:"";position:absolute;left:14%;right:14%;bottom:72px;height:25%;border-radius:50%;background:radial-gradient(ellipse,rgba(54,154,255,.17),transparent 67%);filter:blur(7px);pointer-events:none}.famV325 .fam240Hero{position:relative;z-index:1;flex:1 1 auto;min-height:0!important;border:0!important;border-radius:0!important;background:transparent!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:16px 42px 10px!important;overflow:hidden}.famV325 .fam240Hero>img{width:min(78%,310px)!important;height:min(45vh,320px)!important;min-height:150px;object-fit:contain!important;filter:drop-shadow(0 18px 24px rgba(0,0,0,.48)) drop-shadow(0 0 22px color-mix(in srgb,var(--rc) 24%,transparent))}.famV325 .fam240HeroInfo{align-items:center!important;text-align:center}.famV325 .fam240HeroInfo small{font-size:7px!important;letter-spacing:1.45px!important;color:#79baff!important}.famV325 .fam240HeroInfo>b{max-width:100%;font:900 clamp(20px,2.4vw,30px) var(--fd)!important;color:#f5f8ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.famV325 .fam240HeroInfo>span:not(.famV325HeroElement){font-size:8px!important;color:#c7d6ea!important}.famV325HeroElement{display:inline-flex!important;align-items:center;gap:4px;margin-top:3px;padding:4px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--ec) 60%,#315273);background:color-mix(in srgb,var(--ec) 10%,#0d192a);color:color-mix(in srgb,var(--ec) 68%,#fff)!important;font-size:7px!important;font-weight:900}.famV325 .fam240HeroStats{display:flex!important;flex-direction:row!important;gap:7px!important;margin-top:4px;text-align:center!important}.famV325 .fam240HeroStats b{min-width:92px;padding:7px 9px;border-radius:9px;border:1px solid rgba(104,155,215,.20);background:rgba(5,14,26,.60);font-size:8px!important}.famV325Cycle{position:absolute;z-index:3;top:46%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:1px solid rgba(114,166,227,.45);background:rgba(7,17,31,.72);color:#dcecff;font:400 28px/1 var(--fu);box-shadow:0 6px 16px rgba(0,0,0,.24);backdrop-filter:blur(7px)}.famV325Cycle.prev{left:10px}.famV325Cycle.next{right:10px}.famV325Cycle:active{transform:translateY(-50%) scale(.94)}
+.famV325 .fam240Hatching{position:relative;z-index:2;flex:0 0 auto;margin:0 10px 10px;padding:9px;border:1px solid rgba(84,137,201,.30);border-radius:11px;background:rgba(7,17,30,.72)}.famV325 .fam240HatchGrid{max-height:94px}.famV325 .fam240HatchCard{background:rgba(16,29,48,.88)}
+.famV325Right{display:flex;flex-direction:column;padding:10px}.famV325 .fam240Tabs{flex:0 0 auto;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;margin-bottom:9px}.famV325 .fam240Tab{min-width:0;border:1px solid #2d4567!important;border-radius:10px!important;background:rgba(12,25,43,.94)!important;color:#91a8c4!important;padding:8px 5px!important;display:flex;align-items:center;justify-content:center;gap:5px;font:800 8px var(--fu)!important}.famV325 .fam240Tab.on{border-color:#3da9ff!important;color:#eaf6ff!important;background:linear-gradient(180deg,#123b68,#0b2748)!important;box-shadow:0 0 0 1px rgba(58,169,255,.28),0 0 17px rgba(45,157,255,.18)}.famV325 .fam240Tab b{font:800 8px var(--fu)}.famV325TabIcon{display:flex;align-items:center}.famV325 .fam240Body{flex:1 1 auto;min-height:0!important;overflow:hidden!important}.famV325 .fam240Scroll{height:100%!important;padding:1px 1px 4px!important}.famV325 .fam240Panel,.famV325 .fam241Integrated,.famV325 .fam275Summon{border-color:rgba(75,125,186,.30)!important;background:rgba(9,20,35,.72)!important;border-radius:11px!important}.famV325 .fam275Summon{margin:1px 0 8px!important}.famV325 .fam240StoredGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}.famV325 .fam240Stored{background:rgba(16,30,50,.88)!important}.famV325 .fam240Fusion>div{background:rgba(14,27,45,.66);border-radius:8px;padding:5px 7px}.famV325 .famRatesInfoBtn{background:rgba(15,31,52,.88)!important;border-color:#31567e!important}
+.famV325InfoCard{margin:1px 0 9px;padding:10px;border:1px solid rgba(77,132,199,.36);border-radius:12px;background:linear-gradient(145deg,rgba(16,34,58,.94),rgba(8,19,34,.94))}.famV325InfoCard.empty{display:flex;flex-direction:column;gap:3px;text-align:center;color:#aebed2}.famV325InfoCard.empty span{font-size:8px;color:var(--textMute)}.famV325InfoHead{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.famV325InfoHead>div{display:flex;flex-direction:column}.famV325InfoHead small{font-size:6.5px;font-weight:900;letter-spacing:1.1px;color:#6fa7e7}.famV325InfoHead b{font:900 13px var(--fd);margin-top:2px}.famV325InfoHead>span{padding:4px 7px;border-radius:999px;border:1px solid var(--rc);background:color-mix(in srgb,var(--rc) 10%,#0c1727);color:var(--rc);font-size:7px;font-weight:900;white-space:nowrap}.famV325StatGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}.famV325StatGrid>div{padding:8px;border:1px solid rgba(91,142,202,.19);border-radius:9px;background:rgba(6,15,28,.52);display:flex;flex-direction:column;gap:3px}.famV325StatGrid span{display:flex;align-items:center;gap:4px;font-size:7px;color:#90a6c0}.famV325StatGrid b{font-size:9px;color:#eff6ff}.famV325Element{display:grid;grid-template-columns:31px 1fr;gap:8px;align-items:center;margin-top:7px;padding:8px;border:1px solid color-mix(in srgb,var(--ec) 34%,#2b405d);border-radius:9px;background:color-mix(in srgb,var(--ec) 6%,#091626)}.famV325Element>i{width:31px;height:31px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ec) 14%,#0b1727);color:var(--ec);font-style:normal}.famV325Element>div{min-width:0;display:flex;flex-direction:column;gap:2px}.famV325Element small{font-size:6.5px;font-weight:900;letter-spacing:.7px;color:color-mix(in srgb,var(--ec) 66%,#bcd0e8)}.famV325Element b{font-size:8px;line-height:1.25;color:#e2eaf5}
+@media(max-width:900px){
+  #screen:has(.famV325){overflow-y:auto!important;overscroll-behavior:contain}#screen:has(.famV325) .famV325{overflow:visible!important;padding:7px 8px calc(82px + env(safe-area-inset-bottom,0px))!important}.famV325Layout{height:auto;min-height:0;max-height:none;display:flex;flex-direction:column;gap:8px}.famV325Center{order:1;min-height:330px}.famV325Roster{order:2;min-height:126px;overflow:visible}.famV325Right{order:3;min-height:390px;overflow:visible}.famV325RosterGrid{flex:0 0 auto;display:grid;grid-auto-flow:column;grid-auto-columns:84px;grid-template-columns:none;grid-template-rows:96px;overflow-x:auto;overflow-y:hidden;padding:8px 1px 1px}.famV325 .fam240Hero{min-height:260px!important}.famV325 .fam240Hero>img{height:190px!important;min-height:150px;width:min(72%,250px)!important}.famV325 .fam240Body{overflow:visible!important}.famV325 .fam240Scroll{height:auto!important;max-height:none!important;overflow:visible!important}.famV325 .fam240StoredGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.famV325 .fam240Hatching{margin:0 8px 8px}.famV325Right{padding-bottom:12px}}
+@media(max-width:520px){
+  .famV325Center{min-height:300px}.famV325 .fam240Hero{min-height:225px!important;padding:12px 36px 7px!important}.famV325 .fam240Hero>img{height:158px!important;min-height:130px;width:min(76%,210px)!important}.famV325 .fam240HeroInfo>b{font-size:20px!important}.famV325 .fam240HeroStats b{min-width:82px;padding:6px 7px}.famV325Cycle{width:34px;height:34px;font-size:24px}.famV325Roster,.famV325Right{padding:8px}.famV325 .fam240Tab,.famV325 .fam240Tab b{font-size:7.4px!important}.famV325 .fam240StoredGrid{grid-template-columns:1fr!important}}
+@media(prefers-reduced-motion:reduce){.famV325Pet,.famV325Cycle{transition:none!important}}
+`;
+  document.head.appendChild(st);
 }
 
 function install(){
   try{
+    installStyles();
     if(typeof SCREENS==='undefined'||!SCREENS||typeof SCREENS.familiers!=='function')return false;
     var current=SCREENS.familiers;
     if(current.__srV309){lastOwner=current;return false;}
@@ -153,6 +303,9 @@ window.__srFamiliarFlatUIConfigV309={
   applesVisible:false,
   legacyLevelsVisible:false,
   flatStatsVisible:true,
+  elementEffectsVisible:true,
+  premiumLayout:true,
+  currentActionsPreserved:true,
   asyncRendererSafe:true,
   renderTimeOwnerRecovery:true,
   destructiveMigration:false,

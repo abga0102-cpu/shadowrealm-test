@@ -79,6 +79,55 @@ test('V309 keeps the final asynchronous Familiar renderer on flat stats with no 
   expect(result.statText).not.toContain('%');
 });
 
+test('V309 premium Familiar layout preserves the live action surface and exposes elemental speed', async ({ page }) => {
+  await openCleanGame(page);
+  await page.waitForFunction(() => (
+    window.__srFamNaturalScrollV246 === true &&
+    window.__srFamiliarFlatUIV309 === true &&
+    typeof SCREENS === 'object' &&
+    typeof SCREENS.familiers === 'function' &&
+    SCREENS.familiers.__srV309 === true
+  ), null, { timeout: 12000 });
+
+  await page.evaluate(() => {
+    S.stars = S.stars || {};
+    S.stars.pet = 2;
+    S.essence = Math.max(Number(S.essence || 0), 1000);
+    S.pets = [
+      { id: 'qa-electric', rarity: 'EPIQUE', species: 'oiseau', element: 'electrique', level: 0, petCurveVersion: 286 },
+      { id: 'qa-fire', rarity: 'RARE', species: 'loup', element: 'feu', level: 0, petCurveVersion: 286 },
+    ];
+    S.activePetId = 'qa-electric';
+    if (typeof nav === 'function') nav('familiers');
+    if (typeof render === 'function') render();
+  });
+
+  await expect(page.locator('.famV325Layout')).toHaveCount(1);
+  await expect(page.locator('.famV325Roster')).toHaveCount(1);
+  await expect(page.locator('.famV325Center')).toHaveCount(1);
+  await expect(page.locator('.famV325Right')).toHaveCount(1);
+  await expect(page.locator('.famV325Roster .famV325Pet')).toHaveCount(2);
+  await expect(page.locator('.famV325Right .fam240Tab')).toHaveCount(3);
+  await expect(page.locator('.famV325Right')).toContainText('Infos');
+  await expect(page.locator('.famV325Right')).toContainText('Œufs');
+  await expect(page.locator('.famV325Right')).toContainText('Progression');
+  await expect(page.locator('.famV325Element')).toContainText('+8% vitesse d\'attaque');
+  await expect(page.locator('[data-act="setPet"]')).toHaveCount(4);
+  await expect(page.locator('[data-act="fuse"]')).not.toHaveCount(0);
+  await expect(page.locator('[data-act="upgradePet"]')).toHaveCount(0);
+  await expect(page.locator('#screen')).not.toContainText('Changer la photo');
+
+  await page.locator('[data-fam240-tab="eggs"]').click();
+  await expect(page.locator('.famV325Layout')).toHaveCount(1);
+  await expect(page.locator('[data-act="summonEgg"]')).toHaveCount(2);
+  await expect(page.locator('.fam275Summon')).toHaveCount(1);
+
+  await page.locator('[data-fam240-tab="progress"]').click();
+  await expect(page.locator('.famV325Layout')).toHaveCount(1);
+  await expect(page.locator('.famRatesInfoBtn')).toHaveCount(1);
+  await expect(page.locator('.fam240Panel')).toContainText('Maîtrise familier');
+});
+
 test('V309 is presentation-only and preserves the V307/V308 progression contracts', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => ({
@@ -96,6 +145,9 @@ test('V309 is presentation-only and preserves the V307/V308 progression contract
   expect(result.v309).not.toBeNull();
   expect(result.v309.asyncRendererSafe).toBe(true);
   expect(result.v309.renderTimeOwnerRecovery).toBe(true);
+  expect(result.v309.elementEffectsVisible).toBe(true);
+  expect(result.v309.premiumLayout).toBe(true);
+  expect(result.v309.currentActionsPreserved).toBe(true);
   expect(result.v309.destructiveMigration).toBe(false);
   expect(result.v309.economyRebalanced).toBe(false);
   expect(result.v309.saveSchemaChanged).toBe(false);
