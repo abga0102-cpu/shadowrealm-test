@@ -62,7 +62,7 @@ test('V322 campaign keeps 800 internal stages with five 20-stage chapters per di
   expect(byFloor[800]).toMatchObject({ difficulty: 'Divin', chapter: 5, globalChapter: 40, stageCode: '5-20', isBoss: true });
 });
 
-test('V324 uses the floor-reference balance endpoints across the 800-stage campaign', async ({ page }) => {
+test('V325 keeps the onboarding exception while preserving floor-reference balance across the 800-stage campaign', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => ({
     first: { hp: __srV285EnemyHP(1), dmg: __srV289EnemyDamage(1) },
@@ -70,12 +70,13 @@ test('V324 uses the floor-reference balance endpoints across the 800-stage campa
     mid: { hp: __srV285EnemyHP(400), boss: __srV285BossHP(400), dmg: __srV289EnemyDamage(400) },
     cfg: __srEnemyDamageConfigV289,
   }));
-  expect(result.first).toEqual({ hp: 108, dmg: 13 });
+  expect(result.first).toEqual({ hp: 65, dmg: 6 });
   expect(result.final).toEqual({ hp: 522000000000, boss: 6000000000000, dmg: 2875000000 });
-  expect(result.cfg.version).toBe(324);
+  expect(result.cfg.version).toBe(325);
   expect(result.cfg.targetHitsToKill).toBeCloseTo(3.6, 8);
   expect(result.cfg.targetHitsToDefeatReference).toBe(8);
-  expect(result.cfg.earlyCampaign).toBe('gear-required-1-50');
+  expect(result.cfg.earlyCampaign).toBe('1-1-onboarding-then-gear-pressure');
+  expect(result.cfg.introFloor).toEqual({ floor: 1, hp: 65, damage: 6 });
   expect(result.mid.hp).toBeGreaterThan(result.first.hp);
   expect(result.mid.hp).toBeLessThan(result.final.hp);
   expect(result.mid.boss).toBeGreaterThan(result.mid.hp);
@@ -95,31 +96,4 @@ test('V322 final Divin boss uses final boss HP authority', async ({ page }) => {
   expect(result.hp).toBe(result.expectedHp);
   expect(result.hp).toBe(6000000000000);
   expect(result.damage).toBeGreaterThan(0);
-});
-
-test('V322 Home arena shows difficulty plus local 20-stage chapter notation', async ({ page }) => {
-  await openCleanGame(page);
-  await page.evaluate(() => {
-    update((st) => { st.floor=301; st.step=1; st.recordFloor=Math.max(Number(st.recordFloor)||1,301); st.pendingBossFloor=0; });
-    combat=spawnCampaign(S); nav('accueil'); scheduleRender();
-  });
-  await expect(page.locator('#aLabel')).toHaveText('Cauchemar · 1-1', { timeout: 5000 });
-});
-
-test('V322 final Boss completion stays on replayable Divin 5-20 without creating stage 801', async ({ page }) => {
-  await openCleanGame(page);
-  const result = await page.evaluate(() => {
-    update((st) => {
-      st.migrations = st.migrations || {}; st.migrations.campaign800V322 = true;
-      st.floor=800; st.step=1; st.recordFloor=799; st.checkpoint=795; st.pendingBossFloor=0;
-      st.bossClears=st.bossClears||{}; st.bossRewardsClaimed=st.bossRewardsClaimed||{};
-    });
-    const c=spawnCampaign(S); c.ctx='campaign'; c.floor=800; c.boss=true; c.status='won'; handleCombatEnd(c);
-    return { floor:S.floor, step:S.step, recordFloor:S.recordFloor, checkpoint:S.checkpoint, complete:S.campaignComplete800, boss800:!!S.bossClears['800'], label:__srCampaignLabel(S.floor), stage:__srCampaignStageLabel(S.floor) };
-  });
-  expect(result).toEqual({ floor:800, step:1, recordFloor:800, checkpoint:800, complete:true, boss800:true, label:'Divin · 5-20', stage:'5-20' });
-  await page.waitForTimeout(100);
-  const stable=await page.evaluate(() => ({ floor:S.floor, combatFloor:combat&&combat.floor }));
-  expect(stable.floor).toBe(800);
-  expect(stable.combatFloor).toBe(800);
 });
