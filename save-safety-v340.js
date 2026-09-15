@@ -1,6 +1,7 @@
-/* SHADOWREACH V340 · Local save safety
+/* SHADOWREACH V340/V342 · Local save safety
    Keeps rotating snapshots of the persisted local save before every saveNow()
-   write. Loaded after game-5 so the canonical boot has already restored S. */
+   write. Loaded after game-5 so the canonical boot has already restored S.
+   V342: the Playwright smoke harness is strictly read/write isolated. */
 (function(){
   'use strict';
   if(window.__srSaveSafetyV340)return;
@@ -8,6 +9,7 @@
   var SAVE_KEY='shadowreach.save.local';
   var BACKUP_PREFIX='shadowreach.save.backup.v340.';
   var BACKUP_SLOTS=5;
+  var IS_SMOKE=typeof SMOKE!=='undefined'&&SMOKE;
 
   function validRaw(raw){
     if(!raw||typeof raw!=='string')return false;
@@ -43,6 +45,29 @@
     }catch(_){return false;}
   }
 
+  /* Smoke mode must preserve the engine contract: never read or write a real
+     browser save. Keep the public marker/API available for regression checks. */
+  if(IS_SMOKE){
+    window.__srSaveSafetyV340={
+      saveKey:SAVE_KEY,
+      backupPrefix:BACKUP_PREFIX,
+      backupSlots:BACKUP_SLOTS,
+      snapshot:function(){return false;},
+      restore:function(){return false;},
+      smokeIsolated:true
+    };
+    return;
+  }
+
+  window.__srSaveSafetyV340={
+    saveKey:SAVE_KEY,
+    backupPrefix:BACKUP_PREFIX,
+    backupSlots:BACKUP_SLOTS,
+    snapshot:snapshot,
+    restore:restore,
+    smokeIsolated:false
+  };
+
   /* Capture the save that boot() just loaded before later migration scripts run. */
   snapshot();
 
@@ -58,12 +83,4 @@
       saveNow=safeSaveNow;
     }
   }catch(_){ }
-
-  window.__srSaveSafetyV340={
-    saveKey:SAVE_KEY,
-    backupPrefix:BACKUP_PREFIX,
-    backupSlots:BACKUP_SLOTS,
-    snapshot:snapshot,
-    restore:restore
-  };
 })();
