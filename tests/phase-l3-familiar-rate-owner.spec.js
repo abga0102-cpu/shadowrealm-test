@@ -32,7 +32,7 @@ test('L3: V296 is the single durable Familiar getRates policy owner', async () =
   expect(v307).toContain("familiarRateOwner:'V296'");
 });
 
-test('L3: V296 preserves normalized Familiar rates and exact Ancestral policy at runtime', async ({ page }) => {
+test('L3: V296 preserves Familiar rates and exact Ancestral policy at runtime', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => {
     const max = typeof masteryMax === 'function' ? masteryMax('pet') : 50;
@@ -41,7 +41,6 @@ test('L3: V296 preserves normalized Familiar rates and exact Ancestral policy at
     const sum = (table) => Object.keys(table || {}).reduce((n, k) => n + (Number(table[k]) || 0), 0);
     const valid = (table) => Object.keys(table || {}).every((k) => Number.isFinite(Number(table[k])) && Number(table[k]) >= 0);
     return {
-      max,
       beforeAncestral: Number(before.ANCESTRAL),
       atMaxAncestral: Number(atMax.ANCESTRAL),
       beforeSum: sum(before),
