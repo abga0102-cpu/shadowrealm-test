@@ -147,21 +147,28 @@ test('V283 owns current fixed-base Forge equipment power independently of Forge 
   expect(result.high.originalPower).toBe(result.low.originalPower);
 });
 
-test('V224 keeps Divine Forge drops locked before first Ascension', async ({ page }) => {
+test('V323 Forge-star ladder owns post-Artefact rarity access independently of global Ascension', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
-    const zeroAscension = getRates('forge', 999, 0, 999);
+    const zeroStars = getRates('forge', 50, 999, 0);
+    const fourStars = getRates('forge', 50, 0, 4);
     return {
       authorityLoaded: !!window.__srGameBalanceV224,
-      divine: Number(zeroAscension && zeroAscension.DIVIN) || 0,
-      total: Object.keys(zeroAscension || {}).reduce((sum, key) => sum + (Number(zeroAscension[key]) || 0), 0)
+      rarityAuthorityLoaded: !!(window.__srEquipmentBalanceV224 && window.__srEquipmentBalanceV224.forgeRarityV323),
+      zeroStarsDivine: Number(zeroStars && zeroStars.DIVIN) || 0,
+      fourStarsDivine: Number(fourStars && fourStars.DIVIN) || 0,
+      zeroStarsTotal: Object.keys(zeroStars || {}).reduce((sum, key) => sum + (Number(zeroStars[key]) || 0), 0),
+      fourStarsTotal: Object.keys(fourStars || {}).reduce((sum, key) => sum + (Number(fourStars[key]) || 0), 0),
     };
   });
 
   expect(result.authorityLoaded).toBe(true);
-  expect(result.divine).toBe(0);
-  expect(result.total).toBeCloseTo(100, 8);
+  expect(result.rarityAuthorityLoaded).toBe(true);
+  expect(result.zeroStarsDivine).toBe(0);
+  expect(result.fourStarsDivine).toBeCloseTo(1, 8);
+  expect(result.zeroStarsTotal).toBeCloseTo(100, 8);
+  expect(result.fourStarsTotal).toBeCloseTo(100, 8);
 });
 
 test('Forge arena preview follows the current fixed-base model as real drops', async ({ page }) => {
