@@ -15,7 +15,9 @@ test('V335 Raid Familier pays 350 Essence then +5 per level and keeps Raid Compe
     familier50: raidReward('familier', 50),
     competence1: raidReward('competence', 1),
     competence2: raidReward('competence', 2),
-    config: window.__srRaidSummonEconomyConfigV291
+    config: window.__srRaidSummonEconomyConfigV291,
+    stability: window.__srProgressionStabilityConfigV304,
+    audit: window.__srProgressionAuditV307
   }));
 
   expect(rewards.familier1).toBe(350);
@@ -26,6 +28,10 @@ test('V335 Raid Familier pays 350 Essence then +5 per level and keeps Raid Compe
   expect(rewards.competence2).toBe(260);
   expect(rewards.config.familier.base).toBe(350);
   expect(rewards.config.familier.perLevel).toBe(5);
+  expect(rewards.stability.raids.familier).toEqual({ base: 350, perLevel: 5 });
+  expect(rewards.audit.raidPet1).toBe(350);
+  expect(rewards.audit.raidPet50).toBe(595);
+  expect(rewards.audit.ok).toBe(true);
 });
 
 test('V335 compensates already-cleared Raid Familier levels exactly once', async ({ page }) => {
@@ -58,7 +64,7 @@ test('V335 compensates already-cleared Raid Familier levels exactly once', async
   expect(result.afterSecond).toBe(295);
 });
 
-test('V335 compensation also survives the import migration lifecycle', async ({ page }) => {
+test('V335 compensation also survives the current-save import migration lifecycle', async ({ page }) => {
   await page.goto('/index.html');
   await page.waitForFunction(() =>
     typeof window.migrate === 'function' &&
@@ -68,6 +74,11 @@ test('V335 compensation also survives the import migration lifecycle', async ({ 
   const imported = await page.evaluate(() => {
     const raw = {
       essence: 0,
+      // A current save has already processed the historical V2/V3/V4 economy
+      // migrations. Mark them complete so this regression isolates V335 only.
+      economyRebaseV2: true,
+      economyRebaseV3: true,
+      economyRebaseV4: true,
       raids: { familier: { level: 4, keys: 2, record: 3, stars: 0 } }
     };
     const once = migrate(raw, 'V335 Import Test');
