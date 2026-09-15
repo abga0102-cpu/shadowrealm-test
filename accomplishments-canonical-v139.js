@@ -1,12 +1,16 @@
-/* SHADOWREACH · Accomplishments canonical mobile UI v139 · Fusion milestones V202
-   V322: campaign milestones follow the 800-stage structure with five 20-stage
-   chapters per difficulty; Boss milestones require the actual Boss clear. */
+/* SHADOWREACH · Accomplishments canonical mobile UI v139 · Progression Pass
+   Campaign milestones follow the 800-stage structure with five 20-stage chapters
+   per difficulty; Boss milestones require the actual Boss clear.
+   V326: Arena-facing Pass Progression with Étages / Défis and a visible Premium lane. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsCanonicalV139)return;
 window.__srAccomplishmentsCanonicalV139=true;
+var activeTab='etages';
 function n(v){return Math.max(0,Number(v)||0);}
 function claimed(id){return !!(S.accomplishments&&S.accomplishments.claimed&&S.accomplishments.claimed[id]);}
+function premiumClaimed(id){return !!(S.accomplishments&&S.accomplishments.premiumClaimed&&S.accomplishments.premiumClaimed[id]);}
+function premiumOwned(){var a=S.accomplishments||{};return !!(a.premiumPass||a.premiumPassOwned);}
 function raids(){return n(S.accomplishments&&S.accomplishments.raidWins);}
 function forge(){return n(S.forge&&S.forge.level);}
 function floor(){return n(S.recordFloor);}
@@ -18,6 +22,7 @@ function ensureTitles(){S.titles=S.titles&&typeof S.titles==='object'?S.titles:{
 function divineUnlocked(){ensureTitles();var st=S.sanctuary||{};return !!(st.divineTitleUnlocked||S.titles.divin);}
 function saveTitle(){try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){} }
 function syncTitleButton(b){var equipped=S.equippedTitle==='divin';b.textContent=equipped?'Équipé':'Équiper';b.classList.remove('gold','dark');b.classList.add(equipped?'dark':'gold');}
+function escText(v){return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
 function installTitleInteraction(){
  if(window.__srAccomplishmentsTitleInteractionV139)return;
  window.__srAccomplishmentsTitleInteractionV139=true;
@@ -58,13 +63,50 @@ var ITEMS={
   ['floor400',800,'Terminer Divin · 5-20','2 500 Étincelles + 2 500 Essences + 20 Pièces de fusion Mythiques + 1 Clé universelle']
  ]
 };
+var PREMIUM_TEXT={
+ forge5:'2 500 Or',forge10:'5 000 Or',forge15:'5 Pièces Communes',forge20:'5 Pièces Peu communes',forge30:'15 000 Or + 5 Pièces Peu communes',forge35:'5 Pièces Rares + 1 Clé Minerai',forge40:'25 000 Or + 5 Pièces Rares',forge50:'5 Pièces Épiques + 1 Clé Minerai',
+ fusion50:'5 Pièces Communes',fusion150:'5 Pièces Peu communes',fusion250:'5 Pièces Rares',fusion350:'5 Pièces Rares',fusion500:'5 Pièces Épiques',fusion1000:'25 000 Or + 5 Pièces Mythiques',fusion1500:'5 Pièces Mythiques',
+ raid10:'2 500 Or',raid20:'10 Pièces Communes',raid50:'5 Pièces Rares + 250 Essences',raid100:'250 000 Or + 250 Étincelles + 250 Essences + 10 Pièces Rares',
+ floor25:'100 Essences',floor50:'750 Minerais + 2 500 Or',floor75:'200 Étincelles + 10 Pièces Communes',floor100:'200 Étincelles + 200 Essences + 10 Pièces Communes',floor150:'250 Étincelles + 250 Essences + 5 Pièces Rares',floor200:'300 Étincelles + 300 Essences + 5 Pièces Rares',floor250:'350 Étincelles + 350 Essences + 3 Pièces Épiques',floor300:'400 Étincelles + 400 Essences + 4 Pièces Épiques',floor350:'500 Étincelles + 500 Essences + 3 Pièces Mythiques',floor400:'750 Étincelles + 750 Essences + 5 Pièces Mythiques'
+};
 function value(cat){return cat==='Forge'?forge():cat==='Fusions'?fusions():cat==='Raids'?raids():floor();}
 function itemDone(cat,x){return cat==='Etages'?floorDone(x[1]):value(cat)>=x[1];}
-function status(cat){var v=value(cat),list=ITEMS[cat],done=0,next=null;for(var i=0;i<list.length;i++){if(itemDone(cat,list[i]))done++;else if(next===null)next=list[i];}var fin=done===list.length;var nextText=next?(cat==='Etages'?next[2]:next[1]):'';var pill=fin?'Terminé':(cat==='Etages'?stageLabel(Math.max(1,v))+' → '+stageLabel(next[1]):v+' / '+next[1]);return '<div class="card frame"'+(cat==='Etages'?' data-ach-floor-overview-v138="1" data-ach-floor-overview-v137="1"':'')+' style="margin:6px 0;width:100%;box-sizing:border-box"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0"><div style="min-width:0;flex:1"><div class="b">'+(cat==='Etages'?'Étages':cat)+'</div><div class="mute tiny">'+(fin?done+' / '+list.length+' jalons atteints':'Prochain jalon : '+nextText+' · '+done+' / '+list.length+' atteints')+'</div></div><span class="pill" style="flex:0 0 auto'+(fin?';color:var(--greenLit);border-color:#3FB950':'')+'">'+pill+'</span></div></div>';}
-function action(x,done){if(claimed(x[0]))return '<span class="pill" style="color:var(--greenLit);border-color:#3FB950;flex:0 0 auto">Récupéré</span>';if(!done)return '<span class="pill" style="flex:0 0 auto">En cours</span>';if(x[4]==='choice')return '<div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm blue" data-ach="'+x[0]+'" data-ach-choice="eclat">500 Étincelles</button><button class="btn sm purple" data-ach="'+x[0]+'" data-ach-choice="essence">500 Essences</button></div>';return '<button class="btn sm green" data-ach="'+x[0]+'" style="flex:0 0 auto">Récupérer</button>';}
-function section(cat){var attrs=cat==='Etages'?' data-ach-floors-v138="1" data-ach-floors-v137-safe="1"':'';return '<div'+attrs+' style="width:100%;min-width:0;box-sizing:border-box"><div class="sect" style="margin:14px 0 6px">'+(cat==='Etages'?'Étages':cat)+'</div>'+ITEMS[cat].map(function(x){return '<div class="itemRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;min-width:0;box-sizing:border-box"><div style="flex:1 1 180px;min-width:0"><div class="b small">'+x[2]+'</div><div class="mute tiny" style="overflow-wrap:anywhere">'+x[3]+'</div></div>'+action(x,itemDone(cat,x))+'</div>';}).join('')+'</div>';}
-function titleSection(){ensureTitles();var unlocked=divineUnlocked(),eq=S.equippedTitle==='divin';return '<div data-ach-titles-v134="1" style="width:100%;min-width:0;box-sizing:border-box"><div class="sect" style="margin:14px 0 6px">Titres</div><div class="card frame" style="margin-bottom:7px;width:100%;box-sizing:border-box"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div style="min-width:0"><div class="b">Vue d’ensemble des titres</div><div class="mute tiny">Débloqués : '+(unlocked?1:0)+' / 1</div></div><span class="pill">'+(unlocked?'1 / 1':'0 / 1')+'</span></div></div><div class="itemRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;min-width:0;box-sizing:border-box"><div style="flex:1 1 180px;min-width:0"><div class="b small" style="color:#FFB52E">Divin</div><div class="mute tiny">Sacrifier un Divin · '+(unlocked?'1 / 1':'0 / 1')+'</div></div>'+(unlocked?'<button class="btn sm '+(eq?'dark':'gold')+'" data-ach-title="divin">'+(eq?'Équipé':'Équiper')+'</button>':'<span class="pill">Verrouillé</span>')+'</div></div>';}
-function html(){var cats=['Forge','Fusions','Raids','Etages'];return '<div class="srAch139" data-ach-canonical-v139="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden"><div data-ach-overview-v135="1" style="width:100%;min-width:0"><div class="sect" style="margin:0 0 6px">Vue d’ensemble</div>'+cats.map(status).join('')+'</div>'+cats.map(section).join('')+titleSection()+'<div class="mt10" style="width:100%;box-sizing:border-box"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
+function catDone(cat){var list=ITEMS[cat],done=0;for(var i=0;i<list.length;i++)if(itemDone(cat,list[i]))done++;return done;}
+function allProgress(){var cats=['Forge','Fusions','Raids','Etages'],done=0,total=0,claimable=0;for(var c=0;c<cats.length;c++){var list=ITEMS[cats[c]];for(var i=0;i<list.length;i++){total++;if(itemDone(cats[c],list[i])){done++;if(!claimed(list[i][0]))claimable++;if(premiumOwned()&&!premiumClaimed(list[i][0]))claimable++;}}}return {done:done,total:total,claimable:claimable};}
+function launcherState(){var list=ITEMS.Etages,done=0;for(var i=0;i<list.length;i++)if(itemDone('Etages',list[i]))done++;var a=allProgress();return {done:done,total:list.length,claimable:a.claimable,stage:stageLabel(Math.max(1,floor()))};}
+window.__srAccomplishmentsLauncherStateV139=launcherState;
+function installStyles(){
+ if(document.getElementById('srAchPassV139Style'))return;
+ var st=document.createElement('style');st.id='srAchPassV139Style';st.textContent='\
+.srAch139{--achGold:#d7ae58;--achGold2:#f0d58e;--achBlue:#5d9fe8;--achPanel:#111b2b;--achPanel2:#172338;color:#e8eef7}\
+.srAch139 .achPassHero{border:1px solid rgba(215,174,88,.42);border-radius:14px;padding:14px;background:radial-gradient(circle at 85% 0,rgba(215,174,88,.13),transparent 34%),linear-gradient(180deg,#17243a,#101a2a);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 6px 16px rgba(0,0,0,.25)}\
+.srAch139 .achPassKicker{font-size:9px;letter-spacing:1.6px;color:#cdb979;font-weight:800}.srAch139 .achPassTitle{font-size:21px;line-height:1.08;margin-top:3px;font-weight:850}.srAch139 .achPassSub{margin-top:5px;font-size:11px;line-height:1.35;color:#93a2b7}\
+.srAch139 .achPassTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.srAch139 .achPassPrice{flex:0 0 auto;border:1px solid rgba(215,174,88,.55);border-radius:10px;padding:7px 9px;background:#1b2432;color:#f0d58e;font-size:10px;font-weight:800;text-align:center}.srAch139 .achPassPrice small{display:block;color:#8493a8;font-size:8px;font-weight:700;margin-top:2px}\
+.srAch139 .achPassMeter{height:7px;border-radius:6px;background:#0a111d;overflow:hidden;margin-top:11px;border:1px solid #27364d}.srAch139 .achPassMeter>i{display:block;height:100%;background:linear-gradient(90deg,#9b782f,#e0bd68)}.srAch139 .achPassMeta{display:flex;justify-content:space-between;gap:8px;margin-top:5px;color:#8d9caf;font-size:9px}\
+.srAch139 .achTabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}.srAch139 .achTab{border:1px solid #2b3a52;border-radius:10px;padding:9px 8px;background:#121d2d;color:#91a0b4;font-weight:800;font-size:11px}.srAch139 .achTab.on{border-color:rgba(215,174,88,.65);background:#332a18;color:#f0d58e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}\
+.srAch139 .achLaneHead,.srAch139 .achPassRow{display:grid;grid-template-columns:minmax(125px,1.28fr) minmax(105px,.9fr) minmax(105px,.9fr);gap:7px;align-items:stretch}.srAch139 .achLaneHead{padding:0 8px 5px;color:#8291a5;font-size:8px;font-weight:800;letter-spacing:.9px;text-transform:uppercase}.srAch139 .achLaneHead span:nth-child(3){color:#d7ae58}.srAch139 .achPassRow{margin:6px 0;padding:8px;border:1px solid #2a394f;border-radius:11px;background:linear-gradient(180deg,#162237,#111a2a)}\
+.srAch139 .achObjective{min-width:0;padding:3px 4px}.srAch139 .achObjective b{display:block;font-size:11px;line-height:1.2}.srAch139 .achObjective small{display:block;color:#8190a5;font-size:9px;margin-top:4px}.srAch139 .achReward{min-width:0;border-left:1px solid #29394f;padding:3px 4px 3px 9px;display:flex;flex-direction:column;justify-content:space-between;gap:7px}.srAch139 .achReward.premium{border-left-color:rgba(215,174,88,.28);background:linear-gradient(90deg,rgba(215,174,88,.035),transparent);border-radius:0 7px 7px 0}.srAch139 .achRewardText{font-size:9px;line-height:1.3;color:#b6c1d0;overflow-wrap:anywhere}.srAch139 .achReward.premium .achRewardText{color:#dec98c}.srAch139 .achReward .btn{width:100%;min-height:30px;padding:6px 7px;font-size:9px}.srAch139 .achState{display:flex;align-items:center;justify-content:center;min-height:28px;border:1px solid #33435a;border-radius:8px;color:#8291a6;font-size:9px;font-weight:800}.srAch139 .achState.done{color:#69d389;border-color:#335d46}.srAch139 .achState.locked{color:#a99359;border-color:#5a4c2c;background:rgba(215,174,88,.035)}\
+.srAch139 .achCatTitle{margin:14px 1px 6px;font-size:10px;letter-spacing:1.2px;color:#dcc47e;font-weight:850;text-transform:uppercase}.srAch139 .achCategorySummary{font-size:8px;color:#73839a;margin-left:5px;font-weight:700}.srAch139 .achPassNote{margin-top:8px;padding:8px 10px;border-radius:9px;border:1px solid #29394f;background:#0f1927;color:#8291a5;font-size:9px;line-height:1.35}.srAch139 .achPassNote b{color:#d9c684}\
+@media(max-width:560px){.srAch139 .achLaneHead{grid-template-columns:1fr 1fr}.srAch139 .achLaneHead span:first-child{display:none}.srAch139 .achPassRow{grid-template-columns:1fr 1fr}.srAch139 .achObjective{grid-column:1/-1;padding:2px 3px 6px;border-bottom:1px solid #26364b}.srAch139 .achReward{border-left:0;padding:3px 4px}.srAch139 .achReward.premium{border-left:1px solid rgba(215,174,88,.22);padding-left:8px}.srAch139 .achPassTitle{font-size:19px}}';
+ document.head.appendChild(st);
+}
+function freeAction(x,done){if(claimed(x[0]))return '<span class="achState done">Récupéré</span>';if(!done)return '<span class="achState">En cours</span>';if(x[4]==='choice')return '<div style="display:grid;gap:4px"><button class="btn sm" data-ach="'+x[0]+'" data-ach-choice="eclat">+500 Étincelles</button><button class="btn sm" data-ach="'+x[0]+'" data-ach-choice="essence">+500 Essences</button></div>';return '<button class="btn sm" data-ach="'+x[0]+'" data-primary="true">Récupérer</button>';}
+function premiumAction(x,done){if(!premiumOwned())return '<span class="achState locked">Premium</span>';if(premiumClaimed(x[0]))return '<span class="achState done">Récupéré</span>';if(!done)return '<span class="achState">En cours</span>';return '<button class="btn sm" data-ach-premium="'+x[0]+'" data-primary="true">Récupérer</button>';}
+function row(cat,x){var done=itemDone(cat,x),cur=value(cat),progress=cat==='Etages'?stageLabel(Math.max(1,cur)):(Math.min(cur,x[1])+' / '+x[1]);return '<div class="achPassRow"'+(cat==='Etages'?' data-ach-floors-v138="1" data-ach-floors-v137-safe="1"':'')+'><div class="achObjective"><b>'+escText(x[2])+'</b><small>'+escText(done?'Objectif atteint':progress)+'</small></div><div class="achReward"><div class="achRewardText">'+escText(x[3])+'</div>'+freeAction(x,done)+'</div><div class="achReward premium"><div class="achRewardText">'+escText(PREMIUM_TEXT[x[0]]||'Bonus Premium')+'</div>'+premiumAction(x,done)+'</div></div>';}
+function laneHead(){return '<div class="achLaneHead"><span>Objectif</span><span>Gratuit</span><span>Premium</span></div>';}
+function floorsView(){var list=ITEMS.Etages,done=catDone('Etages');return '<div data-ach-floor-overview-v138="1" data-ach-floor-overview-v137="1"><div class="achCatTitle">Étages <span class="achCategorySummary">'+done+' / '+list.length+' jalons</span></div>'+laneHead()+list.map(function(x){return row('Etages',x);}).join('')+'</div>';}
+function challengesView(){var cats=['Forge','Fusions','Raids'];return cats.map(function(cat){return '<div><div class="achCatTitle">'+cat+' <span class="achCategorySummary">'+catDone(cat)+' / '+ITEMS[cat].length+'</span></div>'+laneHead()+ITEMS[cat].map(function(x){return row(cat,x);}).join('')+'</div>';}).join('')+titleSection();}
+function titleSection(){ensureTitles();var unlocked=divineUnlocked(),eq=S.equippedTitle==='divin';return '<div data-ach-titles-v134="1"><div class="achCatTitle">Titres <span class="achCategorySummary">'+(unlocked?'1 / 1':'0 / 1')+'</span></div><div class="achPassRow" style="grid-template-columns:1fr minmax(110px,.8fr)"><div class="achObjective"><b style="color:#f0c761">Divin</b><small>Sacrifier un Divin · '+(unlocked?'1 / 1':'0 / 1')+'</small></div><div class="achReward" style="border-left:1px solid #29394f">'+(unlocked?'<button class="btn sm '+(eq?'dark':'')+'" data-ach-title="divin" data-primary="'+(eq?'false':'true')+'">'+(eq?'Équipé':'Équiper')+'</button>':'<span class="achState locked">Verrouillé</span>')+'</div></div></div>';}
+function hero(){var p=allProgress(),pct=Math.max(0,Math.min(100,Math.round(p.done/Math.max(1,p.total)*100))),premium=premiumOwned();return '<div class="achPassHero" data-ach-overview-v135="1"><div class="achPassTop"><div><div class="achPassKicker">PROGRESSION</div><div class="achPassTitle">Pass Progression</div><div class="achPassSub">Progresse dans les étages et complète des défis pour récupérer tes récompenses.</div></div><button type="button" class="achPassPrice" data-ach-premium-info="1">'+(premium?'Premium actif':'Premium · 9,99 €')+'<small>'+(premium?'Bonus débloqués':'Récompenses bonus')+'</small></button></div><div class="achPassMeter"><i style="width:'+pct+'%"></i></div><div class="achPassMeta"><span>'+p.done+' / '+p.total+' accomplissements</span><span>'+pct+'%</span></div></div>';}
+function html(){return '<div class="srAch139" data-ach-canonical-v139="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+'<div class="achTabs"><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages">Étages</button><button class="achTab '+(activeTab==='defis'?'on':'')+'" data-ach-tab="defis">Défis</button></div>'+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Gratuit :</b> toutes les récompenses actuelles restent disponibles. <b>Premium :</b> ajoute un bonus sur chaque jalon sans remplacer la voie gratuite.</div><div class="mt10"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
+function reopen(){try{if(typeof openModal==='function')openModal(html(),'Pass Progression');}catch(_){} }
+function installInteractions(){
+ if(window.__srAccomplishmentsPassInteractionV139)return;window.__srAccomplishmentsPassInteractionV139=true;
+ document.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest?e.target.closest('[data-ach-tab]'):null;if(t){e.preventDefault();e.stopPropagation();activeTab=t.getAttribute('data-ach-tab')==='defis'?'defis':'etages';reopen();return;}
+  var info=e.target&&e.target.closest?e.target.closest('[data-ach-premium-info]'):null;if(info){e.preventDefault();e.stopPropagation();try{if(typeof toast==='function')toast(premiumOwned()?'Pass Premium actif':'Pass Premium · 9,99 €',premiumOwned());}catch(_){}return;}
+ },true);
+}
 function installProgressEntry(){
  if(window.__srAccomplishmentsProgressEntryV139)return;
  if(typeof SCREENS==='undefined'||!SCREENS||typeof SCREENS.developpement!=='function')return;
@@ -76,16 +118,18 @@ function installProgressEntry(){
    var box=document.createElement('div');box.innerHTML=h;
    var pad=box.querySelector('.pad.mt6,.pad.mt8,.pad');
    if(!pad||pad.querySelector('[data-act="accomplishments"]'))return box.innerHTML;
-   var entry=document.createElement('div');
-   entry.className='card lit';
-   entry.dataset.act='accomplishments';
-   entry.style.cssText='cursor:pointer;margin-bottom:8px';
-   entry.innerHTML='<div class="between"><b>Accomplissements</b><span class="pill">Voir les récompenses</span></div>';
-   pad.insertBefore(entry,pad.firstChild);
-   return box.innerHTML;
+   var entry=document.createElement('div');entry.className='card lit';entry.dataset.act='accomplishments';entry.style.cssText='cursor:pointer;margin-bottom:8px';
+   entry.innerHTML='<div class="between"><div><b>Pass Progression</b><div class="mute tiny mt3">Étages, défis et récompenses</div></div><span class="pill">Ouvrir</span></div>';
+   pad.insertBefore(entry,pad.firstChild);return box.innerHTML;
   }catch(_){return h;}
  };
 }
-function install(){if(typeof S==='undefined'||typeof ACT==='undefined'||typeof openModal!=='function')return;ACT.accomplishments=function(){openModal(html(),'Accomplissements');};installTitleInteraction();installProgressEntry();}
+function install(){
+ if(typeof S==='undefined'||typeof ACT==='undefined'||typeof openModal!=='function')return;
+ installStyles();
+ ACT.accomplishments=function(){openModal(html(),'Pass Progression');};
+ installTitleInteraction();installInteractions();installProgressEntry();
+ try{window.dispatchEvent(new CustomEvent('sr:accomplishments-ready'));}catch(_){}
+}
 install();
 })();
