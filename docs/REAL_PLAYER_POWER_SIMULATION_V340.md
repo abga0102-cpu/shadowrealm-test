@@ -19,11 +19,17 @@ For every milestone it derives:
 - player level from the real `expToNext` curve and +5 stat points per level;
 - Forge level from Gold actually earned through campaign + a bounded number of Raid Or clears, spending the available Gold greedily on the real 1→50 upgrade ladder;
 - Forge mastery and equipment from a deterministic sequence of real rarity rolls and real `makeItem` output;
-- Familiar rarity from real summon rates and a resource-limited number of paid summons;
-- Skill mastery / highest direct rarity from real summon rates and a resource-limited number of paid summons;
-- final basic combat DGT/PV and displayed power through the real `computeDerived` / `computePower` authority.
+- Familiar progression through the real paid summon path, real rarity/species/element rolls, the real fusion ladder and the authoritative flat Familiar DGT/PV calculation;
+- the strongest resulting Familiar is activated, so its DGT/PV contribution is present in `computeDerived` and `computePower`;
+- Skill progression through the real `summonSkill` path, including duplicate levelling, mastery advancement and the real automatic equipped slots;
+- the equipped Skill loadout is recorded, with direct offensive Skill damage evaluated through the current V284 Skill authority;
+- final DGT/PV, displayed power and a nominal direct-combat DPS reference are reported from the resulting complete character state.
 
-Random affixes and Familiar fusion are deliberately excluded from the baseline. Both are upside. This keeps the diagnostic from inventing a lucky or heavily optimized character.
+Random equipment affixes are deliberately excluded from the baseline because they are luck/optimization upside. Familiar fusion is **not** excluded: it is normal obtainable progression and therefore has to be represented.
+
+For this diagnostic, eggs affordable by a milestone are treated as already hatched. The hatch timer is a pacing axis rather than a permanent power source and can be modelled separately if needed. The important balance rule is that the Familiar obtained from those resources must not disappear from the player-power reference.
+
+Equipped support/debuff/heal Skills remain in the simulated loadout even when they do not contribute to the simple direct-DPS number. Final enemy calibration must therefore use the resulting real Skill loadout in live combat rather than treating the direct-DPS number alone as total Skill value.
 
 ## Three activity profiles
 
@@ -35,10 +41,10 @@ The profiles are not difficulty modifiers and are never read by combat. They are
 | Normal | 16 | 8 | 8 | 8 | Regular use without exhausting every possible key/resource |
 | Optimized | 24 | 16 | 16 | 16 | High activity and much heavier resource conversion |
 
-The key calibration point is **internal floor 75 / Facile 4-15**. The Normal profile has 12 Raid Or clears by that point. Even when every Gold coin available to the model is allowed to fund Forge upgrades, the reference must remain below Forge 15. This matches observed real play much more closely than the old Forge 35/50 fixtures.
+The key calibration point is **internal floor 75 / Facile 4-15**. The Normal reference must land between **Forge 8 and Forge 12 inclusive**. Forge is only one part of that reference: the active Familiar and actually equipped Skills must also be present before the player's effective combat level is used to rebalance the monsters.
 
 ## Safety boundary
 
 V340 is diagnostic only. It does **not** alter enemy HP, enemy damage, Boss values, rewards, saves, rarity rates or campaign progression.
 
-Monster balance should be recalibrated only after this diagnostic has been run against the current runtime and its milestone output has been reviewed. In particular, the old V313 profile ceilings must not be copied into the campaign enemy reference curve.
+Monster balance should be recalibrated only after this diagnostic has run against the current runtime and its milestone output has been reviewed. In particular, the old V313 profile ceilings must not be copied into the campaign enemy reference curve, and a Forge-only reference must not be used as a substitute for the complete player build.
