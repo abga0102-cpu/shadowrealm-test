@@ -1,18 +1,21 @@
-/* SHADOWREACH V309 · Familiar flat-stat UI authority
-   QA/UX correction for the already-approved V286/V305 Familiar model.
+/* SHADOWREACH V309 · Familiar presentation authority
+   Keeps the approved flat-stat Familiar model while owning the final visual pass.
 
-   The late Familiar UI stack (V234/V240/V241...) can finish loading after the
-   static progression authorities. Those renderers still expose the retired
-   Apple/level model and calculate visible bonuses through petBonus(), which V286
-   intentionally neutralized to 0. The gameplay stats are correct; the screen can
-   therefore show 0% / 0%, Niv. 0 and an Apple resource that no longer exists.
+   The late Familiar UI stack (V234/V240/V241/V275...) can finish loading after
+   the static progression authorities. V309 therefore remains the final bounded
+   presentation wrapper and now gives the live Familiar screen one coherent,
+   premium layout without changing gameplay or replacing existing actions.
 
-   V309 changes presentation only:
-   - removes every live Apple control/counter from the Familiar screen;
-   - removes inert Familiar levels from the live UI;
+   Presentation responsibilities:
+   - removes every retired Apple control/counter and inert Familiar level;
    - displays the authoritative flat DGT/PV contribution from V305;
-   - tolerates the asynchronous Familiar renderer chain by re-wrapping only when
-     SCREENS.familiers ownership actually changes, including during a render.
+   - exposes the Familiar's existing elemental effect (including attack speed);
+   - keeps Collection, Eggs, Progression, summon, hatch, accelerator, fusion,
+     rates and equip actions intact while reorganising them visually;
+   - adapts the three-panel desktop composition to a natural mobile layout;
+   - tolerates the asynchronous Familiar renderer chain and reclaims final
+     presentation ownership only when SCREENS.familiers actually changes.
+
    No economy, save schema, owned Familiar, rarity, fusion or combat value changes. */
 (function(){'use strict';
 if(window.__srFamiliarFlatUIV309)return;
@@ -20,143 +23,31 @@ window.__srFamiliarFlatUIV309=true;
 
 var installs=0,lastOwner=null;
 
-function activePet(){
-  try{return (S.pets||[]).find(function(p){return p&&p.id===S.activePetId;})||null;}catch(_){return null;}
-}
-function flatStats(p){
-  if(!p)return {damage:0,hp:0};
-  try{
-    if(typeof window.__srV305PetStats==='function')return window.__srV305PetStats(p,S);
-    if(typeof window.__srV286PetStats==='function')return window.__srV286PetStats(p,S);
-  }catch(_){ }
-  return {damage:0,hp:0};
-}
-function compact(n){
-  n=Math.max(0,Math.round(Number(n)||0));
-  try{if(typeof fmt==='function')return fmt(n);}catch(_){ }
-  try{return new Intl.NumberFormat('fr-FR').format(n);}catch(_){return String(n);}
-}
-function rarityLabel(p){
-  try{return RARITY[p.rarity].label;}catch(_){return String((p&&p.rarity)||'');}
-}
-function petById(id){
-  try{return (S.pets||[]).find(function(p){return p&&p.id===id;})||null;}catch(_){return null;}
-}
-function starsLabel(){
-  var st=0;try{st=Math.max(0,Math.floor(Number(S.stars&&S.stars.pet)||0));}catch(_){ }
-  return st>0?' · '+st+'★':'';
-}
-function markStats(node,ps,mode){
-  if(!node)return;
-  node.setAttribute('data-fam-flat-damage',String(Math.round(ps.damage||0)));
-  node.setAttribute('data-fam-flat-hp',String(Math.round(ps.hp||0)));
-  if(mode==='compact'){
-    node.innerHTML='<b>'+ic('sword',9)+' +'+compact(ps.damage)+' DGT</b><i>'+ic('heart',9)+' +'+compact(ps.hp)+' PV</i>';
-  }else if(mode==='legacy'){
-    node.innerHTML='<b>'+ic('sword',12)+' +'+compact(ps.damage)+' DGT</b><b>'+ic('heart',12)+' +'+compact(ps.hp)+' PV</b>';
-  }else{
-    node.innerHTML='<b>'+ic('sword',11)+' +'+compact(ps.damage)+' DGT</b><b>'+ic('heart',11)+' +'+compact(ps.hp)+' PV</b>';
-  }
-}
-function rewriteLevelNode(node,p){
-  if(!node||!p)return;
-  node.textContent=rarityLabel(p)+starsLabel();
-}
-function modernize(html){
-  if(typeof html!=='string')return html;
-  var tpl=document.createElement('template');
-  try{tpl.innerHTML=html;}catch(_){return html;}
-  var root=tpl.content;
-
-  /* Retired Apple entry points: resource pills and upgrade actions. */
-  Array.prototype.slice.call(root.querySelectorAll('[data-arg="apples"],.fam240Res.apple,[data-act="upgradePet"]')).forEach(function(el){el.remove();});
-
-  /* Old fusion copy can survive in fallback renderers. */
-  Array.prototype.slice.call(root.querySelectorAll('.famDetailsBody,.mute,.tiny')).forEach(function(el){
-    if(/Pommes? investies/i.test(el.textContent||'')){
-      el.textContent='La progression des Familiers se fait par rareté, fusion et Ascension.';
-    }
-  });
-
-  var active=activePet(),ps=flatStats(active);
-  if(active){
-    /* Current V240/V241 owner. */
-    markStats(root.querySelector('.fam240HeroStats'),ps,'current');
-    rewriteLevelNode(root.querySelector('.fam240HeroInfo span'),active);
-
-    /* Earlier wrappers remain covered if the async chain partially loads. */
-    markStats(root.querySelector('.famActiveMini'),ps,'compact');
-    rewriteLevelNode(root.querySelector('.famActiveTxt i'),active);
-    markStats(root.querySelector('.famNsStats'),ps,'legacy');
-    Array.prototype.slice.call(root.querySelectorAll('.famNsHero .pill')).forEach(function(el){if(/^\s*Niv\./i.test(el.textContent||''))el.remove();});
-    var bonus=root.querySelector('.famBonusMain');
-    if(bonus){
-      bonus.setAttribute('data-fam-flat-damage',String(Math.round(ps.damage||0)));
-      bonus.setAttribute('data-fam-flat-hp',String(Math.round(ps.hp||0)));
-      bonus.innerHTML='<div class="famSubtle">BONUS FAMILIER</div><b>'+ic('sword',14)+' +'+compact(ps.damage)+' DGT</b><div class="tiny" style="color:var(--redLit);margin-top:3px">'+ic('heart',10)+' +'+compact(ps.hp)+' PV</div>';
-    }
-  }
-
-  /* Collection tiles must no longer advertise the inert legacy level. */
-  Array.prototype.slice.call(root.querySelectorAll('.fam240Pet,.famNsPet,.famTile')).forEach(function(tile){
-    var p=petById(tile.getAttribute('data-arg'));
-    if(!p)return;
-    var lv=tile.querySelector('small,.famTileLv');
-    if(lv)rewriteLevelNode(lv,p);
-  });
-  /* Very old comparison cards do not expose a stable pet id; remove their inert
-     level line instead of guessing which Familiar the card represents. */
-  Array.prototype.slice.call(root.querySelectorAll('.famComparePet')).forEach(function(card){
-    var lv=Array.prototype.slice.call(card.querySelectorAll('.tiny')).find(function(el){return /^\s*Niv\./i.test(el.textContent||'');});
-    if(lv)lv.remove();
-  });
-
-  return tpl.innerHTML;
-}
-
-function install(){
-  try{
-    if(typeof SCREENS==='undefined'||!SCREENS||typeof SCREENS.familiers!=='function')return false;
-    var current=SCREENS.familiers;
-    if(current.__srV309){lastOwner=current;return false;}
-    if(current===lastOwner)return false;
-    var base=current;
-    var wrapped=function(){
-      var html=modernize(base.apply(this,arguments));
-      /* Some legacy Familiar layers install their outer wrapper lazily while the
-         current screen function is executing. Reclaim authority synchronously so
-         the next render cannot fall back to the retired percentage/Apple UI. */
-      try{if(SCREENS.familiers!==wrapped)install();}catch(_){ }
-      return html;
-    };
-    wrapped.__srV309=true;
-    wrapped.__srPrevious=base;
-    SCREENS.familiers=wrapped;
-    lastOwner=wrapped;
-    installs++;
-    window.__srFamiliarFlatUIInstallCountV309=installs;
-    return true;
-  }catch(_){return false;}
-}
-
-/* The Familiar renderer chain is dynamically injected by V231 and can replace
-   SCREENS.familiers after this static file executes. Re-check a bounded set of
-   times; each pass is a no-op unless ownership changed. No MutationObserver. */
-[0,40,120,260,520,900,1500,2400,3600].forEach(function(ms){setTimeout(function(){
-  var changed=install();
-  try{if(changed&&route==='familiers'&&typeof scheduleRender==='function')scheduleRender();}catch(_){ }
-},ms);});
-try{window.addEventListener('load',install,{once:true});}catch(_){ }
-install();
-
-window.__srFamiliarFlatUIConfigV309={
-  applesVisible:false,
-  legacyLevelsVisible:false,
-  flatStatsVisible:true,
-  asyncRendererSafe:true,
-  renderTimeOwnerRecovery:true,
-  destructiveMigration:false,
-  economyRebalanced:false,
-  saveSchemaChanged:false
-};
+function activePet(){try{return (S.pets||[]).find(function(p){return p&&p.id===S.activePetId;})||null;}catch(_){return null;}}
+function flatStats(p){if(!p)return {damage:0,hp:0};try{if(typeof window.__srV305PetStats==='function')return window.__srV305PetStats(p,S);if(typeof window.__srV286PetStats==='function')return window.__srV286PetStats(p,S);}catch(_){ }return {damage:0,hp:0};}
+function compact(n){n=Math.max(0,Math.round(Number(n)||0));try{if(typeof fmt==='function')return fmt(n);}catch(_){ }try{return new Intl.NumberFormat('fr-FR').format(n);}catch(_){return String(n);}}
+function safeText(v){try{if(typeof esc==='function')return esc(String(v==null?'':v));}catch(_){ }return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+function rarityInfo(p){try{return RARITY[p.rarity]||{label:String((p&&p.rarity)||''),c:'#9fb0c8'};}catch(_){return {label:String((p&&p.rarity)||''),c:'#9fb0c8'};}}
+function rarityLabel(p){return rarityInfo(p).label;}
+function petById(id){try{return (S.pets||[]).find(function(p){return p&&p.id===id;})||null;}catch(_){return null;}}
+function starsLabel(){var st=0;try{st=Math.max(0,Math.floor(Number(S.stars&&S.stars.pet)||0));}catch(_){ }return st>0?' · '+st+'★':'';}
+function sortedPets(){try{return (S.pets||[]).slice().sort(function(a,b){var ar=typeof PET_RARITY_ORDER!=='undefined'?PET_RARITY_ORDER.indexOf(a.rarity):-1;var br=typeof PET_RARITY_ORDER!=='undefined'?PET_RARITY_ORDER.indexOf(b.rarity):-1;return br-ar;});}catch(_){return [];}}
+function markStats(node,ps,mode){if(!node)return;node.setAttribute('data-fam-flat-damage',String(Math.round(ps.damage||0)));node.setAttribute('data-fam-flat-hp',String(Math.round(ps.hp||0)));if(mode==='compact')node.innerHTML='<b>'+ic('sword',9)+' +'+compact(ps.damage)+' DGT</b><i>'+ic('heart',9)+' +'+compact(ps.hp)+' PV</i>';else if(mode==='legacy')node.innerHTML='<b>'+ic('sword',12)+' +'+compact(ps.damage)+' DGT</b><b>'+ic('heart',12)+' +'+compact(ps.hp)+' PV</b>';else node.innerHTML='<b>'+ic('sword',11)+' +'+compact(ps.damage)+' DGT</b><b>'+ic('heart',11)+' +'+compact(ps.hp)+' PV</b>';}
+function rewriteLevelNode(node,p){if(node&&p)node.textContent=rarityLabel(p)+starsLabel();}
+function elementInfo(p){try{return petElement(p)||{id:'normal',label:'Normal',c:'#9fb0c8',icon:'paw',desc:''};}catch(_){return {id:'normal',label:'Normal',c:'#9fb0c8',icon:'paw',desc:''};}}
+function elementIcon(el,size){try{return ic(el.icon||'paw',size||14);}catch(_){return '◆';}}
+function infoCard(p,ps){if(!p)return '<section class="famV325InfoCard empty"><b>Aucun familier équipé</b><span>Équipe un familier depuis ta collection.</span></section>';var r=rarityInfo(p),el=elementInfo(p),species='Familier';try{species=petSpecies(p).label||species;}catch(_){ }return '<section class="famV325InfoCard"><div class="famV325InfoHead"><div><small>FAMILIER ACTIF</small><b>'+safeText(species)+'</b></div><span style="--rc:'+r.c+'">'+safeText(r.label)+starsLabel()+'</span></div><div class="famV325StatGrid"><div><span>'+ic('sword',13)+' Dégâts</span><b>+'+compact(ps.damage)+' DGT</b></div><div><span>'+ic('heart',13)+' Santé</span><b>+'+compact(ps.hp)+' PV</b></div></div><div class="famV325Element" style="--ec:'+el.c+'"><i>'+elementIcon(el,17)+'</i><div><small>EFFET ÉLÉMENTAIRE · '+safeText(el.label)+'</small><b>'+safeText(el.desc||'Aucun effet supplémentaire')+'</b></div></div></section>';}
+function rosterMarkup(active){var pets=sortedPets();if(!pets.length)return '<div class="famV325RosterEmpty">Aucun familier.</div>';return pets.map(function(p){var r=rarityInfo(p),el=elementInfo(p),on=!!(active&&p.id===active.id),art='';try{art=petArt(p)||'';}catch(_){ }var species='Familier';try{species=petSpecies(p).label||species;}catch(_){ }return '<button class="famV325Pet '+(on?'active':'')+'" data-act="setPet" data-arg="'+safeText(p.id)+'" style="--rc:'+r.c+';--ec:'+el.c+'"><span class="famV325PetArt">'+(art?'<img src="'+safeText(art)+'" alt="">':'')+'</span><b>'+safeText(species)+'</b><small><i></i>'+safeText(r.label)+'</small></button>';}).join('');}
+function addCycleButtons(hero,active){if(!hero||!active)return;var pets=sortedPets();if(pets.length<2)return;var idx=pets.findIndex(function(p){return p.id===active.id;});if(idx<0)return;var prev=pets[(idx+pets.length-1)%pets.length],next=pets[(idx+1)%pets.length];[['prev',prev,'‹'],['next',next,'›']].forEach(function(x){var b=document.createElement('button');b.className='famV325Cycle '+x[0];b.setAttribute('data-act','setPet');b.setAttribute('data-arg',x[1].id);b.textContent=x[2];hero.appendChild(b);});}
+function decorateTabs(tabs){if(!tabs)return;var defs={collection:['paw','Infos'],eggs:['egg','Œufs'],progress:['sparkle','Progression']};Object.keys(defs).forEach(function(id){var btn=tabs.querySelector('[data-fam240-tab="'+id+'"]');if(btn)btn.innerHTML='<span>'+ic(defs[id][0],14)+'</span><b>'+defs[id][1]+'</b>';});}
+function applyPremiumLayout(content,active,ps){var shell=content.querySelector('.famScroll240');if(!shell||shell.classList.contains('famV325'))return;var hero=shell.querySelector('.fam240Hero'),hatch=shell.querySelector('.fam240Hatching'),tabs=shell.querySelector('.fam240Tabs'),body=shell.querySelector('.fam240Body');if(!hero||!tabs||!body)return;shell.classList.add('famV325');decorateTabs(tabs);if(active){var el=elementInfo(active),info=hero.querySelector('.fam240HeroInfo');if(info&&!info.querySelector('.famV325HeroElement')){var badge=document.createElement('span');badge.className='famV325HeroElement';badge.style.setProperty('--ec',el.c);badge.innerHTML=elementIcon(el,12)+' '+safeText(el.label);info.appendChild(badge);}addCycleButtons(hero,active);}var current=tabs.querySelector('.fam240Tab.on'),id=current&&current.getAttribute('data-fam240-tab');if(id==='collection'){var scroll=body.querySelector('.fam240Scroll'),grid=scroll&&scroll.querySelector('.fam240Grid');if(grid)grid.remove();if(scroll){var holder=document.createElement('div');holder.innerHTML=infoCard(active,ps);if(holder.firstElementChild)scroll.insertBefore(holder.firstElementChild,scroll.firstChild);}}var roster=document.createElement('aside');roster.className='famV325Roster';roster.innerHTML='<div class="famV325RosterHead"><div><small>COLLECTION</small><b>Mes familiers</b></div><span>'+sortedPets().length+'</span></div><div class="famV325RosterGrid">'+rosterMarkup(active)+'</div>';var center=document.createElement('section');center.className='famV325Center';center.appendChild(hero);if(hatch)center.appendChild(hatch);var right=document.createElement('aside');right.className='famV325Right';right.appendChild(tabs);right.appendChild(body);var layout=document.createElement('div');layout.className='famV325Layout';layout.appendChild(roster);layout.appendChild(center);layout.appendChild(right);while(shell.firstChild)shell.removeChild(shell.firstChild);shell.appendChild(layout);}
+function modernize(html){if(typeof html!=='string')return html;var tpl=document.createElement('template');try{tpl.innerHTML=html;}catch(_){return html;}var root=tpl.content;Array.prototype.slice.call(root.querySelectorAll('[data-arg="apples"],.fam240Res.apple,[data-act="upgradePet"]')).forEach(function(el){el.remove();});Array.prototype.slice.call(root.querySelectorAll('.famDetailsBody,.mute,.tiny')).forEach(function(el){if(/Pommes? investies/i.test(el.textContent||''))el.textContent='La progression des Familiers se fait par rareté, fusion et Ascension.';});var active=activePet(),ps=flatStats(active);if(active){markStats(root.querySelector('.fam240HeroStats'),ps,'current');rewriteLevelNode(root.querySelector('.fam240HeroInfo span'),active);markStats(root.querySelector('.famActiveMini'),ps,'compact');rewriteLevelNode(root.querySelector('.famActiveTxt i'),active);markStats(root.querySelector('.famNsStats'),ps,'legacy');Array.prototype.slice.call(root.querySelectorAll('.famNsHero .pill')).forEach(function(el){if(/^\s*Niv\./i.test(el.textContent||''))el.remove();});var bonus=root.querySelector('.famBonusMain');if(bonus){bonus.setAttribute('data-fam-flat-damage',String(Math.round(ps.damage||0)));bonus.setAttribute('data-fam-flat-hp',String(Math.round(ps.hp||0)));bonus.innerHTML='<div class="famSubtle">BONUS FAMILIER</div><b>'+ic('sword',14)+' +'+compact(ps.damage)+' DGT</b><div class="tiny" style="color:var(--redLit);margin-top:3px">'+ic('heart',10)+' +'+compact(ps.hp)+' PV</div>';}}Array.prototype.slice.call(root.querySelectorAll('.fam240Pet,.famNsPet,.famTile')).forEach(function(tile){var p=petById(tile.getAttribute('data-arg'));if(!p)return;var lv=tile.querySelector('small,.famTileLv');if(lv)rewriteLevelNode(lv,p);});Array.prototype.slice.call(root.querySelectorAll('.famComparePet')).forEach(function(card){var lv=Array.prototype.slice.call(card.querySelectorAll('.tiny')).find(function(el){return /^\s*Niv\./i.test(el.textContent||'');});if(lv)lv.remove();});applyPremiumLayout(root,active,ps);return tpl.innerHTML;}
+function installStyles(){if(document.getElementById('famPremiumVisualV325Style'))return;var st=document.createElement('style');st.id='famPremiumVisualV325Style';st.textContent=`
+#screen:has(.famV325){display:block!important;overflow-y:auto!important;background:radial-gradient(circle at 51% 21%,rgba(61,135,255,.17),transparent 31%),linear-gradient(155deg,#07101d,#091526 48%,#050a13)!important}.famV325{padding:8px 10px calc(82px + env(safe-area-inset-bottom,0px))!important;overflow:visible!important}.famV325Layout{height:calc(100dvh - 155px);min-height:520px;max-height:720px;display:grid;grid-template-columns:minmax(190px,240px) minmax(290px,1fr) minmax(290px,380px);gap:10px}.famV325Roster,.famV325Center,.famV325Right{min-width:0;min-height:0;border:1px solid rgba(79,132,200,.43);border-radius:15px;background:linear-gradient(180deg,rgba(14,27,47,.92),rgba(7,16,29,.94));box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 14px 32px rgba(0,0,0,.20);overflow:hidden}.famV325Roster{display:flex;flex-direction:column;padding:10px}.famV325RosterHead{display:flex;justify-content:space-between;padding:2px 2px 9px;border-bottom:1px solid rgba(98,145,204,.19)}.famV325RosterHead div{display:flex;flex-direction:column}.famV325RosterHead small{font-size:7px;font-weight:900;letter-spacing:1.25px;color:#7faee8}.famV325RosterHead b{font:900 13px var(--fd);color:#f5f8ff}.famV325RosterHead>span{padding:5px 8px;border-radius:999px;background:#111f35;border:1px solid #365b88;color:#9fc9ff;font-size:8px}.famV325RosterGrid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(96px,1fr);gap:7px;padding-top:9px}.famV325Pet{border:1px solid color-mix(in srgb,var(--rc) 56%,#26364d);border-radius:11px;background:linear-gradient(160deg,rgba(26,43,68,.92),rgba(8,17,31,.98));padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text)}.famV325Pet.active{border-color:#f2bd4f;box-shadow:0 0 0 1px rgba(242,189,79,.62),0 0 18px rgba(242,189,79,.18)}.famV325PetArt{width:58px;height:58px}.famV325PetArt img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 9px rgba(0,0,0,.35))}.famV325Pet>b{font:900 9px var(--fd)}.famV325Pet small{font-size:6.7px;color:#9eafc5}.famV325Pet small i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ec);margin-right:4px}.famV325Center{position:relative;display:flex;flex-direction:column;background:radial-gradient(circle at 50% 44%,rgba(39,123,232,.25),transparent 29%),linear-gradient(180deg,rgba(12,29,51,.84),rgba(5,14,26,.96))}.famV325 .fam240Hero{flex:1;min-height:0!important;border:0!important;background:transparent!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;padding:16px 42px 10px!important}.famV325 .fam240Hero>img{width:min(78%,310px)!important;height:min(45vh,320px)!important;object-fit:contain!important;filter:drop-shadow(0 18px 24px rgba(0,0,0,.48))}.famV325 .fam240HeroInfo{align-items:center!important;text-align:center}.famV325 .fam240HeroInfo>b{font:900 clamp(20px,2.4vw,30px) var(--fd)!important}.famV325HeroElement{display:inline-flex!important;gap:4px;margin-top:3px;padding:4px 8px;border-radius:999px;border:1px solid var(--ec);color:var(--ec)!important;font-size:7px!important}.famV325 .fam240HeroStats{display:flex!important;gap:7px!important}.famV325 .fam240HeroStats b{padding:7px 9px;border-radius:9px;background:rgba(5,14,26,.60);font-size:8px!important}.famV325Cycle{position:absolute;z-index:3;top:46%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:1px solid rgba(114,166,227,.45);background:rgba(7,17,31,.72);color:#dcecff;font-size:28px}.famV325Cycle.prev{left:10px}.famV325Cycle.next{right:10px}.famV325 .fam240Hatching{margin:0 10px 10px;padding:9px;border:1px solid rgba(84,137,201,.30);border-radius:11px;background:rgba(7,17,30,.72)}.famV325Right{display:flex;flex-direction:column;padding:10px}.famV325 .fam240Tabs{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:6px!important;margin-bottom:9px}.famV325 .fam240Tab{border:1px solid #2d4567!important;border-radius:10px!important;background:rgba(12,25,43,.94)!important;color:#91a8c4!important;padding:8px 5px!important}.famV325 .fam240Tab.on{border-color:#3da9ff!important;color:#eaf6ff!important;background:linear-gradient(180deg,#123b68,#0b2748)!important}.famV325 .fam240Body{flex:1;min-height:0!important;overflow:hidden!important}.famV325 .fam240Scroll{height:100%!important}.famV325InfoCard{margin:1px 0 9px;padding:10px;border:1px solid rgba(77,132,199,.36);border-radius:12px;background:linear-gradient(145deg,rgba(16,34,58,.94),rgba(8,19,34,.94))}.famV325InfoHead{display:flex;justify-content:space-between}.famV325InfoHead>div{display:flex;flex-direction:column}.famV325InfoHead small{font-size:6.5px;color:#6fa7e7}.famV325InfoHead>span{padding:4px 7px;border-radius:999px;border:1px solid var(--rc);color:var(--rc);font-size:7px}.famV325StatGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}.famV325StatGrid>div{padding:8px;border-radius:9px;background:rgba(6,15,28,.52);display:flex;flex-direction:column}.famV325StatGrid span{font-size:7px;color:#90a6c0}.famV325Element{display:grid;grid-template-columns:31px 1fr;gap:8px;align-items:center;margin-top:7px;padding:8px;border:1px solid var(--ec);border-radius:9px}.famV325Element>i{color:var(--ec)}.famV325Element>div{display:flex;flex-direction:column}.famV325Element small{font-size:6.5px;color:var(--ec)}.famV325Element b{font-size:8px}
+@media(max-width:900px){.famV325Layout{height:auto;min-height:0;max-height:none;display:flex;flex-direction:column}.famV325Center{order:1;min-height:330px}.famV325Roster{order:2;min-height:126px}.famV325Right{order:3;min-height:390px;overflow:visible}.famV325RosterGrid{display:grid;grid-auto-flow:column;grid-auto-columns:84px;grid-template-columns:none;grid-template-rows:96px;overflow-x:auto;overflow-y:hidden}.famV325 .fam240Body{overflow:visible!important}.famV325 .fam240Scroll{height:auto!important;overflow:visible!important}.famV325 .fam240Hero>img{height:190px!important}.famV325 .fam240Hatching{margin:0 8px 8px}}
+@media(max-width:520px){.famV325 .fam240Hero{padding:12px 36px 7px!important}.famV325 .fam240Hero>img{height:158px!important}.famV325Cycle{width:34px;height:34px}.famV325Roster,.famV325Right{padding:8px}}
+` ;document.head.appendChild(st);}
+function install(){try{installStyles();if(typeof SCREENS==='undefined'||!SCREENS||typeof SCREENS.familiers!=='function')return false;var current=SCREENS.familiers;if(current.__srV309){lastOwner=current;return false;}if(current===lastOwner)return false;var base=current;var wrapped=function(){var html=modernize(base.apply(this,arguments));try{if(SCREENS.familiers!==wrapped)install();}catch(_){ }return html;};wrapped.__srV309=true;wrapped.__srPrevious=base;SCREENS.familiers=wrapped;lastOwner=wrapped;installs++;window.__srFamiliarFlatUIInstallCountV309=installs;return true;}catch(_){return false;}}
+[0,40,120,260,520,900,1500,2400,3600].forEach(function(ms){setTimeout(function(){var changed=install();try{if(changed&&route==='familiers'&&typeof scheduleRender==='function')scheduleRender();}catch(_){ }},ms);});try{window.addEventListener('load',install,{once:true});}catch(_){ }install();
+window.__srFamiliarFlatUIConfigV309={applesVisible:false,legacyLevelsVisible:false,flatStatsVisible:true,elementEffectsVisible:true,premiumLayout:true,currentActionsPreserved:true,asyncRendererSafe:true,renderTimeOwnerRecovery:true,destructiveMigration:false,economyRebalanced:false,saveSchemaChanged:false};
 })();
