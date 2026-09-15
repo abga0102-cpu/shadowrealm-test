@@ -1,7 +1,8 @@
-/* Combat Animation V169
+/* Combat Animation V169 · V335 presentation refresh
    Consolidated locomotion + planted-foot articulated walk + weapon choreography.
-   Replaces V168 with continuous swing-foot rotation at lift-off and landing.
-   Visual-only: combat speed, range, damage, cooldowns, rewards, progression and saves untouched.
+   Adds canonical worn-equipment presentation, secondary hero motion and readable
+   combat poses without changing combat speed, range, damage, cooldowns, rewards,
+   progression or saves.
 */
 (function(){
   "use strict";
@@ -9,7 +10,7 @@
 
   const VISUAL_ATTACK=0.28;
   const baseDraw169=drawArena;
-  const heroState={init:false,lastLogical:0,travel:0,visual:0,dir:0,phase:0,moving:false};
+  const heroState={init:false,lastLogical:0,travel:0,visual:0,dir:0,phase:0,moving:false,deathAt:0,victoryAt:0};
   const enemyState=new Map();
   const PROFILES={
     hero:{upperBottom:40,splitTop:58,leftEnd:53,rightStart:47,step:0.040,lift:0.017},
@@ -114,6 +115,94 @@
     img.style.clipPath="inset(0 0 "+profile.upperBottom+"% 0)";img.style.position="relative";img.style.zIndex="2";
   }
 
+  /* ---- canonical worn-equipment visuals ---------------------------------
+     V1 used to replace the painted hero with a CSS mannequin. That bridge was
+     correctly retired. V335 keeps the real hero sprite visible and adds one
+     lightweight SVG overlay whose slot shapes are derived from S.equipped.
+     Weapon art remains owned by weaponHTML, so all eight worn slots are visible
+     without introducing a second equipment renderer or changing item data. */
+  function worn(slot){
+    try{return typeof S!=="undefined"&&S&&S.equipped?S.equipped[slot]||null:null;}catch(_){return null;}
+  }
+  function gearColor(it,fallback){
+    try{return it&&typeof RARITY!=="undefined"&&RARITY[it.rarity]&&RARITY[it.rarity].c?RARITY[it.rarity].c:fallback;}catch(_){return fallback;}
+  }
+  function gearRank(it){
+    try{return it&&typeof equipRank==="function"?Math.max(0,equipRank(it.rarity)):0;}catch(_){return 0;}
+  }
+  function gearClass(it){
+    const r=gearRank(it);
+    return "srGearPart169 "+(r>=7?"srGearDivine169":r>=5?"srGearEpic169":r>=3?"srGearRare169":"srGearBase169");
+  }
+  function gearStyle(it,fallback){return "--gear:"+gearColor(it,fallback)+";--gear-op:"+(0.68+Math.min(0.24,gearRank(it)*0.025)).toFixed(2);}
+  function gearGroup(slot,it,shape,fallback){
+    if(!it)return"";
+    return '<g data-slot="'+slot+'" class="'+gearClass(it)+'" style="'+gearStyle(it,fallback)+'">'+shape+'</g>';
+  }
+  function heroGearSVG(){
+    const helm=worn("casque"),armor=worn("armure"),gloves=worn("gants"),boots=worn("bottes"),belt=worn("ceinture"),neck=worn("collier"),ring=worn("anneau");
+    if(!helm&&!armor&&!gloves&&!boots&&!belt&&!neck&&!ring)return"";
+    const armorShape='<path class="srGearFill169" d="M31 31 L41 27 L50 31 L59 27 L69 31 L74 42 L69 62 L31 62 L26 42 Z"/><path class="srGearHi169" d="M36 34 L50 30 L64 34 L60 55 L50 59 L40 55 Z"/><path class="srGearEdge169" d="M50 31 L50 59 M31 39 L69 39"/>';
+    const helmShape='<path class="srGearFill169" d="M34 22 L35 11 L42 5 L50 2 L58 5 L65 11 L66 22 L60 29 L55 24 L45 24 L40 29 Z"/><path class="srGearHi169" d="M39 12 L50 6 L61 12 L59 17 L41 17 Z"/><path class="srGearEdge169" d="M50 6 L50 22 M39 18 L61 18"/>';
+    const gloveShape='<path class="srGearFill169" d="M20 51 L29 50 L32 59 L28 69 L20 67 L17 59 Z"/><path class="srGearFill169" d="M80 51 L71 50 L68 59 L72 69 L80 67 L83 59 Z"/><path class="srGearEdge169" d="M20 57 L30 57 M70 57 L80 57"/>';
+    const bootShape='<path class="srGearFill169" d="M32 77 L44 77 L45 90 L42 98 L27 98 L29 91 Z"/><path class="srGearFill169" d="M56 77 L68 77 L71 91 L73 98 L58 98 L55 90 Z"/><path class="srGearHi169" d="M33 81 L43 81 L42 88 L31 88 Z M57 81 L67 81 L69 88 L58 88 Z"/>';
+    const beltShape='<path class="srGearFill169" d="M30 58 L70 58 L69 65 L31 65 Z"/><rect class="srGearHi169" x="45" y="57" width="10" height="9" rx="2"/><rect class="srGearEdge169" x="47.5" y="59.5" width="5" height="4" rx="1"/>';
+    const neckShape='<path class="srGearEdge169" d="M41 31 Q50 45 59 31"/><path class="srGearFill169" d="M46 41 L50 36 L54 41 L50 47 Z"/>';
+    const ringShape='<circle class="srGearEdge169" cx="79" cy="62" r="3.2"/><circle class="srGearFill169" cx="79" cy="58.8" r="1.8"/>';
+    return '<div class="srHeroGear169" aria-hidden="true"><svg viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false">'+
+      gearGroup("armure",armor,armorShape,"#6f84a9")+
+      gearGroup("casque",helm,helmShape,"#6f84a9")+
+      gearGroup("gants",gloves,gloveShape,"#6f84a9")+
+      gearGroup("bottes",boots,bootShape,"#6f84a9")+
+      gearGroup("ceinture",belt,beltShape,"#d6aa4d")+
+      gearGroup("collier",neck,neckShape,"#58d9e7")+
+      gearGroup("anneau",ring,ringShape,"#58d9e7")+
+      '</svg></div>';
+  }
+  function applyHeroGear(hero,img,c){
+    if(!hero)return;
+    const markup=heroGearSVG();
+    if(markup){
+      const anchor=hero.querySelector(":scope > .srWeapon")||hero.querySelector(":scope > .hpMini");
+      if(anchor)anchor.insertAdjacentHTML("beforebegin",markup);else hero.insertAdjacentHTML("beforeend",markup);
+      const gear=hero.querySelector(":scope > .srHeroGear169");
+      if(gear){
+        let tf=img&&img.style&&img.style.transform?img.style.transform:"";
+        if(c&&c.heroHit>0)tf+=(tf?" ":"")+"translateX(-1.5px)";
+        gear.style.transform=tf||"none";
+      }
+    }
+    const slots=[];
+    ["arme","casque","armure","gants","bottes","collier","anneau","ceinture"].forEach(function(slot){if(worn(slot))slots.push(slot);});
+    if(slots.length)hero.setAttribute("data-equipped-slots",slots.join(","));else hero.removeAttribute("data-equipped-slots");
+  }
+  function applyHeroPresentationState(hero,img,c){
+    if(!hero||!c)return;
+    const now=typeof performance!=="undefined"&&performance.now?performance.now():Date.now();
+    const lost=Number(c.heroHP||0)<=0||c.status==="lost";
+    const victory=!lost&&c.status!=="fight"&&!(c.pending>0)&&!c.enemies.some(function(e){return e&&e.alive;});
+    const casting=!lost&&Array.isArray(c.skillFxs)&&c.skillFxs.length>0;
+    hero.classList.toggle("srHeroHit169",Number(c.heroHit||0)>0);
+    hero.classList.toggle("srHeroCasting169",casting);
+    hero.classList.toggle("srHeroLost169",lost);
+    hero.classList.toggle("srHeroVictory169",victory);
+    if(lost){
+      if(!heroState.deathAt)heroState.deathAt=now;
+      const p=smooth01((now-heroState.deathAt)/430);
+      hero.style.transform="translate("+(-4*p).toFixed(2)+"px,"+(8*p).toFixed(2)+"px) rotate("+(-74*p).toFixed(1)+"deg) scale("+(1-p*0.06).toFixed(3)+")";
+      if(img)img.style.filter="grayscale("+(p*0.55).toFixed(2)+") brightness("+(1-p*0.28).toFixed(2)+")";
+    }else{
+      heroState.deathAt=0;
+      if(img)img.style.filter="";
+    }
+    if(victory){
+      if(!heroState.victoryAt)heroState.victoryAt=now;
+      const q=(now-heroState.victoryAt)/1000;
+      const lift=Math.sin(Math.min(1,q)*Math.PI)*2.2+Math.sin(q*5.2)*0.45;
+      hero.style.transform="translateY("+(-Math.max(0,lift)).toFixed(2)+"px) scale(1.025)";
+    }else heroState.victoryAt=0;
+  }
+
   weaponHTML=function(weapon,color,attacking,t,size){
     const art=ASSETS["weapon_"+weapon];
     const left=attacking&&typeof combat!=="undefined"&&combat?Number(combat.heroAttacking||0):0;
@@ -138,7 +227,7 @@
         rot=hand.rot+(q<0.43?-extra*(1-q/0.43):extra*strike*0.16);tx=strike*size*0.022;
       }
     }else rot=hand.rot*(ranged?0.45:1)+walkSway;
-    return '<div class="srWeapon" style="position:absolute;z-index:6;left:'+(hand.x*size-w/2+tx).toFixed(1)+'px;top:'+(hand.y*size-h+ty).toFixed(1)+'px;width:'+w.toFixed(1)+'px;height:'+h.toFixed(1)+'px;transform-origin:50% 100%;transform:rotate('+rot.toFixed(1)+'deg) scale('+sx.toFixed(3)+','+sy.toFixed(3)+')"><img src="'+art+'" style="width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 0 5px '+color+'99)"></div>';
+    return '<div class="srWeapon" data-weapon="'+weapon+'" style="position:absolute;z-index:6;left:'+(hand.x*size-w/2+tx).toFixed(1)+'px;top:'+(hand.y*size-h+ty).toFixed(1)+'px;width:'+w.toFixed(1)+'px;height:'+h.toFixed(1)+'px;transform-origin:50% 100%;transform:rotate('+rot.toFixed(1)+'deg) scale('+sx.toFixed(3)+','+sy.toFixed(3)+')"><img src="'+art+'" style="width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 0 5px '+color+'99)"></div>';
   };
 
   if(typeof slashHTML==="function")slashHTML=function(attacking,size){
@@ -166,7 +255,7 @@
         ui=1;
         const img=hero.querySelector(":scope > img"),size=parseFloat(hero.style.width)||64;
         const logical=Number(c.heroX||0),strideWorld=Math.max(5.8,size*0.155)/Math.max(0.01,scale);
-        const active=!(c.heroAttacking>0)&&!(c.heroHit>0)&&!(c.heroStun>0);
+        const active=!(c.heroAttacking>0)&&!(c.heroHit>0)&&!(c.heroStun>0)&&Number(c.heroHP||0)>0;
         const gait=gaitPhase(heroState,logical,strideWorld,Math.max(18,strideWorld*2.5),active);
         hero.style.left=(gait.x*scale-size/2).toFixed(2)+"px";
         if(img&&active&&gait.moving){
@@ -185,6 +274,8 @@
           }else{const cast=Math.sin(Math.min(1,p/0.82)*Math.PI);lean=-2+cast*3.2;y=-cast*1.8;sy=1+cast*0.012;}
           img.style.transform="translateY("+y.toFixed(2)+"px) rotate("+lean.toFixed(2)+"deg) scale("+sx.toFixed(3)+","+sy.toFixed(3)+")";
         }
+        applyHeroPresentationState(hero,img,c);
+        applyHeroGear(hero,img,c);
         const weapon=hero.querySelector(":scope > .srWeapon");if(weapon)weapon.style.zIndex="6";
         const hp=hero.querySelector(":scope > .hpMini");if(hp)hp.style.zIndex="8";
       }
@@ -217,10 +308,23 @@
     ".unit,.unit>img,.ushadow{transition:none!important}",
     ".unit>img{transform-origin:50% 92%;will-change:transform}",
     ".srWeapon{z-index:6!important}",
+    ".srHeroGear169{position:absolute;inset:0;z-index:5;pointer-events:none;transform-origin:50% 92%;will-change:transform;isolation:isolate}",
+    ".srHeroGear169>svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 1px 1px #02081799)}",
+    ".srGearPart169{opacity:var(--gear-op,.72);filter:drop-shadow(0 0 .8px var(--gear))}",
+    ".srGearFill169{fill:var(--gear);stroke:#09111f;stroke-width:1.8;stroke-linejoin:round}",
+    ".srGearHi169{fill:#fff;fill-opacity:.20;stroke:#fff;stroke-opacity:.18;stroke-width:.7}",
+    ".srGearEdge169{fill:none;stroke:#f6df9b;stroke-width:1.25;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:.86}",
+    ".srGearRare169{filter:drop-shadow(0 0 1.4px var(--gear))}",
+    ".srGearEpic169{filter:drop-shadow(0 0 2.1px var(--gear)) drop-shadow(0 0 .8px #fff8)}",
+    ".srGearDivine169{filter:drop-shadow(0 0 3px var(--gear)) drop-shadow(0 0 1.2px #fff)}",
+    ".srHeroCasting169>.srHeroGear169{filter:brightness(1.08) saturate(1.12)}",
+    ".srHeroHit169>.srHeroGear169{filter:brightness(1.18)}",
+    ".srHeroLost169>.srHeroGear169{opacity:.72;filter:saturate(.7) brightness(.78)}",
+    ".srHeroVictory169>.srHeroGear169{filter:brightness(1.13) saturate(1.12)}",
     ".srWalkPseudo169::before,.srWalkPseudo169::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background-image:var(--sr-sprite);background-size:contain;background-position:center;background-repeat:no-repeat;transform-origin:50% 92%;will-change:transform}",
     ".srWalkPseudo169::before{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
     ".srWalkPseudo169::after{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
-    "@media (prefers-reduced-motion:reduce){.unit>img,.srWalkPseudo169::before,.srWalkPseudo169::after{will-change:auto}}"
+    "@media (prefers-reduced-motion:reduce){.unit>img,.srHeroGear169,.srWalkPseudo169::before,.srWalkPseudo169::after{will-change:auto}}"
   ].join("\n");
   document.head.appendChild(style);
 })();
