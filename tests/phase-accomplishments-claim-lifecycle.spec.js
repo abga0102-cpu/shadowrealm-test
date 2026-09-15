@@ -38,6 +38,7 @@ test.describe('Accomplishments claim lifecycle', () => {
       ACT.accomplishments();
     });
 
+    await page.locator('.srAch139 [data-ach-tab="defis"]').click();
     await page.locator('.srAch139 [data-ach="forge15"]').click();
 
     const state = await page.evaluate(() => ({
