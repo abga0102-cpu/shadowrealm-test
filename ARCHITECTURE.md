@@ -19,6 +19,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Campaign combat progression | `combat-progression-authority-v285.js` | Current enemy/boss HP progression authority. |
 | Raid Évolution PE reward | `raid-pe-authority-v290.js` | Sole canonical Evolution raid PE reward owner: 100 PE at level 1, then +3 PE per raid level. Historical Tree auditing now lives in `personal-tree-radial-v82.js` and must remain observational; retired `tree-safety-v83.js` must not regain `raidReward` ownership. |
 | Save import | `import-save-guard-v207.js` | Sole authoritative `ACT.importSave` owner. |
+| Save persistence / local recovery | `save-safety-v340.js` | Canonical owner for rotating local save snapshots, explicit backup restore, recovery candidate scanning/export, and the V341 recovery-center UI/API. Recovery is user-triggered only and snapshots the active save before candidate replacement. The short-lived sibling `save-recovery-v341.js` is retired; import validation remains owned separately by `import-save-guard-v207.js`. |
 | Forge item base power | `progression-overhaul-v283.js` | Current fixed-base equipment generation authority. |
 | Forge Divine pre-Ascension lock | `game-balance-v224.js` | Retains the Divine rarity gate only; not current base-power owner. |
 | Forge auto-batch unlock gating | `forge-auto-batch-gate-v266.js` | Canonical loaded owner for allowed batch choices, persisted selection sanitization, action gating and picker lock state. Historical V254/V258/V260/V261 gate sources are retired. |
@@ -58,6 +59,7 @@ New version-suffixed patch files such as `*-v123.js` are prohibited by default. 
 
 The following files may remain in source history, but must not regain active ownership. Where listed as unloaded, they should not be requested by either static script tags or the deferred loader in `index.html`.
 
+- `save-recovery-v341.js` — short-lived duplicate recovery layer absorbed into canonical `save-safety-v340.js`; retired from runtime and source. The V341 compatibility API is published by the canonical owner.
 - `social-forge-layout-v1.js` — dormant Home duplicate bundle; retired from runtime and source.
 - `premium-recommendation-cleanup-v243.js` — recommendation visual override absorbed into `premium-ui-v209.js`; retired from runtime and source.
 - `bottom-nav-v53.js` — fantasy BottomNav decoration absorbed into canonical `bottom-nav-layout-v183.js`; retired from runtime and source.
