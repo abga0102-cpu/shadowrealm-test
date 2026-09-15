@@ -21,9 +21,10 @@
   window.__srStageGoldBalanceConfigV338={baseGoldMultiplier:MUL,baseGoldIncreasePct:10};
 })();
 
-/* V339 · One-time campaign gold compensation per save.
-   Uses each save's validated recordFloor and compensates the +10% base-gold
-   difference for the standard enemies on fully completed floors only. */
+/* V339/V340 · One-time campaign gold compensation per save.
+   V340 startup safety: compensation is never allowed to mutate/save the live
+   state until the full page load has completed, which guarantees that the
+   canonical game-5 boot() has already loaded the persisted save. */
 (function(){
   'use strict';
   if(window.__srStageGoldCompensationV339)return;
@@ -86,7 +87,7 @@
 
   function applyWhenReady(attempt){
     try{
-      if(typeof S==='undefined'||!S||typeof update!=='function'||typeof saveNow!=='function'||typeof enemyCount!=='function'||typeof campaignWaveCount!=='function'){
+      if(document.readyState!=='complete'||typeof S==='undefined'||!S||typeof update!=='function'||typeof saveNow!=='function'||typeof enemyCount!=='function'||typeof campaignWaveCount!=='function'){
         if(attempt<60)setTimeout(function(){applyWhenReady(attempt+1);},100);
         return;
       }
@@ -104,6 +105,12 @@
     }
   }
 
+  function startAfterBoot(){
+    setTimeout(function(){applyWhenReady(0);},0);
+  }
+
   window.__srStageGoldCompensationCalcV339=compensationFor;
-  setTimeout(function(){applyWhenReady(0);},0);
+  window.__srStageGoldCompensationStartupSafeV340=true;
+  if(document.readyState==='complete')startAfterBoot();
+  else window.addEventListener('load',startAfterBoot,{once:true});
 })();
