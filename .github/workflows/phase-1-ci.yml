@@ -1,0 +1,99 @@
+name: Phase 1 regression guard
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: phase-1-regression-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: Static game regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout PR baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: .phase1-base
+
+      - name: Checkout previous main revision
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.before }}
+          path: .phase1-base
+
+      - name: Set up Node for test tooling only
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Resolve merged PR architecture context
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr_number="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq ".[] | select(.merged_at != null and .merge_commit_sha == \"${GITHUB_SHA}\") | .number" | sed -n '1p')"
+          if [ -n "$pr_number" ]; then
+            echo "ARCH_MERGED_VIA_PR=1" >> "$GITHUB_ENV"
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" --jq '.body // ""' > .phase1-associated-pr-body.txt
+          else
+            echo "ARCH_MERGED_VIA_PR=0" >> "$GITHUB_ENV"
+            : > .phase1-associated-pr-body.txt
+          fi
+
+      - name: Enforce architecture-first file placement
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        env:
+          CHANGE_EVENT: ${{ github.event_name }}
+          PR_BODY: ${{ github.event_name == 'pull_request' && github.event.pull_request.body || '' }}
+          PR_BODY_FILE: ${{ github.event_name == 'push' && '.phase1-associated-pr-body.txt' || '' }}
+        run: node tests/architecture-file-placement-guard.js .phase1-base .
+
+      - name: Install development test tooling
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Enforce moving legacy smoke ratchet
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        run: node tests/smoke-ratchet.js .phase1-base .
+
+      - name: Run static localhost regression tests after ratchet
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        env:
+          PHASE1_SMOKE_RATCHET_DONE: '1'
+        run: npm run test:e2e
+
+      - name: Run standalone static localhost regression tests
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.before == '0000000000000000000000000000000000000000')
+        run: npm run test:e2e
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-1-playwright-diagnostics
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
