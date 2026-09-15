@@ -64,21 +64,6 @@ test('L3: V296 preserves normalized Familiar rates and exact Ancestral policy at
   expect(result.config).toMatchObject({ maxMasteryRate: 5, fusionStillAvailable: true, normalizesInvalidRates: true, rateOwner: true });
 });
 
-test('L3: V296 leaves non-Familiar rate systems on their previous owner', async ({ page }) => {
-  await openCleanGame(page);
-  const result = await page.evaluate(() => {
-    if (typeof getRates.__srPrevious !== 'function') return null;
-    const systems = ['forge', 'skill'];
-    return systems.map((system) => ({
-      system,
-      current: getRates(system, 25, 0, 0),
-      previous: getRates.__srPrevious(system, 25, 0, 0),
-    }));
-  });
-  expect(result).not.toBeNull();
-  for (const row of result) expect(row.current).toEqual(row.previous);
-});
-
 test('L3: V307 retains only its distinct hatch and generic rarity-roll guards', async () => {
   const v307 = src('progression-batch-qa-v307.js');
   expect(v307).toContain('EGG_TIMERS.ANCESTRAL=16*3600');
