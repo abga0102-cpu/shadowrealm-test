@@ -6,8 +6,7 @@
    - Prevents any unknown/invalid egg timer from writing NaN into a save.
    - Hardens rarity rolls against non-finite legacy/authority values without
      changing valid distributions.
-   - Keeps the approved Familiar rule: Ancestral = 0% before max mastery and
-     exactly 5% at max mastery.
+   - Keeps Familiar summon-rate policy owned by V296.
    - Makes the Tree total-PE diagnostic ignore deprecated legacy key nodes.
    - Exposes a compact runtime progression audit for future QA.
 */
@@ -42,42 +41,9 @@ try{
   }
 }catch(_){ }
 
-/* ---------- Rarity integrity ---------- */
-function finiteRate(v){v=Number(v);return isFinite(v)&&v>0?v:0;}
-function normalizeTable(src,order){
-  var out={},sum=0;
-  (order||[]).forEach(function(r){var v=finiteRate(src&&src[r]);out[r]=v;sum+=v;});
-  if(sum<=0){if(order&&order.length)out[order[0]]=100;return out;}
-  (order||[]).forEach(function(r){out[r]=out[r]/sum*100;});
-  return out;
-}
-try{
-  if(typeof getRates==='function'&&!getRates.__srV307){
-    var oldGetRates=getRates;
-    getRates=function(system,mastery,ascension,stars){
-      var out=oldGetRates.apply(this,arguments);
-      if(system!=='pet'||!out)return out;
-      var order=(typeof PET_RARITY_ORDER!=='undefined'&&Array.isArray(PET_RARITY_ORDER))?PET_RARITY_ORDER.slice():Object.keys(out);
-      var clean=normalizeTable(out,order);
-      var max=50;try{if(typeof masteryMax==='function')max=Math.max(0,Number(masteryMax('pet'))||50);}catch(_){ }
-      var target=Math.max(0,Number(mastery)||0)>=max?5:0;
-      var current=finiteRate(clean.ANCESTRAL);
-      if(Math.abs(current-target)>1e-9){
-        var others=order.filter(function(r){return r!=='ANCESTRAL';});
-        var otherSum=others.reduce(function(n,r){return n+finiteRate(clean[r]);},0);
-        var available=Math.max(0,100-target);
-        if(otherSum>0)others.forEach(function(r){clean[r]=finiteRate(clean[r])/otherSum*available;});
-        else if(others.length)clean[others[0]]=available;
-        clean.ANCESTRAL=target;
-      }
-      return clean;
-    };
-    getRates.__srV307=true;getRates.__srPrevious=oldGetRates;
-  }
-}catch(_){ }
-
-/* Valid tables use the old roll exactly. The fallback path is used only if an
-   authority/legacy table contains NaN, Infinity, negatives or a zero total. */
+/* ---------- Rarity integrity ----------
+   Familiar getRates() normalization and the max-mastery Ancestral policy live
+   in V296. V307 only guards the generic rarity roll fallback. */
 try{
   if(typeof rollRarity==='function'&&!rollRarity.__srV307){
     var oldRollRarity=rollRarity;
@@ -152,6 +118,7 @@ window.__srProgressionBatchQAConfigV307={
   ancestralHatchHours:16,
   ancestralDirectRateAtMax:5,
   invalidRarityGuard:true,
+  familiarRateOwner:'V296',
   deprecatedTreeKeysExcludedFromTotals:true,
   destructiveMigration:false,
   economyRebalanced:false,
