@@ -1,41 +1,64 @@
-/* SHADOWREACH V333 · Facile 4-15 Dragon balance
-   Targeted correction for Facile chapter 4 stage 15 (internal floor 75).
-   Keeps the Dragon as a meaningful boss while removing the local difficulty spike.
-   Later Dragon encounters and every other boss remain unchanged. */
+/* SHADOWREACH V334 · Facile 4-15 + late-Easy progression balance
+   - Keeps the targeted Dragon correction on Facile 4-15 (internal floor 75).
+   - Smooths the remaining Facile campaign from 4-16 through 5-20 (floors 76..100).
+   - Fixes the late-Easy spike where damage accelerated much faster than HP.
+   - Difficile and later difficulties remain unchanged. */
 (function(){
   'use strict';
-  if(window.__srEasyDragonBalanceV333)return;
-  window.__srEasyDragonBalanceV333=true;
+  if(window.__srEasyDragonBalanceV334)return;
+  window.__srEasyDragonBalanceV334=true;
 
   var TARGET_FLOOR=75;
+  var LATE_EASY_START=76;
+  var LATE_EASY_END=100;
   var HP_MUL=0.76;
   var BASE_DMG_MUL=0.88;
 
   function isTargetCombat(c){
     return !!(c&&c.ctx==='campaign'&&Number(c.floor)===TARGET_FLOOR);
   }
+  function clamp01(v){return Math.max(0,Math.min(1,Number(v)||0));}
+  function lerp(a,b,t){return a+(b-a)*clamp01(t);}
+  function lateEasyT(floor){return clamp01((Number(floor)-LATE_EASY_START)/(LATE_EASY_END-LATE_EASY_START));}
+  function lateEasyHpMul(floor,isBoss){
+    var t=lateEasyT(floor);
+    return isBoss?lerp(0.70,0.35,t):lerp(0.90,0.52,t);
+  }
+  function lateEasyDamageMul(floor){return lerp(0.98,0.30,lateEasyT(floor));}
 
-  /* Final spawn correction: V288 owns boss HP, so apply this after the final
-     campaign boss authority rather than changing the global curve. */
+  /* Final spawn correction. V288 owns boss HP and V289 owns campaign enemy
+     pressure, so this wrapper runs after both and only adjusts the final enemy. */
   try{
-    if(typeof makeEnemy==='function'&&!makeEnemy.__srEasyDragonBalanceV333){
+    if(typeof makeEnemy==='function'&&!makeEnemy.__srEasyBalanceV334){
       var previousMakeEnemy=makeEnemy;
       makeEnemy=function(mode,opts){
         var enemy=previousMakeEnemy(mode,opts);
-        if(mode==='campaign'&&opts&&opts.boss&&Number(opts.floor)===TARGET_FLOOR&&enemy){
+        if(mode!=='campaign'||!opts||!enemy)return enemy;
+        var floor=Number(opts.floor)||0;
+
+        if(opts.boss&&floor===TARGET_FLOOR){
           enemy.maxHP=Math.max(1,Math.floor(Number(enemy.maxHP||enemy.hp||1)*HP_MUL));
           enemy.hp=enemy.maxHP;
           enemy.dmg=Math.max(1,Math.floor(Number(enemy.dmg||1)*BASE_DMG_MUL));
-          enemy.__srEasyDragonV333=true;
+          enemy.__srEasyDragonV334=true;
+          return enemy;
+        }
+
+        if(floor>=LATE_EASY_START&&floor<=LATE_EASY_END){
+          var hpMul=lateEasyHpMul(floor,!!opts.boss);
+          var dmgMul=lateEasyDamageMul(floor);
+          enemy.maxHP=Math.max(1,Math.floor(Number(enemy.maxHP||enemy.hp||1)*hpMul));
+          enemy.hp=Math.min(enemy.maxHP,Math.max(1,Math.floor(Number(enemy.hp||enemy.maxHP||1)*hpMul)));
+          enemy.dmg=Math.max(1,Math.floor(Number(enemy.dmg||1)*dmgMul));
+          enemy.__srLateEasyBalanceV334={hpMul:hpMul,dmgMul:dmgMul};
         }
         return enemy;
       };
-      makeEnemy.__srEasyDragonBalanceV333=true;
+      makeEnemy.__srEasyBalanceV334=true;
     }
   }catch(_){ }
 
-  /* The ability object is mutable even though its binding is const. Patch only
-     the floor-75 execution path; all other Dragon appearances use the originals. */
+  /* Dragon mechanics remain softened only on 4-15. */
   try{
     if(typeof BOSS_ABIL!=='undefined'&&BOSS_ABIL){
       if(BOSS_ABIL.souffle&&typeof BOSS_ABIL.souffle.tick==='function'){
@@ -95,9 +118,10 @@
     }
   }catch(_){ }
 
-  window.__srEasyDragonBalanceConfigV333={
-    floor:TARGET_FLOOR,stage:'Facile 4-15',hpMul:HP_MUL,baseDamageMul:BASE_DMG_MUL,
-    breathMaxHpPct:33,breathCooldown:18,flightSeconds:3,flightCooldown:22,
-    meleeDamageDuringFlightPct:40,intimidationPct:20,intimidationSeconds:6,intimidationCooldown:20
+  window.__srEasyDragonBalanceConfigV334={
+    dragonFloor:TARGET_FLOOR,dragonStage:'Facile 4-15',dragonHpMul:HP_MUL,dragonBaseDamageMul:BASE_DMG_MUL,
+    dragonBreathMaxHpPct:33,dragonBreathCooldown:18,dragonFlightSeconds:3,dragonFlightCooldown:22,
+    dragonMeleeDamageDuringFlightPct:40,dragonIntimidationPct:20,dragonIntimidationSeconds:6,dragonIntimidationCooldown:20,
+    lateEasy:{startFloor:LATE_EASY_START,endFloor:LATE_EASY_END,normalHpMulStart:0.90,normalHpMulEnd:0.52,bossHpMulStart:0.70,bossHpMulEnd:0.35,damageMulStart:0.98,damageMulEnd:0.30}
   };
 })();
