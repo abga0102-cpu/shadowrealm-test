@@ -4,6 +4,19 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const src = (name) => fs.readFileSync(path.join(ROOT, name), 'utf8');
 
+async function openCleanGame(page) {
+  await page.route('**/npm/**', (route) => route.abort());
+  await page.addInitScript(() => {
+    try {
+      localStorage.removeItem('shadowreach.save.local');
+      localStorage.removeItem('shadowreach.social.v1.messages');
+    } catch (_) {}
+  });
+  await page.goto('/index.html?smoke=1');
+  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
+  await page.waitForFunction(() => window.__srProgressionBatchQAV307 === true);
+}
+
 test('L3: V296 is the single durable Familiar getRates policy owner', async () => {
   const v296 = src('familiar-ancestral-rate-v296.js');
   const v307 = src('progression-batch-qa-v307.js');
@@ -14,6 +27,37 @@ test('L3: V296 is the single durable Familiar getRates policy owner', async () =
   expect(v307).not.toContain("getRates=function(system,mastery,ascension,stars)");
   expect(v307).not.toContain('function normalizeTable(src,order)');
   expect(v307).toContain("familiarRateOwner:'V296'");
+});
+
+test('L3: V296 preserves normalized Familiar rates and exact Ancestral policy at runtime', async ({ page }) => {
+  await openCleanGame(page);
+  const result = await page.evaluate(() => {
+    const max = typeof masteryMax === 'function' ? masteryMax('pet') : 50;
+    const before = getRates('pet', Math.max(0, max - 1), 0, 0);
+    const atMax = getRates('pet', max, 0, 0);
+    const sum = (table) => Object.keys(table || {}).reduce((n, k) => n + (Number(table[k]) || 0), 0);
+    const valid = (table) => Object.keys(table || {}).every((k) => Number.isFinite(Number(table[k])) && Number(table[k]) >= 0);
+    return {
+      max,
+      beforeAncestral: Number(before.ANCESTRAL),
+      atMaxAncestral: Number(atMax.ANCESTRAL),
+      beforeSum: sum(before),
+      atMaxSum: sum(atMax),
+      beforeValid: valid(before),
+      atMaxValid: valid(atMax),
+      audit: window.__srProgressionAuditV307,
+      config: window.__srFamiliarAncestralRateConfigV296,
+    };
+  });
+  expect(result.beforeAncestral).toBe(0);
+  expect(result.atMaxAncestral).toBeCloseTo(5, 8);
+  expect(result.beforeSum).toBeCloseTo(100, 8);
+  expect(result.atMaxSum).toBeCloseTo(100, 8);
+  expect(result.beforeValid).toBe(true);
+  expect(result.atMaxValid).toBe(true);
+  expect(result.audit.ancestralRateBeforeMax).toBe(0);
+  expect(result.audit.ancestralRateAtMax).toBeCloseTo(5, 8);
+  expect(result.config).toMatchObject({ maxMasteryRate: 5, fusionStillAvailable: true, normalizesInvalidRates: true, rateOwner: true });
 });
 
 test('L3: V307 retains only its distinct hatch and generic rarity-roll guards', async () => {
