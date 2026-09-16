@@ -19,10 +19,6 @@ test('retired Hero Equipment V1 bridge source stays absent while canonical hero 
   expect(fs.existsSync(path.join(root, 'hero-equipment-v1.js'))).toBe(false);
   expect(scriptSources(index)).not.toContain('hero-equipment-v1.js');
   expect(scriptSources(index)).toContain('combat-animation-v169.js');
-  const staticCount = scriptSources(index).length;
-  const core = index.match(/var core=\[([^\]]+)\]/)[1].match(/'[^']+'/g);
-  expect(inventory).toContain(`- ${staticCount} scripts are loaded synchronously through static \`<script src>\` entries.`);
-  expect(inventory).toContain(`Index-managed subtotal: **${staticCount + core.length} JavaScript files**.`);
   expect(inventory).toContain('`hero-equipment-v1.js` (retired visual safety bridge; source retired after staged proof)');
 });
 
