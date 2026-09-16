@@ -1,7 +1,8 @@
 /* SHADOWREACH · Accomplishments canonical mobile UI v139 · Progression Pass
    Campaign milestones follow the 800-stage structure with five 20-stage chapters
    per difficulty; Boss milestones require the actual Boss clear.
-   V326: Arena-facing Pass Progression with Étages / Défis and a visible Premium lane. */
+   V326: Arena-facing Pass Progression with Étages / Défis and a visible Premium lane.
+   V343: same-modal tab refresh stays inside the canonical Accomplishments owner. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsCanonicalV139)return;
@@ -98,8 +99,18 @@ function floorsView(){var list=ITEMS.Etages,done=catDone('Etages');return '<div 
 function challengesView(){var cats=['Forge','Fusions','Raids'];return cats.map(function(cat){return '<div><div class="achCatTitle">'+cat+' <span class="achCategorySummary">'+catDone(cat)+' / '+ITEMS[cat].length+'</span></div>'+laneHead()+ITEMS[cat].map(function(x){return row(cat,x);}).join('')+'</div>';}).join('')+titleSection();}
 function titleSection(){ensureTitles();var unlocked=divineUnlocked(),eq=S.equippedTitle==='divin';return '<div data-ach-titles-v134="1"><div class="achCatTitle">Titres <span class="achCategorySummary">'+(unlocked?'1 / 1':'0 / 1')+'</span></div><div class="achPassRow" style="grid-template-columns:1fr minmax(110px,.8fr)"><div class="achObjective"><b style="color:#f0c761">Divin</b><small>Sacrifier un Divin · '+(unlocked?'1 / 1':'0 / 1')+'</small></div><div class="achReward" style="border-left:1px solid #29394f">'+(unlocked?'<button class="btn sm '+(eq?'dark':'')+'" data-ach-title="divin" data-primary="'+(eq?'false':'true')+'">'+(eq?'Équipé':'Équiper')+'</button>':'<span class="achState locked">Verrouillé</span>')+'</div></div></div>';}
 function hero(){var p=allProgress(),pct=Math.max(0,Math.min(100,Math.round(p.done/Math.max(1,p.total)*100))),premium=premiumOwned();return '<div class="achPassHero" data-ach-overview-v135="1"><div class="achPassTop"><div><div class="achPassKicker">PROGRESSION</div><div class="achPassTitle">Pass Progression</div><div class="achPassSub">Progresse dans les étages et complète des défis pour récupérer tes récompenses.</div></div><button type="button" class="achPassPrice" data-ach-premium-info="1">'+(premium?'Premium actif':'Premium · 9,99 €')+'<small>'+(premium?'Bonus débloqués':'Récompenses bonus')+'</small></button></div><div class="achPassMeter"><i style="width:'+pct+'%"></i></div><div class="achPassMeta"><span>'+p.done+' / '+p.total+' accomplissements</span><span>'+pct+'%</span></div></div>';}
-function html(){return '<div class="srAch139" data-ach-canonical-v139="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+'<div class="achTabs"><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages">Étages</button><button class="achTab '+(activeTab==='defis'?'on':'')+'" data-ach-tab="defis">Défis</button></div>'+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Gratuit :</b> toutes les récompenses actuelles restent disponibles. <b>Premium :</b> ajoute un bonus sur chaque jalon sans remplacer la voie gratuite.</div><div class="mt10"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
-function reopen(){try{if(typeof openModal==='function')openModal(html(),'Pass Progression');}catch(_){} }
+function html(){return '<div class="srAch139" data-ach-canonical-v139="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+'<div class="achTabs"><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages">Étages</button><button class="achTab '+(activeTab==='defis'?'on':'')+'" data-ach-tab="defis">Défis</button></div>'+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Gratuit :</b> toutes les récompenses actuelles restent disponibles. <b>Premium :</b> ajoute un bonus sur chaque jalon sans remplacer la voie gratuite.</div></div>';}
+function publishReady(){try{window.dispatchEvent(new CustomEvent('sr:accomplishments-ready'));}catch(_){} }
+function reopen(){
+ try{
+  var ov=document.getElementById('overlay');
+  var root=ov&&ov.querySelector('.srAch139');
+  var body=root&&(ov.querySelector(':scope > .card > .mbody')||ov.querySelector('.mbody'));
+  if(body){body.innerHTML=html();publishReady();return;}
+  if(typeof openModal==='function')openModal(html(),'Pass Progression');
+ }catch(_){}
+}
+window.__srAccomplishmentsModalSyncConfigV343={sameModalBodyReplace:true,singleCloseControl:true};
 function installInteractions(){
  if(window.__srAccomplishmentsPassInteractionV139)return;window.__srAccomplishmentsPassInteractionV139=true;
  document.addEventListener('click',function(e){
@@ -129,7 +140,7 @@ function install(){
  installStyles();
  ACT.accomplishments=function(){openModal(html(),'Pass Progression');};
  installTitleInteraction();installInteractions();installProgressEntry();
- try{window.dispatchEvent(new CustomEvent('sr:accomplishments-ready'));}catch(_){}
+ publishReady();
 }
 install();
 })();
