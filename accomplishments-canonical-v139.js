@@ -1,7 +1,8 @@
 /* SHADOWREACH · Accomplishments canonical mobile UI v139 · Progression Pass
    Campaign milestones follow the 800-stage structure with five 20-stage chapters
    per difficulty; Boss milestones require the actual Boss clear.
-   V326: Arena-facing Pass Progression with Étages / Défis and a visible Premium lane. */
+   V326: Arena-facing Pass Progression with Étages / Défis and a visible Premium lane.
+   V342: Forge milestones follow the approved Gold-only ladder. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsCanonicalV139)return;
@@ -34,10 +35,11 @@ function installTitleInteraction(){
 }
 var ITEMS={
  Forge:[
-  ['forge5',5,'Forge niveau 5','5 000 Or'],['forge10',10,'Forge niveau 10','10 000 Or'],
-  ['forge15',15,'Forge niveau 15','15 Pièces de fusion Communes'],['forge20',20,'Forge niveau 20','15 Pièces de fusion Peu communes'],
-  ['forge30',30,'Forge niveau 30','50 000 Or + 20 Pièces de fusion Peu communes'],['forge35',35,'Forge niveau 35','25 Pièces de fusion Rares + 2 Clés Minerais'],
-  ['forge40',40,'Forge niveau 40','20 Pièces de fusion Rares + 100 000 Or'],['forge50',50,'Forge niveau 50','25 Pièces de fusion Épiques + 2 Clés Minerais']
+  ['forge10',10,'Forge niveau 10','7 500 Or'],['forge15',15,'Forge niveau 15','10 000 Or'],
+  ['forge20',20,'Forge niveau 20','20 000 Or'],['forge25',25,'Forge niveau 25','30 000 Or'],
+  ['forge30',30,'Forge niveau 30','75 000 Or'],['forge35',35,'Forge niveau 35','100 000 Or'],
+  ['forge40',40,'Forge niveau 40','200 000 Or'],['forge45',45,'Forge niveau 45','300 000 Or'],
+  ['forge50',50,'Forge niveau 50','500 000 Or']
  ],
  Fusions:[
   ['fusion50',50,'50 Fusions','15 Pièces de fusion Communes'],['fusion150',150,'150 Fusions','15 Pièces de fusion Peu communes'],
@@ -64,7 +66,6 @@ var ITEMS={
  ]
 };
 var PREMIUM_TEXT={
- forge5:'2 500 Or',forge10:'5 000 Or',forge15:'5 Pièces Communes',forge20:'5 Pièces Peu communes',forge30:'15 000 Or + 5 Pièces Peu communes',forge35:'5 Pièces Rares + 1 Clé Minerai',forge40:'25 000 Or + 5 Pièces Rares',forge50:'5 Pièces Épiques + 1 Clé Minerai',
  fusion50:'5 Pièces Communes',fusion150:'5 Pièces Peu communes',fusion250:'5 Pièces Rares',fusion350:'5 Pièces Rares',fusion500:'5 Pièces Épiques',fusion1000:'25 000 Or + 5 Pièces Mythiques',fusion1500:'5 Pièces Mythiques',
  raid10:'2 500 Or',raid20:'10 Pièces Communes',raid50:'5 Pièces Rares + 250 Essences',raid100:'250 000 Or + 250 Étincelles + 250 Essences + 10 Pièces Rares',
  floor25:'100 Essences',floor50:'750 Minerais + 2 500 Or',floor75:'200 Étincelles + 10 Pièces Communes',floor100:'200 Étincelles + 200 Essences + 10 Pièces Communes',floor150:'250 Étincelles + 250 Essences + 5 Pièces Rares',floor200:'300 Étincelles + 300 Essences + 5 Pièces Rares',floor250:'350 Étincelles + 350 Essences + 3 Pièces Épiques',floor300:'400 Étincelles + 400 Essences + 4 Pièces Épiques',floor350:'500 Étincelles + 500 Essences + 3 Pièces Mythiques',floor400:'750 Étincelles + 750 Essences + 5 Pièces Mythiques'
@@ -72,7 +73,7 @@ var PREMIUM_TEXT={
 function value(cat){return cat==='Forge'?forge():cat==='Fusions'?fusions():cat==='Raids'?raids():floor();}
 function itemDone(cat,x){return cat==='Etages'?floorDone(x[1]):value(cat)>=x[1];}
 function catDone(cat){var list=ITEMS[cat],done=0;for(var i=0;i<list.length;i++)if(itemDone(cat,list[i]))done++;return done;}
-function allProgress(){var cats=['Forge','Fusions','Raids','Etages'],done=0,total=0,claimable=0;for(var c=0;c<cats.length;c++){var list=ITEMS[cats[c]];for(var i=0;i<list.length;i++){total++;if(itemDone(cats[c],list[i])){done++;if(!claimed(list[i][0]))claimable++;if(premiumOwned()&&!premiumClaimed(list[i][0]))claimable++;}}}return {done:done,total:total,claimable:claimable};}
+function allProgress(){var cats=['Forge','Fusions','Raids','Etages'],done=0,total=0,claimable=0;for(var c=0;c<cats.length;c++){var list=ITEMS[cats[c]];for(var i=0;i<list.length;i++){total++;if(itemDone(cats[c],list[i])){done++;if(!claimed(list[i][0]))claimable++;if(cats[c]!=='Forge'&&premiumOwned()&&!premiumClaimed(list[i][0]))claimable++;}}}return {done:done,total:total,claimable:claimable};}
 function launcherState(){var list=ITEMS.Etages,done=0;for(var i=0;i<list.length;i++)if(itemDone('Etages',list[i]))done++;var a=allProgress();return {done:done,total:list.length,claimable:a.claimable,stage:stageLabel(Math.max(1,floor()))};}
 window.__srAccomplishmentsLauncherStateV139=launcherState;
 function installStyles(){
@@ -91,14 +92,14 @@ function installStyles(){
  document.head.appendChild(st);
 }
 function freeAction(x,done){if(claimed(x[0]))return '<span class="achState done">Récupéré</span>';if(!done)return '<span class="achState">En cours</span>';if(x[4]==='choice')return '<div style="display:grid;gap:4px"><button class="btn sm" data-ach="'+x[0]+'" data-ach-choice="eclat">+500 Étincelles</button><button class="btn sm" data-ach="'+x[0]+'" data-ach-choice="essence">+500 Essences</button></div>';return '<button class="btn sm" data-ach="'+x[0]+'" data-primary="true">Récupérer</button>';}
-function premiumAction(x,done){if(!premiumOwned())return '<span class="achState locked">Premium</span>';if(premiumClaimed(x[0]))return '<span class="achState done">Récupéré</span>';if(!done)return '<span class="achState">En cours</span>';return '<button class="btn sm" data-ach-premium="'+x[0]+'" data-primary="true">Récupérer</button>';}
-function row(cat,x){var done=itemDone(cat,x),cur=value(cat),progress=cat==='Etages'?stageLabel(Math.max(1,cur)):(Math.min(cur,x[1])+' / '+x[1]);return '<div class="achPassRow"'+(cat==='Etages'?' data-ach-floors-v138="1" data-ach-floors-v137-safe="1"':'')+'><div class="achObjective"><b>'+escText(x[2])+'</b><small>'+escText(done?'Objectif atteint':progress)+'</small></div><div class="achReward"><div class="achRewardText">'+escText(x[3])+'</div>'+freeAction(x,done)+'</div><div class="achReward premium"><div class="achRewardText">'+escText(PREMIUM_TEXT[x[0]]||'Bonus Premium')+'</div>'+premiumAction(x,done)+'</div></div>';}
+function premiumAction(cat,x,done){if(cat==='Forge')return '<span class="achState locked">Or uniquement</span>';if(!premiumOwned())return '<span class="achState locked">Premium</span>';if(premiumClaimed(x[0]))return '<span class="achState done">Récupéré</span>';if(!done)return '<span class="achState">En cours</span>';return '<button class="btn sm" data-ach-premium="'+x[0]+'" data-primary="true">Récupérer</button>';}
+function row(cat,x){var done=itemDone(cat,x),cur=value(cat),progress=cat==='Etages'?stageLabel(Math.max(1,cur)):(Math.min(cur,x[1])+' / '+x[1]),premiumText=cat==='Forge'?'Aucun bonus Premium':(PREMIUM_TEXT[x[0]]||'Bonus Premium');return '<div class="achPassRow"'+(cat==='Etages'?' data-ach-floors-v138="1" data-ach-floors-v137-safe="1"':'')+'><div class="achObjective"><b>'+escText(x[2])+'</b><small>'+escText(done?'Objectif atteint':progress)+'</small></div><div class="achReward"><div class="achRewardText">'+escText(x[3])+'</div>'+freeAction(x,done)+'</div><div class="achReward premium"><div class="achRewardText">'+escText(premiumText)+'</div>'+premiumAction(cat,x,done)+'</div></div>';}
 function laneHead(){return '<div class="achLaneHead"><span>Objectif</span><span>Gratuit</span><span>Premium</span></div>';}
 function floorsView(){var list=ITEMS.Etages,done=catDone('Etages');return '<div data-ach-floor-overview-v138="1" data-ach-floor-overview-v137="1"><div class="achCatTitle">Étages <span class="achCategorySummary">'+done+' / '+list.length+' jalons</span></div>'+laneHead()+list.map(function(x){return row('Etages',x);}).join('')+'</div>';}
 function challengesView(){var cats=['Forge','Fusions','Raids'];return cats.map(function(cat){return '<div><div class="achCatTitle">'+cat+' <span class="achCategorySummary">'+catDone(cat)+' / '+ITEMS[cat].length+'</span></div>'+laneHead()+ITEMS[cat].map(function(x){return row(cat,x);}).join('')+'</div>';}).join('')+titleSection();}
 function titleSection(){ensureTitles();var unlocked=divineUnlocked(),eq=S.equippedTitle==='divin';return '<div data-ach-titles-v134="1"><div class="achCatTitle">Titres <span class="achCategorySummary">'+(unlocked?'1 / 1':'0 / 1')+'</span></div><div class="achPassRow" style="grid-template-columns:1fr minmax(110px,.8fr)"><div class="achObjective"><b style="color:#f0c761">Divin</b><small>Sacrifier un Divin · '+(unlocked?'1 / 1':'0 / 1')+'</small></div><div class="achReward" style="border-left:1px solid #29394f">'+(unlocked?'<button class="btn sm '+(eq?'dark':'')+'" data-ach-title="divin" data-primary="'+(eq?'false':'true')+'">'+(eq?'Équipé':'Équiper')+'</button>':'<span class="achState locked">Verrouillé</span>')+'</div></div></div>';}
 function hero(){var p=allProgress(),pct=Math.max(0,Math.min(100,Math.round(p.done/Math.max(1,p.total)*100))),premium=premiumOwned();return '<div class="achPassHero" data-ach-overview-v135="1"><div class="achPassTop"><div><div class="achPassKicker">PROGRESSION</div><div class="achPassTitle">Pass Progression</div><div class="achPassSub">Progresse dans les étages et complète des défis pour récupérer tes récompenses.</div></div><button type="button" class="achPassPrice" data-ach-premium-info="1">'+(premium?'Premium actif':'Premium · 9,99 €')+'<small>'+(premium?'Bonus débloqués':'Récompenses bonus')+'</small></button></div><div class="achPassMeter"><i style="width:'+pct+'%"></i></div><div class="achPassMeta"><span>'+p.done+' / '+p.total+' accomplissements</span><span>'+pct+'%</span></div></div>';}
-function html(){return '<div class="srAch139" data-ach-canonical-v139="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+'<div class="achTabs"><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages">Étages</button><button class="achTab '+(activeTab==='defis'?'on':'')+'" data-ach-tab="defis">Défis</button></div>'+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Gratuit :</b> toutes les récompenses actuelles restent disponibles. <b>Premium :</b> ajoute un bonus sur chaque jalon sans remplacer la voie gratuite.</div><div class="mt10"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
+function html(){return '<div class="srAch139" data-ach-canonical-v139="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+'<div class="achTabs"><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages">Étages</button><button class="achTab '+(activeTab==='defis'?'on':'')+'" data-ach-tab="defis">Défis</button></div>'+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Forge :</b> récompenses en Or uniquement selon les 9 paliers dédiés. <b>Premium :</b> ajoute un bonus sur les autres jalons éligibles sans remplacer la voie gratuite.</div><div class="mt10"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
 function reopen(){try{if(typeof openModal==='function')openModal(html(),'Pass Progression');}catch(_){} }
 function installInteractions(){
  if(window.__srAccomplishmentsPassInteractionV139)return;window.__srAccomplishmentsPassInteractionV139=true;
