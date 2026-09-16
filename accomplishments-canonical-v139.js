@@ -2,7 +2,8 @@
    Campaign milestones follow the 800-stage structure with five 20-stage chapters
    per difficulty; Boss milestones require the actual Boss clear.
    V326: Arena-facing Pass Progression with Étages / Défis and a visible Premium lane.
-   V343: same-modal tab refresh stays inside the canonical Accomplishments owner. */
+   V342: Forge milestones follow the approved Gold-only ladder.
+   V343: same-modal tab refresh stays inside the canonical Accomplishments owner; Forge Premium adds +50% Gold. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsCanonicalV139)return;
@@ -35,10 +36,11 @@ function installTitleInteraction(){
 }
 var ITEMS={
  Forge:[
-  ['forge5',5,'Forge niveau 5','5 000 Or'],['forge10',10,'Forge niveau 10','10 000 Or'],
-  ['forge15',15,'Forge niveau 15','15 Pièces de fusion Communes'],['forge20',20,'Forge niveau 20','15 Pièces de fusion Peu communes'],
-  ['forge30',30,'Forge niveau 30','50 000 Or + 20 Pièces de fusion Peu communes'],['forge35',35,'Forge niveau 35','25 Pièces de fusion Rares + 2 Clés Minerais'],
-  ['forge40',40,'Forge niveau 40','20 Pièces de fusion Rares + 100 000 Or'],['forge50',50,'Forge niveau 50','25 Pièces de fusion Épiques + 2 Clés Minerais']
+  ['forge10',10,'Forge niveau 10','7 500 Or'],['forge15',15,'Forge niveau 15','10 000 Or'],
+  ['forge20',20,'Forge niveau 20','20 000 Or'],['forge25',25,'Forge niveau 25','30 000 Or'],
+  ['forge30',30,'Forge niveau 30','75 000 Or'],['forge35',35,'Forge niveau 35','100 000 Or'],
+  ['forge40',40,'Forge niveau 40','200 000 Or'],['forge45',45,'Forge niveau 45','300 000 Or'],
+  ['forge50',50,'Forge niveau 50','500 000 Or']
  ],
  Fusions:[
   ['fusion50',50,'50 Fusions','15 Pièces de fusion Communes'],['fusion150',150,'150 Fusions','15 Pièces de fusion Peu communes'],
@@ -65,7 +67,7 @@ var ITEMS={
  ]
 };
 var PREMIUM_TEXT={
- forge5:'2 500 Or',forge10:'5 000 Or',forge15:'5 Pièces Communes',forge20:'5 Pièces Peu communes',forge30:'15 000 Or + 5 Pièces Peu communes',forge35:'5 Pièces Rares + 1 Clé Minerai',forge40:'25 000 Or + 5 Pièces Rares',forge50:'5 Pièces Épiques + 1 Clé Minerai',
+ forge10:'3 750 Or',forge15:'5 000 Or',forge20:'10 000 Or',forge25:'15 000 Or',forge30:'37 500 Or',forge35:'50 000 Or',forge40:'100 000 Or',forge45:'150 000 Or',forge50:'250 000 Or',
  fusion50:'5 Pièces Communes',fusion150:'5 Pièces Peu communes',fusion250:'5 Pièces Rares',fusion350:'5 Pièces Rares',fusion500:'5 Pièces Épiques',fusion1000:'25 000 Or + 5 Pièces Mythiques',fusion1500:'5 Pièces Mythiques',
  raid10:'2 500 Or',raid20:'10 Pièces Communes',raid50:'5 Pièces Rares + 250 Essences',raid100:'250 000 Or + 250 Étincelles + 250 Essences + 10 Pièces Rares',
  floor25:'100 Essences',floor50:'750 Minerais + 2 500 Or',floor75:'200 Étincelles + 10 Pièces Communes',floor100:'200 Étincelles + 200 Essences + 10 Pièces Communes',floor150:'250 Étincelles + 250 Essences + 5 Pièces Rares',floor200:'300 Étincelles + 300 Essences + 5 Pièces Rares',floor250:'350 Étincelles + 350 Essences + 3 Pièces Épiques',floor300:'400 Étincelles + 400 Essences + 4 Pièces Épiques',floor350:'500 Étincelles + 500 Essences + 3 Pièces Mythiques',floor400:'750 Étincelles + 750 Essences + 5 Pièces Mythiques'
