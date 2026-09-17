@@ -87,9 +87,9 @@ s.textContent=`
 `;
 document.head.appendChild(s);
 try{
- if(!window.__srFusionGoldRewardsV352){
+ if(!window.__srFusionGoldRewardsV355){
   var r=document.createElement('script');
-  r.src='fusion-gold-rewards-v352.js?v=2026.09.17.354';
+  r.src='fusion-gold-rewards-v352.js?v=2026.09.17.355';
   r.async=false;
   document.body.appendChild(r);
  }
