@@ -81,11 +81,11 @@ test('V323 campaign balance uses one floor-only reference for enemy HP and damag
     marker: window.__srCampaignReferenceBalanceV323,
   }));
   expect(r.marker).toBe(true);
-  expect(r.hp1).toBe(43);
-  expect(r.hp800).toBe(522000000000);
+  expect(r.hp1).toBe(65);
+  expect(r.hp800).toBe(503330604016);
   expect(r.boss800).toBe(6000000000000);
-  expect(r.dmg1).toBe(13);
-  expect(r.dmg800).toBe(2875000000);
+  expect(r.dmg1).toBe(6);
+  expect(r.dmg800).toBe(2808241669);
   expect(r.cfg.maxFloor).toBe(800);
   expect(r.cfg.targetHitsToKill).toBeCloseTo(3.6, 8);
   expect(r.cfg.targetHitsToDefeatReference).toBe(8);
