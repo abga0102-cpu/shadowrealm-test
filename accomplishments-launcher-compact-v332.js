@@ -93,5 +93,11 @@ try{
   r.async=false;
   document.body.appendChild(r);
  }
+ if(!window.__srFusionSaveBaselineV356){
+  var b=document.createElement('script');
+  b.src='fusion-save-baseline-v356.js?v=2026.09.17.356';
+  b.async=false;
+  document.body.appendChild(b);
+ }
 }catch(_){}
 })();
