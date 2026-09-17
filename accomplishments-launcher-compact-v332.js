@@ -86,4 +86,12 @@ s.textContent=`
 }
 `;
 document.head.appendChild(s);
+try{
+ if(!window.__srFusionGoldRewardsV352){
+  var r=document.createElement('script');
+  r.src='fusion-gold-rewards-v352.js?v=2026.09.17.352';
+  r.async=false;
+  document.body.appendChild(r);
+ }
+}catch(_){}
 })();

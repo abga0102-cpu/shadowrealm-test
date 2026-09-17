@@ -1,9 +1,9 @@
-/* SHADOWREACH V344 · Forge dust integrity + one-time compensation
+/* SHADOWREACH V344 / V351 · Forge dust integrity + one-time compensation
    Final authority loaded after every Forge/Dust layer.
-   - Never changes the canonical Dust economy.
-   - Verifies filtered Forge recycling and comparison-button recycling.
+   - V351 verifies Dust from canonical equipment rarity before trusting result payloads.
+   - Protects filtered Forge recycling and manual comparison-button recycling.
    - Tops up only a missing delta, so an already-correct credit is never doubled.
-   - Grants a total one-time compensation of 6000 Dust for the affected Auto-Forge bug.
+   - Keeps the existing one-time total compensation of 6000 Dust, with no new grant.
 */
 (function(){
   'use strict';
@@ -12,6 +12,11 @@
   if(typeof S==='undefined'||!S.forge)return;
 
   var COMPENSATION=6000;
+  var CANON_DUST={
+    COMMUN:1,RARE:2,EPIQUE:4,MYTHIQUE:10,ARTEFACT:25,
+    LEGENDAIRE:60,INFERNAL:150,IMMORTEL:400,DIVIN:1000,
+    HEROIQUE:25,ANCESTRAL:150,PEU_COMMUN:2
+  };
   var audit={forgeTopups:0,recycleTopups:0,compensation:0};
 
   function dustBalance(){
@@ -19,31 +24,52 @@
     return isFinite(n)?n:0;
   }
 
-  function rarityDust(r){
+  function normalizeRarity(raw){
     try{
       var cfg=window.__srDustEconomyConfigV293;
-      var map=cfg&&cfg.byRarity;
-      var n=map&&Number(map[r]);
-      if(isFinite(n)&&n>=0)return Math.floor(n);
+      if(cfg&&typeof cfg.normalizeRarity==='function')return cfg.normalizeRarity(raw);
     }catch(_){}
-    return 0;
+    var s=String(raw==null?'':raw).trim().toUpperCase();
+    try{s=s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(_){}
+    return s.replace(/[^A-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  }
+
+  function rarityDust(raw){
+    var key=normalizeRarity(raw);
+    if(!key)return 0;
+    try{
+      var cfg=window.__srDustEconomyConfigV293;
+      if(cfg&&typeof cfg.valueForRarity==='function'){
+        var exact=Number(cfg.valueForRarity(key));
+        if(isFinite(exact)&&exact>0)return Math.floor(exact);
+      }
+      var map=cfg&&cfg.byRarity;
+      var mapped=map&&Number(map[key]);
+      if(isFinite(mapped)&&mapped>0)return Math.floor(mapped);
+    }catch(_){}
+    var own=Number(CANON_DUST[key]);
+    return isFinite(own)&&own>0?Math.floor(own):0;
   }
 
   function expectedResultDust(r){
     if(!r||!r.recycled)return 0;
-    var n=Number(r.dust);
-    if(isFinite(n)&&n>=0)return Math.floor(n);
-    n=rarityDust(r.rarity);
-    if(n>0)r.dust=n;
-    return n;
+    /* Canonical rarity is authoritative. A stale payload such as dust:1 on a
+       Mythique must never downgrade the reward to Common. */
+    var canonical=rarityDust(r.rarity);
+    if(canonical>0){r.dust=canonical;return canonical;}
+    var direct=Number(r.dust);
+    if(isFinite(direct)&&direct>0)return Math.floor(direct);
+    return 0;
   }
 
   function addMissingDust(amount,kind){
     amount=Math.max(0,Math.floor(Number(amount)||0));
     if(!amount)return 0;
     try{
-      if(typeof update==='function')update(function(st){st.poussiere=(Number(st.poussiere)||0)+amount;});
-      else {S.poussiere=(Number(S.poussiere)||0)+amount;if(typeof scheduleRender==='function')scheduleRender();}
+      S.poussiere=(Number(S.poussiere)||0)+amount;
+      if(typeof saveNow==='function')saveNow();
+      if(typeof renderHUD==='function')try{renderHUD();}catch(_){}
+      if(typeof scheduleRender==='function')scheduleRender();
       if(kind==='forge')audit.forgeTopups+=amount;
       else audit.recycleTopups+=amount;
       return amount;
@@ -59,7 +85,7 @@
         var expected=Array.isArray(res)?res.reduce(function(sum,r){return sum+expectedResultDust(r);},0):0;
         var credited=Math.max(0,dustBalance()-before);
         if(expected>credited)addMissingDust(expected-credited,'forge');
-      }catch(e){console.warn('Forge dust integrity V344 audit skipped',e);}
+      }catch(e){console.warn('Forge dust integrity V351 audit skipped',e);}
       return res;
     };
     try{window.forgeSummon=forgeSummon;}catch(_){}
@@ -71,7 +97,10 @@
       var item=null,expected=0,before=dustBalance();
       try{
         item=(S.inventory||[]).find(function(x){return x&&x.id===id;})||null;
-        if(item&&typeof dustValue==='function')expected=Math.max(0,Math.floor(Number(dustValue(S,item))||0));
+        if(item){
+          expected=rarityDust(item.rarity);
+          if(!expected&&typeof dustValue==='function')expected=Math.max(0,Math.floor(Number(dustValue(S,item))||0));
+        }
       }catch(_){}
       var reported=nativeRecycleItem.apply(this,arguments)||0;
       try{
@@ -108,4 +137,5 @@
 
   grantCompensation();
   window.__srForgeDustIntegrityV344Audit=audit;
+  window.__srForgeDustIntegrityV351={version:351,value:expectedResultDust,rarityValue:rarityDust,audit:audit};
 })();

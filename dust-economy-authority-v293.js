@@ -1,16 +1,8 @@
-/* SHADOWREACH V293 · Dust recycling economy authority
-   Additive authority layer.
-   V283 massively increased equipment base stats, while the legacy dustValue()
-   still paid 20% of original item power. At high Forge rarity this turns one
-   recycled item into tens of thousands/millions of Dust and collapses the +100
-   progression target. V293 decouples Dust from combat power entirely.
-
-   Goals:
-   - no stat-power -> currency exploit
-   - predictable rarity value
-   - no inflation from Forge Ascension stat multipliers
-   - ~4–6 weeks for a first +100 for an active late-Forge player who recycles
-     most unusable drops, while keeping useful upgrades
+/* SHADOWREACH V293 / V350 · Dust recycling economy authority
+   Canonical rarity-based Dust values.
+   V350 fixes a legacy fallback that returned +1 whenever a rarity key was not
+   matched exactly. Rarity names are now normalized first and unknown values
+   return 0 instead of silently becoming Common.
 */
 (function(){
   'use strict';
@@ -33,14 +25,29 @@
     PEU_COMMUN:2
   };
 
+  function normalizeRarity(raw){
+    var s=String(raw==null?'':raw).trim().toUpperCase();
+    try{s=s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(_){}
+    s=s.replace(/[^A-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+    if(s==='PEU__COMMUN')s='PEU_COMMUN';
+    return s;
+  }
+
+  function valueForRarity(raw){
+    var key=normalizeRarity(raw);
+    if(!key||!Object.prototype.hasOwnProperty.call(DUST_BY_RARITY,key))return 0;
+    return Math.max(0,Math.floor(Number(DUST_BY_RARITY[key])||0));
+  }
+
   function normalizedDust(s,it){
     if(!it||!it.rarity)return 0;
-    return Math.max(0,Math.floor(Number(DUST_BY_RARITY[it.rarity])||1));
+    return valueForRarity(it.rarity);
   }
 
   try{
     if(typeof dustValue==='function'){
       normalizedDust.__srV293=true;
+      normalizedDust.__srV350=true;
       normalizedDust.__srPrevious=dustValue;
       dustValue=normalizedDust;
     }
@@ -49,7 +56,10 @@
   try{
     window.__srDustEconomyConfigV293={
       version:293,
+      revision:350,
       byRarity:Object.assign({},DUST_BY_RARITY),
+      normalizeRarity:normalizeRarity,
+      valueForRarity:valueForRarity,
       independentOfItemPower:true,
       independentOfForgeStars:true
     };
