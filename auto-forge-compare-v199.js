@@ -1,8 +1,8 @@
-/* SHADOWREACH · Auto-Forge Compare V199 / V349 immediate dust authority
+/* SHADOWREACH · Auto-Forge Compare V199 / V350 canonical dust authority
    AUTO follows the Forge filter only: every kept result is surfaced for comparison.
    Canonical persisted batch sizes are 1/3/5/10, matching the Forge progression gate.
-   V349: recycled Dust is credited synchronously in the same AUTO tick, the HUD is
-   refreshed immediately, and the settled balance is saved before the cycle continues.
+   V350: recycled Dust is valued from the canonical rarity table first, so a stale
+   `dust:1` payload can never flatten Rare/Epic/Mythic/etc. rewards to +1.
 */
 (function(){
 'use strict';
@@ -13,22 +13,34 @@ var pausedForCompare=false;
 var VALID_BATCH=[1,3,5,10];
 function autoBatch(){var n=Math.floor(Number(S.forge.autoBatch)||1);return VALID_BATCH.indexOf(n)>=0?n:1;}
 function isWanted(r){return !!(r&&!r.recycled&&r.id);}
-function recycledDustValue(r){
- if(!r||!r.recycled)return 0;
- var direct=Math.max(0,Math.floor(Number(r.dust)||0));
- if(direct>0)return direct;
+function canonicalRarityDust(raw){
  try{
   var cfg=window.__srDustEconomyConfigV293;
+  if(cfg&&typeof cfg.valueForRarity==='function'){
+   var v=Math.max(0,Math.floor(Number(cfg.valueForRarity(raw))||0));
+   if(v>0)return v;
+  }
   var map=cfg&&cfg.byRarity;
-  var n=map&&Number(map[r.rarity]);
-  if(isFinite(n)&&n>0){r.dust=Math.floor(n);return Math.floor(n);}
+  var key=String(raw==null?'':raw).trim().toUpperCase();
+  try{key=key.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(_){}
+  key=key.replace(/[^A-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  var n=map&&Number(map[key]);
+  if(isFinite(n)&&n>0)return Math.floor(n);
  }catch(_){}
+ return 0;
+}
+function recycledDustValue(r){
+ if(!r||!r.recycled)return 0;
+ var canonical=canonicalRarityDust(r.rarity);
+ if(canonical>0){r.dust=canonical;return canonical;}
  try{
   if(typeof dustValue==='function'&&r.rarity){
    var fallback=Math.max(0,Math.floor(Number(dustValue(S,{rarity:r.rarity,power:r.power||0,originalPower:r.power||0}))||0));
    if(fallback>0){r.dust=fallback;return fallback;}
   }
  }catch(_){}
+ var direct=Math.max(0,Math.floor(Number(r.dust)||0));
+ if(direct>0)return direct;
  return 0;
 }
 function expectedAutoDust(res){
@@ -45,11 +57,7 @@ function ensureAutoDust(res,before){
  var credited=Math.max(0,(Number(S.poussiere)||0)-(Number(before)||0));
  var missing=Math.max(0,expected-credited);
  if(missing){
-  try{
-   /* Direct state write is deliberate here: AUTO Dust must be visible in this same
-      synchronous tick, not after another state/update/render pass. */
-   S.poussiere=(Number(S.poussiere)||0)+missing;
-  }catch(_){return 0;}
+  try{S.poussiere=(Number(S.poussiere)||0)+missing;}catch(_){return 0;}
  }
  refreshDustNow();
  return missing;
@@ -59,8 +67,6 @@ function settleAutoDust(res,before,notify){
  if(!expected)return 0;
  var missing=ensureAutoDust(res,before);
  try{if(typeof saveNow==='function')saveNow();}catch(_){}
- /* saveNow does not render; refresh once more after persistence so the visible
-    counter and the saved counter are guaranteed to be the same immediately. */
  refreshDustNow();
  if(notify){
   var count=res.filter(function(r){return !!(r&&r.recycled);}).length;
@@ -78,6 +84,7 @@ window.__srAutoForgePausedForCompareV199=function(){return pausedForCompare;};
 window.__srAutoForgeDustV346={version:346,ensure:ensureAutoDust,value:recycledDustValue};
 window.__srAutoForgeDustV348={version:348,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue};
 window.__srAutoForgeDustV349={version:349,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue,immediate:true};
+window.__srAutoForgeDustV350={version:350,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue,canonical:true,immediate:true};
 
 try{if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}}catch(_){}
 
@@ -96,11 +103,7 @@ scheduleAutoForge=function(delay){
     var dustBefore=Number(S.poussiere)||0;
     var res=forgeSummon(amount)||[];
     var recycled=res.filter(function(r){return !!(r&&r.recycled);});
-    if(recycled.length){
-      /* Settlement is synchronous. By the next line, S.poussiere and the HUD
-         already contain the full Dust value for every filtered piece. */
-      settleAutoDust(res,dustBefore,true);
-    }
+    if(recycled.length)settleAutoDust(res,dustBefore,true);
     var wanted=res.filter(isWanted);
     if(wanted.length){
       wanted.forEach(function(r){r.__autoForgeCompareV199=true;});
