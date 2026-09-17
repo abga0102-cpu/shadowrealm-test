@@ -1,6 +1,8 @@
-/* SHADOWREACH · Auto-Forge Compare V199 / V273 batch authority
+/* SHADOWREACH · Auto-Forge Compare V199 / V346 dust authority
    AUTO follows the Forge filter only: every kept result is surfaced for comparison.
    Canonical persisted batch sizes are 1/3/5/10, matching the Forge progression gate.
+   V346: the AUTO scheduler verifies recycled Dust on every cycle and restores only
+   a missing delta, so filtered equipment can never disappear without its Dust.
 */
 (function(){
 'use strict';
@@ -11,6 +13,37 @@ var pausedForCompare=false;
 var VALID_BATCH=[1,3,5,10];
 function autoBatch(){var n=Math.floor(Number(S.forge.autoBatch)||1);return VALID_BATCH.indexOf(n)>=0?n:1;}
 function isWanted(r){return !!(r&&!r.recycled&&r.id);}
+function recycledDustValue(r){
+ if(!r||!r.recycled)return 0;
+ var direct=Math.max(0,Math.floor(Number(r.dust)||0));
+ if(direct>0)return direct;
+ try{
+  var cfg=window.__srDustEconomyConfigV293;
+  var map=cfg&&cfg.byRarity;
+  var n=map&&Number(map[r.rarity]);
+  if(isFinite(n)&&n>0){r.dust=Math.floor(n);return Math.floor(n);}
+ }catch(_){}
+ try{
+  if(typeof dustValue==='function'&&r.rarity){
+   var fallback=Math.max(0,Math.floor(Number(dustValue(S,{rarity:r.rarity,power:r.power||0,originalPower:r.power||0}))||0));
+   if(fallback>0){r.dust=fallback;return fallback;}
+  }
+ }catch(_){}
+ return 0;
+}
+function ensureAutoDust(res,before){
+ if(!Array.isArray(res)||!res.length)return 0;
+ var expected=res.reduce(function(sum,r){return sum+recycledDustValue(r);},0);
+ if(!expected)return 0;
+ var credited=Math.max(0,(Number(S.poussiere)||0)-(Number(before)||0));
+ var missing=Math.max(0,expected-credited);
+ if(!missing)return 0;
+ try{
+  if(typeof update==='function')update(function(st){st.poussiere=(Number(st.poussiere)||0)+missing;});
+  else {S.poussiere=(Number(S.poussiere)||0)+missing;if(typeof scheduleRender==='function')scheduleRender();}
+ }catch(_){return 0;}
+ return missing;
+}
 function resume(){
  if(!pausedForCompare)return;
  pausedForCompare=false;
@@ -18,6 +51,7 @@ function resume(){
 }
 window.__srResumeAutoForgeV199=resume;
 window.__srAutoForgePausedForCompareV199=function(){return pausedForCompare;};
+window.__srAutoForgeDustV346={version:346,ensure:ensureAutoDust,value:recycledDustValue};
 
 try{if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}}catch(_){}
 
@@ -33,7 +67,9 @@ scheduleAutoForge=function(delay){
    if(S.minerai>=cost){
     var affordable=Math.max(1,Math.floor(Number(S.minerai||0)/Math.max(1,cost)));
     var amount=Math.max(1,Math.min(autoBatch(),affordable));
+    var dustBefore=Number(S.poussiere)||0;
     var res=forgeSummon(amount)||[];
+    ensureAutoDust(res,dustBefore);
     var wanted=res.filter(isWanted);
     if(wanted.length){
       wanted.forEach(function(r){r.__autoForgeCompareV199=true;});
