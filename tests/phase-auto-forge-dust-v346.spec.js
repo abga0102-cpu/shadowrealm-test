@@ -108,3 +108,48 @@ test('V350 Auto-Forge never double-credits canonical Dust already paid by forgeS
   expect(result.authority350).toBe(true);
   expect(result.dust).toBe(4);
 });
+
+test('V351 global Dust authority normalizes rarity names and never falls back unknown rarity to +1', async ({ page }) => {
+  await openCleanGame(page);
+  const values = await page.evaluate(() => ({
+    commun: dustValue(S, { rarity: 'COMMUN' }),
+    rare: dustValue(S, { rarity: 'Rare' }),
+    epiqueAccent: dustValue(S, { rarity: 'ÉPIQUE' }),
+    mythique: dustValue(S, { rarity: 'MYTHIQUE' }),
+    artefact: dustValue(S, { rarity: 'Artefact' }),
+    legendaireAccent: dustValue(S, { rarity: 'LÉGENDAIRE' }),
+    infernal: dustValue(S, { rarity: 'INFERNAL' }),
+    immortel: dustValue(S, { rarity: 'IMMORTEL' }),
+    divin: dustValue(S, { rarity: 'DIVIN' }),
+    unknown: dustValue(S, { rarity: '???' }),
+  }));
+
+  expect(values).toEqual({
+    commun: 1,
+    rare: 2,
+    epiqueAccent: 4,
+    mythique: 10,
+    artefact: 25,
+    legendaireAccent: 60,
+    infernal: 150,
+    immortel: 400,
+    divin: 1000,
+    unknown: 0,
+  });
+});
+
+test('V351 final integrity layer overrides stale +1 result payload by rarity', async ({ page }) => {
+  await openCleanGame(page);
+  const values = await page.evaluate(() => {
+    const api = window.__srForgeDustIntegrityV351;
+    return {
+      loaded: !!api,
+      rare: api.value({ rarity: 'RARE', recycled: true, dust: 1 }),
+      epique: api.value({ rarity: 'ÉPIQUE', recycled: true, dust: 1 }),
+      mythique: api.value({ rarity: 'MYTHIQUE', recycled: true, dust: 1 }),
+      divin: api.value({ rarity: 'DIVIN', recycled: true, dust: 1 }),
+    };
+  });
+
+  expect(values).toEqual({ loaded: true, rare: 2, epique: 4, mythique: 10, divin: 1000 });
+});
