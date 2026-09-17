@@ -1,12 +1,13 @@
-/* SHADOWREACH · Fusion milestone Gold rewards authority v355
+/* SHADOWREACH · Fusion milestone Gold rewards authority v357
    Approved Gold ladder.
    Free / Premium: 50=50k/10k, 150=100k/20k, 250=150k/30k,
    350=200k/40k, 500=300k/60k, 1000=600k/120k, 1500=1M/200k.
-   V355: while rewards are being redesigned, 50 and 150 Fusions are forcibly
-   kept unclaimed so both remain available to claim again after the redesign. */
+   V357: removes the global DOM MutationObserver that could create a render loop
+   through update() -> scheduleRender() -> DOM mutation -> observer. */
 (function(){
 'use strict';
-if(window.__srFusionGoldRewardsV355)return;
+if(window.__srFusionGoldRewardsV357)return;
+window.__srFusionGoldRewardsV357=true;
 window.__srFusionGoldRewardsV355=true;
 
 var LADDER={
@@ -65,12 +66,19 @@ function claim(id,premium){
 function enforceDesignReset(){
  try{
   if(typeof S==='undefined'||!S)return false;
+  var a=S.accomplishments||{},c=a.claimed||{},p=a.premiumClaimed||{};
+  var needs=false;
+  for(var i=0;i<RESET_IDS.length;i++){
+   var id=RESET_IDS[i];
+   if(c[id]||p[id]){needs=true;break;}
+  }
+  if(!needs)return false;
   var changed=false;
   function apply(s){
-   var a=ensure(s);
+   var x=ensure(s);
    RESET_IDS.forEach(function(id){
-    if(a.claimed[id]){a.claimed[id]=false;changed=true;}
-    if(a.premiumClaimed[id]){a.premiumClaimed[id]=false;changed=true;}
+    if(x.claimed[id]){x.claimed[id]=false;changed=true;}
+    if(x.premiumClaimed[id]){x.premiumClaimed[id]=false;changed=true;}
    });
   }
   if(typeof update==='function')update(apply);else{apply(S);if(changed){try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}}}
@@ -99,7 +107,7 @@ function patchUI(){
    if(RESET_IDS.indexOf(id)>=0){
     var done=count(S)>=cfg.target;
     if(rewards[0]){var freeState=rewards[0].querySelector('.achState,.btn');if(freeState)freeState.outerHTML=done?'<button class="btn sm" data-ach="'+id+'" data-primary="true">Récupérer</button>':'<span class="achState">En cours</span>';}
-    if(rewards[1]){var premState=rewards[1].querySelector('.achState,.btn');if(premState)premState.outerHTML=premiumOwned(ensure(S))?(done?'<button class="btn sm" data-ach-premium="'+id+'" data-primary="true">Récupérer</button>':'<span class="achState">En cours</span>'):'<span class="achState locked">Premium</span>';}
+    if(rewards[1]){var premState=rewards[1].querySelector('.achState,.btn');if(premState)premState.outerHTML=premiumOwned((S&&S.accomplishments)||{})?(done?'<button class="btn sm" data-ach-premium="'+id+'" data-primary="true">Récupérer</button>':'<span class="achState">En cours</span>'):'<span class="achState locked">Premium</span>';}
    }
   }
  }catch(_){}
@@ -108,9 +116,12 @@ function patchUI(){
 try{
  enforceDesignReset();
  patchUI();
- if(typeof MutationObserver==='function'&&document.body){var mo=new MutationObserver(patchUI);mo.observe(document.body,{childList:true,subtree:true});}
- document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('[data-ach-tab]'))setTimeout(patchUI,0);},true);
+ document.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest?e.target.closest('[data-ach-tab],[data-act="accomplishments"],#srAchArenaLauncher138'):null;
+  if(t)setTimeout(patchUI,0);
+ },true);
  window.addEventListener('sr:accomplishments-ready',patchUI);
+ window.addEventListener('sr:accomplishmentclaimed',function(){setTimeout(patchUI,0);});
  setTimeout(patchUI,100);setTimeout(patchUI,400);setTimeout(patchUI,1000);
 }catch(_){}
 })();
