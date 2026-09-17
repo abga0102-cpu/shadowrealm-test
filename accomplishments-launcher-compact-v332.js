@@ -87,11 +87,17 @@ s.textContent=`
 `;
 document.head.appendChild(s);
 try{
- if(!window.__srFusionGoldRewardsV352){
+ if(!window.__srFusionGoldRewardsV355){
   var r=document.createElement('script');
-  r.src='fusion-gold-rewards-v352.js?v=2026.09.17.352';
+  r.src='fusion-gold-rewards-v352.js?v=2026.09.17.355';
   r.async=false;
   document.body.appendChild(r);
+ }
+ if(!window.__srFusionSaveBaselineV356){
+  var b=document.createElement('script');
+  b.src='fusion-save-baseline-v356.js?v=2026.09.17.356';
+  b.async=false;
+  document.body.appendChild(b);
  }
 }catch(_){}
 })();
