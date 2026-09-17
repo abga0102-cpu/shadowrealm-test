@@ -1,4 +1,8 @@
 /* SHADOWREACH V288 · Boss final authority
+   V348 extension: Campaign bosses from Facile 5-11 onward follow the same
+   3-stage-back pressure shift as normal Campaign enemies. The first shifted
+   reference is floor 88 / Facile 5-8.
+
    Campaign boss HP anchors are FINAL post-spawn values. V322 stretches the
    historical 1..400 boss curve across the 1..800 Campaign while preserving
    the approved 5-stage Boss cadence. Mega Bosses still inherit the exact
@@ -8,6 +12,10 @@
   'use strict';
   if(window.__srBossFinalV288)return;
   window.__srBossFinalV288=true;
+
+  var CAMPAIGN_BALANCE_START=91;
+  var CAMPAIGN_BALANCE_MIN=88;
+  var CAMPAIGN_BALANCE_OFFSET=3;
 
   /* Legacy anchors stay documented here for compatibility/fallback. The active
      V322 authority is __srV285BossHP, which maps 1..800 onto these historical
@@ -20,8 +28,14 @@
     130:2200000000,140:4000000000,150:7000000000
   };
 
+  function campaignBalanceFloorV348(floor){
+    var f=Math.max(1,Math.min(800,Math.round(Number(floor)||1)));
+    if(f<CAMPAIGN_BALANCE_START)return f;
+    return Math.max(CAMPAIGN_BALANCE_MIN,f-CAMPAIGN_BALANCE_OFFSET);
+  }
+
   function bossHP(floor){
-    floor=Math.floor(Number(floor)||0);
+    floor=campaignBalanceFloorV348(floor);
     if(typeof window.__srV285BossHP==='function')return window.__srV285BossHP(floor);
     if(BOSS_HP[floor]!=null)return BOSS_HP[floor];
     return null;
@@ -33,11 +47,11 @@
   }
 
   /* Boss damage stays tied to the same semantic world depth as V322 HP/damage,
-     not to the doubled number of internal stages. This preserves the historical
-     boss pressure while allowing twice as many Campaign encounters. */
+     not to the doubled number of internal stages. V348 first shifts the Campaign
+     reference back three stages from 5-11, matching the normal-enemy curve. */
   function legacyBossDamageStatMul(floor){
     var every=(typeof RULES!=='undefined'&&RULES.BOSS_EVERY)||10;
-    var semantic=semanticLegacyFloor(floor);
+    var semantic=semanticLegacyFloor(campaignBalanceFloorV348(floor));
     var bossNo=Math.max(1,Math.min(10,Math.floor(semantic/every)));
     return 1+0.06*(bossNo-1);
   }
@@ -71,5 +85,8 @@
     }
   }catch(_){ }
 
-  window.__srBossFinalConfigV288={bossHP:BOSS_HP,damageStatMul:legacyBossDamageStatMul,semanticLegacyFloor:semanticLegacyFloor};
+  window.__srBossFinalConfigV288={
+    bossHP:BOSS_HP,resolvedBossHP:bossHP,damageStatMul:legacyBossDamageStatMul,semanticLegacyFloor:semanticLegacyFloor,
+    campaign5_11Balance:{startFloor:CAMPAIGN_BALANCE_START,startStage:'5-11',minimumFloor:CAMPAIGN_BALANCE_MIN,minimumStage:'5-8',offset:CAMPAIGN_BALANCE_OFFSET,balanceFloor:campaignBalanceFloorV348}
+  };
 })();
