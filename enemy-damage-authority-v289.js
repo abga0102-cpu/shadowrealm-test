@@ -1,15 +1,14 @@
 /* SHADOWREACH V289 · Campaign enemy balance authority
-   V325 extension: 1-1 is an onboarding exception before the player can access
-   equipment/Forge progression. V324 floor-reference pressure resumes after it.
+   V362: campaign HP and damage are reduced by 40% at their source.
+   The special visible stage 1-2 Forge tutorial remains owned by V321 and may
+   intentionally overwrite these values before the player's first Forge craft.
 
    Design rule:
    - The floor determines enemy power. Current player stats are never sampled.
-   - A correctly equipped, reasonably upgraded player targets ~3.6 basic hits.
-   - Naked / badly under-geared players should hit a clear progression wall.
-   - Better gear keeps its real advantage and may still produce 1-2 hit kills.
-   - 1-1 must remain completable with the starting hero because no progression
-     tool is available yet; this is a fixed floor exception, not player scaling.
-   - Boss HP remains owned by V285/V288; boss damage consumes this floor curve.
+   - The existing campaign curve, tiers, elites, bosses and progression remain intact.
+   - Normal campaign combat uses 60% of the previous HP and damage values.
+   - Visible stage 1-2 keeps its existing forced tutorial behavior before Forge.
+   - Raid balance is unchanged.
 */
 (function(){
   'use strict';
@@ -18,8 +17,10 @@
   window.__srCampaignReferenceBalanceV323=true;
   window.__srCampaignReferenceBalanceV324=true;
   window.__srCampaignReferenceBalanceV325=true;
+  window.__srCampaignPowerSourceV362=true;
 
   var LEGACY_MAX=400;
+  var CAMPAIGN_POWER_MUL=0.60;
   var TARGET_HITS_TO_KILL=3.6;
   var TARGET_HITS_TO_DEFEAT_REFERENCE=8;
   var INTRO_FLOOR_HP=65;
@@ -64,17 +65,30 @@
   function expectedDamage(f){return logInterp(REFERENCE_DAMAGE,semanticLegacyFloor(f));}
   function expectedHP(f){return logInterp(REFERENCE_HP,semanticLegacyFloor(f));}
   function isIntroFloor(f){return Math.max(1,Math.round(Number(f)||1))===1;}
-  function campaignEnemyHP(f){
+  function previousCampaignEnemyHP(f){
     if(isIntroFloor(f))return INTRO_FLOOR_HP;
     return Math.max(1,Math.round(expectedDamage(f)*TARGET_HITS_TO_KILL));
   }
-  function campaignEnemyDamage(f){
+  function previousCampaignEnemyDamage(f){
     if(isIntroFloor(f))return INTRO_FLOOR_DAMAGE;
     return Math.max(1,Math.round(expectedHP(f)/TARGET_HITS_TO_DEFEAT_REFERENCE));
+  }
+  function campaignEnemyHP(f){return Math.max(1,Math.round(previousCampaignEnemyHP(f)*CAMPAIGN_POWER_MUL));}
+  function campaignEnemyDamage(f){return Math.max(1,Math.round(previousCampaignEnemyDamage(f)*CAMPAIGN_POWER_MUL));}
+
+  /* Boss HP has a separate final authority (V288). Scale its source by the same
+     factor so boss ratios and final post-spawn targets stay consistent instead
+     of cancelling the normal-enemy reduction. */
+  var previousBossHP=typeof window.__srV285BossHP==='function'?window.__srV285BossHP:null;
+  function campaignBossHP(f){
+    if(!previousBossHP)return null;
+    var v=Number(previousBossHP(f));
+    return isFinite(v)&&v>0?Math.max(1,Math.round(v*CAMPAIGN_POWER_MUL)):v;
   }
 
   window.__srV285EnemyHP=campaignEnemyHP;
   window.__srV289EnemyDamage=campaignEnemyDamage;
+  if(previousBossHP)window.__srV285BossHP=campaignBossHP;
   window.__srV323ExpectedPlayerDamage=expectedDamage;
   window.__srV323ExpectedPlayerHP=expectedHP;
   window.__srV324ExpectedPlayerDamage=expectedDamage;
@@ -84,9 +98,7 @@
   try{if(typeof enemyHP==='function')enemyHP=campaignEnemyHP;}catch(_){ }
   try{if(typeof enemyDamage==='function')enemyDamage=campaignEnemyDamage;}catch(_){ }
 
-  /* V324 raid-only difficulty increase. Campaign formulas above stay unchanged.
-     Applying the multiplier at the final enemy-construction boundary preserves
-     every existing raid curve, boss identity, escort ratio and special mechanic. */
+  /* V324 raid-only difficulty increase. Raid formulas remain unchanged. */
   try{
     if(typeof makeEnemy==='function'){
       var makeEnemyBeforeRaidV324=makeEnemy;
@@ -105,13 +117,14 @@
   window.__srEnemyDamageConfigV289={
     version:325,maxFloor:800,legacyMaxFloor:400,semanticLegacyFloor:semanticLegacyFloor,
     referenceDamage:REFERENCE_DAMAGE,referenceHP:REFERENCE_HP,
-    targetHitsToKill:TARGET_HITS_TO_KILL,
-    targetHitsToDefeatReference:TARGET_HITS_TO_DEFEAT_REFERENCE,
+    targetHitsToKill:TARGET_HITS_TO_KILL,targetHitsToDefeatReference:TARGET_HITS_TO_DEFEAT_REFERENCE,
     expectedPlayerDamage:expectedDamage,expectedPlayerHP:expectedHP,
     enemyHP:campaignEnemyHP,enemyDamage:campaignEnemyDamage,
+    campaignPowerMul:CAMPAIGN_POWER_MUL,sourceReductionV362:true,
+    forgeTutorialException:{visibleStage:'1-2',internalFloor:2,owner:'V321',beforeFirstForge:true},
     scaling:'floor-only-no-player-rubber-band',
     earlyCampaign:'1-1-onboarding-then-gear-pressure',
-    introFloor:{floor:1,hp:INTRO_FLOOR_HP,damage:INTRO_FLOOR_DAMAGE},
+    introFloor:{floor:1,hp:Math.max(1,Math.round(INTRO_FLOOR_HP*CAMPAIGN_POWER_MUL)),damage:Math.max(1,Math.round(INTRO_FLOOR_DAMAGE*CAMPAIGN_POWER_MUL))},
     raidPowerV324:{hpMul:RAID_HP_MUL,damageMul:RAID_DAMAGE_MUL,campaignUnchanged:true},
     expectedGates:{
       weak:'69-89',normal:'99-119',max0:'139-159',ascended:'199-299+',
