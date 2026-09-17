@@ -27,11 +27,12 @@ async function runOneAutoCycle(page, forgeImpl) {
     try {
       S.forge.autoForge = true;
       scheduleAutoForge(0);
-      await new Promise((resolve) => setTimeout(resolve, 80));
+      await new Promise((resolve) => setTimeout(resolve, 140));
       return {
         dust: Number(S.poussiere) || 0,
         authority: !!window.__srAutoForgeDustV346,
         version: window.__srAutoForgeDustV346 && window.__srAutoForgeDustV346.version,
+        authority348: !!window.__srAutoForgeDustV348,
       };
     } finally {
       S.forge.autoForge = false;
@@ -46,7 +47,7 @@ async function runOneAutoCycle(page, forgeImpl) {
   }, { forgeImplSource: forgeImpl.toString() });
 }
 
-test('V346 Auto-Forge scheduler restores Dust when a recycled result was not credited', async ({ page }) => {
+test('V348 Auto-Forge scheduler restores Dust when a recycled result was not credited', async ({ page }) => {
   await openCleanGame(page);
   const result = await runOneAutoCycle(page, function () {
     return [{ rarity: 'RARE', slot: 'gants', recycled: true, dust: 2 }];
@@ -54,10 +55,11 @@ test('V346 Auto-Forge scheduler restores Dust when a recycled result was not cre
 
   expect(result.authority).toBe(true);
   expect(result.version).toBe(346);
+  expect(result.authority348).toBe(true);
   expect(result.dust).toBe(2);
 });
 
-test('V346 Auto-Forge scheduler never double-credits Dust already paid by forgeSummon', async ({ page }) => {
+test('V348 Auto-Forge scheduler never double-credits Dust already paid by forgeSummon', async ({ page }) => {
   await openCleanGame(page);
   const result = await runOneAutoCycle(page, function () {
     S.poussiere += 2;
@@ -65,5 +67,52 @@ test('V346 Auto-Forge scheduler never double-credits Dust already paid by forgeS
   });
 
   expect(result.authority).toBe(true);
+  expect(result.authority348).toBe(true);
   expect(result.dust).toBe(2);
+});
+
+test('V348 real Auto-Forge filter credits Dust for unchecked rarities', async ({ page }) => {
+  await openCleanGame(page);
+
+  const result = await page.evaluate(async () => {
+    try {
+      if (typeof autoForgeTimer !== 'undefined' && autoForgeTimer !== null) {
+        clearTimeout(autoForgeTimer);
+        autoForgeTimer = null;
+      }
+    } catch (_) {}
+
+    S.level = Math.max(10, Number(S.level) || 10);
+    S.forge.autoForge = false;
+    S.forge.autoBatch = 1;
+    S.forge.filter = true;
+    Object.keys(S.forge.keep || {}).forEach((rarity) => { S.forge.keep[rarity] = false; });
+    S.minerai = 999999;
+    S.poussiere = 6000;
+
+    const invBefore = (S.inventory || []).length;
+    S.forge.autoForge = true;
+    scheduleAutoForge(0);
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    S.forge.autoForge = false;
+    try {
+      if (typeof autoForgeTimer !== 'undefined' && autoForgeTimer !== null) {
+        clearTimeout(autoForgeTimer);
+        autoForgeTimer = null;
+      }
+    } catch (_) {}
+
+    return {
+      dust: Number(S.poussiere) || 0,
+      inventoryBefore: invBefore,
+      inventoryAfter: (S.inventory || []).length,
+      filter: !!S.forge.filter,
+      authority348: !!window.__srAutoForgeDustV348,
+    };
+  });
+
+  expect(result.authority348).toBe(true);
+  expect(result.filter).toBe(true);
+  expect(result.dust).toBeGreaterThan(6000);
+  expect(result.inventoryAfter).toBe(result.inventoryBefore);
 });
