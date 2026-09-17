@@ -1,7 +1,7 @@
 /* SHADOWREACH V353 · smooth late-Looser balance + floor-based campaign ranks
    - Monster growth is softened progressively from old Facile 4-1 (floor 61) to floor 100.
-   - Every normal floor remains stronger than the previous one; no hard nerf step at 5-2.
-   - Replaces the old campaign naming with floor-based ranks:
+   - The old abrupt cut at 5-2 is removed: each normal floor remains stronger than the previous one.
+   - Campaign ranks by real floor:
      Looser 1-25, Débutant 26-49, Aventurier 50-99, Prodige 100-249,
      Héros 250-499, Légende 500-699, Divin 700+.
 */
@@ -10,7 +10,7 @@
   if(window.__srCampaignTierBalanceV353)return;
   window.__srCampaignTierBalanceV353=true;
 
-  var SMOOTH_START=61;  /* ancien Facile 4-1 */
+  var SMOOTH_START=61;  /* ancien 4-1 */
   var SMOOTH_END=100;
   var END_MUL=0.85;
 
@@ -22,8 +22,8 @@
     return lerp(1,END_MUL,(floor-SMOOTH_START)/(SMOOTH_END-SMOOTH_START));
   }
 
-  /* V334 previously applied an additional taper on floors 76..100. Undo that
-     taper first, then apply one continuous V353 curve from floor 61 onward. */
+  /* V334 already softened 76..100. Undo that older taper first, then apply
+     one continuous V353 curve from 61 to 100 so no two nerfs stack. */
   function oldLateEasyHpMul(floor,isBoss){
     if(floor<76||floor>100)return 1;
     var t=(floor-76)/(100-76);
@@ -71,24 +71,44 @@
 
   function tierForFloor(floor){
     floor=Math.max(1,Math.floor(Number(floor)||1));
-    for(var i=0;i<TIERS.length;i++)if(floor>=TIERS[i].min&&floor<=TIERS[i].max)return TIERS[i].name;
+    for(var i=0;i<TIERS.length;i++){
+      if(floor>=TIERS[i].min&&floor<=TIERS[i].max)return TIERS[i].name;
+    }
     return 'Divin';
   }
   window.__srCampaignTierForFloor=tierForFloor;
+  window.__srCampaignFloorLabel=function(floor){return tierForFloor(floor)+' · Étage '+Math.max(1,Math.floor(Number(floor)||1));};
 
-  function rankedFloorLabel(floor){return tierForFloor(floor)+' · Étage '+floor;}
-  window.__srCampaignFloorLabel=rankedFloorLabel;
-
-  function relabelText(value){
-    if(!value||typeof value!=='string')return value;
-    var m=value.match(/^\s*[ÉE]tage\s+(\d+)\s*$/i);
-    if(m)return rankedFloorLabel(Number(m[1]));
-    m=value.match(/^\s*ÉTAGE\s+(\d+)\s*$/);
-    if(m)return tierForFloor(Number(m[1])).toUpperCase()+' · ÉTAGE '+Number(m[1]);
-    return value;
+  /* The combat renderer rewrites #aLabel itself. Keep its real text untouched
+     and add the rank visually with CSS, avoiding a render/observer tug-of-war. */
+  function ensureStyle(){
+    if(document.getElementById('srCampaignRankV353Style'))return;
+    var style=document.createElement('style');
+    style.id='srCampaignRankV353Style';
+    style.textContent='#aLabel[data-sr-rank]::before{content:attr(data-sr-rank) " · ";}';
+    document.head.appendChild(style);
   }
 
-  function relabel(root){
+  function floorFromLabel(label){
+    var m=String(label&&label.textContent||'').match(/[ÉE]tage\s+([\d\s ]+)/i);
+    return m?Number(m[1].replace(/[\s ]/g,''))||0:0;
+  }
+
+  function syncArenaRank(){
+    try{
+      var label=document.getElementById('aLabel');
+      if(!label)return;
+      var floor=0;
+      try{
+        if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')floor=Number(combat.floor)||0;
+      }catch(_){ }
+      if(!floor)floor=floorFromLabel(label);
+      if(floor>0)label.setAttribute('data-sr-rank',tierForFloor(floor));
+      else label.removeAttribute('data-sr-rank');
+    }catch(_){ }
+  }
+
+  function relabelStaticText(root){
     try{
       root=root||document.body;
       if(!root)return;
@@ -97,32 +117,43 @@
       while((node=walker.nextNode())){
         var parent=node.parentNode;
         if(!parent||/^(SCRIPT|STYLE|TEXTAREA)$/i.test(parent.nodeName||''))continue;
-        var next=relabelText(node.nodeValue);
-        if(next!==node.nodeValue)node.nodeValue=next;
+        if(parent.id==='aLabel')continue;
+        var value=String(node.nodeValue||'');
+        var m=value.match(/^\s*[ÉE]tage\s+(\d+)\s*$/i);
+        if(m){
+          var floor=Number(m[1]);
+          node.nodeValue=tierForFloor(floor)+' · Étage '+floor;
+        }
       }
     }catch(_){ }
   }
 
-  function installObserver(){
-    relabel(document.body);
+  function installRankUI(){
+    ensureStyle();
+    relabelStaticText(document.body);
+    syncArenaRank();
     try{
       var pending=false;
       var observer=new MutationObserver(function(){
         if(pending)return;
         pending=true;
-        requestAnimationFrame(function(){pending=false;relabel(document.body);});
+        requestAnimationFrame(function(){
+          pending=false;
+          relabelStaticText(document.body);
+          syncArenaRank();
+        });
       });
       observer.observe(document.body,{subtree:true,childList:true,characterData:true});
       window.__srCampaignTierObserverV353=observer;
     }catch(_){ }
   }
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installObserver,{once:true});
-  else installObserver();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installRankUI,{once:true});
+  else installRankUI();
 
   window.__srCampaignTierBalanceConfigV353={
     smoothStartFloor:SMOOTH_START,
-    smoothStartLegacyStage:'ancien Facile 4-1',
+    smoothStartLegacyStage:'ancien 4-1',
     smoothEndFloor:SMOOTH_END,
     endMultiplier:END_MUL,
     tiers:TIERS
