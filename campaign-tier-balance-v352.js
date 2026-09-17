@@ -1,12 +1,12 @@
-/* SHADOWREACH V360 · same campaign system, monsters -40% power
-   - Keeps the existing campaign curve, ranks, bosses and progression unchanged.
-   - Reduces campaign monster HP and damage to 60% of their current values.
-   - Keeps the existing smooth balance from floor 61 to 100 before the global reduction.
-   - Does not alter rewards, milestones, Pass interactions or progression rules. */
+/* SHADOWREACH V362 · campaign smoothing after source-level -40% power
+   - Keeps the existing smooth monster curve from floor 61 to 100.
+   - The global -40% campaign reduction now lives in enemy-damage-authority-v289.js.
+   - Does not apply a second 0.60 multiplier here.
+   - Keeps ranks, bosses, rewards, progression and Pass behavior unchanged. */
 (function(){
   'use strict';
-  if(window.__srCampaignTierBalanceV360)return;
-  window.__srCampaignTierBalanceV360=true;
+  if(window.__srCampaignTierBalanceV362)return;
+  window.__srCampaignTierBalanceV362=true;
 
   try{if(window.__srCampaignRankObserverV353&&window.__srCampaignRankObserverV353.disconnect)window.__srCampaignRankObserverV353.disconnect();}catch(_){}
   try{if(window.__srCampaignTierObserverV353&&window.__srCampaignTierObserverV353.disconnect)window.__srCampaignTierObserverV353.disconnect();}catch(_){}
@@ -14,7 +14,6 @@
 
   var SMOOTH_START=61;
   var SMOOTH_END=100;
-  var GLOBAL_POWER_MUL=0.60;
 
   function clamp01(v){return Math.max(0,Math.min(1,Number(v)||0));}
   function lerp(a,b,t){return a+(b-a)*clamp01(t);}
@@ -26,47 +25,40 @@
   function smoothDamageMul(floor){return lerp(1,0.60,smoothT(floor));}
 
   try{
-    if(typeof makeEnemy==='function'&&!makeEnemy.__srCampaignTierBalanceV360){
+    if(typeof makeEnemy==='function'&&!makeEnemy.__srCampaignTierBalanceV362){
       var previousMakeEnemy=makeEnemy;
       makeEnemy=function(mode,opts){
         var enemy=previousMakeEnemy(mode,opts);
         if(mode!=='campaign'||!opts||!enemy)return enemy;
 
         var floor=Number(opts.floor)||0;
-        var hpMul=1;
-        var dmgMul=1;
+        if(floor<SMOOTH_START||floor>SMOOTH_END)return enemy;
 
-        if(floor>=SMOOTH_START&&floor<=SMOOTH_END){
-          /* V334 already tapers 76..100. Undo it first so the established
-             V358 smooth curve remains the single authority for 61..100. */
-          var old=enemy.__srLateEasyBalanceV334;
-          if(old){
-            var oldHp=Math.max(0.000001,Number(old.hpMul)||1);
-            var oldDmg=Math.max(0.000001,Number(old.dmgMul)||1);
-            enemy.maxHP=Math.max(1,Math.round(Number(enemy.maxHP||enemy.hp||1)/oldHp));
-            enemy.hp=Math.min(enemy.maxHP,Math.max(1,Math.round(Number(enemy.hp||enemy.maxHP||1)/oldHp)));
-            enemy.dmg=Math.max(1,Math.round(Number(enemy.dmg||1)/oldDmg));
-          }
-          hpMul=smoothHpMul(floor,!!opts.boss);
-          dmgMul=smoothDamageMul(floor);
+        /* V334 already tapers 76..100. Undo it first so only this established
+           smooth curve applies on top of the source-level campaign balance. */
+        var old=enemy.__srLateEasyBalanceV334;
+        if(old){
+          var oldHp=Math.max(0.000001,Number(old.hpMul)||1);
+          var oldDmg=Math.max(0.000001,Number(old.dmgMul)||1);
+          enemy.maxHP=Math.max(1,Math.round(Number(enemy.maxHP||enemy.hp||1)/oldHp));
+          enemy.hp=Math.min(enemy.maxHP,Math.max(1,Math.round(Number(enemy.hp||enemy.maxHP||1)/oldHp)));
+          enemy.dmg=Math.max(1,Math.round(Number(enemy.dmg||1)/oldDmg));
         }
 
-        /* Global -40% power: preserve every relative curve and boss ratio,
-           while applying the same 0.60 factor to HP and damage. */
-        var finalHpMul=hpMul*GLOBAL_POWER_MUL;
-        var finalDmgMul=dmgMul*GLOBAL_POWER_MUL;
-        enemy.maxHP=Math.max(1,Math.floor(Number(enemy.maxHP||enemy.hp||1)*finalHpMul));
-        enemy.hp=Math.min(enemy.maxHP,Math.max(1,Math.floor(Number(enemy.hp||enemy.maxHP||1)*finalHpMul)));
-        enemy.dmg=Math.max(1,Math.floor(Number(enemy.dmg||1)*finalDmgMul));
-        enemy.__srCampaignBalanceV360={
-          hpMul:finalHpMul,
-          dmgMul:finalDmgMul,
-          globalPowerMul:GLOBAL_POWER_MUL,
-          smoothApplied:floor>=SMOOTH_START&&floor<=SMOOTH_END
+        var hpMul=smoothHpMul(floor,!!opts.boss);
+        var dmgMul=smoothDamageMul(floor);
+        enemy.maxHP=Math.max(1,Math.floor(Number(enemy.maxHP||enemy.hp||1)*hpMul));
+        enemy.hp=Math.min(enemy.maxHP,Math.max(1,Math.floor(Number(enemy.hp||enemy.maxHP||1)*hpMul)));
+        enemy.dmg=Math.max(1,Math.floor(Number(enemy.dmg||1)*dmgMul));
+        enemy.__srCampaignBalanceV362={
+          hpMul:hpMul,
+          dmgMul:dmgMul,
+          sourcePowerMul:(window.__srEnemyDamageConfigV289&&Number(window.__srEnemyDamageConfigV289.campaignPowerMul))||0.60,
+          smoothApplied:true
         };
         return enemy;
       };
-      makeEnemy.__srCampaignTierBalanceV360=true;
+      makeEnemy.__srCampaignTierBalanceV362=true;
     }
   }catch(_){}
 
@@ -87,13 +79,14 @@
   window.__srCampaignRankForFloor=rankForFloor;
   window.__srCampaignFloorLabel=function(floor){floor=Math.max(1,Math.floor(Number(floor)||1));return rankForFloor(floor)+' · Étage '+floor;};
 
-  window.__srCampaignTierBalanceConfigV360={
+  window.__srCampaignTierBalanceConfigV362={
     smoothStartFloor:SMOOTH_START,
     smoothEndFloor:SMOOTH_END,
     normalHpMulEnd:0.52,
     bossHpMulEnd:0.45,
     smoothDamageMulEnd:0.60,
-    globalPowerMul:GLOBAL_POWER_MUL,
+    globalPowerMulHere:1,
+    sourcePowerAuthority:'enemy-damage-authority-v289.js V362',
     ranks:RANKS,
     globalDomObserver:false,
     accomplishmentsRecovery:false
