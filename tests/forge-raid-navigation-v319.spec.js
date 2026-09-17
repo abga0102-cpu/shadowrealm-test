@@ -23,6 +23,11 @@ test('V319 Forge depletion points through Progression > Défis > Raids to Raid M
 
   const state = await page.evaluate(() => {
     S.level = 3;
+    S.floor = 2;
+    S.recordFloor = Math.max(2, Number(S.recordFloor) || 1);
+    S.minerai = 250;
+    S.tutorial = S.tutorial || {};
+    S.tutorial.forgeIntroReadyV321 = true;
     S.power = computePower(S);
     D = computeDerived(S);
 
@@ -34,6 +39,8 @@ test('V319 Forge depletion points through Progression > Défis > Raids to Raid M
 
     const seen = S.tutorial.seen || (S.tutorial.seen = {});
     try { Object.keys(TUTORIAL_FLOWS || {}).forEach((key) => { seen[key] = true; }); } catch (_) {}
+    seen.combat = true;
+    seen.equipement = true;
     seen.raid = false;
     const tutorial = pendingTutorialStep();
 
@@ -66,6 +73,7 @@ test('V319 Forge depletion points through Progression > Défis > Raids to Raid M
     const card = document.getElementById('tutorialCard');
     if (card) card.remove();
     S.tutorial = null;
+    if (document.getElementById('overlay') && typeof closeModal === 'function') closeModal();
     nav('accueil');
     scheduleRender();
   });

@@ -25,11 +25,11 @@ test.describe('Accomplishments claim lifecycle', () => {
       window.addEventListener('sr:accomplishmentclaimed', e => {
         window.__claimLifecycleSeen.push(e.detail && e.detail.id);
       });
-      S.forge = S.forge || {};
-      S.forge.level = Math.max(15, Number(S.forge.level) || 0);
       S.accomplishments = S.accomplishments || {};
       S.accomplishments.claimed = S.accomplishments.claimed || {};
-      delete S.accomplishments.claimed.forge15;
+      S.accomplishments.fusionCount = 50;
+      S.accomplishments.mergeCrafts = 50;
+      delete S.accomplishments.claimed.fusion50;
       S.accomplishments.mergePieces = S.accomplishments.mergePieces || {};
       S.accomplishments.mergePieces.COMMUN = 0;
       S.sanctuary = S.sanctuary || {};
@@ -39,17 +39,17 @@ test.describe('Accomplishments claim lifecycle', () => {
     });
 
     await page.locator('.srAch139 [data-ach-tab="defis"]').click();
-    await page.locator('.srAch139 [data-ach="forge15"]').click();
+    await page.locator('.srAch139 [data-ach="fusion50"]').click();
 
     const state = await page.evaluate(() => ({
       events: window.__claimLifecycleSeen.slice(),
-      claimed: !!S.accomplishments.claimed.forge15,
+      claimed: !!S.accomplishments.claimed.fusion50,
       pending: Number(S.accomplishments.mergePieces.COMMUN) || 0,
       board: (S.sanctuary.mergeBoard || []).filter(x => x === 'COMMUN').length,
       reserve: Number(S.sanctuary.mergeReserve && S.sanctuary.mergeReserve.COMMUN) || 0,
     }));
 
-    expect(state.events).toEqual(['forge15']);
+    expect(state.events).toEqual(['fusion50']);
     expect(state.claimed).toBe(true);
     expect(state.pending).toBe(0);
     expect(state.board + state.reserve).toBe(15);

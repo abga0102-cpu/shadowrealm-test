@@ -8,6 +8,10 @@ test('V320 Forge compares replacement Power and keeps all three decisions availa
   await expect(page.locator('#homeForge')).toHaveCount(1, { timeout: 10000 });
 
   const setup = await page.evaluate(() => {
+    S.floor = 2;
+    S.recordFloor = Math.max(2, Number(S.recordFloor) || 1);
+    S.tutorial = S.tutorial || {};
+    S.tutorial.forgeIntroReadyV321 = true;
     S.minerai = 1e12;
     const firstBySlot = Object.create(null);
     let firstResult = null;

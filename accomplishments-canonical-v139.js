@@ -119,6 +119,7 @@ function installInteractions(){
   var t=e.target&&e.target.closest?e.target.closest('[data-ach-tab]'):null;if(t){e.preventDefault();e.stopPropagation();activeTab=t.getAttribute('data-ach-tab')==='defis'?'defis':'etages';reopen();return;}
   var info=e.target&&e.target.closest?e.target.closest('[data-ach-premium-info]'):null;if(info){e.preventDefault();e.stopPropagation();try{if(typeof toast==='function')toast(premiumOwned()?'Pass Premium actif':'Pass Premium · 9,99 €',premiumOwned());}catch(_){}return;}
  },true);
+ window.addEventListener('sr:accomplishmentclaimed',reopen);
 }
 function installProgressEntry(){
  if(window.__srAccomplishmentsProgressEntryV139)return;

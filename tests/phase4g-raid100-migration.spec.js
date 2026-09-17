@@ -163,6 +163,7 @@ test('canonical Raid 100 claims pay the validated reward directly and stamp the 
     ACT.accomplishments();
   });
 
+  await page.locator('#overlay .srAch139 [data-ach-tab="defis"]').click();
   const claim = page.locator('#overlay .srAch139 [data-ach="raid100"]');
   await expect(claim).toHaveCount(1);
   await claim.click();
