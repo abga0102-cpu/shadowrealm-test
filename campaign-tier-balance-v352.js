@@ -1,13 +1,18 @@
-/* SHADOWREACH V353 · Campaign rank ladder + smooth late-Looser balance
-   - Smooths monster growth from floor 61 (old 4-1) through floor 100.
-   - Removes the abrupt V352 floor-82 cut: every base floor keeps growing.
-   - Campaign ranks by real floor:
-     1-25 Looser, 26-49 Débutant, 50-99 Aventurier, 100-249 Prodige,
-     250-499 Héros, 500-699 Légende, 700+ Divin. */
+/* SHADOWREACH V354 · interaction-safe campaign balance
+   - Keeps the smooth monster curve from floor 61 to 100.
+   - Keeps the requested campaign rank ladder as data/helpers.
+   - Removes the global MutationObserver that rescanned the whole DOM and could freeze UI clicks.
+   - Adds a small recovery for Pass Progression Étages/Défis tab switching. */
 (function(){
   'use strict';
-  if(window.__srCampaignTierBalanceV353)return;
-  window.__srCampaignTierBalanceV353=true;
+  if(window.__srCampaignTierBalanceV354)return;
+  window.__srCampaignTierBalanceV354=true;
+
+  /* Kill observers left by the problematic V353 code if this script is ever
+     hot-loaded on top of an already running page. */
+  try{if(window.__srCampaignRankObserverV353&&window.__srCampaignRankObserverV353.disconnect)window.__srCampaignRankObserverV353.disconnect();}catch(_){}
+  try{if(window.__srCampaignTierObserverV353&&window.__srCampaignTierObserverV353.disconnect)window.__srCampaignTierObserverV353.disconnect();}catch(_){}
+  try{if(window.__srCampaignTierLabelObserverV352&&window.__srCampaignTierLabelObserverV352.disconnect)window.__srCampaignTierLabelObserverV352.disconnect();}catch(_){}
 
   var SMOOTH_START=61;
   var SMOOTH_END=100;
@@ -22,7 +27,7 @@
   function smoothDamageMul(floor){return lerp(1,0.60,smoothT(floor));}
 
   try{
-    if(typeof makeEnemy==='function'&&!makeEnemy.__srCampaignTierBalanceV353){
+    if(typeof makeEnemy==='function'&&!makeEnemy.__srCampaignTierBalanceV354){
       var previousMakeEnemy=makeEnemy;
       makeEnemy=function(mode,opts){
         var enemy=previousMakeEnemy(mode,opts);
@@ -30,8 +35,8 @@
         var floor=Number(opts.floor)||0;
         if(floor<SMOOTH_START||floor>SMOOTH_END)return enemy;
 
-        /* V334 already softened 76..100. Undo that curve first so this layer
-           owns one continuous 61..100 progression instead of stacking nerfs. */
+        /* V334 already tapers 76..100. Undo it first so only one smooth curve
+           applies, instead of stacking two separate reductions. */
         var old=enemy.__srLateEasyBalanceV334;
         if(old){
           var oldHp=Math.max(0.000001,Number(old.hpMul)||1);
@@ -46,12 +51,12 @@
         enemy.maxHP=Math.max(1,Math.floor(Number(enemy.maxHP||enemy.hp||1)*hpMul));
         enemy.hp=Math.min(enemy.maxHP,Math.max(1,Math.floor(Number(enemy.hp||enemy.maxHP||1)*hpMul)));
         enemy.dmg=Math.max(1,Math.floor(Number(enemy.dmg||1)*dmgMul));
-        enemy.__srSmoothLooserBalanceV353={hpMul:hpMul,dmgMul:dmgMul};
+        enemy.__srSmoothCampaignBalanceV354={hpMul:hpMul,dmgMul:dmgMul};
         return enemy;
       };
-      makeEnemy.__srCampaignTierBalanceV353=true;
+      makeEnemy.__srCampaignTierBalanceV354=true;
     }
-  }catch(_){ }
+  }catch(_){}
 
   var RANKS=[
     {min:1,max:25,label:'Looser'},
@@ -62,62 +67,44 @@
     {min:500,max:699,label:'Légende'},
     {min:700,max:Infinity,label:'Divin'}
   ];
-
   function rankForFloor(floor){
     floor=Math.max(1,Math.floor(Number(floor)||1));
-    for(var i=0;i<RANKS.length;i++){
-      if(floor>=RANKS[i].min&&floor<=RANKS[i].max)return RANKS[i].label;
-    }
+    for(var i=0;i<RANKS.length;i++)if(floor>=RANKS[i].min&&floor<=RANKS[i].max)return RANKS[i].label;
     return 'Divin';
   }
   window.__srCampaignRankForFloor=rankForFloor;
+  window.__srCampaignFloorLabel=function(floor){floor=Math.max(1,Math.floor(Number(floor)||1));return rankForFloor(floor)+' · Étage '+floor;};
 
-  function installRankUI(){
+  /* Do not observe the whole page. The renderer owns its DOM and must remain
+     free to update buttons/modals without an expensive tree walk on every mutation. */
+
+  var achRecoveryBusy=false;
+  function recoverAccomplishmentsTab(wanted){
+    if(achRecoveryBusy)return;
+    var selected=document.querySelector('.srAch139 [data-ach-tab].on');
+    if(selected&&selected.getAttribute('data-ach-tab')===wanted)return;
+    achRecoveryBusy=true;
     try{
-      if(!document.getElementById('srCampaignRankV353Style')){
-        var style=document.createElement('style');
-        style.id='srCampaignRankV353Style';
-        style.textContent='#aLabel[data-sr-rank]::before{content:attr(data-sr-rank) " · ";}';
-        document.head.appendChild(style);
-      }
-
-      var pending=false;
-      function sync(){
-        pending=false;
-        var label=document.getElementById('aLabel');
-        if(!label)return;
-        var floor=0;
-        try{
-          if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')floor=Number(combat.floor)||0;
-        }catch(_){ }
-        if(!floor){
-          var m=String(label.textContent||'').match(/Étage\s+([\d\s ]+)/i);
-          if(m)floor=Number(m[1].replace(/[\s ]/g,''))||0;
-        }
-        if(floor>0)label.setAttribute('data-sr-rank',rankForFloor(floor));
-        else label.removeAttribute('data-sr-rank');
-      }
-
-      var observer=new MutationObserver(function(){
-        if(pending)return;
-        pending=true;
-        requestAnimationFrame(sync);
-      });
-      observer.observe(document.body,{subtree:true,childList:true,characterData:true});
-      window.__srCampaignRankObserverV353=observer;
-      sync();
-    }catch(_){ }
+      if(typeof closeModal==='function')closeModal();
+      if(typeof ACT!=='undefined'&&ACT&&typeof ACT.accomplishments==='function')ACT.accomplishments();
+    }catch(_){}
+    setTimeout(function(){achRecoveryBusy=false;},80);
   }
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installRankUI,{once:true});
-  else installRankUI();
+  document.addEventListener('click',function(e){
+    var target=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach-tab]'):null;
+    if(!target)return;
+    var wanted=target.getAttribute('data-ach-tab')==='defis'?'defis':'etages';
+    setTimeout(function(){recoverAccomplishmentsTab(wanted);},0);
+  },true);
 
-  window.__srCampaignTierBalanceConfigV353={
+  window.__srCampaignTierBalanceConfigV354={
     smoothStartFloor:SMOOTH_START,
     smoothEndFloor:SMOOTH_END,
     normalHpMulEnd:0.52,
     bossHpMulEnd:0.45,
     damageMulEnd:0.60,
-    ranks:RANKS
+    ranks:RANKS,
+    globalDomObserver:false
   };
 })();
