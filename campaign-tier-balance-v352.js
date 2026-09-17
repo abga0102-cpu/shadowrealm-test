@@ -1,15 +1,14 @@
-/* SHADOWREACH V354 · interaction-safe campaign balance
+/* SHADOWREACH V358 · campaign balance only
    - Keeps the smooth monster curve from floor 61 to 100.
    - Keeps the requested campaign rank ladder as data/helpers.
-   - Removes the global MutationObserver that rescanned the whole DOM and could freeze UI clicks.
-   - Adds a small recovery for Pass Progression Étages/Défis tab switching. */
+   - Does not install any Pass/Accomplishments click recovery or global DOM observer. */
 (function(){
   'use strict';
-  if(window.__srCampaignTierBalanceV354)return;
-  window.__srCampaignTierBalanceV354=true;
+  if(window.__srCampaignTierBalanceV358)return;
+  window.__srCampaignTierBalanceV358=true;
 
-  /* Kill observers left by the problematic V353 code if this script is ever
-     hot-loaded on top of an already running page. */
+  /* Disconnect stale observers from older campaign builds if they are still alive,
+     but do not create any new observer or UI click handler here. */
   try{if(window.__srCampaignRankObserverV353&&window.__srCampaignRankObserverV353.disconnect)window.__srCampaignRankObserverV353.disconnect();}catch(_){}
   try{if(window.__srCampaignTierObserverV353&&window.__srCampaignTierObserverV353.disconnect)window.__srCampaignTierObserverV353.disconnect();}catch(_){}
   try{if(window.__srCampaignTierLabelObserverV352&&window.__srCampaignTierLabelObserverV352.disconnect)window.__srCampaignTierLabelObserverV352.disconnect();}catch(_){}
@@ -27,7 +26,7 @@
   function smoothDamageMul(floor){return lerp(1,0.60,smoothT(floor));}
 
   try{
-    if(typeof makeEnemy==='function'&&!makeEnemy.__srCampaignTierBalanceV354){
+    if(typeof makeEnemy==='function'&&!makeEnemy.__srCampaignTierBalanceV358){
       var previousMakeEnemy=makeEnemy;
       makeEnemy=function(mode,opts){
         var enemy=previousMakeEnemy(mode,opts);
@@ -51,10 +50,10 @@
         enemy.maxHP=Math.max(1,Math.floor(Number(enemy.maxHP||enemy.hp||1)*hpMul));
         enemy.hp=Math.min(enemy.maxHP,Math.max(1,Math.floor(Number(enemy.hp||enemy.maxHP||1)*hpMul)));
         enemy.dmg=Math.max(1,Math.floor(Number(enemy.dmg||1)*dmgMul));
-        enemy.__srSmoothCampaignBalanceV354={hpMul:hpMul,dmgMul:dmgMul};
+        enemy.__srSmoothCampaignBalanceV358={hpMul:hpMul,dmgMul:dmgMul};
         return enemy;
       };
-      makeEnemy.__srCampaignTierBalanceV354=true;
+      makeEnemy.__srCampaignTierBalanceV358=true;
     }
   }catch(_){}
 
@@ -75,36 +74,14 @@
   window.__srCampaignRankForFloor=rankForFloor;
   window.__srCampaignFloorLabel=function(floor){floor=Math.max(1,Math.floor(Number(floor)||1));return rankForFloor(floor)+' · Étage '+floor;};
 
-  /* Do not observe the whole page. The renderer owns its DOM and must remain
-     free to update buttons/modals without an expensive tree walk on every mutation. */
-
-  var achRecoveryBusy=false;
-  function recoverAccomplishmentsTab(wanted){
-    if(achRecoveryBusy)return;
-    var selected=document.querySelector('.srAch139 [data-ach-tab].on');
-    if(selected&&selected.getAttribute('data-ach-tab')===wanted)return;
-    achRecoveryBusy=true;
-    try{
-      if(typeof closeModal==='function')closeModal();
-      if(typeof ACT!=='undefined'&&ACT&&typeof ACT.accomplishments==='function')ACT.accomplishments();
-    }catch(_){}
-    setTimeout(function(){achRecoveryBusy=false;},80);
-  }
-
-  document.addEventListener('click',function(e){
-    var target=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach-tab]'):null;
-    if(!target)return;
-    var wanted=target.getAttribute('data-ach-tab')==='defis'?'defis':'etages';
-    setTimeout(function(){recoverAccomplishmentsTab(wanted);},0);
-  },true);
-
-  window.__srCampaignTierBalanceConfigV354={
+  window.__srCampaignTierBalanceConfigV358={
     smoothStartFloor:SMOOTH_START,
     smoothEndFloor:SMOOTH_END,
     normalHpMulEnd:0.52,
     bossHpMulEnd:0.45,
     damageMulEnd:0.60,
     ranks:RANKS,
-    globalDomObserver:false
+    globalDomObserver:false,
+    accomplishmentsRecovery:false
   };
 })();
