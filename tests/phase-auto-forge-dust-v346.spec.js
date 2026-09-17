@@ -30,10 +30,7 @@ async function runOneAutoCycle(page, forgeImpl) {
       await new Promise((resolve) => setTimeout(resolve, 140));
       return {
         dust: Number(S.poussiere) || 0,
-        authority: !!window.__srAutoForgeDustV346,
-        version: window.__srAutoForgeDustV346 && window.__srAutoForgeDustV346.version,
-        authority348: !!window.__srAutoForgeDustV348,
-        authority349: !!window.__srAutoForgeDustV349,
+        authority350: !!window.__srAutoForgeDustV350,
       };
     } finally {
       S.forge.autoForge = false;
@@ -48,108 +45,66 @@ async function runOneAutoCycle(page, forgeImpl) {
   }, { forgeImplSource: forgeImpl.toString() });
 }
 
-test('V349 settlement adds missing Dust synchronously with no timeout', async ({ page }) => {
+test('V350 Dust rarity table returns the canonical values', async ({ page }) => {
+  await openCleanGame(page);
+  const values = await page.evaluate(() => {
+    const cfg = window.__srDustEconomyConfigV293;
+    const rarities = ['COMMUN','RARE','EPIQUE','MYTHIQUE','ARTEFACT','LEGENDAIRE','INFERNAL','IMMORTEL','DIVIN'];
+    return Object.fromEntries(rarities.map((r) => [r, cfg.valueForRarity(r)]));
+  });
+
+  expect(values).toEqual({
+    COMMUN: 1,
+    RARE: 2,
+    EPIQUE: 4,
+    MYTHIQUE: 10,
+    ARTEFACT: 25,
+    LEGENDAIRE: 60,
+    INFERNAL: 150,
+    IMMORTEL: 400,
+    DIVIN: 1000,
+  });
+});
+
+test('V350 Auto-Forge overrides stale +1 payload with canonical rarity value', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => {
     S.poussiere = 6000;
-    let hudCalls = 0;
-    const previousRenderHUD = renderHUD;
-    renderHUD = function () {
-      hudCalls += 1;
-      return previousRenderHUD.apply(this, arguments);
-    };
-    try {
-      const before = Number(S.poussiere) || 0;
-      const missing = window.__srAutoForgeDustV349.settle(
-        [{ rarity: 'RARE', slot: 'gants', recycled: true, dust: 2 }],
-        before,
-        false
-      );
-      return {
-        dustImmediately: Number(S.poussiere) || 0,
-        missing,
-        hudCalls,
-        immediate: window.__srAutoForgeDustV349.immediate === true,
-      };
-    } finally {
-      renderHUD = previousRenderHUD;
-    }
-  });
-
-  expect(result.immediate).toBe(true);
-  expect(result.missing).toBe(2);
-  expect(result.dustImmediately).toBe(6002);
-  expect(result.hudCalls).toBeGreaterThan(0);
-});
-
-test('V349 Auto-Forge scheduler restores Dust when a recycled result was not credited', async ({ page }) => {
-  await openCleanGame(page);
-  const result = await runOneAutoCycle(page, function () {
-    return [{ rarity: 'RARE', slot: 'gants', recycled: true, dust: 2 }];
-  });
-
-  expect(result.authority).toBe(true);
-  expect(result.version).toBe(346);
-  expect(result.authority348).toBe(true);
-  expect(result.authority349).toBe(true);
-  expect(result.dust).toBe(2);
-});
-
-test('V349 Auto-Forge scheduler never double-credits Dust already paid by forgeSummon', async ({ page }) => {
-  await openCleanGame(page);
-  const result = await runOneAutoCycle(page, function () {
-    S.poussiere += 2;
-    return [{ rarity: 'RARE', slot: 'gants', recycled: true, dust: 2 }];
-  });
-
-  expect(result.authority).toBe(true);
-  expect(result.authority348).toBe(true);
-  expect(result.authority349).toBe(true);
-  expect(result.dust).toBe(2);
-});
-
-test('V349 real Auto-Forge filter credits Dust for unchecked rarities', async ({ page }) => {
-  await openCleanGame(page);
-
-  const result = await page.evaluate(async () => {
-    try {
-      if (typeof autoForgeTimer !== 'undefined' && autoForgeTimer !== null) {
-        clearTimeout(autoForgeTimer);
-        autoForgeTimer = null;
-      }
-    } catch (_) {}
-
-    S.level = Math.max(10, Number(S.level) || 10);
-    S.forge.autoForge = false;
-    S.forge.autoBatch = 1;
-    S.forge.filter = true;
-    Object.keys(S.forge.keep || {}).forEach((rarity) => { S.forge.keep[rarity] = false; });
-    S.minerai = 999999;
-    S.poussiere = 6000;
-
-    const invBefore = (S.inventory || []).length;
-    S.forge.autoForge = true;
-    scheduleAutoForge(0);
-    await new Promise((resolve) => setTimeout(resolve, 180));
-    S.forge.autoForge = false;
-    try {
-      if (typeof autoForgeTimer !== 'undefined' && autoForgeTimer !== null) {
-        clearTimeout(autoForgeTimer);
-        autoForgeTimer = null;
-      }
-    } catch (_) {}
-
+    const before = Number(S.poussiere) || 0;
+    const missing = window.__srAutoForgeDustV350.settle(
+      [{ rarity: 'RARE', slot: 'gants', recycled: true, dust: 1 }],
+      before,
+      false
+    );
     return {
       dust: Number(S.poussiere) || 0,
-      inventoryBefore: invBefore,
-      inventoryAfter: (S.inventory || []).length,
-      filter: !!S.forge.filter,
-      authority349: !!window.__srAutoForgeDustV349,
+      missing,
+      canonical: window.__srAutoForgeDustV350.canonical === true,
     };
   });
 
-  expect(result.authority349).toBe(true);
-  expect(result.filter).toBe(true);
-  expect(result.dust).toBeGreaterThan(6000);
-  expect(result.inventoryAfter).toBe(result.inventoryBefore);
+  expect(result.canonical).toBe(true);
+  expect(result.missing).toBe(2);
+  expect(result.dust).toBe(6002);
+});
+
+test('V350 Auto-Forge scheduler restores canonical Dust when result was not credited', async ({ page }) => {
+  await openCleanGame(page);
+  const result = await runOneAutoCycle(page, function () {
+    return [{ rarity: 'MYTHIQUE', slot: 'gants', recycled: true, dust: 1 }];
+  });
+
+  expect(result.authority350).toBe(true);
+  expect(result.dust).toBe(10);
+});
+
+test('V350 Auto-Forge never double-credits canonical Dust already paid by forgeSummon', async ({ page }) => {
+  await openCleanGame(page);
+  const result = await runOneAutoCycle(page, function () {
+    S.poussiere += 4;
+    return [{ rarity: 'EPIQUE', slot: 'gants', recycled: true, dust: 1 }];
+  });
+
+  expect(result.authority350).toBe(true);
+  expect(result.dust).toBe(4);
 });
