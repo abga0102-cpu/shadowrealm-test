@@ -1,7 +1,9 @@
-/* SHADOWREACH · Progression Pass launcher compact visual v357
+/* SHADOWREACH · Progression Pass launcher compact visual v359
    Presentation-only override for the Arena shortcut.
    V357 loads the Fusion reward authority without the one-shot save-baseline
-   boot injection, so startup cannot force an extra modal/render cycle. */
+   boot injection, so startup cannot force an extra modal/render cycle.
+   V359 fixes Étages / Défis switching by rerendering the open Pass in place
+   instead of stacking a second modal behind the current one. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsLauncherCompactV332)return;
@@ -87,6 +89,36 @@ s.textContent=`
 }
 `;
 document.head.appendChild(s);
+
+/* The canonical Pass changes activeTab then calls openModal() again. The modal
+   system stacks that new Pass under the existing one, so the new tab only
+   becomes visible after the user closes the current modal. For Pass-only
+   refreshes, replace the current Pass body instead. Other modals are untouched. */
+try{
+ if(!window.__srAccomplishmentsTabLiveRerenderV359){
+  var previousOpenModal=window.openModal;
+  if(typeof previousOpenModal==='function'){
+   var passOpenModal=function(content,title){
+    try{
+     var current=document.querySelector('.srAch139[data-ach-canonical-v139="1"]');
+     var nextIsPass=typeof content==='string'&&content.indexOf('data-ach-canonical-v139="1"')!==-1;
+     if(current&&nextIsPass){
+      var holder=document.createElement('div');
+      holder.innerHTML=content;
+      var next=holder.querySelector('.srAch139[data-ach-canonical-v139="1"]');
+      if(next){current.replaceWith(next);return;}
+     }
+    }catch(_){}
+    return previousOpenModal.apply(this,arguments);
+   };
+   passOpenModal.__srAccomplishmentsTabLiveRerenderV359=true;
+   window.openModal=passOpenModal;
+   try{openModal=passOpenModal;}catch(_){}
+   window.__srAccomplishmentsTabLiveRerenderV359=true;
+  }
+ }
+}catch(_){}
+
 try{
  if(!window.__srFusionGoldRewardsV357){
   var r=document.createElement('script');
