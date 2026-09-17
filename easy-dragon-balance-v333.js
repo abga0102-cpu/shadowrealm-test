@@ -1,8 +1,10 @@
 /* SHADOWREACH V334 · Facile 4-15 + late-Easy progression balance
+   V348 extension: from Facile 5-11, the late-Easy final multipliers use the
+   same 3-stage-back reference as the Campaign HP/damage authorities. This keeps
+   5-11 at the 5-8 final-pressure floor instead of over-reducing it.
    - Keeps the targeted Dragon correction on Facile 4-15 (internal floor 75).
    - Smooths the remaining Facile campaign from 4-16 through 5-20 (floors 76..100).
-   - Fixes the late-Easy spike where damage accelerated much faster than HP.
-   - Difficile and later difficulties remain unchanged. */
+   - Fixes the late-Easy spike where damage accelerated much faster than HP. */
 (function(){
   'use strict';
   if(window.__srEasyDragonBalanceV334)return;
@@ -13,9 +15,17 @@
   var LATE_EASY_END=100;
   var HP_MUL=0.76;
   var BASE_DMG_MUL=0.88;
+  var CAMPAIGN_BALANCE_START=91;
+  var CAMPAIGN_BALANCE_MIN=88;
+  var CAMPAIGN_BALANCE_OFFSET=3;
 
   function isTargetCombat(c){
     return !!(c&&c.ctx==='campaign'&&Number(c.floor)===TARGET_FLOOR);
+  }
+  function campaignBalanceFloorV348(floor){
+    var f=Math.max(1,Math.min(800,Math.round(Number(floor)||1)));
+    if(f<CAMPAIGN_BALANCE_START)return f;
+    return Math.max(CAMPAIGN_BALANCE_MIN,f-CAMPAIGN_BALANCE_OFFSET);
   }
   function clamp01(v){return Math.max(0,Math.min(1,Number(v)||0));}
   function lerp(a,b,t){return a+(b-a)*clamp01(t);}
@@ -45,12 +55,13 @@
         }
 
         if(floor>=LATE_EASY_START&&floor<=LATE_EASY_END){
-          var hpMul=lateEasyHpMul(floor,!!opts.boss);
-          var dmgMul=lateEasyDamageMul(floor);
+          var balanceFloor=campaignBalanceFloorV348(floor);
+          var hpMul=lateEasyHpMul(balanceFloor,!!opts.boss);
+          var dmgMul=lateEasyDamageMul(balanceFloor);
           enemy.maxHP=Math.max(1,Math.floor(Number(enemy.maxHP||enemy.hp||1)*hpMul));
           enemy.hp=Math.min(enemy.maxHP,Math.max(1,Math.floor(Number(enemy.hp||enemy.maxHP||1)*hpMul)));
           enemy.dmg=Math.max(1,Math.floor(Number(enemy.dmg||1)*dmgMul));
-          enemy.__srLateEasyBalanceV334={hpMul:hpMul,dmgMul:dmgMul};
+          enemy.__srLateEasyBalanceV334={hpMul:hpMul,dmgMul:dmgMul,balanceFloor:balanceFloor};
         }
         return enemy;
       };
@@ -122,6 +133,7 @@
     dragonFloor:TARGET_FLOOR,dragonStage:'Facile 4-15',dragonHpMul:HP_MUL,dragonBaseDamageMul:BASE_DMG_MUL,
     dragonBreathMaxHpPct:33,dragonBreathCooldown:18,dragonFlightSeconds:3,dragonFlightCooldown:22,
     dragonMeleeDamageDuringFlightPct:40,dragonIntimidationPct:20,dragonIntimidationSeconds:6,dragonIntimidationCooldown:20,
-    lateEasy:{startFloor:LATE_EASY_START,endFloor:LATE_EASY_END,normalHpMulStart:0.90,normalHpMulEnd:0.52,bossHpMulStart:0.70,bossHpMulEnd:0.35,damageMulStart:0.98,damageMulEnd:0.30}
+    lateEasy:{startFloor:LATE_EASY_START,endFloor:LATE_EASY_END,normalHpMulStart:0.90,normalHpMulEnd:0.52,bossHpMulStart:0.70,bossHpMulEnd:0.35,damageMulStart:0.98,damageMulEnd:0.30},
+    campaign5_11Balance:{startFloor:CAMPAIGN_BALANCE_START,startStage:'5-11',minimumFloor:CAMPAIGN_BALANCE_MIN,minimumStage:'5-8',offset:CAMPAIGN_BALANCE_OFFSET,balanceFloor:campaignBalanceFloorV348}
   };
 })();
