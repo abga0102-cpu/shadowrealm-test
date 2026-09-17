@@ -3,7 +3,7 @@
    - Never changes the canonical Dust economy.
    - Verifies filtered Forge recycling and comparison-button recycling.
    - Tops up only a missing delta, so an already-correct credit is never doubled.
-   - Grants one standardized one-time compensation for the affected Auto-Forge bug.
+   - Grants a total one-time compensation of 6000 Dust for the affected Auto-Forge bug.
 */
 (function(){
   'use strict';
@@ -11,7 +11,7 @@
   window.__srForgeDustIntegrityV344=true;
   if(typeof S==='undefined'||!S.forge)return;
 
-  var COMPENSATION=1000;
+  var COMPENSATION=6000;
   var audit={forgeTopups:0,recycleTopups:0,compensation:0};
 
   function dustBalance(){
@@ -90,14 +90,18 @@
   function grantCompensation(){
     try{
       if(typeof SMOKE!=='undefined'&&SMOKE)return;
-      if(!S.forge||S.forge.dustCompensationV344)return;
-      S.forge.dustCompensationV344={amount:COMPENSATION,claimedAt:Date.now()};
-      S.poussiere=(Number(S.poussiere)||0)+COMPENSATION;
-      audit.compensation=COMPENSATION;
+      if(!S.forge)return;
+      var previous=S.forge.dustCompensationV344;
+      var already=Math.max(0,Math.floor(Number(previous&&previous.amount)||0));
+      var grant=Math.max(0,COMPENSATION-already);
+      if(!grant)return;
+      S.forge.dustCompensationV344={amount:COMPENSATION,claimedAt:previous&&previous.claimedAt||Date.now(),updatedAt:Date.now()};
+      S.poussiere=(Number(S.poussiere)||0)+grant;
+      audit.compensation=grant;
       if(typeof saveNow==='function')saveNow();
       if(typeof scheduleRender==='function')scheduleRender();
       setTimeout(function(){
-        try{if(typeof toast==='function')toast('Compensation Auto-Forge · +'+(typeof fmt==='function'?fmt(COMPENSATION):COMPENSATION)+' poussière',true);}catch(_){}
+        try{if(typeof toast==='function')toast('Compensation Auto-Forge · +'+(typeof fmt==='function'?fmt(grant):grant)+' poussière',true);}catch(_){}
       },450);
     }catch(e){console.warn('Forge dust compensation V344 skipped',e);}
   }
