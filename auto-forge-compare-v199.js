@@ -1,8 +1,8 @@
-/* SHADOWREACH · Auto-Forge Compare V199 / V348 dust authority
+/* SHADOWREACH · Auto-Forge Compare V199 / V349 immediate dust authority
    AUTO follows the Forge filter only: every kept result is surfaced for comparison.
    Canonical persisted batch sizes are 1/3/5/10, matching the Forge progression gate.
-   V348: every filtered AUTO cycle settles recycled Dust against the balance before
-   the cycle, persists the result immediately, and shows the exact Dust gain.
+   V349: recycled Dust is credited synchronously in the same AUTO tick, the HUD is
+   refreshed immediately, and the settled balance is saved before the cycle continues.
 */
 (function(){
 'use strict';
@@ -35,16 +35,23 @@ function expectedAutoDust(res){
  if(!Array.isArray(res)||!res.length)return 0;
  return res.reduce(function(sum,r){return sum+recycledDustValue(r);},0);
 }
+function refreshDustNow(){
+ try{if(typeof renderHUD==='function')renderHUD();}catch(_){}
+ try{if(typeof scheduleRender==='function')scheduleRender();}catch(_){}
+}
 function ensureAutoDust(res,before){
  var expected=expectedAutoDust(res);
  if(!expected)return 0;
  var credited=Math.max(0,(Number(S.poussiere)||0)-(Number(before)||0));
  var missing=Math.max(0,expected-credited);
- if(!missing)return 0;
- try{
-  if(typeof update==='function')update(function(st){st.poussiere=(Number(st.poussiere)||0)+missing;});
-  else {S.poussiere=(Number(S.poussiere)||0)+missing;if(typeof scheduleRender==='function')scheduleRender();}
- }catch(_){return 0;}
+ if(missing){
+  try{
+   /* Direct state write is deliberate here: AUTO Dust must be visible in this same
+      synchronous tick, not after another state/update/render pass. */
+   S.poussiere=(Number(S.poussiere)||0)+missing;
+  }catch(_){return 0;}
+ }
+ refreshDustNow();
  return missing;
 }
 function settleAutoDust(res,before,notify){
@@ -52,7 +59,9 @@ function settleAutoDust(res,before,notify){
  if(!expected)return 0;
  var missing=ensureAutoDust(res,before);
  try{if(typeof saveNow==='function')saveNow();}catch(_){}
- try{if(typeof scheduleRender==='function')scheduleRender();}catch(_){}
+ /* saveNow does not render; refresh once more after persistence so the visible
+    counter and the saved counter are guaranteed to be the same immediately. */
+ refreshDustNow();
  if(notify){
   var count=res.filter(function(r){return !!(r&&r.recycled);}).length;
   try{if(typeof toast==='function')toast('Auto-Forge · '+count+' pièce'+(count>1?'s':'')+' recyclée'+(count>1?'s':'')+' · +'+(typeof fmt==='function'?fmt(expected):expected)+' poussière',true);}catch(_){}
@@ -68,6 +77,7 @@ window.__srResumeAutoForgeV199=resume;
 window.__srAutoForgePausedForCompareV199=function(){return pausedForCompare;};
 window.__srAutoForgeDustV346={version:346,ensure:ensureAutoDust,value:recycledDustValue};
 window.__srAutoForgeDustV348={version:348,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue};
+window.__srAutoForgeDustV349={version:349,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue,immediate:true};
 
 try{if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}}catch(_){}
 
@@ -87,10 +97,9 @@ scheduleAutoForge=function(delay){
     var res=forgeSummon(amount)||[];
     var recycled=res.filter(function(r){return !!(r&&r.recycled);});
     if(recycled.length){
+      /* Settlement is synchronous. By the next line, S.poussiere and the HUD
+         already contain the full Dust value for every filtered piece. */
       settleAutoDust(res,dustBefore,true);
-      /* A second settlement catches any late state write from another runtime layer.
-         The same baseline is safe because only the missing delta can be credited. */
-      setTimeout(function(){try{settleAutoDust(res,dustBefore,false);}catch(_){}},80);
     }
     var wanted=res.filter(isWanted);
     if(wanted.length){
