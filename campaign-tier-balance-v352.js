@@ -1,15 +1,13 @@
-/* SHADOWREACH V354 · interaction-safe campaign balance
-   - Keeps the smooth monster curve from floor 61 to 100.
-   - Keeps the requested campaign rank ladder as data/helpers.
-   - Removes the global MutationObserver that rescanned the whole DOM and could freeze UI clicks.
-   - Adds a small recovery for Pass Progression Étages/Défis tab switching. */
+/* SHADOWREACH V362 · campaign smoothing after source-level -40% power
+   - Keeps the existing smooth monster curve from floor 61 to 100.
+   - The global -40% campaign reduction now lives in enemy-damage-authority-v289.js.
+   - Does not apply a second 0.60 multiplier here.
+   - Keeps ranks, bosses, rewards, progression and Pass behavior unchanged. */
 (function(){
   'use strict';
-  if(window.__srCampaignTierBalanceV354)return;
-  window.__srCampaignTierBalanceV354=true;
+  if(window.__srCampaignTierBalanceV362)return;
+  window.__srCampaignTierBalanceV362=true;
 
-  /* Kill observers left by the problematic V353 code if this script is ever
-     hot-loaded on top of an already running page. */
   try{if(window.__srCampaignRankObserverV353&&window.__srCampaignRankObserverV353.disconnect)window.__srCampaignRankObserverV353.disconnect();}catch(_){}
   try{if(window.__srCampaignTierObserverV353&&window.__srCampaignTierObserverV353.disconnect)window.__srCampaignTierObserverV353.disconnect();}catch(_){}
   try{if(window.__srCampaignTierLabelObserverV352&&window.__srCampaignTierLabelObserverV352.disconnect)window.__srCampaignTierLabelObserverV352.disconnect();}catch(_){}
@@ -27,16 +25,17 @@
   function smoothDamageMul(floor){return lerp(1,0.60,smoothT(floor));}
 
   try{
-    if(typeof makeEnemy==='function'&&!makeEnemy.__srCampaignTierBalanceV354){
+    if(typeof makeEnemy==='function'&&!makeEnemy.__srCampaignTierBalanceV362){
       var previousMakeEnemy=makeEnemy;
       makeEnemy=function(mode,opts){
         var enemy=previousMakeEnemy(mode,opts);
         if(mode!=='campaign'||!opts||!enemy)return enemy;
+
         var floor=Number(opts.floor)||0;
         if(floor<SMOOTH_START||floor>SMOOTH_END)return enemy;
 
-        /* V334 already tapers 76..100. Undo it first so only one smooth curve
-           applies, instead of stacking two separate reductions. */
+        /* V334 already tapers 76..100. Undo it first so only this established
+           smooth curve applies on top of the source-level campaign balance. */
         var old=enemy.__srLateEasyBalanceV334;
         if(old){
           var oldHp=Math.max(0.000001,Number(old.hpMul)||1);
@@ -51,10 +50,15 @@
         enemy.maxHP=Math.max(1,Math.floor(Number(enemy.maxHP||enemy.hp||1)*hpMul));
         enemy.hp=Math.min(enemy.maxHP,Math.max(1,Math.floor(Number(enemy.hp||enemy.maxHP||1)*hpMul)));
         enemy.dmg=Math.max(1,Math.floor(Number(enemy.dmg||1)*dmgMul));
-        enemy.__srSmoothCampaignBalanceV354={hpMul:hpMul,dmgMul:dmgMul};
+        enemy.__srCampaignBalanceV362={
+          hpMul:hpMul,
+          dmgMul:dmgMul,
+          sourcePowerMul:(window.__srEnemyDamageConfigV289&&Number(window.__srEnemyDamageConfigV289.campaignPowerMul))||0.60,
+          smoothApplied:true
+        };
         return enemy;
       };
-      makeEnemy.__srCampaignTierBalanceV354=true;
+      makeEnemy.__srCampaignTierBalanceV362=true;
     }
   }catch(_){}
 
@@ -75,36 +79,16 @@
   window.__srCampaignRankForFloor=rankForFloor;
   window.__srCampaignFloorLabel=function(floor){floor=Math.max(1,Math.floor(Number(floor)||1));return rankForFloor(floor)+' · Étage '+floor;};
 
-  /* Do not observe the whole page. The renderer owns its DOM and must remain
-     free to update buttons/modals without an expensive tree walk on every mutation. */
-
-  var achRecoveryBusy=false;
-  function recoverAccomplishmentsTab(wanted){
-    if(achRecoveryBusy)return;
-    var selected=document.querySelector('.srAch139 [data-ach-tab].on');
-    if(selected&&selected.getAttribute('data-ach-tab')===wanted)return;
-    achRecoveryBusy=true;
-    try{
-      if(typeof closeModal==='function')closeModal();
-      if(typeof ACT!=='undefined'&&ACT&&typeof ACT.accomplishments==='function')ACT.accomplishments();
-    }catch(_){}
-    setTimeout(function(){achRecoveryBusy=false;},80);
-  }
-
-  document.addEventListener('click',function(e){
-    var target=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach-tab]'):null;
-    if(!target)return;
-    var wanted=target.getAttribute('data-ach-tab')==='defis'?'defis':'etages';
-    setTimeout(function(){recoverAccomplishmentsTab(wanted);},0);
-  },true);
-
-  window.__srCampaignTierBalanceConfigV354={
+  window.__srCampaignTierBalanceConfigV362={
     smoothStartFloor:SMOOTH_START,
     smoothEndFloor:SMOOTH_END,
     normalHpMulEnd:0.52,
     bossHpMulEnd:0.45,
-    damageMulEnd:0.60,
+    smoothDamageMulEnd:0.60,
+    globalPowerMulHere:1,
+    sourcePowerAuthority:'enemy-damage-authority-v289.js V362',
     ranks:RANKS,
-    globalDomObserver:false
+    globalDomObserver:false,
+    accomplishmentsRecovery:false
   };
 })();
