@@ -1,13 +1,13 @@
-/* SHADOWREACH · Fusion milestone Gold rewards authority v354
+/* SHADOWREACH · Fusion milestone Gold rewards authority v355
    Approved Gold ladder.
    Free / Premium: 50=50k/10k, 150=100k/20k, 250=150k/30k,
    350=200k/40k, 500=300k/60k, 1000=600k/120k, 1500=1M/200k.
-   V354: resets the already-claimed 50/150 Fusion milestones for the current
-   330-Fusion test save so the rewards can be redesigned and claimed again. */
+   V355: while rewards are being redesigned, 50 and 150 Fusions are forcibly
+   kept unclaimed so both remain available to claim again after the redesign. */
 (function(){
 'use strict';
-if(window.__srFusionGoldRewardsV352)return;
-window.__srFusionGoldRewardsV352=true;
+if(window.__srFusionGoldRewardsV355)return;
+window.__srFusionGoldRewardsV355=true;
 
 var LADDER={
  fusion50:{target:50,free:50000,premium:10000,title:'50 Fusions'},
@@ -19,6 +19,7 @@ var LADDER={
  fusion1500:{target:1500,free:1000000,premium:200000,title:'1 500 Fusions'}
 };
 var TITLE_TO_ID={};Object.keys(LADDER).forEach(function(id){TITLE_TO_ID[LADDER[id].title]=id;});
+var RESET_IDS=['fusion50','fusion150'];
 
 function n(v){return Math.max(0,Math.floor(Number(v)||0));}
 function ensure(s){
@@ -61,29 +62,18 @@ function claim(id,premium){
  if(granted)refresh(id,premium);return granted;
 }
 
-/* The previous rollback only worked below 150 Fusions. The actual test save is
-   currently at 330/350, with 50 and 150 already marked as claimed. Reset those
-   two claim flags exactly once. Resource balances are left untouched because the
-   save does not record which historical reward version produced them. */
-function resetCurrentFusionClaimsOnce(){
+function enforceDesignReset(){
  try{
   if(typeof S==='undefined'||!S)return false;
-  var c=count(S);if(c<300||c>=350)return false;
-  var a=ensure(S);if(a.fusionRewardClaimResetV354Done)return false;
   var changed=false;
   function apply(s){
-   var x=ensure(s);if(x.fusionRewardClaimResetV354Done)return;
-   ['fusion50','fusion150'].forEach(function(id){
-    if(x.claimed[id]){x.claimed[id]=false;changed=true;}
-    if(x.premiumClaimed[id]){x.premiumClaimed[id]=false;changed=true;}
+   var a=ensure(s);
+   RESET_IDS.forEach(function(id){
+    if(a.claimed[id]){a.claimed[id]=false;changed=true;}
+    if(a.premiumClaimed[id]){a.premiumClaimed[id]=false;changed=true;}
    });
-   x.fusionRewardClaimResetV354Done=true;
   }
-  if(typeof update==='function')update(apply);else{apply(S);try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}}
-  if(changed){
-   try{if(typeof toast==='function')toast('Récompenses Fusion 50 et 150 réinitialisées',true);}catch(_){}
-   try{if(typeof ACT!=='undefined'&&ACT&&typeof ACT.accomplishments==='function')ACT.accomplishments();}catch(_){}
-  }
+  if(typeof update==='function')update(apply);else{apply(S);if(changed){try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}}}
   return changed;
  }catch(_){return false;}
 }
@@ -91,11 +81,13 @@ function resetCurrentFusionClaimsOnce(){
 window.addEventListener('click',function(e){
  var t=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach-premium],.srAch139 [data-ach]'):null;if(!t)return;
  var premium=t.hasAttribute('data-ach-premium');var id=String(t.getAttribute(premium?'data-ach-premium':'data-ach')||'');if(!LADDER[id])return;
+ if(RESET_IDS.indexOf(id)>=0){e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();return;}
  e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();claim(id,premium);
 },true);
 
 function patchUI(){
  try{
+  enforceDesignReset();
   var root=document.querySelector('.srAch139');if(!root)return;
   var rows=root.querySelectorAll('.achPassRow');
   for(var i=0;i<rows.length;i++){
@@ -104,17 +96,21 @@ function patchUI(){
    var rewards=row.querySelectorAll('.achReward'),cfg=LADDER[id];
    if(rewards[0]){var ft=rewards[0].querySelector('.achRewardText');if(ft&&ft.textContent!==fmt(cfg.free))ft.textContent=fmt(cfg.free);}
    if(rewards[1]){var pt=rewards[1].querySelector('.achRewardText');if(pt&&pt.textContent!==fmt(cfg.premium))pt.textContent=fmt(cfg.premium);}
+   if(RESET_IDS.indexOf(id)>=0){
+    var done=count(S)>=cfg.target;
+    if(rewards[0]){var freeState=rewards[0].querySelector('.achState,.btn');if(freeState)freeState.outerHTML=done?'<button class="btn sm" data-ach="'+id+'" data-primary="true">Récupérer</button>':'<span class="achState">En cours</span>';}
+    if(rewards[1]){var premState=rewards[1].querySelector('.achState,.btn');if(premState)premState.outerHTML=premiumOwned(ensure(S))?(done?'<button class="btn sm" data-ach-premium="'+id+'" data-primary="true">Récupérer</button>':'<span class="achState">En cours</span>'):'<span class="achState locked">Premium</span>';}
+   }
   }
  }catch(_){}
 }
 
 try{
- resetCurrentFusionClaimsOnce();
+ enforceDesignReset();
  patchUI();
  if(typeof MutationObserver==='function'&&document.body){var mo=new MutationObserver(patchUI);mo.observe(document.body,{childList:true,subtree:true});}
  document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('[data-ach-tab]'))setTimeout(patchUI,0);},true);
  window.addEventListener('sr:accomplishments-ready',patchUI);
- setTimeout(function(){resetCurrentFusionClaimsOnce();patchUI();},200);
- setTimeout(function(){resetCurrentFusionClaimsOnce();patchUI();},900);
+ setTimeout(patchUI,100);setTimeout(patchUI,400);setTimeout(patchUI,1000);
 }catch(_){}
 })();
