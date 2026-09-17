@@ -1,6 +1,7 @@
 /* SHADOWREACH V289 · Campaign enemy balance authority
-   V325 extension: 1-1 is an onboarding exception before the player can access
-   equipment/Forge progression. V324 floor-reference pressure resumes after it.
+   V348 extension: from Facile 5-11 (internal floor 91), Campaign enemy pressure
+   follows the floor from 3 stages earlier. 5-11 therefore starts exactly from
+   the 5-8 base reference instead of creating another late-Easy spike.
 
    Design rule:
    - The floor determines enemy power. Current player stats are never sampled.
@@ -10,6 +11,8 @@
    - 1-1 must remain completable with the starting hero because no progression
      tool is available yet; this is a fixed floor exception, not player scaling.
    - Boss HP remains owned by V285/V288; boss damage consumes this floor curve.
+   - From 5-11 onward, Campaign scaling is shifted back 3 stages; Raids keep
+     their independent raidEnemyHP / raidEnemyDamage curves.
 */
 (function(){
   'use strict';
@@ -18,6 +21,7 @@
   window.__srCampaignReferenceBalanceV323=true;
   window.__srCampaignReferenceBalanceV324=true;
   window.__srCampaignReferenceBalanceV325=true;
+  window.__srCampaignReferenceBalanceV348=true;
 
   var LEGACY_MAX=400;
   var TARGET_HITS_TO_KILL=3.6;
@@ -26,6 +30,9 @@
   var INTRO_FLOOR_DAMAGE=6;
   var RAID_HP_MUL=1.35;
   var RAID_DAMAGE_MUL=1.25;
+  var CAMPAIGN_BALANCE_START=91;
+  var CAMPAIGN_BALANCE_MIN=88;
+  var CAMPAIGN_BALANCE_OFFSET=3;
 
   var REFERENCE_DAMAGE={
     1:30,3:80,5:150,10:350,15:800,20:2500,30:23000,40:180000,50:900000,
@@ -44,6 +51,12 @@
 
   function maxFloor(){
     try{return Math.max(1,Number(window.__srCampaignMaxFloor)||800);}catch(_){return 800;}
+  }
+  function campaignBalanceFloorV348(f){
+    var max=maxFloor();
+    f=Math.max(1,Math.min(max,Math.round(Number(f)||1)));
+    if(f<CAMPAIGN_BALANCE_START)return f;
+    return Math.max(CAMPAIGN_BALANCE_MIN,f-CAMPAIGN_BALANCE_OFFSET);
   }
   function semanticLegacyFloor(f){
     var max=maxFloor();f=Math.max(1,Math.min(max,Number(f)||1));
@@ -66,11 +79,11 @@
   function isIntroFloor(f){return Math.max(1,Math.round(Number(f)||1))===1;}
   function campaignEnemyHP(f){
     if(isIntroFloor(f))return INTRO_FLOOR_HP;
-    return Math.max(1,Math.round(expectedDamage(f)*TARGET_HITS_TO_KILL));
+    return Math.max(1,Math.round(expectedDamage(campaignBalanceFloorV348(f))*TARGET_HITS_TO_KILL));
   }
   function campaignEnemyDamage(f){
     if(isIntroFloor(f))return INTRO_FLOOR_DAMAGE;
-    return Math.max(1,Math.round(expectedHP(f)/TARGET_HITS_TO_DEFEAT_REFERENCE));
+    return Math.max(1,Math.round(expectedHP(campaignBalanceFloorV348(f))/TARGET_HITS_TO_DEFEAT_REFERENCE));
   }
 
   window.__srV285EnemyHP=campaignEnemyHP;
@@ -81,10 +94,11 @@
   window.__srV324ExpectedPlayerHP=expectedHP;
   window.__srV325ExpectedPlayerDamage=expectedDamage;
   window.__srV325ExpectedPlayerHP=expectedHP;
+  window.__srV348CampaignBalanceFloor=campaignBalanceFloorV348;
   try{if(typeof enemyHP==='function')enemyHP=campaignEnemyHP;}catch(_){ }
   try{if(typeof enemyDamage==='function')enemyDamage=campaignEnemyDamage;}catch(_){ }
 
-  /* V324 raid-only difficulty increase. Campaign formulas above stay unchanged.
+  /* V324 raid-only difficulty increase. Campaign formulas above stay independent.
      Applying the multiplier at the final enemy-construction boundary preserves
      every existing raid curve, boss identity, escort ratio and special mechanic. */
   try{
@@ -103,7 +117,7 @@
   }catch(_){ }
 
   window.__srEnemyDamageConfigV289={
-    version:325,maxFloor:800,legacyMaxFloor:400,semanticLegacyFloor:semanticLegacyFloor,
+    version:348,maxFloor:800,legacyMaxFloor:400,semanticLegacyFloor:semanticLegacyFloor,
     referenceDamage:REFERENCE_DAMAGE,referenceHP:REFERENCE_HP,
     targetHitsToKill:TARGET_HITS_TO_KILL,
     targetHitsToDefeatReference:TARGET_HITS_TO_DEFEAT_REFERENCE,
@@ -112,6 +126,7 @@
     scaling:'floor-only-no-player-rubber-band',
     earlyCampaign:'1-1-onboarding-then-gear-pressure',
     introFloor:{floor:1,hp:INTRO_FLOOR_HP,damage:INTRO_FLOOR_DAMAGE},
+    campaign5_11Balance:{startFloor:CAMPAIGN_BALANCE_START,startStage:'5-11',minimumFloor:CAMPAIGN_BALANCE_MIN,minimumStage:'5-8',offset:CAMPAIGN_BALANCE_OFFSET,balanceFloor:campaignBalanceFloorV348},
     raidPowerV324:{hpMul:RAID_HP_MUL,damageMul:RAID_DAMAGE_MUL,campaignUnchanged:true},
     expectedGates:{
       weak:'69-89',normal:'99-119',max0:'139-159',ascended:'199-299+',
