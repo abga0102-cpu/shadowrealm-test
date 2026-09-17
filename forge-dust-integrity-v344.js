@@ -1,9 +1,10 @@
-/* SHADOWREACH V344 / V351 · Forge dust integrity + one-time compensation
+/* SHADOWREACH V344 / V363 · Forge dust integrity + one-time compensation
    Final authority loaded after every Forge/Dust layer.
-   - V351 verifies Dust from canonical equipment rarity before trusting result payloads.
+   - V363 follows the rebalanced canonical rarity rewards used by Auto-Forge.
    - Protects filtered Forge recycling and manual comparison-button recycling.
    - Tops up only a missing delta, so an already-correct credit is never doubled.
-   - Keeps the existing one-time total compensation of 6000 Dust, with no new grant.
+   - Raises the existing compensation total from 6000 to 7500 Dust: players who
+     already received V344 get only the +1500 difference.
 */
 (function(){
   'use strict';
@@ -11,11 +12,11 @@
   window.__srForgeDustIntegrityV344=true;
   if(typeof S==='undefined'||!S.forge)return;
 
-  var COMPENSATION=6000;
+  var COMPENSATION=7500;
   var CANON_DUST={
-    COMMUN:1,RARE:2,EPIQUE:4,MYTHIQUE:10,ARTEFACT:25,
-    LEGENDAIRE:60,INFERNAL:150,IMMORTEL:400,DIVIN:1000,
-    HEROIQUE:25,ANCESTRAL:150,PEU_COMMUN:2
+    COMMUN:8,RARE:20,EPIQUE:50,MYTHIQUE:125,ARTEFACT:300,
+    LEGENDAIRE:750,INFERNAL:1800,IMMORTEL:4500,DIVIN:12000,
+    HEROIQUE:300,ANCESTRAL:1800,PEU_COMMUN:12
   };
   var audit={forgeTopups:0,recycleTopups:0,compensation:0};
 
@@ -53,8 +54,6 @@
 
   function expectedResultDust(r){
     if(!r||!r.recycled)return 0;
-    /* Canonical rarity is authoritative. A stale payload such as dust:1 on a
-       Mythique must never downgrade the reward to Common. */
     var canonical=rarityDust(r.rarity);
     if(canonical>0){r.dust=canonical;return canonical;}
     var direct=Number(r.dust);
@@ -85,7 +84,7 @@
         var expected=Array.isArray(res)?res.reduce(function(sum,r){return sum+expectedResultDust(r);},0):0;
         var credited=Math.max(0,dustBalance()-before);
         if(expected>credited)addMissingDust(expected-credited,'forge');
-      }catch(e){console.warn('Forge dust integrity V351 audit skipped',e);}
+      }catch(e){console.warn('Forge dust integrity V363 audit skipped',e);}
       return res;
     };
     try{window.forgeSummon=forgeSummon;}catch(_){}
@@ -132,10 +131,11 @@
       setTimeout(function(){
         try{if(typeof toast==='function')toast('Compensation Auto-Forge · +'+(typeof fmt==='function'?fmt(grant):grant)+' poussière',true);}catch(_){}
       },450);
-    }catch(e){console.warn('Forge dust compensation V344 skipped',e);}
+    }catch(e){console.warn('Forge dust compensation V363 skipped',e);}
   }
 
   grantCompensation();
   window.__srForgeDustIntegrityV344Audit=audit;
   window.__srForgeDustIntegrityV351={version:351,value:expectedResultDust,rarityValue:rarityDust,audit:audit};
+  window.__srForgeDustIntegrityV363={version:363,value:expectedResultDust,rarityValue:rarityDust,audit:audit,compensation:COMPENSATION};
 })();
