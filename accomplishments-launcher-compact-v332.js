@@ -1,6 +1,7 @@
-/* SHADOWREACH · Progression Pass launcher compact visual v332
+/* SHADOWREACH · Progression Pass launcher compact visual v357
    Presentation-only override for the Arena shortcut.
-   Keeps the Pass easy to access without competing with combat information. */
+   V357 loads the Fusion reward authority without the one-shot save-baseline
+   boot injection, so startup cannot force an extra modal/render cycle. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsLauncherCompactV332)return;
@@ -87,17 +88,11 @@ s.textContent=`
 `;
 document.head.appendChild(s);
 try{
- if(!window.__srFusionGoldRewardsV355){
+ if(!window.__srFusionGoldRewardsV357){
   var r=document.createElement('script');
-  r.src='fusion-gold-rewards-v352.js?v=2026.09.17.355';
+  r.src='fusion-gold-rewards-v352.js?v=2026.09.17.357';
   r.async=false;
   document.body.appendChild(r);
- }
- if(!window.__srFusionSaveBaselineV356){
-  var b=document.createElement('script');
-  b.src='fusion-save-baseline-v356.js?v=2026.09.17.356';
-  b.async=false;
-  document.body.appendChild(b);
  }
 }catch(_){}
 })();
