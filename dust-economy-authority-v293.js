@@ -1,28 +1,18 @@
-/* SHADOWREACH V293 / V363 · Dust recycling economy authority
-   Canonical rarity-based Dust values.
-   V363 makes Auto-Forge recycling meaningful again: rejected Common/Rare gear
-   no longer collapses to +1/+2 Dust, while higher rarities keep a controlled
-   progression curve. Values stay rarity-based to avoid upgrade/recycle loops.
+/* SHADOWREACH V293 / V364 · Dust recycling economy authority
+   Recycling now follows the game's native equipment-value formula again:
+   rarity rank + 20% of ORIGINAL equipment power, then the Tree Dust bonus.
+   This keeps Auto-Forge and manual recycling coherent while preventing any
+   upgrade/recycle loop because upgraded power and dustInvested are ignored.
 */
 (function(){
   'use strict';
   if(window.__srDustEconomyAuthorityV293)return;
   window.__srDustEconomyAuthorityV293=true;
 
-  var DUST_BY_RARITY={
-    COMMUN:8,
-    RARE:20,
-    EPIQUE:50,
-    MYTHIQUE:125,
-    ARTEFACT:300,
-    LEGENDAIRE:750,
-    INFERNAL:1800,
-    IMMORTEL:4500,
-    DIVIN:12000,
-    /* legacy aliases kept only for old saves */
-    HEROIQUE:300,
-    ANCESTRAL:1800,
-    PEU_COMMUN:12
+  var RANK_BY_RARITY={
+    COMMUN:0,RARE:1,EPIQUE:2,MYTHIQUE:3,ARTEFACT:4,
+    LEGENDAIRE:5,INFERNAL:6,IMMORTEL:7,DIVIN:8,
+    /* legacy aliases */ HEROIQUE:4,ANCESTRAL:6,PEU_COMMUN:1
   };
 
   function normalizeRarity(raw){
@@ -33,22 +23,50 @@
     return s;
   }
 
-  function valueForRarity(raw){
+  function rankForRarity(raw){
     var key=normalizeRarity(raw);
-    if(!key||!Object.prototype.hasOwnProperty.call(DUST_BY_RARITY,key))return 0;
-    return Math.max(0,Math.floor(Number(DUST_BY_RARITY[key])||0));
+    var n=RANK_BY_RARITY[key];
+    return Number.isFinite(Number(n))?Math.max(0,Math.floor(Number(n))):0;
   }
 
-  function normalizedDust(s,it){
-    if(!it||!it.rarity)return 0;
-    return valueForRarity(it.rarity);
+  function treeDustBonus(s){
+    try{
+      if(typeof treeSum==='function')return Math.max(0,Number(treeSum(s,'dust'))||0);
+    }catch(_){}
+    return 0;
   }
+
+  function originalPowerOf(it){
+    if(!it)return 0;
+    var original=it.originalPower!=null?Number(it.originalPower):NaN;
+    if(!Number.isFinite(original)){
+      original=(Number(it.baseDamage)||0)+(Number(it.baseHp)||0);
+      if(!(original>0))original=Number(it.power)||0;
+    }
+    return Math.max(0,original||0);
+  }
+
+  function valueForItem(s,it){
+    if(!it||!it.rarity)return 0;
+    var rank=rankForRarity(it.rarity);
+    var original=originalPowerOf(it);
+    var bonus=treeDustBonus(s);
+    return Math.max(0,Math.floor(((rank+1)*5+original*0.2)*(1+bonus/100)));
+  }
+
+  /* Rarity alone is no longer authoritative: two pieces of the same rarity may
+     have different base power because of slot and stat-quality rolls. Returning
+     0 here intentionally makes old safety layers fall through to valueForItem. */
+  function valueForRarity(){return 0;}
+
+  function normalizedDust(s,it){return valueForItem(s,it);}
 
   try{
     if(typeof dustValue==='function'){
       normalizedDust.__srV293=true;
       normalizedDust.__srV350=true;
       normalizedDust.__srV363=true;
+      normalizedDust.__srV364=true;
       normalizedDust.__srPrevious=dustValue;
       dustValue=normalizedDust;
     }
@@ -57,12 +75,15 @@
   try{
     window.__srDustEconomyConfigV293={
       version:293,
-      revision:363,
-      byRarity:Object.assign({},DUST_BY_RARITY),
+      revision:364,
+      byRarity:{},
       normalizeRarity:normalizeRarity,
+      rankForRarity:rankForRarity,
       valueForRarity:valueForRarity,
-      independentOfItemPower:true,
-      independentOfForgeStars:true
+      valueForItem:valueForItem,
+      originalPowerOf:originalPowerOf,
+      independentOfUpgradedPower:true,
+      independentOfForgeStars:false
     };
   }catch(_){ }
 })();
