@@ -16,7 +16,7 @@ var REWARDS={
 };
 var PREMIUM_REWARDS={
  fusion50:{merge:{COMMUN:5}},fusion150:{merge:{PEU_COMMUN:5}},fusion250:{merge:{RARE:5}},fusion350:{merge:{RARE:5}},fusion500:{merge:{EPIQUE:5}},fusion1000:{gold:25000,merge:{MYTHIQUE:5}},fusion1500:{merge:{MYTHIQUE:5}},
- raid10:{gold:2500},raid20:{gold:5000},raid50:{gold:25000},raid100:{gold:50000},
+ raid10:{gold:2500},raid20:{gold:5000},raid50:{gold:25000},raid100:{gold:75000},
  floor25:{essence:100},floor50:{minerai:750,gold:2500},floor75:{eclat:200,merge:{COMMUN:10}},floor100:{eclat:200,essence:200,merge:{COMMUN:10}},floor150:{eclat:250,essence:250,merge:{RARE:5}},floor200:{eclat:300,essence:300,merge:{RARE:5}},floor250:{eclat:350,essence:350,merge:{EPIQUE:3}},floor300:{eclat:400,essence:400,merge:{EPIQUE:4}},floor350:{eclat:500,essence:500,merge:{MYTHIQUE:3}},floor400:{eclat:750,essence:750,merge:{MYTHIQUE:5}}
 };
 function fusionCount(){var st=(S&&S.sanctuary)||{},a=(S&&S.accomplishments)||{};return Math.max(0,Math.floor(Number(st.mergeCrafts)||0),Math.floor(Number(st.fusions)||0),Math.floor(Number(a.fusionCount)||0));}
@@ -63,7 +63,7 @@ document.addEventListener('click',function(e){
 var RAID_UI={
  '20 Raids accomplis':{free:'15 000 Or',premium:'5 000 Or',id:'raid20'},
  '50 Raids accomplis':{free:'50 000 Or',premium:'25 000 Or',id:'raid50'},
- '100 Raids accomplis':{free:'250 000 Or',premium:'50 000 Or',id:'raid100'}
+ '100 Raids accomplis':{free:'250 000 Or',premium:'75 000 Or',id:'raid100'}
 };
 function patchRaidRewardUI(){
  try{
