@@ -2284,12 +2284,24 @@ function summonSkill(n) {
         }
         const existing = s.skills[def.id];
         if (existing) {
+          const beforeLevel = existing.level;
+          const beforeGlobalPower = computePower(s);
           const need = skillDupesNeeded(existing.level);
           existing.count += 1;
           if (existing.count >= need && existing.level < RULES.SKILL_MAX_LEVEL) {
-            existing.count -= need; existing.level += 1;
+            existing.count -= need;
+            existing.level += 1;
           }
-          results.push({ id: def.id, rarity: rar, dup: true });
+          const leveled = existing.level > beforeLevel;
+          const afterGlobalPower = leveled ? computePower(s) : beforeGlobalPower;
+          results.push({
+            id: def.id, rarity: rar, dup: true,
+            beforeLevel, afterLevel: existing.level, leveled,
+            count: existing.count,
+            need: existing.level < RULES.SKILL_MAX_LEVEL ? skillDupesNeeded(existing.level) : 0,
+            levelPowerPct: leveled ? 10 : 0,
+            globalPowerGain: leveled ? Math.max(0, Math.round(afterGlobalPower - beforeGlobalPower)) : 0
+          });
         } else {
           s.skills[def.id] = { level: 1, count: 0 };
           const empty = s.skillSlots.slice(0, skillSlotCount(s)).indexOf(null);
