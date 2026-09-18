@@ -64,6 +64,8 @@ test('V321 moves Forge to 1-2 but keeps the V317 Raid level-3 depletion gate', a
 
     const seen = S.tutorial.seen || (S.tutorial.seen = {});
     try { Object.keys(TUTORIAL_FLOWS || {}).forEach((key) => { seen[key] = true; }); } catch (_) {}
+    seen.combat = true;
+    seen.equipement = true;
     seen.raid = false;
     const tutorial = pendingTutorialStep();
 
