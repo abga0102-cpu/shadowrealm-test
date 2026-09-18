@@ -1867,7 +1867,7 @@ function defaultState(name) {
     economyRebaseV3: true,
     economyRebaseV4: true,
     eventDay: todayStr(), eventClaims: {}, eventProgress: {},
-    testDays: 0, power: 0,
+    power: 0,
     autoSkills: true, firstSeen: Date.now(), tutorial: { version: 3, seen: {} },
     recommendationDismissed: {},
     raidKeyLossCompensationV1: true,
@@ -1969,6 +1969,7 @@ function migrate(s, name) {
   });
   merged.forge.filter = !!merged.forge.filter;
 
+  delete merged.testDays;
   delete merged._raidStars;
   Object.keys(merged.raids).forEach((rid) => {
     if (typeof merged.raids[rid].stars !== "number") merged.raids[rid].stars = 0;
