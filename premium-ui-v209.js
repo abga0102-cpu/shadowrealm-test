@@ -1,5 +1,5 @@
-/* SHADOWREACH · Premium UI polish V209 / V368
-   Safe reference-fidelity rebuild: brighter fantasy scene, ornate blue-and-gold HUD, Forge and navigation.
+/* SHADOWREACH · Premium UI polish V209 / V369
+   Strict reference composition: brighter fantasy arena, compact Forge, ornate blue-and-gold HUD and navigation.
    Presentation-only: no routes, economy, saves, timers, combat values or gameplay state are changed. */
 (function(){
   'use strict';
@@ -1048,6 +1048,298 @@ body{
 .srNavHubItem{
   border-color:#6A9ABE!important;
   background:linear-gradient(180deg,#2E6998,#17466F)!important;
+}
+
+
+/* V369 STRICT REFERENCE COMPOSITION
+   Final visual correction pass against the supplied reference screen.
+   Presentation-only: canonical layout sizing lives in home-layout-authority-v219.js. */
+
+/* HUD: cleaner, lighter and less massive, while preserving the same controls. */
+#app.srHomeFullArena>#hud{
+  gap:6px!important;
+  padding:5px 7px 5px!important;
+  background:
+    radial-gradient(92% 110% at 13% -18%,rgba(98,205,255,.32),transparent 63%),
+    linear-gradient(180deg,rgba(41,103,151,.98) 0%,rgba(20,70,112,.96) 50%,rgba(8,40,70,.88) 82%,rgba(7,28,50,.42) 100%)!important;
+  border-bottom:2px solid #DDB24F!important;
+}
+#app.srHomeFullArena>#hud>.pbox{
+  height:56px!important;min-height:56px!important;
+  padding:4px 7px 4px 4px!important;
+  border-radius:13px!important;
+  border:1px solid #E0B75B!important;
+  background:linear-gradient(135deg,#3F8BC2 0%,#205A8D 48%,#0E3A66 100%)!important;
+}
+#app.srHomeFullArena .avatar{
+  width:47px!important;height:47px!important;
+  box-shadow:0 0 0 1px #694510,0 0 0 3px #EDC45F,0 3px 8px rgba(0,0,0,.46),0 0 12px rgba(255,209,91,.22)!important;
+}
+#app.srHomeFullArena .pname{font-size:13px!important}
+#app.srHomeFullArena .power{
+  padding:2px 6px!important;
+  border-color:#DDB24F!important;
+  background:rgba(5,33,60,.62)!important;
+}
+#app.srHomeFullArena .curr{
+  min-height:29px!important;height:29px!important;
+  padding:2px 2px 2px 6px!important;
+  border-radius:14px!important;
+  border-color:#DDB24F!important;
+  background:linear-gradient(180deg,#2B6FA4,#123F69)!important;
+}
+#app.srHomeFullArena .curr>.plus{
+  width:22px!important;height:25px!important;
+  margin:-1px -1px -1px 1px!important;
+  border-radius:50%!important;
+}
+#app.srHomeFullArena .hudBtn,
+#app.srHomeFullArena .menuBtn{
+  width:29px!important;height:29px!important;min-width:29px!important;
+  border-color:#DDB24F!important;
+  background:linear-gradient(180deg,#3D82B5,#174C78)!important;
+}
+
+/* Keep popups in the same top-right notification lane as the reference. */
+#app.srHomeFullArena>#toast{
+  left:auto!important;right:8px!important;
+  top:calc(var(--srHudH) + 10px)!important;bottom:auto!important;
+  width:min(205px,57%)!important;max-width:205px!important;
+  margin:0!important;
+}
+#app.srHomeFullArena>#toast.nban{
+  padding:6px 8px!important;
+  border-radius:10px!important;
+  font-size:9px!important;
+  box-shadow:0 3px 9px rgba(0,0,0,.34)!important;
+}
+#app.srHomeFullArena>#toast .nt{font-size:9px!important;line-height:1.2!important}
+#app.srHomeFullArena>#toast .ns{font-size:8px!important}
+
+/* Arena: more room for the scene, brighter fantasy presentation and centered stage hierarchy. */
+#app.srHomeFullArena #screen.fixed>.campaignWorld{
+  background:#123B58!important;
+  border-bottom:2px solid #E1B655!important;
+}
+#app.srHomeFullArena #arenaBg{
+  filter:brightness(1.18) saturate(1.12) contrast(1.02)!important;
+  background-position:center 45%!important;
+}
+#app.srHomeFullArena #arenaShade{
+  background:
+    radial-gradient(95% 48% at 50% 18%,rgba(188,235,255,.10),transparent 72%),
+    linear-gradient(180deg,rgba(4,31,49,0) 0%,rgba(3,22,35,.02) 52%,rgba(2,15,24,.15) 100%)!important;
+}
+#app.srHomeFullArena #aDecor{filter:brightness(1.12) saturate(1.08)!important}
+#app.srHomeFullArena #aLayer .unit{
+  scale:.82!important;
+  filter:saturate(1.08) brightness(1.05) drop-shadow(0 4px 4px rgba(0,0,0,.26))!important;
+}
+#app.srHomeFullArena #arena .floorTag{
+  top:calc(var(--srHudH) + 2px)!important;
+  gap:4px!important;
+}
+#app.srHomeFullArena #arena .floorTxt{
+  min-width:146px!important;
+  padding:5px 18px 6px!important;
+  border-radius:12px!important;
+  border:1px solid #E7BE62!important;
+  background:linear-gradient(180deg,#3E85B7 0%,#174D7A 100%)!important;
+  font-size:16px!important;
+  letter-spacing:1.35px!important;
+}
+#app.srHomeFullArena #arena .fTrack{
+  padding:2px 6px!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transform:scale(.88)!important;
+}
+#app.srHomeFullArena #arena .sdot{width:11px!important;height:11px!important}
+#app.srHomeFullArena #arena #aSub{gap:7px!important}
+#app.srHomeFullArena #arena .fPill{
+  min-height:24px!important;
+  padding:3px 10px!important;
+  border-radius:999px!important;
+}
+#app.srHomeFullArena .campaignWorld .btn.red{
+  min-width:144px!important;
+  border-radius:18px!important;
+  border-color:#FF8191!important;
+  background:linear-gradient(180deg,#A6273A,#65111F)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.19),inset 0 -2px 0 #410B14,0 0 13px rgba(208,52,70,.20),0 4px 8px rgba(0,0,0,.30)!important;
+}
+
+/* Skills + Familiar: one slim framed shelf, close to the reference proportions. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  padding:5px 7px!important;
+  gap:5px!important;
+  background:linear-gradient(180deg,#173F67 0%,#0A2A49 100%)!important;
+  border-top:2px solid #E0B554!important;
+  border-bottom:2px solid #E0B554!important;
+}
+#app.srHomeFullArena #skillbar .slot{
+  width:44px!important;height:44px!important;
+  border-radius:11px!important;
+  border-color:#E0B554!important;
+}
+#app.srHomeFullArena #skillbar .petMini{
+  height:44px!important;min-width:98px!important;
+  border-radius:11px!important;
+  border-color:#E0B554!important;
+  padding-right:6px!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{width:38px!important;height:38px!important}
+
+/* Forge: remove the oversized empty middle and reproduce the compact reference console. */
+#app.srHomeFullArena #screen.fixed>.pad.mt4{
+  padding:4px 7px 4px!important;
+  background:linear-gradient(180deg,#0D3152,#08233E)!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266{
+  padding:4px 6px!important;
+  border:2px solid #D8A947!important;
+  border-radius:13px!important;
+  background:
+    linear-gradient(90deg,rgba(8,38,65,.90) 0%,rgba(9,43,72,.78) 54%,rgba(34,42,45,.30) 100%),
+    radial-gradient(circle at 85% 58%,rgba(255,139,34,.34),transparent 27%),
+    url("art/props/brazier.png") 86% 58% / 72px auto no-repeat,
+    url("art/props/crystal.png") 97% 65% / 34px auto no-repeat,
+    linear-gradient(180deg,#1C4A75,#0B2948)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -3px 0 rgba(3,19,34,.54),0 0 0 1px rgba(91,53,12,.42),0 4px 10px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena .srForgeHead266{
+  height:24px!important;flex-basis:24px!important;
+  padding:0 2px 3px!important;
+}
+#app.srHomeFullArena .srForgeHeadLeft266>b{
+  font-size:11.5px!important;
+  letter-spacing:.65px!important;
+}
+#app.srHomeFullArena .srForgeHammer266{width:23px!important;height:23px!important}
+#app.srHomeFullArena .srForgeUpgrade266{
+  margin-top:3px!important;
+  min-height:34px!important;flex:0 0 34px!important;
+  padding:3px 5px 3px 7px!important;
+  border-radius:9px!important;
+}
+#app.srHomeFullArena .srForgeUpgrade266>.btn{
+  min-width:78px!important;
+  height:28px!important;min-height:28px!important;
+  padding:3px 8px!important;
+  border-radius:8px!important;
+}
+#app.srHomeFullArena .srForgeUpText266>b,
+#app.srHomeFullArena .srForgeUpLine266,
+#app.srHomeFullArena .srForgeUpLine266 b{font-size:8.5px!important}
+
+/* The result/anvil lane stays functional but no longer dominates the Forge. */
+#app.srHomeFullArena .srForgeLootReserve266{
+  min-height:38px!important;
+  height:38px!important;
+  max-height:38px!important;
+  flex:0 0 38px!important;
+  margin-top:3px!important;
+  overflow:hidden!important;
+  border-radius:8px!important;
+  background:linear-gradient(90deg,rgba(4,27,47,.72),rgba(7,34,55,.38) 62%,transparent)!important;
+}
+#app.srHomeFullArena #srForgeLoot273{
+  height:38px!important;max-height:38px!important;
+}
+#app.srHomeFullArena #srForgeLoot273 .srForgeStack273,
+#app.srHomeFullArena #srForgeLoot273 .srForgeTransient273{right:78px!important}
+#app.srHomeFullArena #srForgeLoot273 .srForgeStackCard273{
+  width:32px!important;height:34px!important;border-radius:7px!important;
+}
+#app.srHomeFullArena #srForgeLoot273 .srForgeStackCard273 img{width:22px!important;height:22px!important}
+#app.srHomeFullArena #srForgeLoot273 .srForgeTransientCard273{
+  left:19px!important;top:1px!important;
+  width:90px!important;height:35px!important;
+  padding:3px 5px!important;gap:4px!important;border-radius:8px!important;
+}
+#app.srHomeFullArena #srForgeLoot273 .srForgeTransientIcon273{
+  width:25px!important;height:25px!important;flex-basis:25px!important;
+}
+#app.srHomeFullArena #srForgeLoot273 .srForgeTransientIcon273 img{width:23px!important;height:23px!important}
+#app.srHomeFullArena #srForgeLoot273 .srForgeTool273{
+  right:2px!important;top:1px!important;
+  width:72px!important;height:36px!important;
+  border-radius:9px!important;
+}
+#app.srHomeFullArena #srForgeLoot273 .srForgeHammer273{
+  left:27px!important;top:1px!important;
+  transform:scale(.72) rotate(-13deg)!important;
+  transform-origin:13px 34px!important;
+}
+#app.srHomeFullArena #srForgeLoot273 .srForgeAnvil273{
+  left:14px!important;bottom:2px!important;
+  width:44px!important;height:12px!important;
+}
+#app.srHomeFullArena #srForgeLoot273 .srForgeGlow273{
+  left:18px!important;bottom:-14px!important;width:42px!important;
+}
+
+#app.srHomeFullArena .srForgeActions266{
+  height:35px!important;flex:0 0 35px!important;
+  gap:5px!important;margin-top:3px!important;
+}
+#app.srHomeFullArena .srForgeActions266>.btn{
+  height:35px!important;min-height:35px!important;
+  border-radius:9px!important;
+}
+#app.srHomeFullArena .srForgeActions266 .tgl{
+  flex:0 0 82px!important;min-width:82px!important;
+  height:35px!important;
+  border-radius:10px!important;
+}
+#app.srHomeFullArena .srForgeFilter266{
+  margin-top:3px!important;
+  height:22px!important;min-height:22px!important;max-height:22px!important;
+  flex:0 0 22px!important;
+  padding:1px 5px!important;
+  border-radius:7px!important;
+}
+#app.srHomeFullArena .srForgeFilter266 .pill{
+  padding:1px 4px!important;
+  font-size:6.5px!important;
+}
+
+/* Bottom navigation: slimmer, more ornate and with a stronger selected plate. */
+#tabs{
+  border-top:2px solid #DFB452!important;
+  background:linear-gradient(180deg,#173D63 0%,#0A2846 58%,#06192E 100%)!important;
+  box-shadow:0 -4px 11px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.11)!important;
+}
+#tabs::before{
+  height:3px!important;
+  background:linear-gradient(90deg,#6E4510,#F4CF6D 16%,#A97927 50%,#F4CF6D 84%,#6E4510)!important;
+}
+#tabs>.tab{
+  border-right:1px solid rgba(216,173,73,.20)!important;
+}
+#tabs>.tab.on,
+#tabs>.tab.active,
+#tabs>.tab[aria-current="page"]{
+  color:#FFF0B2!important;
+  background:
+    linear-gradient(180deg,rgba(238,186,70,.18),rgba(132,84,18,.05) 56%,transparent),
+    radial-gradient(circle at 50% 12%,rgba(255,225,137,.24),transparent 62%)!important;
+}
+#tabs>.tab.on>.ico>.fantasyNavIcon,
+#tabs>.tab.active>.ico>.fantasyNavIcon,
+#tabs>.tab[aria-current="page"]>.ico>.fantasyNavIcon{
+  filter:saturate(1.06) brightness(1.20) drop-shadow(0 0 7px rgba(255,210,87,.46))!important;
+}
+
+/* Narrow phones retain the same hierarchy rather than inflating the Forge. */
+@media(max-width:390px){
+  #app.srHomeFullArena>#hud>.pbox{height:53px!important;min-height:53px!important}
+  #app.srHomeFullArena .avatar{width:44px!important;height:44px!important}
+  #app.srHomeFullArena .curr{height:27px!important;min-height:27px!important}
+  #app.srHomeFullArena #arena .floorTxt{min-width:138px!important;font-size:15px!important}
+  #app.srHomeFullArena .srForgeLootReserve266{height:34px!important;min-height:34px!important;max-height:34px!important;flex-basis:34px!important}
+  #app.srHomeFullArena #srForgeLoot273{height:34px!important;max-height:34px!important}
 }
 
 `;
