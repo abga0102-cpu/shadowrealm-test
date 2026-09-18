@@ -203,3 +203,16 @@ test('Skill mastery stars cannot unlock Divin before global character Ascension'
   expect(rows.noStarAscended.DIVIN).toBeGreaterThan(0);
   expect(rows.skillStarAscended.DIVIN).toBeGreaterThan(0);
 });
+
+test('V372 publishes fresh cache keys for every modified Divin authority', async ({ page }) => {
+  await openCleanGame(page);
+  const published = await page.evaluate(() => ({
+    build: document.querySelector('meta[name="shadowreach-build"]')?.getAttribute('content') || '',
+    scripts: Array.from(document.scripts).map((s) => s.getAttribute('src') || ''),
+  }));
+
+  expect(published.build).toBe('2026.09.18.372');
+  expect(published.scripts).toContain('game-1.js?v=2026.09.18.372');
+  expect(published.scripts).toContain('game-balance-v224.js?v=2026.09.18.372');
+  expect(published.scripts).toContain('progression-stability-authority-v304.js?v=2026.09.18.372');
+});
