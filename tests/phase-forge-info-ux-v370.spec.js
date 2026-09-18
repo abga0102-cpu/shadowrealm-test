@@ -9,7 +9,7 @@ test('V370 keeps Forge information compact and out of the combat header', async 
   const auto = fs.readFileSync(path.join(root, 'auto-forge-compare-v199.js'), 'utf8');
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-  expect(compare).toContain('Forge comparison authority v146 / V370');
+  expect(compare).toContain('Forge comparison authority v146');
   expect(compare).toContain("bottom='calc(env(safe-area-inset-bottom) + 64px)'");
   expect(compare).toContain('maxHeight');
   expect(compare).toContain('grid-template-columns:1.05fr .9fr 1fr');
@@ -20,7 +20,7 @@ test('V370 keeps Forge information compact and out of the combat header', async 
   expect(safety).toContain("more?'GARDER · SUIVANT':'GARDER'");
   expect(safety).toContain("setText(equip,'ÉQUIPER')");
 
-  expect(auto).toContain('Auto-Forge Compare V199 / V370');
+  expect(auto).toContain('Auto-Forge Compare V199');
   expect(auto).toContain("settleAutoDust(res,dustBefore,!document.getElementById('srForgeLoot273'))");
   expect(auto).toContain('__srAutoForgeDustV370');
 
