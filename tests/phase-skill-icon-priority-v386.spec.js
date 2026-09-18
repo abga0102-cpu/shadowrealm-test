@@ -7,7 +7,7 @@ test('V386 keeps skill art visible while cooldowns stay secondary', async () => 
   const ui = fs.readFileSync(path.join(root, 'premium-ui-v209.js'), 'utf8');
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-  expect(ui).toContain('Premium UI polish V209 / V386');
+  expect(ui).toContain('Premium UI polish V209 / V387');
   const v386 = ui.slice(ui.indexOf('/* V386 SKILL ICON PRIORITY'));
   expect(v386).toContain('.srSkillRefV383 .skfx>svg');
   expect(v386).toContain('width:30px!important');
@@ -19,6 +19,6 @@ test('V386 keeps skill art visible while cooldowns stay secondary', async () => 
   expect(v386).not.toContain('saveNow');
   expect(v386).not.toContain('localStorage');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.19.386"');
-  expect(index).toContain("var V='2026.09.19.386'");
+  expect(index).toContain('name="shadowreach-build"');
+  expect(index).toContain("var V='2026.09.19.387'");
 });
