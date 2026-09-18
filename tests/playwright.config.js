@@ -1,36 +1,50 @@
 const { defineConfig, devices } = require('@playwright/test');
 
-const CURRENT_RELEASE_SPECS = [
-  'phase1.spec.js',
-  'phase-premium-ui-v369-reference-composition.spec.js',
-  'phase-forge-info-ux-v370.spec.js',
-  'phase-auto-forge-dust-v346.spec.js',
-  'release-stability-legacy-save.spec.js',
-  'phase4h-progression-state-safety.spec.js',
-  'phase4i-familiar-flat-ui.spec.js',
-  'phase4j-progression-consolidation-v310.spec.js',
-  'phase4k-progression-playthrough-v311.spec.js',
-  'phase4l-tutorial-feedback-v312.spec.js',
-  'phase-familiar-fusion-ladder-v334.spec.js',
-  'phase-mega-rewards-v329-v330.spec.js',
-  'phase-raid-power-v324.spec.js',
-  'familiar-summon-cost-v322a.spec.js',
-  'forge-rarity-ascension-v323.spec.js',
-  'raid-minerai-v323-owner.spec.js',
-  'save-startup-safety-v340.spec.js',
-  'save-recovery-v341.spec.js',
-  'v342-pending-boss-progression.spec.js'
+// These files are retained as archaeology/ownership history, but their exact
+// assertions describe superseded V317-V333 implementations rather than the
+// current V364-V370 game. They stay runnable in test:e2e:historical and are
+// modernized one-by-one before returning to the blocking release gate.
+const HISTORICAL_CONTRACTS = [
+  'forge-intro-v321.spec.js',
+  'forge-power-replacement-v320.spec.js',
+  'forge-raid-navigation-v319.spec.js',
+  'forge-raid-onboarding-v317.spec.js',
+  'phase-accomplishments-claim-lifecycle.spec.js',
+  'phase-accomplishments-visual-v331.spec.js',
+  'phase-easy-dragon-v333.spec.js',
+  'phase-hero-equipment-v1-runtime-unload.spec.js',
+  'phase-navigation-dedup.spec.js',
+  'phase-runtime-inventory.spec.js',
+  'phase3-compatibility.spec.js',
+  'phase4g-raid100-migration.spec.js',
+  'phase4m-combat-profiles-v313.spec.js',
+  'phase4n-campaign-400-v314.spec.js',
+  'phase4n-campaign-accomplishments-v314.spec.js',
+  'phase4o-forge-master-stage-flow-v316.spec.js',
+  'v322-campaign-canonical.spec.js'
 ];
 
 module.exports = defineConfig({
   testDir: __dirname,
-  // Blocking release gate = current player-facing contracts only.
-  // Historical Vxxx archaeology remains in the repository and can be run with
-  // npm run test:e2e:historical, but obsolete markup/exact-value assertions no
-  // longer make an unrelated current release red.
-  testMatch: CURRENT_RELEASE_SPECS,
+  // Keep the broad regression net. Only explicitly classified superseded
+  // contracts are non-blocking; current Dust/save/V369/V370 coverage remains.
+  testMatch: [
+    'phase*.spec.js',
+    'release-stability-legacy-save.spec.js',
+    'forge-raid-onboarding-v317.spec.js',
+    'forge-raid-navigation-v319.spec.js',
+    'forge-power-replacement-v320.spec.js',
+    'forge-intro-v321.spec.js',
+    'familiar-summon-cost-v322a.spec.js',
+    'v322-campaign-canonical.spec.js',
+    'forge-rarity-ascension-v323.spec.js',
+    'raid-minerai-v323-owner.spec.js',
+    'save-startup-safety-v340.spec.js',
+    'save-recovery-v341.spec.js',
+    'v342-pending-boss-progression.spec.js'
+  ],
+  testIgnore: HISTORICAL_CONTRACTS,
   fullyParallel: false,
-  workers: process.env.CI ? 1 : undefined,
   timeout: 45000,
   globalTimeout: process.env.CI ? 15 * 60 * 1000 : undefined,
   expect: { timeout: 7000 },
