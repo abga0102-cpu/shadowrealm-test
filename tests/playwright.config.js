@@ -2,6 +2,8 @@ const { defineConfig, devices } = require('@playwright/test');
 
 const CURRENT_RELEASE_SPECS = [
   'phase1.spec.js',
+  'phase-premium-ui-v369-reference-composition.spec.js',
+  'phase-forge-info-ux-v370.spec.js',
   'phase4h-progression-state-safety.spec.js',
   'phase4i-familiar-flat-ui.spec.js',
   'phase4j-progression-consolidation-v310.spec.js',
