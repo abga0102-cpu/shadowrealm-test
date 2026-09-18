@@ -1949,7 +1949,7 @@ function showRarityInfo() {
   const rows = EQUIP_RARITY_ORDER.map((r) => {
     const c = RARITY[r].c;
     const min = RARITY_MIN_FORGE[r] || 1;
-    const ok = rarityAllowed(r, lv);
+    const ok = rarityAllowed(r, lv, S);
     const rate = ok ? (rates[r] || 0) : 0;
     return '<div class="itemRow" style="border-left-color:' + c + ";opacity:" + (ok ? 1 : 0.45) + '">' +
       '<div class="imini" style="width:22px;height:22px;border-color:' + c + '80;box-shadow:0 0 8px ' + c + '3d">' +
@@ -1970,7 +1970,7 @@ function showRarityInfo() {
       "monter sa Maîtrise améliore les chances à l\'intérieur de ceux déjà ouverts.</div>" +
     rows +
     '<div class="mute tiny center mt6">Forge niv.' + lv + " · " +
-      EQUIP_RARITY_ORDER.filter((r) => rarityAllowed(r, lv)).length + " paliers sur " +
+      EQUIP_RARITY_ORDER.filter((r) => rarityAllowed(r, lv, S)).length + " paliers sur " +
       EQUIP_RARITY_ORDER.length + " ouverts</div>" +
     '<div class="mt8">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
     "Raretés d\'équipement");
@@ -1984,6 +1984,9 @@ function forgeSummon(n) {
       st.minerai -= cost;
       const rates = gateForgeRates(
         getRates("forge", st.forge.level, st.ascension, starsOf(st, "forge")), st.forge.level);
+      Object.keys(rates).forEach((r) => { if (!rarityAllowed(r, st.forge.level, st)) rates[r] = 0; });
+      const rateSum = Object.values(rates).reduce((a,b) => a + (Number(b)||0), 0) || 1;
+      Object.keys(rates).forEach((r) => { rates[r] = rates[r] / rateSum * 100; });
       // one paid forge; the tree's "Forge gratuite" nodes may add a second
       // result at no extra cost
       const extra = Math.random() * 100 < treeSum(st, "forgeFree") ? 1 : 0;
