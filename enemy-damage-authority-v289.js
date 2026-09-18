@@ -1,14 +1,16 @@
-/* SHADOWREACH V289 · Campaign enemy balance authority
-   V362: campaign HP and damage are reduced by 40% at their source.
-   The special visible stage 1-2 Forge tutorial remains owned by V321 and may
-   intentionally overwrite these values before the player's first Forge craft.
+/* SHADOWREACH V289 · Enemy balance authority
+   V362 reduced Campaign HP and damage to 60% of their earlier source values.
+   V379 adds the requested global nerf on top of the live balance:
+   - every enemy keeps 90% of its current HP (-10%);
+   - every enemy keeps 60% of its current base damage (-40%);
+   - normal enemies, Elites, Bosses and Raid enemies all inherit the same nerf;
+   - Mega-Bosses remain x10 versions of the already-reduced Campaign Boss;
+   - the special visible stage 1-2 Forge tutorial remains owned by V321 and may
+     intentionally overwrite these values before the player's first Forge craft.
 
    Design rule:
    - The floor determines enemy power. Current player stats are never sampled.
-   - The existing campaign curve, tiers, elites, bosses and progression remain intact.
-   - Normal campaign combat uses 60% of the previous HP and damage values.
-   - Visible stage 1-2 keeps its existing forced tutorial behavior before Forge.
-   - Raid balance is unchanged.
+   - Existing curves, identities, tiers and relative Boss/Mega-Boss ratios stay intact.
 */
 (function(){
   'use strict';
@@ -18,15 +20,22 @@
   window.__srCampaignReferenceBalanceV324=true;
   window.__srCampaignReferenceBalanceV325=true;
   window.__srCampaignPowerSourceV362=true;
+  window.__srGlobalEnemyNerfV379=true;
 
   var LEGACY_MAX=400;
-  var CAMPAIGN_POWER_MUL=0.60;
+  var V362_CAMPAIGN_POWER_MUL=0.60;
+  var GLOBAL_HP_MUL_V379=0.90;
+  var GLOBAL_DAMAGE_MUL_V379=0.60;
+  var CAMPAIGN_HP_MUL=V362_CAMPAIGN_POWER_MUL*GLOBAL_HP_MUL_V379;
+  var CAMPAIGN_DAMAGE_MUL=V362_CAMPAIGN_POWER_MUL*GLOBAL_DAMAGE_MUL_V379;
   var TARGET_HITS_TO_KILL=3.6;
   var TARGET_HITS_TO_DEFEAT_REFERENCE=8;
   var INTRO_FLOOR_HP=65;
   var INTRO_FLOOR_DAMAGE=6;
-  var RAID_HP_MUL=1.35;
-  var RAID_DAMAGE_MUL=1.25;
+  var RAID_BASE_HP_MUL_V324=1.35;
+  var RAID_BASE_DAMAGE_MUL_V324=1.25;
+  var RAID_HP_MUL=RAID_BASE_HP_MUL_V324*GLOBAL_HP_MUL_V379;
+  var RAID_DAMAGE_MUL=RAID_BASE_DAMAGE_MUL_V324*GLOBAL_DAMAGE_MUL_V379;
 
   var REFERENCE_DAMAGE={
     1:30,3:80,5:150,10:350,15:800,20:2500,30:23000,40:180000,50:900000,
@@ -73,8 +82,8 @@
     if(isIntroFloor(f))return INTRO_FLOOR_DAMAGE;
     return Math.max(1,Math.round(expectedHP(f)/TARGET_HITS_TO_DEFEAT_REFERENCE));
   }
-  function campaignEnemyHP(f){return Math.max(1,Math.round(previousCampaignEnemyHP(f)*CAMPAIGN_POWER_MUL));}
-  function campaignEnemyDamage(f){return Math.max(1,Math.round(previousCampaignEnemyDamage(f)*CAMPAIGN_POWER_MUL));}
+  function campaignEnemyHP(f){return Math.max(1,Math.round(previousCampaignEnemyHP(f)*CAMPAIGN_HP_MUL));}
+  function campaignEnemyDamage(f){return Math.max(1,Math.round(previousCampaignEnemyDamage(f)*CAMPAIGN_DAMAGE_MUL));}
 
   /* Boss HP has a separate final authority (V288). Scale its source by the same
      factor so boss ratios and final post-spawn targets stay consistent instead
@@ -83,7 +92,7 @@
   function campaignBossHP(f){
     if(!previousBossHP)return null;
     var v=Number(previousBossHP(f));
-    return isFinite(v)&&v>0?Math.max(1,Math.round(v*CAMPAIGN_POWER_MUL)):v;
+    return isFinite(v)&&v>0?Math.max(1,Math.round(v*CAMPAIGN_HP_MUL)):v;
   }
 
   window.__srV285EnemyHP=campaignEnemyHP;
@@ -98,7 +107,9 @@
   try{if(typeof enemyHP==='function')enemyHP=campaignEnemyHP;}catch(_){ }
   try{if(typeof enemyDamage==='function')enemyDamage=campaignEnemyDamage;}catch(_){ }
 
-  /* V324 raid-only difficulty increase. Raid formulas remain unchanged. */
+  /* Keep the V324 Raid relationship, then apply the same V379 global nerf.
+     This covers normal Raid enemies and named Raid bosses without flattening
+     their existing relative difficulty. */
   try{
     if(typeof makeEnemy==='function'){
       var makeEnemyBeforeRaidV324=makeEnemy;
@@ -120,12 +131,22 @@
     targetHitsToKill:TARGET_HITS_TO_KILL,targetHitsToDefeatReference:TARGET_HITS_TO_DEFEAT_REFERENCE,
     expectedPlayerDamage:expectedDamage,expectedPlayerHP:expectedHP,
     enemyHP:campaignEnemyHP,enemyDamage:campaignEnemyDamage,
-    campaignPowerMul:CAMPAIGN_POWER_MUL,sourceReductionV362:true,
+    campaignPowerMul:V362_CAMPAIGN_POWER_MUL,sourceReductionV362:true,
+    campaignHpMulV379:CAMPAIGN_HP_MUL,campaignDamageMulV379:CAMPAIGN_DAMAGE_MUL,
+    globalEnemyNerfV379:{
+      hpMul:GLOBAL_HP_MUL_V379,damageMul:GLOBAL_DAMAGE_MUL_V379,
+      appliesTo:['normal','elite','boss','raid','mega-boss'],
+      megaBossRule:'reduced-campaign-boss-x10'
+    },
     forgeTutorialException:{visibleStage:'1-2',internalFloor:2,owner:'V321',beforeFirstForge:true},
     scaling:'floor-only-no-player-rubber-band',
     earlyCampaign:'1-1-onboarding-then-gear-pressure',
-    introFloor:{floor:1,hp:Math.max(1,Math.round(INTRO_FLOOR_HP*CAMPAIGN_POWER_MUL)),damage:Math.max(1,Math.round(INTRO_FLOOR_DAMAGE*CAMPAIGN_POWER_MUL))},
-    raidPowerV324:{hpMul:RAID_HP_MUL,damageMul:RAID_DAMAGE_MUL,campaignUnchanged:true},
+    introFloor:{floor:1,hp:Math.max(1,Math.round(INTRO_FLOOR_HP*CAMPAIGN_HP_MUL)),damage:Math.max(1,Math.round(INTRO_FLOOR_DAMAGE*CAMPAIGN_DAMAGE_MUL))},
+    raidPowerV324:{
+      hpMul:RAID_HP_MUL,damageMul:RAID_DAMAGE_MUL,
+      baseHpMul:RAID_BASE_HP_MUL_V324,baseDamageMul:RAID_BASE_DAMAGE_MUL_V324,
+      globalNerfAppliedV379:true
+    },
     expectedGates:{
       weak:'69-89',normal:'99-119',max0:'139-159',ascended:'199-299+',
       nightmare:'301-400',infernal:'401-500',abyssal:'501-600',immortal:'601-700',divine:'701-800'
