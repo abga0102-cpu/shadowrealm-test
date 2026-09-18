@@ -433,8 +433,7 @@ function scrParametres() {
           ["Puissance", fmt(S.power), "color:var(--goldLit)"],
           ["Rebirth · Asc.", S.rebirth.count + " · " + S.ascension, ""],
           ["Environnement", ENV_NAMES[combat && combat.bg] || "—", ""],
-          ["Jour", String(daysElapsed(S)), "color:var(--goldLit)"],
-          ["Jours simulés", String(S.testDays || 0), ""],
+          ["Jour", String(Math.max(1, Math.floor((Date.now() - (S.firstSeen || Date.now())) / 86400000) + 1)), "color:var(--goldLit)"],
         ].map((r) => '<div style="width:50%"><div class="kv" style="border:none;padding:2px 0">' +
           '<span class="dim">' + r[0] + '</span><b style="' + r[2] + '">' + r[1] + "</b></div></div>").join("") + "</div>" +
       "</div>" +
