@@ -1,4 +1,4 @@
-/* SHADOWREACH · Auto-Forge Compare V199 / V350 canonical dust authority
+/* SHADOWREACH · Auto-Forge Compare V199 / V370 canonical dust authority
    AUTO follows the Forge filter only: every kept result is surfaced for comparison.
    Canonical persisted batch sizes are 1/3/5/10, matching the Forge progression gate.
    V350: recycled Dust is valued from the canonical rarity table first, so a stale
@@ -85,6 +85,7 @@ window.__srAutoForgeDustV346={version:346,ensure:ensureAutoDust,value:recycledDu
 window.__srAutoForgeDustV348={version:348,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue};
 window.__srAutoForgeDustV349={version:349,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue,immediate:true};
 window.__srAutoForgeDustV350={version:350,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue,canonical:true,immediate:true};
+window.__srAutoForgeDustV370={version:370,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue,canonical:true,immediate:true,quietWhenForgeLane:true};
 
 try{if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}}catch(_){}
 
@@ -103,7 +104,7 @@ scheduleAutoForge=function(delay){
     var dustBefore=Number(S.poussiere)||0;
     var res=forgeSummon(amount)||[];
     var recycled=res.filter(function(r){return !!(r&&r.recycled);});
-    if(recycled.length)settleAutoDust(res,dustBefore,true);
+    if(recycled.length)settleAutoDust(res,dustBefore,!document.getElementById('srForgeLoot273'));
     var wanted=res.filter(isWanted);
     if(wanted.length){
       wanted.forEach(function(r){r.__autoForgeCompareV199=true;});
