@@ -23,6 +23,42 @@ function forgeHTML(){var lvl=Number(S.forge.level||1),min=safe(function(){return
 function replaceForge(html){try{var t=document.createElement('template');t.innerHTML=String(html||'');var old=t.content.querySelector('#homeForge');if(!old)return html;var holder=document.createElement('template');holder.innerHTML=forgeHTML();var neu=holder.content.firstElementChild;if(!neu)return html;old.replaceWith(neu);return t.innerHTML;}catch(e){console.warn('Forge renderer V266 fallback',e);return html;}}
 SCREENS.accueil=function(){return replaceForge(nativeAccueil.apply(this,arguments));};
 document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('.srForgeSpeedBtn266,.srForgeSpeedClose266'):null;if(!b)return;e.preventDefault();e.stopPropagation();setSpeedOpen(b.classList.contains('srForgeSpeedBtn266')?!speedOpen():false);try{if(typeof scheduleRender==='function')scheduleRender();else if(typeof render==='function')render();}catch(_){}},true);
+
+/* V383 · Forge upgrade tap authority.
+   The Forge panel is rendered by this late authority, while the generic ACT
+   dispatcher lives earlier in game-5. On mobile, later interaction layers can
+   consume the same tap before the delegated handler completes. Own the two
+   Forge-upgrade actions here so a valid tap always opens the confirmation and
+   the confirmation always starts the upgrade. */
+function forgeUpgradeResult383(r){
+  try{
+    if(typeof toast!=='function')return;
+    if(r&&r.ok)toast(r.instant?'Forge améliorée !':'Amélioration lancée',true);
+    else toast(r&&r.reason==='gold'?'Or insuffisant':r&&r.reason==='max'?'Forge au maximum':r&&r.reason==='busy'?'Amélioration en cours':"Impossible d'améliorer la Forge");
+  }catch(_){}
+}
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('[data-act="forgeUpgradeAsk"],[data-act="forgeUpgrade"]'):null;
+  if(!b)return;
+  if(b.disabled||b.getAttribute('aria-disabled')==='true')return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  if(b.getAttribute('data-act')==='forgeUpgradeAsk'){
+    try{
+      if(typeof showForgeUpgrade==='function'){showForgeUpgrade();return;}
+    }catch(err){try{console.error('Forge upgrade sheet failed',err);}catch(_){}}
+  }
+  try{
+    if(typeof closeModal==='function')closeModal();
+    var r=typeof upgradeForge==='function'?upgradeForge():{ok:false,reason:'missing'};
+    forgeUpgradeResult383(r);
+    if(typeof scheduleRender==='function')scheduleRender();
+    else if(typeof render==='function')render();
+  }catch(err){
+    try{console.error('Forge upgrade tap failed',err);}catch(_){}
+    forgeUpgradeResult383({ok:false,reason:'error'});
+  }
+},true);
 var st=document.createElement('style');st.id='srForgePanelAuthorityV266Style';st.textContent='\
 .srForgePanel266{position:relative;box-sizing:border-box!important;padding:5px 7px 5px!important;overflow:visible!important}.srForgeHead266{display:flex;align-items:center;justify-content:space-between;gap:7px;height:24px;flex:0 0 24px}.srForgeHeadLeft266,.srForgeMineral266{display:flex;align-items:center;gap:5px}.srForgeHeadLeft266>b{font:900 11px/1 Georgia,serif;color:var(--goldLit);letter-spacing:.4px;white-space:nowrap}.srForgeHammer266{width:21px;height:21px;border:1px solid var(--goldDim);border-radius:7px;display:grid;place-items:center}.srForgeMineral266{color:var(--blueLit);font-size:10px;white-space:nowrap}.srForgeUpgrade266{position:relative;margin-top:3px;min-height:31px;flex:0 0 31px;border:1px solid #314762;border-radius:9px;background:#0b1525;padding:3px 6px;display:flex;align-items:center;gap:6px;box-sizing:border-box}.srForgeUpgrade266.max{justify-content:center;color:var(--greenLit);min-height:27px;flex-basis:27px}.srForgeUpText266{display:flex;flex-direction:column;gap:1px;min-width:0}.srForgeUpText266>b,.srForgeUpLine266 b{font-size:8.5px;color:var(--goldLit)}.srForgeUpLine266{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:8.5px;color:var(--goldLit)}.srForgeSpeedBtn266{height:24px;min-width:64px;border:1px solid #2e7186;border-radius:8px;background:linear-gradient(180deg,#102a38,#0a1c27);color:#aaf1fb;display:flex;align-items:center;justify-content:center;gap:3px;font:900 8.5px system-ui;flex:0 0 auto}.srForgeSpeedBtn266.open{border-color:#55d9e3;box-shadow:0 0 0 1px #55d9e344 inset}.srForgeSpeedPop266{display:none;position:absolute;z-index:120;left:5px;right:5px;top:calc(100% + 3px);border:1px solid #2e7186;border-radius:10px;background:#071521f7;box-shadow:0 10px 28px #000c;padding:7px}.srForgeSpeedPop266.open{display:block}.srForgeSpeedPopHead266{display:flex;align-items:center;justify-content:space-between;color:#aaf1fb;font-size:9px;margin-bottom:5px}.srForgeSpeedClose266{width:24px;height:24px;border:1px solid #3b5873;border-radius:7px;background:#101c2b;color:#d7e7f8;font-weight:900}.srForgeSpeedList266{display:flex;gap:5px;overflow-x:auto}.srForgeSpeedChip266{flex:0 0 auto;border:1px solid #3fcfd6;border-radius:999px;background:#0c1e2b;color:#9ef2f8;padding:6px 9px;font:800 9px system-ui}.srForgeLootReserve266{height:auto!important;min-height:66px!important;max-height:none!important;margin-top:3px;flex:1 1 auto!important;overflow:visible;min-width:0}.srForgeActions266{display:flex;align-items:stretch;gap:5px;margin-top:3px;height:37px;flex:0 0 37px}.srForgeActions266>.btn{min-height:37px!important;height:37px!important}.srForgeActionLabel266,.srForgeBatchLabel266{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1}.srForgeActionLabel266 small,.srForgeBatchLabel266 small{font-size:7px;opacity:.8;display:flex;gap:2px;align-items:center}.srForgeActions266 .tgl{flex:0 0 88px;min-width:88px;height:37px!important}.srForgeAuto266.on span{color:#78e996;font-size:8px}.srForgeFilter266{margin-top:3px!important;height:25px!important;min-height:25px!important;max-height:25px!important;padding:2px 6px!important;flex:0 0 25px;box-sizing:border-box!important}.srForgeFilter266 .pill{font-size:7px!important;padding:2px 5px!important}@media(max-width:390px){.srForgePanel266{padding-left:6px!important;padding-right:6px!important}.srForgeHeadLeft266>b{font-size:10.5px}.srForgeLootReserve266{min-height:60px!important}.srForgeActions266{height:35px;flex-basis:35px}.srForgeActions266>.btn,.srForgeActions266 .tgl{height:35px!important;min-height:35px!important}.srForgeActions266 .tgl{flex-basis:82px;min-width:82px}.srForgeSpeedBtn266{min-width:58px}.srForgeFilter266{height:24px!important;min-height:24px!important;max-height:24px!important;flex-basis:24px}}@media(max-height:720px){.srForgeLootReserve266{min-height:52px!important}.srForgeUpgrade266{min-height:29px;flex-basis:29px}.srForgeActions266{height:34px;flex-basis:34px}.srForgeActions266>.btn,.srForgeActions266 .tgl{height:34px!important;min-height:34px!important}.srForgeFilter266{height:23px!important;min-height:23px!important;max-height:23px!important;flex-basis:23px}}@media(prefers-reduced-motion:reduce){.srForgeSpeedBtn266{transition:none!important}}';document.head.appendChild(st);
 try{if(typeof render==='function')render();}catch(_){}
