@@ -448,9 +448,6 @@ function scrParametres() {
         '</div><div class="divider"></div><div class="between"><span class="dim tiny">Version web · ' + APP_BUILD + '</span>' +
           btn("Forcer la mise à jour", { small: true, cls: "blue", act: "freshReload", style: "width:auto;padding:5px 10px" }) +
         "</div></div>") +
-      fold("tools", "Outils de test", '<div class="card"><div class="dim small">Comme dans l\'app d\'origine : avance d\'une journée complète ' +
-        "(recharge les clés, termine les recherches et les œufs, applique les gains AFK plafonnés).</div>" +
-        '<div class="mt10">' + btn(ic("forward", 14) + "Simuler 1 jour", { cls: "blue", small: true, act: "warpDay" }) + "</div></div>") +
       fold("account", "Compte", '<div class="card"><div class="dim small" style="line-height:1.5">L\'app d\'origine gère un mode invité et ' +
         "« Continuer avec Google » via le backend Emergent, avec migration de progression. " +
         "Cette version est locale et anonyme.</div>" +
@@ -1894,7 +1891,6 @@ const ACT = {
   // settings
   saveNow: () => { saveNow(); toast("Sauvegardé", true); },
   freshReload: () => forceFreshReload(),
-  warpDay: () => { warpDay(); toast("+1 jour simulé", true); },
   rename: () => {
     const n = prompt("Nom du héros :", S.playerName);
     if (n && n.trim()) { update((s) => { s.playerName = n.trim().slice(0, 18); }); toast("Renommé", true); }
