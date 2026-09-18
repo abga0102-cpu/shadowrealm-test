@@ -1,5 +1,5 @@
-/* SHADOWREACH · Premium UI polish V209 / V369
-   Strict reference composition: brighter fantasy arena, compact Forge, ornate blue-and-gold HUD and navigation.
+/* SHADOWREACH · Premium UI polish V209 / V377
+   Reference-locked dark fantasy composition: ruins arena, dramatic Forge, premium skills, ready-egg capsule.
    Presentation-only: no routes, economy, saves, timers, combat values or gameplay state are changed. */
 (function(){
   'use strict';
@@ -1340,6 +1340,368 @@ body{
   #app.srHomeFullArena #arena .floorTxt{min-width:138px!important;font-size:15px!important}
   #app.srHomeFullArena .srForgeLootReserve266{height:34px!important;min-height:34px!important;max-height:34px!important;flex-basis:34px!important}
   #app.srHomeFullArena #srForgeLoot273{height:34px!important;max-height:34px!important}
+}
+
+
+/* V377 REFERENCE LOCK
+   Locked to the annotated reference: dark navy UI, gold trim, luminous ruins,
+   premium skill buttons, ready-egg capsule and a dramatic visible Forge fire. */
+
+/* Global navy/gold language: no light-cyan dominant surfaces. */
+#app.srHomeFullArena{
+  background:#06182B!important;
+  border-left-color:#244C6E!important;
+  border-right-color:#244C6E!important;
+}
+#app.srHomeFullArena>#hud{
+  background:
+    radial-gradient(88% 90% at 18% -18%,rgba(54,112,157,.18),transparent 64%),
+    linear-gradient(180deg,#0D2A47 0%,#09213A 58%,#06182B 88%,rgba(6,24,43,.38) 100%)!important;
+  border-bottom:2px solid #D6A948!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 4px 10px rgba(0,0,0,.28)!important;
+}
+#app.srHomeFullArena>#hud>.pbox{
+  border:1.5px solid #D6AA4D!important;
+  background:linear-gradient(145deg,#173B60 0%,#102E4D 48%,#081D33 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -3px 8px rgba(0,10,22,.58),0 3px 8px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena .avatar{
+  background:radial-gradient(circle at 50% 30%,#315F87,#0C2947 66%,#061629)!important;
+  box-shadow:0 0 0 1px #684611,0 0 0 3px #E8BA55,0 3px 8px rgba(0,0,0,.50),0 0 10px rgba(231,183,76,.22)!important;
+}
+#app.srHomeFullArena .power{
+  color:#FFE3A0!important;
+  border-color:#C99A3E!important;
+  background:#071A2F!important;
+}
+#app.srHomeFullArena .curr{
+  border-color:#D0A345!important;
+  background:linear-gradient(180deg,#173C60,#0A2744)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),inset 0 -2px 0 #041426,0 3px 6px rgba(0,0,0,.28)!important;
+}
+#app.srHomeFullArena .curr>.plus{
+  border-color:#13713A!important;
+  background:linear-gradient(180deg,#55E77C,#19B851)!important;
+  box-shadow:inset 0 1px 0 #C6FBD2,0 1px 4px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena .hudBtn,
+#app.srHomeFullArena .menuBtn{
+  color:#BFD4E8!important;
+  border:1.5px solid #CCA042!important;
+  background:linear-gradient(180deg,#173B5E,#0B2744)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -2px 0 #041528,0 2px 6px rgba(0,0,0,.30)!important;
+}
+
+/* Reference arena: luminous forgotten ruins, dark UI stays on top. */
+#app.srHomeFullArena #screen.fixed>.campaignWorld{
+  background:#0B2A40!important;
+  border-top:0!important;
+  border-bottom:2px solid #DDB14E!important;
+}
+#app.srHomeFullArena #arenaBg{
+  background-image:url("art/env_ruins.jpg")!important;
+  background-position:center 48%!important;
+  background-size:cover!important;
+  filter:brightness(1.08) saturate(1.08) contrast(1.03)!important;
+}
+#app.srHomeFullArena #arenaShade{
+  background:
+    radial-gradient(90% 46% at 50% 12%,rgba(197,237,255,.05),transparent 75%),
+    linear-gradient(90deg,rgba(4,19,32,.13),transparent 12%,transparent 88%,rgba(4,19,32,.13)),
+    linear-gradient(180deg,rgba(4,22,36,.02) 0%,rgba(2,18,31,.02) 58%,rgba(2,14,25,.16) 100%)!important;
+}
+#app.srHomeFullArena #aDecor{
+  filter:brightness(1.03) saturate(1.04) drop-shadow(0 3px 3px rgba(0,0,0,.20))!important;
+}
+#app.srHomeFullArena #aLayer .unit{
+  scale:.80!important;
+  filter:saturate(1.05) brightness(1.03) drop-shadow(0 4px 4px rgba(0,0,0,.30))!important;
+}
+
+/* Stage hierarchy like the reference: title floats over the scenery, not inside a cyan plate. */
+#app.srHomeFullArena #arena .floorTxt{
+  min-width:0!important;
+  padding:2px 7px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#FFF1BF!important;
+  font-family:Georgia,var(--fd),serif!important;
+  font-size:18px!important;
+  letter-spacing:1.4px!important;
+  text-shadow:0 2px 0 #07101A,0 0 4px #000,0 0 8px rgba(223,177,70,.30)!important;
+  box-shadow:none!important;
+}
+#app.srHomeFullArena #arena .fTrack{
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#app.srHomeFullArena #arena .sdot{
+  border-color:#0C2138!important;
+  box-shadow:0 0 0 1px rgba(238,199,104,.42),0 1px 4px rgba(0,0,0,.40)!important;
+}
+#app.srHomeFullArena #arena .sdot.cur,
+#app.srHomeFullArena #arena .sdot.on{
+  border-color:#FFF1B3!important;
+  box-shadow:0 0 8px rgba(200,92,255,.42),0 0 0 1px #8558C6!important;
+}
+#app.srHomeFullArena #arena .fPill{
+  border:1px solid #284C6D!important;
+  background:linear-gradient(180deg,rgba(13,43,70,.97),rgba(6,26,46,.98))!important;
+  color:#F6F4F1!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 5px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena .campaignWorld .btn.red{
+  border:1.5px solid #FF7A8B!important;
+  background:linear-gradient(180deg,#992238,#5B101E)!important;
+  color:#FFD7D9!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -3px 0 #370814,0 0 12px rgba(217,54,75,.22),0 4px 8px rgba(0,0,0,.34)!important;
+}
+
+/* Egg-ready capsule: visible, elegant and anchored under the right HUD controls. */
+#app.srHomeFullArena .srEggReadyV377{
+  position:absolute!important;
+  top:calc(var(--srHudH) + 46px)!important;
+  right:10px!important;
+  z-index:42!important;
+  width:min(196px,51vw)!important;
+  min-height:48px!important;
+  padding:5px 34px 5px 10px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  appearance:none!important;
+  border:1.5px solid #567EA3!important;
+  border-radius:12px!important;
+  background:linear-gradient(180deg,rgba(17,50,79,.98),rgba(7,29,51,.98))!important;
+  color:#F3F7FB!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -2px 0 #03111F,0 3px 8px rgba(0,0,0,.38)!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377{
+  min-width:0!important;flex:1!important;
+  display:flex!important;flex-direction:column!important;gap:2px!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377 b{
+  font-size:10px!important;line-height:1.05!important;color:#E8EEF6!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377 small{
+  font-size:7.5px!important;line-height:1!important;font-weight:900!important;color:#B8C7D8!important;
+}
+#app.srHomeFullArena .srEggReadyNestV377{
+  position:absolute!important;right:18px!important;bottom:2px!important;
+  width:45px!important;height:45px!important;
+  display:grid!important;place-items:center!important;
+  background:radial-gradient(ellipse at 50% 82%,rgba(227,184,64,.70),rgba(117,75,17,.12) 48%,transparent 69%)!important;
+}
+#app.srHomeFullArena .srEggReadyNestV377 img{
+  width:36px!important;height:36px!important;object-fit:contain!important;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))!important;
+}
+#app.srHomeFullArena .srEggReadyChevronV377{
+  position:absolute!important;right:5px!important;top:50%!important;transform:translateY(-50%)!important;
+  color:#C5D7E7!important;font-size:20px!important;font-weight:900!important;
+}
+
+/* Secondary reward feed lives left so it never collides with the egg capsule. */
+#app.srHomeFullArena #rewardFeed{
+  left:8px!important;right:auto!important;
+  top:calc(var(--srHudH) + 55px)!important;
+  width:min(160px,42%)!important;
+}
+
+/* Skills: thick premium frames, dark wells, circular painted icons and stronger cooldown readability. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  padding:5px 7px!important;
+  gap:6px!important;
+  background:linear-gradient(180deg,#0F3456 0%,#082440 60%,#061B31 100%)!important;
+  border-top:2px solid #D8AB4B!important;
+  border-bottom:2px solid #D8AB4B!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -3px 7px rgba(0,11,22,.52),0 -2px 8px rgba(0,0,0,.24)!important;
+}
+#app.srHomeFullArena #skillbar .slot{
+  width:45px!important;height:45px!important;
+  border:2px solid #D8AB4B!important;
+  border-radius:11px!important;
+  background:linear-gradient(180deg,#102C49,#061A2F)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -4px 8px rgba(0,10,22,.58),0 2px 6px rgba(0,0,0,.36)!important;
+}
+#app.srHomeFullArena #skillbar .slot .skfx{
+  inset:3px!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.20),0 0 6px rgba(0,0,0,.34)!important;
+}
+#app.srHomeFullArena #skillbar .slot .skfx::after{
+  border-radius:50%!important;
+  background:radial-gradient(circle at 50% 20%,rgba(255,255,255,.38),transparent 54%)!important;
+}
+#app.srHomeFullArena #skillbar .slot .cdRing{inset:1px!important}
+#app.srHomeFullArena #skillbar .slot .cdTxt{
+  font-size:13px!important;color:#FFF4D3!important;
+  -webkit-text-stroke:1px rgba(4,9,16,.55)!important;
+}
+#app.srHomeFullArena #skillbar .slot .catBar{
+  left:4px!important;right:4px!important;bottom:1px!important;height:3px!important;border-radius:999px!important;
+  box-shadow:0 0 5px currentColor!important;
+}
+#app.srHomeFullArena #skillbar .autoSk{
+  width:45px!important;height:45px!important;
+  border:2px solid #B98C31!important;
+  border-radius:11px!important;
+  background:linear-gradient(180deg,#163657,#08233E)!important;
+  color:#D3C18D!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),inset 0 -3px 6px rgba(0,10,21,.48)!important;
+}
+#app.srHomeFullArena #skillbar .autoSk.on{
+  color:#FFE08C!important;border-color:#E2B348!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 8px rgba(226,179,72,.20)!important;
+}
+#app.srHomeFullArena #skillbar .petMini{
+  height:45px!important;
+  min-width:104px!important;
+  border:2px solid #D8AB4B!important;
+  border-radius:11px!important;
+  background:linear-gradient(180deg,#123252,#071E36)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.11),inset 0 -3px 7px rgba(0,10,22,.50),0 2px 6px rgba(0,0,0,.32)!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:39px!important;height:39px!important;
+  filter:saturate(1.12) brightness(1.06) drop-shadow(0 2px 4px rgba(0,0,0,.45))!important;
+}
+
+/* Forge: dark navy frame with a large visible fire/anvil atmosphere on the right. */
+#app.srHomeFullArena #screen.fixed>.pad.mt4{
+  background:linear-gradient(180deg,#08243F,#061A2F)!important;
+  padding:4px 7px!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266{
+  position:relative!important;
+  border:2px solid #D5A640!important;
+  border-radius:13px!important;
+  background:
+    linear-gradient(90deg,rgba(8,29,50,.98) 0%,rgba(8,31,54,.94) 52%,rgba(20,28,35,.50) 71%,rgba(32,22,16,.36) 100%),
+    radial-gradient(circle at 84% 56%,rgba(255,119,22,.64),rgba(232,70,10,.19) 28%,transparent 54%),
+    url("art/props/brazier.png") 84% 58% / 142px auto no-repeat,
+    url("art/props/brazier.png") 101% 67% / 96px auto no-repeat,
+    url("art/props/crystal.png") 97% 70% / 34px auto no-repeat,
+    linear-gradient(180deg,#123856,#071D34)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.11),inset 0 -3px 0 rgba(2,15,28,.58),0 0 0 1px rgba(92,53,10,.42),0 4px 10px rgba(0,0,0,.34)!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266::before{
+  content:""!important;
+  position:absolute!important;inset:1px!important;pointer-events:none!important;border-radius:10px!important;
+  background:radial-gradient(45% 70% at 83% 57%,rgba(255,177,53,.16),transparent 70%)!important;
+  border:1px solid rgba(241,195,89,.24)!important;
+}
+#app.srHomeFullArena .srForgeHead266{
+  border-bottom:1px solid rgba(209,164,69,.34)!important;
+}
+#app.srHomeFullArena .srForgeHeadLeft266>b{
+  color:#FFF0B8!important;
+  font-family:Georgia,var(--fd),serif!important;
+  font-size:11.5px!important;
+  letter-spacing:.75px!important;
+  text-shadow:0 2px 2px #000!important;
+}
+#app.srHomeFullArena .srForgeHammer266{
+  border-color:#D7AA4A!important;
+  background:linear-gradient(180deg,#183A5A,#0A2540)!important;
+}
+#app.srHomeFullArena .srForgeMineral266{
+  color:#E4EEF7!important;
+  border-color:#4F7190!important;
+  background:rgba(5,26,45,.76)!important;
+}
+#app.srHomeFullArena .srForgeUpgrade266{
+  border:1px solid #436789!important;
+  background:linear-gradient(180deg,rgba(17,50,78,.96),rgba(7,28,49,.97))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#app.srHomeFullArena .srForgeUpgrade266>.btn{
+  --bA:#F9B73B;--bB:#D97A13;--bS:#8C4604;--bE:#FFF0A9;--bT:#fff;--bSh:0 1px 1px #6B3600;
+  min-width:82px!important;
+  border:1px solid #6F3D05!important;
+  border-radius:8px!important;
+  box-shadow:inset 0 1px 0 #FFE2A2,inset 0 -3px 0 #9A5107,0 2px 5px rgba(0,0,0,.32)!important;
+}
+#app.srHomeFullArena .srForgeLootReserve266{
+  border:1px solid rgba(72,104,132,.46)!important;
+  background:linear-gradient(90deg,rgba(4,22,39,.78),rgba(5,26,44,.30) 55%,transparent 100%)!important;
+  box-shadow:inset 0 1px 8px rgba(0,0,0,.32)!important;
+}
+#app.srHomeFullArena .srForgeActions266>.btn.blue{
+  border:1px solid #16669B!important;
+  background:linear-gradient(180deg,#1D91D5,#0D5F9F)!important;
+  color:#F3F8FC!important;
+  box-shadow:inset 0 1px 0 #9FD8F6,inset 0 -3px 0 #074E86,0 2px 0 #032D4C,0 4px 7px rgba(0,0,0,.28)!important;
+}
+#app.srHomeFullArena .srForgeActions266 .tgl{
+  border:1px solid #496D8E!important;
+  background:linear-gradient(180deg,#183B5D,#0A2643)!important;
+  color:#C1CEE0!important;
+}
+#app.srHomeFullArena .srForgeActions266 .tgl.on{
+  border-color:#6FD28D!important;
+  background:linear-gradient(180deg,#1B6E45,#11492F)!important;
+  color:#A5F0BB!important;
+}
+#app.srHomeFullArena .srForgeFilter266{
+  border-color:#395D7C!important;
+  background:linear-gradient(180deg,rgba(12,40,65,.95),rgba(5,25,44,.96))!important;
+}
+
+/* Preserve V371 dust feedback as part of the Forge language. */
+#app.srHomeFullArena #srAutoDustNoticeV371{
+  color:#78E996!important;
+  border-color:rgba(87,214,126,.55)!important;
+  background:rgba(7,43,26,.91)!important;
+}
+
+/* Bottom navigation: deep navy, gold separators and a strong active glow. */
+#tabs{
+  border-top:2px solid #D8AB49!important;
+  background:linear-gradient(180deg,#0E2F50 0%,#08233E 55%,#05182C 100%)!important;
+  box-shadow:0 -4px 12px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#tabs::before{
+  height:3px!important;
+  background:linear-gradient(90deg,#71470F,#F0C968 17%,#8E6120 50%,#F0C968 83%,#71470F)!important;
+  box-shadow:0 0 8px rgba(232,182,72,.18)!important;
+}
+#tabs>.tab{
+  color:#AFC1D2!important;
+  border-right:1px solid rgba(217,174,73,.25)!important;
+}
+#tabs>.tab.on,
+#tabs>.tab.active,
+#tabs>.tab[aria-current="page"]{
+  color:#FFF0B3!important;
+  background:
+    linear-gradient(180deg,rgba(211,159,49,.16),rgba(108,70,16,.04) 58%,transparent),
+    radial-gradient(circle at 50% 14%,rgba(255,216,105,.28),transparent 63%)!important;
+}
+#tabs>.tab.on::before,
+#tabs>.tab.active::before,
+#tabs>.tab[aria-current="page"]::before{
+  background:linear-gradient(90deg,transparent,#FFF0A9 18%,#E3AC38 82%,transparent)!important;
+  box-shadow:0 0 9px rgba(236,182,66,.40)!important;
+}
+#tabs>.tab.on>.ico>.fantasyNavIcon,
+#tabs>.tab.active>.ico>.fantasyNavIcon,
+#tabs>.tab[aria-current="page"]>.ico>.fantasyNavIcon{
+  filter:saturate(1.06) brightness(1.17) drop-shadow(0 0 8px rgba(243,194,78,.48))!important;
+}
+
+/* Keep the same identity on smaller phones instead of inflating Forge again. */
+@media(max-width:390px){
+  #app.srHomeFullArena .srEggReadyV377{right:7px!important;width:min(184px,52vw)!important;top:calc(var(--srHudH) + 42px)!important}
+  #app.srHomeFullArena #skillbar .slot,
+  #app.srHomeFullArena #skillbar .autoSk{width:42px!important;height:42px!important}
+  #app.srHomeFullArena #skillbar .petMini{height:42px!important;min-width:92px!important}
+  #app.srHomeFullArena #skillbar .petMini img{width:36px!important;height:36px!important}
 }
 
 `;
