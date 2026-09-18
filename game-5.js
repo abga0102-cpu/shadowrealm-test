@@ -1437,21 +1437,39 @@ function showSkillResult(res) {
     const def = SKILL_BY_ID[r.id];
     const col = RARITY[r.rarity].c;
     const cat = def ? SKILL_CATS[def.cat] : null;
-    return '<div class="resItem rf" style="width:58px;border-color:' + col + ";--rc:" + col + '">' +
+    const levelInfo = r.dup
+      ? (r.leveled
+          ? '<div class="tiny bb" style="color:var(--greenLit)">Niv. ' + r.beforeLevel + ' → ' + r.afterLevel + '</div>' +
+            '<div class="tiny b" style="color:var(--goldLit)">+10 % puissance</div>' +
+            (r.globalPowerGain > 0 ? '<div class="tiny b" style="color:#8FEFF4">+' + fmt(r.globalPowerGain) + ' puissance globale</div>' : '')
+          : '<div class="tiny b" style="color:var(--textMute)">' +
+            (r.need ? r.count + ' / ' + r.need + ' vers Niv. ' + (r.afterLevel + 1) : 'Niveau maximum') + '</div>')
+      : '<div class="tiny b" style="color:var(--greenLit)">Niv. 1</div>';
+    return '<div class="resItem rf" style="width:76px;border-color:' + col + ";--rc:" + col + '">' +
       '<span style="position:relative;z-index:1">' + ic(def ? def.icon : "sparkle", 18) + "</span>" +
       '<div class="tiny bb" style="color:' + col + ';line-height:1.1">' + esc(def ? def.name : r.id) + "</div>" +
       (cat ? '<span class="tag" style="color:' + cat.c + ";border-color:" + cat.c + '66">' + cat.label + "</span>" : "") +
       '<div class="tiny b" style="color:' + (r.dup ? "var(--textMute)" : "var(--greenLit)") + '">' +
-        (r.dup ? "Doublon" : "Nouveau") + "</div></div>";
+        (r.dup ? "Doublon" : "Nouveau") + "</div>" + levelInfo + "</div>";
   };
   const news = res.filter((r) => !r.dup).length;
+  const levelUps = res.filter((r) => r.leveled);
+  const totalPowerGain = levelUps.reduce((sum, r) => sum + Math.max(0, Number(r.globalPowerGain) || 0), 0);
+  let summary;
+  if (levelUps.length) {
+    summary = levelUps.length + " montée" + (levelUps.length > 1 ? "s" : "") + " de niveau · +10 % puissance par niveau" +
+      (totalPowerGain > 0 ? " · +" + fmt(totalPowerGain) + " puissance globale" : "");
+    if (news) summary = news + " nouvelle" + (news > 1 ? "s" : "") + " · " + summary;
+  } else if (news) {
+    summary = news + " nouvelle" + (news > 1 ? "s" : "") + " compétence" + (news > 1 ? "s" : "");
+  } else {
+    summary = "Doublons — progression vers le prochain niveau";
+  }
   openModal('<div class="center" style="margin-bottom:6px">' + ic("sparkle", 32) + "</div>" +
     '<div class="modalT" style="color:' + bc + ';text-shadow:0 2px 0 #000,0 0 18px ' + bc + '80">' +
       res.length + " INVOCATION" + (res.length > 1 ? "S" : "") + "</div>" +
     '<div class="resGrid">' + res.slice(0, 12).map(card).join("") + "</div>" +
-    '<div class="dim small center" style="margin-bottom:10px">' +
-      (news ? news + " nouvelle" + (news > 1 ? "s" : "") + " compétence" + (news > 1 ? "s" : "")
-            : "Doublons — ils font monter le niveau des compétences possédées") + "</div>" +
+    '<div class="dim small center" style="margin-bottom:10px">' + summary + "</div>" +
     btn("Continuer", { cls: "purple", act: "closeModal" }), "Résultat d’invocation");
 }
 function showSkillSlotPicker(idx) {
