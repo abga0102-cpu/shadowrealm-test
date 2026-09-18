@@ -46,7 +46,7 @@ function ensureStyle(){
 #srAchArenaLauncher138 .srAchLaunchProgress{position:relative;z-index:1;display:block;color:#fff;font-size:9px;letter-spacing:0;white-space:nowrap}\
 #srAchArenaLauncher138 .srAchLaunchBadge{position:absolute;left:-7px;top:-7px;z-index:3;min-width:19px;height:19px;padding:0 4px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(180deg,#ff6470,#e62d42);color:#fff;border:2px solid #091331;font-size:9px;box-shadow:0 2px 7px rgba(0,0,0,.4)}\
 #srAchArenaLauncher138:active{transform:translateY(calc(-50% + 1px)) scale(.97);filter:brightness(1.06)}\
-#overlay.srPassOverlay331{background:rgba(3,7,18,.73)!important;backdrop-filter:blur(5px)}\
+#overlay.srPassOverlay331{position:fixed!important;inset:0!important;z-index:1000!important;background:rgba(3,7,18,.73)!important;backdrop-filter:blur(5px)}\
 #overlay.srPassOverlay331>.card{width:min(94vw,820px)!important;max-width:820px!important;max-height:min(92dvh,900px)!important;padding:0!important;border-radius:23px!important;border:1px solid #39508e!important;background:linear-gradient(180deg,#101b38 0%,#0b142b 100%)!important;box-shadow:0 28px 80px rgba(0,0,0,.65),0 0 0 1px rgba(128,157,255,.12),inset 0 1px 0 rgba(255,255,255,.08)!important;overflow:hidden!important}\
 #overlay.srPassOverlay331>.card>.mhead{display:none!important}\
 #overlay.srPassOverlay331>.card>.mbody{max-height:min(92dvh,900px)!important;padding:14px 15px 16px!important;background:radial-gradient(circle at 50% -12%,rgba(78,99,224,.20),transparent 35%)!important}\
@@ -106,7 +106,8 @@ function enhanceLane(root){
 function enhanceFooter(root){
  try{
   if(root.querySelector('.srPassFooter331'))return;var st=launcherState()||{},done=Math.max(0,Number(st.done)||0),total=Math.max(1,Number(st.total)||10),pct=Math.max(0,Math.min(100,Math.round(done/total*100))),stage=String(st.stage||'');
-  var close=root.querySelector(':scope > .mt10');if(!close)return;close.insertAdjacentHTML('beforebegin','<div class="srPassFooter331"><div class="srPassFooterTop331"><span>♛ Progression des étages</span><span>'+done+'/'+total+'</span></div><div class="srPassFooterTrack331"><i style="width:'+pct+'%"></i></div><div class="srPassFooterStage331">Étape actuelle : '+esc(stage||'—')+'</div></div>');
+  var close=root.querySelector(':scope > .mt10'),markup='<div class="srPassFooter331"><div class="srPassFooterTop331"><span>♛ Progression des étages</span><span>'+done+'/'+total+'</span></div><div class="srPassFooterTrack331"><i style="width:'+pct+'%"></i></div><div class="srPassFooterStage331">Étape actuelle : '+esc(stage||'—')+'</div></div>';
+  if(close)close.insertAdjacentHTML('beforebegin',markup);else root.insertAdjacentHTML('beforeend',markup);
  }catch(_){}
 }
 function enhancePass(){

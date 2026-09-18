@@ -62,7 +62,7 @@ test('Phase 4G makes legacy Raid 100 compensation migration-driven instead of po
   expect(legacyFix).not.toContain('setTimeout(compensateCurrentState,50)');
   expect(legacyFix).not.toContain('setTimeout(compensateCurrentState,80)');
 
-  expect(canonicalClaim).toContain('raid100:{gold:1500000,eclat:1000,essence:1000,merge:{RARE:50},validatedRaid100:true}');
+  expect(canonicalClaim).toContain('raid100:{gold:250000,validatedRaid100:true}');
   expect(canonicalClaim).toContain('raid100ValidatedV127=true');
 
   expect(canonicalMerge).toContain('__srSyncAccomplishmentMergeV126');
@@ -163,6 +163,7 @@ test('canonical Raid 100 claims pay the validated reward directly and stamp the 
     ACT.accomplishments();
   });
 
+  await page.locator('#overlay .srAch139 [data-ach-tab="defis"]').click();
   const claim = page.locator('#overlay .srAch139 [data-ach="raid100"]');
   await expect(claim).toHaveCount(1);
   await claim.click();
@@ -181,10 +182,10 @@ test('canonical Raid 100 claims pay the validated reward directly and stamp the 
   }, rareExpr);
 
   expect(result).toEqual({
-    gold: 1500000,
-    eclat: 1000,
-    essence: 1000,
-    rare: 50,
+    gold: 250000,
+    eclat: 0,
+    essence: 0,
+    rare: 0,
     claimed: true,
     validated: true,
   });

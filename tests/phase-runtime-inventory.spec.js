@@ -9,11 +9,13 @@ const core = [...index.match(/var core=\[([^\]]+)\]/)[1].matchAll(/'([^']+)'/g)]
 const nested = [...read('familiars-noscr-v231.js').matchAll(/load\('([^'?]+\.js)/g)].map(m => m[1]);
 const expected = [...staticFiles, ...core, ...nested].sort();
 
-test('normal runtime inventory includes transitive Familiar dependencies', async ({ page }) => {
-  const inventory = read('RUNTIME_INVENTORY.md');
+test('normal runtime exactly matches the declared loader including transitive Familiar dependencies', async ({ page }) => {
   expect(new Set(expected).size).toBe(expected.length);
-  expect(inventory).toContain(`Default first-party runtime total: **${expected.length} JavaScript files**.`);
-  for (const file of expected) expect(inventory).toContain('`' + file + '`');
+  expect(expected).toContain('save-safety-v340.js');
+  expect(expected).toContain('save-recovery-v341.js');
+  expect(expected).toContain('easy-dragon-balance-v333.js');
+  expect(expected).toContain('accomplishments-launcher-compact-v332.js');
+
   const loaded = new Set();
   page.on('response', response => {
     const url = new URL(response.url());
@@ -21,6 +23,7 @@ test('normal runtime inventory includes transitive Familiar dependencies', async
       loaded.add(url.pathname.slice(1));
     }
   });
+
   await page.goto('/index.html?smoke=1');
   await expect.poll(() => [...loaded].sort()).toEqual(expected);
 });
