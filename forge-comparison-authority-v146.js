@@ -1,4 +1,4 @@
-/* SHADOWREACH · Forge comparison authority v146
+/* SHADOWREACH · Forge comparison authority v146 / V370
    Additive final presentation authority loaded after v145.
    Keeps every previous Forge file in place, but future Forge results are handled here.
    V199: Auto-Forge results selected by the Forge filter are queued exactly as dropped,
@@ -78,11 +78,16 @@ function weaponHtml(it){
 }
 function remove(){['srForgeArenaPreview142','srForgeArenaPreview143','srForgeArenaPreview145',ROOT].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});}
 function position(root){
- var vw=Math.max(document.documentElement.clientWidth||0,window.innerWidth||0),vh=Math.max(document.documentElement.clientHeight||0,window.innerHeight||0),ar=null;
- try{if(typeof arenaEl!=='undefined'&&arenaEl&&arenaEl.getBoundingClientRect)ar=arenaEl.getBoundingClientRect();}catch(_){}
- var w=Math.min(vw-16,390);root.style.width=w+'px';root.style.left=Math.max(8,(vw-w)/2)+'px';root.style.transform='none';
- if(ar&&ar.height>60){var below=ar.bottom+6,needed=310;if(below+needed<vh-68){root.style.top=Math.max(8,below)+'px';root.style.bottom='auto';return;}root.style.top=Math.max(8,Math.min(vh-needed-72,ar.top+8))+'px';root.style.bottom='auto';return;}
- root.style.bottom='calc(env(safe-area-inset-bottom) + 76px)';root.style.top='auto';
+ var vw=Math.max(document.documentElement.clientWidth||0,window.innerWidth||0),vh=Math.max(document.documentElement.clientHeight||0,window.innerHeight||0);
+ var w=Math.min(vw-16,370);
+ root.style.width=w+'px';
+ root.style.left=Math.max(8,(vw-w)/2)+'px';
+ root.style.transform='none';
+ root.style.top='auto';
+ root.style.bottom='calc(env(safe-area-inset-bottom) + 64px)';
+ root.style.maxHeight=Math.max(180,Math.min(250,vh-150))+'px';
+ root.style.overflow='auto';
+ root.style.borderRadius='12px';
 }
 function maybeResumeAuto(){
  if(current||autoPending.length||Object.keys(pending).length)return;
@@ -122,30 +127,30 @@ function wornCard(cur){
 }
 function powerCompareHtml(pv,worn){
  var d=Math.round(Number(pv&&pv.delta)||0),c=d>0?'#6ee7a0':d<0?'#ff7474':'#9dacbf';
- return '<div data-sr-forge-power-v320="1" style="display:grid;grid-template-columns:1fr auto 1fr auto;gap:7px;align-items:center;margin-top:7px;padding:7px 8px;border:1px solid #2f405b;border-radius:9px;background:#08101d">'+
-  '<div><div style="font-size:7px;color:#8493aa;font-weight:900">PUISSANCE ACTUELLE</div><div data-sr-forge-power-before-v320 style="font-size:11px;font-weight:900;color:#d5deec">'+fmt2(pv.before)+'</div></div>'+
-  '<div aria-hidden="true" style="color:#65758d;font-weight:900">→</div>'+
-  '<div><div style="font-size:7px;color:#8493aa;font-weight:900">'+(worn?'PUISSANCE ÉQUIPÉE':'SI ÉQUIPÉ')+'</div><div data-sr-forge-power-after-v320 style="font-size:11px;font-weight:900;color:#d5deec">'+fmt2(pv.after)+'</div></div>'+
-  '<div data-sr-forge-power-delta-v320 style="font-size:10px;font-weight:1000;color:'+c+';white-space:nowrap">'+(worn?'= ':signed(d))+'</div></div>';
+ return '<div data-sr-forge-power-v320="1" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:5px;padding:5px 7px;border:1px solid #2f405b;border-radius:8px;background:#08101d">'+
+  '<div style="min-width:0"><div style="font-size:7px;color:#8493aa;font-weight:900">PUISSANCE</div><div style="font-size:10px;font-weight:900;color:#d5deec;white-space:nowrap"><span data-sr-forge-power-before-v320>'+fmt2(pv.before)+'</span> → <span data-sr-forge-power-after-v320>'+fmt2(pv.after)+'</span></div></div>'+
+  '<div data-sr-forge-power-delta-v320 style="font-size:10px;font-weight:1000;color:'+c+';white-space:nowrap">'+(worn?'ÉQUIPÉ':signed(d))+'</div></div>';
 }
 function render(){
  remove();var it=byId(current&&current.id);if(!it){next();return;}
  var cur=(S.equipped||{})[it.slot]||null,worn=cur&&cur.id===it.id,nb=primary(it),cb=cur&&!worn?primary(cur):0,bd=cur&&!worn?Math.round(nb-cb):Math.round(nb),pv=powerPreview(it),r=rarity(it),more=pendingCount(),dust=0;
  var batchTotal=Math.max(0,Number(current&&current.__srAutoForgeBatchTotal)||0),batchIndex=Math.max(0,Number(current&&current.__srAutoForgeBatchIndex)||0);
- var queueBadge=batchTotal>1&&batchIndex>0?('<span style="font-size:9px;font-weight:900;padding:3px 6px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">'+batchIndex+'/'+batchTotal+'</span>'):(more?'<span style="font-size:9px;font-weight:900;padding:3px 6px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">+'+more+'</span>':'');
+ var queueBadge=batchTotal>1&&batchIndex>0?('<span style="font-size:8px;font-weight:900;padding:2px 5px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">'+batchIndex+'/'+batchTotal+'</span>'):(more?'<span style="font-size:8px;font-weight:900;padding:2px 5px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">+'+more+'</span>':'');
  try{if(!worn&&typeof dustValue==='function')dust=dustValue(S,it);}catch(_){}
  var root=document.createElement('div');root.id=ROOT;root.style.cssText='position:fixed;z-index:8800;pointer-events:auto;font-family:inherit;max-width:calc(100vw - 16px);';
- root.innerHTML='<div style="background:rgba(7,12,21,.97);border:1px solid '+r.c+'88;border-radius:13px;box-shadow:0 10px 30px #0009;padding:9px;overflow:hidden">'+
-  '<div style="display:flex;align-items:center;gap:8px"><div style="width:38px;height:38px;flex:0 0 38px;border:1px solid '+r.c+'99;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#0b1220">'+iconHtml(it,24)+'</div><div style="min-width:0;flex:1"><div style="font-size:9px;font-weight:900;letter-spacing:.7px;color:'+r.c+'">FORGE · '+esc2(r.label).toUpperCase()+'</div><div style="font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(slotName(it))+'</div></div>'+queueBadge+'<button data-sr-fp146="closeAll" aria-label="Fermer toute la file" style="border:0;background:transparent;color:#9dacbf;font-size:21px;padding:2px 5px">×</button></div>'+
-  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px"><div style="padding:6px;border-radius:8px;background:#0b1220"><div style="font-size:8px;color:#8493aa;font-weight:900">NOUVEAU</div><div style="font-size:11px;font-weight:900;color:'+r.c+'">'+primaryLabel(it)+' '+fmt2(nb)+'</div><div style="font-size:9px;font-weight:800;color:'+(bd>0?'#6ee7a0':bd<0?'#ff7474':'#9dacbf')+'">'+signed(bd)+' stat</div><div style="font-size:8px;color:#8493aa;font-weight:900;margin:5px 0 3px">BONUS</div>'+affixHtml(it)+'</div>'+wornCard(cur)+'</div>'+powerCompareHtml(pv,worn)+weaponHtml(it)+
-  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">'+
-    (worn?'<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;min-height:38px;color:#6ee7a0;font-weight:900;font-size:11px">✓ DÉJÀ ÉQUIPÉ</div>':'<button data-sr-fp146="equip" style="grid-column:1/-1;min-height:40px;border-radius:8px;border:1px solid #3fb950;background:#173d26;color:#8ff0aa;font-weight:900;font-size:10px">ÉQUIPER LE NOUVEAU</button>')+
-    '<button data-sr-fp146="keep" style="min-height:40px;border-radius:8px;border:1px solid #35445e;background:#111a2a;color:#c2cce0;font-weight:900;font-size:9px;line-height:1.15;padding:5px">'+(more?'GARDER DANS L’INVENTAIRE · SUIVANT':'GARDER DANS L’INVENTAIRE')+'</button>'+
-    (!worn?'<button data-sr-fp146="recycle" style="min-height:40px;border-radius:8px;border:1px solid #7a3137;background:#2b1216;color:#ff9aa0;font-weight:900;font-size:10px">RECYCLER'+(dust>0?' · +'+fmt2(dust):'')+'</button>':'')+
+ var currentMini=cur&&!worn?('<div style="font-size:7px;color:#8493aa;font-weight:900;margin-top:3px">PORTÉ</div><div style="font-size:8px;font-weight:900;color:'+(RARITY[cur.rarity]?RARITY[cur.rarity].c:'#9dacbf')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(RARITY[cur.rarity]?RARITY[cur.rarity].label:cur.rarity)+' · '+primaryLabel(cur)+' '+fmt2(primary(cur))+' · '+esc2(upgradeText(cur))+'</div>'):'';
+ root.innerHTML='<div style="background:rgba(7,12,21,.97);border:1px solid '+r.c+'88;border-radius:12px;box-shadow:0 8px 24px #0009;padding:7px;overflow:hidden">'+
+  '<div style="display:flex;align-items:center;gap:6px"><div style="width:30px;height:30px;flex:0 0 30px;border:1px solid '+r.c+'99;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#0b1220">'+iconHtml(it,20)+'</div><div style="min-width:0;flex:1"><div style="font-size:8px;font-weight:900;letter-spacing:.6px;color:'+r.c+'">FORGE · '+esc2(r.label).toUpperCase()+'</div><div style="font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(slotName(it))+'</div></div>'+queueBadge+'<button data-sr-fp146="closeAll" aria-label="Fermer toute la file" style="border:0;background:transparent;color:#9dacbf;font-size:19px;padding:0 4px">×</button></div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px"><div style="padding:5px;border-radius:8px;background:#0b1220"><div style="font-size:7px;color:#8493aa;font-weight:900">NOUVEAU</div><div style="font-size:10px;font-weight:900;color:'+r.c+'">'+primaryLabel(it)+' '+fmt2(nb)+'</div><div style="font-size:8px;font-weight:800;color:'+(bd>0?'#6ee7a0':bd<0?'#ff7474':'#9dacbf')+'">'+signed(bd)+' stat</div><div style="font-size:7px;color:#8493aa;font-weight:900;margin:3px 0 2px">BONUS</div>'+affixHtml(it)+'</div>'+
+  '<div style="padding:5px;border-radius:8px;background:#0b1220;min-width:0"><div style="font-size:7px;color:#8493aa;font-weight:900">ACTUEL</div><div style="display:flex;gap:4px;align-items:center;margin-top:2px">'+(cur?'<div style="width:25px;height:25px;flex:0 0 25px;border:1px solid '+((RARITY[cur.rarity]&&RARITY[cur.rarity].c)||'#9dacbf')+'88;border-radius:7px;display:flex;align-items:center;justify-content:center;background:#08101d">'+iconHtml(cur,17)+'</div>':'')+'<div style="min-width:0;flex:1">'+(cur?'<div style="font-size:8px;font-weight:900;color:'+((RARITY[cur.rarity]&&RARITY[cur.rarity].c)||'#9dacbf')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2((RARITY[cur.rarity]&&RARITY[cur.rarity].label)||cur.rarity)+' · '+primaryLabel(cur)+' '+fmt2(primary(cur))+'</div><div style="font-size:7px;font-weight:900;color:#f0c96a">'+esc2(upgradeText(cur))+'</div>':'<div style="font-size:8px;font-weight:900;color:#9dacbf">Emplacement vide</div>')+'</div></div><div style="font-size:7px;color:#8493aa;font-weight:900;margin:3px 0 2px">BONUS</div>'+(cur?affixHtml(cur):'<span style="font-size:8px;color:#65758d">Aucun</span>')+'</div></div>'+
+  powerCompareHtml(pv,worn)+weaponHtml(it)+
+  '<div style="display:grid;grid-template-columns:1.05fr .9fr 1fr;gap:5px;margin-top:6px">'+
+    (worn?'<div style="display:flex;align-items:center;justify-content:center;min-height:34px;color:#6ee7a0;font-weight:900;font-size:9px">✓ ÉQUIPÉ</div>':'<button data-sr-fp146="equip" style="min-height:34px;border-radius:8px;border:1px solid #3fb950;background:#173d26;color:#8ff0aa;font-weight:900;font-size:9px">ÉQUIPER</button>')+
+    '<button data-sr-fp146="keep" style="min-height:34px;border-radius:8px;border:1px solid #35445e;background:#111a2a;color:#c2cce0;font-weight:900;font-size:8px;line-height:1.1;padding:4px">'+(more?'GARDER · SUIVANT':'GARDER')+'</button>'+
+    (!worn?'<button data-sr-fp146="recycle" style="min-height:34px;border-radius:8px;border:1px solid #7a3137;background:#2b1216;color:#ff9aa0;font-weight:900;font-size:8px;line-height:1.1;padding:4px">RECYCLER'+(dust>0?'<br>+'+fmt2(dust):'')+'</button>':'<div></div>')+
   '</div></div>';
  document.body.appendChild(root);position(root);
 }
-
 showForgeResult=function(res){
  res=Array.isArray(res)?res:[];
  var kept=res.filter(function(r){return r&&!r.recycled&&r.id&&byId(r.id);});
