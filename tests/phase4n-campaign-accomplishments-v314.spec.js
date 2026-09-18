@@ -22,9 +22,9 @@ test('V322 Accomplishments uses 20-stage local notation and preserved milestone 
   await page.evaluate(() => ACT.accomplishments());
   const modal = page.locator('.srAch139');
   await expect(modal).toBeVisible();
-  await expect(modal).toContainText('Terminer Divin · 5-20');
-  await expect(modal).toContainText('Terminer Cauchemar · 5-20');
-  await expect(modal).toContainText('Vaincre Difficile · 3-5');
+  await expect(modal.locator('[title="Terminer Divin · 5-20"]')).toHaveCount(1);
+  await expect(modal.locator('[title="Terminer Cauchemar · 5-20"]')).toHaveCount(1);
+  await expect(modal.locator('[title="Vaincre Difficile · 3-5"]')).toHaveCount(1);
   await expect(modal).not.toContainText('40-10');
   await expect(modal).not.toContainText('Rebirth');
   await expect(modal).not.toContainText('1 000 PR');
@@ -60,7 +60,7 @@ test('V322 final difficulty reward stays locked until Divin Boss 5-20 is actuall
     ACT.accomplishments();
   });
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toHaveCount(0);
-  await expect(page.locator('.srAch139')).toContainText('Terminer Divin · 5-20');
+  await expect(page.locator('.srAch139 [title="Terminer Divin · 5-20"]')).toHaveCount(1);
   await page.locator('.srAch139 [data-act="closeModal"]').click();
   await page.evaluate(() => { S.bossClears['800'] = true; ACT.accomplishments(); });
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toBeVisible();
