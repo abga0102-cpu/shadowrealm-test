@@ -59,13 +59,13 @@ let dirty = false;
 let offlineRecap = null;
 
 /* -------- state mutation -------- */
-function update(fn) {
+function update(fn, opts) {
   const beforePower = Number(S.power || computePower(S) || 0);
   fn(S);
   S.power = computePower(S);
   D = computeDerived(S);
   const delta = Math.round(S.power - beforePower);
-  if (delta) queuePowerDelta(delta);
+  if (delta && !(opts && opts.suppressPowerDelta)) queuePowerDelta(delta);
   dirty = true;
   scheduleRender();
 }
@@ -2251,6 +2251,7 @@ function upgradeItem(id) {
 
 function summonSkill(n) {
   const results = [];
+  const beforeSummonPower = Number(S.power || computePower(S) || 0);
   update((s) => {
     // "Double invocation": one paid summon, a chance at a second free result.
     // Mastery still advances once per PAID summon — the tree never speeds the gauge.
@@ -2315,7 +2316,15 @@ function summonSkill(n) {
         s.skillMastery.progress -= mreq; s.skillMastery.level += 1;
       }
     }
-  });
+  }, { suppressPowerDelta: true });
+  /* V386 · Skill summons own their power feedback explicitly.
+     This avoids a duplicate generic popup and guarantees that a duplicate which
+     levels an equipped skill uses the same central green Puissance +X feedback
+     as equipment upgrades. */
+  results.powerDelta = Math.round(S.power - beforeSummonPower);
+  results.levelUpPowerDelta = results
+    .filter((r) => r && r.leveled)
+    .reduce((sum, r) => sum + Math.max(0, Number(r.globalPowerGain) || 0), 0);
   return results;
 }
 function equipSkill(slotIdx, skillId) {
