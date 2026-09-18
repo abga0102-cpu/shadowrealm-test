@@ -208,7 +208,7 @@ function forgeKeepAll() {
   EQUIP_RARITY_ORDER.forEach((r) => { o[r] = true; });
   return o;
 }
-const EQUIP_RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "ARTEFACT", "LEGENDAIRE", "INFERNAL", "IMMORTEL", "DIVIN"];
+const EQUIP_RARITY_ORDER = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "HEROIQUE", "MYTHIQUE", "ARTEFACT", "LEGENDAIRE", "INFERNAL", "IMMORTEL", "DIVIN"];
 function orderFor(system) { return system === "forge" ? EQUIP_RARITY_ORDER : system === "pet" ? PET_RARITY_ORDER : RARITY_ORDER; }
 function equipRank(rarity) { return EQUIP_RARITY_ORDER.indexOf(rarity); }
 const C = {
@@ -719,9 +719,9 @@ const SLOT_ICON  = { arme: "sword", casque: "helm", armure: "armor", gants: "glo
 /* La rareté porte surtout la STAT DE BASE. Les bonus secondaires restent fortement
    chevauchants afin qu'un excellent Mythique puisse battre les bonus d'un Infernal
    médiocre, tout en laissant l'Infernal très tentant grâce à sa base. */
-const RARITY_MUL = { COMMUN: 1, RARE: 1.45, EPIQUE: 1.95, MYTHIQUE: 2.60,
-  ARTEFACT: 3.45, LEGENDAIRE: 4.55, INFERNAL: 6.00, IMMORTEL: 7.90, DIVIN: 10.40,
-  /* legacy */ HEROIQUE: 3.45, ANCESTRAL: 6.00 };
+const RARITY_MUL = { COMMUN: 1, PEU_COMMUN: 1.35, RARE: 1.80, EPIQUE: 3.30, HEROIQUE: 4.50, MYTHIQUE: 6.00,
+  ARTEFACT: 10.50, LEGENDAIRE: 18.00, INFERNAL: 30.00, IMMORTEL: 50.00, DIVIN: 80.00,
+  /* legacy */ ANCESTRAL: 30.00 };
 
 /* Section 18 brings the high rarities down. The ladder above Épique used to
    halve at each step, which at full Maîtrise handed out a Mythique every 8
@@ -740,8 +740,8 @@ const RARITY_MUL = { COMMUN: 1, RARE: 1.45, EPIQUE: 1.95, MYTHIQUE: 2.60,
    compresses what is next to it. */
 const RATE_ANCHORS = {
   forge: {
-    m0:  { COMMUN: 100, RARE: 0, EPIQUE: 0, MYTHIQUE: 0, ARTEFACT: 0, LEGENDAIRE: 0, INFERNAL: 0, IMMORTEL: 0, DIVIN: 0 },
-    m50: { COMMUN: 35.0, RARE: 28, EPIQUE: 21, MYTHIQUE: 8, ARTEFACT: 4, LEGENDAIRE: 2.2, INFERNAL: 1.1, IMMORTEL: 0.7, DIVIN: 0 },
+    m0:  { COMMUN: 100, PEU_COMMUN: 0, RARE: 0, EPIQUE: 0, HEROIQUE: 0, MYTHIQUE: 0, ARTEFACT: 0, LEGENDAIRE: 0, INFERNAL: 0, IMMORTEL: 0, DIVIN: 0 },
+    m50: { COMMUN: 25.0, PEU_COMMUN: 24, RARE: 22, EPIQUE: 16, HEROIQUE: 7, MYTHIQUE: 4, ARTEFACT: 2, LEGENDAIRE: 0, INFERNAL: 0, IMMORTEL: 0, DIVIN: 0 },
   },
   skill: {
     m0:  { COMMUN: 100,  RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,   LEGENDAIRE: 0, DIVIN: 0 },
@@ -793,10 +793,12 @@ function starsOf(s, sys) { return (s.stars && s.stars[sys]) || 0; }
 /* Forge and Skill retain their original defined first star. Familiars have a
    complete three-star ladder: 0★ x1, 1★ x2, 2★ x3, 3★ x4. */
 const ASCEND_POWER_MUL = [1, 2];
+const FORGE_ASCEND_POWER_MUL = [1, 2, 3, 4];
+const FORGE_ASCEND_MAX_STARS = 3;
 const PET_ASCEND_POWER_MUL = [1, 2, 3, 4];
 const PET_ASCEND_MAX_STARS = 3;
 function ascendPowerMul(stars, sys) {
-  const table = sys === "pet" ? PET_ASCEND_POWER_MUL : ASCEND_POWER_MUL;
+  const table = sys === "pet" ? PET_ASCEND_POWER_MUL : sys === "forge" ? FORGE_ASCEND_POWER_MUL : ASCEND_POWER_MUL;
   return table[Math.min(Math.max(0, stars || 0), table.length - 1)];
 }
 function starMul(s, sys) { return ascendPowerMul(starsOf(s, sys), sys); }
@@ -807,7 +809,7 @@ function masteryLevel(s, sys) {
 }
 function canAscend(s, sys) {
   const stars = starsOf(s, sys);
-  const belowStarCap = sys === "pet" ? stars < PET_ASCEND_MAX_STARS : stars < (ASCEND_POWER_MUL.length - 1);
+  const belowStarCap = sys === "pet" ? stars < PET_ASCEND_MAX_STARS : sys === "forge" ? stars < FORGE_ASCEND_MAX_STARS : stars < (ASCEND_POWER_MUL.length - 1);
   return masteryLevel(s, sys) >= masteryMax(sys) && belowStarCap;
 }
 
@@ -951,8 +953,7 @@ function getRates(system, mastery, ascension, stars) {
   order.forEach((r) => { out[r] = a.m0[r] + (a.m50[r] - a.m0[r]) * Math.pow(t, EASE[r]); });
   // Familiar Ascension unlocks Legendary, never Divine. Divine Familiars only
   // enter the table after the character completes its own global Ascension.
-  const divinPush = (ascension || 0) * 2 +
-    (system === "pet" ? 0 : st * ((ASCENSION[system] || {}).divin || 0));
+  const divinPush = (ascension || 0) * 2;
   if (divinPush > 0) {
     const divin = Math.min(9, divinPush * t);
     out.DIVIN = divin;
