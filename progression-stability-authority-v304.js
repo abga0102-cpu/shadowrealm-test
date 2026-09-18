@@ -1,20 +1,35 @@
-/* SHADOWREACH V304 · Progression stability authority / V323 Forge rarity Ascensions
-   One late, additive authority for approved progression rules.
-   Purpose: reduce cross-version drift without rewriting legacy files.
+/* SHADOWREACH V304 / V372 · Progression stability authority
+   One late authority for approved progression rules.
    - Ascension multipliers remain: Forge x2 from 1★ onward,
      Skill x1.5 at 1★, Familiar x1 / x1.5 / x2.1 / x3.
-   - V323 extends Forge Ascension to 4★ only for the rarity ladder:
-     ★ Légendaire, ★★ Infernal, ★★★ Immortel, ★★★★ Divin.
+   - Forge rarity Ascension ends at 3★:
+     ★ Légendaire, ★★ Infernal, ★★★ Immortel.
+   - Divin is not a fourth Forge star. It requires the character's global Ascension.
+   - Legacy saves that physically contain Forge 4★ keep their raw save value, but
+     runtime progression treats it as the approved 3★ cap (no destructive rewrite).
    - Raid rewards keep the approved V290/V291 curves.
-   - Dust upgrade keeps the approved V301 5% minimum and V283 cost curve.
-   This layer changes no save schema and performs no destructive migration. */
+   - Dust upgrade keeps the approved V301 5% minimum and V283 cost curve. */
 (function(){'use strict';
 if(window.__srProgressionStabilityV304)return;window.__srProgressionStabilityV304=true;
 
 var PET_STAR=[1,1.5,2.1,3],FORGE_STAR=[1,2],SKILL_STAR=[1,1.5];
-var FORGE_ASCEND_MAX_STARS_V323=4;
-var FORGE_RARITY_BY_STAR_V323={1:'Légendaire',2:'Infernal',3:'Immortel',4:'Divin'};
+var FORGE_ASCEND_MAX_STARS_V323=3;
+var FORGE_RARITY_BY_STAR_V323={1:'Légendaire',2:'Infernal',3:'Immortel'};
 function pick(table,stars){stars=Math.max(0,Math.floor(Number(stars)||0));return table[Math.min(stars,table.length-1)];}
+
+/* Preserve legacy raw save data while making every runtime caller observe the
+   approved three-star Forge ceiling. This is intentionally non-destructive. */
+try{
+  if(typeof starsOf==='function'&&!starsOf.__srV372){
+    var rawStarsOfV372=starsOf;
+    starsOf=function(s,sys){
+      var raw=Math.max(0,Math.floor(Number(rawStarsOfV372(s,sys))||0));
+      return sys==='forge'?Math.min(FORGE_ASCEND_MAX_STARS_V323,raw):raw;
+    };
+    starsOf.__srV372=true;starsOf.__srPrevious=rawStarsOfV372;
+  }
+}catch(_){ }
+
 try{
   ascendPowerMul=function(stars,sys){
     if(sys==='pet')return pick(PET_STAR,stars);
@@ -27,8 +42,8 @@ try{
   };
 }catch(_){ }
 
-/* V323: Forge may Ascend four times so each post-Artefact rarity has its own
-   earned star. Pet and Skill retain their existing caps unchanged. */
+/* V372: Forge has exactly three rarity stars. Divin belongs to the character
+   Ascension gate, not to a fourth Forge reset. Pet and Skill keep their caps. */
 try{
   if(typeof canAscend==='function'&&!canAscend.__srV323){
     var oldCanAscend=canAscend;
@@ -46,7 +61,7 @@ try{
 }catch(_){ }
 
 /* Keep the Ascension preview honest: the first Forge star still doubles base
-   equipment power; stars 2-4 are rarity unlocks, not extra hidden power. */
+   equipment power; stars 2-3 are rarity unlocks, not extra hidden power. */
 try{
   if(typeof ascensionPreview==='function'&&!ascensionPreview.__srV323){
     var oldAscensionPreview=ascensionPreview;
@@ -96,7 +111,8 @@ try{
 
 window.__srProgressionStabilityConfigV304={
   stars:{forge:FORGE_STAR,skill:SKILL_STAR,pet:PET_STAR},
-  forgeRarityAscensionV323:{maxStars:FORGE_ASCEND_MAX_STARS_V323,rarityByStar:FORGE_RARITY_BY_STAR_V323,powerStopsGrowingAfterStar:1},
+  forgeRarityAscensionV323:{maxStars:FORGE_ASCEND_MAX_STARS_V323,rarityByStar:FORGE_RARITY_BY_STAR_V323,powerStopsGrowingAfterStar:1,divineRequiresGlobalAscension:true,legacyRawStarsPreserved:true},
+  forgeRarityAscensionV372:{maxStars:FORGE_ASCEND_MAX_STARS_V323,rarityByStar:FORGE_RARITY_BY_STAR_V323,powerStopsGrowingAfterStar:1,divineRequiresGlobalAscension:true,legacyRawStarsPreserved:true},
   raids:{evolution:{base:100,perLevel:3},competence:{base:250,perLevel:10},familier:{base:250,perLevel:10}},
   dust:{minimumChance:5,costBase:60,costPerLevel:36},
   destructiveMigration:false
