@@ -134,6 +134,14 @@ function grantLevels(s) {
 }
 
 /* -------- enemy / wave construction -------- */
+/* V380: abilities whose damage is not derived from enemy.dmg still need the
+   same global -40% damage pass. Attacks already based on enemy.dmg inherit the
+   nerf from the enemy balance authority and are intentionally not scaled twice. */
+function enemyAbilityDamageV380(raw) {
+  return Math.max(1, Math.floor(Math.max(0, Number(raw) || 0) * 0.60));
+}
+window.__srEnemyAbilityDamageV380 = enemyAbilityDamageV380;
+
 /* ---- elite abilities ------------------------------------------------------
    One per elite, taken from what its artwork already shows: the Chevalier has a
    shield, the Bete de Guerre is soaked in blood, the Seigneur burns. Each hooks
@@ -235,7 +243,7 @@ const ELITE_ABIL = {
     onLand(c, e) {
       if (!e.stored) return;
       // capped, so a long channel into the crystal cannot one-shot the hero
-      const back = Math.min(Math.floor(c.heroMaxHP * 0.30), Math.floor(e.stored * 0.6));
+      const back = enemyAbilityDamageV380(Math.min(Math.floor(c.heroMaxHP * 0.30), Math.floor(e.stored * 0.6)));
       e.stored = 0;
       c.heroHP -= back;
       addShake(c, 6);
@@ -251,7 +259,7 @@ const ELITE_ABIL = {
     filter(c, e, dmg, src, crit) {
       if (!crit || e.shardCd > 0 || !e.alive) return dmg;
       e.shardCd = 3;                       // so a high-crit build is not simply deleted
-      const each = Math.max(1, Math.floor(c.heroMaxHP * 0.04));
+      const each = enemyAbilityDamageV380(c.heroMaxHP * 0.04);
       for (let k = 0; k < 3; k++) {
         c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX, color: "#B15CF6", kind: "magic", life: 0.35 });
         scheduleHit(c, 0.15 + k * 0.09, () => {
@@ -349,7 +357,7 @@ const ELITE_ABIL = {
       e.stompCd = 12;
       addShake(c, 9);
       addBurst(c, "crit", c.heroX, "#E8B44A");
-      const hit = Math.max(1, Math.floor(c.heroMaxHP * 0.08));
+      const hit = enemyAbilityDamageV380(c.heroMaxHP * 0.08);
       c.heroHP -= hit;
       c.floats.push({ id: rid(), x: c.heroX, val: hit, crit: true, color: "#E8B44A", born: Date.now() });
       // knocked back to the edge: melee has to walk the whole way in again,
@@ -408,7 +416,7 @@ const ELITE_ABIL = {
       if (dmg <= 0 || src !== "weapon") return dmg;
       const mult = (D && D.critMult) || BASE.critMult;
       const physical = crit && mult > 1 ? dmg / mult : dmg;
-      const back = Math.max(1, Math.floor(physical * 0.05));
+      const back = enemyAbilityDamageV380(physical * 0.05);
       c.heroHP -= back;
       c.floats.push({ id: rid(), x: c.heroX, val: back, crit: false, color: "#CFE0FF", born: Date.now() });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
@@ -426,7 +434,7 @@ const ELITE_ABIL = {
       e._zone = (e._zone || 0) + dt;
       if (e._zone < 1) return;
       e._zone = 0;
-      const b = Math.max(1, Math.floor(c.heroMaxHP * 0.02));
+      const b = enemyAbilityDamageV380(c.heroMaxHP * 0.02);
       c.heroHP -= b;
       c.floats.push({ id: rid(), x: c.heroX, val: b, crit: false, color: "#FF7A3D", born: Date.now() });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
@@ -483,7 +491,7 @@ const ELITE_ABIL = {
         // two seconds of warning, then 40% of the hero's maximum, less whatever
         // he put up in the meantime -- Rempart or a heal is the answer
         const raw = Math.floor(c.heroMaxHP * 0.4);
-        const d = Math.max(1, Math.floor(raw * (1 - heroDmgRed(c) / 100)));
+        const d = enemyAbilityDamageV380(raw * (1 - heroDmgRed(c) / 100));
         c.heroHP -= d;
         c.heroHit = 0.3;
         addShake(c, 11);
@@ -609,7 +617,7 @@ const ELITE_ABIL = {
       if (e.quakeWind > 0) {
         e.quakeWind = Math.max(0, e.quakeWind - dt);
         if (e.quakeWind > 0) return;
-        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.25 * (1 - heroDmgRed(c) / 100)));
+        const d = enemyAbilityDamageV380(c.heroMaxHP * 0.25 * (1 - heroDmgRed(c) / 100));
         c.heroHP -= d;
         c.heroHit = 0.3;
         c.heroX = 24;
@@ -643,7 +651,7 @@ const ELITE_ABIL = {
         e._ch = (e._ch || 0) + dt;
         if (e._ch < 0.5) return;
         e._ch = 0;
-        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.07 * (1 - heroDmgRed(c) / 100)));
+        const d = enemyAbilityDamageV380(c.heroMaxHP * 0.07 * (1 - heroDmgRed(c) / 100));
         c.heroHP -= d;
         c.heroHit = 0.2;
         c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX, color: "#FF7A3D", kind: "magic", life: 0.3 });
@@ -761,7 +769,7 @@ const ELITE_ABIL = {
         // it detonates where he stands: the closer you are, the worse it is
         const dist = Math.max(0, e.x - c.heroX);
         const near = Math.max(0, Math.min(1, 1 - dist / 220));
-        const d = Math.max(1, Math.floor(c.heroMaxHP * (0.05 + 0.25 * near) * (1 - heroDmgRed(c) / 100)));
+        const d = enemyAbilityDamageV380(c.heroMaxHP * (0.05 + 0.25 * near) * (1 - heroDmgRed(c) / 100));
         c.heroHP -= d;
         c.heroHit = 0.3;
         addShake(c, 10);
@@ -792,7 +800,7 @@ const ELITE_ABIL = {
         if (e._claw < 1) return;
         e._claw = 0;
         // your own familiar, clawing at you
-        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.03));
+        const d = enemyAbilityDamageV380(c.heroMaxHP * 0.03);
         c.heroHP -= d;
         c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#B15CF6", born: Date.now() });
         if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
@@ -815,7 +823,7 @@ const ELITE_ABIL = {
         e.leapWind = Math.max(0, e.leapWind - dt);
         if (e.leapWind > 0) return;
         e.x = c.heroX + 34;                       // lands on top of him
-        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.18 * (1 - heroDmgRed(c) / 100)));
+        const d = enemyAbilityDamageV380(c.heroMaxHP * 0.18 * (1 - heroDmgRed(c) / 100));
         c.heroHP -= d;
         c.heroHit = 0.3;
         addShake(c, 10);
@@ -866,7 +874,7 @@ const ELITE_ABIL = {
     filter(c, e, dmg, src) {
       if ((e.mutations || 0) >= 2) dmg = Math.max(1, Math.floor(dmg * 0.65));
       if ((e.mutations || 0) >= 3 && dmg > 0 && src !== "dot") {
-        const back = Math.max(1, Math.floor(dmg * 0.3));
+        const back = enemyAbilityDamageV380(dmg * 0.3);
         c.heroHP -= back;
         c.floats.push({ id: rid(), x: c.heroX, val: back, crit: false, color: "#8FEFF4", born: Date.now() });
         if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
@@ -900,7 +908,7 @@ const ELITE_ABIL = {
         e._grip = (e._grip || 0) + dt;
         if (e._grip < 0.5) return;
         e._grip = 0;
-        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.04 * (1 - heroDmgRed(c) / 100)));
+        const d = enemyAbilityDamageV380(c.heroMaxHP * 0.04 * (1 - heroDmgRed(c) / 100));
         c.heroHP -= d;
         c.heroHit = 0.2;
         c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#8FEFF4", born: Date.now() });
@@ -1478,7 +1486,7 @@ function tick() {
     c._burnHero = (c._burnHero || 0) + dt;
     if (c._burnHero >= 1) {
       c._burnHero = 0;
-      const b = Math.max(1, Math.floor(c.heroMaxHP * 0.005 * c.burn));
+      const b = enemyAbilityDamageV380(c.heroMaxHP * 0.005 * c.burn);
       c.heroHP -= b;
       c.floats.push({ id: rid(), x: c.heroX, val: b, crit: false, color: "#FF7A3D", born: now });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
