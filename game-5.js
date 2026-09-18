@@ -1730,6 +1730,9 @@ const ACT = {
     const r = summonSkill(parseInt(a, 10));
     if (!r.length) { toast("Éclats insuffisants"); return; }
     showSkillResult(r);
+    if (r.some((x) => x && x.leveled) && Number(r.powerDelta) > 0) {
+      queuePowerDelta(Number(r.powerDelta));
+    }
   },
   skillSlot: (a) => showSkillSlotPicker(parseInt(a, 10)),
   setSkill: (a, b) => { equipSkill(parseInt(a, 10), b || null); closeModal(); },
