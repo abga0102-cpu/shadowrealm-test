@@ -951,15 +951,19 @@ function checkTimerNotifications() {
     timerNoticeSeen.tree = null;
   }
 
-  // Chaque œuf terminé reçoit sa propre notification.
+  // V379: Home owns one consolidated ready-egg capsule.
+  // Do not duplicate it with stacked reward cards over the stage.
   const alive = {};
+  const homeEggCapsule = route === "accueil" || !!document.querySelector(".srEggReadyV377");
   S.eggs.forEach((e) => {
     if (!eggIsHatching(e)) return;
     alive[e.id] = true;
     if (e.hatchEnd <= now && !timerNoticeSeen.eggs[e.id]) {
       timerNoticeSeen.eggs[e.id] = true;
-      rewardPop("Œuf prêt à éclore", e.rarity + " · " + (e.species || "Familier"),
-        false, "eggFinished", e.id, 9000);
+      if (!homeEggCapsule) {
+        rewardPop("Œuf prêt à éclore", e.rarity + " · " + (e.species || "Familier"),
+          false, "eggFinished", e.id, 9000);
+      }
     }
   });
   Object.keys(timerNoticeSeen.eggs).forEach((id) => {
