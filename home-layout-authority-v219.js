@@ -1,4 +1,4 @@
-/* SHADOWREACH · Home layout authority V219 / V369 · Lean consolidation
+/* SHADOWREACH · Home layout authority V219 / V377 · Lean consolidation
    Sole Home geometry, render lifecycle and UI compatibility authority.
    V119 compatibility decoration is absorbed here so Home has one runtime owner.
    UI-only: no combat values, economy, progression or save data are changed. */
@@ -67,14 +67,62 @@ style.textContent=`
 #toast{max-width:calc(100% - 24px)!important;left:12px!important;right:12px!important;margin:0 auto!important}
 #app.srHomeFullArena #tutorialCard{bottom:calc(var(--srForgeH) + var(--srSkillH) + 68px + env(safe-area-inset-bottom))!important}
 #app.srHomeFullArena:has(#tutorialCard) #toast{bottom:calc(var(--srForgeH) + var(--srSkillH) + 160px + env(safe-area-inset-bottom))!important}
-@media(max-width:370px){#app.srHomeFullArena{--srHudH:106px;--srForgeH:240px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
+@media(max-width:370px){#app.srHomeFullArena{--srHudH:104px;--srSkillH:58px;--srForgeH:180px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
 @media(max-height:720px){#app.srHomeFullArena{--srHudH:100px;--srSkillH:56px;--srForgeH:174px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
 `;
 document.head.appendChild(style);
 var app=document.getElementById('app'),screen=document.getElementById('screen');
 function important(el,prop,value){if(el)el.style.setProperty(prop,value,'important');}
+
+function eggReadyCandidate(){
+  try{
+    if(typeof S==='undefined'||!S||!Array.isArray(S.eggs))return null;
+    var now=Date.now(),ready=S.eggs.filter(function(e){return !!(e&&Number(e.hatchEnd)>0&&Number(e.hatchEnd)<=now);});
+    if(!ready.length)return null;
+    ready.sort(function(a,b){
+      var ar=0,br=0;
+      try{ar=typeof PET_RARITY_ORDER!=='undefined'?PET_RARITY_ORDER.indexOf(a.rarity):0;}catch(_){}
+      try{br=typeof PET_RARITY_ORDER!=='undefined'?PET_RARITY_ORDER.indexOf(b.rarity):0;}catch(_){}
+      return br-ar;
+    });
+    return ready[0];
+  }catch(_){return null;}
+}
+function eggReadyArt(r){
+  var key=String(r||'COMMUN').toLowerCase().replace(/é|è|ê|ë/g,'e').replace(/[^a-z0-9]+/g,'_');
+  if(key==='peu_commun')key='commun';
+  return 'art/eggs/'+key+'.png';
+}
+function eggReadyLabels(e){
+  var rar=String((e&&e.rarity)||'COMMUN'),rarLabel=rar,species='';
+  try{if(typeof RARITY!=='undefined'&&RARITY[rar]&&RARITY[rar].label)rarLabel=RARITY[rar].label;}catch(_){}
+  try{if(typeof PET_SPECIES_BY_ID!=='undefined'&&e&&PET_SPECIES_BY_ID[e.species])species=PET_SPECIES_BY_ID[e.species].label;}catch(_){}
+  return {rarity:rarLabel,species:species};
+}
+function decorateEggReady(){
+  if(!screen)return;
+  var world=screen.querySelector('.campaignWorld');
+  var existing=screen.querySelector('.srEggReadyV377');
+  var egg=eggReadyCandidate();
+  if(!world||!egg){if(existing)existing.remove();return;}
+  var labels=eggReadyLabels(egg);
+  var sig=String(egg.id||'')+'|'+String(egg.rarity||'')+'|'+String(egg.species||'');
+  if(existing&&existing.getAttribute('data-sig')===sig)return;
+  if(existing)existing.remove();
+  var card=document.createElement('button');
+  card.type='button';
+  card.className='srEggReadyV377';
+  card.setAttribute('data-act','go');
+  card.setAttribute('data-arg','familiers');
+  card.setAttribute('data-sig',sig);
+  card.setAttribute('aria-label','Œuf prêt à éclore');
+  card.innerHTML='<span class="srEggReadyCopyV377"><b>Œuf prêt à éclore</b><small>'+labels.rarity.toUpperCase()+(labels.species?' · '+labels.species.toLowerCase():'')+'</small></span><span class="srEggReadyNestV377"><img src="'+eggReadyArt(egg.rarity)+'" alt=""></span><span class="srEggReadyChevronV377">›</span>';
+  world.appendChild(card);
+}
+
 function decorate(){
   if(!screen)return;
+  decorateEggReady();
   var info=screen.querySelector('.homeForge .iBtn');
   if(info){
     ['width','height','min-width','min-height','max-width','max-height'].forEach(function(p){important(info,p,'28px');});
@@ -98,5 +146,8 @@ var queued=false;function schedule(){if(queued)return;queued=true;requestAnimati
 window.__srApplyHomeCompatV119=decorate;
 window.__srSyncHomeLayoutV219=sync;window.__srSyncHomeFramePhase2B=sync;
 window.addEventListener('sr:bottomnavrendered',schedule);
-window.addEventListener('resize',schedule,{passive:true});window.addEventListener('orientationchange',schedule,{passive:true});sync();
+window.addEventListener('resize',schedule,{passive:true});window.addEventListener('orientationchange',schedule,{passive:true});
+try{var homeObserver=new MutationObserver(schedule);homeObserver.observe(screen,{childList:true,subtree:false});}catch(_){}
+var eggTicker=setInterval(function(){if(app&&app.classList.contains('srHomeFullArena'))schedule();},1000);
+window.addEventListener('pagehide',function(){try{clearInterval(eggTicker);}catch(_){}});sync();
 })();
