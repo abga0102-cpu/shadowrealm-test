@@ -40,7 +40,7 @@
              will resume the normal daily reset automatically. */
           S.lastKeyReset=todayStr();
           S.eventDay=todayStr();
-          S.testDays=Math.max(0,Number(S.testDays)||0);
+          delete S.testDays;
           S.power=computePower(S);
           refreshDerived();
           saveNow();
