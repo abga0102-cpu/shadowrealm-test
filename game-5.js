@@ -1279,7 +1279,7 @@ const TREE_EFFECT_INFO = {
   forgeCost:   "Réduit le coût en Or des améliorations de Forge",
   forgeFree:   "Chance de forger un équipement supplémentaire gratuitement",
   forgeMulti:  "Augmente le nombre de forges lancées en une fois",
-  forgeMult:   "Pousse le multiplicateur de Forge au-delà de ×5, jusqu’à ×10",
+  forgeMult:   "Ajoute directement des forges au lot actuel. La Forge part de ×1, donc +2 fait passer ×1 à ×3.",
   hatch_COMMUN: "Réduit le temps d'éclosion des Œufs Communs uniquement",
   hatch_PEU_COMMUN: "Réduit le temps d'éclosion des Œufs Peu communs uniquement",
   hatch_RARE: "Réduit le temps d'éclosion des Œufs Rares uniquement",
@@ -1312,6 +1312,7 @@ const TREE_EFFECT_INFO = {
    reduction still need the minus put in front. */
 function treeEffectValue(node, level) {
   const v = node.per * level;
+  if (node.effect === "forgeMult") return level > 0 ? "+" + v + (v > 1 ? " forges" : " forge") : "—";
   if (node.unit === "×") return "×" + (RULES.FORGE_BATCH_BASE + v);
   if (node.unit === "") return level > 0 ? "Actif" : "—";
   const r = Math.round(v * 10) / 10;
@@ -1401,7 +1402,10 @@ function showTreeNode(id) {
         treeEffectValue(node, node.max) + "</b></div>" +
       (node.effect !== "raidKey" && node.effect !== "eggSlot"
         ? '<div class="kv"><span class="dim">Total de la branche</span><b style="color:var(--goldLit)">' +
-          (Math.round(branchTotal * 10) / 10) + (node.unit === "h" ? " h" : node.unit === "×" ? "" : "%") + "</b></div>"
+          (node.effect === "forgeMult"
+            ? "+" + (Math.round(branchTotal * 10) / 10) + " · Forge ×" + forgeBatch(S)
+            : (Math.round(branchTotal * 10) / 10) + (node.unit === "h" ? " h" : node.unit === "×" ? "" : "%")) +
+          "</b></div>"
         : "") +
       (maxed ? ""
         : busy
