@@ -440,7 +440,10 @@ function drawArena() {
   if (!c) { arenaNodes.layer.innerHTML = ""; return; }
 
   // ---- header: title, floor-block track, status pills (sheet §4) ----
-  const label = c.ctx === "campaign" ? "Étage " + fmtInt(c.floor)
+  const label = c.ctx === "campaign"
+    ? (typeof window.__srCampaignFloorLabel === "function"
+      ? window.__srCampaignFloorLabel(c.floor)
+      : "Étage " + fmtInt(c.floor))
     : c.ctx === "mega" ? "Méga " + megaLevelForFloor(c.floor) + " · Boss normal " + fmtInt(c.floor) + " ×10"
     : c.ctx === "arenaLive" ? "Arène · Duel réel"
     : c.raidId ? RAIDS[c.raidId].name : "Épreuve d'Ascension";
