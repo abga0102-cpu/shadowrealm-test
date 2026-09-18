@@ -209,7 +209,7 @@ function scrAccueil() {
       '</div>' +
     '</div>' +
     '<div id="skillbar">' +
-      '<div class="slot" data-act="go" data-arg="equipement" title="' + esc(wtHome.name) +
+      '<div class="slot srWeaponSlotV383" data-act="go" data-arg="equipement" title="' + esc(wtHome.name) +
         '" style="border-color:' + wCol + '66">' +
         (wArt ? '<img src="' + wArt + '" style="width:26px;height:26px;object-fit:contain;' +
                 "filter:drop-shadow(0 0 5px " + wCol + '99)">' : ic("sword", 22)) +
@@ -328,25 +328,27 @@ function skillSlotsHTML() {
     const sid = S.skillSlots[i];
     const def = sid ? SKILL_DEFS.find((x) => x.id === sid) : null;
     const cat = def ? SKILL_CATS[def.cat] : null;
-    // a filled slot casts; an empty one still takes you to the roster
     const sealed = def && skillSealed(combat, def.id);
-    sb += '<div class="slot' + (sealed ? " sealed" : "") + '" data-act="' + (def ? "castSkill" : "go") +
+    const skillColor = def ? (cat ? cat.c : def.color) : "#5E7895";
+    sb += '<div class="slot ' + (def ? "srSkillRefV383" : "srSkillEmptyV383") + (sealed ? " sealed" : "") + '" data-act="' + (def ? "castSkill" : "go") +
       '" data-arg="' + (def ? def.id : "competences") + '"' +
-      (def ? ' data-skill="' + def.id + '"' : "") + ">" + (def
-      ? '<div class="skfx" style="background:linear-gradient(' + shade(def.color, 26) + "," + shade(def.color, -34) + ')">' +
-        ic(def.icon, 24) + "</div>" +
-        '<svg class="cdRing" viewBox="0 0 46 46"><circle cx="23" cy="23" r="20" stroke="#050A12" stroke-width="3" opacity="0"/>' +
-        '<circle class="cdArc" cx="23" cy="23" r="20" stroke="' + (cat ? cat.c : def.color) +
-          '" stroke-width="3" stroke-dasharray="125.6" stroke-dashoffset="125.6"/></svg>' +
-        '<div class="cdTxt"></div>' +
-        '<div class="fxBub" style="display:none;color:' + (cat ? cat.c : def.color) + '"></div>' +
-        '<i class="catBar" style="background:' + (cat ? cat.c : def.color) + '"></i>' +
+      (def ? ' data-skill="' + def.id + '" style="--srSkillColor:' + skillColor + ';--srSkillLight:' + shade(def.color, 30) + ';--srSkillDark:' + shade(def.color, -38) + '"' : "") + ">" + (def
+      ? '<div class="srSkillOrbV383">' +
+          '<div class="skfx" style="background:radial-gradient(circle at 50% 25%,' + shade(def.color, 38) + ' 0%,' + shade(def.color, 6) + ' 38%,' + shade(def.color, -40) + ' 100%)">' +
+            ic(def.icon, 25) +
+          "</div>" +
+          '<svg class="cdRing" viewBox="0 0 46 46"><circle class="srSkillRingBaseV383" cx="23" cy="23" r="20" stroke="#08121F" stroke-width="4"/>' +
+          '<circle class="cdArc" cx="23" cy="23" r="20" stroke="' + skillColor +
+            '" stroke-width="4" stroke-dasharray="125.6" stroke-dashoffset="125.6"/></svg>' +
+          '<div class="cdTxt"></div>' +
+        "</div>" +
+        '<div class="fxBub" style="display:none;color:' + skillColor + '"></div>' +
         '<span class="lv">' + (S.skills[sid] ? S.skills[sid].level : 1) + "</span>"
-      : ic("plus", 18)) + "</div>";
+      : '<div class="srSkillEmptyOrbV383">' + ic("plus", 18) + "</div>") + "</div>";
   }
-  sb += '<div class="autoSk ' + (S.autoSkills ? "on" : "off") + '" data-act="autoSkills" ' +
+  sb += '<div class="autoSk srAutoRefV383 ' + (S.autoSkills ? "on" : "off") + '" data-act="autoSkills" ' +
     'title="' + (S.autoSkills ? "Compétences automatiques" : "Compétences manuelles") + '">' +
-    ic("bolt", 12) + "<span>AUTO</span><i></i></div>";
+    '<span class="srAutoBoltV383">' + ic("bolt", 13) + '</span><span>AUTO</span><i></i></div>';
   return sb;
 }
 /* compact combat strip: what you are fighting with, plus the skill cooldowns */
@@ -356,7 +358,7 @@ function combatBarHTML() {
   const rar = S.equipped.arme ? RARITY[S.equipped.arme.rarity] : null;
   const col = rar ? rar.c : "#d6dae4";
   return '<div id="skillbar">' +
-    '<div class="slot" data-act="go" data-arg="equipement" style="border-color:' + col + '66">' +
+    '<div class="slot srWeaponSlotV383" data-act="go" data-arg="equipement" style="border-color:' + col + '66">' +
       (art ? '<img src="' + art + '" style="width:26px;height:26px;object-fit:contain;' +
              "filter:drop-shadow(0 0 5px " + col + '99)">' : ic("sword", 22)) +
       '<i class="catBar" style="background:' + col + '"></i>' +
