@@ -1,4 +1,4 @@
-/* SHADOWREACH · Auto-Forge Compare V199 / V371 canonical dust authority
+/* SHADOWREACH · Auto-Forge Compare V199 / V378 canonical dust authority
    AUTO follows the Forge filter only: every kept result is surfaced for comparison.
    Canonical persisted batch sizes are 1/3/5/10, matching the Forge progression gate.
    V350: recycled Dust is valued from the canonical rarity table first, so a stale
@@ -51,7 +51,7 @@ function refreshDustNow(){
  try{if(typeof renderHUD==='function')renderHUD();}catch(_){}
  try{if(typeof scheduleRender==='function')scheduleRender();}catch(_){}
 }
-function showForgeDustNotice(expected,count){
+function showForgeDustNotice(expected,count,label){
  try{
   var panel=document.getElementById('homeForge');
   if(!panel)return false;
@@ -59,7 +59,7 @@ function showForgeDustNotice(expected,count){
   if(old)old.remove();
   var d=document.createElement('div');
   d.id='srAutoDustNoticeV371';
-  d.textContent='Auto-Forge · +'+(typeof fmt==='function'?fmt(expected):expected)+' poussière';
+  d.textContent=(label||'Auto-Forge')+' · +'+(typeof fmt==='function'?fmt(expected):expected)+' poussière';
   d.style.cssText='position:absolute;left:10px;right:96px;bottom:63px;z-index:80;min-height:18px;padding:2px 7px;border-radius:8px;border:1px solid rgba(87,214,126,.55);background:rgba(8,46,27,.88);color:#78E996;font:900 9px/14px system-ui;text-shadow:0 1px 1px rgba(0,0,0,.55);box-shadow:0 2px 7px rgba(0,0,0,.28);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
   panel.appendChild(d);
   setTimeout(function(){var x=document.getElementById('srAutoDustNoticeV371');if(x)x.remove();},1650);
@@ -103,6 +103,8 @@ window.__srAutoForgeDustV349={version:349,ensure:ensureAutoDust,settle:settleAut
 window.__srAutoForgeDustV350={version:350,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue,canonical:true,immediate:true};
 window.__srAutoForgeDustV370={version:370,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue,canonical:true,immediate:true,quietWhenForgeLane:true};
 window.__srAutoForgeDustV371={version:371,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue,canonical:true,immediate:true,greenForgeFeedback:true};
+window.__srShowForgeDustNoticeV378=showForgeDustNotice;
+window.__srAutoForgeDustV378={version:378,ensure:ensureAutoDust,settle:settleAutoDust,value:recycledDustValue,canonical:true,immediate:true,greenForgeFeedback:true,manualFeedbackBridge:true};
 
 try{if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}}catch(_){}
 
