@@ -1,5 +1,5 @@
-/* SHADOWREACH · Premium UI polish V209 / V343
-   Reference-faithful mobile fantasy interface: blue-and-gold frames, staged combat and integrated Forge.
+/* SHADOWREACH · Premium UI polish V209 / V368
+   Safe reference-fidelity rebuild: brighter fantasy scene, ornate blue-and-gold HUD, Forge and navigation.
    Presentation-only: no routes, economy, saves, timers, combat values or gameplay state are changed. */
 (function(){
   'use strict';
@@ -782,6 +782,274 @@ body{
 @media(prefers-reduced-motion:reduce){
   .btn,.hudBtn,.menuBtn,.iBtn,.recommendedClose,.seg>span,.tgl,#tabs>.tab,#tabs>.tab .fantasyNavIcon{transition:none!important}
 }
+
+/* V368 SAFE REFERENCE REBUILD
+   Reintroduces the approved reference direction on top of the stable V367/V343 presentation owner.
+   Deliberately presentation-only: no canonical Home geometry variables, route logic, state, economy,
+   combat, save, timer or progression ownership is changed here. */
+#app.srHomeFullArena{
+  background:
+    radial-gradient(120% 72% at 50% 2%,rgba(83,175,232,.16),transparent 62%),
+    #081D34!important;
+  border-left-color:#1D4E79!important;
+  border-right-color:#1D4E79!important;
+}
+
+/* Floating fantasy HUD without replacing the stable Home layout geometry. */
+#app.srHomeFullArena>#hud{
+  background:
+    radial-gradient(92% 125% at 13% -28%,rgba(89,191,244,.31),transparent 63%),
+    linear-gradient(180deg,rgba(37,96,143,.98) 0%,rgba(20,68,108,.96) 48%,rgba(8,39,69,.91) 82%,rgba(7,28,50,.56) 100%)!important;
+  border-bottom:2px solid #D7AA4C!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.24),
+    inset 0 -4px 10px rgba(0,15,31,.46),
+    0 4px 11px rgba(0,0,0,.27)!important;
+}
+#app.srHomeFullArena>#hud::before{
+  content:""!important;
+  position:absolute!important;
+  left:8px!important;right:8px!important;top:3px!important;height:1px!important;
+  background:linear-gradient(90deg,transparent,#C8EEFF 18%,rgba(255,255,255,.30) 68%,transparent)!important;
+  opacity:.92!important;
+  pointer-events:none!important;
+}
+#app.srHomeFullArena>#hud>.pbox{
+  border-color:#D8AC50!important;
+  background:linear-gradient(135deg,rgba(64,138,193,.98),rgba(24,75,119,.98) 51%,rgba(10,45,79,.99))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    inset 0 -2px 0 rgba(2,20,39,.55),
+    0 0 0 1px rgba(83,48,8,.32),
+    0 4px 8px rgba(0,0,0,.28)!important;
+}
+#app.srHomeFullArena .avatar{
+  background:radial-gradient(circle at 50% 28%,#84D2F8,#245F92 58%,#0A2C50 100%)!important;
+  box-shadow:0 0 0 1px #62400F,0 0 0 3px #E7BA54,0 2px 9px rgba(0,0,0,.48),0 0 12px rgba(255,205,91,.18)!important;
+}
+#app.srHomeFullArena .avatar::after{
+  filter:brightness(1.16) saturate(1.07) drop-shadow(0 2px 2px rgba(0,0,0,.50))!important;
+}
+#app.srHomeFullArena .pname{color:#FFFFFF!important;text-shadow:0 2px 2px rgba(0,0,0,.62)!important}
+#app.srHomeFullArena .power{
+  color:#FFE39A!important;
+  border-color:rgba(232,187,82,.62)!important;
+  background:rgba(3,30,55,.62)!important;
+}
+#app.srHomeFullArena .curr{
+  border-color:#D7AA4E!important;
+  background:linear-gradient(180deg,rgba(39,105,156,.98),rgba(13,57,95,.98))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 -2px 0 rgba(1,19,36,.50),0 3px 6px rgba(0,0,0,.25)!important;
+}
+#app.srHomeFullArena .curr>.plus{
+  border-color:#145C31!important;
+  background:linear-gradient(180deg,#78EB92,#27B65A)!important;
+}
+
+/* Arena: brighter artwork and a centered gold/blue stage identity. */
+#app.srHomeFullArena #screen.fixed>.campaignWorld{
+  border-top-color:#78B4D8!important;
+  border-bottom:2px solid #D6A94C!important;
+  background:#103752!important;
+  box-shadow:inset 0 0 0 1px rgba(240,201,104,.14)!important;
+}
+#app.srHomeFullArena #arenaBg{
+  background-position:center 48%!important;
+  filter:brightness(1.12) saturate(1.10) contrast(1.03)!important;
+}
+#app.srHomeFullArena #arenaShade{
+  background:linear-gradient(180deg,rgba(9,38,60,.02) 0%,rgba(5,25,39,.04) 48%,rgba(2,17,27,.18) 100%)!important;
+}
+#app.srHomeFullArena #arena::before{
+  content:""!important;
+  position:absolute!important;inset:0!important;z-index:7!important;pointer-events:none!important;
+  background:
+    radial-gradient(90% 46% at 50% 16%,rgba(193,239,255,.10),transparent 72%),
+    linear-gradient(90deg,rgba(5,28,45,.12),transparent 9%,transparent 91%,rgba(5,28,45,.12)),
+    linear-gradient(180deg,transparent 68%,rgba(3,23,36,.12))!important;
+}
+#app.srHomeFullArena #aDecor{filter:brightness(1.06) saturate(1.06) drop-shadow(0 3px 3px rgba(0,0,0,.15))!important}
+#app.srHomeFullArena #aLayer .unit{filter:saturate(1.05) brightness(1.035) drop-shadow(0 4px 4px rgba(0,0,0,.28))!important}
+#app.srHomeFullArena #arena .floorTxt{
+  border-color:#E3B652!important;
+  background:linear-gradient(180deg,rgba(48,119,171,.95),rgba(11,55,91,.96))!important;
+  color:#FFF4CE!important;
+  font-family:Georgia,var(--fd),serif!important;
+  text-shadow:0 2px 2px rgba(0,0,0,.76)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -2px 0 rgba(0,21,39,.40),0 3px 7px rgba(0,0,0,.33),0 0 10px rgba(255,209,93,.10)!important;
+}
+#app.srHomeFullArena #arena .fTrack{background:rgba(6,35,61,.64)!important;border-color:rgba(224,181,84,.54)!important}
+#app.srHomeFullArena #arena .fTrack i.on{background:linear-gradient(90deg,#F1C55C,#FFE49A)!important}
+#app.srHomeFullArena #arena .sdot.cur,
+#app.srHomeFullArena #arena .sdot.on{
+  border-color:#FFE59B!important;
+  background:radial-gradient(circle at 40% 30%,#FFF5C6,#E9AD39 62%,#A96C15)!important;
+  box-shadow:0 0 8px rgba(255,203,79,.52)!important;
+}
+#app.srHomeFullArena #arena .fPill{
+  border-color:#D7AB50!important;
+  background:linear-gradient(180deg,rgba(31,82,124,.96),rgba(7,42,73,.97))!important;
+  color:#FFFFFF!important;
+}
+#app.srHomeFullArena .worldAction,
+#app.srHomeFullArena .worldMenu>summary{
+  border-color:#D7AB50!important;
+  background:linear-gradient(180deg,rgba(48,113,164,.97),rgba(17,58,95,.98))!important;
+  color:#FFF0C4!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.23),inset 0 -2px 0 rgba(2,20,38,.53),0 3px 7px rgba(0,0,0,.34)!important;
+}
+
+/* One ornate combat shelf, retaining all stable sizing/interaction rules. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  background:linear-gradient(180deg,#123D65 0%,#0A2D4F 100%)!important;
+  border-top:2px solid #DDB04E!important;
+  border-bottom:2px solid #DDB04E!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -3px 7px rgba(0,14,27,.50),0 -2px 8px rgba(0,0,0,.20)!important;
+}
+#app.srHomeFullArena #screen.fixed>#skillbar::before{
+  content:""!important;
+  position:absolute!important;left:6px!important;right:6px!important;top:-2px!important;height:3px!important;
+  background:linear-gradient(90deg,transparent,#B68125 9%,#F0CB68 23%,#A87520 50%,#F0CB68 77%,#B68125 91%,transparent)!important;
+  pointer-events:none!important;
+}
+#app.srHomeFullArena #skillbar .slot,
+#app.srHomeFullArena #skillbar .petMini{
+  border-color:#DDB04E!important;
+  background:linear-gradient(180deg,#285F90,#0E3459)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.23),inset 0 -4px 7px rgba(0,13,26,.48),0 2px 5px rgba(0,0,0,.33)!important;
+}
+#app.srHomeFullArena #skillbar .slot::before{border-color:rgba(126,207,248,.34)!important}
+#app.srHomeFullArena #skillbar .petMini img{
+  filter:saturate(1.10) brightness(1.07) drop-shadow(0 0 5px rgba(78,218,255,.20))!important;
+}
+
+/* Forge: warm workshop depth and strong gold/blue actions, but no Forge layout sizing overrides. */
+#app.srHomeFullArena #screen.fixed>.pad.mt4{
+  background:linear-gradient(180deg,#0C3152,#082541)!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266{
+  border-color:#D1A13E!important;
+  background:
+    radial-gradient(62% 90% at 84% 45%,rgba(255,126,28,.16),transparent 65%),
+    linear-gradient(180deg,#1D4D78 0%,#12385E 45%,#0A294A 100%)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.21),
+    inset 0 -3px 0 rgba(3,19,34,.55),
+    0 0 0 1px rgba(89,51,11,.42),
+    0 4px 10px rgba(0,0,0,.32)!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266::before,
+#app.srHomeFullArena .homeForge.srForgePanel266::after{border-color:#F0C663!important}
+#app.srHomeFullArena .srForgeHead266{border-bottom-color:rgba(239,196,94,.38)!important}
+#app.srHomeFullArena .srForgeHeadLeft266>b{
+  color:#FFF0BB!important;
+  font-family:Georgia,var(--fd),serif!important;
+  text-shadow:0 2px 2px rgba(0,0,0,.60)!important;
+}
+#app.srHomeFullArena .srForgeHammer266{
+  border-color:#EFC35B!important;
+  background:linear-gradient(180deg,#3A82B4,#17496F)!important;
+}
+#app.srHomeFullArena .srForgeMineral266{
+  border-color:#72B6DC!important;
+  background:rgba(4,35,60,.66)!important;
+  color:#D9F4FF!important;
+}
+#app.srHomeFullArena .srForgeUpgrade266{
+  border-color:#6EA8CF!important;
+  background:linear-gradient(180deg,rgba(31,85,126,.95),rgba(11,48,80,.96))!important;
+}
+#app.srHomeFullArena .srForgeUpgrade266>.btn{
+  --bA:#FFC353;--bB:#D98615;--bS:#8C4B05;--bE:#FFF0AD;--bT:#fff;--bSh:0 1px 1px #6A3400;
+  border-color:#704006!important;
+}
+#app.srHomeFullArena .srForgeLootReserve266{
+  border-color:rgba(103,170,209,.38)!important;
+  background:
+    linear-gradient(90deg,rgba(4,27,47,.84) 0%,rgba(5,29,49,.60) 53%,rgba(13,28,38,.18) 100%),
+    radial-gradient(circle at 78% 82%,rgba(255,142,38,.52),transparent 25%),
+    url("art/props/brazier.png") 82% 82% / 76px auto no-repeat,
+    url("art/props/crystal.png") 97% 86% / 36px auto no-repeat,
+    linear-gradient(180deg,#123D60,#081F37)!important;
+  box-shadow:inset 0 1px 6px rgba(0,0,0,.27),inset 0 0 28px rgba(255,106,18,.055)!important;
+}
+#app.srHomeFullArena .srForgeActions266>.btn.blue{
+  border-color:#075383!important;
+  background:linear-gradient(180deg,#54CAFF,#148BE0)!important;
+  box-shadow:inset 0 1px 0 #C9F1FF,inset 0 -3px 0 #075A9E,0 2px 0 #052B49,0 4px 8px rgba(0,0,0,.25)!important;
+}
+#app.srHomeFullArena .srForgeActions266 .tgl{
+  border-color:#719DC0!important;
+  background:linear-gradient(180deg,#315F88,#173D61)!important;
+  color:#D8E7F4!important;
+}
+#app.srHomeFullArena .srForgeActions266 .tgl.on{
+  border-color:#7BE797!important;
+  background:linear-gradient(180deg,#5DDB80,#27AA58)!important;
+}
+#app.srHomeFullArena .srForgeFilter266{
+  border-color:#5789B0!important;
+  background:linear-gradient(180deg,#16466F,#0A2C4E)!important;
+}
+
+/* Navigation adopts the strict reference materials, without changing tab geometry. */
+#tabs{
+  border-top:2px solid #D8AB4A!important;
+  background:linear-gradient(180deg,#183F66 0%,#0C2B4A 58%,#071D34 100%)!important;
+  box-shadow:0 -4px 12px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.11)!important;
+}
+#tabs::before{
+  height:3px!important;
+  background:linear-gradient(90deg,#70470F,#F0C866 15%,#A97723 50%,#F0C866 85%,#70470F)!important;
+  box-shadow:0 0 8px rgba(255,199,76,.14)!important;
+}
+#tabs>.tab{
+  color:#B8CDE0!important;
+  border-right-color:rgba(112,167,205,.18)!important;
+}
+#tabs>.tab .fantasyNavIcon{
+  opacity:.84!important;
+  filter:saturate(.76) brightness(.96) drop-shadow(0 2px 3px rgba(0,0,0,.48))!important;
+}
+#tabs>.tab.on,
+#tabs>.tab.active,
+#tabs>.tab[aria-current="page"]{
+  color:#FFF0B1!important;
+  background:radial-gradient(80% 90% at 50% 23%,rgba(255,210,93,.28),rgba(205,137,25,.09) 51%,transparent 74%)!important;
+}
+#tabs>.tab.on .fantasyNavIcon,
+#tabs>.tab.active .fantasyNavIcon,
+#tabs>.tab[aria-current="page"] .fantasyNavIcon{
+  opacity:1!important;
+  filter:saturate(1.02) brightness(1.16) drop-shadow(0 0 7px rgba(255,207,79,.43))!important;
+}
+#tabs>.tab.on::before,
+#tabs>.tab.active::before,
+#tabs>.tab[aria-current="page"]::before{
+  background:linear-gradient(90deg,transparent,#FFF2AF 18%,#E6AD35 82%,transparent)!important;
+  box-shadow:0 0 8px rgba(255,203,75,.36)!important;
+}
+
+/* Secondary screens inherit only materials, not structure. */
+#topbar{
+  background:linear-gradient(180deg,#286490,#113D65)!important;
+  border-bottom-color:#D7A94E!important;
+}
+.back{
+  border-color:#D4A74B!important;
+  background:linear-gradient(180deg,#367CAF,#194B75)!important;
+  color:#FFFFFF!important;
+}
+#screen:not(.fixed)>.pad>.card,
+#screen:not(.fixed) .srNavHub{
+  border-color:#527FA7!important;
+  background:linear-gradient(180deg,#245984,#123A62)!important;
+}
+.srNavHubItem{
+  border-color:#6A9ABE!important;
+  background:linear-gradient(180deg,#2E6998,#17466F)!important;
+}
+
 `;
   document.head.appendChild(style);
 })();
