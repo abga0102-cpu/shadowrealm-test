@@ -10,6 +10,11 @@ if(typeof S==='undefined'||typeof sanctMergeState!=='function')return;
 var st=sanctMergeState();
 if(st.legacyDivinRollbackV131)return;
 
+/* This rollback only belongs to saves that actually recorded the two legacy
+   DIVIN sacrifices. Fresh saves also pass through this file, but have no such
+   history and must keep their onboarding resources intact. */
+if(Math.max(0,Number(st.sacrifices)||0)<2)return;
+
 /* Reverse exactly two DIVIN reward bundles from v130. Negative balances are
    deliberately avoided: if a granted consumable was already spent, the
    remainder becomes an explicit rollback debt so future gains repay it rather
