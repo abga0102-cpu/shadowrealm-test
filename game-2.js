@@ -1870,7 +1870,7 @@ function allocStat(key, pts) {
    to the best tier it can, so the odds are never wasted, they just land lower. */
 const RARITY_MIN_FORGE = {
   COMMUN: 1, PEU_COMMUN: 4, RARE: 12, EPIQUE: 18, HEROIQUE: 24, MYTHIQUE: 30,
-  ARTEFACT: 40, LEGENDAIRE: 40, INFERNAL: 40, IMMORTEL: 40, DIVIN: 40,
+  ARTEFACT: 40, LEGENDAIRE: 30, INFERNAL: 30, IMMORTEL: 30, DIVIN: 48,
 };
 function rarityAllowed(rarity, forgeLevel, state) {
   const st = state || S;
@@ -1881,6 +1881,14 @@ function rarityAllowed(rarity, forgeLevel, state) {
   if (rarity === "IMMORTEL") return stars >= 3;
   if (rarity === "DIVIN") return (st.ascension || 0) >= 1;
   return true;
+}
+function forgeRarityRequirement(rarity) {
+  if (rarity === "LEGENDAIRE") return { text: "Forge ★ · niv. 30", pill: "★ 30" };
+  if (rarity === "INFERNAL") return { text: "Forge ★★ · niv. 30", pill: "★★ 30" };
+  if (rarity === "IMMORTEL") return { text: "Forge ★★★ · niv. 30", pill: "★★★ 30" };
+  if (rarity === "DIVIN") return { text: "Ascension personnage · Forge 48", pill: "ASC." };
+  const min = RARITY_MIN_FORGE[rarity] || 1;
+  return { text: "Forge " + min, pill: String(min) };
 }
 /* The gate was real in the roll but not in the rates: getRates still handed a
    locked tier its share, capRarityForForge quietly stepped that roll down, and
@@ -1925,7 +1933,7 @@ function showForgeFilterPicker() {
       '<div class="flex1"><div class="b small" style="color:' + c + '">' + RARITY[r].label + "</div>" +
       '<div class="mute tiny b">' + (kept ? "gardé · va dans l'Inventaire"
         : "recyclé en poussière") +
-        (reachable ? "" : " · hors de portée à la Forge " + lv) + "</div></div>" +
+        (reachable ? "" : " · " + forgeRarityRequirement(r).text + " requis") + "</div></div>" +
       '<div class="tgl ' + (kept ? "on" : "off") + '" style="pointer-events:none"><i></i></div>' +
       "</div>";
   }).join("");
@@ -1949,6 +1957,7 @@ function showRarityInfo() {
   const rows = EQUIP_RARITY_ORDER.map((r) => {
     const c = RARITY[r].c;
     const min = RARITY_MIN_FORGE[r] || 1;
+    const req = forgeRarityRequirement(r);
     const ok = rarityAllowed(r, lv, S);
     const rate = ok ? (rates[r] || 0) : 0;
     return '<div class="itemRow" style="border-left-color:' + c + ";opacity:" + (ok ? 1 : 0.45) + '">' +
@@ -1957,11 +1966,11 @@ function showRarityInfo() {
       '<div class="flex1"><div class="b small" style="color:' + c + '">' + RARITY[r].label +
         '<span class="mute" style="font-weight:700"> ×' + RARITY_MUL[r] + " puissance</span></div>" +
       '<div class="mute tiny b">' + (ok
-        ? "Forge " + min + "+ · " + rate.toFixed(rate < 10 ? 1 : 0) + "% par forge"
-        : "Débloqué à Forge " + min) + "</div></div>" +
+        ? req.text + " · " + rate.toFixed(rate < 10 ? 1 : 0) + "% par forge"
+        : "Débloqué : " + req.text) + "</div></div>" +
       (ok ? '<span class="pill" style="color:' + c + ";border-color:" + c + '99">' +
         rate.toFixed(rate < 10 ? 1 : 0) + "%</span>"
-          : '<span class="pill">' + ic("lock", 9) + min + "</span>") +
+          : '<span class="pill">' + ic("lock", 9) + req.pill + "</span>") +
       "</div>";
   }).join("");
   openModal(
