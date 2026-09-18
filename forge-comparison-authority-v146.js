@@ -1,4 +1,4 @@
-/* SHADOWREACH · Forge comparison authority v146 / V370
+/* SHADOWREACH · Forge comparison authority v146 / V378
    Additive final presentation authority loaded after v145.
    Keeps every previous Forge file in place, but future Forge results are handled here.
    V199: Auto-Forge results selected by the Forge filter are queued exactly as dropped,
@@ -151,11 +151,17 @@ function render(){
   '</div></div>';
  document.body.appendChild(root);position(root);
 }
+function forgeDustNoticeV378(amount,label){
+ amount=Math.max(0,Math.floor(Number(amount)||0));if(!amount)return false;
+ try{if(typeof window.__srShowForgeDustNoticeV378==='function')return !!window.__srShowForgeDustNoticeV378(amount,0,label||'Équipement recyclé');}catch(_){}
+ try{if(typeof toast==='function'){toast((label||'Équipement recyclé')+' · +'+fmt2(amount)+' poussière',true);return true;}}catch(_){}
+ return false;
+}
 showForgeResult=function(res){
  res=Array.isArray(res)?res:[];
  var kept=res.filter(function(r){return r&&!r.recycled&&r.id&&byId(r.id);});
  var melted=res.filter(function(r){return r&&r.recycled;});
- if(!kept.length){var dust=melted.reduce(function(a,r){return a+(Number(r.dust)||0);},0);try{if(typeof toast==='function')toast(melted.length+' pièce'+(melted.length>1?'s':'')+' recyclée'+(melted.length>1?'s':'')+' · +'+fmt2(dust)+' poussière',true);}catch(_){}maybeResumeAuto();return;}
+ if(!kept.length){var dust=melted.reduce(function(a,r){return a+(Number(r.dust)||0);},0);forgeDustNoticeV378(dust,melted.length+' pièce'+(melted.length>1?'s':'')+' recyclée'+(melted.length>1?'s':'')+'');maybeResumeAuto();return;}
  var autoKept=kept.filter(function(r){return !!(r&&r.__autoForgeCompareV199);});
  if(autoKept.length>1)autoKept.forEach(function(r,i){r.__srAutoForgeBatchIndex=i+1;r.__srAutoForgeBatchTotal=autoKept.length;});
  kept.forEach(ingest);if(!current)next();else render();
@@ -166,7 +172,7 @@ document.addEventListener('click',function(e){
  e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();
  var a=b.getAttribute('data-sr-fp146');
  if(a==='equip'&&current){var it=byId(current.id);if(it){try{equipItem(it.id);}catch(_){}}current=null;next();}
- else if(a==='recycle'&&current){var rit=byId(current.id),dust=0;if(rit){try{if(typeof recycleItem==='function')dust=recycleItem(rit.id)||0;}catch(_){}}if(dust>0){try{if(typeof toast==='function')toast('Équipement recyclé · +'+fmt2(dust)+' poussière',true);}catch(_){}}current=null;next();}
+ else if(a==='recycle'&&current){var rit=byId(current.id),dust=0;if(rit){try{if(typeof recycleItem==='function')dust=recycleItem(rit.id)||0;}catch(_){}}if(dust>0)forgeDustNoticeV378(dust,'Équipement recyclé');current=null;next();}
  else if(a==='keep'){current=null;next();}
  else if(a==='closeAll')clearAll();
 },true);
