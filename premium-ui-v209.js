@@ -1,5 +1,5 @@
-/* SHADOWREACH · Premium UI polish V209 / V377
-   Reference-locked dark fantasy composition: ruins arena, dramatic Forge, premium skills, ready-egg capsule.
+/* SHADOWREACH · Premium UI polish V209 / V378
+   Reference-locked dark fantasy composition: V378 final positioning, luminous ruins, dramatic Forge and premium skills.
    Presentation-only: no routes, economy, saves, timers, combat values or gameplay state are changed. */
 (function(){
   'use strict';
@@ -1702,6 +1702,204 @@ body{
   #app.srHomeFullArena #skillbar .autoSk{width:42px!important;height:42px!important}
   #app.srHomeFullArena #skillbar .petMini{height:42px!important;min-width:92px!important}
   #app.srHomeFullArena #skillbar .petMini img{width:36px!important;height:36px!important}
+}
+
+
+/* V378 TARGETED REFERENCE FINISH
+   Final pass from the V377 phone capture: keep the approved navy/gold identity,
+   but restore reference hierarchy, move secondary feedback out of combat,
+   brighten the ruins and make the Forge fire/anvil read immediately. */
+
+/* 1) Arena: same ruins asset, now closer to the bright reference instead of dusk-purple. */
+#app.srHomeFullArena #arenaBg{
+  filter:brightness(1.24) saturate(1.13) contrast(1.01) hue-rotate(-18deg)!important;
+  background-position:center 43%!important;
+}
+#app.srHomeFullArena #arenaBg::after{
+  content:""!important;
+  position:absolute!important;inset:0!important;pointer-events:none!important;
+  background:
+    url("art/props/bush.png") left -22px bottom -22px / 150px auto no-repeat,
+    url("art/props/bush.png") right -26px bottom -26px / 145px auto no-repeat,
+    url("art/props/crystal.png") 7% 83% / 48px auto no-repeat,
+    url("art/props/crystal.png") 94% 79% / 42px auto no-repeat,
+    linear-gradient(180deg,rgba(112,199,235,.045) 0%,rgba(58,165,144,.025) 48%,rgba(44,145,86,.11) 100%)!important;
+  opacity:.88!important;
+}
+#app.srHomeFullArena #arenaShade{
+  background:
+    radial-gradient(85% 52% at 50% 8%,rgba(165,225,255,.08),transparent 70%),
+    linear-gradient(90deg,rgba(3,22,35,.08),transparent 11%,transparent 89%,rgba(3,22,35,.08)),
+    linear-gradient(180deg,rgba(4,21,33,0) 0%,rgba(3,21,31,.015) 56%,rgba(3,19,27,.10) 100%)!important;
+}
+#app.srHomeFullArena #aDecor{
+  filter:brightness(1.08) saturate(1.08) drop-shadow(0 3px 3px rgba(0,0,0,.18))!important;
+  opacity:.90!important;
+}
+
+/* 2) Reference hierarchy: notification lane below HUD, then stage content. */
+#app.srHomeFullArena .srEggReadyV377{
+  top:calc(var(--srHudH) + 10px)!important;
+  right:10px!important;
+  width:min(190px,50vw)!important;
+  min-height:44px!important;
+  padding:5px 61px 5px 10px!important;
+  border-radius:11px!important;
+  background:linear-gradient(180deg,rgba(14,47,77,.98),rgba(6,27,48,.985))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -2px 0 #03111F,0 3px 7px rgba(0,0,0,.34)!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377 b{font-size:9.5px!important;white-space:nowrap!important}
+#app.srHomeFullArena .srEggReadyCopyV377 small{font-size:7.2px!important;white-space:nowrap!important}
+#app.srHomeFullArena .srEggReadyNestV377{
+  right:17px!important;bottom:1px!important;width:43px!important;height:43px!important;
+}
+#app.srHomeFullArena .srEggReadyNestV377 img{width:35px!important;height:35px!important}
+#app.srHomeFullArena #arena .floorTag{
+  top:calc(var(--srHudH) + 66px)!important;
+  gap:3px!important;
+}
+#app.srHomeFullArena #arena .floorTxt{
+  font-size:17.5px!important;
+  letter-spacing:1.25px!important;
+}
+#app.srHomeFullArena #rewardFeed{
+  top:calc(var(--srHudH) + 9px)!important;
+  left:8px!important;right:auto!important;
+  width:min(145px,38%)!important;
+  z-index:41!important;
+}
+#app.srHomeFullArena #rewardFeed .rewardPop{
+  padding:3px 6px!important;
+  background:linear-gradient(180deg,rgba(12,40,65,.88),rgba(5,25,44,.88))!important;
+  border-color:rgba(91,132,166,.55)!important;
+  box-shadow:0 2px 5px rgba(0,0,0,.24)!important;
+}
+#app.srHomeFullArena #rewardFeed .rewardPop .rpT{font-size:8.5px!important}
+#app.srHomeFullArena #rewardFeed .rewardPop .rpS{font-size:7.5px!important}
+
+/* 3) Skills: preserve V377 proportions, strengthen the painted-circle / cooldown treatment. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  background:linear-gradient(180deg,#0B2B49 0%,#071F39 62%,#05182D 100%)!important;
+  border-top-color:#DAB04F!important;
+  border-bottom-color:#DAB04F!important;
+}
+#app.srHomeFullArena #skillbar .slot{
+  background:linear-gradient(180deg,#0F3152,#061B31)!important;
+  border-color:#D7AA49!important;
+}
+#app.srHomeFullArena #skillbar .slot .skfx{
+  inset:4px!important;
+  border:1.5px solid rgba(241,219,154,.34)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.13),0 0 7px rgba(0,0,0,.38)!important;
+}
+#app.srHomeFullArena #skillbar .slot .cdArc{
+  stroke-width:4!important;
+  filter:drop-shadow(0 0 1.5px currentColor)!important;
+}
+#app.srHomeFullArena #skillbar .slot .cdTxt{
+  font-size:13.5px!important;
+  font-weight:1000!important;
+}
+#app.srHomeFullArena #skillbar .autoSk{
+  background:linear-gradient(180deg,#123653,#071F37)!important;
+}
+#app.srHomeFullArena #skillbar .petMini{
+  background:linear-gradient(180deg,#103553,#071F37)!important;
+  padding-right:6px!important;
+}
+#app.srHomeFullArena #skillbar .petMini>.flex1{min-width:0!important;overflow:hidden!important}
+#app.srHomeFullArena #skillbar .petMini .mute{font-size:7px!important;line-height:1!important}
+#app.srHomeFullArena #skillbar .petMini .bb{font-size:10.5px!important;line-height:1.05!important}
+#app.srHomeFullArena #skillbar .petMini .tiny{font-size:7.5px!important;line-height:1.05!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+
+/* 4) Forge: a real visual furnace window with large fire and an anvil silhouette. */
+#app.srHomeFullArena .homeForge.srForgePanel266{
+  overflow:hidden!important;
+  background:
+    linear-gradient(90deg,rgba(7,29,50,.99) 0%,rgba(7,30,52,.97) 52%,rgba(13,27,38,.72) 69%,rgba(31,22,16,.50) 100%),
+    linear-gradient(180deg,#123858,#071D34)!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266>*{
+  position:relative!important;
+  z-index:3!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266::before{
+  content:""!important;
+  position:absolute!important;
+  right:-6px!important;
+  top:54px!important;
+  width:184px!important;
+  height:82px!important;
+  left:auto!important;bottom:auto!important;
+  border:0!important;
+  border-radius:18px 0 0 18px!important;
+  pointer-events:none!important;
+  z-index:0!important;
+  background:
+    radial-gradient(ellipse at 58% 84%,rgba(255,226,125,.94) 0 7%,rgba(255,155,37,.86) 13%,rgba(240,75,11,.58) 29%,transparent 57%),
+    radial-gradient(ellipse at 77% 72%,rgba(255,196,73,.78),rgba(232,64,8,.35) 34%,transparent 61%),
+    url("art/props/brazier.png") 70% 78% / 168px auto no-repeat,
+    linear-gradient(180deg,rgba(69,30,15,.12),rgba(33,18,14,.45))!important;
+  filter:saturate(1.16) brightness(1.13) drop-shadow(0 0 10px rgba(255,100,16,.32))!important;
+  opacity:.98!important;
+  animation:srForgeFirePulseV378 1.8s ease-in-out infinite alternate!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266::after{
+  content:""!important;
+  position:absolute!important;
+  right:45px!important;
+  top:91px!important;
+  width:78px!important;
+  height:24px!important;
+  z-index:1!important;
+  pointer-events:none!important;
+  background:linear-gradient(180deg,#9AA5B3 0%,#5D6875 36%,#2D343D 100%)!important;
+  clip-path:polygon(0 23%,57% 23%,67% 0,100% 0,100% 34%,73% 48%,69% 72%,91% 72%,91% 100%,25% 100%,25% 72%,10% 63%)!important;
+  box-shadow:0 4px 0 #12161C,0 6px 9px rgba(0,0,0,.46)!important;
+  filter:drop-shadow(0 0 3px rgba(255,170,67,.24))!important;
+}
+@keyframes srForgeFirePulseV378{
+  from{filter:saturate(1.08) brightness(1.04) drop-shadow(0 0 7px rgba(255,92,12,.24))}
+  to{filter:saturate(1.24) brightness(1.22) drop-shadow(0 0 14px rgba(255,115,20,.42))}
+}
+#app.srHomeFullArena .srForgeLootReserve266{
+  position:relative!important;
+  z-index:2!important;
+  background:
+    linear-gradient(90deg,rgba(4,24,42,.93) 0%,rgba(5,27,47,.88) 48%,rgba(5,26,45,.47) 62%,rgba(5,24,40,.05) 77%,transparent 100%)!important;
+  border-color:rgba(73,110,141,.56)!important;
+}
+#app.srHomeFullArena #srForgeLoot273{z-index:4!important}
+#app.srHomeFullArena .srForgeActions266,
+#app.srHomeFullArena .srForgeFilter266{z-index:4!important}
+#app.srHomeFullArena .srForgeActions266>.btn.blue{
+  background:linear-gradient(180deg,#209BDF,#0C659F)!important;
+  border-color:#0B5585!important;
+}
+#app.srHomeFullArena #srAutoDustNoticeV371{
+  left:10px!important;
+  right:104px!important;
+  bottom:61px!important;
+  z-index:12!important;
+  min-height:18px!important;
+  background:rgba(7,44,27,.94)!important;
+  color:#7BF09A!important;
+  border-color:rgba(103,228,139,.62)!important;
+}
+
+/* Smaller phones keep the same vertical order: egg card first, stage second. */
+@media(max-width:390px){
+  #app.srHomeFullArena .srEggReadyV377{
+    top:calc(var(--srHudH) + 8px)!important;
+    right:7px!important;
+    width:min(178px,51vw)!important;
+    min-height:42px!important;
+    padding-right:57px!important;
+  }
+  #app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 62px)!important}
+  #app.srHomeFullArena #rewardFeed{top:calc(var(--srHudH) + 8px)!important;width:min(134px,37%)!important}
+  #app.srHomeFullArena .homeForge.srForgePanel266::before{width:168px!important;height:77px!important;top:54px!important}
+  #app.srHomeFullArena .homeForge.srForgePanel266::after{right:39px!important;top:90px!important;width:72px!important}
 }
 
 `;
