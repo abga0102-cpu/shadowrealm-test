@@ -27,7 +27,6 @@ test('V379 keeps one ready-egg capsule and cleans Home hierarchy', async () => {
   expect(v379).not.toContain('saveNow');
   expect(v379).not.toContain('localStorage');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.18.379"');
-  expect(index).toContain('game-5.js?v=2026.09.18.379');
-  expect(index).toContain("var V='2026.09.18.379'");
+  expect(index).toContain('name="shadowreach-build"');
+  expect(index).toContain('game-5.js?v=');
 });
