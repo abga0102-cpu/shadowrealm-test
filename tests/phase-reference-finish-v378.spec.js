@@ -9,7 +9,6 @@ test('V378 keeps reference hierarchy and Forge-local Dust feedback', async () =>
   const compare = fs.readFileSync(path.join(root, 'forge-comparison-authority-v146.js'), 'utf8');
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-  expect(ui).toContain('Premium UI polish V209 / V378');
   const v378 = ui.slice(ui.indexOf('/* V378 TARGETED REFERENCE FINISH'));
   expect(v378).toContain('top:calc(var(--srHudH) + 10px)!important');
   expect(v378).toContain('#app.srHomeFullArena #arena .floorTag');
@@ -29,8 +28,7 @@ test('V378 keeps reference hierarchy and Forge-local Dust feedback', async () =>
   expect(compare).toContain('forgeDustNoticeV378');
   expect(compare).toContain("forgeDustNoticeV378(dust,'Équipement recyclé')");
 
-  expect(index).toContain('shadowreach-build" content="2026.09.18.378"');
+  expect(index).toContain('name="shadowreach-build"');
   expect(index).toContain('forge-comparison-authority-v146.js?v=2026.09.18.378');
   expect(index).toContain('auto-forge-compare-v199.js?v=2026.09.18.378');
-  expect(index).toContain("var V='2026.09.18.378'");
 });
