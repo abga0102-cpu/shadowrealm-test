@@ -21,13 +21,17 @@
   window.__srCampaignReferenceBalanceV325=true;
   window.__srCampaignPowerSourceV362=true;
   window.__srGlobalEnemyNerfV380=true;
+  window.__srAdditionalEnemyDamageNerfV381=true;
 
   var LEGACY_MAX=400;
   var V362_CAMPAIGN_POWER_MUL=0.60;
   var GLOBAL_HP_MUL_V380=0.90;
   var GLOBAL_DAMAGE_MUL_V380=0.60;
+  var ADDITIONAL_DAMAGE_MUL_V381=0.50;
+  var GLOBAL_DAMAGE_MUL_V381=GLOBAL_DAMAGE_MUL_V380*ADDITIONAL_DAMAGE_MUL_V381;
   var CAMPAIGN_HP_MUL=V362_CAMPAIGN_POWER_MUL*GLOBAL_HP_MUL_V380;
-  var CAMPAIGN_DAMAGE_MUL=V362_CAMPAIGN_POWER_MUL*GLOBAL_DAMAGE_MUL_V380;
+  var CAMPAIGN_DAMAGE_MUL_V380=V362_CAMPAIGN_POWER_MUL*GLOBAL_DAMAGE_MUL_V380;
+  var CAMPAIGN_DAMAGE_MUL=V362_CAMPAIGN_POWER_MUL*GLOBAL_DAMAGE_MUL_V381;
   var TARGET_HITS_TO_KILL=3.6;
   var TARGET_HITS_TO_DEFEAT_REFERENCE=8;
   var INTRO_FLOOR_HP=65;
@@ -35,7 +39,8 @@
   var RAID_BASE_HP_MUL_V324=1.35;
   var RAID_BASE_DAMAGE_MUL_V324=1.25;
   var RAID_HP_MUL=RAID_BASE_HP_MUL_V324*GLOBAL_HP_MUL_V380;
-  var RAID_DAMAGE_MUL=RAID_BASE_DAMAGE_MUL_V324*GLOBAL_DAMAGE_MUL_V380;
+  var RAID_DAMAGE_MUL_V380=RAID_BASE_DAMAGE_MUL_V324*GLOBAL_DAMAGE_MUL_V380;
+  var RAID_DAMAGE_MUL=RAID_BASE_DAMAGE_MUL_V324*GLOBAL_DAMAGE_MUL_V381;
 
   var REFERENCE_DAMAGE={
     1:30,3:80,5:150,10:350,15:800,20:2500,30:23000,40:180000,50:900000,
@@ -132,20 +137,28 @@
     expectedPlayerDamage:expectedDamage,expectedPlayerHP:expectedHP,
     enemyHP:campaignEnemyHP,enemyDamage:campaignEnemyDamage,
     campaignPowerMul:V362_CAMPAIGN_POWER_MUL,sourceReductionV362:true,
-    campaignHpMulV380:CAMPAIGN_HP_MUL,campaignDamageMulV380:CAMPAIGN_DAMAGE_MUL,
+    campaignHpMulV380:CAMPAIGN_HP_MUL,campaignDamageMulV380:CAMPAIGN_DAMAGE_MUL_V380,
+    campaignDamageMulV381:CAMPAIGN_DAMAGE_MUL,
     globalEnemyNerfV380:{
       hpMul:GLOBAL_HP_MUL_V380,damageMul:GLOBAL_DAMAGE_MUL_V380,
       appliesTo:['normal','elite','boss','raid','mega-boss'],
       megaBossRule:'reduced-campaign-boss-x10'
+    },
+    additionalDamageNerfV381:{
+      currentDamageMul:ADDITIONAL_DAMAGE_MUL_V381,
+      effectiveVsV379:GLOBAL_DAMAGE_MUL_V381,
+      totalReductionVsV379Pct:70,
+      appliesTo:['normal','elite','boss','raid','mega-boss']
     },
     forgeTutorialException:{visibleStage:'1-2',internalFloor:2,owner:'V321',beforeFirstForge:true},
     scaling:'floor-only-no-player-rubber-band',
     earlyCampaign:'1-1-onboarding-then-gear-pressure',
     introFloor:{floor:1,hp:Math.max(1,Math.round(INTRO_FLOOR_HP*CAMPAIGN_HP_MUL)),damage:Math.max(1,Math.round(INTRO_FLOOR_DAMAGE*CAMPAIGN_DAMAGE_MUL))},
     raidPowerV324:{
-      hpMul:RAID_HP_MUL,damageMul:RAID_DAMAGE_MUL,
+      hpMul:RAID_HP_MUL,damageMul:RAID_DAMAGE_MUL_V380,
+      effectiveDamageMulV381:RAID_DAMAGE_MUL,
       baseHpMul:RAID_BASE_HP_MUL_V324,baseDamageMul:RAID_BASE_DAMAGE_MUL_V324,
-      globalNerfAppliedV380:true
+      globalNerfAppliedV380:true,additionalDamageNerfAppliedV381:true
     },
     expectedGates:{
       weak:'69-89',normal:'99-119',max0:'139-159',ascended:'199-299+',
