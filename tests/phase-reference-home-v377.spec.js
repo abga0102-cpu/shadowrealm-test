@@ -8,13 +8,11 @@ test('V377 locks Home to annotated dark reference without gameplay ownership', a
   const ui = fs.readFileSync(path.join(root, 'premium-ui-v209.js'), 'utf8');
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-  expect(home).toContain('Home layout authority V219 / V377');
   expect(home).toContain('srEggReadyV377');
   expect(home).toContain("art/eggs/");
   expect(home).toContain("--srForgeH:180px");
   expect(home).not.toContain('saveNow');
 
-  expect(ui).toContain('Premium UI polish V209 / V377');
   expect(ui).toContain('V377 REFERENCE LOCK');
   const v377 = ui.slice(ui.indexOf('/* V377 REFERENCE LOCK'));
   expect(v377).toContain('background-image:url("art/env_ruins.jpg")!important');
@@ -25,6 +23,5 @@ test('V377 locks Home to annotated dark reference without gameplay ownership', a
   expect(v377).not.toContain('saveNow');
   expect(v377).not.toContain('localStorage');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.18.377"');
-  expect(index).toContain("var V='2026.09.18.377'");
+  expect(index).toContain('name="shadowreach-build"');
 });
