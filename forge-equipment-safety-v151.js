@@ -55,11 +55,11 @@ function clarify(root){
  var equip=panel.querySelector('[data-sr-fp146="equip"]');
  if(keep){
   var more=/SUIVANT/i.test(keep.textContent||'');
-  setText(keep,more?'GARDER DANS L’INVENTAIRE · SUIVANT':'GARDER DANS L’INVENTAIRE');
+  setText(keep,more?'GARDER · SUIVANT':'GARDER');
   setTitle(keep,'Conserve le nouvel équipement dans l’inventaire sans changer l’équipement porté.');
  }
  if(equip){
-  setText(equip,'ÉQUIPER LE NOUVEAU');
+  setText(equip,'ÉQUIPER');
   setTitle(equip,'Équipe le nouvel objet et remet automatiquement l’ancien dans l’inventaire.');
  }
 }
