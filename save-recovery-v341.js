@@ -180,15 +180,8 @@
   }
 
   function mountButton(){
-    if(document.getElementById(BUTTON_ID))return;
-    var list=scan(),active=activeOf(list),ahead=false;
-    for(var i=0;i<list.length;i++)if(aheadOf(list[i],active)){ahead=true;break;}
-    var b=document.createElement('button');
-    b.id=BUTTON_ID;b.type='button';
-    b.textContent=ahead?'Sauvegarde récupérable':'Récupération';
-    b.setAttribute('aria-label','Ouvrir la récupération de sauvegarde');
-    b.style.cssText='position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom) + 82px);z-index:99990;border:'+(ahead?'1px solid #56d364':'1px solid #3b4d68')+';border-radius:12px;padding:8px 10px;background:'+(ahead?'#173d25':'#182234')+';color:#fff;font:800 12px/1 system-ui,-apple-system,Segoe UI,sans-serif;box-shadow:0 8px 26px rgba(0,0,0,.35)';
-    b.addEventListener('click',openPanel);document.body.appendChild(b);
+    var old=document.getElementById(BUTTON_ID);
+    if(old&&old.parentNode)old.parentNode.removeChild(old);
   }
 
   window.__srSaveRecoveryV341={scan:scan,open:openPanel,exportCandidate:exportCandidate,restoreCandidate:restoreCandidate,aheadOf:aheadOf};
