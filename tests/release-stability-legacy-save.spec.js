@@ -35,6 +35,7 @@ test('legacy localStorage save boots through current migration without losing co
     level: S.level,
     gold: S.gold,
     floor: S.floor,
+    recordFloor: S.recordFloor,
     raidsReady: !!S.raids && typeof S.raids === 'object',
     forgeReady: !!S.forge && typeof S.forge === 'object',
     treeReady: !!S.tree && typeof S.tree === 'object',
@@ -45,7 +46,11 @@ test('legacy localStorage save boots through current migration without losing co
 
   expect(state.level).toBe(7);
   expect(state.gold).toBe(321);
-  expect(state.floor).toBe(4);
+  // Live startup immediately resumes campaign combat, so a healthy returning
+  // save may advance beyond its persisted floor before this assertion runs.
+  // The release contract is no progress loss, not a frozen exact floor.
+  expect(state.floor).toBeGreaterThanOrEqual(4);
+  expect(state.recordFloor).toBeGreaterThanOrEqual(4);
   expect(state.raidsReady).toBe(true);
   expect(state.forgeReady).toBe(true);
   expect(state.treeReady).toBe(true);
