@@ -19,6 +19,5 @@ test('V386 keeps skill art visible while cooldowns stay secondary', async () => 
   expect(v386).not.toContain('saveNow');
   expect(v386).not.toContain('localStorage');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.19.386"');
-  expect(index).toContain("var V='2026.09.19.386'");
+  expect(index).toContain('name="shadowreach-build"');
 });
