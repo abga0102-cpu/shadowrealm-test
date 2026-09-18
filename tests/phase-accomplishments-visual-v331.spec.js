@@ -15,7 +15,7 @@ test.describe('Progression Pass V331 visual presentation', () => {
     expect(source).toContain('srRewardVisual331');
     expect(source).toContain('srPassFooter331');
     expect(source).toContain('srAchLaunchTrack');
-    expect(source).not.toContain('ACT.accomplishments=');
+    expect(source).not.toMatch(/ACT\.accomplishments\s*=(?!=)/);
     expect(source).not.toContain('openModal=');
     expect(source).not.toContain('MutationObserver');
 
