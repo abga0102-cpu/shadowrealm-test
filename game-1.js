@@ -1235,19 +1235,10 @@ const SKILL_BY_ID = {};
 SKILL_DEFS.forEach((d) => { SKILL_BY_ID[d.id] = d; });
 
 function skillDupesNeeded(level) { return Math.min(12, 1 + Math.floor(level / 5)); }
-/* Section 17. Measured at character 100 with a full Épique set, comparing a
-   cast against what auto-attacks deal during that skill's own cooldown:
-
-     level 1     Taillade 0.83   Percée 1.02   Exécution 1.30   Cataclysme 1.16
-     level 50    Taillade 3.3    Percée 4.1    Exécution 5.1    Cataclysme 4.6
-
-   At level 1 the numbers are right -- a cast is worth roughly its downtime. The
-   base multipliers are therefore not the problem; the per-level growth is, and
-   it alone multiplied every skill by 3.94 while nothing else about the hero
-   moved. Halving it to 3 % puts a maxed skill at 2.47x its level-1 value, so a
-   cast lands at 2 to 3 times its cooldown in auto-attacks: a burst worth
-   pressing, not a replacement for the fight. */
-const SKILL_LEVEL_GROWTH = 0.03;
+/* V385 · Duplicate progression is intentionally more rewarding.
+   Every skill level adds +10% of the level-1 skill power. The late V284 owner
+   uses the same value, so combat, previews and summon feedback stay aligned. */
+const SKILL_LEVEL_GROWTH = 0.10;
 function skillDamageMult(base, level) {
   return base * (1 + (level - 1) * SKILL_LEVEL_GROWTH) * starMul(S, "skill");
 }
@@ -2519,6 +2510,29 @@ function speedCapFor(s, key) {
   });
   return cap;
 }
+/* V385 · Global Power now acknowledges the skills actually equipped.
+   Slots add a small baseline contribution. Level/Ascension progression is
+   weighted at 20% of offense so the score rises with useful skill progression
+   without multiplying the entire character sheet one-for-one. */
+function activeSkillPowerFactor(s) {
+  const ids = [];
+  const seen = {};
+  (s.skillSlots || []).forEach((id) => {
+    if (!id || seen[id] || !s.skills || !s.skills[id] || !SKILL_BY_ID[id]) return;
+    seen[id] = true;
+    ids.push(id);
+  });
+  if (!ids.length) return 1;
+  const avgGrowth = ids.reduce((sum, id) => {
+    const lv = Math.max(1, Number(s.skills[id].level) || 1);
+    return sum + (1 + (lv - 1) * SKILL_LEVEL_GROWTH);
+  }, 0) / ids.length;
+  const asc = starMul(s, "skill");
+  const slotBaseline = Math.min(5, ids.length) * 0.04;
+  const progression = Math.max(0, avgGrowth * asc - 1) * 0.20;
+  return Math.min(3, 1 + slotBaseline + progression);
+}
+
 function computeDerived(s) {
   let equipHP = 0, equipDmg = 0;
   Object.keys(s.equipped).forEach((slot) => {
@@ -2574,8 +2588,9 @@ function computeDerived(s) {
   const doubleFactor = 1 + Math.min(100, A("double")) / 100;
   const skillFactor = 1 + ((treeSum(s, "skillDmg") + A("skilldmg")) / 100) * 0.25;
   const cooldownFactor = 1 + (Math.min(80, A("skillcd")) / 100) * 0.25;
+  const skillPowerFactor = activeSkillPowerFactor(s);
   const offense = damage * attackSpeed * weaponDef.speed * weaponDef.hit *
-    critFactor * doubleFactor * (1 + weaponBonus / 100) * skillFactor * cooldownFactor;
+    critFactor * doubleFactor * (1 + weaponBonus / 100) * skillFactor * cooldownFactor * skillPowerFactor;
   const dmgRedNow = Math.min(85, rb(s, "dmgred"));
   const blockNow = Math.min(75, A("block"));
   const lifeStealNow = Math.max(0, rb(s, "lifesteal") + A("lifesteal"));
@@ -2596,6 +2611,7 @@ function computeDerived(s) {
     doubleAtk: Math.min(100, A("double")),
     meleeDmg: A("melee"), rangedDmg: A("ranged"),
     skillCdCut: Math.min(80, A("skillcd")),
+    skillPowerFactor,
     affixes: af,
     // gold / exp scaling belongs to Rebirth — the tree deliberately has no
     // blanket "more of every resource" node
