@@ -1520,7 +1520,7 @@ const TREE_NODES = [
   { id: "n1_27", sect: "Palier I", label: "Œuf Légendaire Vitesse d'éclosion I", short: "Œuf Légend. I", icon: "egg", color: "#F5C542", tier: 1, effect: "hatch_LEGENDAIRE", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_11", "n1_25", "n1_26", "n1_14"], lane: 3, row: 5 },
   { id: "n1_03", sect: "Palier I", label: "Chance de forger gratuitement I", short: "Forge Grat. I", icon: "hammer", color: "#F5C542", tier: 1, effect: "forgeFree", per: 1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_02"], lane: 4, row: 5 },
   { id: "sp_slot1", sect: "Palier I", label: "+1 Slot d'Éclosion", short: "+1 Slot Éclosion", icon: "egg", color: "#57E07A", tier: 1, effect: "eggSlot", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_21"], lane: 0, row: 6, special: true },
-  { id: "sp_forge1", sect: "Palier I", label: "Forge multiple ×2", short: "Forge ×2", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_14"], lane: 1, row: 6, special: true },
+  { id: "sp_forge1", sect: "Palier I", label: "Forge multiple +2", short: "Forge +2", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeMult", per: 2, unit: "", max: 1, times: PAL_T[0], req: ["n1_14"], lane: 1, row: 6, special: true },
   { id: "n1_pc", sect: "Palier I", label: "Œuf Peu commun Vitesse d'éclosion I", short: "Œuf Peu com. I", icon: "egg", color: "#57E07A", tier: 1, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_23"], lane: 2, row: 6 },
   { id: "sp_key1", sect: "Palier I", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 1, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_27"], lane: 3, row: 6, special: true, note: "Choix du Raid" },
 
@@ -1555,7 +1555,7 @@ const TREE_NODES = [
   { id: "n2_18", sect: "Palier II", label: "Collier Bonus Dégâts II", short: "Collier II", icon: "gem", color: "#FF5A5A", tier: 2, effect: "eq_collier", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_24"], lane: 2, row: 12 },
   { id: "n2_23", sect: "Palier II", label: "Œuf Commun Vitesse d'éclosion II", short: "Œuf Commun II", icon: "egg", color: "#9FB0C8", tier: 2, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_30"], lane: 3, row: 12 },
   { id: "n2_17", sect: "Palier II", label: "Gants Bonus Dégâts II", short: "Gants II", icon: "glove", color: "#FF5A5A", tier: 2, effect: "eq_gants", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_20", "n2_14"], lane: 4, row: 12 },
-  { id: "sp_forge3", sect: "Palier II", label: "Forge multiple ×4", short: "Forge ×4", icon: "hammer", color: "#E8B44A", tier: 2, effect: "forgeMult", per: 2, unit: "", max: 1, times: PAL_T[1], req: ["sp_forge1", "n2_18"], lane: 2, row: 13, special: true },
+  { id: "sp_forge3", sect: "Palier II", label: "Forge multiple ×4", short: "Forge ×4", icon: "hammer", color: "#E8B44A", tier: 2, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["sp_forge1", "n2_18"], lane: 2, row: 13, special: true },
   { id: "n2_pc", sect: "Palier II", label: "Œuf Peu commun Vitesse d'éclosion II", short: "Œuf Peu com. II", icon: "egg", color: "#57E07A", tier: 2, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n1_pc", "n2_23"], lane: 3, row: 13 },
   { id: "sp_key2", sect: "Palier II", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 2, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["n2_17"], lane: 4, row: 13, special: true, note: "Choix du Raid" },
 
@@ -2397,7 +2397,9 @@ function raidKeyFree(s) { return Math.max(0, raidKeyGrants(s) - raidKeyAssigned(
 function raidKeyCapFor(s, raid) {
   return RULES.RAID_KEY_CAP + ((s.raidKeyAlloc || {})[raid] || 0);
 }
-/* forge batch size: the game reaches x5 on its own, the tree finishes x10 */
+/* Forge batch progression.
+   Base is ×1. The first special node is an additive +2, so it moves ×1 → ×3.
+   The following special nodes then land cleanly on ×4, ×5 and finally ×10. */
 function forgeBatch(s) {
   return Math.min(RULES.FORGE_BATCH_MAX,
     RULES.FORGE_BATCH_BASE + treeSum(s, "forgeMulti") + treeSum(s, "forgeMult"));
