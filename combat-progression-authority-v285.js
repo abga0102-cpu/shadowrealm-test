@@ -317,12 +317,16 @@ try{
   }
 }catch(_){ }
 
+function campaignArenaTitle(floor){
+  try{if(typeof window.__srCampaignFloorLabel==='function')return window.__srCampaignFloorLabel(floor);}catch(_){ }
+  return campaignMeta(floor).label;
+}
 function decorateArenaLabel(){
   try{
     if(typeof arenaNodes==='undefined'||!arenaNodes||!arenaNodes.label||arenaNodes.label.__srCampaign400Proxy)return;
     var node=arenaNodes.label;if(!node||!node.nodeType)return;var raw=String(node.textContent||'');var proxy={__srCampaign400Proxy:true};
-    Object.defineProperty(proxy,'textContent',{configurable:false,enumerable:true,get:function(){return raw;},set:function(v){raw=String(v==null?'':v);try{if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')node.textContent=campaignMeta(combat.floor).label;else node.textContent=raw;}catch(_){node.textContent=raw;}}});
-    arenaNodes.label=proxy;if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')node.textContent=campaignMeta(combat.floor).label;
+    Object.defineProperty(proxy,'textContent',{configurable:false,enumerable:true,get:function(){return raw;},set:function(v){raw=String(v==null?'':v);try{if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')node.textContent=campaignArenaTitle(combat.floor);else node.textContent=raw;}catch(_){node.textContent=raw;}}});
+    arenaNodes.label=proxy;if(typeof combat!=='undefined'&&combat&&combat.ctx==='campaign')node.textContent=campaignArenaTitle(combat.floor);
   }catch(_){ }
 }
 try{
