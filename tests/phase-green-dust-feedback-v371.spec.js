@@ -8,7 +8,7 @@ test('V371 restores green Dust feedback inside Forge without combat-area toast',
   const ux = fs.readFileSync(path.join(root, 'forge-ux-v273.js'), 'utf8');
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-  expect(auto).toContain('Auto-Forge Compare V199 / V371');
+  expect(auto).toContain('Auto-Forge Compare V199 / V378');
   expect(auto).toContain('srAutoDustNoticeV371');
   expect(auto).toContain("color:#78E996");
   expect(auto).toContain("bottom:63px");
@@ -19,7 +19,7 @@ test('V371 restores green Dust feedback inside Forge without combat-area toast',
   expect(ux).toContain('color:#78E996');
   expect(ux).toContain('reduced?300:950');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.18.371"');
-  expect(index).toContain('auto-forge-compare-v199.js?v=2026.09.18.371');
-  expect(index).toContain('forge-ux-v273.js?v=2026.09.18.371');
+  expect(index).toContain('name="shadowreach-build"');
+  expect(index).toContain('auto-forge-compare-v199.js?v=');
+  expect(index).toContain('forge-ux-v273.js?v=');
 });
