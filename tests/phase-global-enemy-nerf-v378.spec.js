@@ -16,6 +16,7 @@ test('V378 globally reduces enemy HP and damage and keeps Mega-Boss ratios', asy
   expect(cfg.globalEnemyNerfV378.appliesTo).toEqual(
     expect.arrayContaining(['normal', 'elite', 'boss', 'raid', 'mega-boss'])
   );
+  expect(await page.evaluate(() => window.__srEnemyAbilityDamageV378(100))).toBe(60);
 
   const mega = await page.evaluate(() => {
     const floor = 50;
@@ -55,4 +56,5 @@ test('V378 globally reduces enemy HP and damage and keeps Mega-Boss ratios', asy
 
   const index = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
   expect(index).toContain('enemy-damage-authority-v289.js?v=2026.09.18.378');
+  expect(index).toContain('game-2.js?v=2026.09.18.378');
 });
