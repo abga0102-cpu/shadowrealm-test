@@ -1,4 +1,4 @@
-/* SHADOWREACH · Home layout authority V219 / V262 · Lean consolidation
+/* SHADOWREACH · Home layout authority V219 / V369 · Lean consolidation
    Sole Home geometry, render lifecycle and UI compatibility authority.
    V119 compatibility decoration is absorbed here so Home has one runtime owner.
    UI-only: no combat values, economy, progression or save data are changed. */
@@ -12,7 +12,7 @@ window.__srHomeLayoutCompatV119=true;
 var style=document.createElement('style');
 style.id='srHomeLayoutAuthorityV219';
 style.textContent=`
-#app.srHomeFullArena{position:relative!important;overflow:hidden!important;--srHudH:112px;--srSkillH:58px;--srForgeH:250px}
+#app.srHomeFullArena{position:relative!important;overflow:hidden!important;--srHudH:108px;--srSkillH:62px;--srForgeH:184px}
 #app.srHomeFullArena>#hud{position:absolute!important;left:0!important;right:0!important;top:0!important;z-index:70!important;height:var(--srHudH)!important;min-height:var(--srHudH)!important;max-height:var(--srHudH)!important;overflow:visible!important;flex:none!important;padding:4px 9px 3px!important;background:linear-gradient(180deg,#07101df2 0%,#0a1422d4 76%,#08101b70 92%,transparent 100%)!important;border:0!important;box-shadow:none!important;pointer-events:auto!important;align-items:flex-start!important}
 #app.srHomeFullArena>#hud::after{display:none!important}
 #app.srHomeFullArena>#hud>.pbox{align-self:flex-start!important;margin-top:0!important;transform:none!important}
@@ -47,7 +47,7 @@ style.textContent=`
 #app.srHomeFullArena .homeForge .fgFilter{display:flex!important;align-items:center!important}
 #app.srHomeFullArena .homeForge .homeCompactEnd{display:block!important}
 #app.srHomeFullArena .homeForge .iBtn{box-sizing:border-box!important;width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important;max-width:28px!important;max-height:28px!important;flex:0 0 28px!important;padding:0!important;margin:0!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;line-height:1!important;aspect-ratio:1/1!important;font-family:var(--fd)!important;font-size:13px!important;font-weight:900!important;color:var(--goldLit)!important;background:linear-gradient(180deg,#18253d,#0d1627)!important;border:1px solid var(--goldDim)!important;box-shadow:inset 0 1px 0 #ffffff20,0 1px 3px #0008!important}
-#app.srHomeFullArena #rewardFeed{right:8px!important;top:96px!important;width:min(176px,46%)!important;gap:3px!important;z-index:66!important;pointer-events:none!important}
+#app.srHomeFullArena #rewardFeed{right:8px!important;top:calc(var(--srHudH) + 10px)!important;width:min(176px,46%)!important;gap:3px!important;z-index:66!important;pointer-events:none!important}
 #app.srHomeFullArena #rewardFeed .rewardPop{padding:4px 7px!important;min-height:0!important;border-radius:8px!important;background:linear-gradient(180deg,#17263ee8,#0b1425df)!important;box-shadow:0 2px 6px #0006!important;backdrop-filter:blur(3px)!important;-webkit-backdrop-filter:blur(3px)!important;pointer-events:auto!important}
 #app.srHomeFullArena #rewardFeed .rewardPop .rpT{font-size:10px!important;line-height:1.15!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
 #app.srHomeFullArena #rewardFeed .rewardPop .rpS{font-size:8.5px!important;line-height:1.15!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
@@ -68,7 +68,7 @@ style.textContent=`
 #app.srHomeFullArena #tutorialCard{bottom:calc(var(--srForgeH) + var(--srSkillH) + 68px + env(safe-area-inset-bottom))!important}
 #app.srHomeFullArena:has(#tutorialCard) #toast{bottom:calc(var(--srForgeH) + var(--srSkillH) + 160px + env(safe-area-inset-bottom))!important}
 @media(max-width:370px){#app.srHomeFullArena{--srHudH:106px;--srForgeH:240px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
-@media(max-height:720px){#app.srHomeFullArena{--srHudH:104px;--srSkillH:54px;--srForgeH:225px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
+@media(max-height:720px){#app.srHomeFullArena{--srHudH:100px;--srSkillH:56px;--srForgeH:174px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
 `;
 document.head.appendChild(style);
 var app=document.getElementById('app'),screen=document.getElementById('screen');
