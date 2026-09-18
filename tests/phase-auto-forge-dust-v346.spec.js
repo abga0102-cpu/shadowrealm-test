@@ -52,9 +52,12 @@ test('V364 manual Dust authority ignores upgraded power and preserves original-v
       treeSum = () => 0;
       const base = { rarity: 'EPIQUE', originalPower: 250, power: 250 };
       const upgraded = { rarity: 'EPIQUE', originalPower: 250, power: 250000, dustInvested: 99999 };
+      const cfg = window.__srDustEconomyConfigV293;
       return {
-        base: dustValue(S, base),
-        upgraded: dustValue(S, upgraded),
+        base: cfg.valueForItem(S, base),
+        upgraded: cfg.valueForItem(S, upgraded),
+        integrityBase: window.__srForgeDustIntegrityV364.itemValue(base),
+        integrityUpgraded: window.__srForgeDustIntegrityV364.itemValue(upgraded),
         expected: Math.floor((3 * 5) + (250 * 0.2)),
       };
     } finally {
@@ -64,6 +67,8 @@ test('V364 manual Dust authority ignores upgraded power and preserves original-v
 
   expect(values.base).toBe(values.expected);
   expect(values.upgraded).toBe(values.expected);
+  expect(values.integrityBase).toBe(values.expected);
+  expect(values.integrityUpgraded).toBe(values.expected);
 });
 
 test('V370 Auto-Forge restores the item-based Dust delta from a stale result payload', async ({ page }) => {
@@ -122,13 +127,16 @@ test('V364 final Forge integrity uses the same item-based Dust value as the glob
       const result = { rarity: 'INFERNAL', power: 500, recycled: true, dust: 1 };
       return {
         integrity: window.__srForgeDustIntegrityV364.value(result),
-        global: dustValue(S, { rarity: 'INFERNAL', originalPower: 500, power: 500 }),
+        itemAuthority: window.__srDustEconomyConfigV293.valueForItem(
+          S,
+          { rarity: 'INFERNAL', originalPower: 500, power: 500 }
+        ),
       };
     } finally {
       if (previousTreeSum) treeSum = previousTreeSum;
     }
   });
 
-  expect(values.integrity).toBe(values.global);
+  expect(values.integrity).toBe(values.itemAuthority);
   expect(values.integrity).toBe(135);
 });
