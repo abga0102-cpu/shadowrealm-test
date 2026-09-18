@@ -1870,7 +1870,7 @@ function allocStat(key, pts) {
    to the best tier it can, so the odds are never wasted, they just land lower. */
 const RARITY_MIN_FORGE = {
   COMMUN: 1, PEU_COMMUN: 4, RARE: 12, EPIQUE: 18, HEROIQUE: 24, MYTHIQUE: 30,
-  ARTEFACT: 40, LEGENDAIRE: 30, INFERNAL: 30, IMMORTEL: 30, DIVIN: 48,
+  ARTEFACT: 40, LEGENDAIRE: 40, INFERNAL: 40, IMMORTEL: 40, DIVIN: 48,
 };
 function rarityAllowed(rarity, forgeLevel, state) {
   const st = state || S;
@@ -1883,9 +1883,9 @@ function rarityAllowed(rarity, forgeLevel, state) {
   return true;
 }
 function forgeRarityRequirement(rarity) {
-  if (rarity === "LEGENDAIRE") return { text: "Forge ★ · niv. 30", pill: "★ 30" };
-  if (rarity === "INFERNAL") return { text: "Forge ★★ · niv. 30", pill: "★★ 30" };
-  if (rarity === "IMMORTEL") return { text: "Forge ★★★ · niv. 30", pill: "★★★ 30" };
+  if (rarity === "LEGENDAIRE") return { text: "Forge ★ · niv. 40", pill: "★ 40" };
+  if (rarity === "INFERNAL") return { text: "Forge ★★ · niv. 40", pill: "★★ 40" };
+  if (rarity === "IMMORTEL") return { text: "Forge ★★★ · niv. 40", pill: "★★★ 40" };
   if (rarity === "DIVIN") return { text: "Ascension personnage · Forge 48", pill: "ASC." };
   const min = RARITY_MIN_FORGE[rarity] || 1;
   return { text: "Forge " + min, pill: String(min) };
