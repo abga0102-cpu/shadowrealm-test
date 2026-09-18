@@ -2573,30 +2573,6 @@ function resetGame() {
   scheduleRender();
 }
 
-// TEST-ONLY: simulate one full day of time-based progress.
-/* Days the save has lived through: real time since it was created, plus every
-   day skipped with the test button. */
-function daysElapsed(s) {
-  const real = Math.floor((Date.now() - (s.firstSeen || Date.now())) / 86400000);
-  return Math.max(0, real) + (s.testDays || 0) + 1;
-}
-function warpDay() {
-  S.testDays = (S.testDays || 0) + 1;
-  if (S.tree.active) S.tree.activeEnd = Date.now();
-  S.eggs = S.eggs.map((e) => eggIsHatching(e)
-    ? Object.assign({}, e, { hatchEnd: Date.now() }) : e);
-  if (S.forge.upgradeEnd) S.forge.upgradeEnd = Date.now();
-  S.lastKeyReset = ""; S.eventDay = "";
-  applyDailyReset(S);
-  S.lastSeen = Date.now() - 24 * 3600 * 1000;
-  applyOffline(S);
-  delete S._offline;
-  S.power = computePower(S);
-  refreshDerived();
-  dirty = true;
-  scheduleRender();
-}
-
 /* -------- boot -------- */
 function boot() {
   const loaded = loadSave();
