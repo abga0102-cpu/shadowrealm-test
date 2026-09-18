@@ -59,13 +59,13 @@ let dirty = false;
 let offlineRecap = null;
 
 /* -------- state mutation -------- */
-function update(fn) {
+function update(fn, opts) {
   const beforePower = Number(S.power || computePower(S) || 0);
   fn(S);
   S.power = computePower(S);
   D = computeDerived(S);
   const delta = Math.round(S.power - beforePower);
-  if (delta) queuePowerDelta(delta);
+  if (delta && !(opts && opts.suppressPowerDelta)) queuePowerDelta(delta);
   dirty = true;
   scheduleRender();
 }
@@ -2251,6 +2251,7 @@ function upgradeItem(id) {
 
 function summonSkill(n) {
   const results = [];
+  const beforeSummonPower = Number(S.power || computePower(S) || 0);
   update((s) => {
     // "Double invocation": one paid summon, a chance at a second free result.
     // Mastery still advances once per PAID summon — the tree never speeds the gauge.
@@ -2315,7 +2316,10 @@ function summonSkill(n) {
         s.skillMastery.progress -= mreq; s.skillMastery.level += 1;
       }
     }
-  });
+  }, { suppressPowerDelta: true });
+  /* V388 · Summon feedback owns one explicit Power delta so the central
+     green popup is not duplicated by the generic update() path. */
+  results.powerDelta = Math.round(S.power - beforeSummonPower);
   return results;
 }
 function equipSkill(slotIdx, skillId) {
