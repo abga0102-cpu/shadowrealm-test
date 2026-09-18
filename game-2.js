@@ -1869,11 +1869,18 @@ function allocStat(key, pts) {
    Each tier now has a floor. A roll above what the Forge can produce steps down
    to the best tier it can, so the odds are never wasted, they just land lower. */
 const RARITY_MIN_FORGE = {
-  COMMUN: 1, RARE: 1, EPIQUE: 6, MYTHIQUE: 14,
-  ARTEFACT: 22, LEGENDAIRE: 30, INFERNAL: 37, IMMORTEL: 43, DIVIN: 48,
+  COMMUN: 1, PEU_COMMUN: 4, RARE: 12, EPIQUE: 18, HEROIQUE: 24, MYTHIQUE: 30,
+  ARTEFACT: 40, LEGENDAIRE: 40, INFERNAL: 40, IMMORTEL: 40, DIVIN: 40,
 };
-function rarityAllowed(rarity, forgeLevel) {
-  return forgeLevel >= (RARITY_MIN_FORGE[rarity] || 1);
+function rarityAllowed(rarity, forgeLevel, state) {
+  const st = state || S;
+  if (forgeLevel < (RARITY_MIN_FORGE[rarity] || 1)) return false;
+  const stars = starsOf(st, "forge");
+  if (rarity === "LEGENDAIRE") return stars >= 1;
+  if (rarity === "INFERNAL") return stars >= 2;
+  if (rarity === "IMMORTEL") return stars >= 3;
+  if (rarity === "DIVIN") return (st.ascension || 0) >= 1;
+  return true;
 }
 /* The gate was real in the roll but not in the rates: getRates still handed a
    locked tier its share, capRarityForForge quietly stepped that roll down, and
