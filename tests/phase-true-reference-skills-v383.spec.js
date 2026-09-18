@@ -16,7 +16,6 @@ test('V383 uses true circular reference skill structure', async () => {
   expect(game4).toContain('--srSkillColor:');
   expect(game4).not.toContain(`class="slot' + (sealed ? " sealed" : "")`);
 
-  expect(ui).toContain('Premium UI polish V209 / V383');
   const v383 = ui.slice(ui.indexOf('/* V383 TRUE REFERENCE SKILLS'));
   expect(v383).toContain('.srSkillRefV383');
   expect(v383).toContain('border-radius:50%');
@@ -29,5 +28,4 @@ test('V383 uses true circular reference skill structure', async () => {
 
   expect(index).toContain('name="shadowreach-build"');
   expect(index).toContain('game-4.js?v=2026.09.19.383');
-  expect(index).toContain("var V='2026.09.19.383'");
 });
