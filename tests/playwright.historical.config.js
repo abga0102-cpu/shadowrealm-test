@@ -3,9 +3,10 @@ const current = require('./playwright.config');
 
 module.exports = defineConfig({
   ...current,
-  // Non-blocking archaeology/audit suite. Useful when consolidating old owners
-  // or intentionally reconciling historical contracts with current behavior.
+  // Full non-blocking archaeology/audit suite, including contracts explicitly
+  // excluded from the current release gate.
   testMatch: ['*.spec.js'],
+  testIgnore: [],
   globalTimeout: undefined,
   reporter: 'list'
 });
