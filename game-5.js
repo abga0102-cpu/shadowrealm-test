@@ -861,7 +861,8 @@ function rewardPop(title, sub, boss, action, arg, ttl, kind) {
     document.getElementById("app").appendChild(feed);
   }
   const el = document.createElement("div");
-  el.className = "rewardPop" + (boss ? " boss" : "") + (kind ? " " + kind : "") + (action ? " clickable" : "");
+  el.className = "rewardPop" + (boss ? " boss" : "") + (kind ? " " + kind : "") + (action ? " clickable" : "") +
+    (title === "Œuf prêt à éclore" ? " eggReady" : "");
   el.innerHTML = '<div class="rpT">' + esc(title) + '</div>' + (sub ? '<div class="rpS">' + esc(sub) + '</div>' : "");
   if (action) {
     el.addEventListener("click", () => {
