@@ -7,7 +7,7 @@ test('V382 visibly redesigns Home skill buttons to the approved reference', asyn
   const ui = fs.readFileSync(path.join(root, 'premium-ui-v209.js'), 'utf8');
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-  expect(ui).toContain('Premium UI polish V209 / V382');
+  expect(ui).toContain('Premium UI polish V209 / V387');
   const v382 = ui.slice(ui.indexOf('/* V382 REFERENCE SKILL BUTTONS'));
   expect(v382).toContain('border:2px solid #D9AC4D');
   expect(v382).toContain('.slot[data-skill] .skfx');
@@ -19,6 +19,7 @@ test('V382 visibly redesigns Home skill buttons to the approved reference', asyn
   expect(v382).not.toContain('saveNow');
   expect(v382).not.toContain('localStorage');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.19.382"');
-  expect(index).toContain("var V='2026.09.19.382'");
+  // Later gameplay builds may advance while the current visual bundle remains V387.
+  expect(index).toContain('name="shadowreach-build"');
+  expect(index).toContain("var V='2026.09.19.387'");
 });
