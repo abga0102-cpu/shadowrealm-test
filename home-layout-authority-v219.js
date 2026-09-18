@@ -1,4 +1,4 @@
-/* SHADOWREACH · Home layout authority V219 / V377 · Lean consolidation
+/* SHADOWREACH · Home layout authority V219 / V379 · Lean consolidation
    Sole Home geometry, render lifecycle and UI compatibility authority.
    V119 compatibility decoration is absorbed here so Home has one runtime owner.
    UI-only: no combat values, economy, progression or save data are changed. */
@@ -88,6 +88,13 @@ function eggReadyCandidate(){
     return ready[0];
   }catch(_){return null;}
 }
+function eggReadyCount(){
+  try{
+    if(typeof S==='undefined'||!S||!Array.isArray(S.eggs))return 0;
+    var now=Date.now();
+    return S.eggs.filter(function(e){return !!(e&&Number(e.hatchEnd)>0&&Number(e.hatchEnd)<=now);}).length;
+  }catch(_){return 0;}
+}
 function eggReadyArt(r){
   var key=String(r||'COMMUN').toLowerCase().replace(/é|è|ê|ë/g,'e').replace(/[^a-z0-9]+/g,'_');
   if(key==='peu_commun')key='commun';
@@ -105,8 +112,8 @@ function decorateEggReady(){
   var existing=screen.querySelector('.srEggReadyV377');
   var egg=eggReadyCandidate();
   if(!world||!egg){if(existing)existing.remove();return;}
-  var labels=eggReadyLabels(egg);
-  var sig=String(egg.id||'')+'|'+String(egg.rarity||'')+'|'+String(egg.species||'');
+  var labels=eggReadyLabels(egg),readyCount=eggReadyCount();
+  var sig=String(egg.id||'')+'|'+String(egg.rarity||'')+'|'+String(egg.species||'')+'|'+readyCount;
   if(existing&&existing.getAttribute('data-sig')===sig)return;
   if(existing)existing.remove();
   var card=document.createElement('button');
@@ -116,7 +123,7 @@ function decorateEggReady(){
   card.setAttribute('data-arg','familiers');
   card.setAttribute('data-sig',sig);
   card.setAttribute('aria-label','Œuf prêt à éclore');
-  card.innerHTML='<span class="srEggReadyCopyV377"><b>Œuf prêt à éclore</b><small>'+labels.rarity.toUpperCase()+(labels.species?' · '+labels.species.toLowerCase():'')+'</small></span><span class="srEggReadyNestV377"><img src="'+eggReadyArt(egg.rarity)+'" alt=""></span><span class="srEggReadyChevronV377">›</span>';
+  card.innerHTML='<span class="srEggReadyCopyV377"><b>Œuf prêt à éclore'+(readyCount>1?' · '+readyCount:'')+'</b><small>'+labels.rarity.toUpperCase()+(labels.species?' · '+labels.species.toLowerCase():'')+(readyCount>1?' · voir les autres':'')+'</small></span><span class="srEggReadyNestV377"><img src="'+eggReadyArt(egg.rarity)+'" alt=""></span><span class="srEggReadyChevronV377">›</span>';
   world.appendChild(card);
 }
 

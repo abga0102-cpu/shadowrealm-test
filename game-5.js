@@ -861,7 +861,8 @@ function rewardPop(title, sub, boss, action, arg, ttl, kind) {
     document.getElementById("app").appendChild(feed);
   }
   const el = document.createElement("div");
-  el.className = "rewardPop" + (boss ? " boss" : "") + (kind ? " " + kind : "") + (action ? " clickable" : "");
+  el.className = "rewardPop" + (boss ? " boss" : "") + (kind ? " " + kind : "") + (action ? " clickable" : "") +
+    (title === "Œuf prêt à éclore" ? " eggReady" : "");
   el.innerHTML = '<div class="rpT">' + esc(title) + '</div>' + (sub ? '<div class="rpS">' + esc(sub) + '</div>' : "");
   if (action) {
     el.addEventListener("click", () => {
@@ -951,15 +952,19 @@ function checkTimerNotifications() {
     timerNoticeSeen.tree = null;
   }
 
-  // Chaque œuf terminé reçoit sa propre notification.
+  // V379: Home owns one consolidated ready-egg capsule.
+  // Do not duplicate it with stacked reward cards over the stage.
   const alive = {};
+  const homeEggCapsule = route === "accueil" || !!document.querySelector(".srEggReadyV377");
   S.eggs.forEach((e) => {
     if (!eggIsHatching(e)) return;
     alive[e.id] = true;
     if (e.hatchEnd <= now && !timerNoticeSeen.eggs[e.id]) {
       timerNoticeSeen.eggs[e.id] = true;
-      rewardPop("Œuf prêt à éclore", e.rarity + " · " + (e.species || "Familier"),
-        false, "eggFinished", e.id, 9000);
+      if (!homeEggCapsule) {
+        rewardPop("Œuf prêt à éclore", e.rarity + " · " + (e.species || "Familier"),
+          false, "eggFinished", e.id, 9000);
+      }
     }
   });
   Object.keys(timerNoticeSeen.eggs).forEach((id) => {

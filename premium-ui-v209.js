@@ -1,5 +1,5 @@
-/* SHADOWREACH · Premium UI polish V209 / V378
-   Reference-locked dark fantasy composition: V378 final positioning, luminous ruins, dramatic Forge and premium skills.
+/* SHADOWREACH · Premium UI polish V209 / V379
+   Reference-locked dark fantasy composition: V379 clean hierarchy, lighter ruins and roomier Familiar strip.
    Presentation-only: no routes, economy, saves, timers, combat values or gameplay state are changed. */
 (function(){
   'use strict';
@@ -1900,6 +1900,121 @@ body{
   #app.srHomeFullArena #rewardFeed{top:calc(var(--srHudH) + 8px)!important;width:min(134px,37%)!important}
   #app.srHomeFullArena .homeForge.srForgePanel266::before{width:168px!important;height:77px!important;top:54px!important}
   #app.srHomeFullArena .homeForge.srForgePanel266::after{right:39px!important;top:90px!important;width:72px!important}
+}
+
+
+/* V379 CLEAN HOME HIERARCHY
+   One ready-egg capsule, quieter foreground scenery, brighter ruins and a
+   roomier Familiar strip. Presentation only. */
+
+/* The reference is luminous blue/green fantasy, not pink dusk. */
+#app.srHomeFullArena #arenaBg{
+  filter:brightness(1.31) saturate(1.04) contrast(.99) hue-rotate(18deg)!important;
+  background-position:center 41%!important;
+}
+#app.srHomeFullArena #arenaBg::after{
+  background:
+    url("art/props/bush.png") left -18px bottom -15px / 100px auto no-repeat,
+    url("art/props/bush.png") right -20px bottom -17px / 98px auto no-repeat,
+    url("art/props/crystal.png") 7% 85% / 34px auto no-repeat,
+    url("art/props/crystal.png") 94% 82% / 30px auto no-repeat,
+    linear-gradient(180deg,rgba(142,218,246,.055) 0%,rgba(94,195,176,.03) 50%,rgba(50,151,92,.075) 100%)!important;
+  opacity:.64!important;
+}
+#app.srHomeFullArena #arenaShade{
+  background:
+    radial-gradient(88% 56% at 50% 5%,rgba(188,235,255,.10),transparent 72%),
+    linear-gradient(90deg,rgba(3,19,31,.06),transparent 12%,transparent 88%,rgba(3,19,31,.06)),
+    linear-gradient(180deg,rgba(3,20,31,0) 0%,rgba(3,18,28,.008) 60%,rgba(3,17,25,.075) 100%)!important;
+}
+#app.srHomeFullArena #aDecor{
+  filter:brightness(1.13) saturate(1.03) drop-shadow(0 2px 2px rgba(0,0,0,.15))!important;
+  opacity:.82!important;
+}
+
+/* A single right-side egg card owns the ready state. */
+#app.srHomeFullArena .srEggReadyV377{
+  top:calc(var(--srHudH) + 8px)!important;
+  right:8px!important;
+  width:min(190px,52vw)!important;
+  min-height:42px!important;
+  padding:5px 58px 5px 9px!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377 b{
+  font-size:9.2px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377 small{
+  font-size:6.9px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#app.srHomeFullArena .srEggReadyNestV377{
+  right:16px!important;
+  width:41px!important;height:41px!important;
+}
+#app.srHomeFullArena .srEggReadyNestV377 img{
+  width:34px!important;height:34px!important;
+}
+#app.srHomeFullArena #arena .floorTag{
+  top:calc(var(--srHudH) + 59px)!important;
+}
+
+/* No egg-ready reward card should remain visible on Home even during a hot reload. */
+#app.srHomeFullArena #rewardFeed .rewardPop[data-sr-egg-ready],
+#app.srHomeFullArena #rewardFeed .rewardPop.eggReady{display:none!important}
+
+/* Free horizontal room for Familiar without shrinking the visual quality of skills. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  gap:4px!important;
+  padding-left:6px!important;
+  padding-right:6px!important;
+}
+#app.srHomeFullArena #skillbar .slot,
+#app.srHomeFullArena #skillbar .autoSk{
+  width:43px!important;
+  height:43px!important;
+}
+#app.srHomeFullArena #skillbar .petMini{
+  min-width:110px!important;
+  height:43px!important;
+  padding:0 5px 0 3px!important;
+  gap:4px!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:34px!important;
+  height:34px!important;
+}
+#app.srHomeFullArena #skillbar .petMini .mute{
+  font-size:6.8px!important;
+}
+#app.srHomeFullArena #skillbar .petMini .bb{
+  font-size:10px!important;
+}
+#app.srHomeFullArena #skillbar .petMini .tiny{
+  font-size:7.2px!important;
+  max-width:100%!important;
+}
+
+/* Keep the V378 Forge spectacle exactly as approved; only preserve its green feedback clarity. */
+#app.srHomeFullArena #srAutoDustNoticeV371{
+  color:#80F09D!important;
+  background:rgba(6,43,25,.95)!important;
+}
+
+@media(max-width:390px){
+  #app.srHomeFullArena .srEggReadyV377{
+    width:min(180px,52vw)!important;
+    padding-right:55px!important;
+  }
+  #app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 57px)!important}
+  #app.srHomeFullArena #skillbar .slot,
+  #app.srHomeFullArena #skillbar .autoSk{width:41px!important;height:41px!important}
+  #app.srHomeFullArena #skillbar .petMini{height:41px!important;min-width:104px!important}
+  #app.srHomeFullArena #skillbar .petMini img{width:32px!important;height:32px!important}
 }
 
 `;
