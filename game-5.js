@@ -1730,6 +1730,11 @@ const ACT = {
     const r = summonSkill(parseInt(a, 10));
     if (!r.length) { toast("Éclats insuffisants"); return; }
     showSkillResult(r);
+    /* Same centered green Power feedback used by equipment upgrades.
+       Show it specifically when at least one duplicate actually levelled a skill. */
+    if (r.some((x) => x && x.leveled) && Number(r.powerDelta) > 0) {
+      queuePowerDelta(Number(r.powerDelta));
+    }
   },
   skillSlot: (a) => showSkillSlotPicker(parseInt(a, 10)),
   setSkill: (a, b) => { equipSkill(parseInt(a, 10), b || null); closeModal(); },
