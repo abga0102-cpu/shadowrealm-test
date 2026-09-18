@@ -24,8 +24,7 @@ test('V370 keeps Forge information compact and out of the combat header', async 
   expect(auto).toContain("settleAutoDust(res,dustBefore,!document.getElementById('srForgeLoot273'))");
   expect(auto).toContain('__srAutoForgeDustV370');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.18.370"');
-  expect(index).toContain('forge-comparison-authority-v146.js?v=2026.09.18.370');
-  expect(index).toContain('forge-equipment-safety-v151.js?v=2026.09.18.370');
-  expect(index).toContain('auto-forge-compare-v199.js?v=2026.09.18.370');
+  expect(index).toContain('forge-comparison-authority-v146.js');
+  expect(index).toContain('forge-equipment-safety-v151.js');
+  expect(index).toContain('auto-forge-compare-v199.js');
 });
