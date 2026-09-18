@@ -1,5 +1,5 @@
-/* SHADOWREACH · Premium UI polish V209 / V383
-   Reference-locked dark fantasy composition: V383 true circular skill structure from the approved reference.
+/* SHADOWREACH · Premium UI polish V209 / V386
+   Reference-locked dark fantasy composition: V386 icon-first skill readability.
    Presentation-only: no routes, economy, saves, timers, combat values or gameplay state are changed. */
 (function(){
   'use strict';
@@ -2553,6 +2553,137 @@ body{
   }
   #app.srHomeFullArena #skillbar .petMini{height:41px!important;min-width:94px!important}
   #app.srHomeFullArena #skillbar .petMini img{width:32px!important;height:32px!important}
+}
+
+
+/* V386 SKILL ICON PRIORITY
+   Keep the V383 circular reference structure, but make the skill art the hero.
+   Cooldowns become supporting information instead of covering the icon. */
+
+/* Give the artwork more room and more light. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx{
+  inset:2px!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.30),
+    inset 0 -5px 8px rgba(0,0,0,.20),
+    0 0 8px color-mix(in srgb,var(--srSkillColor) 55%,transparent)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx::before{
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,255,255,.38),transparent 31%),
+    linear-gradient(160deg,rgba(255,255,255,.16),transparent 36%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx::after{
+  background:
+    radial-gradient(circle at 50% 115%,rgba(0,0,0,.18),transparent 54%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx>svg{
+  width:30px!important;
+  height:30px!important;
+  color:#FFF6DA!important;
+  filter:
+    brightness(1.28)
+    saturate(1.12)
+    drop-shadow(0 1px 2px rgba(0,0,0,.62))
+    drop-shadow(0 0 4px color-mix(in srgb,var(--srSkillColor) 62%,transparent))!important;
+  transform:scale(1.03)!important;
+}
+
+/* Cooling must never black out the skill artwork. */
+#app.srHomeFullArena #skillbar .srSkillRefV383.cooling .skfx{
+  filter:brightness(.96) saturate(.96)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383.cooling .skfx::after{
+  background:
+    linear-gradient(rgba(2,10,17,.08),rgba(2,10,17,.08)),
+    radial-gradient(circle at 50% 115%,rgba(0,0,0,.18),transparent 54%)!important;
+}
+
+/* The ring is a progress accent, not the dominant shape. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdRing{
+  inset:-1px!important;
+  width:45px!important;
+  height:45px!important;
+  opacity:.90!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .srSkillRingBaseV383{
+  stroke-width:2.4!important;
+  opacity:.46!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdArc{
+  stroke-width:2.8!important;
+  filter:drop-shadow(0 0 1.5px var(--srSkillColor))!important;
+}
+
+/* Timer moves to a compact lower badge so the center remains the skill icon. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdTxt{
+  inset:auto 7px 3px 7px!important;
+  min-height:13px!important;
+  border-radius:7px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  z-index:6!important;
+  font-size:9.5px!important;
+  line-height:11px!important;
+  font-weight:1000!important;
+  letter-spacing:0!important;
+  color:#FFF7DE!important;
+  background:rgba(4,13,22,.72)!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.48)!important;
+  text-shadow:0 1px 1px #000!important;
+  -webkit-text-stroke:0!important;
+  pointer-events:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdTxt:empty{
+  display:none!important;
+}
+
+/* Keep secondary information truly secondary. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .lv{
+  width:12px!important;
+  min-width:12px!important;
+  height:12px!important;
+  right:-2px!important;
+  bottom:-2px!important;
+  font-size:6.5px!important;
+  line-height:12px!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .fxBub{
+  bottom:-4px!important;
+  min-width:24px!important;
+  padding:1px 3px!important;
+  font-size:6.5px!important;
+  line-height:8px!important;
+  opacity:.94!important;
+}
+
+/* Ready skills receive a subtle coloured halo, so they read as abilities rather than timers. */
+#app.srHomeFullArena #skillbar .srSkillRefV383:not(.cooling) .srSkillOrbV383{
+  box-shadow:
+    0 0 0 1px #07111D,
+    0 0 0 2px var(--srSkillColor),
+    0 0 8px color-mix(in srgb,var(--srSkillColor) 58%,transparent),
+    0 3px 6px rgba(0,0,0,.38),
+    inset 0 0 8px rgba(0,0,0,.22)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383.cooling .srSkillOrbV383{
+  box-shadow:
+    0 0 0 1px #07111D,
+    0 0 0 2px color-mix(in srgb,var(--srSkillColor) 74%,#23313D),
+    0 2px 5px rgba(0,0,0,.34),
+    inset 0 0 8px rgba(0,0,0,.18)!important;
+}
+
+@media(max-width:390px){
+  #app.srHomeFullArena #skillbar .srSkillRefV383 .skfx>svg{
+    width:28px!important;height:28px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV383 .cdTxt{
+    inset:auto 6px 3px 6px!important;
+    font-size:9px!important;
+  }
 }
 
 `;
