@@ -780,11 +780,12 @@ function reconstructedPaidSummons(s, sys) {
    headStart is deliberately capped: however many stars you hold, the last
    third of the rarity curve still has to be climbed. */
 const ASCENSION = {
-  /* Familiar stars control their own x1/x2/x3/x4 power and Legendary curve.
-     They never unlock Divine: only the character's global Ascension does. */
+  /* System stars improve their own progression, but never unlock Divine.
+     Divine rates belong exclusively to the character's global Ascension.
+     Familiar fusion remains a separate explicit exception outside this table. */
   pet:   { key: "pet",   label: "Familier",   headStart: 0.22 },
-  forge: { key: "forge", label: "Forge",      headStart: 0.22, divin: 1.0 },
-  skill: { key: "skill", label: "Compétence", headStart: 0.22, divin: 1.1 },
+  forge: { key: "forge", label: "Forge",      headStart: 0.22 },
+  skill: { key: "skill", label: "Compétence", headStart: 0.22 },
 };
 const STAR_HEADSTART_CAP = 0.66;
 
@@ -949,10 +950,10 @@ function getRates(system, mastery, ascension, stars) {
     HEROIQUE: 1.85, ANCESTRAL: 2.45 };
   const out = {};
   order.forEach((r) => { out[r] = a.m0[r] + (a.m50[r] - a.m0[r]) * Math.pow(t, EASE[r]); });
-  // Familiar Ascension unlocks Legendary, never Divine. Divine Familiars only
-  // enter the table after the character completes its own global Ascension.
-  const divinPush = (ascension || 0) * 2 +
-    (system === "pet" ? 0 : st * ((ASCENSION[system] || {}).divin || 0));
+  // Divine is a character-Ascension reward across every random-roll system.
+  // System stars may unlock lower rarity tiers, but can never bypass this gate.
+  // Familiar fusion remains an explicit separate path and does not use getRates.
+  const divinPush = (ascension || 0) * 2;
   if (divinPush > 0) {
     const divin = Math.min(9, divinPush * t);
     out.DIVIN = divin;
