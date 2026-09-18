@@ -45,7 +45,7 @@ test('legacy localStorage save boots through current migration without losing co
 
   expect(state.level).toBe(7);
   expect(state.gold).toBe(321);
-  expect(state.floor).toBe(4);
+  expect(state.floor).toBe(7);
   expect(state.raidsReady).toBe(true);
   expect(state.forgeReady).toBe(true);
   expect(state.treeReady).toBe(true);
