@@ -208,58 +208,9 @@ function treeGraph(active, remain) {
     "<defs>" + defs + Object.keys(filters).map((k) => filters[k]).join("") + "</defs>" +
     caps + links + beads + nodes + "</svg>";
 }
-/* ---------------- REBIRTH ---------------- */
-function scrRebirth() {
-  const ok = canRebirth();
-  const prGainBonus = rb(S, "prgain");
-  const pr = Math.floor(prFromFloor(S.floor) * (1 + prGainBonus / 100));
-  const keepPct = rebirthKeepPct(S.rebirth.upgrades.keep || 0);
-  const after = floorAfterRebirth(S);
-  // only one reason to be blocked now: you are below the floor it needs
-
-  let body;
-  if (ok) {
-    body = '<div class="dim tiny mt4" style="line-height:1.4">Renais pour gagner <b style="color:var(--purpleLit)">' +
-        pr + " PR</b> · tu conserves " + keepPct + "% de ton étage (" + S.floor + " → " + after + ").</div>" +
-      '<div class="mt6">' + btn(ic("cycle", 14) + "Renaître · +" + pr + " PR", { cls: "purple", small: true, act: "doRebirth" }) + "</div>";
-  } else {
-    body = '<div class="dim small mt6" style="line-height:1.55">Atteins l' + "’" + "étage " + RULES.REBIRTH_UNLOCK_FLOOR +
-        " pour pouvoir renaître.<br>Étage actuel : " + S.floor + ".</div>" +
-      '<div class="mt8">' + meter((S.floor / RULES.REBIRTH_UNLOCK_FLOOR) * 100, C.purple,
-        S.floor + " / " + RULES.REBIRTH_UNLOCK_FLOOR) + "</div>" +
-      '<div class="mt8">' + btn(ic("cycle", 15) + "Renaître", { cls: "purple", act: "doRebirth", dis: true }) + "</div>";
-  }
-
-  return topbar("Rebirth", '<span class="pill" style="color:var(--purpleLit);border-color:var(--purple)">' + ic("cycle", 11) + fmt(S.rebirth.pr) + " PR</span>") +
-    '<div class="pad mt6">' +
-      '<div class="card frame center">' + ic("cycle", 26) +
-        '<div class="bb gt mt4" style="font-size:15px;letter-spacing:1.2px">REBIRTH ' + S.rebirth.count + "</div>" +
-        body +
-        '<div class="mute tiny mt10 row gap4" style="justify-content:center">' + ic("banner", 11) +
-        "Points de Guerre : " + fmt(S.warScore) + " (" + RULES.WAR_POINTS_PER_PR + "/PR)</div>" +
-      "</div>" +
-      '<div class="sect" style="margin:16px 0 9px">Améliorations permanentes</div>' +
-      '<div class="duo">' +
-      REBIRTH_UPGRADES.map((u) => {
-        const lvl = S.rebirth.upgrades[u.key] || 0;
-        const maxed = lvl >= u.max;
-        const cost = maxed ? 0 : rebirthUpgCost(u, lvl);
-        const uc = maxed ? C.green : C.purple;
-        // the level pill already says X / Y, so the duplicate progress bar goes
-        return '<div class="itemRow" style="border-left-color:' + uc + ';gap:5px;padding:3px 6px">' +
-          '<div class="imini" style="width:22px;height:22px;border-color:' + uc + '80;box-shadow:0 0 9px ' + uc + '33">' +
-          ic(u.icon, 13) + "</div>" +
-          '<div class="flex1" style="min-width:0"><div class="b" style="font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + u.label +
-            ' <span class="mute">' + lvl + "/" + u.max + "</span></div>" +
-          '<div class="mute b" style="font-size:9px">+' + (lvl * u.perLvl).toFixed(u.perLvl < 1 ? 2 : 0) + u.unit +
-          (maxed ? "" : " → +" + ((lvl + 1) * u.perLvl).toFixed(u.perLvl < 1 ? 2 : 0) + u.unit) + "</div></div>" +
-          (maxed ? '<span class="pill" style="padding:1px 6px;font-size:9px;color:' + C.green + ';border-color:' + C.green + '">MAX</span>'
-            : btn(cost, { small: true, cls: "purple", act: "buyRebirth", arg: u.key,
-                dis: S.rebirth.pr < cost, style: "padding:4px 7px;font-size:10px;width:auto" })) +
-          "</div>";
-      }).join("") + "</div>" +
-    '<div style="height:2px"></div></div>';
-}
+/* ---------------- RETIRED REBIRTH COMPAT ----------------
+   Old routes resolve to Ascension; no Rebirth UI/economy is kept in core. */
+function scrRebirth() { return scrAscension(); }
 
 /* ---------------- ASCENSION ---------------- */
 function scrAscension() {
@@ -387,7 +338,7 @@ function scrClassement() {
         '<div class="between"><b style="font-size:15px">' + esc(S.playerName) + "</b>" +
         '<b class="gt row gap4" style="font-size:15px">' + ic("castle", 14) + "Étage " + S.recordFloor + "</b></div>" +
         '<div class="between mt6"><span class="mute small">Niveau ' + S.level + " · Puissance " + fmt(S.power) + "</span>" +
-        '<span class="mute small">' + S.rebirth.count + " rebirth · Asc. " + S.ascension + "</span></div></div></div></div>" +
+        '<span class="mute small">Ascension · Palier ' + S.ascension + "</span></div></div></div></div>" +
       '<div class="sect" style="margin:16px 0 9px">Meilleurs joueurs</div>' +
       '<div class="notice">Le classement mondial vient du serveur FastAPI (<b>GET /api/leaderboard</b>), ' +
       "qui n'est pas disponible dans cette version fichier-unique. Tes records restent suivis localement.</div>" +
@@ -398,7 +349,6 @@ function scrClassement() {
         '<div class="kv"><span class="dim row gap6">' + ic("skull", 13) + "Boss vaincus</span><b>" + Object.keys(S.bossClears).length + "</b></div>" +
         RAID_IDS.map((id) => '<div class="kv"><span class="dim row gap6">' + ic(RAIDS[id].icon, 13) + RAIDS[id].name +
           '</span><b>niv. ' + S.raids[id].record + "</b></div>").join("") +
-        '<div class="kv"><span class="dim row gap6">' + ic("banner", 13) + 'Points de Guerre</span><b style="color:var(--purpleLit)">' + fmt(S.warScore) + "</b></div>" +
       "</div></div>" +
     '<div style="height:2px"></div></div>';
 }
@@ -431,7 +381,7 @@ function scrParametres() {
           ["Niveau", S.level + " / " + RULES.MAX_LEVEL, ""],
           ["Étage · record", S.floor + " · " + S.recordFloor, ""],
           ["Puissance", fmt(S.power), "color:var(--goldLit)"],
-          ["Rebirth · Asc.", S.rebirth.count + " · " + S.ascension, ""],
+          ["Ascension", "Palier " + S.ascension, ""],
           ["Environnement", ENV_NAMES[combat && combat.bg] || "—", ""],
           ["Jour", String(Math.max(1, Math.floor((Date.now() - (S.firstSeen || Date.now())) / 86400000) + 1)), "color:var(--goldLit)"],
         ].map((r) => '<div style="width:50%"><div class="kv" style="border:none;padding:2px 0">' +
@@ -453,7 +403,7 @@ function scrParametres() {
         '<div class="mt10">' + btn(ic("trash", 14) + "Réinitialiser la progression", { cls: "red", small: true, act: "askReset" }) + "</div></div>") +
       fold("about", "À propos", '<div class="card"><div class="dim small" style="line-height:1.6">' +
         "<b>Shadowreach</b> — portage fichier-unique du projet Expo/React&nbsp;Native + FastAPI. " +
-        "Moteur de combat, forge, compétences, familiers, raids, arbre, rebirth et ascension repris " +
+        "Moteur de combat, forge, compétences, familiers, raids, arbre et ascension repris " +
         "des mêmes formules (<code>src/game/config.ts</code>).<br><br>" +
         "Non inclus, car nécessitant le serveur : chat monde/clan, clans, classement mondial, " +
         "connexion Google, sauvegarde cloud, achats intégrés." +
@@ -1044,7 +994,6 @@ function pendingTutorialStep() {
   if (!seen.familier && ((S.pets||[]).length || (S.eggs||[]).length)) return {key:"familier",title:"Familiers",sub:"Suis les flèches : ouvre Développement, puis Familiers. Tes œufs sont stockés individuellement avec leur vraie rareté."};
   if (!seen.forge && S.minerai >= FORGE_CRAFT_COST) return {key:"forge",title:"Forge",sub:"Le Minerai fabrique l'équipement. L'Or améliore le niveau de Forge."};
   if (!seen.raid && S.level >= RULES.RAID_UNLOCK_LEVEL) return {key:"raid",title:"Raids",sub:"Suis les flèches : ouvre Défis, puis Raids pour utiliser tes clés et obtenir des ressources spécialisées."};
-  if (!seen.rebirth && S.floor >= RULES.REBIRTH_UNLOCK_FLOOR) return {key:"rebirth",title:"Rebirth",sub:"Suis les flèches : ouvre Progression, puis Rebirth pour voir tes PR permanents et les conséquences de la renaissance."};
   if (!seen.megaBoss && megaRaidUnlocked(S)) return {key:"megaBoss",title:"Méga Boss",sub:"Suis les flèches : ouvre Défis, puis Méga-Boss. Chaque Méga reprend un ancien Boss avec une puissance fortement augmentée."};
   if (!seen.tree && (S.pe||0) > 0) return {key:"tree",title:"Arbre personnel",sub:"Suis les flèches : ouvre Développement, puis Arbre personnel. Les PE du Raid Évolution servent à améliorer ses nœuds."};
   return null;
@@ -1927,13 +1876,9 @@ const ACT = {
     if (useAccelerator(target, a)) toast("Accélérateur utilisé", true); else toast("Impossible ici");
   },
 
-  // rebirth / ascension
-  doRebirth: () => {
-    const pr = doRebirth();
-    if (pr) { toast("+" + pr + " PR", true); nav("rebirth"); }
-    else toast("Rebirth impossible : étage " + RULES.REBIRTH_UNLOCK_FLOOR + " requis");
-  },
-  buyRebirth: (a) => { if (buyRebirth(a)) toast("Amélioration achetée", true); else toast("PR insuffisants"); },
+  // retired Rebirth compatibility / active Ascension
+  doRebirth: () => false,
+  buyRebirth: () => false,
   startTrial: () => {
     startAscensionTrial((won) => {
       if (won) {
