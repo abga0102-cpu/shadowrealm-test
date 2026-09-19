@@ -269,8 +269,8 @@ function scrAccueil() {
 
 /* ---------------- PERSONNAGE ---------------- */
 const STAT_META = [
-  { key: "sante",   label: "Santé",              icon: "heart",  color: "#E5484D", desc: "+0,30% PV totaux / point" },
-  { key: "degats",  label: "Dégâts",             icon: "flame",  color: "#FF7A3D", desc: "+0,30% dégâts totaux / point" },
+  { key: "sante",   label: "Santé",              icon: "heart",  color: "#E5484D", desc: "+1% PV + 2 PV / point" },
+  { key: "degats",  label: "Dégâts",             icon: "flame",  color: "#FF7A3D", desc: "+1% dégâts + 0,25 / point" },
   { key: "critred", label: "Réduc. Dégâts Crit.",icon: "shield", color: "#4A90D9", desc: "-0,40% dégâts crit. reçus / point" },
 ];
 /* The four skill slots, shared by the home screen and by any screen that shows
