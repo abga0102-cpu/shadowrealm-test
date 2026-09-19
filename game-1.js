@@ -1422,7 +1422,6 @@ const REBIRTH_UPGRADES = [
   { key: "lifesteal", label: "Vol de Vie", icon: "droplet", max: 5, perLvl: 1, unit: "%", costs: [10,20,32,46,64] },
   { key: "bossdmg", label: "Dégâts Boss", icon: "skull", max: 20, perLvl: 8, unit: "%", costDiv: 1, costs: [100,300,500,700,900,1100,1300,1500,1700,1900,2100,2300,2500,2700,2900,3100,3300,3500,3700,3900] },
   { key: "exp", label: "EXP", icon: "cap", max: 100, perLvl: 2, unit: "%", costs: [10,20,30,50,75,110,160,230,320,450,610,800,1020,1270,1550,1860,2200,2570,2970,3400,3860,4350,4870,5420,6000,6610,7250,7920,8620,9350,10110,10900,11720,12570,13450,14360,15300,16270,17270,18300,19360,20450,21570,22720,23900,25110,26350,27620,28920,30250,31610,33000,34420,35870,37350,38860,40400,41970,43570,45200,46860,48550,50270,52020,53800,55610,57450,59320,61220,63150,65110,67100,69120,71170,73250,75360,77500,79670,81870,84100,86360,88650,90970,93320,95700,98110,100550,103020,105520,108050,110610,113200,115820,118470,121150,123860,126600,129370,132170,135000] },
-  { key: "gold", label: "Or", icon: "gold", max: 100, perLvl: 6, unit: "%", costDiv: 1, costs: [25,40,50,65,80,90,105,130,145,155,180,205,220,245,270,300,325,350,375,415,440,465,505,545,570,610,650,685,725,765,805,845,895,935,970,1025,1075,1115,1165,1220,1270,1320,1375,1425,1490,1545,1595,1660,1725,1815,1875,1935,1995,2055,2115,2180,2245,2310,2375,2440,2510,2580,2650,2720,2790,2865,2940,3015,3090,3165,3245,3325,3405,3485,3565,3650,3735,3820,3905,3990,4080,4170,4260,4350,4440,4535,4630,4725,4820,4915,5015,5115,5215,5315,5415,5520,5625,5730,5835,5940] },
   { key: "apples", label: "Gain Pommes", icon: "paw", max: 20, perLvl: 5, unit: "%", costDiv: 1, costs: [200,300,400,500,650,800,950,1100,1300,1500,1700,1900,2100,2300,2500,2800,3100,3400,3700,3800] },
   { key: "prgain", label: "Gain PR", icon: "chart", max: 25, perLvl: 8, unit: "%", costDiv: 1, costs: [50,129,208,288,367,446,525,604,683,762,842,921,1000,1079,1158,1238,1317,1396,1475,1554,1633,1712,1792,1871,1950] },
   { key: "keep", label: "Conservation", icon: "cycle", max: 5, perLvl: 2, unit: "%", costs: [100,200,350,550,800] },
@@ -2226,6 +2225,21 @@ function migrate(s, name) {
     }
     merged.raidKeyLossCompensationV1 = true;
   }
+  /* V399: the legacy Rebirth Or upgrade is fully retired. It was still
+     affecting Campaign gold even though Or progression now belongs to the
+     personal Tree. Refund every PR spent on the recorded Gold level exactly
+     once, then delete the stale save key so it can never affect runtime again. */
+  if (!merged.rebirthGoldRemovedV399) {
+    const legacyGoldCostsV399 = [25,40,50,65,80,90,105,130,145,155,180,205,220,245,270,300,325,350,375,415,440,465,505,545,570,610,650,685,725,765,805,845,895,935,970,1025,1075,1115,1165,1220,1270,1320,1375,1425,1490,1545,1595,1660,1725,1815,1875,1935,1995,2055,2115,2180,2245,2310,2375,2440,2510,2580,2650,2720,2790,2865,2940,3015,3090,3165,3245,3325,3405,3485,3565,3650,3735,3820,3905,3990,4080,4170,4260,4350,4440,4535,4630,4725,4820,4915,5015,5115,5215,5315,5415,5520,5625,5730,5835,5940];
+    const oldGoldLevel = Math.max(0, Math.min(legacyGoldCostsV399.length,
+      Math.floor(Number((merged.rebirth.upgrades || {}).gold) || 0)));
+    const refundPR = legacyGoldCostsV399.slice(0, oldGoldLevel).reduce((a,b) => a + b, 0);
+    merged.rebirth.pr = Math.max(0, Number(merged.rebirth.pr) || 0) + refundPR;
+    if (merged.rebirth && merged.rebirth.upgrades) delete merged.rebirth.upgrades.gold;
+    merged.rebirthGoldRemovedV399 = true;
+    merged.rebirthGoldRemovedNoticeV399 = { oldGoldLevel, refundPR };
+  }
+
   // L'ancien Retour Rapide est retiré du jeu. On conserve les PR déjà dépensés
   // sans tenter de les recalculer automatiquement, pour ne pas inventer un remboursement.
   if (merged.rebirth && merged.rebirth.upgrades) delete merged.rebirth.upgrades.fastback;
@@ -2711,9 +2725,7 @@ function computeDerived(s) {
     skillCdCut: Math.min(80, A("skillcd")),
     skillPowerFactor,
     affixes: af,
-    // gold / exp scaling belongs to Rebirth — the tree deliberately has no
-    // blanket "more of every resource" node
-    goldBonus: rb(s, "gold"),
+    // EXP still belongs to Rebirth. Gold progression is owned by the Tree.
     expBonus: rb(s, "exp"),
     // tree-driven multipliers, applied at the point each resource is granted
     petPct, petDmgPct, petElem: el,

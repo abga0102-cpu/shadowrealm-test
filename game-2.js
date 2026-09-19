@@ -1767,7 +1767,7 @@ function handleCombatEnd(c) {
   const won = c.status === "won";
   update((s) => {
     const dv = computeDerived(s);
-    const earnedGold = Math.floor(rewardAcc.gold * (1 + dv.goldBonus / 100) * goldMul(s));
+    const earnedGold = Math.floor(rewardAcc.gold * goldMul(s));
     const earnedExp = Math.floor(rewardAcc.exp * (1 + dv.expBonus / 100));
     s.gold += earnedGold;
     s.exp += earnedExp;
@@ -1826,7 +1826,7 @@ function handleCombatEnd(c) {
           for (let stp = 1; stp <= RULES.STEPS_PER_FLOOR; stp++) kills += enemyCount(nextFloor, stp);
           const skipGoldBase = kills * goldReward(nextFloor);
           const skipExpBase = kills * expReward(nextFloor);
-          const skipGold = Math.floor(skipGoldBase * (1 + dv.goldBonus / 100) * goldMul(s));
+          const skipGold = Math.floor(skipGoldBase * goldMul(s));
           const skipExp = Math.floor(skipExpBase * (1 + dv.expBonus / 100));
           s.gold += skipGold; s.exp += skipExp; grantLevels(s);
           s.eventProgress.floors = (s.eventProgress.floors || 0) + 1;
@@ -1854,7 +1854,7 @@ function flushRewards() {
   if (rewardAcc.gold <= 0 && rewardAcc.exp <= 0) return;
   update((st) => {
     const dv = computeDerived(st);
-    const paidGold = Math.floor(rewardAcc.gold * (1 + dv.goldBonus / 100) * goldMul(st));
+    const paidGold = Math.floor(rewardAcc.gold * goldMul(st));
     const paidExp = Math.floor(rewardAcc.exp * (1 + dv.expBonus / 100));
     st.gold += paidGold;
     st.exp += paidExp;
