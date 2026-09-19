@@ -2558,6 +2558,18 @@ function activeSkillPowerFactor(s) {
   return Math.min(3, 1 + slotBaseline + progression);
 }
 
+/* V403 · An equipped skill level-up must always be visible in the integer
+   Puissance HUD. Combat scaling remains the existing +10% per skill level;
+   this additive floor only prevents a real gain disappearing to rounding. */
+function activeSkillLevelScore(s) {
+  const seen = {};
+  return (s.skillSlots || []).reduce((sum, id) => {
+    if (!id || seen[id] || !s.skills || !s.skills[id] || !SKILL_BY_ID[id]) return sum;
+    seen[id] = true;
+    return sum + Math.max(0, (Number(s.skills[id].level) || 1) - 1);
+  }, 0);
+}
+
 function computeDerived(s) {
   let equipHP = 0, equipDmg = 0;
   Object.keys(s.equipped).forEach((slot) => {
@@ -2636,7 +2648,8 @@ function computeDerived(s) {
   const critDefenseFactor = (1 + critPressure) /
     (1 + critPressure * (1 - Math.min(CRIT_RED_CAP, critRed) / 100));
   const effectiveHP = maxHP * mitigation * blockFactor * sustainFactor * critDefenseFactor;
-  const power = Math.floor(Math.sqrt(Math.max(1, offense) * Math.max(1, effectiveHP)) * 1.5);
+  const skillLevelScore = activeSkillLevelScore(s);
+  const power = Math.floor(Math.sqrt(Math.max(1, offense) * Math.max(1, effectiveHP)) * 1.5) + skillLevelScore;
 
   return {
     maxHP, damage, attackSpeed, moveSpeed, critChance, critMult, critRed,
@@ -2648,7 +2661,7 @@ function computeDerived(s) {
     doubleAtk: Math.min(100, A("double")),
     meleeDmg: A("melee"), rangedDmg: A("ranged"),
     skillCdCut: Math.min(80, A("skillcd")),
-    skillPowerFactor,
+    skillPowerFactor, skillLevelScore,
     affixes: af,
     // No retired Rebirth multiplier may affect rewards.
     expBonus: 0,
