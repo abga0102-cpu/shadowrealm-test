@@ -59,13 +59,13 @@ let dirty = false;
 let offlineRecap = null;
 
 /* -------- state mutation -------- */
-function update(fn) {
+function update(fn, opts) {
   const beforePower = Number(S.power || computePower(S) || 0);
   fn(S);
   S.power = computePower(S);
   D = computeDerived(S);
   const delta = Math.round(S.power - beforePower);
-  if (delta) queuePowerDelta(delta);
+  if (delta && !(opts && opts.suppressPowerDelta)) queuePowerDelta(delta);
   dirty = true;
   scheduleRender();
 }
@@ -2300,7 +2300,12 @@ function summonSkill(n) {
         s.skillMastery.progress -= mreq; s.skillMastery.level += 1;
       }
     }
-  });
+  }, { suppressPowerDelta: true });
+  /* V405 · Duplicate skill level-ups own the centered green Power feedback.
+     Newly unlocked skills do not create a misleading summon Power popup. */
+  results.levelUpPowerDelta = results
+    .filter((r) => r && r.leveled)
+    .reduce((sum, r) => sum + Math.max(0, Number(r.globalPowerGain) || 0), 0);
   return results;
 }
 function equipSkill(slotIdx, skillId) {
