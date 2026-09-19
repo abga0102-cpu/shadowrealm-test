@@ -153,9 +153,8 @@ function scrAccueil() {
   ];
   // CAMPAIGN_WORLD_NAV_V37
   // ARENA_EQUIPMENT_REMOVED_V45: l'accès Équipement reste disponible hors du décor de l'arène.
-  // Les systèmes secondaires restent accessibles, mais ils ne prennent plus de
-  // hauteur sous la campagne. Le Rebirth devient une action du monde, directement
-  // visible dans l'arène, et l'Ascension reste dans le menu compact.
+  // Les systèmes secondaires restent accessibles sans ajouter de système retiré
+  // dans la navigation principale de campagne.
   const sysBtns = [
     { label: "Clan", icon: "banner", color: "#B0862C", go: "clan", lock: S.level < 10 ? 10 : 0 },
     { label: "Boutique", icon: "shop", color: "#3B7FC4", go: "boutique" },
@@ -188,10 +187,7 @@ function scrAccueil() {
       '<span>' + (b.lock ? 'Niv.' + b.lock : esc(b.label)) + '</span>' +
       (b.badge && !b.lock ? '<i class="worldDot"></i>' : '') + '</button>';
   };
-  const worldPrimary = [
-    { label:"Rebirth", icon:"cycle", go:"rebirth", badge:canRebirth() },
-    navBtns[0], navBtns[1], navBtns[2]
-  ];
+  const worldPrimary = [navBtns[1], navBtns[2]];
 
   const wtHome = WEAPON_TYPES[D.weapon] || WEAPON_TYPES.epee;
   const wArt = ASSETS["weapon_" + D.weapon];
@@ -200,9 +196,8 @@ function scrAccueil() {
   return recommendedCard + '<div class="campaignWorld">' +
       '<div id="arenaSlot"></div>' +
       '<div class="worldNavLayer">' +
-        worldAction(worldPrimary[0], "worldRebirth") +
-        worldAction(worldPrimary[2], "worldDev") +
-        worldAction(worldPrimary[3], "worldDefis") +
+        worldAction(worldPrimary[0], "worldDev") +
+        worldAction(worldPrimary[1], "worldDefis") +
         '<details class="worldMenu"><summary>' + ic("menu", 14) + '<span>Menu</span>' +
           (sysBtns.some((b)=>b.badge && !b.lock) ? '<i class="worldDot"></i>' : '') +
         '</summary><div class="worldMenuPanel">' + sysBtns.map(tile).join("") + '</div></details>' +
@@ -1082,8 +1077,7 @@ function scrMegaRaid() {
         '<span class="pill" style="color:#A9E06F;border-color:#6FA83C">Gain Pommes +' + appleBoost + "%</span></div>" +
         '<div class="mt8">' + meter(floors.length ? cleared.length / floors.length * 100 : 0, C.red,
           cleared.length + " / " + floors.length) + "</div>" +
-        '<div class="mute tiny mt6">Récompense par première victoire : 33 + 7 tous les 25 étages. ' +
-          "Le Rebirth peut la doubler à 20/20. Les replays ne donnent jamais de Pomme.</div></div>" +
+        '<div class="mute tiny mt6">Cette ancienne récompense est désactivée. Les replays ne donnent jamais de Pomme.</div></div>' +
       '<div class="sect">Prochain défi</div>' + challenge +
       (history ? '<div class="sect">Méga-Boss vaincus</div>' + history : "") +
     '<div style="height:2px"></div></div>';
