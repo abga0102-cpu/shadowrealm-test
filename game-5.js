@@ -1438,6 +1438,59 @@ function showTreeNode(id) {
 }
 
 /* Summon results as framed cards, mirroring the sheet RESULTAT D INVOCATION */
+function ensureEggRevealStyleV397() {
+  if (document.getElementById("srEggRevealV397Style")) return;
+  const st = document.createElement("style");
+  st.id = "srEggRevealV397Style";
+  st.textContent = [
+    ".srEggRevealV397{text-align:center;padding:8px 2px 2px}",
+    ".srEggRevealHeroV397{position:relative;height:178px;display:grid;place-items:center;overflow:hidden;border-radius:18px;background:radial-gradient(circle at 50% 48%,var(--eggGlow) 0%,#101a2c 42%,#08111f 76%);border:1px solid var(--eggLine)}",
+    ".srEggRevealHaloV397{position:absolute;width:138px;height:138px;border-radius:50%;background:var(--eggGlow);filter:blur(18px);opacity:.72;animation:srEggPulseV397 1.4s ease-in-out infinite alternate}",
+    ".srEggRevealImgV397{position:relative;width:108px;height:108px;object-fit:contain;filter:drop-shadow(0 12px 10px #0009);animation:srEggFloatV397 1.8s ease-in-out infinite}",
+    ".srEggRevealFallbackV397{position:relative;font-size:74px;filter:drop-shadow(0 10px 10px #0009);animation:srEggFloatV397 1.8s ease-in-out infinite}",
+    ".srEggRevealRareV397{margin-top:10px;font:900 16px Georgia,serif;letter-spacing:1px}",
+    ".srEggRevealMasteryV397{margin:8px auto 0;display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;border:1px solid #ffc29b66;background:#ffc29b14;color:#ffd3b7;font-weight:900;font-size:11px}",
+    ".srEggRevealGridV397{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:10px}",
+    ".srEggRevealMiniV397{position:relative;width:42px;height:48px;border-radius:10px;border:1px solid var(--miniC);background:#091323;padding:4px;box-sizing:border-box}",
+    ".srEggRevealMiniV397 img{width:100%;height:100%;object-fit:contain}",
+    ".srEggRevealFreeV397{position:absolute;right:-4px;top:-5px;border-radius:999px;background:#57e07a;color:#07140b;font:900 7px system-ui;padding:2px 4px;border:1px solid #a2ffb6}",
+    "@keyframes srEggFloatV397{0%,100%{transform:translateY(4px) scale(.97)}50%{transform:translateY(-5px) scale(1.04)}}",
+    "@keyframes srEggPulseV397{from{transform:scale(.85);opacity:.45}to{transform:scale(1.1);opacity:.8}}",
+    "@media(prefers-reduced-motion:reduce){.srEggRevealImgV397,.srEggRevealFallbackV397,.srEggRevealHaloV397{animation:none}}"
+  ].join("");
+  document.head.appendChild(st);
+}
+function showEggSummonResult(results) {
+  if (!results || !results.length) return;
+  ensureEggRevealStyleV397();
+  const rank = (r) => Math.max(0, PET_RARITY_ORDER.indexOf(r.rarity));
+  const hero = results.slice().sort((a,b) => rank(b) - rank(a))[0];
+  const rc = (RARITY[hero.rarity] && RARITY[hero.rarity].c) || "#FFC29B";
+  const art = ASSETS["egg_" + String(hero.rarity).toLowerCase()];
+  const freeCount = results.filter((r) => r.free).length;
+  const minis = results.length > 1 ? '<div class="srEggRevealGridV397">' + results.map((r) => {
+    const c = (RARITY[r.rarity] && RARITY[r.rarity].c) || "#FFC29B";
+    const a = ASSETS["egg_" + String(r.rarity).toLowerCase()];
+    return '<div class="srEggRevealMiniV397" style="--miniC:' + c + '">' +
+      (a ? '<img src="' + a + '">' : '<div style="font-size:25px;line-height:38px">🥚</div>') +
+      (r.free ? '<span class="srEggRevealFreeV397">DOUBLE</span>' : '') + '</div>';
+  }).join("") + '</div>' : '';
+  openModal(
+    '<div class="srEggRevealV397">' +
+      '<div class="srEggRevealHeroV397" style="--eggGlow:' + rc + '55;--eggLine:' + rc + '99">' +
+        '<div class="srEggRevealHaloV397"></div>' +
+        (art ? '<img class="srEggRevealImgV397" src="' + art + '">' : '<div class="srEggRevealFallbackV397">🥚</div>') +
+      '</div>' +
+      '<div class="srEggRevealRareV397" style="color:' + rc + '">' + esc(RARITY[hero.rarity].label) + '</div>' +
+      '<div class="mute small mt4">' + results.length + ' œuf' + (results.length>1?'s':'') + ' obtenu' + (results.length>1?'s':'') +
+        (freeCount ? ' · <b style="color:#57E07A">+' + freeCount + ' double' + (freeCount>1?'s':'') + '</b>' : '') + '</div>' +
+      '<div class="srEggRevealMasteryV397">★ +' + results.length + ' Maîtrise Familier</div>' +
+      minis +
+      '<div class="mt12">' + btn("Continuer", { cls:"green", act:"closeModal" }) + '</div>' +
+    '</div>',
+    results.length > 1 ? "Invocation d’Œufs" : "Œuf obtenu");
+}
+
 function showSkillResult(res) {
   const best = res.reduce((a, b) =>
     RARITY_ORDER.indexOf(b.rarity) > RARITY_ORDER.indexOf(a.rarity) ? b : a, res[0]);
@@ -1752,8 +1805,8 @@ const ACT = {
   // pets
   summonEgg: (a) => {
     const r = summonEgg(parseInt(a, 10));
-    if (!r.length) toast("Essence insuffisante");
-    else toast(r.length + " œuf" + (r.length > 1 ? "s" : "") + " ajouté" + (r.length > 1 ? "s" : "") + " au stock", true);
+    if (!r.length) { toast("Essence insuffisante"); return; }
+    showEggSummonResult(r);
   },
   startEgg: (a) => { if (startEgg(a)) toast("Œuf placé en éclosion", true); else toast("Aucun emplacement libre"); },
   collectEgg: (a) => { collectEgg(a); toast("Familier obtenu !", true); },
