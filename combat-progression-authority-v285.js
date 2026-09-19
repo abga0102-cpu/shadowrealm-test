@@ -229,10 +229,18 @@ function prepareForgeIntroMineralV407(s){
   if(!forgeIntroEligibleV321(s))return false;
   var t=forgeIntroTutorialStateV407(s);
   if(!t||t.forgeIntroMineralGrantV323)return false;
+  /* Recovery for saves that already suffered the regression: the V321 loss
+     marker proves the teaching defeat happened, so restore the missing reward
+     immediately instead of forcing the player to lose 1-2 a second time. */
+  if(t.forgeIntroReadyV321&&Number(s.minerai)<=0){
+    s.minerai=FORGE_INTRO_MINERAI_REWARD_V407;
+    t.forgeIntroMineralGrantV323=true;
+    return true;
+  }
   if(Number(s.minerai)===400){s.minerai=0;return true;}
   return false;
 }
-window.__srForgeIntroCombatConfigV321={floor:FORGE_INTRO_FLOOR_V321,stage:'1-2',hpVsHero:1000,damageVsHero:20,mineraiBeforeDefeat:0,mineraiReward:FORGE_INTRO_MINERAI_REWARD_V407};
+window.__srForgeIntroCombatConfigV321={floor:FORGE_INTRO_FLOOR_V321,stage:'1-2',hpVsHero:1000,damageVsHero:20,mineraiBeforeDefeat:0,mineraiReward:FORGE_INTRO_MINERAI_REWARD_V407,recoverMissingReward:true};
 
 /* One-time migration preserves each legacy difficulty and position within it:
    legacy 1..50 becomes the same difficulty's odd positions 1..99. Completed

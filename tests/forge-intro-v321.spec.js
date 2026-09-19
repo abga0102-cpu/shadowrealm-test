@@ -102,6 +102,35 @@ test('V321 stage 1-2 forces the pre-Forge teaching loss and then surfaces the Fo
   expect(result.config).toMatchObject({ floor: 2, stage: '1-2', hpVsHero: 1000, damageVsHero: 20 });
 });
 
+test('V408 reload recovers 250 mineral for a save that already lost 1-2 during the regression', async ({ page }) => {
+  await openCleanGame(page);
+
+  await page.evaluate(() => {
+    S.floor = 2;
+    S.recordFloor = 2;
+    S.checkpoint = 1;
+    S.step = 1;
+    S.minerai = 0;
+    S.forge.summonCount = 0;
+    S.tutorial = S.tutorial || {};
+    S.tutorial.seen = S.tutorial.seen || {};
+    S.tutorial.forgeIntroReadyV321 = true;
+    delete S.tutorial.forgeIntroMineralGrantV323;
+    saveNow();
+  });
+
+  await page.reload();
+  await page.waitForFunction(() => window.__srForgeIntroCombatV321 === true);
+
+  const recovered = await page.evaluate(() => ({
+    minerai: S.minerai,
+    granted: !!(S.tutorial && S.tutorial.forgeIntroMineralGrantV323),
+    ready: !!(S.tutorial && S.tutorial.forgeIntroReadyV321),
+  }));
+
+  expect(recovered).toEqual({ minerai: 250, granted: true, ready: true });
+});
+
 test('V321 first Forge craft raises fresh equipment Power, restores normal 1-2 and leaves Raid gate unchanged', async ({ page }) => {
   await openCleanGame(page);
 
