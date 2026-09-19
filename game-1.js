@@ -1526,6 +1526,17 @@ const TREE_ROW_Y = (row) => 44 + row * 84;
 const PAL_T = [mn([4, 8, 14, 22, 32]), mn([10, 18, 30, 46, 66]),
                mn([24, 42, 68, 100, 145]), mn([50, 88, 140, 210, 300])];
 
+/* V398: later Tree depths are intentionally stronger. Percentage nodes keep
+   their original listed base value, then gain this depth multiplier. Special
+   nodes (+keys, slots, Forge batch, etc.) are never scaled. */
+const TREE_TIER_PERCENT_MUL = [1.00, 1.15, 1.30, 1.50];
+function treeEffectivePer(node) {
+  if (!node) return 0;
+  if (node.unit !== "%" || node.special) return node.per;
+  const mul = TREE_TIER_PERCENT_MUL[Math.max(0, Math.min(TREE_TIER_PERCENT_MUL.length - 1, (node.tier || 1) - 1))] || 1;
+  return node.per * mul;
+}
+
 const TREE_NODES = [
 
   /* ---------------- PALIER I ---------------- */
@@ -2416,7 +2427,7 @@ function treeSum(s, effect) {
   let t = 0;
   for (let i = 0; i < TREE_NODES.length; i++) {
     const n = TREE_NODES[i];
-    if (n.effect === effect) t += treeLv(s, n.id) * n.per;
+    if (n.effect === effect) t += treeLv(s, n.id) * treeEffectivePer(n);
   }
   return t;
 }
