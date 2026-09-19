@@ -851,7 +851,7 @@ function scrFamiliers() {
       })() +
       '<div class="card mt6"><div class="between"><div style="min-width:0"><div class="row gap4"><div class="bb gt" style="font-size:13px;letter-spacing:1px">MAÎTRISE FAMILIER</div>' +
         starRow("pet", "#FFC29B") + "</div>" +
-        '<div class="mute tiny b">' + S.petMastery.progress + "/" + mreq + " invocations</div></div>" +
+        '<div class="mute tiny b">' + S.petMastery.progress + "/" + mreq + " œufs obtenus</div></div>" +
         '<b style="color:#FFC29B;font-size:18px;text-shadow:0 0 12px ' + ORANGE + '80">' + S.petMastery.level + "/" + RULES.MASTERY_MAX + "</b></div>" +
         '<div class="mt6">' + meter((S.petMastery.progress / mreq) * 100, ORANGE, S.petMastery.progress + " / " + mreq) + "</div>" +
         ascendCta("pet") +
