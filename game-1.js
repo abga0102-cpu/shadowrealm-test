@@ -757,6 +757,26 @@ const RATE_ANCHORS = {
   },
 };
 function masteryReq(level) { return Math.round(5 + level * 1.6); }
+/* Credit real Familiar/Skill mastery progress by produced result count.
+   Unlike the paid-summon counter, this may advance by more than 1 when a
+   bonus result is generated. */
+function addMasteryCredits(track, amount) {
+  let left = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!track || !left) return 0;
+  let credited = 0;
+  while (left > 0 && track.level < RULES.MASTERY_MAX) {
+    const need = masteryReq(track.level);
+    const room = Math.max(1, need - Math.max(0, Number(track.progress) || 0));
+    const take = Math.min(left, room);
+    track.progress = Math.max(0, Number(track.progress) || 0) + take;
+    credited += take; left -= take;
+    if (track.progress >= need) {
+      track.progress -= need;
+      track.level += 1;
+    }
+  }
+  return credited;
+}
 /* Total paid summons needed to climb a fresh mastery ladder from 0 to max.
    `skillMastery.count` / `petMastery.count` reset on Ascension, so lifetime
    summon reconstruction must include completed ladders represented by stars. */
@@ -907,7 +927,7 @@ function doAscendMastery(sys) {
       appleRefund = petAppleInvestmentTotal(st);
       st.apples = (st.apples || 0) + appleRefund;
       // section 1: the ladder comes back at 0/50, which is where a new save starts
-      st.petMastery = { level: 0, count: 0, progress: 0 };
+      st.petMastery = { level: 0, count: 0, progress: 0, bonusCount: 0 };
       st.pets = []; st.eggs = []; st.activePetId = null;
       // Essence, every slot source and every Apple ever invested all survive.
     } else if (sys === "forge") {
@@ -1918,6 +1938,23 @@ function migrate(s, name) {
     stars: Object.assign({}, base.stars, s.stars || {}),
     recommendationDismissed: Object.assign({}, base.recommendationDismissed, s.recommendationDismissed || {}),
   });
+
+  /* V397: old saves counted only PAID Familiar summons toward Mastery even
+     when Double Œuf produced a second egg. The old save did not journal each
+     historical double, so exact reconstruction is impossible. Compensate the
+     current Familiar ladder once from the paid summons recorded on that ladder
+     and the save's current Double Œuf rate; completed pre-Ascension ladders do
+     not need compensation because their progress was already consumed by the
+     Ascension. Future doubles are tracked exactly in summonEgg(). */
+  if (!merged.petDoubleMasteryCompV397) {
+    const paidCurrent = Math.max(0, Number(merged.petMastery && merged.petMastery.count) || 0);
+    const dblRate = Math.max(0, Math.min(100, Number(treeSum(merged, "eggFree")) || 0));
+    const estimatedMissing = Math.max(0, Math.round(paidCurrent * dblRate / 100));
+    const credited = addMasteryCredits(merged.petMastery, estimatedMissing);
+    merged.petMastery.bonusCount = Math.max(0, Number(merged.petMastery.bonusCount) || 0) + credited;
+    merged.petDoubleMasteryCompV397 = true;
+    merged.petDoubleMasteryCompNoticeV397 = credited;
+  }
 
   /* V390: Chance Critique is no longer a level-point destination. Refund every
      point previously invested there exactly once, then keep the legacy field at
