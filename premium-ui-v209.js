@@ -1,5 +1,5 @@
-/* SHADOWREACH · Premium UI polish V209 / V391
-   Reference-locked dark fantasy composition: V391 refined framed skill tiles.
+/* SHADOWREACH · Premium UI polish V209 / V392
+   Reference-locked dark fantasy composition: V392 skill cards matched to the approved reference crop.
    Presentation-only: no routes, economy, saves, timers, combat values or gameplay state are changed. */
 (function(){
   'use strict';
@@ -3489,6 +3489,338 @@ body{
   #app.srHomeFullArena #skillbar .srSkillRefV388 .skfx>svg{
     width:30px!important;
     height:30px!important;
+  }
+}
+
+
+/* V392 APPROVED REFERENCE SKILL CARDS
+   Match the supplied reference crop: coloured rounded card, large circular art,
+   cooldown number centred with NO dark backing, effect pill at bottom-left,
+   level token at bottom-right. */
+
+/* Compact one-line strip: no cooldown row below the buttons. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  align-items:center!important;
+  gap:4px!important;
+  padding:4px 7px!important;
+  background:
+    linear-gradient(180deg,#0C2C4B 0%,#08233C 58%,#05182B 100%)!important;
+  border-top:2px solid #DCAF4B!important;
+  border-bottom:2px solid #C69537!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 -3px 7px rgba(0,8,17,.45),
+    0 -2px 6px rgba(0,0,0,.22)!important;
+}
+
+/* Weapon stays a separate square like the left edge of the reference. */
+#app.srHomeFullArena #skillbar .srWeaponSlotV392{
+  width:43px!important;
+  height:48px!important;
+  flex:0 0 43px!important;
+  margin:0!important;
+  border:2px solid #D4A744!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 50% 28%,rgba(65,149,205,.22),transparent 58%),
+    linear-gradient(180deg,#133B5F,#071E36)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -3px 0 #03101D,
+    0 2px 4px rgba(0,0,0,.34)!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srWeaponSlotV392 img{
+  width:29px!important;height:29px!important;
+  filter:brightness(1.12) drop-shadow(0 2px 3px rgba(0,0,0,.55))!important;
+}
+#app.srHomeFullArena #skillbar .srWeaponSlotV392 .catBar{
+  left:4px!important;right:4px!important;bottom:2px!important;height:2px!important;border-radius:999px!important;
+}
+
+/* Skill wrapper: reference-sized, slightly larger than the system tiles. */
+#app.srHomeFullArena #skillbar .srSkillRefV392{
+  position:relative!important;
+  width:48px!important;
+  height:48px!important;
+  flex:0 0 48px!important;
+  border:0!important;
+  border-radius:12px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV392::before,
+#app.srHomeFullArena #skillbar .srSkillRefV392::after{
+  display:none!important;
+  content:none!important;
+}
+
+/* Coloured rounded-square shell from the reference, not a gold frame. */
+#app.srHomeFullArena #skillbar .srSkillCardV392{
+  position:absolute!important;
+  inset:0!important;
+  border-radius:12px!important;
+  overflow:visible!important;
+  border:2px solid color-mix(in srgb,var(--srSkillColor) 78%,#A8C0D2)!important;
+  background:
+    radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--srSkillColor) 28%,transparent),transparent 66%),
+    linear-gradient(180deg,#17354F,#0A2037)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 -3px 0 rgba(2,11,20,.68),
+    0 0 6px color-mix(in srgb,var(--srSkillColor) 36%,transparent),
+    0 2px 4px rgba(0,0,0,.35)!important;
+}
+
+/* Big circular skill art nearly fills the card. */
+#app.srHomeFullArena #skillbar .srSkillRefV392 .skfx{
+  position:absolute!important;
+  left:3px!important;
+  top:3px!important;
+  width:38px!important;
+  height:38px!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  border:1px solid color-mix(in srgb,var(--srSkillColor) 66%,#D7E4ED)!important;
+  background:
+    radial-gradient(circle at 48% 27%,
+      var(--srSkillLight) 0%,
+      color-mix(in srgb,var(--srSkillLight) 62%,var(--srSkillColor)) 33%,
+      color-mix(in srgb,var(--srSkillColor) 74%,var(--srSkillDark)) 68%,
+      var(--srSkillDark) 100%)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    inset 0 -5px 8px rgba(0,0,0,.18),
+    0 0 5px color-mix(in srgb,var(--srSkillColor) 48%,transparent)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV392 .skfx::before{
+  content:""!important;
+  position:absolute!important;inset:0!important;z-index:0!important;
+  border-radius:50%!important;
+  background:
+    radial-gradient(circle at 50% 14%,rgba(255,255,255,.42),transparent 29%),
+    linear-gradient(150deg,rgba(255,255,255,.15),transparent 40%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV392 .skfx::after{
+  content:""!important;
+  position:absolute!important;inset:0!important;z-index:2!important;
+  pointer-events:none!important;border-radius:50%!important;
+  background:radial-gradient(circle at 50% 112%,rgba(0,0,0,.12),transparent 55%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV392 .skfx>svg{
+  position:relative!important;
+  z-index:1!important;
+  width:31px!important;
+  height:31px!important;
+  color:#FFF7E7!important;
+  transform:scale(1.04)!important;
+  filter:
+    brightness(1.38)
+    contrast(1.08)
+    saturate(1.14)
+    drop-shadow(0 1px 2px rgba(0,0,0,.58))
+    drop-shadow(0 0 3px color-mix(in srgb,var(--srSkillColor) 52%,transparent))!important;
+}
+
+/* Cooling never hides the image. */
+#app.srHomeFullArena #skillbar .srSkillRefV392.cooling .skfx{
+  filter:none!important;
+  opacity:1!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV392.cooling .skfx>svg{
+  filter:
+    brightness(1.25)
+    contrast(1.06)
+    saturate(1.08)
+    drop-shadow(0 1px 2px rgba(0,0,0,.58))
+    drop-shadow(0 0 2px color-mix(in srgb,var(--srSkillColor) 45%,transparent))!important;
+}
+
+/* Main cooldown exactly where the reference puts it: centred, no opaque badge. */
+#app.srHomeFullArena #skillbar .srSkillCooldownV392{
+  position:absolute!important;
+  left:2px!important;
+  right:2px!important;
+  top:11px!important;
+  bottom:auto!important;
+  height:22px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  z-index:7!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#FFFDF3!important;
+  font-size:13.2px!important;
+  line-height:1!important;
+  font-weight:1000!important;
+  letter-spacing:-.2px!important;
+  text-shadow:
+    0 2px 2px rgba(0,0,0,.92),
+    0 0 4px rgba(0,0,0,.74)!important;
+  -webkit-text-stroke:.45px rgba(0,0,0,.72)!important;
+  pointer-events:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillCooldownV392:empty{
+  display:none!important;
+}
+
+/* Secondary active-effect time = compact coloured pill at bottom-left. */
+#app.srHomeFullArena #skillbar .srSkillEffectV392{
+  position:absolute!important;
+  left:3px!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:-3px!important;
+  transform:none!important;
+  z-index:9!important;
+  min-width:25px!important;
+  height:13px!important;
+  padding:0 4px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:999px!important;
+  font-size:7px!important;
+  line-height:13px!important;
+  font-weight:1000!important;
+  background:#09243AEF!important;
+  border:1px solid currentColor!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.55)!important;
+  text-shadow:0 1px 1px rgba(0,0,0,.65)!important;
+}
+
+/* Level badge = small black circle bottom-right, like the reference. */
+#app.srHomeFullArena #skillbar .srSkillLevelV392{
+  position:absolute!important;
+  right:-4px!important;
+  top:auto!important;
+  bottom:-3px!important;
+  z-index:10!important;
+  min-width:14px!important;
+  width:14px!important;
+  height:14px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:50%!important;
+  border:1px solid rgba(230,208,154,.78)!important;
+  background:#060A10F5!important;
+  color:#FFF!important;
+  font-size:7px!important;
+  line-height:14px!important;
+  font-weight:1000!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.64)!important;
+}
+
+/* Empty skill cards follow the same coloured-card footprint. */
+#app.srHomeFullArena #skillbar .srSkillEmptyV392{
+  position:relative!important;
+  width:48px!important;height:48px!important;flex:0 0 48px!important;
+  border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important;
+}
+#app.srHomeFullArena #skillbar .srSkillEmptyV392::before,
+#app.srHomeFullArena #skillbar .srSkillEmptyV392::after{display:none!important;content:none!important}
+#app.srHomeFullArena #skillbar .srSkillEmptyCardV392{
+  width:44px!important;height:44px!important;margin:2px!important;
+  border-radius:11px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  color:#91A9BE!important;
+  border:2px solid #6E8194!important;
+  background:linear-gradient(180deg,#102D49,#071A2E)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.30)!important;
+}
+
+/* AUTO mirrors the compact reference system tile. */
+#app.srHomeFullArena #skillbar .srAutoRefV392{
+  width:43px!important;
+  height:48px!important;
+  flex:0 0 43px!important;
+  margin:0!important;
+  border:2px solid #D5AA4A!important;
+  border-radius:10px!important;
+  gap:0!important;
+  background:
+    radial-gradient(circle at 50% 24%,rgba(255,214,92,.11),transparent 42%),
+    linear-gradient(180deg,#173B5B,#092641 58%,#05192D)!important;
+  color:#FFF1C0!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.13),
+    inset 0 -3px 0 #03111F,
+    0 2px 4px rgba(0,0,0,.31)!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV392 .srAutoBoltV392{
+  width:21px!important;height:21px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  color:#FFE05F!important;
+  filter:brightness(1.2) drop-shadow(0 0 5px rgba(255,210,72,.48))!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV392>span:not(.srAutoBoltV392){
+  font-size:7px!important;line-height:8px!important;letter-spacing:.5px!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV392>i{
+  width:20px!important;height:3px!important;margin-top:2px!important;border-radius:999px!important;background:#717980!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV392.on>i{
+  background:#F0BD42!important;
+  box-shadow:0 0 6px rgba(240,189,66,.58)!important;
+}
+
+/* Familiar aligns with the taller skill cards. */
+#app.srHomeFullArena #skillbar .petMini{
+  height:48px!important;
+  min-width:94px!important;
+  flex:1 1 auto!important;
+  margin:0!important;
+  padding-left:6px!important;padding-right:6px!important;
+  gap:5px!important;
+  border:2px solid #D5AA4A!important;
+  border-radius:10px!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:36px!important;height:36px!important;
+}
+
+@media(max-width:390px){
+  #app.srHomeFullArena #screen.fixed>#skillbar{
+    gap:3px!important;
+    padding-left:5px!important;
+    padding-right:5px!important;
+  }
+  #app.srHomeFullArena #skillbar .srWeaponSlotV392,
+  #app.srHomeFullArena #skillbar .srAutoRefV392{
+    width:41px!important;height:46px!important;flex-basis:41px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV392,
+  #app.srHomeFullArena #skillbar .srSkillEmptyV392{
+    width:46px!important;height:46px!important;flex-basis:46px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillCardV392{
+    border-radius:11px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV392 .skfx{
+    width:36px!important;height:36px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV392 .skfx>svg{
+    width:29px!important;height:29px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillCooldownV392{
+    top:10px!important;
+    font-size:12.6px!important;
+  }
+  #app.srHomeFullArena #skillbar .petMini{
+    height:46px!important;min-width:90px!important;
+  }
+  #app.srHomeFullArena #skillbar .petMini img{
+    width:34px!important;height:34px!important;
   }
 }
 
