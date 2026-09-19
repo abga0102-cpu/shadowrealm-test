@@ -59,13 +59,13 @@ let dirty = false;
 let offlineRecap = null;
 
 /* -------- state mutation -------- */
-function update(fn) {
+function update(fn, opts) {
   const beforePower = Number(S.power || computePower(S) || 0);
   fn(S);
   S.power = computePower(S);
   D = computeDerived(S);
   const delta = Math.round(S.power - beforePower);
-  if (delta) queuePowerDelta(delta);
+  if (delta && !(opts && opts.suppressPowerDelta)) queuePowerDelta(delta);
   dirty = true;
   scheduleRender();
 }
@@ -2319,7 +2319,12 @@ function summonSkill(n) {
         s.skillMastery.progress -= mreq; s.skillMastery.level += 1;
       }
     }
-  });
+  }, { suppressPowerDelta: true });
+  /* V391 · Use the exact gains attached to duplicate level-ups. A new skill
+     auto-equipped in the same summon cannot inflate this feedback. */
+  results.levelUpPowerDelta = results
+    .filter((r) => r && r.leveled)
+    .reduce((sum, r) => sum + Math.max(0, Number(r.globalPowerGain) || 0), 0);
   return results;
 }
 function equipSkill(slotIdx, skillId) {
