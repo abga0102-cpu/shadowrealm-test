@@ -209,7 +209,7 @@ function scrAccueil() {
       '</div>' +
     '</div>' +
     '<div id="skillbar">' +
-      '<div class="slot srWeaponSlotV388" data-act="go" data-arg="equipement" title="' + esc(wtHome.name) +
+      '<div class="slot srWeaponSlotV392" data-act="go" data-arg="equipement" title="' + esc(wtHome.name) +
         '" style="border-color:' + wCol + '66">' +
         (wArt ? '<img src="' + wArt + '" style="width:26px;height:26px;object-fit:contain;' +
                 "filter:drop-shadow(0 0 5px " + wCol + '99)">' : ic("sword", 22)) +
@@ -329,22 +329,20 @@ function skillSlotsHTML() {
     const cat = def ? SKILL_CATS[def.cat] : null;
     const sealed = def && skillSealed(combat, def.id);
     const skillColor = def ? (cat ? cat.c : def.color) : "#5E7895";
-    sb += '<div class="slot ' + (def ? "srSkillRefV388" : "srSkillEmptyV388") + (sealed ? " sealed" : "") + '" data-act="' + (def ? "castSkill" : "go") +
+    sb += '<div class="slot ' + (def ? "srSkillRefV392" : "srSkillEmptyV392") + (sealed ? " sealed" : "") + '" data-act="' + (def ? "castSkill" : "go") +
       '" data-arg="' + (def ? def.id : "competences") + '"' +
-      (def ? ' data-skill="' + def.id + '" style="--srSkillColor:' + skillColor + ';--srSkillLight:' + shade(def.color, 34) + ';--srSkillDark:' + shade(def.color, -42) + '"' : "") + ">" + (def
-      ? '<div class="srSkillTileV388">' +
-          '<div class="skfx" style="background:linear-gradient(180deg,' + shade(def.color, 28) + ' 0%,' + shade(def.color, 2) + ' 46%,' + shade(def.color, -38) + ' 100%)">' +
-            ic(def.icon, 29) +
-          "</div>" +
-        "</div>" +
-        '<div class="cdTxt srSkillCooldownV388"></div>' +
-        '<div class="fxBub srSkillEffectV388" style="display:none;color:' + skillColor + '"></div>' +
-        '<span class="lv srSkillLevelV388">' + (S.skills[sid] ? S.skills[sid].level : 1) + "</span>"
-      : '<div class="srSkillEmptyTileV388">' + ic("plus", 18) + "</div>") + "</div>";
+      (def ? ' data-skill="' + def.id + '" style="--srSkillColor:' + skillColor + ';--srSkillLight:' + shade(def.color, 36) + ';--srSkillDark:' + shade(def.color, -42) + '"' : "") + ">" + (def
+      ? '<div class="srSkillCardV392">' +
+          '<div class="skfx">' + ic(def.icon, 30) + "</div>" +
+          '<div class="cdTxt srSkillCooldownV392"></div>' +
+          '<div class="fxBub srSkillEffectV392" style="display:none;color:' + skillColor + '"></div>' +
+          '<span class="lv srSkillLevelV392">' + (S.skills[sid] ? S.skills[sid].level : 1) + "</span>" +
+        "</div>"
+      : '<div class="srSkillEmptyCardV392">' + ic("plus", 18) + "</div>") + "</div>";
   }
-  sb += '<div class="autoSk srAutoRefV388 ' + (S.autoSkills ? "on" : "off") + '" data-act="autoSkills" ' +
+  sb += '<div class="autoSk srAutoRefV392 ' + (S.autoSkills ? "on" : "off") + '" data-act="autoSkills" ' +
     'title="' + (S.autoSkills ? "Compétences automatiques" : "Compétences manuelles") + '">' +
-    '<span class="srAutoBoltV388">' + ic("bolt", 14) + '</span><span>AUTO</span><i></i></div>';
+    '<span class="srAutoBoltV392">' + ic("bolt", 14) + '</span><span>AUTO</span><i></i></div>';
   return sb;
 }
 /* compact combat strip: what you are fighting with, plus the skill cooldowns */
@@ -354,7 +352,7 @@ function combatBarHTML() {
   const rar = S.equipped.arme ? RARITY[S.equipped.arme.rarity] : null;
   const col = rar ? rar.c : "#d6dae4";
   return '<div id="skillbar">' +
-    '<div class="slot srWeaponSlotV388" data-act="go" data-arg="equipement" style="border-color:' + col + '66">' +
+    '<div class="slot srWeaponSlotV392" data-act="go" data-arg="equipement" style="border-color:' + col + '66">' +
       (art ? '<img src="' + art + '" style="width:26px;height:26px;object-fit:contain;' +
              "filter:drop-shadow(0 0 5px " + col + '99)">' : ic("sword", 22)) +
       '<i class="catBar" style="background:' + col + '"></i>' +
