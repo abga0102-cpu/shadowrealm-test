@@ -1868,6 +1868,10 @@ function flushRewards() {
    ACTIONS
    ========================================================================= */
 function allocStat(key, pts) {
+  /* Chance Critique was removed from level allocation in V390. Whitelist the
+     three remaining destinations so stale cached buttons cannot spend points
+     into a retired stat. */
+  if (!["sante", "degats", "critred"].includes(key)) return;
   update((s) => {
     const n = Math.min(pts, s.statPoints);
     if (n <= 0) return;

@@ -269,10 +269,9 @@ function scrAccueil() {
 
 /* ---------------- PERSONNAGE ---------------- */
 const STAT_META = [
-  { key: "sante",   label: "Santé",              icon: "heart",  color: "#E5484D", desc: "+20 PV max / point" },
-  { key: "degats",  label: "Dégâts",             icon: "flame",  color: "#FF7A3D", desc: "+2.2 dégâts / point (mêlée &amp; distance)" },
-  { key: "crit",    label: "Chance Critique",    icon: "bolt",   color: "#F5C542", desc: "+0.2% critique / point" },
-  { key: "critred", label: "Réduc. Dégâts Crit.",icon: "shield", color: "#4A90D9", desc: "-0.3% dégâts crit. reçus / point" },
+  { key: "sante",   label: "Santé",              icon: "heart",  color: "#E5484D", desc: "+0,30% PV totaux / point" },
+  { key: "degats",  label: "Dégâts",             icon: "flame",  color: "#FF7A3D", desc: "+0,30% dégâts totaux / point" },
+  { key: "critred", label: "Réduc. Dégâts Crit.",icon: "shield", color: "#4A90D9", desc: "-0,40% dégâts crit. reçus / point" },
 ];
 /* The four skill slots, shared by the home screen and by any screen that shows
    the arena. updateCombatHud() drives the cooldown rings off whatever

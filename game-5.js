@@ -550,8 +550,11 @@ function arenaSyntheticBase(prog,kind){
   const gear=arenaSyntheticGear(prog);let hp=BASE.hp,dmg=BASE.damage,af={};let weapon="epee";
   Object.values(gear).forEach(it=>{hp+=it.hp;dmg+=it.damage;if(it.slot==="arme")weapon=it.weaponType||weapon;(it.affixes||[]).forEach(a=>af[a.key]=(af[a.key]||0)+a.value);});
   const A=k=>af[k]||0, pts=prog.statPts;
-  let hpPts=.42,dmgPts=.42,critPts=.16;if(kind==="tank"){hpPts=.68;dmgPts=.25;critPts=.07}else if(kind==="dps"||kind==="crit"||kind==="skills"){hpPts=.27;dmgPts=.55;critPts=.18}
-  hp+=pts*hpPts*STATS.SANTE.perPoint;dmg+=pts*dmgPts*STATS.DEGATS.perPoint;
+  let hpPts=.50,dmgPts=.40,critRedPts=.10;
+  if(kind==="tank"){hpPts=.70;dmgPts=.20;critRedPts=.10}
+  else if(kind==="dps"||kind==="crit"||kind==="skills"){hpPts=.30;dmgPts=.60;critRedPts=.10}
+  hp*=1+pts*hpPts*STATS.SANTE.perPointPct/100;
+  dmg*=1+pts*dmgPts*STATS.DEGATS.perPointPct/100;
   const tree=prog.tree||{};
   const petBase=petBonusAt(prog.petRarity,Math.min(prog.petLevel,petMaxLevel(prog.petRarity)),prog.petStars||0);
   const petHpPct=petBase*(1+(tree.petHp||0)/100), elem=PET_ELEMENTS[Math.floor(Math.random()*PET_ELEMENTS.length)].id;
@@ -562,7 +565,8 @@ function arenaSyntheticBase(prog,kind){
   const wt=WEAPON_TYPES[weapon]||WEAPON_TYPES.epee;
   let p={name:"Bot",maxHP:Math.max(1,Math.floor(hp*(1+A("hp")/100))),damage:Math.max(1,Math.floor(dmg*(1+A("dmg")/100))),
     attackSpeed:BASE.attackSpeed*(1+arenaRbValue(prog,"atkspeed")/100)*(1+Math.min(20,A("atkspeed"))/100)*(elem==="electrique"?1.08:1)*(wt.speed||1),hit:wt.hit||1,
-    critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+pts*critPts*STATS.CRIT.perPoint+A("crit")),critMult:BASE.critMult+arenaRbValue(prog,"critdmg")/100+A("critdmg")/100,critRed:0,
+    critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+A("crit")),critMult:BASE.critMult+arenaRbValue(prog,"critdmg")/100+A("critdmg")/100,
+    critRed:Math.min(CRIT_RED_CAP,pts*critRedPts*STATS.CRITRED.perPoint),
     dmgRed:Math.min(85,arenaRbValue(prog,"dmgred")),blockChance:Math.min(75,A("block")),doubleAtk:Math.min(100,A("double")),
     lifesteal:Math.max(0,arenaRbValue(prog,"lifesteal")+A("lifesteal")),regen:Math.max(0,arenaRbValue(prog,"regen")),
     styleBonus:wt.attackType==="MELEE"?A("melee"):A("ranged"),skillDmg:(tree.skillDmg||0)+A("skilldmg"),skillCd:Math.min(80,A("skillcd")),
