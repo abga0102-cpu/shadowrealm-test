@@ -1,0 +1,20 @@
+const { test, expect } = require('@playwright/test');
+const fs=require('fs'),path=require('path');
+test('V390 hero level stats scale with build and Crit allocation is retired', async()=>{
+  const root=path.join(__dirname,'..');
+  const g1=fs.readFileSync(path.join(root,'game-1.js'),'utf8');
+  const g2=fs.readFileSync(path.join(root,'game-2.js'),'utf8');
+  const g4=fs.readFileSync(path.join(root,'game-4.js'),'utf8');
+  expect(g1).toContain('perPointPct: 0.30');
+  expect(g1).toContain('heroHpStatMul');
+  expect(g1).toContain('heroDmgStatMul');
+  expect(g1).toContain('critDefenseFactor');
+  expect(g1).toContain('merged.statPoints = Math.max(0, Number(merged.statPoints) || 0) + oldCritPoints');
+  expect(g1).toContain('merged.stats.crit = 0');
+  expect(g2).toContain('["sante", "degats", "critred"].includes(key)');
+  const meta=g4.slice(g4.indexOf('const STAT_META = ['),g4.indexOf('];',g4.indexOf('const STAT_META = ['))+2);
+  expect(meta).not.toContain('key: "crit"');
+  expect(meta).toContain('+0,30% PV totaux / point');
+  expect(meta).toContain('+0,30% dégâts totaux / point');
+  expect(meta).toContain('-0,40% dégâts crit. reçus / point');
+});
