@@ -1,5 +1,5 @@
-/* SHADOWREACH V290 · Raid Évolution PE authority
-   Restores the validated PE economy: level 1 = 100 PE, then +3 PE per raid level.
+/* SHADOWREACH V394 · Raid Évolution PE authority
+   Level 1 = 150 PE, then +3 PE per raid level.
    Only the Evolution raid reward is changed; Minerai, Or, Éclat, Essence and
    Autonomy remain under their existing authorities. */
 (function(){
@@ -9,7 +9,7 @@
 
   function peReward(level){
     level=Math.max(1,Math.floor(Number(level)||1));
-    return 100+3*(level-1);
+    return 150+3*(level-1);
   }
 
   try{
@@ -25,5 +25,5 @@
     }
   }catch(_){ }
 
-  window.__srRaidPEConfigV290={level1:100,perLevel:3,reward:peReward};
+  window.__srRaidPEConfigV290={level1:150,perLevel:3,reward:peReward};
 })();
