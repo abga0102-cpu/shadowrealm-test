@@ -14,7 +14,7 @@ test('V383 uses true circular reference skill structure', async () => {
   expect(game4).toContain('srWeaponSlotV383');
   expect(game4).toContain('srAutoRefV383');
   expect(game4).toContain('--srSkillColor:');
-  expect(game4).not.toContain('class="slot' + (sealed ? " sealed" : "")');
+  expect(game4).not.toContain(`class="slot' + (sealed ? " sealed" : "")`);
 
   expect(ui).toContain('Premium UI polish V209 / V383');
   const v383 = ui.slice(ui.indexOf('/* V383 TRUE REFERENCE SKILLS'));
