@@ -1814,25 +1814,6 @@ function handleCombatEnd(c) {
         s.step = 1;
         const pendingBoss = Number(s.pendingBossFloor || 0);
         if (!(pendingBoss && pendingBoss === s.floor + 1)) s.floor += 1;
-        // Saut d'étage : uniquement après un étage dont tous les ennemis étaient verts,
-        // et jamais si l'étage à sauter est un Élite, un Boss ou un Méga Étage.
-        const nextFloor = s.floor;
-        const weakFight = !c.boss && !c.elite && c.enemies.length > 0 &&
-          c.enemies.every((e) => threatOf(c, e) === "easy");
-        const skipPct = rb(s, "floorSkip");
-        if (!(pendingBoss && pendingBoss === s.floor + 1) && weakFight && skipPct > 0 && !isElite(nextFloor) && !isBoss(nextFloor) && !isMegaFloor(nextFloor) &&
-            Math.random() * 100 < skipPct) {
-          let kills = 0;
-          for (let stp = 1; stp <= RULES.STEPS_PER_FLOOR; stp++) kills += enemyCount(nextFloor, stp);
-          const skipGoldBase = kills * goldReward(nextFloor);
-          const skipExpBase = kills * expReward(nextFloor);
-          const skipGold = Math.floor(skipGoldBase * goldMul(s));
-          const skipExp = Math.floor(skipExpBase * (1 + dv.expBonus / 100));
-          s.gold += skipGold; s.exp += skipExp; grantLevels(s);
-          s.eventProgress.floors = (s.eventProgress.floors || 0) + 1;
-          skipNotice = { floor: nextFloor, gold: skipGold, exp: skipExp };
-          s.floor += 1;
-        }
         floorFlash = { floor: s.floor, until: Date.now() + RULES.FLOOR_FLASH_MS };
       }
       s.recordFloor = Math.max(s.recordFloor, s.floor);
@@ -2522,44 +2503,12 @@ function useAccelerator(target, key) {
   return true;
 }
 
-/* floor you would land on after a rebirth */
-function floorAfterRebirth(s) {
-  const keepPct = rebirthKeepPct(s.rebirth.upgrades.keep || 0);
-  return Math.max(1, Math.floor(s.floor * keepPct / 100));
-}
-/* Section 4A: the requirement is the floor you are standing on, and it is 25.
-   There used to be a second rule on top -- a Rebirth must also leave you at 25
-   or above -- and since you keep half your floor, that pushed the real gate out
-   to 50: at floor 25 you would land at 12 and never qualify. The stated rule
-   wins. Where you land afterwards is what the Conservation upgrade is for. */
-function canRebirth() {
-  return S.floor >= RULES.REBIRTH_UNLOCK_FLOOR;
-}
-function doRebirth() {
-  if (!canRebirth()) return 0;
-  const prGainBonus = rb(S, "prgain");
-  const pr = Math.floor(prFromFloor(S.floor) * (1 + prGainBonus / 100));
-  const keepPct = rebirthKeepPct(S.rebirth.upgrades.keep || 0);
-  update((st) => {
-    st.rebirth.pr += pr;
-    st.rebirth.count += 1;
-    st.warScore += pr * RULES.WAR_POINTS_PER_PR;
-    st.floor = Math.max(1, Math.floor(st.floor * keepPct / 100));
-    st.step = 1;
-    st.checkpoint = lastCheckpoint(st.floor);
-  });
-  setTimeout(startCampaign, 40);
-  return pr;
-}
-function buyRebirth(key) {
-  const def = REBIRTH_UPGRADES.find((u) => u.key === key);
-  const lvl = S.rebirth.upgrades[key] || 0;
-  if (lvl >= def.max) return false;
-  const cost = rebirthUpgCost(def, lvl);
-  if (S.rebirth.pr < cost) return false;
-  update((st) => { st.rebirth.pr -= cost; st.rebirth.upgrades[key] = lvl + 1; });
-  return true;
-}
+/* Rebirth is retired. Compatibility stubs prevent old routes or imported
+   saves from mutating progression if a legacy layer calls these names. */
+function floorAfterRebirth(s) { return Math.max(1, Number(s && s.floor) || 1); }
+function canRebirth() { return false; }
+function doRebirth() { return 0; }
+function buyRebirth() { return false; }
 
 function doAscension() {
   update((s) => {
