@@ -553,8 +553,9 @@ function arenaSyntheticBase(prog,kind){
   let hpPts=.50,dmgPts=.40,critRedPts=.10;
   if(kind==="tank"){hpPts=.70;dmgPts=.20;critRedPts=.10}
   else if(kind==="dps"||kind==="crit"||kind==="skills"){hpPts=.30;dmgPts=.60;critRedPts=.10}
-  hp*=1+pts*hpPts*STATS.SANTE.perPointPct/100;
-  dmg*=1+pts*dmgPts*STATS.DEGATS.perPointPct/100;
+  const hpStatPoints=pts*hpPts,dmgStatPoints=pts*dmgPts;
+  hp=hp*(1+hpStatPoints*STATS.SANTE.perPointPct/100)+hpStatPoints*STATS.SANTE.perPointFlat;
+  dmg=dmg*(1+dmgStatPoints*STATS.DEGATS.perPointPct/100)+dmgStatPoints*STATS.DEGATS.perPointFlat;
   const tree=prog.tree||{};
   const petBase=petBonusAt(prog.petRarity,Math.min(prog.petLevel,petMaxLevel(prog.petRarity)),prog.petStars||0);
   const petHpPct=petBase*(1+(tree.petHp||0)/100), elem=PET_ELEMENTS[Math.floor(Math.random()*PET_ELEMENTS.length)].id;
