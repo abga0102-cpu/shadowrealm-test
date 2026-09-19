@@ -1314,18 +1314,24 @@ function raidMineraiBase(s) {
   return RAID_MINERAI_BASE[Math.min(Math.max(0, st), RAID_MINERAI_BASE.length - 1)];
 }
 function raidReward(raid, level) {
-  // Mise à jour 10 : progression lisible et linéaire pour les trois ressources demandées.
-  // Évolution : 10 au niveau 1, puis +3 par niveau.
-  if (raid === "evolution") return 10 + 3 * Math.max(0, level - 1);
-  // Raids Compétence et Familier : 125 au niveau 1, puis +5 par niveau.
-  // Une victoire de niveau 1 finance 5 invocations de base à 25.
-  if (raid === "competence") return 125 + 5 * Math.max(0, level - 1);
-  if (raid === "familier") return 125 + 5 * Math.max(0, level - 1);
-  // Raid Or conserve sa courbe dédiée.
-  if (raid === "or") return Math.floor(RAID_OR_BASE * Math.pow(RAID_OR_GROWTH, level - 1));
-  if (raid === "minerai") return raidMineraiBase(S) + RAID_MINERAI_PER_LEVEL * (level - 1);
+  const lv = Math.max(1, Math.floor(Number(level) || 1));
+  // V396 canonical Raid reward curves. A final authority loaded at the end of
+  // index.html mirrors these values so legacy wrappers cannot restore old ones.
+  if (raid === "evolution") return 150 + 3 * (lv - 1);
+  if (raid === "competence") return 250 + 10 * (lv - 1);
+  if (raid === "familier") return lv <= 10 ? 300 + 3 * (lv - 1) : 327 + (lv - 10);
+  if (raid === "or") {
+    if (lv <= 10) return Math.round(5000 + 5000 * ((lv - 1) / 9));
+    if (lv <= 15) return 10000 + (lv - 10) * 1000;
+    if (lv <= 20) return 15000 + (lv - 15) * 1000;
+    return Math.floor(20000 * Math.pow(1.057, lv - 20));
+  }
+  if (raid === "minerai") {
+    const early = [600, 630, 660, 690, 720, 750, 780, 810, 830, 850];
+    return lv <= 10 ? early[lv - 1] : 850 + (lv - 10) * 10;
+  }
   const base = RAID_BASE[raid] || 8;
-  return Math.floor(base * Math.pow(RAID_GROWTH, level - 1));
+  return Math.floor(base * Math.pow(RAID_GROWTH, lv - 1));
 }
 /* Section 5: a raid's first Ascension makes its level 1 exactly five times the
    difficulty of the same raid's un-starred level 1. It applies here, on the
