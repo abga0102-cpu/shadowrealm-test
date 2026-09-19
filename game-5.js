@@ -414,32 +414,25 @@ function scrParametres() {
 
 const ARENA_PROGRESSION = {
   /* Ces profils restent des hypothèses de rythme tant qu'aucune télémétrie réelle
-     n'existe. La V3 leur donne cependant une progression interne cohérente avec
-     les systèmes du jeu : Forge, Rebirth, Arbre, Familiers et niveaux de Compétences. */
+     n'existe. Ils suivent uniquement les systèmes actuellement actifs. */
   j1:  { label:"J1",  forge:6,  crafts:5,  petRarity:"COMMUN",   petLevel:4,  petStars:0,
          skillRarity:0, skillLevel:2, skillStars:0, statPts:12, spread:.14,
-         rebirth:{}, tree:{passDmg:0,passHp:0,skillDmg:0,petDmg:0,petHp:0}, globalAscension:0, forgeStars:0 },
+tree:{passDmg:0,passHp:0,skillDmg:0,petDmg:0,petHp:0}, globalAscension:0, forgeStars:0 },
   j7:  { label:"J7",  forge:18, crafts:12, petRarity:"RARE",     petLevel:7,  petStars:0,
          skillRarity:1, skillLevel:6, skillStars:0, statPts:35, spread:.11,
-         rebirth:{damage:2,life:2,atkspeed:1,critdmg:1,dmgred:1},
-         tree:{passDmg:4,passHp:4,skillDmg:4,petDmg:4,petHp:4}, globalAscension:0, forgeStars:0 },
+tree:{passDmg:4,passHp:4,skillDmg:4,petDmg:4,petHp:4}, globalAscension:0, forgeStars:0 },
   j30: { label:"J30", forge:35, crafts:28, petRarity:"EPIQUE",   petLevel:10, petStars:0,
          skillRarity:2, skillLevel:16, skillStars:0, statPts:85, spread:.09,
-         rebirth:{damage:7,life:7,atkspeed:3,critdmg:3,dmgred:5,regen:2,lifesteal:2},
-         tree:{passDmg:12,passHp:12,skillDmg:12,petDmg:10,petHp:10}, globalAscension:0, forgeStars:0 },
+tree:{passDmg:12,passHp:12,skillDmg:12,petDmg:10,petHp:10}, globalAscension:0, forgeStars:0 },
   j90: { label:"J90", forge:50, crafts:60, petRarity:"MYTHIQUE", petLevel:14, petStars:1,
          skillRarity:3, skillLevel:30, skillStars:0, statPts:170,spread:.07,
-         rebirth:{damage:15,life:15,atkspeed:5,critdmg:5,dmgred:10,regen:4,lifesteal:4},
-         tree:{passDmg:24,passHp:24,skillDmg:24,petDmg:20,petHp:20}, globalAscension:1, forgeStars:0 },
+tree:{passDmg:24,passHp:24,skillDmg:24,petDmg:20,petHp:20}, globalAscension:1, forgeStars:0 },
 };
 const ARENA_BUILDS = {
   random:{label:"Aléatoire"}, equilibre:{label:"Équilibré"}, dps:{label:"DPS"},
   tank:{label:"Tank"}, crit:{label:"Critique"}, sustain:{label:"Vol de vie"}, skills:{label:"Compétences"}
 };
 const ARENA_SKILL_RANK={COMMUN:0,RARE:1,EPIQUE:2,MYTHIQUE:3,LEGENDAIRE:4,DIVIN:5};
-function arenaRbValue(prog,key){
-  const def=REBIRTH_UPGRADES.find(u=>u.key===key);return def?((prog.rebirth&&prog.rebirth[key])||0)*def.perLvl:0;
-}
 function arenaPlayerProfile() {
   const wt=WEAPON_TYPES[D.weapon]||WEAPON_TYPES.epee;
   const active=S.skillSlots.slice(0,skillSlotCount(S)).map(id=>SKILL_BY_ID[id]&&S.skills[id]?{def:SKILL_BY_ID[id],level:S.skills[id].level||1,stars:starsOf(S,"skill")}:null)
@@ -511,15 +504,15 @@ function arenaSyntheticBase(prog,kind){
   const petHpPct=petBase*(1+(tree.petHp||0)/100), elem=PET_ELEMENTS[Math.floor(Math.random()*PET_ELEMENTS.length)].id;
   const petDmgPct=petHpPct*(1+(tree.petDmg||0)/100)*(elem==="normal"?1.10:1);
   const forgePct=prog.forge*2;
-  hp*=(1+arenaRbValue(prog,"life")/100+petHpPct/100+forgePct/200+(tree.passHp||0)/100);
-  dmg*=(1+arenaRbValue(prog,"damage")/100+petDmgPct/100+forgePct/100+(tree.passDmg||0)/100);
+  hp*=(1+petHpPct/100+forgePct/200+(tree.passHp||0)/100);
+  dmg*=(1+petDmgPct/100+forgePct/100+(tree.passDmg||0)/100);
   const wt=WEAPON_TYPES[weapon]||WEAPON_TYPES.epee;
   let p={name:"Bot",maxHP:Math.max(1,Math.floor(hp*(1+A("hp")/100))),damage:Math.max(1,Math.floor(dmg*(1+A("dmg")/100))),
-    attackSpeed:BASE.attackSpeed*(1+arenaRbValue(prog,"atkspeed")/100)*(1+Math.min(20,A("atkspeed"))/100)*(elem==="electrique"?1.08:1)*(wt.speed||1),hit:wt.hit||1,
-    critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+A("crit")),critMult:BASE.critMult+arenaRbValue(prog,"critdmg")/100+A("critdmg")/100,
+    attackSpeed:BASE.attackSpeed*(1+Math.min(20,A("atkspeed"))/100)*(elem==="electrique"?1.08:1)*(wt.speed||1),hit:wt.hit||1,
+    critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+A("crit")),critMult:BASE.critMult+A("critdmg")/100,
     critRed:Math.min(CRIT_RED_CAP,pts*critRedPts*STATS.CRITRED.perPoint),
-    dmgRed:Math.min(85,arenaRbValue(prog,"dmgred")),blockChance:Math.min(75,A("block")),doubleAtk:Math.min(100,A("double")),
-    lifesteal:Math.max(0,arenaRbValue(prog,"lifesteal")+A("lifesteal")),regen:Math.max(0,arenaRbValue(prog,"regen")),
+    dmgRed:0,blockChance:Math.min(75,A("block")),doubleAtk:Math.min(100,A("double")),
+    lifesteal:Math.max(0,A("lifesteal")),regen:0,
     styleBonus:wt.attackType==="MELEE"?A("melee"):A("ranged"),skillDmg:(tree.skillDmg||0)+A("skilldmg"),skillCd:Math.min(80,A("skillcd")),
     skills:arenaSyntheticSkills(prog,kind),petElem:elem,gear,source:prog.label};
   if(kind==="dps"){p.damage*=1.12;p.maxHP*=.92} if(kind==="tank"){p.maxHP*=1.18;p.damage*=.92;p.dmgRed=Math.min(85,p.dmgRed+8);p.blockChance=Math.min(75,p.blockChance+6)}
@@ -726,7 +719,7 @@ function scrArenaSim(){
     const versusRows=builds.map(a=>'<tr><td style="padding:6px;white-space:nowrap"><b>'+ARENA_BUILDS[a].label+'</b></td>'+builds.map(d=>cell(m.versus[a][d])).join('')+'</tr>').join('');
     matrix='<div class="card mt8"><div class="b">Analyse complète · '+fmt(m.total)+' combats</div><div class="dim tiny mt4">Calcul asynchrone par lots · aucun impact sur ta sauvegarde.</div><div class="sect mt12">Ton héros · 100 % Puissance</div><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Build bot</th><th style="padding:6px">Tes victoires</th></tr>'+equalRows+'</table></div><div class="sect mt12">Progression naturelle détaillée</div><div style="overflow:auto"><table style="min-width:650px;width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Profil</th>'+builds.map(k=>'<th style="padding:6px">'+ARENA_BUILDS[k].label+'</th>').join('')+'</tr>'+naturalRows+'</table></div><div class="sect mt12">Matrice 6×6 · archétypes</div><div class="dim tiny mt2">Ligne = attaquant · colonne = défenseur · tous normalisés au même benchmark de Puissance ('+fmt(m.playerPower)+').</div><div style="overflow:auto" class="mt6"><table style="min-width:650px;width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Att. ↓ / Déf. →</th>'+builds.map(k=>'<th style="padding:6px">'+ARENA_BUILDS[k].label+'</th>').join('')+'</tr>'+versusRows+'</table></div><div class="dim tiny mt8">Lecture : ~50 % indique un matchup proche. Une ligne très souvent au-dessus de 55 % signale un archétype potentiellement dominant ; une colonne très souvent sous 45 % signale un défenseur particulièrement difficile à battre.</div></div>';}
   const natural=arenaSimCfg.ratio==="natural",busy=!!arenaMatrixRun;
-  return topbar("Arène",'<span class="pill" style="color:#8FEFF4;border-color:#3F8FA0">ARÈNE V4</span>')+'<div class="pad"><div class="card" style="border-color:#3F8FA055"><div class="b">Laboratoire PvP</div><div class="dim small mt4" style="line-height:1.45">Les bots utilisent une progression synthétique indépendante : Forge, raretés, affixes, Rebirth, Arbre, familiers et niveaux de Compétences. J1/J7/J30/J90 restent des hypothèses tant que nous n’avons pas de télémétrie réelle.</div></div><div class="sect mt12">Progression simulée</div>'+seg(Object.entries(ARENA_PROGRESSION).map(([k,v])=>[k,v.label]),'arenaProg',arenaSimCfg.progression)+'<div class="dim tiny mt4">'+prog.label+' · Forge '+prog.forge+' · familier '+RARITY[prog.petRarity].label+' niv.'+prog.petLevel+' · compétences niv.~'+prog.skillLevel+' · '+prog.crafts+' tirages/slot.</div><div class="sect mt12">Matchmaking de test</div>'+seg([['natural','Naturel'],[50,'50%'],[75,'75%'],[100,'100%'],[125,'125%'],[150,'150%'],[200,'200%']],'arenaRatio',arenaSimCfg.ratio)+'<div class="dim tiny mt4">'+(natural?'Naturel : aucune normalisation sur ta Puissance. Le bot conserve la puissance produite par sa progression J1/J7/J30/J90.':'Pourcentage : la population est normalisée vers ta Puissance afin d’isoler l’efficacité des builds à puissance comparable.')+'</div><div class="sect mt12">Type de build</div>'+seg(Object.entries(ARENA_BUILDS).map(([k,v])=>[k,v.label]),'arenaBuild',arenaSimCfg.build)+'<div class="sect mt12">Nombre de combats</div>'+seg([[1,'1'],[100,'100'],[1000,'1 000']],'arenaCount',arenaSimCfg.count)+(arenaLiveResult?'<div class="card mt8" style="border-color:'+(arenaLiveResult.won?'#3FB950':'#E5484D')+'66"><div class="b" style="color:'+(arenaLiveResult.won?'#57E07A':'#FF6B72')+'">'+(arenaLiveResult.won?'Victoire en duel':'Défaite en duel')+'</div><div class="dim tiny mt2">Dernier combat réel contre '+esc(arenaLiveResult.bot?.name||'un bot')+'. Aucun gain ni perte.</div></div>':'')+'<button class="btn green mt12" style="width:100%" data-act="arenaLiveStart" '+(busy?'disabled':'')+'>'+ic('swords',14)+' Lancer un combat réel</button><button class="btn blue mt8" style="width:100%" data-act="arenaRun" '+(busy?'disabled':'')+'>Simuler '+fmt(arenaSimCfg.count)+' combat'+(arenaSimCfg.count>1?'s':'')+'</button><button class="btn mt8" style="width:100%" data-act="arenaMatrix" '+(busy?'disabled':'')+'>Analyser le méta · 30 000 combats</button>'+progress+result+matrix+'<div class="card mt8"><div class="dim tiny" style="line-height:1.5"><b style="color:var(--text)">V4 :</b> le duel temps réel utilise le moteur de combat visible ; la grande analyse s’exécute désormais par petits lots pour préserver la fluidité mobile. Elle inclut une vraie matrice 6×6 entre archétypes, plus le détail J1/J7/J30/J90.</div></div></div>';
+  return topbar("Arène",'<span class="pill" style="color:#8FEFF4;border-color:#3F8FA0">ARÈNE V4</span>')+'<div class="pad"><div class="card" style="border-color:#3F8FA055"><div class="b">Laboratoire PvP</div><div class="dim small mt4" style="line-height:1.45">Les bots utilisent une progression synthétique indépendante : Forge, raretés, affixes, Arbre, familiers et niveaux de Compétences. J1/J7/J30/J90 restent des hypothèses tant que nous n’avons pas de télémétrie réelle.</div></div><div class="sect mt12">Progression simulée</div>'+seg(Object.entries(ARENA_PROGRESSION).map(([k,v])=>[k,v.label]),'arenaProg',arenaSimCfg.progression)+'<div class="dim tiny mt4">'+prog.label+' · Forge '+prog.forge+' · familier '+RARITY[prog.petRarity].label+' niv.'+prog.petLevel+' · compétences niv.~'+prog.skillLevel+' · '+prog.crafts+' tirages/slot.</div><div class="sect mt12">Matchmaking de test</div>'+seg([['natural','Naturel'],[50,'50%'],[75,'75%'],[100,'100%'],[125,'125%'],[150,'150%'],[200,'200%']],'arenaRatio',arenaSimCfg.ratio)+'<div class="dim tiny mt4">'+(natural?'Naturel : aucune normalisation sur ta Puissance. Le bot conserve la puissance produite par sa progression J1/J7/J30/J90.':'Pourcentage : la population est normalisée vers ta Puissance afin d’isoler l’efficacité des builds à puissance comparable.')+'</div><div class="sect mt12">Type de build</div>'+seg(Object.entries(ARENA_BUILDS).map(([k,v])=>[k,v.label]),'arenaBuild',arenaSimCfg.build)+'<div class="sect mt12">Nombre de combats</div>'+seg([[1,'1'],[100,'100'],[1000,'1 000']],'arenaCount',arenaSimCfg.count)+(arenaLiveResult?'<div class="card mt8" style="border-color:'+(arenaLiveResult.won?'#3FB950':'#E5484D')+'66"><div class="b" style="color:'+(arenaLiveResult.won?'#57E07A':'#FF6B72')+'">'+(arenaLiveResult.won?'Victoire en duel':'Défaite en duel')+'</div><div class="dim tiny mt2">Dernier combat réel contre '+esc(arenaLiveResult.bot?.name||'un bot')+'. Aucun gain ni perte.</div></div>':'')+'<button class="btn green mt12" style="width:100%" data-act="arenaLiveStart" '+(busy?'disabled':'')+'>'+ic('swords',14)+' Lancer un combat réel</button><button class="btn blue mt8" style="width:100%" data-act="arenaRun" '+(busy?'disabled':'')+'>Simuler '+fmt(arenaSimCfg.count)+' combat'+(arenaSimCfg.count>1?'s':'')+'</button><button class="btn mt8" style="width:100%" data-act="arenaMatrix" '+(busy?'disabled':'')+'>Analyser le méta · 30 000 combats</button>'+progress+result+matrix+'<div class="card mt8"><div class="dim tiny" style="line-height:1.5"><b style="color:var(--text)">V4 :</b> le duel temps réel utilise le moteur de combat visible ; la grande analyse s’exécute désormais par petits lots pour préserver la fluidité mobile. Elle inclut une vraie matrice 6×6 entre archétypes, plus le détail J1/J7/J30/J90.</div></div></div>';
 }
 
 function scrHub(title, entries) {
@@ -747,7 +740,6 @@ function scrDefis(){ return scrHub("Défis", [
   {label:"Sanctuaire",icon:"flame",go:"sanctuaire",desc:"Fusion de ressources et recettes découvertes."}
 ]); }
 function scrProgression(){ return scrHub("Progression", [
-  {label:"Rebirth",icon:"cycle",go:"rebirth",desc:"Réinitialisation stratégique contre des PR permanents."},
   {label:"Ascension",icon:"star",go:"ascension",desc:"Progression de haut niveau et étoiles d'Ascension."}
 ]); }
 
@@ -769,7 +761,7 @@ const SCREENS = {
   clan: () => scrServerOnly("Clan", [["GET /api/clans", "liste des clans"], ["POST /api/clans", "créer"],
     ["POST /api/clans/join", "rejoindre"], ["POST /api/clans/leave", "quitter"],
     ["POST /api/clans/war", "points de guerre"]],
-    "Les clans (création, adhésion, points de guerre issus du Rebirth) sont stockés côté serveur dans MongoDB."),
+    "Les clans (création, adhésion et guerre de clans) sont stockés côté serveur dans MongoDB."),
 };
 
 /* ---- level-up celebration (sheet §14) ---- */
@@ -938,7 +930,6 @@ const TUTORIAL_FLOWS = {
   tree:       { parent: "developpement", parentLabel: "Développement", child: "arbre", childLabel: "Arbre personnel" },
   raid:       { parent: "defis", parentLabel: "Défis", child: "raid", childLabel: "Raids" },
   megaBoss:   { parent: "defis", parentLabel: "Défis", child: "mega", childLabel: "Méga-Boss" },
-  rebirth:    { parent: "progression", parentLabel: "Progression", child: "rebirth", childLabel: "Rebirth" }
 };
 
 function tutorialGuideInfo(key) {
@@ -1039,7 +1030,7 @@ function checkLevelUp() {
     seenLevel = S.level;
     if (!document.getElementById("overlay")) showLevelUp(from, S.level);
   } else if (S.level < seenLevel) {
-    seenLevel = S.level;   // rebirth / ascension reset the level
+    seenLevel = S.level;   // Ascension can reset the level
   }
 }
 
@@ -1542,7 +1533,7 @@ function showMegaResult(r) {
 function askReset() {
   openModal('<div class="center">' + ic("trash", 34) + "</div>" +
     '<div class="dim small center mt6" style="margin-bottom:14px;line-height:1.55">Toute la progression locale sera effacée : ' +
-    "niveau, étage, équipement, compétences, familiers, rebirth et ascension. <b>Action irréversible.</b></div>" +
+    "niveau, étage, équipement, compétences, familiers et ascension. <b>Action irréversible.</b></div>" +
     '<div class="row gap6">' + btn("Annuler", { cls: "ghost", act: "closeModal" }) +
     btn("Tout effacer", { cls: "red", act: "doReset" }) + "</div>", "Réinitialiser ?");
 }
