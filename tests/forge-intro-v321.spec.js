@@ -58,6 +58,7 @@ test('V321 stage 1-2 forces the pre-Forge teaching loss and then surfaces the Fo
     const introCombat = combat;
     handleCombatEnd(introCombat);
     const mineraiOnce = S.minerai;
+    const defeatsOnce = S.tutorial.forgeIntroDefeatsV321;
     handleCombatEnd(introCombat);
     const mineraiTwice = S.minerai;
 
@@ -71,7 +72,7 @@ test('V321 stage 1-2 forces the pre-Forge teaching loss and then surfaces the Fo
       encounter,
       afterLoss: {
         ready: !!S.tutorial.forgeIntroReadyV321,
-        defeats: S.tutorial.forgeIntroDefeatsV321,
+        defeats: defeatsOnce,
         floor: S.floor,
         recordFloor: S.recordFloor,
         forgeUnlocked: __srProgressionUnlocksV321.forgeUnlocked(),
