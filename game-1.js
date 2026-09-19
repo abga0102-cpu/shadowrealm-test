@@ -458,8 +458,8 @@ const RULES = {
 const STATS = {
   /* Hero level points scale the current build instead of adding tiny flat values
      that disappear once real equipment enters the progression. */
-  SANTE:   { key: "sante",   label: "Santé",       perPointPct: 0.30, icon: "heart" },
-  DEGATS:  { key: "degats",  label: "Dégâts",      perPointPct: 0.30, icon: "flame" },
+  SANTE:   { key: "sante",   label: "Santé",       perPointPct: 1.00, perPointFlat: 2, icon: "heart" },
+  DEGATS:  { key: "degats",  label: "Dégâts",      perPointPct: 1.00, perPointFlat: 0.25, icon: "flame" },
   /* Kept as a zero-value legacy key so old saves can be refunded safely. Crit
      chance now comes from the hero base, gear and other dedicated systems. */
   CRIT:    { key: "crit",    label: "Chance Critique", perPoint: 0, icon: "bolt" },
@@ -2584,10 +2584,14 @@ function computeDerived(s) {
   const af = equippedAffixes(s);
   const A = (k) => af[k] || 0;
 
-  const heroHpStatMul = 1 + Math.max(0, Number(s.stats.sante) || 0) * STATS.SANTE.perPointPct / 100;
-  const heroDmgStatMul = 1 + Math.max(0, Number(s.stats.degats) || 0) * STATS.DEGATS.perPointPct / 100;
-  const maxHP = Math.floor((BASE.hp + equipHP) * heroHpStatMul * lifeMul * (1 + A("hp") / 100));
-  const damage = Math.floor((BASE.damage + equipDmg) * heroDmgStatMul * dmgMul * (1 + A("dmg") / 100));
+  const heroHpStatPoints = Math.max(0, Number(s.stats.sante) || 0);
+  const heroDmgStatPoints = Math.max(0, Number(s.stats.degats) || 0);
+  const heroHpStatMul = 1 + heroHpStatPoints * STATS.SANTE.perPointPct / 100;
+  const heroDmgStatMul = 1 + heroDmgStatPoints * STATS.DEGATS.perPointPct / 100;
+  const heroHpStatFlat = heroHpStatPoints * STATS.SANTE.perPointFlat;
+  const heroDmgStatFlat = heroDmgStatPoints * STATS.DEGATS.perPointFlat;
+  const maxHP = Math.floor(((BASE.hp + equipHP) * heroHpStatMul + heroHpStatFlat) * lifeMul * (1 + A("hp") / 100));
+  const damage = Math.floor(((BASE.damage + equipDmg) * heroDmgStatMul + heroDmgStatFlat) * dmgMul * (1 + A("dmg") / 100));
   const critChance = Math.min(CRIT_CHANCE_CAP, BASE.critChance + A("crit"));
   const critMult = BASE.critMult + rb(s, "critdmg") / 100 + A("critdmg") / 100;
   const critRed = Math.min(CRIT_RED_CAP, Math.max(0, Number(s.stats.critred) || 0) * STATS.CRITRED.perPoint);
