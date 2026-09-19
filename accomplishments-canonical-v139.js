@@ -55,9 +55,9 @@ var ITEMS={
  Etages:[
   ['floor25',45,'Vaincre Facile · 3-5','250 Essences'],
   ['floor50',100,'Terminer Facile · 5-20','2 000 Minerais + 5 000 Or'],
-  ['floor75',145,'Vaincre Difficile · 3-5','500 Étincelles + 30 Pièces de fusion Communes'],
-  ['floor100',200,'Terminer Difficile · 5-20','500 Étincelles + 500 Essences + 30 Pièces de fusion Communes'],
-  ['floor150',300,'Terminer Expert · 5-20','750 Étincelles + 750 Essences + 15 Pièces de fusion Rares'],
+  ['floor75',145,'Vaincre Difficile · 3-5','50 000 Or + 500 Étincelles + 30 Pièces de fusion Communes'],
+  ['floor100',200,'Terminer Difficile · 5-20','100 000 Or + 500 Étincelles + 500 Essences + 30 Pièces de fusion Communes'],
+  ['floor150',300,'Terminer Expert · 5-20','150 000 Or + 750 Étincelles + 750 Essences + 15 Pièces de fusion Rares'],
   ['floor200',400,'Terminer Cauchemar · 5-20','1 000 Étincelles + 1 000 Essences + 20 Pièces de fusion Rares'],
   ['floor250',500,'Terminer Infernal · 5-20','1 250 Étincelles + 1 250 Essences + 10 Pièces de fusion Épiques'],
   ['floor300',600,'Terminer Abyssal · 5-20','1 500 Étincelles + 1 500 Essences + 15 Pièces de fusion Épiques'],
