@@ -1505,6 +1505,10 @@ function treeEffectivePer(node) {
   return node.per * mul;
 }
 
+/* Global Gold target caps by Tree tier: I +5%, II +10%, III +15%, IV +20%.
+   These four nodes opt out of the generic tier multiplier so their combined cap is exactly +50%. */
+const TREE_GOLD_TIER_CAPS = [5, 10, 15, 20];
+
 const TREE_NODES = [
 
   /* ---------------- PALIER I ---------------- */
