@@ -436,13 +436,13 @@ const SAVE_VERSION = 4;
 
 const RULES = {
   STEPS_PER_FLOOR: 3, CHECKPOINT_EVERY: 5, ELITE_EVERY: 5, BOSS_EVERY: 10,
-  MAX_LEVEL: 100, STAT_POINTS_PER_LEVEL: 5, REBIRTH_UNLOCK_FLOOR: 25,
+  MAX_LEVEL: 100, STAT_POINTS_PER_LEVEL: 5, REBIRTH_UNLOCK_FLOOR: 25, // legacy compatibility only
   SKILL_SLOTS_BASE: 3, SKILL_SLOT_5_LEVEL: 100,
   RAID_UNLOCK_LEVEL: 5, CHAT_UNLOCK_LEVEL: 3, MAX_ENEMIES: 3,
   FORGE_MAX: 50, SKILL_MAX_LEVEL: 50, MASTERY_MAX: 50, EGG_SLOT_MAX: 5,
   RAID_MAX_LEVEL: 50, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6, RAID_ASCEND_MAX_STARS: 1,
   UNIVERSAL_KEY_DAILY: 3, UNIVERSAL_KEY_CAP: 6, AFK_BASE_HOURS: 8,
-  WAR_POINTS_PER_PR: 30,
+  WAR_POINTS_PER_PR: 30, // legacy compatibility only
   FORGE_BATCH_BASE: 1, FORGE_BATCH_MAX: 10,
   // a fight is never resolved instantly, however overpowered the player is:
   // ENTRY = enemy walks in before anyone swings, HOLD = victory/defeat beat.
@@ -450,8 +450,7 @@ const RULES = {
   // clearing the last step of a floor gets a longer beat plus an on-screen
   // floor banner, so a fast campaign sprint stays readable instead of a blur
   FLOOR_CLEAR_MS: 700, FLOOR_FLASH_MS: 900,
-  // Kept for the screen, which still tells you where a Rebirth would land you.
-  // It is no longer a condition: section 4A gates on the current floor alone.
+  // Retained only so old imported code can read the historical field safely.
   REBIRTH_MIN_FLOOR_AFTER: 25,
 };
 
@@ -1430,7 +1429,7 @@ const PE_REWARD_BASE = 20, PE_REWARD_PER_LEVEL = 6;
 /* First-clear reward for a major Boss (floor 10, 20, 30, ...). Deeper bosses
    hand out better accelerators, and more of them, but the ladder is capped so
    it cannot flood the economy. Claimed once per boss, FOREVER — the record
-   survives Rebirth, so re-killing a boss pays the normal rewards only. */
+   persists permanently, so re-killing a boss pays the normal rewards only. */
 function bossFirstClearReward(floor) {
   const tier = Math.floor(floor / RULES.BOSS_EVERY);        // 1 at floor 10, 5 at 50...
   if (tier <= 0) return null;
@@ -2461,7 +2460,7 @@ function harvestRates(s) {
   };
 }
 /* V395 Gold Autonomy stays at 25% through Raid Or 10, then tapers to 20% at
-   level 20 and above. It spends no key and never receives the Rebirth Gold bonus. */
+   level 20 and above. It spends no key and receives no retired Rebirth multiplier. */
 
 function harvestAdvance(s, seconds) {
   const h = s.harvest;
@@ -2524,8 +2523,7 @@ function harvestIsEmpty(s) {
 /* Section 16: everything worn together may add at most 20 % to either speed.
    The one exception is the exceptional roll -- a bonus that came out above its
    cap raises the ceiling to its own value, which is what makes such a piece
-   worth wearing at all. Rebirth's attack speed is not equipment and is not
-   capped here. */
+   worth wearing at all. */
 const SPEED_AFFIX_CAP = 20;
 function speedCapFor(s, key) {
   let cap = SPEED_AFFIX_CAP;
