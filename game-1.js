@@ -999,13 +999,23 @@ function rollRarity(rates, order) {
    gold price of an upgrade and is untouched. */
 function forgeCost(forgeLevel) { return FORGE_CRAFT_COST; }
 const FORGE_CRAFT_COST = 10;
-/* Exact Forge Gold ladder. Levels 1 -> 50 cost 15,000,000 Gold in total.
-   The early levels stay cheap, then the curve rises smoothly so long upgrade
-   timers double as time to farm the next payment. */
+/* Forge Gold base ladder. V395 keeps the opening unchanged, then applies a
+   moderate pacing multiplier against the stronger Raid Or economy:
+   x1.00 through level 5, x1.10 at 10, x1.20 at 15, x1.25 at 20+.
+   The Raid Or buff remains meaningful; this only prevents late Forge upgrades
+   from becoming disproportionately cheap. */
 const FORGE_UPGRADE_GOLD_COSTS = [3350,3800,4350,4950,5650,6450,7400,8400,9600,10950,12500,14250,16250,18550,21150,24100,27500,31350,35750,40800,46550,53100,60550,69050,78750,89850,102500,116900,133300,152050,173450,197850,225650,257400,293600,334850,381950,435650,496900,566800,646500,737400,841100,959350,1094250,1248100,1423600,1623800,1852100];
+function forgeGoldEconomyMul(level) {
+  const lv = Math.max(1, Number(level) || 1);
+  if (lv <= 5) return 1;
+  if (lv <= 10) return 1 + (lv - 5) * 0.02;
+  if (lv <= 15) return 1.10 + (lv - 10) * 0.02;
+  if (lv <= 20) return 1.20 + (lv - 15) * 0.01;
+  return 1.25;
+}
 function forgeUpgradeCost(level) {
   const i = Math.max(0, Math.min(FORGE_UPGRADE_GOLD_COSTS.length - 1, level - 1));
-  return FORGE_UPGRADE_GOLD_COSTS[i];
+  return Math.round(FORGE_UPGRADE_GOLD_COSTS[i] * forgeGoldEconomyMul(level));
 }
 const FORGE_UPGRADE_TIMES = { 1: 0, 2: 0, 3: 0, 4: 300, 5: 600, 6: 900, 7: 1200, 8: 1800, 9: 3000, 10: 3600 };
 function forgeUpgradeTime(level) {
@@ -1413,7 +1423,7 @@ function rebirthUpgCost(def, lvl) {
    Opening is deliberately cheaper than levelling, so breadth stays affordable
    and depth is what the Raid has to fund.
    ------------------------------------------------------------------------ */
-const PE_TIER_COST  = [8, 14, 26, 45];      // base PE cost of a node's levels, by tier
+const PE_TIER_COST  = [9, 16, 30, 52];      // V395: ~15% rebalance for the stronger Raid Évolution economy
 const PE_FIRST_MUL  = 0.6;                  // opening a node costs less than levelling it
 const PA_TO_PE = 8;                         // legacy: 105 PA of unlocks buys 780 PE of unlocks
 const PE_LEVEL_GROWTH = 1.22;               // each further level costs more
@@ -2437,6 +2447,12 @@ function harvestEfficiency(s) { return Math.min(100, treeSum(s, "harvestEff")); 
    the level the player has actually reached -- no key is spent, no raid is won
    and no level is ever unlocked by this. PE is deliberately absent: it stays
    exclusive to the Raid Évolution. */
+function goldHarvestShare(level) {
+  const lv = Math.max(1, Number(level) || 1);
+  if (lv <= 10) return 0.25;
+  if (lv >= 20) return 0.20;
+  return 0.25 - (lv - 10) * 0.005;
+}
 function harvestRates(s) {
   const eff = 1 + harvestEfficiency(s) / 100;
   return {
@@ -2446,11 +2462,11 @@ function harvestRates(s) {
     minerai: raidReward("minerai", s.raids.minerai.level) * 0.50 * eff,
     essence: raidReward("familier", s.raids.familier.level) * 0.25 * eff,
     eclat: raidReward("competence", s.raids.competence.level) * 0.25 * eff,
-    gold: raidReward("or", s.raids.or.level) * 0.25 * eff * afkGainMul(s),
+    gold: raidReward("or", s.raids.or.level) * goldHarvestShare(s.raids.or.level) * eff * afkGainMul(s),
   };
 }
-/* Gold Autonomy pays 25% of the player's current Raid Or reward per hour.
-   It spends no key and never receives the Rebirth Gold bonus. */
+/* V395 Gold Autonomy stays at 25% through Raid Or 10, then tapers to 20% at
+   level 20 and above. It spends no key and never receives the Rebirth Gold bonus. */
 
 function harvestAdvance(s, seconds) {
   const h = s.harvest;
