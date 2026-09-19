@@ -1,7 +1,7 @@
-/* SHADOWREACH V291 · Skill/Familiar summon economy authority
-   Raid summon rewards remain on the validated V291 curve:
-   - Raid Compétence: 250 at lvl1, +10 per level.
-   - Raid Familier:   250 at lvl1, +10 per level.
+/* SHADOWREACH V394 · Skill/Familiar summon economy authority
+   - Raid Compétence remains 250 at lvl1, +10 per level.
+   - Raid Familier starts at 300, gains +3 per level through lvl10,
+     then +1 per level from lvl11 through lvl50.
    V322A changes only the PAID Familiar invocation price from 25 to 50 Essence.
    Tree Double Œuf stays a free extra result and never pays a second 50 Essence.
    Skill costs, raid keys, reward curves and all other raids remain unchanged. */
@@ -12,16 +12,23 @@
 
   var FAMILIAR_SUMMON_COST_V322A=50;
 
-  function summonReward(level){
+  function competenceReward(level){
     level=Math.max(1,Math.floor(Number(level)||1));
     return 250+10*(level-1);
+  }
+
+  function familiarReward(level){
+    level=Math.max(1,Math.floor(Number(level)||1));
+    if(level<=10) return 300+3*(level-1);
+    return 327+(level-10);
   }
 
   try{
     if(typeof raidReward==='function'&&!raidReward.__srV291){
       var previousRaidReward=raidReward;
       var wrappedReward=function(type,level){
-        if(type==='competence'||type==='familier')return summonReward(level);
+        if(type==='competence')return competenceReward(level);
+        if(type==='familier')return familiarReward(level);
         return previousRaidReward.apply(this,arguments);
       };
       wrappedReward.__srV291=true;
@@ -117,7 +124,7 @@
   window.__srFamiliarSummonCostV322A=FAMILIAR_SUMMON_COST_V322A;
   window.__srRaidSummonEconomyConfigV291={
     competence:{base:250,perLevel:10},
-    familier:{base:250,perLevel:10,paidSummonCost:FAMILIAR_SUMMON_COST_V322A},
-    expectedPaidSummonsPerBaseRaidWin:{level1:5,level50:14.8}
+    familier:{base:300,perLevelTo10:3,perLevelAfter10:1,level10:327,level50:367,paidSummonCost:FAMILIAR_SUMMON_COST_V322A},
+    expectedPaidSummonsPerBaseRaidWin:{level1:6,level50:7.34}
   };
 })();
