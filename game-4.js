@@ -1032,7 +1032,7 @@ function scrMegaRaid() {
   const floors = megaBossFloors(S);
   const cleared = floors.filter((f) => S.megaBossClears[String(f)]);
   const next = nextMegaBossFloor(S);
-  const appleBoost = rb(S, "apples");
+  const appleBoost = 0;
   let challenge;
   if (!floors.length) {
     challenge = '<div class="card frame center" style="border-left-color:#E5484D">' + ic("lock", 30) +
