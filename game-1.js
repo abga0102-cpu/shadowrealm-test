@@ -456,10 +456,14 @@ const RULES = {
 };
 
 const STATS = {
-  SANTE:   { key: "sante",   label: "Santé",           perPoint: 20,  icon: "heart" },
-  DEGATS:  { key: "degats",  label: "Dégâts",          perPoint: 2.2, icon: "flame" },
-  CRIT:    { key: "crit",    label: "Chance Critique", perPoint: 0.2, icon: "bolt" },
-  CRITRED: { key: "critred", label: "Réduc. Crit",     perPoint: 0.3, icon: "shield" },
+  /* Hero level points scale the current build instead of adding tiny flat values
+     that disappear once real equipment enters the progression. */
+  SANTE:   { key: "sante",   label: "Santé",       perPointPct: 0.30, icon: "heart" },
+  DEGATS:  { key: "degats",  label: "Dégâts",      perPointPct: 0.30, icon: "flame" },
+  /* Kept as a zero-value legacy key so old saves can be refunded safely. Crit
+     chance now comes from the hero base, gear and other dedicated systems. */
+  CRIT:    { key: "crit",    label: "Chance Critique", perPoint: 0, icon: "bolt" },
+  CRITRED: { key: "critred", label: "Réduc. Crit", perPoint: 0.40, icon: "shield" },
 };
 const CRIT_CHANCE_CAP = 60, CRIT_RED_CAP = 80;
 const SKILL_SUMMON_COST = 25;  // base cost per Compétence invocation; Tree reductions apply afterwards
@@ -1899,6 +1903,16 @@ function migrate(s, name) {
     recommendationDismissed: Object.assign({}, base.recommendationDismissed, s.recommendationDismissed || {}),
   });
 
+  /* V390: Chance Critique is no longer a level-point destination. Refund every
+     point previously invested there exactly once, then keep the legacy field at
+     zero for save compatibility. */
+  if (!merged.heroStatRebalanceV390) {
+    const oldCritPoints = Math.max(0, Math.floor(Number(merged.stats.crit) || 0));
+    merged.statPoints = Math.max(0, Number(merged.statPoints) || 0) + oldCritPoints;
+    merged.stats.crit = 0;
+    merged.heroStatRebalanceV390 = true;
+  }
+
   // ---- tree: the old save held a flat `unlocked` id list of single-level nodes.
   // Those ids no longer exist, so refund their points rather than dropping them.
   /* The generic "accessoire" became Collier, Anneau and Ceinture. An accessory
@@ -2570,11 +2584,13 @@ function computeDerived(s) {
   const af = equippedAffixes(s);
   const A = (k) => af[k] || 0;
 
-  const maxHP = Math.floor((BASE.hp + s.stats.sante * STATS.SANTE.perPoint + equipHP) * lifeMul * (1 + A("hp") / 100));
-  const damage = Math.floor((BASE.damage + s.stats.degats * STATS.DEGATS.perPoint + equipDmg) * dmgMul * (1 + A("dmg") / 100));
-  const critChance = Math.min(CRIT_CHANCE_CAP, BASE.critChance + s.stats.crit * STATS.CRIT.perPoint + A("crit"));
+  const heroHpStatMul = 1 + Math.max(0, Number(s.stats.sante) || 0) * STATS.SANTE.perPointPct / 100;
+  const heroDmgStatMul = 1 + Math.max(0, Number(s.stats.degats) || 0) * STATS.DEGATS.perPointPct / 100;
+  const maxHP = Math.floor((BASE.hp + equipHP) * heroHpStatMul * lifeMul * (1 + A("hp") / 100));
+  const damage = Math.floor((BASE.damage + equipDmg) * heroDmgStatMul * dmgMul * (1 + A("dmg") / 100));
+  const critChance = Math.min(CRIT_CHANCE_CAP, BASE.critChance + A("crit"));
   const critMult = BASE.critMult + rb(s, "critdmg") / 100 + A("critdmg") / 100;
-  const critRed = Math.min(CRIT_RED_CAP, s.stats.critred * STATS.CRITRED.perPoint);
+  const critRed = Math.min(CRIT_RED_CAP, Math.max(0, Number(s.stats.critred) || 0) * STATS.CRITRED.perPoint);
   const atkSpeedAffix = Math.min(speedCapFor(s, "atkspeed"), A("atkspeed"));
   const moveSpeedAffix = Math.min(speedCapFor(s, "movespeed"), A("movespeed"));
   const attackSpeed = BASE.attackSpeed * (1 + rb(s, "atkspeed") / 100) * (1 + atkSpeedAffix / 100)
@@ -2600,7 +2616,13 @@ function computeDerived(s) {
   const mitigation = 1 / Math.max(0.15, 1 - dmgRedNow / 100);
   const blockFactor = 1 + blockNow / 200;
   const sustainFactor = 1 + Math.min(50, lifeStealNow) / 200 + Math.min(50, regenNow) / 250;
-  const effectiveHP = maxHP * mitigation * blockFactor * sustainFactor;
+  /* Normal enemies crit about 8% of the time for roughly +60% damage. Reflect
+     Crit Reduction in displayed Power using that real expected-damage effect,
+     rather than granting an arbitrary flat Power bonus. */
+  const critPressure = 0.08 * 0.60;
+  const critDefenseFactor = (1 + critPressure) /
+    (1 + critPressure * (1 - Math.min(CRIT_RED_CAP, critRed) / 100));
+  const effectiveHP = maxHP * mitigation * blockFactor * sustainFactor * critDefenseFactor;
   const power = Math.floor(Math.sqrt(Math.max(1, offense) * Math.max(1, effectiveHP)) * 1.5);
 
   return {
