@@ -1,19 +1,19 @@
-/* Shadowreach V323 — Raid Minerai active-play balance
+/* Shadowreach V394 — Raid Minerai active-play balance
    Design authority:
-   - Raid Minerai rewards: 750 at level 1, ramp quickly to 1000 at level 10.
-   - From level 11 onward: +10 Minerai per raid level.
+   - Raid Minerai rewards: 600 at level 1, preserving the existing progression shape.
+   - Level 10 = 850; from level 11 onward: +10 Minerai per raid level.
    - Minerai Autonomy: 25% of the authoritative current Raid Minerai reward per hour.
    Other raid/autonomy resources and progression rules remain unchanged.
 */
 (function(){
   'use strict';
   var MINERAI_AUTONOMY_SHARE = 0.25;
-  var EARLY_REWARDS = [750, 780, 810, 840, 870, 900, 930, 960, 980, 1000];
+  var EARLY_REWARDS = [600, 630, 660, 690, 720, 750, 780, 810, 830, 850];
 
   function mineraiReward(level) {
     var lv = Math.max(1, Math.floor(Number(level) || 1));
     if (lv <= EARLY_REWARDS.length) return EARLY_REWARDS[lv - 1];
-    return 1000 + (lv - 10) * 10;
+    return 850 + (lv - 10) * 10;
   }
 
   /* Minerai now owns its explicit V323 reward curve. All other raid reward
@@ -52,9 +52,9 @@
 
   try {
     window.__shadowreachRaidMineraiBalance = {
-      version: 323,
-      level1: 750,
-      level10: 1000,
+      version: 394,
+      level1: 600,
+      level10: 850,
       postLevel10PerLevel: 10,
       autonomySharePerHour: MINERAI_AUTONOMY_SHARE
     };
