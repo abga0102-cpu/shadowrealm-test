@@ -1,5 +1,5 @@
-/* SHADOWREACH · Premium UI polish V209 / V388
-   Reference-locked dark fantasy composition: V388 framed skill tiles matching the approved reference.
+/* SHADOWREACH · Premium UI polish V209 / V391
+   Reference-locked dark fantasy composition: V391 refined framed skill tiles.
    Presentation-only: no routes, economy, saves, timers, combat values or gameplay state are changed. */
 (function(){
   'use strict';
@@ -3348,6 +3348,148 @@ body{
   }
   #app.srHomeFullArena #skillbar .petMini{height:41px!important;min-width:94px!important}
   #app.srHomeFullArena #skillbar .petMini img{width:32px!important;height:32px!important}
+}
+
+
+/* V391 SKILL BAND POLISH
+   Keep V388 structure. Improve only readability, icon emphasis, badge placement
+   and spacing based on the latest phone screenshot. */
+
+/* Skill art gets more visual weight and a brighter, cleaner center. */
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx{
+  inset:2px!important;
+  background:
+    radial-gradient(circle at 50% 28%,var(--srSkillLight) 0%,
+      color-mix(in srgb,var(--srSkillLight) 66%,var(--srSkillColor)) 32%,
+      color-mix(in srgb,var(--srSkillColor) 74%,var(--srSkillDark)) 68%,
+      var(--srSkillDark) 100%)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    inset 0 -4px 7px rgba(0,0,0,.13),
+    0 0 6px color-mix(in srgb,var(--srSkillColor) 50%,transparent)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx::before{
+  background:
+    radial-gradient(circle at 50% 13%,rgba(255,255,255,.42),transparent 29%),
+    linear-gradient(150deg,rgba(255,255,255,.15),transparent 39%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx::after{
+  background:linear-gradient(180deg,transparent 72%,rgba(0,0,0,.08))!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx>svg{
+  width:32px!important;
+  height:32px!important;
+  transform:scale(1.06)!important;
+  filter:
+    brightness(1.42)
+    contrast(1.10)
+    saturate(1.18)
+    drop-shadow(0 1px 2px rgba(0,0,0,.56))
+    drop-shadow(0 0 4px color-mix(in srgb,var(--srSkillColor) 56%,transparent))!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388.cooling .skfx{
+  filter:none!important;
+  opacity:1!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388.cooling .skfx>svg{
+  filter:
+    brightness(1.34)
+    contrast(1.08)
+    saturate(1.12)
+    drop-shadow(0 1px 2px rgba(0,0,0,.56))
+    drop-shadow(0 0 3px color-mix(in srgb,var(--srSkillColor) 48%,transparent))!important;
+}
+
+/* Slightly cleaner tile frame so the artwork, not the border, leads. */
+#app.srHomeFullArena #skillbar .srSkillTileV388{
+  border-width:1.5px!important;
+  border-color:#D6AA49!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.15),
+    inset 0 -2px 0 rgba(2,12,22,.64),
+    0 2px 4px rgba(0,0,0,.31)!important;
+}
+
+/* Cooldown stays BELOW the tile and becomes quieter/smaller. */
+#app.srHomeFullArena #skillbar .srSkillCooldownV388{
+  top:45px!important;
+  min-height:8px!important;
+  font-size:7.3px!important;
+  line-height:8px!important;
+  font-weight:850!important;
+  color:#E8DDBF!important;
+  letter-spacing:0!important;
+  text-shadow:0 1px 1px #000!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388{
+  height:54px!important;
+}
+
+/* Move level badge inside the tile's upper corner, away from the cooldown lane. */
+#app.srHomeFullArena #skillbar .srSkillLevelV388{
+  right:2px!important;
+  top:3px!important;
+  width:10px!important;
+  min-width:10px!important;
+  height:10px!important;
+  font-size:5.5px!important;
+  line-height:10px!important;
+  border-color:rgba(229,190,101,.82)!important;
+  background:#07121DEE!important;
+  color:#FFEEC0!important;
+  box-shadow:0 1px 2px rgba(0,0,0,.46)!important;
+}
+
+/* Active-effect timer moves to the opposite upper corner, compact and non-overlapping. */
+#app.srHomeFullArena #skillbar .srSkillEffectV388{
+  left:-1px!important;
+  right:auto!important;
+  top:-1px!important;
+  min-width:16px!important;
+  padding:1px 3px!important;
+  font-size:5.4px!important;
+  line-height:7px!important;
+  opacity:.90!important;
+}
+
+/* AUTO gets a little more finish without changing its structure. */
+#app.srHomeFullArena #skillbar .srAutoRefV388{
+  background:
+    radial-gradient(circle at 50% 24%,rgba(255,214,92,.10),transparent 42%),
+    linear-gradient(180deg,#173B5B,#092641 58%,#05192D)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -3px 0 #03111F,
+    0 2px 4px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV388 .srAutoBoltV388{
+  color:#FFE06A!important;
+  filter:brightness(1.18) drop-shadow(0 0 5px rgba(255,210,72,.44))!important;
+}
+
+/* Familiar keeps the current successful structure but gets slightly more breathing room. */
+#app.srHomeFullArena #skillbar .petMini{
+  padding-left:7px!important;
+  padding-right:7px!important;
+  gap:5px!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:35px!important;
+  height:35px!important;
+}
+
+@media(max-width:390px){
+  #app.srHomeFullArena #skillbar .srSkillRefV388{
+    height:52px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillCooldownV388{
+    top:43px!important;
+    font-size:7px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV388 .skfx>svg{
+    width:30px!important;
+    height:30px!important;
+  }
 }
 
 `;
