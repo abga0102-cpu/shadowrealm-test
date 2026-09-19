@@ -436,22 +436,21 @@ const SAVE_VERSION = 4;
 
 const RULES = {
   STEPS_PER_FLOOR: 3, CHECKPOINT_EVERY: 5, ELITE_EVERY: 5, BOSS_EVERY: 10,
-  MAX_LEVEL: 100, STAT_POINTS_PER_LEVEL: 5, REBIRTH_UNLOCK_FLOOR: 25,
+  MAX_LEVEL: 100, STAT_POINTS_PER_LEVEL: 5, REBIRTH_UNLOCK_FLOOR: 25, // legacy compatibility only
   SKILL_SLOTS_BASE: 3, SKILL_SLOT_5_LEVEL: 100,
   RAID_UNLOCK_LEVEL: 5, CHAT_UNLOCK_LEVEL: 3, MAX_ENEMIES: 3,
   FORGE_MAX: 50, SKILL_MAX_LEVEL: 50, MASTERY_MAX: 50, EGG_SLOT_MAX: 5,
   RAID_MAX_LEVEL: 50, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6, RAID_ASCEND_MAX_STARS: 1,
   UNIVERSAL_KEY_DAILY: 3, UNIVERSAL_KEY_CAP: 6, AFK_BASE_HOURS: 8,
-  WAR_POINTS_PER_PR: 30,
+  WAR_POINTS_PER_PR: 30, // legacy compatibility only
   FORGE_BATCH_BASE: 1, FORGE_BATCH_MAX: 10,
   // a fight is never resolved instantly, however overpowered the player is:
   // ENTRY = enemy walks in before anyone swings, HOLD = victory/defeat beat.
   FIGHT_ENTRY_MS: 420, FIGHT_HOLD_MS: 820,
   // clearing the last step of a floor gets a longer beat plus an on-screen
-  // floor banner, so a post-Rebirth sprint stays readable instead of a blur
+  // floor banner, so a fast campaign sprint stays readable instead of a blur
   FLOOR_CLEAR_MS: 700, FLOOR_FLASH_MS: 900,
-  // Kept for the screen, which still tells you where a Rebirth would land you.
-  // It is no longer a condition: section 4A gates on the current floor alone.
+  // Retained only so old imported code can read the historical field safely.
   REBIRTH_MIN_FLOOR_AFTER: 25,
 };
 
@@ -523,8 +522,7 @@ function enemyDamage(floor) {
 }
 /* Campaign Gold economy. Floors 1-25 keep the original early curve.
    After floor 25, growth slows progressively at floors 300, 500 and 750.
-   Elite floors pay +20%; Boss floors +40%. The Rebirth Gold bonus applies
-   only when campaign Gold is awarded, not inside this base reward function. */
+   Elite floors pay +20%; Boss floors +40%. */
 const GOLD_KNEE = 25;
 /* Gold progression is intentionally tiered at deep floors so the economy keeps
    growing without an endless exponential explosion. The value is continuous
@@ -1399,40 +1397,15 @@ function raidEnemyHP(raid, level) {
 function raidEnemyDamage(raid, level) {
   return Math.max(1, Math.floor(raidWaveDamage(raid, level) / raidEnemyCount(raid, level)));
 }
-/* PR per rebirth. Same shape as before, scaled up so the Rebirth upgrades
-   (whose costs are unchanged) buy at a satisfying pace. */
-/* Section 4B: more PR per Rebirth, same formula and same factors. The formula
-   is floor x rate x (1 + Gain PR), so the rate is the only thing that moves --
-   nothing about how a Rebirth is calculated changes.
-
-   Sized against the actual economy rather than picked: the whole Rebirth tree
-   costs 12993 PR, and a Rebirth paid floor x 3. That is 174 loops from the new
-   floor-25 minimum, or 29 from floor 150. Doubling the rate halves both, and
-   makes the first Rebirth a player can now take at floor 25 worth 150 PR
-   instead of 75 -- enough to buy something the same evening. */
-const PR_PER_FLOOR = 6;
-function prFromFloor(floor) { return Math.floor(floor * PR_PER_FLOOR); }
-const REBIRTH_UPGRADES = [
-  { key: "damage", label: "Dégâts", icon: "flame", max: 100, perLvl: 8, unit: "%", costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266,1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,12524,13498,14520,15590,16710,17880,19102,20376,21704,23086,24524,26018,27570,29180,30850,32580,34372,36226,38144,40126,42174,44288,46470,48720,51040,53430,55892,58426,61034,63716,66474,69308,72220,75210,78280,81430,84662,87976,91374,94856,98424,102078,105820,109650,113570,117580,121682,125876,130164,134546,139024,143598,148270,153040,157910,162880,167952,173126,178404,183786] },
-  { key: "life", label: "Vie", icon: "heart", max: 100, perLvl: 8, unit: "%", costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266,1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,12524,13498,14520,15590,16710,17880,19102,20376,21704,23086,24524,26018,27570,29180,30850,32580,34372,36226,38144,40126,42174,44288,46470,48720,51040,53430,55892,58426,61034,63716,66474,69308,72220,75210,78280,81430,84662,87976,91374,94856,98424,102078,105820,109650,113570,117580,121682,125876,130164,134546,139024,143598,148270,153040,157910,162880,167952,173126,178404,183786] },
-  { key: "atkspeed", label: "Vit. Attaque", icon: "bolt", max: 5, perLvl: 3, unit: "%", costs: [10,20,30,50,75] },
-  { key: "critdmg", label: "Dégâts Crit.", icon: "sparkle", max: 5, perLvl: 8, unit: "%", costs: [10,20,30,50,75] },
-  { key: "dmgred", label: "Réduc. Dégâts", icon: "shield", max: 20, perLvl: 2, unit: "%", costDiv: 1, costs: [20,39,63,90,125,168,219,278,348,430,528,641,774,927,1102,1306,1540,1810,2119,2473] },
-  { key: "regen", label: "Régénération", icon: "potion", max: 5, perLvl: 0.6, unit: "%/s", costs: [10,20,30,50,75] },
-  { key: "lifesteal", label: "Vol de Vie", icon: "droplet", max: 5, perLvl: 1, unit: "%", costs: [10,20,32,46,64] },
-  { key: "bossdmg", label: "Dégâts Boss", icon: "skull", max: 20, perLvl: 8, unit: "%", costDiv: 1, costs: [100,300,500,700,900,1100,1300,1500,1700,1900,2100,2300,2500,2700,2900,3100,3300,3500,3700,3900] },
-  { key: "exp", label: "EXP", icon: "cap", max: 100, perLvl: 2, unit: "%", costs: [10,20,30,50,75,110,160,230,320,450,610,800,1020,1270,1550,1860,2200,2570,2970,3400,3860,4350,4870,5420,6000,6610,7250,7920,8620,9350,10110,10900,11720,12570,13450,14360,15300,16270,17270,18300,19360,20450,21570,22720,23900,25110,26350,27620,28920,30250,31610,33000,34420,35870,37350,38860,40400,41970,43570,45200,46860,48550,50270,52020,53800,55610,57450,59320,61220,63150,65110,67100,69120,71170,73250,75360,77500,79670,81870,84100,86360,88650,90970,93320,95700,98110,100550,103020,105520,108050,110610,113200,115820,118470,121150,123860,126600,129370,132170,135000] },
-  { key: "apples", label: "Gain Pommes", icon: "paw", max: 20, perLvl: 5, unit: "%", costDiv: 1, costs: [200,300,400,500,650,800,950,1100,1300,1500,1700,1900,2100,2300,2500,2800,3100,3400,3700,3800] },
-  { key: "prgain", label: "Gain PR", icon: "chart", max: 25, perLvl: 8, unit: "%", costDiv: 1, costs: [50,129,208,288,367,446,525,604,683,762,842,921,1000,1079,1158,1238,1317,1396,1475,1554,1633,1712,1792,1871,1950] },
-  { key: "keep", label: "Conservation", icon: "cycle", max: 5, perLvl: 2, unit: "%", costs: [100,200,350,550,800] },
-  { key: "floorSkip", label: "Saut d'étage", icon: "forward", max: 50, perLvl: 0.8, unit: "%", costDiv: 1, costs: [100,258,417,575,733,892,1050,1208,1367,1525,1683,1842,2000,2158,2317,2475,2633,2792,2950,3108,3267,3425,3583,3742,3900,4058,4217,4375,4533,4692,4850,5008,5167,5325,5483,5642,5800,5958,6117,6275,6433,6592,6750,6908,7067,7225,7383,7542,7700,7858] },
-];
-function rebirthKeepPct(keepLevel) { return 50 + keepLevel; }
-const REBIRTH_COST_DIV = 3;
-function rebirthUpgCost(def, lvl) {
-  const div = def.costDiv || REBIRTH_COST_DIV;
-  return Math.max(1, Math.round(def.costs[lvl] / div));
-}
+/* Rebirth and PR are retired from gameplay.
+   These zero-value names stay only as compatibility shims for old saves and
+   late-loaded legacy layers. They must never grant stats, rewards or currency. */
+const PR_PER_FLOOR = 0;
+function prFromFloor() { return 0; }
+const REBIRTH_UPGRADES = [];
+function rebirthKeepPct() { return 0; }
+const REBIRTH_COST_DIV = 1;
+function rebirthUpgCost() { return Infinity; }
 
 /* ---------------------------- personal tree -------------------------------
    One continuous DAG of MULTI-LEVEL nodes. A node counts as "activated" for
@@ -1456,7 +1429,7 @@ const PE_REWARD_BASE = 20, PE_REWARD_PER_LEVEL = 6;
 /* First-clear reward for a major Boss (floor 10, 20, 30, ...). Deeper bosses
    hand out better accelerators, and more of them, but the ladder is capped so
    it cannot flood the economy. Claimed once per boss, FOREVER — the record
-   survives Rebirth, so re-killing a boss pays the normal rewards only. */
+   persists permanently, so re-killing a boss pays the normal rewards only. */
 function bossFirstClearReward(floor) {
   const tier = Math.floor(floor / RULES.BOSS_EVERY);        // 1 at floor 10, 5 at 50...
   if (tier <= 0) return null;
@@ -1477,16 +1450,12 @@ function megaAccelReward(floor) {
 function megaRaidUnlocked(s) {
   return !!(s && s.bossClears && s.bossClears["50"]);
 }
-/* Apples have one source: the first clear of each Mega-Boss. One reward every
-   ten floors replaces the old Elite + Boss pair without turning Rebirth or a
-   replay into a farming loop. Rebirth's Gain Pommes only scales that first
-   clear; at 20/20 it doubles the amount. */
+/* Legacy Mega Apple helpers are retained for compatibility only. The active
+   reward authority retired this payout, so the helper must stay inert too. */
 function megaAppleBaseReward(floor) {
   return 33 + 7 * Math.floor(Math.max(0, floor) / 25);
 }
-function megaAppleFirstClearReward(floor, s) {
-  return Math.floor(megaAppleBaseReward(floor) * (1 + rb(s, "apples") / 100));
-}
+function megaAppleFirstClearReward() { return 0; }
 /* The primary gold faucet: one Raid Or run should be worth a solid stretch of
    floors. 1.17 over 50 levels was 2566x, which outran every cost curve the
    Forge could carry and pushed the Raid to 100% of late income. 1.14 is 758x --
@@ -1745,7 +1714,6 @@ function progressionGoals(st) {
   const skillMax = Object.values(st.skills || {}).reduce((m, x) => Math.max(m, Number(x && x.level) || 0), 0);
   const treeNodes = Object.values((st.tree && st.tree.levels) || {}).filter((lv) => Number(lv) > 0).length;
   const floor = st.recordFloor || 1, forge = (st.forge && st.forge.level) || 1;
-  const rebirths = (st.rebirth && st.rebirth.count) || 0;
   const goal = (id,title,why,now,max,category,go,priority,prereq=true) => ({
     id,title,why,now:Math.min(Number(now)||0,max),max,done:(Number(now)||0)>=max,category,go,priority,prereq
   });
@@ -1755,8 +1723,7 @@ function progressionGoals(st) {
     goal("floor10","Vaincre le Boss de l’étage 10","Premier grand jalon de la campagne.",floor,10,"campagne","accueil",94),
     goal("skills3","Équiper 3 compétences","Construis une vraie rotation de combat.",skillEquipped,3,"developpement","competences",88,floor>=5),
     goal("rareGear","Obtenir un équipement Rare","Commence à construire un build avec des affixes.",hasEquipAtLeast(st,"RARE")?1:0,1,"developpement","equipement",86,forge>=2),
-    goal("floor25","Atteindre l’étage 25","Débloque le Rebirth et la progression permanente.",floor,25,"campagne","accueil",92,floor>=10),
-    goal("rebirth1","Effectuer ton premier Rebirth","Transforme la campagne en progression permanente.",rebirths,1,"progression","rebirth",91,floor>=25),
+    goal("floor25","Atteindre l’étage 25","Franchis un premier cap majeur de campagne.",floor,25,"campagne","accueil",92,floor>=10),
     goal("raidEvo3","Raid Évolution niveau 3","Obtiens des PE pour développer ton Arbre personnel.",raidEvo,3,"defi","raid",82,floor>=10),
     goal("tree3","Activer 3 nœuds de l’Arbre","Commence à spécialiser durablement ta progression.",treeNodes,3,"developpement","arbre",80,raidEvo>=1 || treeNodes>0),
     goal("skill5","Améliorer une compétence niveau 5","Fais progresser une compétence clé de ton build.",skillMax,5,"developpement","competences",74,skillEquipped>=3),
@@ -1767,7 +1734,6 @@ function progressionGoals(st) {
     goal("mega1","Vaincre ton premier Méga-Boss","Débloque le Sanctuaire et ses fusions.",mega,1,"defi","mega",89,megaRaidUnlocked(st)),
     goal("fusion1","Réussir une fusion au Sanctuaire","Transforme les ressources accumulées en nouvelles récompenses.",fusions,1,"developpement","sanctuaire",89,mega>=1),
     goal("floor100","Atteindre l’étage 100","Entre dans la progression avancée de Shadowreach.",floor,100,"campagne","accueil",88,floor>=50),
-    goal("rebirth5","Effectuer 5 Rebirth","Consolide tes bonus permanents avant l’endgame.",rebirths,5,"progression","rebirth",73,rebirths>=1),
     goal("forge25","Forge niveau 25","Atteins le cœur de la progression d’équipement.",forge,25,"developpement","accueil",68,forge>=10),
   ];
 }
@@ -1798,7 +1764,6 @@ function nextUnlockGoal(st) {
   const mega = st.megaBossClears ? Object.keys(st.megaBossClears).some((k) => st.megaBossClears[k]) : false;
   const megaUnlocked = megaRaidUnlocked(st);
   const candidates = [
-    {title:"Rebirth", note:"Étage 25", detail:"Convertis une partie de ta progression en PR permanents.", now:Math.min(st.recordFloor||1,25), max:25, done:(st.recordFloor||1)>=25, go:"rebirth"},
     {title:"Méga-Boss", note:"Vaincre le Boss 50", detail:"Affronte des versions extrêmes des Boss et ouvre la voie au Sanctuaire.", now:megaUnlocked?1:0, max:1, done:megaUnlocked, go:"mega"},
     {title:"Sanctuaire", note:"Vaincre un Méga-Boss", detail:"Fusionne tes ressources pour découvrir des recettes spéciales.", now:mega?1:0, max:1, done:mega, go:"sanctuaire"},
   ];
@@ -2392,12 +2357,7 @@ function migrate(s, name) {
   return merged;
 }
 
-function rb(s, key) {
-  const def = REBIRTH_UPGRADES.find((u) => u.key === key);
-  if (!def) return 0;
-  const lvl = Math.max(0, Math.min(def.max, Number((s.rebirth.upgrades || {})[key]) || 0));
-  return lvl * def.perLvl;
-}
+function rb() { return 0; }
 /* ---- tree accessors: level 1 == activated, so children open immediately ---- */
 function treeLv(s, id) { return (s.tree.levels && s.tree.levels[id]) || 0; }
 function hasTree(s, id) { return treeLv(s, id) >= 1; }
@@ -2500,7 +2460,7 @@ function harvestRates(s) {
   };
 }
 /* V395 Gold Autonomy stays at 25% through Raid Or 10, then tapers to 20% at
-   level 20 and above. It spends no key and never receives the Rebirth Gold bonus. */
+   level 20 and above. It spends no key and receives no retired Rebirth multiplier. */
 
 function harvestAdvance(s, seconds) {
   const h = s.harvest;
@@ -2563,8 +2523,7 @@ function harvestIsEmpty(s) {
 /* Section 16: everything worn together may add at most 20 % to either speed.
    The one exception is the exceptional roll -- a bonus that came out above its
    cap raises the ceiling to its own value, which is what makes such a piece
-   worth wearing at all. Rebirth's attack speed is not equipment and is not
-   capped here. */
+   worth wearing at all. */
 const SPEED_AFFIX_CAP = 20;
 function speedCapFor(s, key) {
   let cap = SPEED_AFFIX_CAP;
@@ -2625,9 +2584,9 @@ function computeDerived(s) {
 
   // the eight equipment families now live on their own slots, above; what stays
   // global here is the passive base, which is not equipment
-  const lifeMul = 1 + rb(s, "life") / 100 + petPct / 100 + forgePct / 200
+  const lifeMul = 1 + petPct / 100 + forgePct / 200
     + treeSum(s, "passHp") / 100;
-  const dmgMul  = 1 + rb(s, "damage") / 100 + petDmgPct / 100 + forgePct / 100
+  const dmgMul  = 1 + petDmgPct / 100 + forgePct / 100
     + treeSum(s, "passDmg") / 100;
 
   // random bonuses carried by equipped gear
@@ -2643,11 +2602,11 @@ function computeDerived(s) {
   const maxHP = Math.floor(((BASE.hp + equipHP) * heroHpStatMul + heroHpStatFlat) * lifeMul * (1 + A("hp") / 100));
   const damage = Math.floor(((BASE.damage + equipDmg) * heroDmgStatMul + heroDmgStatFlat) * dmgMul * (1 + A("dmg") / 100));
   const critChance = Math.min(CRIT_CHANCE_CAP, BASE.critChance + A("crit"));
-  const critMult = BASE.critMult + rb(s, "critdmg") / 100 + A("critdmg") / 100;
+  const critMult = BASE.critMult + A("critdmg") / 100;
   const critRed = Math.min(CRIT_RED_CAP, Math.max(0, Number(s.stats.critred) || 0) * STATS.CRITRED.perPoint);
   const atkSpeedAffix = Math.min(speedCapFor(s, "atkspeed"), A("atkspeed"));
   const moveSpeedAffix = Math.min(speedCapFor(s, "movespeed"), A("movespeed"));
-  const attackSpeed = BASE.attackSpeed * (1 + rb(s, "atkspeed") / 100) * (1 + atkSpeedAffix / 100)
+  const attackSpeed = BASE.attackSpeed * (1 + atkSpeedAffix / 100)
     * (el === "electrique" ? 1.08 : 1);
   const moveSpeed = BASE.moveSpeed * (1 + moveSpeedAffix / 100);
   const weapon = (s.equipped.arme && s.equipped.arme.weaponType) || "epee";
@@ -2663,10 +2622,10 @@ function computeDerived(s) {
   const skillPowerFactor = activeSkillPowerFactor(s);
   const offense = damage * attackSpeed * weaponDef.speed * weaponDef.hit *
     critFactor * doubleFactor * (1 + weaponBonus / 100) * skillFactor * cooldownFactor * skillPowerFactor;
-  const dmgRedNow = Math.min(85, rb(s, "dmgred"));
+  const dmgRedNow = 0;
   const blockNow = Math.min(75, A("block"));
-  const lifeStealNow = Math.max(0, rb(s, "lifesteal") + A("lifesteal"));
-  const regenNow = Math.max(0, rb(s, "regen"));
+  const lifeStealNow = Math.max(0, A("lifesteal"));
+  const regenNow = 0;
   const mitigation = 1 / Math.max(0.15, 1 - dmgRedNow / 100);
   const blockFactor = 1 + blockNow / 200;
   const sustainFactor = 1 + Math.min(50, lifeStealNow) / 200 + Math.min(50, regenNow) / 250;
@@ -2681,9 +2640,9 @@ function computeDerived(s) {
 
   return {
     maxHP, damage, attackSpeed, moveSpeed, critChance, critMult, critRed,
-    dmgRed: rb(s, "dmgred"), regen: rb(s, "regen"),
-    lifesteal: rb(s, "lifesteal") + A("lifesteal"),
-    bossDmg: rb(s, "bossdmg"),
+    dmgRed: 0, regen: 0,
+    lifesteal: A("lifesteal"),
+    bossDmg: 0,
     // affix-only combat stats
     blockChance: blockNow,
     doubleAtk: Math.min(100, A("double")),
@@ -2691,8 +2650,8 @@ function computeDerived(s) {
     skillCdCut: Math.min(80, A("skillcd")),
     skillPowerFactor,
     affixes: af,
-    // EXP still belongs to Rebirth. Gold progression is owned by the Tree.
-    expBonus: rb(s, "exp"),
+    // No retired Rebirth multiplier may affect rewards.
+    expBonus: 0,
     // tree-driven multipliers, applied at the point each resource is granted
     petPct, petDmgPct, petElem: el,
     skillDmgBonus: treeSum(s, "skillDmg") + A("skilldmg"),
