@@ -2225,21 +2225,8 @@ function migrate(s, name) {
     }
     merged.raidKeyLossCompensationV1 = true;
   }
-  /* V399: the legacy Rebirth Or upgrade is fully retired. It was still
-     affecting Campaign gold even though Or progression now belongs to the
-     personal Tree. Refund every PR spent on the recorded Gold level exactly
-     once, then delete the stale save key so it can never affect runtime again. */
-  if (!merged.rebirthGoldRemovedV399) {
-    const legacyGoldCostsV399 = [25,40,50,65,80,90,105,130,145,155,180,205,220,245,270,300,325,350,375,415,440,465,505,545,570,610,650,685,725,765,805,845,895,935,970,1025,1075,1115,1165,1220,1270,1320,1375,1425,1490,1545,1595,1660,1725,1815,1875,1935,1995,2055,2115,2180,2245,2310,2375,2440,2510,2580,2650,2720,2790,2865,2940,3015,3090,3165,3245,3325,3405,3485,3565,3650,3735,3820,3905,3990,4080,4170,4260,4350,4440,4535,4630,4725,4820,4915,5015,5115,5215,5315,5415,5520,5625,5730,5835,5940];
-    const oldGoldLevel = Math.max(0, Math.min(legacyGoldCostsV399.length,
-      Math.floor(Number((merged.rebirth.upgrades || {}).gold) || 0)));
-    const refundPR = legacyGoldCostsV399.slice(0, oldGoldLevel).reduce((a,b) => a + b, 0);
-    merged.rebirth.pr = Math.max(0, Number(merged.rebirth.pr) || 0) + refundPR;
-    if (merged.rebirth && merged.rebirth.upgrades) delete merged.rebirth.upgrades.gold;
-    merged.rebirthGoldRemovedV399 = true;
-    merged.rebirthGoldRemovedNoticeV399 = { oldGoldLevel, refundPR };
-  }
-
+  /* V400: Rebirth and PR are retired. Legacy save fields stay inert for
+     compatibility only: no conversion, no compensation and no PR refund. */
   // L'ancien Retour Rapide est retiré du jeu. On conserve les PR déjà dépensés
   // sans tenter de les recalculer automatiquement, pour ne pas inventer un remboursement.
   if (merged.rebirth && merged.rebirth.upgrades) delete merged.rebirth.upgrades.fastback;
@@ -2342,32 +2329,11 @@ function migrate(s, name) {
     }
     merged.autonomyGoldRebaseV31 = true;
   }
-  // REBIRTH_CAPS_V171
-  if (!Object.prototype.hasOwnProperty.call(s, "rebirthCapsV171")) {
-    const oldCosts=[50,77,103,130,156,183,209,236,262,289,315,342,368,395,421,448,474,501,528,554,581,607,634,660,687,713,740,766,793,819,846,872,899,926,952,979,1005,1032,1058,1085,1111,1138,1164,1191,1217,1244,1270,1297,1323,1350];
-    const ups=merged.rebirth.upgrades || (merged.rebirth.upgrades={});
-    const oldLv=Math.max(0,Math.min(50,Math.floor(Number(ups.prgain)||0)));
-    let refundPR=0;
-    if(oldLv>25){ refundPR=oldCosts.slice(25,oldLv).reduce((a,b)=>a+b,0); merged.rebirth.pr=Math.max(0,Number(merged.rebirth.pr)||0)+refundPR; ups.prgain=25; }
-    merged.rebirthCapsV171=true;
-    if(refundPR>0) merged.rebirthCapsV171Notice={oldLevel:oldLv,newLevel:25,refundPR};
-  }
+  // Rebirth/PR retired: keep old compatibility markers without mutating PR.
+  if (!Object.prototype.hasOwnProperty.call(s, "rebirthCapsV171")) merged.rebirthCapsV171 = true;
 
-  // GOLD_ECONOMY_REBASE_V32
-  // Le coût Rebirth Or passe de 135 000 à 35 000 PR au total. Un joueur qui a
-  // déjà acheté des niveaux récupère exactement la différence entre l'ancienne
-  // et la nouvelle courbe, sans modifier son niveau d'amélioration.
-  if (!Object.prototype.hasOwnProperty.call(s, "rebirthGoldCostRebaseV32")) {
-    const oldGoldCostsV32 = [100,150,200,250,300,350,400,500,550,600,700,800,850,950,1050,1150,1250,1350,1450,1600,1700,1800,1950,2100,2200,2350,2500,2650,2800,2950,3100,3250,3450,3600,3750,3950,4150,4300,4500,4700,4900,5100,5300,5500,5750,5950,6150,6400,6650,7000];
-    const newGoldCostsV32 = [25,40,50,65,80,90,105,130,145,155,180,205,220,245,270,300,325,350,375,415,440,465,505,545,570,610,650,685,725,765,805,845,895,935,970,1025,1075,1115,1165,1220,1270,1320,1375,1425,1490,1545,1595,1660,1725,1815];
-    const lv = Math.max(0, Math.min(50, Number((merged.rebirth.upgrades || {}).gold) || 0));
-    const oldSpent = oldGoldCostsV32.slice(0, lv).reduce((a,b)=>a+b, 0);
-    const newSpent = newGoldCostsV32.slice(0, lv).reduce((a,b)=>a+b, 0);
-    const refundPR = Math.max(0, oldSpent - newSpent);
-    merged.rebirth.pr = Math.max(0, Number(merged.rebirth.pr) || 0) + refundPR;
-    merged.rebirthGoldCostRebaseV32 = true;
-    merged.rebirthGoldCostRebaseNoticeV32 = { level: lv, oldSpent, newSpent, refundPR };
-  }
+  // Rebirth/PR retired: do not create or refund legacy PR on old saves.
+  if (!Object.prototype.hasOwnProperty.call(s, "rebirthGoldCostRebaseV32")) merged.rebirthGoldCostRebaseV32 = true;
 
   // La Prospection d'Or autonome vaut maintenant jusqu'à +25 % au total.
   // On revalorise uniquement la réserve encore présente : les gains déjà encaissés
