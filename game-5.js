@@ -1316,11 +1316,11 @@ const TREE_EFFECT_INFO = {
    prints itself; only the families whose number is positive but means a
    reduction still need the minus put in front. */
 function treeEffectValue(node, level) {
-  const v = node.per * level;
+  const v = treeEffectivePer(node) * level;
   if (node.effect === "forgeMult") return level > 0 ? "+" + v + (v > 1 ? " forges" : " forge") : "—";
   if (node.unit === "×") return "×" + (RULES.FORGE_BATCH_BASE + v);
   if (node.unit === "") return level > 0 ? "Actif" : "—";
-  const r = Math.round(v * 10) / 10;
+  const r = Math.round(v * 100) / 100;
   /* The sign comes from the number itself and nothing else. The three cost
      families carry a negative `per` and read as -5%; everything else is a gain
      and reads as +. Speed families are written +20% and +50% in the list, so
