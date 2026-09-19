@@ -26,6 +26,7 @@ test('V321 stage 1-2 forces the pre-Forge teaching loss and then surfaces the Fo
       recordFloor: S.recordFloor,
       forgeUnlocked: __srProgressionUnlocksV321.forgeUnlocked(),
       forgeStage: __srProgressionUnlocksV321.forgeStage,
+      minerai: S.minerai,
     };
 
     S.floor = 2;
@@ -38,6 +39,8 @@ test('V321 stage 1-2 forces the pre-Forge teaching loss and then surfaces the Fo
     S.tutorial.seen = S.tutorial.seen || {};
     S.tutorial.forgeIntroReadyV321 = false;
     S.tutorial.forgeIntroCompletedV321 = false;
+    delete S.tutorial.forgeIntroMineralGrantV323;
+    S.minerai = 0;
 
     startCampaign();
     const firstEnemy = combat.enemies[0];
@@ -52,7 +55,12 @@ test('V321 stage 1-2 forces the pre-Forge teaching loss and then surfaces the Fo
     };
 
     combat.status = 'lost';
-    handleCombatEnd(combat);
+    const introCombat = combat;
+    handleCombatEnd(introCombat);
+    const mineraiOnce = S.minerai;
+    const defeatsOnce = S.tutorial.forgeIntroDefeatsV321;
+    handleCombatEnd(introCombat);
+    const mineraiTwice = S.minerai;
 
     const seen = S.tutorial.seen || (S.tutorial.seen = {});
     try { Object.keys(TUTORIAL_FLOWS || {}).forEach((key) => { seen[key] = true; }); } catch (_) {}
@@ -64,17 +72,20 @@ test('V321 stage 1-2 forces the pre-Forge teaching loss and then surfaces the Fo
       encounter,
       afterLoss: {
         ready: !!S.tutorial.forgeIntroReadyV321,
-        defeats: S.tutorial.forgeIntroDefeatsV321,
+        defeats: defeatsOnce,
         floor: S.floor,
         recordFloor: S.recordFloor,
         forgeUnlocked: __srProgressionUnlocksV321.forgeUnlocked(),
+        mineraiOnce,
+        mineraiTwice,
+        mineralGranted: !!S.tutorial.forgeIntroMineralGrantV323,
       },
       tutorial,
       config: __srForgeIntroCombatConfigV321,
     };
   });
 
-  expect(result.initial).toMatchObject({ floor: 1, forgeUnlocked: false, forgeStage: '1-2' });
+  expect(result.initial).toMatchObject({ floor: 1, forgeUnlocked: false, forgeStage: '1-2', minerai: 0 });
   expect(result.encounter).toMatchObject({ floor: 2, tagged: true, enemyTagged: true, forgeUnlockedAtStage: true });
   expect(result.encounter.enemyHP).toBeGreaterThanOrEqual(result.encounter.heroMaxHP * 1000);
   expect(result.encounter.enemyDamage).toBeGreaterThanOrEqual(result.encounter.heroMaxHP * 20);
@@ -83,6 +94,9 @@ test('V321 stage 1-2 forces the pre-Forge teaching loss and then surfaces the Fo
   expect(result.afterLoss.defeats).toBe(1);
   expect(result.afterLoss.recordFloor).toBeGreaterThanOrEqual(2);
   expect(result.afterLoss.forgeUnlocked).toBe(true);
+  expect(result.afterLoss.mineraiOnce).toBe(250);
+  expect(result.afterLoss.mineraiTwice).toBe(250);
+  expect(result.afterLoss.mineralGranted).toBe(true);
   expect(result.tutorial).toMatchObject({ key: 'forge', title: 'Forge ton équipement' });
   expect(result.tutorial.sub).toContain('Puissance');
   expect(result.config).toMatchObject({ floor: 2, stage: '1-2', hpVsHero: 1000, damageVsHero: 20 });
