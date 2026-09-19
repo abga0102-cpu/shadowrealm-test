@@ -2349,29 +2349,25 @@ function startEgg(id) {
 function summonEgg(n) {
   const results = [];
   update((s) => {
-    // "Double Œuf": one paid summon may yield 2 EGGS (not a double hatch) —
-    // each egg keeps its own independent timer.
+    // "Double Œuf": one paid summon may yield 2 EGGS. Every egg produced now
+    // counts for Familiar Mastery, including the free second egg.
     const dblChance = treeSum(s, "eggFree");
-    // each rarity carries its own reduction; a Rare upgrade must never touch
-    // an Épique egg
+    s.petMastery.bonusCount = Math.max(0, Number(s.petMastery.bonusCount) || 0);
     for (let i = 0; i < n; i++) {
-      // Essence is the only thing that can stop a summon now
       if (s.essence < PET_SUMMON_COST) break;
       s.essence -= PET_SUMMON_COST;
       const eggsToMake = Math.random() * 100 < dblChance ? 2 : 1;
       for (let e = 0; e < eggsToMake; e++) {
         const rates = getRates("pet", s.petMastery.level, s.ascension, starsOf(s, "pet"));
         const rar = rollRarity(rates, PET_RARITY_ORDER);
-        // every summoned egg enters unlimited storage; the player chooses when to hatch it
-        s.eggs.push({ id: rid(), rarity: rar, species: randSpecies(), element: randElement(),
-          hatchEnd: 0 });
-        results.push({ rarity: rar, free: e > 0 });
+        const egg = { id: rid(), rarity: rar, species: randSpecies(), element: randElement(), hatchEnd: 0 };
+        s.eggs.push(egg);
+        results.push({ id: egg.id, rarity: rar, species: egg.species, element: egg.element, free: e > 0 });
       }
-      s.petMastery.count += 1; s.petMastery.progress += 1;
-      const mreq = masteryReq(s.petMastery.level);
-      if (s.petMastery.progress >= mreq && s.petMastery.level < RULES.MASTERY_MAX) {
-        s.petMastery.progress -= mreq; s.petMastery.level += 1;
-      }
+      // Keep count as PAID summons for economy/history; progress follows real eggs.
+      s.petMastery.count += 1;
+      const credited = addMasteryCredits(s.petMastery, eggsToMake);
+      if (eggsToMake > 1) s.petMastery.bonusCount += Math.min(eggsToMake - 1, credited);
     }
   });
   return results;
