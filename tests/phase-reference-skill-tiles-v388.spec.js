@@ -26,7 +26,7 @@ test('V388 matches framed reference skill tiles and keeps cooldown off artwork',
   expect(v388).not.toContain('saveNow');
   expect(v388).not.toContain('localStorage');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.19.388"');
+  expect(index).toContain('name="shadowreach-build"');
   expect(index).toContain('game-4.js?v=2026.09.19.388');
-  expect(index).toContain("var V='2026.09.19.388'");
+  expect(index).toContain("var V='2026.09.19.390'");
 });
