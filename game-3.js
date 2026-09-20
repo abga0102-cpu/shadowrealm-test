@@ -4,6 +4,76 @@
    the same 0.22 lerp smoothing and layered-sine idle animation as the app.
    ========================================================================= */
 const RANGED_IDS = ["arc", "arbalete", "baton"];
+
+/* ---- Dynamic Hero Equipment Layer Manager ---- */
+const EQUIP_PARTS_CONFIG = [
+  { part: "armure_torse_arriere", slot: "armure", zIndex: 1 },
+  { part: "ceinture_arriere",      slot: "ceinture", zIndex: 2 },
+  { part: "bottes_jambieres",     slot: "bottes", zIndex: 3 },
+  { part: "bottes",               slot: "bottes", zIndex: 4 },
+  { part: "ceinture_avant",       slot: "ceinture", zIndex: 5 },
+  { part: "armure_torse_avant",   slot: "armure", zIndex: 6 },
+  { part: "armure_epaules",       slot: "armure", zIndex: 7 },
+  { part: "casque",               slot: "casque", zIndex: 8 },
+  { part: "collier",              slot: "collier", zIndex: 9 },
+  { part: "gants",                slot: "gants", zIndex: 10 },
+  { part: "anneau",               slot: "anneau", zIndex: 11 }
+];
+
+function normRarityKey(rarity) {
+  if (!rarity) return null;
+  const s = String(rarity).trim().toLowerCase();
+  if (s === "peu_commun" || s === "peu commun" || s === "peu-commun") return "peu_commun";
+  if (s === "epique" || s === "épique") return "epique";
+  if (s === "heroique" || s === "héroïque") return "heroique";
+  if (s === "legendaire" || s === "légendaire") return "legendaire";
+  return s;
+}
+
+const PRELOADED_EQUIP_URLS = new Set();
+let cachedEquipSig = "";
+let cachedEquipBody = "";
+
+function getEquipSig(equipped) {
+  if (!equipped || typeof equipped !== "object") return "";
+  let s = "";
+  for (let i = 0; i < EQUIP_PARTS_CONFIG.length; i++) {
+    const cfg = EQUIP_PARTS_CONFIG[i];
+    const item = equipped[cfg.slot];
+    if (item && item.rarity) {
+      s += cfg.slot + ":" + normRarityKey(item.rarity) + ";";
+    }
+  }
+  return s;
+}
+
+function getEquipBodyHTML(equipped) {
+  const sig = getEquipSig(equipped);
+  if (sig === cachedEquipSig) return cachedEquipBody;
+  let h = "";
+  for (let i = 0; i < EQUIP_PARTS_CONFIG.length; i++) {
+    const cfg = EQUIP_PARTS_CONFIG[i];
+    const item = equipped[cfg.slot];
+    if (!item || !item.rarity) continue;
+    const rKey = normRarityKey(item.rarity);
+    if (!rKey) continue;
+    const src = "art/equipment/" + rKey + "/" + cfg.part + ".png";
+    if (!PRELOADED_EQUIP_URLS.has(src)) {
+      PRELOADED_EQUIP_URLS.add(src);
+      preloadImg(src);
+    }
+    h += '<img class="srEquipLayer" src="' + src + '" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;z-index:' + cfg.zIndex + '">';
+  }
+  cachedEquipSig = sig;
+  cachedEquipBody = h;
+  return h;
+}
+
+function heroEquipmentLayersHTML(equipped, tilt, sc) {
+  const body = getEquipBodyHTML(equipped);
+  if (!body) return "";
+  return '<div class="srEquipWrap" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' + body + '</div>';
+}
 /* width-to-height of each sprite, so none of them stretch */
 const WEAPON_ASPECT = { epee: 0.543, hache: 0.359, masse: 0.258, dague: 0.301, arc: 0.219, arbalete: 0.664, baton: 0.93 };
 const WEAPON_SILVER = "#d6dae4";
@@ -539,6 +609,7 @@ function drawArena() {
         'transform:scale(' + auraPulse + ');box-shadow:0 0 14px ' + auraColor + '"></div>' : '') +
 
       '<img src="' + spriteFrame("hero", c.heroAttacking, t) + '" style="transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
+      heroEquipmentLayersHTML(S.equipped, tilt, sc) +
       weaponHTML(D.weapon, weaponColor, c.heroAttacking > 0, t, size) +
       (c.heroAttacking > 0
         ? (RANGED_IDS.includes(D.weapon)

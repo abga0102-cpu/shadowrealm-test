@@ -169,12 +169,18 @@
         const active=!(c.heroAttacking>0)&&!(c.heroHit>0)&&!(c.heroStun>0);
         const gait=gaitPhase(heroState,logical,strideWorld,Math.max(18,strideWorld*2.5),active);
         hero.style.left=(gait.x*scale-size/2).toFixed(2)+"px";
+        const equipWrap=hero.querySelector(":scope > .srEquipWrap");
         if(img&&active&&gait.moving){
           const p=bodyPose(gait.phase,"hero");hero.style.transform="translate(0px,0px)";
-          img.style.transform="translateY("+p.lift.toFixed(2)+"px) rotate("+p.lean.toFixed(2)+"deg) scaleY("+p.squash.toFixed(4)+")";
+          const tf="translateY("+p.lift.toFixed(2)+"px) rotate("+p.lean.toFixed(2)+"deg) scaleY("+p.squash.toFixed(4)+")";
+          img.style.transform=tf;
+          if(equipWrap)equipWrap.style.transform=tf;
           articulate(hero,img,gait.phase,size,gait.dir||1,false,PROFILES.hero);
           const shadow=hero.querySelector(":scope > .ushadow");if(shadow){shadow.style.transform="scaleX("+(0.968+p.contact*0.032).toFixed(3)+")";shadow.style.opacity=(0.54+p.contact*0.08).toFixed(3);}
-        }else disableLegs(hero,img);
+        }else{
+          disableLegs(hero,img);
+          if(equipWrap&&!(c.heroAttacking>0))equipWrap.style.transform="";
+        }
         if(img&&c.heroAttacking>0&&RANGED_IDS.includes(D.weapon)){
           if(ASSETS.hero)img.src=ASSETS.hero;
           const p=attackP(c.heroAttacking);let lean=0,y=0,sx=1,sy=1;
@@ -183,7 +189,9 @@
           }else if(D.weapon==="arbalete"){
             const aim=Math.min(1,p/0.35),recoil=Math.max(0,1-Math.abs(p-0.62)/0.14);lean=-1.4+aim*1.8-recoil*2.5;y=-aim*0.7;
           }else{const cast=Math.sin(Math.min(1,p/0.82)*Math.PI);lean=-2+cast*3.2;y=-cast*1.8;sy=1+cast*0.012;}
-          img.style.transform="translateY("+y.toFixed(2)+"px) rotate("+lean.toFixed(2)+"deg) scale("+sx.toFixed(3)+","+sy.toFixed(3)+")";
+          const tf="translateY("+y.toFixed(2)+"px) rotate("+lean.toFixed(2)+"deg) scale("+sx.toFixed(3)+","+sy.toFixed(3)+")";
+          img.style.transform=tf;
+          if(equipWrap)equipWrap.style.transform=tf;
         }
         const weapon=hero.querySelector(":scope > .srWeapon");if(weapon)weapon.style.zIndex="6";
         const hp=hero.querySelector(":scope > .hpMini");if(hp)hp.style.zIndex="8";
@@ -220,6 +228,7 @@
     ".srWalkPseudo169::before,.srWalkPseudo169::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background-image:var(--sr-sprite);background-size:contain;background-position:center;background-repeat:no-repeat;transform-origin:50% 92%;will-change:transform}",
     ".srWalkPseudo169::before{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
     ".srWalkPseudo169::after{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
+    ".srEquipLayer{will-change:transform}",
     "@media (prefers-reduced-motion:reduce){.unit>img,.srWalkPseudo169::before,.srWalkPseudo169::after{will-change:auto}}"
   ].join("\n");
   document.head.appendChild(style);
