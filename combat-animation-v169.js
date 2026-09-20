@@ -80,11 +80,7 @@
   function px(n){return Number(n||0).toFixed(2)+"px";}
   function disableLegs(unit,img){
     unit.classList.remove("srWalkPseudo169");
-    if(img){
-      img.style.clipPath="";
-      img.style.zIndex=isHeroUnit(unit)?"4":"";
-      img.style.position=isHeroUnit(unit)?"absolute":"";
-    }
+    if(img){img.style.clipPath="";img.style.zIndex="";img.style.position="";}
   }
   function footCycle(phase,offset,step,lift){
     const u=(phase+offset)%1;
@@ -115,9 +111,7 @@
     unit.style.setProperty("--sr-lx",px(lx));unit.style.setProperty("--sr-ly",px(left.y));unit.style.setProperty("--sr-lr",lr.toFixed(2)+"deg");
     unit.style.setProperty("--sr-rx",px(rx));unit.style.setProperty("--sr-ry",px(right.y));unit.style.setProperty("--sr-rr",rr.toFixed(2)+"deg");
     unit.style.setProperty("--sr-flip",flip?"scaleX(-1)":"scaleX(1)");
-    img.style.clipPath="inset(0 0 "+profile.upperBottom+"% 0)";
-    img.style.position=isHeroUnit(unit)?"absolute":"relative";
-    img.style.zIndex=isHeroUnit(unit)?"4":"2";
+    img.style.clipPath="inset(0 0 "+profile.upperBottom+"% 0)";img.style.position="relative";img.style.zIndex="2";
   }
 
   weaponHTML=function(weapon,color,attacking,t,size){
@@ -175,49 +169,21 @@
         const active=!(c.heroAttacking>0)&&!(c.heroHit>0)&&!(c.heroStun>0);
         const gait=gaitPhase(heroState,logical,strideWorld,Math.max(18,strideWorld*2.5),active);
         hero.style.left=(gait.x*scale-size/2).toFixed(2)+"px";
-        const backWrap=hero.querySelector(":scope > .srEquipBackWrap");
-        const frontWrap=hero.querySelector(":scope > .srEquipFrontWrap");
-        const legWrap=hero.querySelector(":scope > .srEquipLegWrap");
         if(img&&active&&gait.moving){
           const p=bodyPose(gait.phase,"hero");hero.style.transform="translate(0px,0px)";
-          const tf="translateY("+p.lift.toFixed(2)+"px) rotate("+p.lean.toFixed(2)+"deg) scaleY("+p.squash.toFixed(4)+")";
-          img.style.transform=tf;
-          if(backWrap)backWrap.style.transform=tf;
-          if(frontWrap)frontWrap.style.transform=tf;
-          /* The articulated hero legs are unit-level pseudo layers, so the
-             leg equipment wrapper must stay in unit coordinates while each
-             left/right equipment half receives the exact foot transform. */
-          if(legWrap)legWrap.style.transform="none";
+          img.style.transform="translateY("+p.lift.toFixed(2)+"px) rotate("+p.lean.toFixed(2)+"deg) scaleY("+p.squash.toFixed(4)+")";
           articulate(hero,img,gait.phase,size,gait.dir||1,false,PROFILES.hero);
           const shadow=hero.querySelector(":scope > .ushadow");if(shadow){shadow.style.transform="scaleX("+(0.968+p.contact*0.032).toFixed(3)+")";shadow.style.opacity=(0.54+p.contact*0.08).toFixed(3);}
-        }else{
-          disableLegs(hero,img);
-        }
-        if(img&&c.heroAttacking>0){
-          if(ASSETS.hero_bare)img.src=ASSETS.hero_bare;
-          else if(ASSETS.hero)img.src=ASSETS.hero;
+        }else disableLegs(hero,img);
+        if(img&&c.heroAttacking>0&&RANGED_IDS.includes(D.weapon)){
+          if(ASSETS.hero)img.src=ASSETS.hero;
           const p=attackP(c.heroAttacking);let lean=0,y=0,sx=1,sy=1;
-          if(RANGED_IDS.includes(D.weapon)){
-            if(D.weapon==="arc"){
-              const draw=p<0.62?clamp01((p-0.20)/0.42):Math.max(0,1-(p-0.62)/0.28);lean=-2.2+draw*3.2;y=-draw*1.2;sx=1-draw*0.012;sy=1+draw*0.008;
-            }else if(D.weapon==="arbalete"){
-              const aim=Math.min(1,p/0.35),recoil=Math.max(0,1-Math.abs(p-0.62)/0.14);lean=-1.4+aim*1.8-recoil*2.5;y=-aim*0.7;
-            }else{const cast=Math.sin(Math.min(1,p/0.82)*Math.PI);lean=-2+cast*3.2;y=-cast*1.8;sy=1+cast*0.012;}
-          }else{
-            /* Melee no longer swaps to the legacy armoured attack PNGs. Give
-               the neutral body a small readable strike instead; the weapon
-               still owns the full swing arc and timing. */
-            const strike=Math.sin(clamp01((p-0.08)/0.84)*Math.PI);
-            lean=-1.5+strike*4.8;
-            y=-strike*1.15;
-            sx=1+strike*0.012;
-            sy=1-strike*0.010;
-          }
-          const tf="translateY("+y.toFixed(2)+"px) rotate("+lean.toFixed(2)+"deg) scale("+sx.toFixed(3)+","+sy.toFixed(3)+")";
-          img.style.transform=tf;
-          if(backWrap)backWrap.style.transform=tf;
-          if(frontWrap)frontWrap.style.transform=tf;
-          if(legWrap)legWrap.style.transform=tf;
+          if(D.weapon==="arc"){
+            const draw=p<0.62?clamp01((p-0.20)/0.42):Math.max(0,1-(p-0.62)/0.28);lean=-2.2+draw*3.2;y=-draw*1.2;sx=1-draw*0.012;sy=1+draw*0.008;
+          }else if(D.weapon==="arbalete"){
+            const aim=Math.min(1,p/0.35),recoil=Math.max(0,1-Math.abs(p-0.62)/0.14);lean=-1.4+aim*1.8-recoil*2.5;y=-aim*0.7;
+          }else{const cast=Math.sin(Math.min(1,p/0.82)*Math.PI);lean=-2+cast*3.2;y=-cast*1.8;sy=1+cast*0.012;}
+          img.style.transform="translateY("+y.toFixed(2)+"px) rotate("+lean.toFixed(2)+"deg) scale("+sx.toFixed(3)+","+sy.toFixed(3)+")";
         }
         const weapon=hero.querySelector(":scope > .srWeapon");if(weapon)weapon.style.zIndex="6";
         const hp=hero.querySelector(":scope > .hpMini");if(hp)hp.style.zIndex="8";
@@ -254,14 +220,6 @@
     ".srWalkPseudo169::before,.srWalkPseudo169::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background-image:var(--sr-sprite);background-size:contain;background-position:center;background-repeat:no-repeat;transform-origin:50% 92%;will-change:transform}",
     ".srWalkPseudo169::before{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
     ".srWalkPseudo169::after{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
-    ".srEquipLayer{display:block;max-width:none!important;object-fit:fill!important;will-change:transform}",
-    ".srEquipLegIdle,.srEquipLegHalf{position:absolute;inset:0;pointer-events:none}",
-    ".srEquipLegHalf{display:none;transform-origin:50% 92%;will-change:transform}",
-    ".srWalkPseudo169 .srEquipLegIdle{display:none}",
-    ".srWalkPseudo169 .srEquipLegHalf{display:block!important}",
-    ".srWalkPseudo169 .srEquipLegLeft{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
-    ".srWalkPseudo169 .srEquipLegRight{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
-    ".srWalkPseudo169::before,.srWalkPseudo169::after{z-index:4!important}",
     "@media (prefers-reduced-motion:reduce){.unit>img,.srWalkPseudo169::before,.srWalkPseudo169::after{will-change:auto}}"
   ].join("\n");
   document.head.appendChild(style);

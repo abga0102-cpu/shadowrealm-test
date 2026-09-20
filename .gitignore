@@ -4,11 +4,6 @@
 # previous build kept locally for reference
 Archive/
 
-node_modules/
-playwright-report/
-test-results/
-
-
 # OneDrive / OS noise
 desktop.ini
 Thumbs.db
