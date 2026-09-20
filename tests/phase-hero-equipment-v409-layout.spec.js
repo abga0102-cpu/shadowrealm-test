@@ -42,6 +42,10 @@ test('V409 equipment uses explicit atlas anchors and articulated boot halves', a
     const ring = hero && hero.querySelector('[data-equip-part="anneau"]');
     const halves = hero ? hero.querySelectorAll('.srEquipLegHalf') : [];
 
+    /* drawArena may already have advanced the locomotion class before the
+       assertion, depending on engine/rAF timing. Normalize to a known idle
+       class state before checking the idle/walk CSS swap. */
+    if (hero) hero.classList.remove('srWalkPseudo169');
     const beforeWalk = halves.length ? getComputedStyle(halves[0]).display : '';
     if (hero) {
       hero.classList.add('srWalkPseudo169');
