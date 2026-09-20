@@ -67,8 +67,8 @@ function legEquipLayerHTML(cfg, src) {
   return '<div class="srEquipLegLayer" data-equip-part="' + cfg.part +
     '" style="position:absolute;inset:0;pointer-events:none">' +
     '<div class="srEquipLegIdle">' + art + '</div>' +
-    '<div class="srEquipLegHalf srEquipLegLeft">' + art + '</div>' +
-    '<div class="srEquipLegHalf srEquipLegRight">' + art + '</div>' +
+    '<div class="srEquipLegHalf srEquipLegLeft" style="display:none">' + art + '</div>' +
+    '<div class="srEquipLegHalf srEquipLegRight" style="display:none">' + art + '</div>' +
     '</div>';
 }
 
