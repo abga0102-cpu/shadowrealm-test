@@ -6,6 +6,10 @@
 const RANGED_IDS = ["arc", "arbalete", "baton"];
 
 /* ---- Dynamic Hero Equipment Layer Manager ---- */
+/* Equipment V2 sub-parts configuration.
+   Note: All V2 equipment PNG assets in art/equipment/<rarity>/ are pre-framed 192x192 px transparent images
+   matching the exact dimensions and body coordinate positioning of the 192x192 hero base sprite.
+   Overlaying each layer at top:0; left:0; width:100%; height:100% achieves pixel-perfect alignment. */
 const EQUIP_PARTS_CONFIG = [
   { part: "armure_torse_arriere", slot: "armure", zIndex: 1 },
   { part: "ceinture_arriere",      slot: "ceinture", zIndex: 2 },
@@ -62,7 +66,7 @@ function getEquipBodyHTML(equipped) {
       PRELOADED_EQUIP_URLS.add(src);
       preloadImg(src);
     }
-    h += '<img class="srEquipLayer" src="' + src + '" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;z-index:' + cfg.zIndex + '">';
+    h += '<img class="srEquipLayer" src="' + src + '" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;pointer-events:none;z-index:' + cfg.zIndex + '">';
   }
   cachedEquipSig = sig;
   cachedEquipBody = h;
