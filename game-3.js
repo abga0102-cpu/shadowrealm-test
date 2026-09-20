@@ -612,7 +612,7 @@ function drawArena() {
         'height:' + (size * 0.94) + 'px;background:' + auraColor + '22;border-color:' + auraColor + '99;' +
         'transform:scale(' + auraPulse + ');box-shadow:0 0 14px ' + auraColor + '"></div>' : '') +
 
-      '<img src="' + spriteFrame("hero", c.heroAttacking, t) + '" style="transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
+      '<img src="' + spriteFrame("hero", c.heroAttacking, t) + '" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
       heroEquipmentLayersHTML(S.equipped, tilt, sc) +
       weaponHTML(D.weapon, weaponColor, c.heroAttacking > 0, t, size) +
       (c.heroAttacking > 0
