@@ -10,15 +10,15 @@ function item(id, slot, rarity) {
   };
 }
 
-async function boot(page) {
+async function boot(page, equipV410 = false) {
   await page.addInitScript(() => { try { localStorage.removeItem('shadowreach.save.local'); } catch (_) {} });
-  await page.goto('/index.html?smoke=1');
+  await page.goto('/index.html?smoke=1' + (equipV410 ? '&equipV410=1' : ''));
   await page.waitForFunction(() => window.__smoke && typeof drawArena === 'function' && typeof spawnCampaign === 'function');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V409 equipment uses explicit atlas anchors and articulated boot halves', async ({ page }) => {
-  await boot(page);
+test('V410 canary uses explicit atlas anchors and articulated boot halves', async ({ page }) => {
+  await boot(page, true);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;
     update((st) => {
@@ -107,4 +107,49 @@ test('V409 equipment uses explicit atlas anchors and articulated boot halves', a
   expect(result.afterWalk).toBe('block');
   expect(result.idleDuringWalk).toBe('none');
   expect(result.hiddenBootRule).toBe(false);
+});
+
+
+test('V410 is completely dormant without the explicit URL flag', async ({ page }) => {
+  await boot(page, false);
+  const result = await page.evaluate((gear) => {
+    const H = window.__smoke;
+    update((st) => {
+      st.level = 40; st.floor = 20; st.step = 1;
+      st.stats = { sante:100, degats:100, crit:0, critred:0 };
+      st.equipped = gear; st.skills = {}; st.skillSlots = [null,null,null,null,null];
+      st.autoSkills = false; st.pets = []; st.activePetId = null;
+    });
+    H.D = computeDerived(H.S);
+    nav('accueil'); render();
+    H.combat = spawnCampaign(H.S);
+    drawArena();
+
+    const hero = document.querySelector('#aLayer > .unit');
+    const sprite = hero && hero.querySelector(':scope > img');
+    return {
+      flag: window.__srEquipV410Enabled,
+      equipmentWraps: hero ? hero.querySelectorAll(':scope > .srEquipBackWrap,:scope > .srEquipFrontWrap,:scope > .srEquipLegWrap').length : -1,
+      canaryClass: !!(hero && hero.classList.contains('srEquipV410Enabled')),
+      inlinePosition: sprite ? sprite.style.position : '',
+      inlineZ: sprite ? sprite.style.zIndex : '',
+      src: sprite ? sprite.getAttribute('src') : ''
+    };
+  }, {
+    arme: item('w','arme','RARE'),
+    casque: item('h','casque','RARE'),
+    armure: item('a','armure','RARE'),
+    gants: item('g','gants','RARE'),
+    bottes: item('b','bottes','RARE'),
+    collier: item('c','collier','RARE'),
+    anneau: item('r','anneau','RARE'),
+    ceinture: item('ce','ceinture','RARE')
+  });
+
+  expect(result.flag).toBe(false);
+  expect(result.equipmentWraps).toBe(0);
+  expect(result.canaryClass).toBe(false);
+  expect(result.inlinePosition).toBe('');
+  expect(result.inlineZ).toBe('');
+  expect(result.src).toContain('art/hero.png');
 });

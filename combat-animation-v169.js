@@ -78,12 +78,20 @@
     return{lift:-contact*liftBase,lean:Math.sin(q)*leanBase,squash:1-(1-contact)*compression,contact:1-contact};
   }
   function px(n){return Number(n||0).toFixed(2)+"px";}
+  function heroEquipV410(unit){
+    try{return !!(unit&&isHeroUnit(unit)&&typeof window!=="undefined"&&window.__srEquipV410Enabled);}catch(_){return false;}
+  }
   function disableLegs(unit,img){
     unit.classList.remove("srWalkPseudo169");
     if(img){
       img.style.clipPath="";
-      img.style.zIndex=isHeroUnit(unit)?"4":"";
-      img.style.position=isHeroUnit(unit)?"absolute":"";
+      if(heroEquipV410(unit)){
+        img.style.zIndex="4";
+        img.style.position="absolute";
+      }else{
+        img.style.zIndex="";
+        img.style.position="";
+      }
     }
   }
   function footCycle(phase,offset,step,lift){
@@ -116,8 +124,13 @@
     unit.style.setProperty("--sr-rx",px(rx));unit.style.setProperty("--sr-ry",px(right.y));unit.style.setProperty("--sr-rr",rr.toFixed(2)+"deg");
     unit.style.setProperty("--sr-flip",flip?"scaleX(-1)":"scaleX(1)");
     img.style.clipPath="inset(0 0 "+profile.upperBottom+"% 0)";
-    img.style.position=isHeroUnit(unit)?"absolute":"relative";
-    img.style.zIndex=isHeroUnit(unit)?"4":"2";
+    if(heroEquipV410(unit)){
+      img.style.position="absolute";
+      img.style.zIndex="4";
+    }else{
+      img.style.position="relative";
+      img.style.zIndex="2";
+    }
   }
 
   weaponHTML=function(weapon,color,attacking,t,size){
@@ -175,9 +188,11 @@
         const active=!(c.heroAttacking>0)&&!(c.heroHit>0)&&!(c.heroStun>0);
         const gait=gaitPhase(heroState,logical,strideWorld,Math.max(18,strideWorld*2.5),active);
         hero.style.left=(gait.x*scale-size/2).toFixed(2)+"px";
-        const backWrap=hero.querySelector(":scope > .srEquipBackWrap");
-        const frontWrap=hero.querySelector(":scope > .srEquipFrontWrap");
-        const legWrap=hero.querySelector(":scope > .srEquipLegWrap");
+        const equipV410=heroEquipV410(hero);
+        hero.classList.toggle("srEquipV410Enabled",equipV410);
+        const backWrap=equipV410?hero.querySelector(":scope > .srEquipBackWrap"):null;
+        const frontWrap=equipV410?hero.querySelector(":scope > .srEquipFrontWrap"):null;
+        const legWrap=equipV410?hero.querySelector(":scope > .srEquipLegWrap"):null;
         if(img&&active&&gait.moving){
           const p=bodyPose(gait.phase,"hero");hero.style.transform="translate(0px,0px)";
           const tf="translateY("+p.lift.toFixed(2)+"px) rotate("+p.lean.toFixed(2)+"deg) scaleY("+p.squash.toFixed(4)+")";
@@ -242,14 +257,14 @@
     ".srWalkPseudo169::before,.srWalkPseudo169::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;background-image:var(--sr-sprite);background-size:contain;background-position:center;background-repeat:no-repeat;transform-origin:50% 92%;will-change:transform}",
     ".srWalkPseudo169::before{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
     ".srWalkPseudo169::after{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
-    ".srEquipLayer{display:block;max-width:none!important;object-fit:fill!important;will-change:transform}",
-    ".srEquipLegIdle,.srEquipLegHalf{position:absolute;inset:0;pointer-events:none}",
-    ".srEquipLegHalf{display:none;transform-origin:50% 92%;will-change:transform}",
-    ".srWalkPseudo169 .srEquipLegIdle{display:none}",
-    ".srWalkPseudo169 .srEquipLegHalf{display:block!important}",
-    ".srWalkPseudo169 .srEquipLegLeft{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
-    ".srWalkPseudo169 .srEquipLegRight{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
-    ".srWalkPseudo169::before,.srWalkPseudo169::after{z-index:4!important}",
+    ".srEquipV410Enabled .srEquipLayer{display:block;max-width:none!important;object-fit:fill!important;will-change:transform}",
+    ".srEquipV410Enabled .srEquipLegIdle,.srEquipV410Enabled .srEquipLegHalf{position:absolute;inset:0;pointer-events:none}",
+    ".srEquipV410Enabled .srEquipLegHalf{display:none;transform-origin:50% 92%;will-change:transform}",
+    ".srEquipV410Enabled.srWalkPseudo169 .srEquipLegIdle{display:none}",
+    ".srEquipV410Enabled.srWalkPseudo169 .srEquipLegHalf{display:block!important}",
+    ".srEquipV410Enabled.srWalkPseudo169 .srEquipLegLeft{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
+    ".srEquipV410Enabled.srWalkPseudo169 .srEquipLegRight{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
+    ".srEquipV410Enabled.srWalkPseudo169::before,.srEquipV410Enabled.srWalkPseudo169::after{z-index:4!important}",
     "@media (prefers-reduced-motion:reduce){.unit>img,.srWalkPseudo169::before,.srWalkPseudo169::after{will-change:auto}}"
   ].join("\n");
   document.head.appendChild(style);

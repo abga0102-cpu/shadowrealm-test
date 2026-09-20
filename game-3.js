@@ -5,6 +5,19 @@
    ========================================================================= */
 const RANGED_IDS = ["arc", "arbalete", "baton"];
 
+/* V410 canary: production stays on the exact legacy hero renderer unless the
+   URL explicitly opts in with ?equipV410=1. No localStorage persistence: a
+   normal reload without the flag always returns to the stable V408 visuals. */
+const HERO_EQUIP_V410_ENABLED = (() => {
+  try {
+    return typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("equipV410") === "1";
+  } catch (_) {
+    return false;
+  }
+})();
+if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410_ENABLED;
+
 /* ---- Dynamic Hero Equipment Layer Manager ---- */
 /* V409: the V2 PNGs are cropped 192px-wide atlas slices, not 192x192
    full-canvas sprites. Keep their native aspect ratio and place each slice
@@ -97,6 +110,7 @@ function getEquipBodyHTML(equipped) {
 }
 
 function heroEquipmentLayersHTML(equipped, tilt, sc) {
+  if (!HERO_EQUIP_V410_ENABLED) return "";
   const raw = getEquipBodyHTML(equipped);
   if (!raw) return "";
   const body = JSON.parse(raw);
@@ -642,8 +656,10 @@ function drawArena() {
         'height:' + (size * 0.94) + 'px;background:' + auraColor + '22;border-color:' + auraColor + '99;' +
         'transform:scale(' + auraPulse + ');box-shadow:0 0 14px ' + auraColor + '"></div>' : '') +
 
-      '<img src="' + spriteFrame("hero", c.heroAttacking, t) + '" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
-      heroEquipmentLayersHTML(S.equipped, tilt, sc) +
+      '<img src="' + spriteFrame("hero", c.heroAttacking, t) + '" style="' +
+      (HERO_EQUIP_V410_ENABLED ? 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;' : '') +
+      'transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
+      (HERO_EQUIP_V410_ENABLED ? heroEquipmentLayersHTML(S.equipped, tilt, sc) : '') +
       weaponHTML(D.weapon, weaponColor, c.heroAttacking > 0, t, size) +
       (c.heroAttacking > 0
         ? (RANGED_IDS.includes(D.weapon)
