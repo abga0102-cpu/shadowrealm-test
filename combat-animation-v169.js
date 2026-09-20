@@ -229,6 +229,8 @@
     ".srWalkPseudo169::before{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
     ".srWalkPseudo169::after{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
     ".srEquipLayer{will-change:transform}",
+    ".srWalkPseudo169 .srEquipLayer[src*='bottes']{display:none!important}",
+    ".srWalkPseudo169::before,.srWalkPseudo169::after{z-index:5!important}",
     "@media (prefers-reduced-motion:reduce){.unit>img,.srWalkPseudo169::before,.srWalkPseudo169::after{will-change:auto}}"
   ].join("\n");
   document.head.appendChild(style);
