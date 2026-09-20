@@ -258,7 +258,7 @@
     ".srEquipLegIdle,.srEquipLegHalf{position:absolute;inset:0;pointer-events:none}",
     ".srEquipLegHalf{display:none;transform-origin:50% 92%;will-change:transform}",
     ".srWalkPseudo169 .srEquipLegIdle{display:none}",
-    ".srWalkPseudo169 .srEquipLegHalf{display:block}",
+    ".srWalkPseudo169 .srEquipLegHalf{display:block!important}",
     ".srWalkPseudo169 .srEquipLegLeft{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
     ".srWalkPseudo169 .srEquipLegRight{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
     ".srWalkPseudo169::before,.srWalkPseudo169::after{z-index:4!important}",
