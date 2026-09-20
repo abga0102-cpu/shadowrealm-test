@@ -21,7 +21,7 @@ const EQUIP_PARTS_CONFIG = [
   { part: "casque",               slot: "casque",   plane: "front", x: 0,  y: 0,   w: 192, h: 64 },
   { part: "collier",              slot: "collier",  plane: "front", x: 8,  y: 49,  w: 192, h: 56 },
   { part: "gants",                slot: "gants",    plane: "front", x: 2,  y: 79,  w: 192, h: 64 },
-  { part: "anneau",               slot: "anneau",   plane: "front", x: 28, y: 96,  w: 192, h: 48 }
+  { part: "anneau",               slot: "anneau",   plane: "front", x: 32, y: 76,  w: 192, h: 48, scale: 0.55 }
 ];
 
 function normRarityKey(rarity) {
@@ -54,11 +54,12 @@ function getEquipSig(equipped) {
 }
 
 function placedEquipImgHTML(cfg, src, extraClass) {
+  const scale = Number(cfg.scale || 1);
   return '<img class="srEquipLayer ' + (extraClass || "") + '" data-equip-part="' + cfg.part +
     '" data-anchor-x="' + cfg.x + '" data-anchor-y="' + cfg.y + '" src="' + src +
     '" style="position:absolute;left:' + equipPct(cfg.x) + ';top:' + equipPct(cfg.y) +
     ';width:' + equipPct(cfg.w) + ';height:' + equipPct(cfg.h) +
-    ';pointer-events:none">';
+    ';pointer-events:none;transform:scale(' + scale + ');transform-origin:50% 50%">';
 }
 
 function legEquipLayerHTML(cfg, src) {
@@ -101,9 +102,11 @@ function heroEquipmentLayersHTML(equipped, tilt, sc) {
   const body = JSON.parse(raw);
   if (!body.back && !body.front && !body.legs) return "";
   const tf = "rotate(" + tilt + "deg) scale(" + sc + ")";
+  /* Legs render before the front torso plane at the same stack level so
+     belts/torso pieces naturally cover the upper edge of the greaves. */
   return (body.back ? '<div class="srEquipPoseWrap srEquipBackWrap" style="position:absolute;inset:0;z-index:1;pointer-events:none;transform:' + tf + '">' + body.back + '</div>' : '') +
-    (body.front ? '<div class="srEquipPoseWrap srEquipFrontWrap" style="position:absolute;inset:0;z-index:5;pointer-events:none;transform:' + tf + '">' + body.front + '</div>' : '') +
-    (body.legs ? '<div class="srEquipLegWrap" style="position:absolute;inset:0;z-index:5;pointer-events:none;transform:' + tf + '">' + body.legs + '</div>' : '');
+    (body.legs ? '<div class="srEquipLegWrap" style="position:absolute;inset:0;z-index:5;pointer-events:none;transform:' + tf + '">' + body.legs + '</div>' : '') +
+    (body.front ? '<div class="srEquipPoseWrap srEquipFrontWrap" style="position:absolute;inset:0;z-index:5;pointer-events:none;transform:' + tf + '">' + body.front + '</div>' : '');
 }
 /* width-to-height of each sprite, so none of them stretch */
 const WEAPON_ASPECT = { epee: 0.543, hache: 0.359, masse: 0.258, dague: 0.301, arc: 0.219, arbalete: 0.664, baton: 0.93 };

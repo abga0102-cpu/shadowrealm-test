@@ -64,6 +64,9 @@ test('V409 equipment uses explicit atlas anchors and articulated boot halves', a
       bootTop: boots && boots.style.top,
       bootHeight: boots && boots.style.height,
       ringLeft: ring && ring.style.left,
+      ringTop: ring && ring.style.top,
+      ringTransform: ring && ring.style.transform,
+      frontAfterLegs: !!(front && legs && (legs.compareDocumentPosition(front) & Node.DOCUMENT_POSITION_FOLLOWING)),
       halfCount: halves.length,
       beforeWalk,
       afterWalk: halves.length ? getComputedStyle(halves[0]).display : '',
@@ -91,7 +94,10 @@ test('V409 equipment uses explicit atlas anchors and articulated boot halves', a
   expect(result.torsoFit).not.toBe('contain');
   expect(result.bootTop).toBe('72.3958%');
   expect(result.bootHeight).toBe('33.3333%');
-  expect(result.ringLeft).toBe('14.5833%');
+  expect(result.ringLeft).toBe('16.6667%');
+  expect(result.ringTop).toBe('39.5833%');
+  expect(result.ringTransform).toBe('scale(0.55)');
+  expect(result.frontAfterLegs).toBe(true);
   expect(result.halfCount).toBe(4);
   expect(result.beforeWalk).toBe('none');
   expect(result.afterWalk).toBe('block');
