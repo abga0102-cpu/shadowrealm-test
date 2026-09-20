@@ -3,6 +3,7 @@
    Any key missing from disk simply renders nothing, so partial sets are safe. */
 const ASSETS = {
   hero:            "art/hero.png",
+  hero_bare:       "art/hero-bare.svg",
   enemy_goblin_attack1:      "art/frames/enemy_goblin_attack1.png",
   enemy_goblin_attack2:      "art/frames/enemy_goblin_attack2.png",
   enemy_orc_attack1:         "art/frames/enemy_orc_attack1.png",

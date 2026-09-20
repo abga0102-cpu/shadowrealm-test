@@ -193,14 +193,26 @@
         }else{
           disableLegs(hero,img);
         }
-        if(img&&c.heroAttacking>0&&RANGED_IDS.includes(D.weapon)){
-          if(ASSETS.hero)img.src=ASSETS.hero;
+        if(img&&c.heroAttacking>0){
+          if(ASSETS.hero_bare)img.src=ASSETS.hero_bare;
+          else if(ASSETS.hero)img.src=ASSETS.hero;
           const p=attackP(c.heroAttacking);let lean=0,y=0,sx=1,sy=1;
-          if(D.weapon==="arc"){
-            const draw=p<0.62?clamp01((p-0.20)/0.42):Math.max(0,1-(p-0.62)/0.28);lean=-2.2+draw*3.2;y=-draw*1.2;sx=1-draw*0.012;sy=1+draw*0.008;
-          }else if(D.weapon==="arbalete"){
-            const aim=Math.min(1,p/0.35),recoil=Math.max(0,1-Math.abs(p-0.62)/0.14);lean=-1.4+aim*1.8-recoil*2.5;y=-aim*0.7;
-          }else{const cast=Math.sin(Math.min(1,p/0.82)*Math.PI);lean=-2+cast*3.2;y=-cast*1.8;sy=1+cast*0.012;}
+          if(RANGED_IDS.includes(D.weapon)){
+            if(D.weapon==="arc"){
+              const draw=p<0.62?clamp01((p-0.20)/0.42):Math.max(0,1-(p-0.62)/0.28);lean=-2.2+draw*3.2;y=-draw*1.2;sx=1-draw*0.012;sy=1+draw*0.008;
+            }else if(D.weapon==="arbalete"){
+              const aim=Math.min(1,p/0.35),recoil=Math.max(0,1-Math.abs(p-0.62)/0.14);lean=-1.4+aim*1.8-recoil*2.5;y=-aim*0.7;
+            }else{const cast=Math.sin(Math.min(1,p/0.82)*Math.PI);lean=-2+cast*3.2;y=-cast*1.8;sy=1+cast*0.012;}
+          }else{
+            /* Melee no longer swaps to the legacy armoured attack PNGs. Give
+               the neutral body a small readable strike instead; the weapon
+               still owns the full swing arc and timing. */
+            const strike=Math.sin(clamp01((p-0.08)/0.84)*Math.PI);
+            lean=-1.5+strike*4.8;
+            y=-strike*1.15;
+            sx=1+strike*0.012;
+            sy=1-strike*0.010;
+          }
           const tf="translateY("+y.toFixed(2)+"px) rotate("+lean.toFixed(2)+"deg) scale("+sx.toFixed(3)+","+sy.toFixed(3)+")";
           img.style.transform=tf;
           if(backWrap)backWrap.style.transform=tf;

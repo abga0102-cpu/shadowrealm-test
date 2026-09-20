@@ -104,3 +104,49 @@ test('V409 equipment uses explicit atlas anchors and articulated boot halves', a
   expect(result.idleDuringWalk).toBe('none');
   expect(result.hiddenBootRule).toBe(false);
 });
+
+
+test('V409 bare hero is the canonical neutral body and never flashes legacy armour during attack', async ({ page }) => {
+  await boot(page);
+  const result = await page.evaluate(async () => {
+    const H = window.__smoke;
+    update((st) => {
+      st.level = 10; st.floor = 2; st.step = 1;
+      st.stats = { sante:50, degats:50, crit:0, critred:0 };
+      st.equipped = { arme:null, casque:null, armure:null, gants:null, bottes:null, collier:null, anneau:null, ceinture:null };
+      st.skills = {}; st.skillSlots = [null,null,null,null,null];
+      st.autoSkills = false; st.pets = []; st.activePetId = null;
+    });
+    H.D = computeDerived(H.S);
+    nav('accueil'); render();
+    H.combat = spawnCampaign(H.S);
+    drawArena();
+    let hero = document.querySelector('#aLayer > .unit');
+    let sprite = hero && hero.querySelector(':scope > img');
+    const idleSrc = sprite ? sprite.getAttribute('src') : '';
+    const wraps = hero ? hero.querySelectorAll(':scope > .srEquipBackWrap,:scope > .srEquipFrontWrap,:scope > .srEquipLegWrap').length : -1;
+
+    H.combat.heroAttacking = 0.12;
+    drawArena();
+    hero = document.querySelector('#aLayer > .unit');
+    sprite = hero && hero.querySelector(':scope > img');
+    const attackSrc = sprite ? sprite.getAttribute('src') : '';
+
+    const svgText = await fetch(ASSETS.hero_bare).then(r => r.text());
+    return {
+      idleSrc, attackSrc, wraps,
+      hasBareTorso: svgText.includes('data-role="bare-torso"'),
+      hasWhiteShorts: svgText.includes('data-role="white-shorts"'),
+      hasLegacyArmourWord: /data-role="(?:armou?r|cape|boots|helmet)"/i.test(svgText),
+      animationError: window.__srWalkV169Error || ''
+    };
+  });
+
+  expect(result.idleSrc).toContain('art/hero-bare.svg');
+  expect(result.attackSrc).toContain('art/hero-bare.svg');
+  expect(result.wraps).toBe(0);
+  expect(result.hasBareTorso).toBe(true);
+  expect(result.hasWhiteShorts).toBe(true);
+  expect(result.hasLegacyArmourWord).toBe(false);
+  expect(result.animationError).toBe('');
+});

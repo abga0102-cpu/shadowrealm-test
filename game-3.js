@@ -488,6 +488,12 @@ function attackFrames(key) {
 }
 /* which image to draw for a unit right now */
 function spriteFrame(key, attacking, t) {
+  /* Equipment V2 needs a genuinely neutral body underneath every worn layer.
+     The legacy hero/attack PNGs already contain armour, so using them would
+     make unequipping lie visually and would let old armour bleed through new
+     rarity layers. Keep attack motion in the DOM/weapon choreography and use
+     the dedicated bare sprite for every hero pose. */
+  if (key === "hero" && ASSETS.hero_bare) return ASSETS.hero_bare;
   const f = attackFrames(key);
   if (!f.length || !(attacking > 0)) return ASSETS[key];
   // attacking counts DOWN, so progress runs 0 -> 1 across the swing
