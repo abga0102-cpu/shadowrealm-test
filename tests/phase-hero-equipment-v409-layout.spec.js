@@ -95,14 +95,14 @@ test('V410 opt-in uses explicit atlas anchors and articulated boot halves', asyn
   expect(result.backZ).toBe('1');
   expect(result.frontZ).toBe('5');
   expect(result.legZ).toBe('5');
-  expect(result.torsoTop).toBe('27.0833%');
+  expect(result.torsoTop).toBe('28.1250%');
   expect(result.torsoHeight).toBe('41.6667%');
   expect(result.torsoFit).not.toBe('contain');
-  expect(result.bootTop).toBe('72.3958%');
+  expect(result.bootTop).toBe('72.9167%');
   expect(result.bootHeight).toBe('33.3333%');
-  expect(result.ringLeft).toBe('16.6667%');
-  expect(result.ringTop).toBe('39.5833%');
-  expect(result.ringTransform).toBe('scale(0.55)');
+  expect(result.ringLeft).toBe('17.7083%');
+  expect(result.ringTop).toBe('40.6250%');
+  expect(result.ringTransform).toBe('scale(0.5)');
   expect(result.frontAfterLegs).toBe(true);
   expect(result.halfCount).toBe(4);
   expect(result.beforeWalk).toBe('none');
@@ -154,4 +154,76 @@ test('V410 stays dormant on the normal production URL', async ({ page }) => {
   expect(result.inlinePosition).toBe('');
   expect(result.inlineZ).toBe('');
   expect(result.src).toContain('art/hero.png');
+});
+
+
+test('V411 uses a true bare hero base when no equipment is worn', async ({ page }) => {
+  await boot(page, true);
+  const result = await page.evaluate(() => {
+    const H = window.__smoke;
+    update((st) => {
+      st.level = 40; st.floor = 20; st.step = 1;
+      st.stats = { sante:100, degats:100, crit:0, critred:0 };
+      st.equipped = { arme:null, casque:null, armure:null, gants:null, bottes:null, collier:null, anneau:null, ceinture:null };
+      st.skills = {}; st.skillSlots = [null,null,null,null,null]; st.autoSkills = false; st.pets = []; st.activePetId = null;
+    });
+    H.D = computeDerived(H.S);
+    nav('accueil'); render(); H.combat = spawnCampaign(H.S); drawArena();
+    const hero = document.querySelector('#aLayer > .unit');
+    const sprite = hero && hero.querySelector(':scope > img');
+    return {
+      src: sprite && sprite.getAttribute('src'),
+      wraps: hero ? hero.querySelectorAll(':scope > .srEquipBackWrap,:scope > .srEquipFrontWrap,:scope > .srEquipLegWrap').length : -1
+    };
+  });
+  expect(result.src).toContain('art/hero-bare-v411.png');
+  expect(result.src).not.toContain('hero_attack');
+  expect(result.wraps).toBe(0);
+});
+
+test('V411 melee attack keeps every equipment plane locked to the hero transform', async ({ page }) => {
+  await boot(page, true);
+  const result = await page.evaluate((gear) => {
+    const H = window.__smoke;
+    update((st) => {
+      st.level = 40; st.floor = 20; st.step = 1;
+      st.stats = { sante:100, degats:100, crit:0, critred:0 };
+      st.equipped = gear; st.skills = {}; st.skillSlots = [null,null,null,null,null];
+      st.autoSkills = false; st.pets = []; st.activePetId = null;
+    });
+    H.D = computeDerived(H.S);
+    H.D.weapon = 'epee';
+    nav('accueil'); render(); H.combat = spawnCampaign(H.S);
+    H.combat.heroAttacking = ATTACK_WINDOW * 0.46;
+    drawArena();
+    const hero = document.querySelector('#aLayer > .unit');
+    const sprite = hero && hero.querySelector(':scope > img');
+    const back = hero && hero.querySelector(':scope > .srEquipBackWrap');
+    const front = hero && hero.querySelector(':scope > .srEquipFrontWrap');
+    const legs = hero && hero.querySelector(':scope > .srEquipLegWrap');
+    return {
+      src: sprite && sprite.getAttribute('src'),
+      spriteTransform: sprite && sprite.style.transform,
+      backTransform: back && back.style.transform,
+      frontTransform: front && front.style.transform,
+      legTransform: legs && legs.style.transform,
+      spriteOrigin: sprite && getComputedStyle(sprite).transformOrigin,
+      backOrigin: back && getComputedStyle(back).transformOrigin,
+      frontOrigin: front && getComputedStyle(front).transformOrigin,
+      legOrigin: legs && getComputedStyle(legs).transformOrigin
+    };
+  }, {
+    arme: item('w','arme','RARE'), casque: item('h','casque','RARE'), armure: item('a','armure','RARE'),
+    gants: item('g','gants','RARE'), bottes: item('b','bottes','RARE'), collier: item('c','collier','RARE'),
+    anneau: item('r','anneau','RARE'), ceinture: item('ce','ceinture','RARE')
+  });
+  expect(result.src).toContain('art/hero-bare-v411.png');
+  expect(result.src).not.toContain('hero_attack');
+  expect(result.spriteTransform).toBeTruthy();
+  expect(result.backTransform).toBe(result.spriteTransform);
+  expect(result.frontTransform).toBe(result.spriteTransform);
+  expect(result.legTransform).toBe(result.spriteTransform);
+  expect(result.backOrigin).toBe(result.spriteOrigin);
+  expect(result.frontOrigin).toBe(result.spriteOrigin);
+  expect(result.legOrigin).toBe(result.spriteOrigin);
 });
