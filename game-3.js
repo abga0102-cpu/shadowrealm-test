@@ -5,15 +5,15 @@
    ========================================================================= */
 const RANGED_IDS = ["arc", "arbalete", "baton"];
 
-/* V411 safety gate: keep the corrected equipment renderer private while
-   visual alignment, head layering and unequipped-weapon rendering are fixed.
-   Use ?equipV410=1 only for explicit QA. Nothing is persisted. */
+/* V413: V412 equipment visuals are the default renderer.
+   Emergency visual rollback remains available with ?equipV410=0.
+   This flag changes rendering only: gameplay, combat values, progression and saves are untouched. */
 const HERO_EQUIP_V410_ENABLED = (() => {
   try {
-    return typeof location !== "undefined" &&
-      new URLSearchParams(location.search).get("equipV410") === "1";
+    return !(typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("equipV410") === "0");
   } catch (_) {
-    return false;
+    return true;
   }
 })();
 if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410_ENABLED;
