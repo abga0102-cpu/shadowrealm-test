@@ -10,16 +10,15 @@ function item(id, slot, rarity) {
   };
 }
 
-async function boot(page, equipV410 = null) {
+async function boot(page, equipV410 = false) {
   await page.addInitScript(() => { try { localStorage.removeItem('shadowreach.save.local'); } catch (_) {} });
-  const flag = equipV410 === null ? '' : '&equipV410=' + (equipV410 ? '1' : '0');
-  await page.goto('/index.html?smoke=1' + flag);
+  await page.goto('/index.html?smoke=1' + (equipV410 ? '&equipV410=1' : ''));
   await page.waitForFunction(() => window.__smoke && typeof drawArena === 'function' && typeof spawnCampaign === 'function');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V410 is enabled by default and uses explicit atlas anchors and articulated boot halves', async ({ page }) => {
-  await boot(page);
+test('V410 opt-in uses explicit atlas anchors and articulated boot halves', async ({ page }) => {
+  await boot(page, true);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;
     update((st) => {
@@ -113,7 +112,7 @@ test('V410 is enabled by default and uses explicit atlas anchors and articulated
 });
 
 
-test('V410 emergency fallback disables equipment only with explicit equipV410=0', async ({ page }) => {
+test('V410 stays dormant on the normal production URL', async ({ page }) => {
   await boot(page, false);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;

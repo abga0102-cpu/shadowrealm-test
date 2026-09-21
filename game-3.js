@@ -5,15 +5,15 @@
    ========================================================================= */
 const RANGED_IDS = ["arc", "arbalete", "baton"];
 
-/* V410 public rollout: equipment visuals are enabled for normal production.
-   Keep ?equipV410=0 as an emergency URL-only visual fallback to the legacy
-   V408 hero renderer. Nothing is persisted in localStorage. */
+/* V410 safety gate: normal production stays on the stable V408 hero renderer
+   while the bare-body art, alignment and attack-follow animation are corrected.
+   Use ?equipV410=1 only for explicit visual QA. Nothing is persisted. */
 const HERO_EQUIP_V410_ENABLED = (() => {
   try {
-    return !(typeof location !== "undefined" &&
-      new URLSearchParams(location.search).get("equipV410") === "0");
+    return typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("equipV410") === "1";
   } catch (_) {
-    return true;
+    return false;
   }
 })();
 if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410_ENABLED;
