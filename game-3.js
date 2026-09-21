@@ -23,18 +23,22 @@ if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410
    full-canvas sprites. Keep their native aspect ratio and place each slice
    on an explicit 192x192 hero coordinate system. */
 const EQUIP_CANVAS = 192;
+/* V415 calibration: atlas rows are 192px wide, but their visible art was
+   authored for a much larger reference body than the 64px live hero.  Treat
+   every row as a local sprite and calibrate it around the live body's centre,
+   rather than stretching the whole 192px strip over the hero. */
 const EQUIP_PARTS_CONFIG = [
-  { part: "armure_torse_arriere", slot: "armure",   plane: "back",  x: 0,  y: 55,  w: 192, h: 64 },
-  { part: "ceinture_arriere",     slot: "ceinture", plane: "back",  x: 0,  y: 93,  w: 192, h: 64 },
-  { part: "bottes_jambieres",     slot: "bottes",   plane: "legs",  x: 0,  y: 105, w: 192, h: 72 },
-  { part: "bottes",               slot: "bottes",   plane: "legs",  x: 0,  y: 139, w: 192, h: 64 },
-  { part: "ceinture_avant",       slot: "ceinture", plane: "front", x: 0,  y: 91,  w: 192, h: 56 },
-  { part: "armure_torse_avant",   slot: "armure",   plane: "front", x: 0,  y: 52,  w: 192, h: 80 },
-  { part: "armure_epaules",       slot: "armure",   plane: "front", x: 0,  y: 50,  w: 192, h: 64 },
-  { part: "casque",               slot: "casque",   plane: "front", x: 0,  y: 0,   w: 192, h: 64 },
-  { part: "collier",              slot: "collier",  plane: "front", x: 8,  y: 49,  w: 192, h: 56 },
-  { part: "gants",                slot: "gants",    plane: "front", x: 2,  y: 79,  w: 192, h: 64 },
-  { part: "anneau",               slot: "anneau",   plane: "front", x: 32, y: 76,  w: 192, h: 48, scale: 0.55 }
+  { part: "armure_torse_arriere", slot: "armure",   plane: "back",  x: 37, y: 57,  w: 118, h: 39 },
+  { part: "ceinture_arriere",     slot: "ceinture", plane: "back",  x: 45, y: 91,  w: 102, h: 34 },
+  { part: "bottes_jambieres",     slot: "bottes",   plane: "legs",  x: 45, y: 108, w: 102, h: 38 },
+  { part: "bottes",               slot: "bottes",   plane: "legs",  x: 45, y: 137, w: 102, h: 34 },
+  { part: "ceinture_avant",       slot: "ceinture", plane: "front", x: 45, y: 90,  w: 102, h: 30 },
+  { part: "armure_torse_avant",   slot: "armure",   plane: "front", x: 37, y: 55,  w: 118, h: 49 },
+  { part: "armure_epaules",       slot: "armure",   plane: "front", x: 30, y: 49,  w: 132, h: 44 },
+  { part: "casque",               slot: "casque",   plane: "front", x: 52, y: 15,  w: 88,  h: 38 },
+  { part: "collier",              slot: "collier",  plane: "front", x: 57, y: 49,  w: 78,  h: 30 },
+  { part: "gants",                slot: "gants",    plane: "front", x: 27, y: 76,  w: 138, h: 42 },
+  { part: "anneau",               slot: "anneau",   plane: "front", x: 126,y: 82,  w: 28,  h: 18 }
 ];
 
 function normRarityKey(rarity) {
