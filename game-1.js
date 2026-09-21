@@ -1509,6 +1509,9 @@ function treeEffectivePer(node) {
 /* Global Gold target caps by Tree tier: I +5%, II +10%, III +15%, IV +20%.
    These four nodes opt out of the generic tier multiplier so their combined cap is exactly +50%. */
 const TREE_GOLD_TIER_CAPS = [5, 10, 15, 20];
+/* Autonomy target caps by Tree tier: I +10%, II +20%, III +30%, IV +40%.
+   These four nodes opt out of generic tier scaling so the combined boost is exactly +100%: 8h -> 16h. */
+const TREE_AUTONOMY_TIER_CAPS = [10, 20, 30, 40];
 
 const TREE_NODES = [
 
@@ -1533,7 +1536,7 @@ const TREE_NODES = [
   { id: "n1_12", sect: "Palier I", label: "Compétence Invoquer Coût I", short: "Invoq. Coût I", icon: "sparkle", color: "#B15CF6", tier: 1, effect: "skillCost", per: -1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_30"], lane: 2, row: 3 },
   { id: "n1_11", sect: "Palier I", label: "Compétence Passive Base Santé I", short: "Pass. Santé I", icon: "heart", color: "#57E07A", tier: 1, effect: "passHp", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_23"], lane: 3, row: 3 },
   { id: "n1_06", sect: "Palier I", label: "Bonus Or global I", short: "Or Global I", icon: "gold", color: "#F5C542", tier: 1, effect: "goldAll", per: 1, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_04"], lane: 4, row: 3 },
-  { id: "n1_08", sect: "Palier I", label: "Temps Récompense Autonomie I", short: "Tps Auton. I", icon: "cycle", color: "#8FC4FF", tier: 1, effect: "afkTime", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_18", "n1_10"], lane: 0, row: 4 },
+  { id: "n1_08", sect: "Palier I", label: "Temps Récompense Autonomie I", short: "Tps Auton. I", icon: "cycle", color: "#8FC4FF", tier: 1, effect: "afkTime", per: 2, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_18", "n1_10"], lane: 0, row: 4 },
   { id: "n1_14", sect: "Palier I", label: "Animal Bonus Santé I", short: "Animal Santé I", icon: "paw", color: "#57E07A", tier: 1, effect: "petHp", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_12"], lane: 1, row: 4 },
   { id: "n1_26", sect: "Palier I", label: "Œuf Mythique Vitesse d'éclosion I", short: "Œuf Mythique I", icon: "egg", color: "#FF4D6A", tier: 1, effect: "hatch_MYTHIQUE", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_24"], lane: 2, row: 4 },
   { id: "n1_02", sect: "Palier I", label: "Forge Amélioration Coût I", short: "Forge Coût I", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_12", "n1_06", "n1_18"], lane: 3, row: 4 },
@@ -1557,7 +1560,7 @@ const TREE_NODES = [
   { id: "n2_21", sect: "Palier II", label: "Chaussures Bonus Santé II", short: "Chaussures II", icon: "boot", color: "#57E07A", tier: 2, effect: "eq_bottes", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_05", "n2_16"], lane: 0, row: 8 },
   { id: "n2_10", sect: "Palier II", label: "Compétence Passive Base Dégâts II", short: "Pass. Dég. II", icon: "swords", color: "#9B5CF6", tier: 2, effect: "passDmg", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_06", "n2_16", "n2_05"], lane: 1, row: 8 },
   { id: "n2_28", sect: "Palier II", label: "Chance d'obtenir 1 Œuf supplémentaire gratuitement II", short: "Œuf Suppl. II", icon: "egg", color: "#8FEFF4", tier: 2, effect: "eggFree", per: 1, unit: "%", max: 5, times: PAL_T[1], req: ["n2_16", "n2_06"], lane: 2, row: 8 },
-  { id: "n2_08", sect: "Palier II", label: "Temps Récompense Autonomie II", short: "Tps Auton. II", icon: "cycle", color: "#8FC4FF", tier: 2, effect: "afkTime", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_26"], lane: 3, row: 8 },
+  { id: "n2_08", sect: "Palier II", label: "Temps Récompense Autonomie II", short: "Tps Auton. II", icon: "cycle", color: "#8FC4FF", tier: 2, effect: "afkTime", per: 4, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n2_26"], lane: 3, row: 8 },
   { id: "n2_15", sect: "Palier II", label: "Arme Bonus Dégâts II", short: "Arme II", icon: "swords", color: "#FF5A5A", tier: 2, effect: "eq_arme", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_05", "n2_03", "n2_26"], lane: 4, row: 8 },
   { id: "n2_02", sect: "Palier II", label: "Forge Amélioration Coût II", short: "Forge Coût II", icon: "hammer", color: "#E8B44A", tier: 2, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[1], req: ["n2_28", "n2_10", "n2_06"], lane: 0, row: 9 },
   { id: "n2_19", sect: "Palier II", label: "Armure Bonus Santé II", short: "Armure II", icon: "armor", color: "#57E07A", tier: 2, effect: "eq_armure", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_21"], lane: 1, row: 9 },
@@ -1613,7 +1616,7 @@ const TREE_NODES = [
   { id: "n3_15", sect: "Palier III", label: "Arme Bonus Dégâts III", short: "Arme III", icon: "swords", color: "#FF5A5A", tier: 3, effect: "eq_arme", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_30"], lane: 1, row: 19 },
   { id: "n3_10", sect: "Palier III", label: "Compétence Passive Base Dégâts III", short: "Pass. Dég. III", icon: "swords", color: "#9B5CF6", tier: 3, effect: "passDmg", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_18"], lane: 2, row: 19 },
   { id: "n3_13", sect: "Palier III", label: "Animal Bonus Dégâts III", short: "Animal Dég. III", icon: "paw", color: "#FF7A3D", tier: 3, effect: "petDmg", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_18", "n3_26"], lane: 3, row: 19 },
-  { id: "n3_08", sect: "Palier III", label: "Temps Récompense Autonomie III", short: "Tps Auton. III", icon: "cycle", color: "#8FC4FF", tier: 3, effect: "afkTime", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_11", "n3_29"], lane: 4, row: 19 },
+  { id: "n3_08", sect: "Palier III", label: "Temps Récompense Autonomie III", short: "Tps Auton. III", icon: "cycle", color: "#8FC4FF", tier: 3, effect: "afkTime", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_11", "n3_29"], lane: 4, row: 19 },
   { id: "sp_forge5", sect: "Palier III", label: "Forge multiple ×5", short: "Forge ×5", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge3", "n3_15"], lane: 1, row: 20, special: true },
   { id: "sp_forge10", sect: "Palier III", label: "Forge multiple ×10", short: "Forge ×10", icon: "hammer", color: "#F5C542", tier: 3, effect: "forgeMult", per: 5, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge5", "n3_10"], lane: 2, row: 20, special: true },
   { id: "n3_pc", sect: "Palier III", label: "Œuf Peu commun Vitesse d'éclosion III", short: "Œuf Peu com. III", icon: "egg", color: "#57E07A", tier: 3, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n2_pc", "n3_23"], lane: 3, row: 20 },
@@ -1643,7 +1646,7 @@ const TREE_NODES = [
   { id: "n4_05", sect: "Palier IV", label: "Amélioration de Nœud Technologique Coût IV", short: "Tech Coût IV", icon: "gear", color: "#3FCFD6", tier: 4, effect: "techCost", per: -2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_19", "n4_23"], lane: 0, row: 25 },
   { id: "n4_10", sect: "Palier IV", label: "Compétence Passive Base Dégâts IV", short: "Pass. Dég. IV", icon: "swords", color: "#9B5CF6", tier: 4, effect: "passDmg", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_07", "n4_23"], lane: 1, row: 25 },
   { id: "n4_18", sect: "Palier IV", label: "Collier Bonus Dégâts IV", short: "Collier IV", icon: "gem", color: "#FF5A5A", tier: 4, effect: "eq_collier", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_29", "n4_07"], lane: 2, row: 25 },
-  { id: "n4_08", sect: "Palier IV", label: "Temps Récompense Autonomie IV", short: "Tps Auton. IV", icon: "cycle", color: "#8FC4FF", tier: 4, effect: "afkTime", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n4_27", "n4_03"], lane: 3, row: 25 },
+  { id: "n4_08", sect: "Palier IV", label: "Temps Récompense Autonomie IV", short: "Tps Auton. IV", icon: "cycle", color: "#8FC4FF", tier: 4, effect: "afkTime", per: 8, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_27", "n4_03"], lane: 3, row: 25 },
   { id: "n4_21", sect: "Palier IV", label: "Chaussures Bonus Santé IV", short: "Chaussures IV", icon: "boot", color: "#57E07A", tier: 4, effect: "eq_bottes", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_09", "n4_03"], lane: 4, row: 25 },
   { id: "n4_20", sect: "Palier IV", label: "Anneau Bonus Dégâts IV", short: "Anneau IV", icon: "ring", color: "#FF5A5A", tier: 4, effect: "eq_anneau", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_18"], lane: 0, row: 26 },
   { id: "n4_13", sect: "Palier IV", label: "Animal Bonus Dégâts IV", short: "Animal Dég. IV", icon: "paw", color: "#FF7A3D", tier: 4, effect: "petDmg", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_18", "n4_05"], lane: 1, row: 26 },
@@ -2437,7 +2440,7 @@ function forgeBatch(s) {
    -------------------------------------------------------------------------- */
 /* Two different families: one lengthens the window, the other fattens what it
    pays. They used to be the same flat "afk" number. */
-function afkCapHours(s) { return RULES.AFK_BASE_HOURS * (1 + treeSum(s, "afkTime") / 100); }
+function afkCapHours(s) { return Math.min(16, RULES.AFK_BASE_HOURS * (1 + treeSum(s, "afkTime") / 100)); }
 function afkGainMul(s) { return 1 + treeSum(s, "afkGain") / 100; }
 function harvestCapSeconds(s) { return afkCapHours(s) * 3600; }
 function harvestEfficiency(s) { return Math.min(100, treeSum(s, "harvestEff")); }

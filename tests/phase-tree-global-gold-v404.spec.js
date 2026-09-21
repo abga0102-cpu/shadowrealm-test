@@ -21,6 +21,6 @@ test('V404 Global Gold caps are exactly 5/10/15/20 and +50 total', async()=>{
   expect(g1).toContain('function goldMul(s) { return 1 + treeSum(s, "goldAll") / 100; }');
   expect(g2).toContain('Math.floor(rewardAcc.gold * goldMul(s))');
   expect(g2).toContain('Math.floor(rewardAcc.gold * goldMul(st))');
-  expect(index).toContain("var V='2026.09.19.404'");
-  expect(index).toContain('game-1.js?v=2026.09.19.404a');
+  expect(index).toContain("var V='2026.09.22.415'");
+  expect(index).toContain('game-1.js?v=2026.09.22.415a');
 });
