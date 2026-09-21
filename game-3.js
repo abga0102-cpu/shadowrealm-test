@@ -24,17 +24,17 @@ if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410
    on an explicit 192x192 hero coordinate system. */
 const EQUIP_CANVAS = 192;
 const EQUIP_PARTS_CONFIG = [
-  { part: "armure_torse_arriere", slot: "armure",   plane: "back",  x: 0,  y: 56,  w: 192, h: 64, scale: 0.96 },
-  { part: "ceinture_arriere",     slot: "ceinture", plane: "back",  x: 0,  y: 94,  w: 192, h: 64, scale: 0.96 },
-  { part: "bottes_jambieres",     slot: "bottes",   plane: "legs",  x: 0,  y: 107, w: 192, h: 72, scale: 0.94 },
-  { part: "bottes",               slot: "bottes",   plane: "legs",  x: 0,  y: 140, w: 192, h: 64, scale: 0.94 },
-  { part: "ceinture_avant",       slot: "ceinture", plane: "front", x: 0,  y: 93,  w: 192, h: 56, scale: 0.96 },
-  { part: "armure_torse_avant",   slot: "armure",   plane: "front", x: 0,  y: 54,  w: 192, h: 80, scale: 0.96 },
-  { part: "armure_epaules",       slot: "armure",   plane: "front", x: 0,  y: 51,  w: 192, h: 64, scale: 0.94 },
-  { part: "casque",               slot: "casque",   plane: "front", x: 0,  y: 1,   w: 192, h: 64, scale: 0.94 },
-  { part: "collier",              slot: "collier",  plane: "front", x: 8,  y: 51,  w: 192, h: 56, scale: 0.90 },
-  { part: "gants",                slot: "gants",    plane: "front", x: 2,  y: 80,  w: 192, h: 64, scale: 0.92 },
-  { part: "anneau",               slot: "anneau",   plane: "front", x: 34, y: 78,  w: 192, h: 48, scale: 0.50 }
+  { part: "armure_torse_arriere", slot: "armure",   plane: "back",  x: 0,  y: 55,  w: 192, h: 64 },
+  { part: "ceinture_arriere",     slot: "ceinture", plane: "back",  x: 0,  y: 93,  w: 192, h: 64 },
+  { part: "bottes_jambieres",     slot: "bottes",   plane: "legs",  x: 0,  y: 105, w: 192, h: 72 },
+  { part: "bottes",               slot: "bottes",   plane: "legs",  x: 0,  y: 139, w: 192, h: 64 },
+  { part: "ceinture_avant",       slot: "ceinture", plane: "front", x: 0,  y: 91,  w: 192, h: 56 },
+  { part: "armure_torse_avant",   slot: "armure",   plane: "front", x: 0,  y: 52,  w: 192, h: 80 },
+  { part: "armure_epaules",       slot: "armure",   plane: "front", x: 0,  y: 50,  w: 192, h: 64 },
+  { part: "casque",               slot: "casque",   plane: "front", x: 0,  y: 0,   w: 192, h: 64 },
+  { part: "collier",              slot: "collier",  plane: "front", x: 8,  y: 49,  w: 192, h: 56 },
+  { part: "gants",                slot: "gants",    plane: "front", x: 2,  y: 79,  w: 192, h: 64 },
+  { part: "anneau",               slot: "anneau",   plane: "front", x: 32, y: 76,  w: 192, h: 48, scale: 0.55 }
 ];
 
 function normRarityKey(rarity) {
@@ -502,7 +502,7 @@ function attackFrames(key) {
 }
 /* which image to draw for a unit right now */
 function spriteFrame(key, attacking, t) {
-  if (key === "hero" && HERO_EQUIP_V410_ENABLED && ASSETS.hero_bare_v411) return ASSETS.hero_bare_v411;
+  if (key === "hero" && HERO_EQUIP_V410_ENABLED && ASSETS.hero_bare_v412) return ASSETS.hero_bare_v412;
   const f = attackFrames(key);
   if (!f.length || !(attacking > 0)) return ASSETS[key];
   // attacking counts DOWN, so progress runs 0 -> 1 across the swing
@@ -649,6 +649,7 @@ function drawArena() {
     const sc = 1;   // the hero holds one size: no breathing, no attack punch
     const auraPulse = 1 + Math.sin(t * 0.006) * 0.06;
     const hpPct = Math.max(0, (c.heroHP / c.heroMaxHP) * 100);
+    const visualWeapon = (S.equipped && S.equipped.arme) ? D.weapon : null;
 
     html += '<div class="unit" style="left:' + (P.hero * scale - size / 2) + 'px;top:' + (groundY - size) + 'px;' +
       'width:' + size + 'px;height:' + size + 'px;transform:translate(' + (lunge + knock) + 'px,' + (idle + hop) + 'px);z-index:4">' +
@@ -661,9 +662,9 @@ function drawArena() {
       (HERO_EQUIP_V410_ENABLED ? 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;' : '') +
       'transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
       (HERO_EQUIP_V410_ENABLED ? heroEquipmentLayersHTML(S.equipped, tilt, sc) : '') +
-      weaponHTML(D.weapon, weaponColor, c.heroAttacking > 0, t, size) +
-      (c.heroAttacking > 0
-        ? (RANGED_IDS.includes(D.weapon)
+      (visualWeapon ? weaponHTML(visualWeapon, weaponColor, c.heroAttacking > 0, t, size) : '') +
+      (c.heroAttacking > 0 && visualWeapon
+        ? (RANGED_IDS.includes(visualWeapon)
             ? releaseHTML(c.heroAttacking, size, weaponColor)
             : slashHTML(c.heroAttacking, size))
         : '') +

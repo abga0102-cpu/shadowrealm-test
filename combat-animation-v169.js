@@ -199,18 +199,20 @@
           img.style.transform=tf;
           if(backWrap)backWrap.style.transform=tf;
           if(frontWrap)frontWrap.style.transform=tf;
-          /* The articulated hero legs are unit-level pseudo layers, so the
-             leg equipment wrapper must stay in unit coordinates while each
-             left/right equipment half receives the exact foot transform. */
-          if(legWrap)legWrap.style.transform="none";
-          articulate(hero,img,gait.phase,size,gait.dir||1,false,PROFILES.hero);
+          if(equipV410){
+            if(legWrap)legWrap.style.transform=tf;
+            disableLegs(hero,img);
+          }else{
+            if(legWrap)legWrap.style.transform="none";
+            articulate(hero,img,gait.phase,size,gait.dir||1,false,PROFILES.hero);
+          }
           const shadow=hero.querySelector(":scope > .ushadow");if(shadow){shadow.style.transform="scaleX("+(0.968+p.contact*0.032).toFixed(3)+")";shadow.style.opacity=(0.54+p.contact*0.08).toFixed(3);}
         }else{
           disableLegs(hero,img);
         }
         if(img&&c.heroAttacking>0){
           if(equipV410){
-            if(ASSETS.hero_bare_v411)img.src=ASSETS.hero_bare_v411;
+            if(ASSETS.hero_bare_v412)img.src=ASSETS.hero_bare_v412;
             const p=attackP(c.heroAttacking);let lean=0,y=0,sx=1,sy=1;
             if(RANGED_IDS.includes(D.weapon)){
               if(D.weapon==="arc"){
@@ -289,7 +291,7 @@
     ".srEquipV410Enabled.srWalkPseudo169 .srEquipLegHalf{display:block!important}",
     ".srEquipV410Enabled.srWalkPseudo169 .srEquipLegLeft{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
     ".srEquipV410Enabled.srWalkPseudo169 .srEquipLegRight{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
-    ".srEquipV410Enabled.srWalkPseudo169::before,.srEquipV410Enabled.srWalkPseudo169::after{z-index:4!important}",
+    ".srEquipV410Enabled.srWalkPseudo169::before,.srEquipV410Enabled.srWalkPseudo169::after{content:none!important;display:none!important}",
     "@media (prefers-reduced-motion:reduce){.unit>img,.srWalkPseudo169::before,.srWalkPseudo169::after{will-change:auto}}"
   ].join("\n");
   document.head.appendChild(style);
