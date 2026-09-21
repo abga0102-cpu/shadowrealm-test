@@ -4,6 +4,124 @@
    the same 0.22 lerp smoothing and layered-sine idle animation as the app.
    ========================================================================= */
 const RANGED_IDS = ["arc", "arbalete", "baton"];
+
+/* V410 canary: production stays on the exact legacy hero renderer unless the
+   URL explicitly opts in with ?equipV410=1. No localStorage persistence: a
+   normal reload without the flag always returns to the stable V408 visuals. */
+const HERO_EQUIP_V410_ENABLED = (() => {
+  try {
+    return typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("equipV410") === "1";
+  } catch (_) {
+    return false;
+  }
+})();
+if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410_ENABLED;
+
+/* ---- Dynamic Hero Equipment Layer Manager ---- */
+/* V409: the V2 PNGs are cropped 192px-wide atlas slices, not 192x192
+   full-canvas sprites. Keep their native aspect ratio and place each slice
+   on an explicit 192x192 hero coordinate system. */
+const EQUIP_CANVAS = 192;
+const EQUIP_PARTS_CONFIG = [
+  { part: "armure_torse_arriere", slot: "armure",   plane: "back",  x: 0,  y: 55,  w: 192, h: 64 },
+  { part: "ceinture_arriere",     slot: "ceinture", plane: "back",  x: 0,  y: 93,  w: 192, h: 64 },
+  { part: "bottes_jambieres",     slot: "bottes",   plane: "legs",  x: 0,  y: 105, w: 192, h: 72 },
+  { part: "bottes",               slot: "bottes",   plane: "legs",  x: 0,  y: 139, w: 192, h: 64 },
+  { part: "ceinture_avant",       slot: "ceinture", plane: "front", x: 0,  y: 91,  w: 192, h: 56 },
+  { part: "armure_torse_avant",   slot: "armure",   plane: "front", x: 0,  y: 52,  w: 192, h: 80 },
+  { part: "armure_epaules",       slot: "armure",   plane: "front", x: 0,  y: 50,  w: 192, h: 64 },
+  { part: "casque",               slot: "casque",   plane: "front", x: 0,  y: 0,   w: 192, h: 64 },
+  { part: "collier",              slot: "collier",  plane: "front", x: 8,  y: 49,  w: 192, h: 56 },
+  { part: "gants",                slot: "gants",    plane: "front", x: 2,  y: 79,  w: 192, h: 64 },
+  { part: "anneau",               slot: "anneau",   plane: "front", x: 32, y: 76,  w: 192, h: 48, scale: 0.55 }
+];
+
+function normRarityKey(rarity) {
+  if (!rarity) return null;
+  const s = String(rarity).trim().toLowerCase();
+  if (s === "peu_commun" || s === "peu commun" || s === "peu-commun") return "peu_commun";
+  if (s === "epique" || s === "épique") return "epique";
+  if (s === "heroique" || s === "héroïque") return "heroique";
+  if (s === "legendaire" || s === "légendaire") return "legendaire";
+  return s;
+}
+
+const PRELOADED_EQUIP_URLS = new Set();
+let cachedEquipSig = "";
+let cachedEquipBody = "";
+
+function equipPct(n) {
+  return ((Number(n) || 0) * 100 / EQUIP_CANVAS).toFixed(4) + "%";
+}
+
+function getEquipSig(equipped) {
+  if (!equipped || typeof equipped !== "object") return "";
+  let s = "";
+  for (let i = 0; i < EQUIP_PARTS_CONFIG.length; i++) {
+    const cfg = EQUIP_PARTS_CONFIG[i];
+    const item = equipped[cfg.slot];
+    if (item && item.rarity) s += cfg.part + ":" + normRarityKey(item.rarity) + ";";
+  }
+  return s;
+}
+
+function placedEquipImgHTML(cfg, src, extraClass) {
+  const scale = Number(cfg.scale || 1);
+  return '<img class="srEquipLayer ' + (extraClass || "") + '" data-equip-part="' + cfg.part +
+    '" data-anchor-x="' + cfg.x + '" data-anchor-y="' + cfg.y + '" src="' + src +
+    '" style="position:absolute;left:' + equipPct(cfg.x) + ';top:' + equipPct(cfg.y) +
+    ';width:' + equipPct(cfg.w) + ';height:' + equipPct(cfg.h) +
+    ';pointer-events:none;transform:scale(' + scale + ');transform-origin:50% 50%">';
+}
+
+function legEquipLayerHTML(cfg, src) {
+  const art = placedEquipImgHTML(cfg, src, "srEquipLegArt");
+  return '<div class="srEquipLegLayer" data-equip-part="' + cfg.part +
+    '" style="position:absolute;inset:0;pointer-events:none">' +
+    '<div class="srEquipLegIdle">' + art + '</div>' +
+    '<div class="srEquipLegHalf srEquipLegLeft" style="display:none">' + art + '</div>' +
+    '<div class="srEquipLegHalf srEquipLegRight" style="display:none">' + art + '</div>' +
+    '</div>';
+}
+
+function getEquipBodyHTML(equipped) {
+  const sig = getEquipSig(equipped);
+  if (sig === cachedEquipSig) return cachedEquipBody;
+  let back = "", front = "", legs = "";
+  for (let i = 0; i < EQUIP_PARTS_CONFIG.length; i++) {
+    const cfg = EQUIP_PARTS_CONFIG[i];
+    const item = equipped && equipped[cfg.slot];
+    if (!item || !item.rarity) continue;
+    const rKey = normRarityKey(item.rarity);
+    if (!rKey) continue;
+    const src = "art/equipment/" + rKey + "/" + cfg.part + ".png";
+    if (!PRELOADED_EQUIP_URLS.has(src)) {
+      PRELOADED_EQUIP_URLS.add(src);
+      preloadImg(src);
+    }
+    if (cfg.plane === "legs") legs += legEquipLayerHTML(cfg, src);
+    else if (cfg.plane === "back") back += placedEquipImgHTML(cfg, src, "");
+    else front += placedEquipImgHTML(cfg, src, "");
+  }
+  cachedEquipSig = sig;
+  cachedEquipBody = JSON.stringify({ back, front, legs });
+  return cachedEquipBody;
+}
+
+function heroEquipmentLayersHTML(equipped, tilt, sc) {
+  if (!HERO_EQUIP_V410_ENABLED) return "";
+  const raw = getEquipBodyHTML(equipped);
+  if (!raw) return "";
+  const body = JSON.parse(raw);
+  if (!body.back && !body.front && !body.legs) return "";
+  const tf = "rotate(" + tilt + "deg) scale(" + sc + ")";
+  /* Legs render before the front torso plane at the same stack level so
+     belts/torso pieces naturally cover the upper edge of the greaves. */
+  return (body.back ? '<div class="srEquipPoseWrap srEquipBackWrap" style="position:absolute;inset:0;z-index:1;pointer-events:none;transform:' + tf + '">' + body.back + '</div>' : '') +
+    (body.legs ? '<div class="srEquipLegWrap" style="position:absolute;inset:0;z-index:5;pointer-events:none;transform:' + tf + '">' + body.legs + '</div>' : '') +
+    (body.front ? '<div class="srEquipPoseWrap srEquipFrontWrap" style="position:absolute;inset:0;z-index:5;pointer-events:none;transform:' + tf + '">' + body.front + '</div>' : '');
+}
 /* width-to-height of each sprite, so none of them stretch */
 const WEAPON_ASPECT = { epee: 0.543, hache: 0.359, masse: 0.258, dague: 0.301, arc: 0.219, arbalete: 0.664, baton: 0.93 };
 const WEAPON_SILVER = "#d6dae4";
@@ -538,7 +656,10 @@ function drawArena() {
         'height:' + (size * 0.94) + 'px;background:' + auraColor + '22;border-color:' + auraColor + '99;' +
         'transform:scale(' + auraPulse + ');box-shadow:0 0 14px ' + auraColor + '"></div>' : '') +
 
-      '<img src="' + spriteFrame("hero", c.heroAttacking, t) + '" style="transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
+      '<img src="' + spriteFrame("hero", c.heroAttacking, t) + '" style="' +
+      (HERO_EQUIP_V410_ENABLED ? 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;' : '') +
+      'transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
+      (HERO_EQUIP_V410_ENABLED ? heroEquipmentLayersHTML(S.equipped, tilt, sc) : '') +
       weaponHTML(D.weapon, weaponColor, c.heroAttacking > 0, t, size) +
       (c.heroAttacking > 0
         ? (RANGED_IDS.includes(D.weapon)
