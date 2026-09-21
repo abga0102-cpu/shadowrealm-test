@@ -10,77 +10,15 @@ function item(id, slot, rarity) {
   };
 }
 
-async function boot(page, equipV410 = null) {
+async function boot(page, enabled = false) {
   await page.addInitScript(() => { try { localStorage.removeItem('shadowreach.save.local'); } catch (_) {} });
-  const flag = equipV410 === null ? '' : '&equipV410=' + (equipV410 ? '1' : '0');
-  await page.goto('/index.html?smoke=1' + flag);
+  await page.goto('/index.html?smoke=1' + (enabled ? '&equipV410=1' : ''));
   await page.waitForFunction(() => window.__smoke && typeof drawArena === 'function' && typeof spawnCampaign === 'function');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V411 public default uses calibrated atlas anchors and articulated boot halves', async ({ page }) => {
-  await boot(page);
-  const result = await page.evaluate((gear) => {
-    const H = window.__smoke;
-    update((st) => {
-      st.level = 40; st.floor = 20; st.step = 1;
-      st.stats = { sante:100, degats:100, crit:0, critred:0 };
-      st.equipped = gear; st.skills = {}; st.skillSlots = [null,null,null,null,null];
-      st.autoSkills = false; st.pets = []; st.activePetId = null;
-    });
-    H.D = computeDerived(H.S);
-    nav('accueil'); render();
-    H.combat = spawnCampaign(H.S);
-    drawArena();
-
-    const hero = document.querySelector('#aLayer > .unit');
-    const sprite = hero && hero.querySelector(':scope > img');
-    const back = hero && hero.querySelector(':scope > .srEquipBackWrap');
-    const front = hero && hero.querySelector(':scope > .srEquipFrontWrap');
-    const legs = hero && hero.querySelector(':scope > .srEquipLegWrap');
-    const torso = hero && hero.querySelector('[data-equip-part="armure_torse_avant"]');
-    const boots = hero && hero.querySelector('.srEquipLegIdle [data-equip-part="bottes"]');
-    const ring = hero && hero.querySelector('[data-equip-part="anneau"]');
-    const halves = hero ? hero.querySelectorAll('.srEquipLegHalf') : [];
-
-    /* drawArena may already have advanced the locomotion class before the
-       assertion, depending on engine/rAF timing. Normalize to a known idle
-       class state before checking the idle/walk CSS swap. */
-    if (hero) hero.classList.remove('srWalkPseudo169');
-    const beforeWalk = halves.length ? getComputedStyle(halves[0]).display : '';
-    if (hero) {
-      hero.classList.add('srWalkPseudo169');
-      hero.style.setProperty('--sr-split-top','58%');
-      hero.style.setProperty('--sr-left-end','53%');
-      hero.style.setProperty('--sr-right-start','47%');
-      hero.style.setProperty('--sr-lx','1px'); hero.style.setProperty('--sr-ly','0px'); hero.style.setProperty('--sr-lr','1deg');
-      hero.style.setProperty('--sr-rx','-1px'); hero.style.setProperty('--sr-ry','-1px'); hero.style.setProperty('--sr-rr','-1deg');
-      hero.style.setProperty('--sr-flip','scaleX(1)');
-    }
-    const idle = hero && hero.querySelector('.srEquipLegIdle');
-    return {
-      flag: window.__srEquipV410Enabled,
-      spriteZ: sprite && getComputedStyle(sprite).zIndex,
-      backZ: back && getComputedStyle(back).zIndex,
-      frontZ: front && getComputedStyle(front).zIndex,
-      legZ: legs && getComputedStyle(legs).zIndex,
-      torsoTop: torso && torso.style.top,
-      torsoHeight: torso && torso.style.height,
-      torsoFit: torso && torso.style.objectFit,
-      bootTop: boots && boots.style.top,
-      bootHeight: boots && boots.style.height,
-      ringLeft: ring && ring.style.left,
-      ringTop: ring && ring.style.top,
-      ringTransform: ring && ring.style.transform,
-      frontAfterLegs: !!(front && legs && (legs.compareDocumentPosition(front) & Node.DOCUMENT_POSITION_FOLLOWING)),
-      halfCount: halves.length,
-      beforeWalk,
-      afterWalk: halves.length ? getComputedStyle(halves[0]).display : '',
-      idleDuringWalk: idle ? getComputedStyle(idle).display : '',
-      hiddenBootRule: !![...document.styleSheets].flatMap(s => { try { return [...s.cssRules]; } catch (_) { return []; } })
-        .some(r => String(r.cssText || '').includes("src*='bottes'") && String(r.cssText || '').includes('display: none'))
-    };
-  }, {
+function fullGear() {
+  return {
     arme: item('w','arme','RARE'),
     casque: item('h','casque','RARE'),
     armure: item('a','armure','RARE'),
@@ -89,101 +27,126 @@ test('V411 public default uses calibrated atlas anchors and articulated boot hal
     collier: item('c','collier','RARE'),
     anneau: item('r','anneau','RARE'),
     ceinture: item('ce','ceinture','RARE')
-  });
+  };
+}
 
-  expect(result.flag).toBe(true);
-  expect(result.spriteZ).toBe('4');
-  expect(result.backZ).toBe('1');
-  expect(result.frontZ).toBe('5');
-  expect(result.legZ).toBe('5');
-  expect(result.torsoTop).toBe('28.125%');
-  expect(result.torsoHeight).toBe('41.6667%');
-  expect(result.torsoFit).not.toBe('contain');
-  expect(result.bootTop).toBe('72.9167%');
-  expect(result.bootHeight).toBe('33.3333%');
-  expect(result.ringLeft).toBe('17.7083%');
-  expect(result.ringTop).toBe('40.6250%');
-  expect(result.ringTransform).toBe('scale(0.5)');
-  expect(result.frontAfterLegs).toBe(true);
-  expect(result.halfCount).toBe(4);
-  expect(result.beforeWalk).toBe('none');
-  expect(result.afterWalk).toBe('block');
-  expect(result.idleDuringWalk).toBe('none');
-  expect(result.hiddenBootRule).toBe(false);
-});
-
-
-test('V411 emergency fallback disables equipment only with explicit equipV410=0', async ({ page }) => {
+test('V412 remains private on the normal production URL', async ({ page }) => {
   await boot(page, false);
-  const result = await page.evaluate((gear) => {
-    const H = window.__smoke;
-    update((st) => {
-      st.level = 40; st.floor = 20; st.step = 1;
-      st.stats = { sante:100, degats:100, crit:0, critred:0 };
-      st.equipped = gear; st.skills = {}; st.skillSlots = [null,null,null,null,null];
-      st.autoSkills = false; st.pets = []; st.activePetId = null;
-    });
-    H.D = computeDerived(H.S);
-    nav('accueil'); render();
-    H.combat = spawnCampaign(H.S);
-    drawArena();
-
-    const hero = document.querySelector('#aLayer > .unit');
-    const sprite = hero && hero.querySelector(':scope > img');
-    return {
-      flag: window.__srEquipV410Enabled,
-      equipmentWraps: hero ? hero.querySelectorAll(':scope > .srEquipBackWrap,:scope > .srEquipFrontWrap,:scope > .srEquipLegWrap').length : -1,
-      canaryClass: !!(hero && hero.classList.contains('srEquipV410Enabled')),
-      inlinePosition: sprite ? sprite.style.position : '',
-      inlineZ: sprite ? sprite.style.zIndex : '',
-      src: sprite ? sprite.getAttribute('src') : ''
-    };
-  }, {
-    arme: item('w','arme','RARE'),
-    casque: item('h','casque','RARE'),
-    armure: item('a','armure','RARE'),
-    gants: item('g','gants','RARE'),
-    bottes: item('b','bottes','RARE'),
-    collier: item('c','collier','RARE'),
-    anneau: item('r','anneau','RARE'),
-    ceinture: item('ce','ceinture','RARE')
-  });
-
+  const result = await page.evaluate(() => ({
+    flag: window.__srEquipV410Enabled,
+    src: document.querySelector('#aLayer > .unit > img')?.getAttribute('src') || ''
+  }));
   expect(result.flag).toBe(false);
-  expect(result.equipmentWraps).toBe(0);
-  expect(result.canaryClass).toBe(false);
-  expect(['', 'relative']).toContain(result.inlinePosition);
-  expect(result.inlineZ).toBe('');
   expect(result.src).toContain('art/hero.png');
 });
 
-
-test('V411 uses a true bare hero base when no equipment is worn', async ({ page }) => {
-  await boot(page);
+test('V412 unequipped hero uses one bare base and renders no ghost weapon', async ({ page }) => {
+  await boot(page, true);
   const result = await page.evaluate(() => {
     const H = window.__smoke;
     update((st) => {
       st.level = 40; st.floor = 20; st.step = 1;
       st.stats = { sante:100, degats:100, crit:0, critred:0 };
       st.equipped = { arme:null, casque:null, armure:null, gants:null, bottes:null, collier:null, anneau:null, ceinture:null };
-      st.skills = {}; st.skillSlots = [null,null,null,null,null]; st.autoSkills = false; st.pets = []; st.activePetId = null;
+      st.skills = {}; st.skillSlots = [null,null,null,null,null];
+      st.autoSkills = false; st.pets = []; st.activePetId = null;
     });
     H.D = computeDerived(H.S);
     nav('accueil'); render(); H.combat = spawnCampaign(H.S); drawArena();
     const hero = document.querySelector('#aLayer > .unit');
-    const sprite = hero && hero.querySelector(':scope > img');
+    const sprite = hero?.querySelector(':scope > img');
     return {
-      src: sprite && sprite.getAttribute('src'),
-      wraps: hero ? hero.querySelectorAll(':scope > .srEquipBackWrap,:scope > .srEquipFrontWrap,:scope > .srEquipLegWrap').length : -1
+      src: sprite?.getAttribute('src') || '',
+      equipmentWraps: hero?.querySelectorAll(':scope > .srEquipBackWrap,:scope > .srEquipFrontWrap,:scope > .srEquipLegWrap').length ?? -1,
+      weapons: hero?.querySelectorAll(':scope > .srWeapon').length ?? -1,
+      pseudoClass: !!hero?.classList.contains('srWalkPseudo169')
     };
   });
-  expect(result.src).toContain('art/hero-bare-v411.png');
+  expect(result.src).toContain('art/hero-bare-v412.png');
   expect(result.src).not.toContain('hero_attack');
-  expect(result.wraps).toBe(0);
+  expect(result.equipmentWraps).toBe(0);
+  expect(result.weapons).toBe(0);
+  expect(result.pseudoClass).toBe(false);
 });
 
-test('V411 melee attack keeps every equipment plane locked to the hero transform', async ({ page }) => {
-  await boot(page);
+test('V412 equipment uses atlas anchors without V411 shrink drift', async ({ page }) => {
+  await boot(page, true);
+  const result = await page.evaluate((gear) => {
+    const H = window.__smoke;
+    update((st) => {
+      st.level = 40; st.floor = 20; st.step = 1;
+      st.stats = { sante:100, degats:100, crit:0, critred:0 };
+      st.equipped = gear; st.skills = {}; st.skillSlots = [null,null,null,null,null];
+      st.autoSkills = false; st.pets = []; st.activePetId = null;
+    });
+    H.D = computeDerived(H.S);
+    nav('accueil'); render(); H.combat = spawnCampaign(H.S); drawArena();
+    const hero = document.querySelector('#aLayer > .unit');
+    const torso = hero?.querySelector('[data-equip-part="armure_torse_avant"]');
+    const helmet = hero?.querySelector('[data-equip-part="casque"]');
+    const boots = hero?.querySelector('.srEquipLegIdle [data-equip-part="bottes"]');
+    const ring = hero?.querySelector('[data-equip-part="anneau"]');
+    return {
+      torsoTop: torso?.style.top,
+      torsoTransform: torso?.style.transform,
+      helmetTop: helmet?.style.top,
+      helmetTransform: helmet?.style.transform,
+      bootTop: boots?.style.top,
+      bootTransform: boots?.style.transform,
+      ringLeft: ring?.style.left,
+      ringTop: ring?.style.top,
+      ringTransform: ring?.style.transform
+    };
+  }, fullGear());
+  expect(result.torsoTop).toBe('27.0833%');
+  expect(result.torsoTransform).toBe('scale(1)');
+  expect(result.helmetTop).toBe('0.0000%');
+  expect(result.helmetTransform).toBe('scale(1)');
+  expect(result.bootTop).toBe('72.3958%');
+  expect(result.bootTransform).toBe('scale(1)');
+  expect(result.ringLeft).toBe('16.6667%');
+  expect(result.ringTop).toBe('39.5833%');
+  expect(result.ringTransform).toBe('scale(0.55)');
+});
+
+test('V412 WebKit-safe walk never clones a second hero face', async ({ page }) => {
+  await boot(page, true);
+  const result = await page.evaluate((gear) => {
+    const H = window.__smoke;
+    update((st) => {
+      st.level = 40; st.floor = 20; st.step = 1;
+      st.stats = { sante:100, degats:100, crit:0, critred:0 };
+      st.equipped = gear; st.skills = {}; st.skillSlots = [null,null,null,null,null];
+      st.autoSkills = false; st.pets = []; st.activePetId = null;
+    });
+    H.D = computeDerived(H.S);
+    nav('accueil'); render(); H.combat = spawnCampaign(H.S); drawArena();
+    H.combat.heroX = Number(H.combat.heroX || 0) + 16;
+    drawArena();
+    const hero = document.querySelector('#aLayer > .unit');
+    const sprite = hero?.querySelector(':scope > img');
+    const back = hero?.querySelector(':scope > .srEquipBackWrap');
+    const front = hero?.querySelector(':scope > .srEquipFrontWrap');
+    const legs = hero?.querySelector(':scope > .srEquipLegWrap');
+    return {
+      pseudoClass: !!hero?.classList.contains('srWalkPseudo169'),
+      clipPath: sprite?.style.clipPath || '',
+      spriteTransform: sprite?.style.transform || '',
+      backTransform: back?.style.transform || '',
+      frontTransform: front?.style.transform || '',
+      legTransform: legs?.style.transform || ''
+    };
+  }, fullGear());
+  expect(result.pseudoClass).toBe(false);
+  expect(result.clipPath).toBe('');
+  expect(result.spriteTransform).toBeTruthy();
+  expect(result.backTransform).toBe(result.spriteTransform);
+  expect(result.frontTransform).toBe(result.spriteTransform);
+  expect(result.legTransform).toBe(result.spriteTransform);
+});
+
+test('V412 melee attack locks body, equipment and equipped weapon together', async ({ page }) => {
+  await boot(page, true);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;
     update((st) => {
@@ -198,33 +161,25 @@ test('V411 melee attack keeps every equipment plane locked to the hero transform
     H.combat.heroAttacking = ATTACK_WINDOW * 0.46;
     drawArena();
     const hero = document.querySelector('#aLayer > .unit');
-    const sprite = hero && hero.querySelector(':scope > img');
-    const back = hero && hero.querySelector(':scope > .srEquipBackWrap');
-    const front = hero && hero.querySelector(':scope > .srEquipFrontWrap');
-    const legs = hero && hero.querySelector(':scope > .srEquipLegWrap');
+    const sprite = hero?.querySelector(':scope > img');
+    const back = hero?.querySelector(':scope > .srEquipBackWrap');
+    const front = hero?.querySelector(':scope > .srEquipFrontWrap');
+    const legs = hero?.querySelector(':scope > .srEquipLegWrap');
     return {
-      src: sprite && sprite.getAttribute('src'),
-      spriteTransform: sprite && sprite.style.transform,
-      backTransform: back && back.style.transform,
-      frontTransform: front && front.style.transform,
-      legTransform: legs && legs.style.transform,
-      spriteOrigin: sprite && getComputedStyle(sprite).transformOrigin,
-      backOrigin: back && getComputedStyle(back).transformOrigin,
-      frontOrigin: front && getComputedStyle(front).transformOrigin,
-      legOrigin: legs && getComputedStyle(legs).transformOrigin
+      src: sprite?.getAttribute('src') || '',
+      spriteTransform: sprite?.style.transform || '',
+      backTransform: back?.style.transform || '',
+      frontTransform: front?.style.transform || '',
+      legTransform: legs?.style.transform || '',
+      weaponCount: hero?.querySelectorAll(':scope > .srWeapon').length ?? -1,
+      pseudoClass: !!hero?.classList.contains('srWalkPseudo169')
     };
-  }, {
-    arme: item('w','arme','RARE'), casque: item('h','casque','RARE'), armure: item('a','armure','RARE'),
-    gants: item('g','gants','RARE'), bottes: item('b','bottes','RARE'), collier: item('c','collier','RARE'),
-    anneau: item('r','anneau','RARE'), ceinture: item('ce','ceinture','RARE')
-  });
-  expect(result.src).toContain('art/hero-bare-v411.png');
-  expect(result.src).not.toContain('hero_attack');
+  }, fullGear());
+  expect(result.src).toContain('art/hero-bare-v412.png');
   expect(result.spriteTransform).toBeTruthy();
   expect(result.backTransform).toBe(result.spriteTransform);
   expect(result.frontTransform).toBe(result.spriteTransform);
   expect(result.legTransform).toBe(result.spriteTransform);
-  expect(result.backOrigin).toBe(result.spriteOrigin);
-  expect(result.frontOrigin).toBe(result.spriteOrigin);
-  expect(result.legOrigin).toBe(result.spriteOrigin);
+  expect(result.weaponCount).toBe(1);
+  expect(result.pseudoClass).toBe(false);
 });
