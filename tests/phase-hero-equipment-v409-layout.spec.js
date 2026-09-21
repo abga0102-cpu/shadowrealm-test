@@ -10,15 +10,16 @@ function item(id, slot, rarity) {
   };
 }
 
-async function boot(page, equipV410 = false) {
+async function boot(page, equipV410 = null) {
   await page.addInitScript(() => { try { localStorage.removeItem('shadowreach.save.local'); } catch (_) {} });
-  await page.goto('/index.html?smoke=1' + (equipV410 ? '&equipV410=1' : ''));
+  const flag = equipV410 === null ? '' : '&equipV410=' + (equipV410 ? '1' : '0');
+  await page.goto('/index.html?smoke=1' + flag);
   await page.waitForFunction(() => window.__smoke && typeof drawArena === 'function' && typeof spawnCampaign === 'function');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V410 opt-in uses explicit atlas anchors and articulated boot halves', async ({ page }) => {
-  await boot(page, true);
+test('V411 public default uses calibrated atlas anchors and articulated boot halves', async ({ page }) => {
+  await boot(page);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;
     update((st) => {
@@ -112,7 +113,7 @@ test('V410 opt-in uses explicit atlas anchors and articulated boot halves', asyn
 });
 
 
-test('V410 stays dormant on the normal production URL', async ({ page }) => {
+test('V411 emergency fallback disables equipment only with explicit equipV410=0', async ({ page }) => {
   await boot(page, false);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;
@@ -158,7 +159,7 @@ test('V410 stays dormant on the normal production URL', async ({ page }) => {
 
 
 test('V411 uses a true bare hero base when no equipment is worn', async ({ page }) => {
-  await boot(page, true);
+  await boot(page);
   const result = await page.evaluate(() => {
     const H = window.__smoke;
     update((st) => {
@@ -182,7 +183,7 @@ test('V411 uses a true bare hero base when no equipment is worn', async ({ page 
 });
 
 test('V411 melee attack keeps every equipment plane locked to the hero transform', async ({ page }) => {
-  await boot(page, true);
+  await boot(page);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;
     update((st) => {

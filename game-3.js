@@ -5,15 +5,15 @@
    ========================================================================= */
 const RANGED_IDS = ["arc", "arbalete", "baton"];
 
-/* V410 safety gate: normal production stays on the stable V408 hero renderer
-   while the bare-body art, alignment and attack-follow animation are corrected.
-   Use ?equipV410=1 only for explicit visual QA. Nothing is persisted. */
+/* V411 public rollout: corrected bare-body equipment rendering is enabled
+   for normal production. Keep ?equipV410=0 as an emergency URL-only fallback
+   to the stable legacy hero renderer. Nothing is persisted. */
 const HERO_EQUIP_V410_ENABLED = (() => {
   try {
-    return typeof location !== "undefined" &&
-      new URLSearchParams(location.search).get("equipV410") === "1";
+    return !(typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("equipV410") === "0");
   } catch (_) {
-    return false;
+    return true;
   }
 })();
 if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410_ENABLED;
