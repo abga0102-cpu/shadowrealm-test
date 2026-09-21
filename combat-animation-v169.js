@@ -208,19 +208,43 @@
         }else{
           disableLegs(hero,img);
         }
-        if(img&&c.heroAttacking>0&&RANGED_IDS.includes(D.weapon)){
-          if(ASSETS.hero)img.src=ASSETS.hero;
-          const p=attackP(c.heroAttacking);let lean=0,y=0,sx=1,sy=1;
-          if(D.weapon==="arc"){
-            const draw=p<0.62?clamp01((p-0.20)/0.42):Math.max(0,1-(p-0.62)/0.28);lean=-2.2+draw*3.2;y=-draw*1.2;sx=1-draw*0.012;sy=1+draw*0.008;
-          }else if(D.weapon==="arbalete"){
-            const aim=Math.min(1,p/0.35),recoil=Math.max(0,1-Math.abs(p-0.62)/0.14);lean=-1.4+aim*1.8-recoil*2.5;y=-aim*0.7;
-          }else{const cast=Math.sin(Math.min(1,p/0.82)*Math.PI);lean=-2+cast*3.2;y=-cast*1.8;sy=1+cast*0.012;}
-          const tf="translateY("+y.toFixed(2)+"px) rotate("+lean.toFixed(2)+"deg) scale("+sx.toFixed(3)+","+sy.toFixed(3)+")";
-          img.style.transform=tf;
-          if(backWrap)backWrap.style.transform=tf;
-          if(frontWrap)frontWrap.style.transform=tf;
-          if(legWrap)legWrap.style.transform=tf;
+        if(img&&c.heroAttacking>0){
+          if(equipV410){
+            if(ASSETS.hero_bare_v411)img.src=ASSETS.hero_bare_v411;
+            const p=attackP(c.heroAttacking);let lean=0,y=0,sx=1,sy=1;
+            if(RANGED_IDS.includes(D.weapon)){
+              if(D.weapon==="arc"){
+                const draw=p<0.62?clamp01((p-0.20)/0.42):Math.max(0,1-(p-0.62)/0.28);lean=-2.2+draw*3.2;y=-draw*1.2;sx=1-draw*0.012;sy=1+draw*0.008;
+              }else if(D.weapon==="arbalete"){
+                const aim=Math.min(1,p/0.35),recoil=Math.max(0,1-Math.abs(p-0.62)/0.14);lean=-1.4+aim*1.8-recoil*2.5;y=-aim*0.7;
+              }else{
+                const cast=Math.sin(Math.min(1,p/0.82)*Math.PI);lean=-2+cast*3.2;y=-cast*1.8;sy=1+cast*0.012;
+              }
+            }else{
+              const strike=Math.sin(clamp01((p-0.08)/0.84)*Math.PI);
+              lean=-1.5+strike*4.8;
+              y=-strike*1.15;
+              sx=1+strike*0.012;
+              sy=1-strike*0.010;
+            }
+            const tf="translateY("+y.toFixed(2)+"px) rotate("+lean.toFixed(2)+"deg) scale("+sx.toFixed(3)+","+sy.toFixed(3)+")";
+            img.style.transform=tf;
+            if(backWrap)backWrap.style.transform=tf;
+            if(frontWrap)frontWrap.style.transform=tf;
+            if(legWrap)legWrap.style.transform=tf;
+          }else if(RANGED_IDS.includes(D.weapon)){
+            /* Preserve the exact V408 ranged pose when V411 is not enabled. */
+            if(ASSETS.hero)img.src=ASSETS.hero;
+            const p=attackP(c.heroAttacking);let lean=0,y=0,sx=1,sy=1;
+            if(D.weapon==="arc"){
+              const draw=p<0.62?clamp01((p-0.20)/0.42):Math.max(0,1-(p-0.62)/0.28);lean=-2.2+draw*3.2;y=-draw*1.2;sx=1-draw*0.012;sy=1+draw*0.008;
+            }else if(D.weapon==="arbalete"){
+              const aim=Math.min(1,p/0.35),recoil=Math.max(0,1-Math.abs(p-0.62)/0.14);lean=-1.4+aim*1.8-recoil*2.5;y=-aim*0.7;
+            }else{
+              const cast=Math.sin(Math.min(1,p/0.82)*Math.PI);lean=-2+cast*3.2;y=-cast*1.8;sy=1+cast*0.012;
+            }
+            img.style.transform="translateY("+y.toFixed(2)+"px) rotate("+lean.toFixed(2)+"deg) scale("+sx.toFixed(3)+","+sy.toFixed(3)+")";
+          }
         }
         const weapon=hero.querySelector(":scope > .srWeapon");if(weapon)weapon.style.zIndex="6";
         const hp=hero.querySelector(":scope > .hpMini");if(hp)hp.style.zIndex="8";
@@ -258,6 +282,7 @@
     ".srWalkPseudo169::before{clip-path:polygon(0 var(--sr-split-top),var(--sr-left-end) var(--sr-split-top),var(--sr-left-end) 100%,0 100%);transform:var(--sr-flip) translate(var(--sr-lx),var(--sr-ly)) rotate(var(--sr-lr))}",
     ".srWalkPseudo169::after{clip-path:polygon(var(--sr-right-start) var(--sr-split-top),100% var(--sr-split-top),100% 100%,var(--sr-right-start) 100%);transform:var(--sr-flip) translate(var(--sr-rx),var(--sr-ry)) rotate(var(--sr-rr))}",
     ".srEquipV410Enabled .srEquipLayer{display:block;max-width:none!important;object-fit:fill!important;will-change:transform}",
+    ".srEquipV410Enabled>.srEquipPoseWrap,.srEquipV410Enabled>.srEquipLegWrap{transform-origin:50% 92%!important}",
     ".srEquipV410Enabled .srEquipLegIdle,.srEquipV410Enabled .srEquipLegHalf{position:absolute;inset:0;pointer-events:none}",
     ".srEquipV410Enabled .srEquipLegHalf{display:none;transform-origin:50% 92%;will-change:transform}",
     ".srEquipV410Enabled.srWalkPseudo169 .srEquipLegIdle{display:none}",
