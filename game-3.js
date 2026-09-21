@@ -5,15 +5,15 @@
    ========================================================================= */
 const RANGED_IDS = ["arc", "arbalete", "baton"];
 
-/* V413: V412 equipment visuals are the default renderer.
-   Emergency visual rollback remains available with ?equipV410=0.
-   This flag changes rendering only: gameplay, combat values, progression and saves are untouched. */
+/* V414 hotfix: keep the experimental equipment renderer out of the default
+   production path after visual alignment regressions. QA can still opt in with
+   ?equipV410=1 while the renderer is corrected in isolation. */
 const HERO_EQUIP_V410_ENABLED = (() => {
   try {
-    return !(typeof location !== "undefined" &&
-      new URLSearchParams(location.search).get("equipV410") === "0");
+    return typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("equipV410") === "1";
   } catch (_) {
-    return true;
+    return false;
   }
 })();
 if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410_ENABLED;
