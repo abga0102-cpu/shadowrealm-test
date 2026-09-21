@@ -5,15 +5,15 @@
    ========================================================================= */
 const RANGED_IDS = ["arc", "arbalete", "baton"];
 
-/* V410 canary: production stays on the exact legacy hero renderer unless the
-   URL explicitly opts in with ?equipV410=1. No localStorage persistence: a
-   normal reload without the flag always returns to the stable V408 visuals. */
+/* V410 public rollout: equipment visuals are enabled for normal production.
+   Keep ?equipV410=0 as an emergency URL-only visual fallback to the legacy
+   V408 hero renderer. Nothing is persisted in localStorage. */
 const HERO_EQUIP_V410_ENABLED = (() => {
   try {
-    return typeof location !== "undefined" &&
-      new URLSearchParams(location.search).get("equipV410") === "1";
+    return !(typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("equipV410") === "0");
   } catch (_) {
-    return false;
+    return true;
   }
 })();
 if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410_ENABLED;

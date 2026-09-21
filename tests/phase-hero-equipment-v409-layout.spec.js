@@ -10,15 +10,16 @@ function item(id, slot, rarity) {
   };
 }
 
-async function boot(page, equipV410 = false) {
+async function boot(page, equipV410 = null) {
   await page.addInitScript(() => { try { localStorage.removeItem('shadowreach.save.local'); } catch (_) {} });
-  await page.goto('/index.html?smoke=1' + (equipV410 ? '&equipV410=1' : ''));
+  const flag = equipV410 === null ? '' : '&equipV410=' + (equipV410 ? '1' : '0');
+  await page.goto('/index.html?smoke=1' + flag);
   await page.waitForFunction(() => window.__smoke && typeof drawArena === 'function' && typeof spawnCampaign === 'function');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V410 canary uses explicit atlas anchors and articulated boot halves', async ({ page }) => {
-  await boot(page, true);
+test('V410 is enabled by default and uses explicit atlas anchors and articulated boot halves', async ({ page }) => {
+  await boot(page);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;
     update((st) => {
@@ -58,6 +59,7 @@ test('V410 canary uses explicit atlas anchors and articulated boot halves', asyn
     }
     const idle = hero && hero.querySelector('.srEquipLegIdle');
     return {
+      flag: window.__srEquipV410Enabled,
       spriteZ: sprite && getComputedStyle(sprite).zIndex,
       backZ: back && getComputedStyle(back).zIndex,
       frontZ: front && getComputedStyle(front).zIndex,
@@ -89,6 +91,7 @@ test('V410 canary uses explicit atlas anchors and articulated boot halves', asyn
     ceinture: item('ce','ceinture','RARE')
   });
 
+  expect(result.flag).toBe(true);
   expect(result.spriteZ).toBe('4');
   expect(result.backZ).toBe('1');
   expect(result.frontZ).toBe('5');
@@ -110,7 +113,7 @@ test('V410 canary uses explicit atlas anchors and articulated boot halves', asyn
 });
 
 
-test('V410 is completely dormant without the explicit URL flag', async ({ page }) => {
+test('V410 emergency fallback disables equipment only with explicit equipV410=0', async ({ page }) => {
   await boot(page, false);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;
