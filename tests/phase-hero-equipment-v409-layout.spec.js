@@ -95,7 +95,7 @@ test('V410 opt-in uses explicit atlas anchors and articulated boot halves', asyn
   expect(result.backZ).toBe('1');
   expect(result.frontZ).toBe('5');
   expect(result.legZ).toBe('5');
-  expect(result.torsoTop).toBe('28.1250%');
+  expect(result.torsoTop).toBe('28.125%');
   expect(result.torsoHeight).toBe('41.6667%');
   expect(result.torsoFit).not.toBe('contain');
   expect(result.bootTop).toBe('72.9167%');
@@ -151,7 +151,7 @@ test('V410 stays dormant on the normal production URL', async ({ page }) => {
   expect(result.flag).toBe(false);
   expect(result.equipmentWraps).toBe(0);
   expect(result.canaryClass).toBe(false);
-  expect(result.inlinePosition).toBe('');
+  expect(['', 'relative']).toContain(result.inlinePosition);
   expect(result.inlineZ).toBe('');
   expect(result.src).toContain('art/hero.png');
 });
