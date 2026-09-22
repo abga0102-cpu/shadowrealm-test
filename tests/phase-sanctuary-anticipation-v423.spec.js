@@ -16,6 +16,8 @@ test('V423 marks mergeable Sanctuary duplicates before drag and excludes max rar
   await page.goto('/?smoke=1');
   await page.waitForFunction(()=>window.__srSanctTouchV181===true && typeof render==='function' && typeof sanctMergeState==='function');
   const state=await page.evaluate(async()=>{
+    S.megaBossClears=S.megaBossClears||{};
+    S.megaBossClears['50']=true;
     S.sanctuary=S.sanctuary||{};
     S.sanctuary.mergeBoard=Array(16).fill(null);
     S.sanctuary.mergeBoard[0]='COMMUN';
