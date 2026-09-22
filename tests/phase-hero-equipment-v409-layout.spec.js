@@ -69,7 +69,7 @@ test('V412 unequipped hero uses one bare base and renders no ghost weapon', asyn
   expect(result.pseudoClass).toBe(false);
 });
 
-test('V412 equipment uses atlas anchors without V411 shrink drift', async ({ page }) => {
+test('V415 equipment uses calibrated live-hero anchors', async ({ page }) => {
   await boot(page, true);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;
@@ -98,15 +98,15 @@ test('V412 equipment uses atlas anchors without V411 shrink drift', async ({ pag
       ringTransform: ring?.style.transform
     };
   }, fullGear());
-  expect(result.torsoTop).toBe('27.0833%');
+  expect(result.torsoTop).toBe('28.6458%');
   expect(result.torsoTransform).toBe('scale(1)');
-  expect(result.helmetTop).toBe('0.0000%');
+  expect(result.helmetTop).toBe('7.8125%');
   expect(result.helmetTransform).toBe('scale(1)');
-  expect(result.bootTop).toBe('72.3958%');
+  expect(result.bootTop).toBe('71.3542%');
   expect(result.bootTransform).toBe('scale(1)');
-  expect(result.ringLeft).toBe('16.6667%');
-  expect(result.ringTop).toBe('39.5833%');
-  expect(result.ringTransform).toBe('scale(0.55)');
+  expect(result.ringLeft).toBe('65.6250%');
+  expect(result.ringTop).toBe('42.7083%');
+  expect(result.ringTransform).toBe('scale(1)');
 });
 
 test('V412 WebKit-safe walk never clones a second hero face', async ({ page }) => {
