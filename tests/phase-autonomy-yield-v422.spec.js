@@ -40,7 +40,7 @@ test('V422 Autonomy yield is 5%/h base and 20%/h max for every reserve resource'
   expect(authority).toContain('var GLOBAL_PER={n1_06:1,n2_06:2,n3_06:3,n4_06:4};');
   expect(authority).toContain('var GLOBAL_CAP={n1_06:5,n2_06:10,n3_06:15,n4_06:20};');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.22.422');
+  expect(index).toContain('shadowreach-build" content="2026.09.22.425');
   expect(index).toContain('game-1.js?v=2026.09.22.422a');
   expect(index).toContain('familiar-ladder-authority-v295.js?v=2026.09.22.422a');
   expect(index).toContain('game-3.js?v=2026.09.22.417a');
