@@ -471,8 +471,11 @@ function heroAllocatedStatPoints(s) {
   return ["sante", "degats", "critred"].reduce((sum, key) =>
     sum + Math.max(0, Math.floor(Number(st[key]) || 0)), 0);
 }
+function heroLevelStatPoints(s) {
+  return heroAllocatedStatPoints(s) + Math.max(0, Math.floor(Number(s && s.statPoints) || 0));
+}
 function heroStatPowerBonusPct(s) {
-  return heroAllocatedStatPoints(s) * HERO_STAT_POWER_PER_POINT_PCT;
+  return heroLevelStatPoints(s) * HERO_STAT_POWER_PER_POINT_PCT;
 }
 const CRIT_CHANCE_CAP = 60, CRIT_RED_CAP = 80;
 const SKILL_SUMMON_COST = 25;  // base cost per Compétence invocation; Tree reductions apply afterwards
@@ -2666,7 +2669,9 @@ function computeDerived(s) {
   const effectiveHP = maxHP * mitigation * blockFactor * sustainFactor * critDefenseFactor;
   const skillLevelScore = activeSkillLevelScore(s);
   const rawPower = Math.floor(Math.sqrt(Math.max(1, offense) * Math.max(1, effectiveHP)) * 1.5) + skillLevelScore;
-  const heroStatPoints = heroAllocatedStatPoints(s);
+  const heroStatPoints = heroLevelStatPoints(s);
+  const heroAllocatedPoints = heroAllocatedStatPoints(s);
+  const heroAvailablePoints = Math.max(0, Math.floor(Number(s.statPoints) || 0));
   const heroStatPowerBonusPct = heroStatPoints * HERO_STAT_POWER_PER_POINT_PCT;
   const heroStatPowerMul = 1 + heroStatPowerBonusPct / 100;
   const power = Math.floor(rawPower * heroStatPowerMul);
@@ -2682,7 +2687,7 @@ function computeDerived(s) {
     meleeDmg: A("melee"), rangedDmg: A("ranged"),
     skillCdCut: Math.min(80, A("skillcd")),
     skillPowerFactor, skillLevelScore,
-    heroStatPoints, heroStatPowerBonusPct, heroStatPowerMul,
+    heroStatPoints, heroAllocatedPoints, heroAvailablePoints, heroStatPowerBonusPct, heroStatPowerMul,
     affixes: af,
     // No retired Rebirth multiplier may affect rewards.
     expBonus: 0,
