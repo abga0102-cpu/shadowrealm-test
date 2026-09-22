@@ -17,7 +17,7 @@ function closeTo(actual, expected, digits = 8) {
   expect(Number(actual)).toBeCloseTo(expected, digits);
 }
 
-test('V323 every base Forge rarity starts at exactly 0.25% and 0★ ends at Artefact', async ({ page }) => {
+test('V427 keeps Artefact locked until Forge 40 and 0★ still ends at Artefact', async ({ page }) => {
   await openCleanGame(page);
 
   const rows = await page.evaluate(() => ({
@@ -26,8 +26,8 @@ test('V323 every base Forge rarity starts at exactly 0.25% and 0★ ends at Arte
     f6: getRates('forge', 6, 0, 0),
     f13: getRates('forge', 13, 0, 0),
     f14: getRates('forge', 14, 0, 0),
-    f21: getRates('forge', 21, 0, 0),
-    f22: getRates('forge', 22, 0, 0),
+    f39: getRates('forge', 39, 0, 0),
+    f40: getRates('forge', 40, 0, 0),
     f50: getRates('forge', 50, 999, 0),
   }));
 
@@ -36,8 +36,8 @@ test('V323 every base Forge rarity starts at exactly 0.25% and 0★ ends at Arte
   closeTo(rows.f6.EPIQUE, 0.25);
   closeTo(rows.f13.MYTHIQUE, 0);
   closeTo(rows.f14.MYTHIQUE, 0.25);
-  closeTo(rows.f21.ARTEFACT, 0);
-  closeTo(rows.f22.ARTEFACT, 0.25);
+  closeTo(rows.f39.ARTEFACT, 0);
+  closeTo(rows.f40.ARTEFACT, 0.25);
 
   closeTo(rows.f50.COMMUN, 39);
   closeTo(rows.f50.RARE, 28);
@@ -121,6 +121,7 @@ test('V323 Forge can Ascend to four rarity stars without increasing power beyond
   expect(result.multipliers).toEqual([1, 2, 2, 2, 2]);
   expect(result.config.maxStars).toBe(4);
   expect(result.config.rarityByStar).toEqual({ 1: 'Légendaire', 2: 'Infernal', 3: 'Immortel', 4: 'Divin' });
+  expect(result.rarityConfig.artefactUnlockLevel).toBe(40);
   expect(result.rarityConfig.starUnlockLevel).toBe(45);
   closeTo(result.rarityConfig.starStartChance, 0.25);
   closeTo(result.rarityConfig.starMaxChance, 1);
