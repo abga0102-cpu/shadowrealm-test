@@ -18,7 +18,7 @@ test('V423 Sanctuary shows merge-ready anticipation before drag without gameplay
 
   // Existing authorities stay intact.
   expect(touch).toContain("if(typeof sanctMergeDrop!=='function'||typeof sanctMergeState!=='function')return;");
-  expect(touch).toContain('var base=sanctMergeDrop').not.toBeDefined;
+  expect(touch).not.toContain('var base=sanctMergeDrop');
 
   expect(index).toContain('shadowreach-build" content="2026.09.22.423');
   expect(index).toContain('game-4.js?v=2026.09.22.423a');
