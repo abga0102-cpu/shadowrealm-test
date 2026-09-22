@@ -69,7 +69,7 @@ test('V412 unequipped hero uses one bare base and renders no ghost weapon', asyn
   expect(result.pseudoClass).toBe(false);
 });
 
-test('V415 equipment uses calibrated live-hero anchors', async ({ page }) => {
+test('V418 equipment uses live 64px hero anchors', async ({ page }) => {
   await boot(page, true);
   const result = await page.evaluate((gear) => {
     const H = window.__smoke;
@@ -98,14 +98,14 @@ test('V415 equipment uses calibrated live-hero anchors', async ({ page }) => {
       ringTransform: ring?.style.transform
     };
   }, fullGear());
-  expect(result.torsoTop).toBe('28.6458%');
+  expect(result.torsoTop).toBe('29.6875%');
   expect(result.torsoTransform).toBe('scale(1)');
-  expect(result.helmetTop).toBe('7.8125%');
+  expect(result.helmetTop).toBe('6.2500%');
   expect(result.helmetTransform).toBe('scale(1)');
-  expect(result.bootTop).toBe('71.3542%');
+  expect(result.bootTop).toBe('75.0000%');
   expect(result.bootTransform).toBe('scale(1)');
-  expect(result.ringLeft).toBe('65.6250%');
-  expect(result.ringTop).toBe('42.7083%');
+  expect(result.ringLeft).toBe('70.3125%');
+  expect(result.ringTop).toBe('45.3125%');
   expect(result.ringTransform).toBe('scale(1)');
 });
 
