@@ -1012,30 +1012,44 @@ function run(W) {
     if (H.S.essence !== 5) return "Essence restante " + H.S.essence + " au lieu de 5";
     return true;
   });
-  check("la Récolte Autonomie paie la moitié du Raid Minerai courant", function () {
+  check("la Récolte Autonomie produit 5 %/h sans boost", function () {
     const bad = [];
     set(function (st) { st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 }; });
-    [[1, 0, 250], [50, 0, 495], [1, 1, 425], [30, 1, 570]].forEach(function (c) {
+    [[1, 0], [50, 0], [1, 1], [30, 1]].forEach(function (c) {
       set(function (st) { st.raids.minerai.level = c[0]; st.raids.minerai.stars = c[1]; });
       const r = W.harvestRates(H.S).minerai;
-      if (r !== c[2]) bad.push("niv" + c[0] + " ★" + c[1] + " : " + r + "/h au lieu de " + c[2]);
-      if (r !== W.raidReward("minerai", c[0]) * 0.5) bad.push("niv" + c[0] + " n'est pas la moitié");
+      const expected = W.raidReward("minerai", c[0]) * 0.05;
+      if (Math.abs(r - expected) > 1e-9) bad.push("niv" + c[0] + " ★" + c[1] + " : " + r + "/h au lieu de " + expected);
     });
     set(function (st) { st.raids.minerai.level = 1; st.raids.minerai.stars = 0; });
     return bad.length ? bad.join(", ") : true;
   });
-  check("les autres ressources de la Récolte n'ont pas bougé", function () {
+  check("toutes les ressources Autonomie partagent 5 %/h, puis 20 %/h au boost max", function () {
+    const ids = ["n1_07", "n2_07", "n3_07", "n4_07"];
+    const verify = function (share) {
+      const r = W.harvestRates(H.S);
+      const expected = {
+        minerai: W.raidReward("minerai", H.S.raids.minerai.level) * share,
+        essence: W.raidReward("familier", H.S.raids.familier.level) * share,
+        eclat: W.raidReward("competence", H.S.raids.competence.level) * share,
+        gold: W.raidReward("or", H.S.raids.or.level) * share
+      };
+      const bad = [];
+      Object.keys(expected).forEach(function (k) {
+        if (Math.abs(r[k] - expected[k]) > 1e-9) bad.push(k + "=" + r[k] + " au lieu de " + expected[k]);
+      });
+      return bad;
+    };
     set(function (st) {
-      st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 }; st.floor = 40;
+      st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+      st.floor = 40;
     });
-    const r = W.harvestRates(H.S);
-    const bad = [];
-    if (r.essence !== W.raidReward("familier", H.S.raids.familier.level) * 0.25)
-      bad.push("Essence");
-    if (r.eclat !== W.raidReward("competence", H.S.raids.competence.level) * 0.25)
-      bad.push("Éclat");
-    if (!(r.gold > 0)) bad.push("Or");
-    return bad.length ? "part modifiée : " + bad.join(", ") : true;
+    let bad = verify(0.05);
+    set(function (st) {
+      ids.forEach(function (id) { st.tree.levels[id] = 5; });
+    });
+    bad = bad.concat(verify(0.20));
+    return bad.length ? bad.join(", ") : true;
   });
   check("l'Ascension d'un raid quintuple exactement sa difficulté", function () {
     const bad = [];
