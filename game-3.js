@@ -5,15 +5,15 @@
    ========================================================================= */
 const RANGED_IDS = ["arc", "arbalete", "baton"];
 
-/* V414 hotfix: keep the experimental equipment renderer out of the default
-   production path after visual alignment regressions. QA can still opt in with
-   ?equipV410=1 while the renderer is corrected in isolation. */
+/* V416 test rollout: V415 calibrated equipment is enabled by default.
+   Emergency visual rollback remains available with ?equipV410=0.
+   Rendering only: gameplay, progression and saves are untouched. */
 const HERO_EQUIP_V410_ENABLED = (() => {
   try {
-    return typeof location !== "undefined" &&
-      new URLSearchParams(location.search).get("equipV410") === "1";
+    return !(typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("equipV410") === "0");
   } catch (_) {
-    return false;
+    return true;
   }
 })();
 if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410_ENABLED;
