@@ -2,7 +2,7 @@
    - Equipment base power is fixed by rarity and no longer scales with Forge level.
    - Rarity-specific stat quality rolls; perfect rolls stay rare through Mythic.
    - V323: every newly available Forge rarity starts at exactly 0.25%.
-   - V323: 0★ ends at Artefact; Forge stars unlock Légendaire/Infernal/Immortel/Divin.
+   - V427: 0★ ends at Artefact, strictly locked until Forge 40; Forge stars unlock Légendaire/Infernal/Immortel/Divin.
    - Removes obsolete Rebirth upgrades (including Regeneration) from active effects/UI registry.
    - Existing gear is migrated once without lowering owned stats or upgrade investment. */
 (function(){
@@ -68,7 +68,7 @@ var FORGE_BASE_RARITIES_V323=[
   {key:'RARE',unlock:1,target:28,ease:.70},
   {key:'EPIQUE',unlock:6,target:21,ease:1.15},
   {key:'MYTHIQUE',unlock:14,target:8,ease:1.55},
-  {key:'ARTEFACT',unlock:22,target:4,ease:1.85}
+  {key:'ARTEFACT',unlock:40,target:4,ease:1.85}
 ];
 var FORGE_STAR_RARITIES_V323=[
   {key:'LEGENDAIRE',stars:1},
@@ -114,6 +114,7 @@ function forgeRequiredStarsV323(rarity){
    Base rarity floors remain unchanged; every Ascension-only tier enters at 45. */
 try{
   if(typeof RARITY_MIN_FORGE!=='undefined'&&RARITY_MIN_FORGE){
+    RARITY_MIN_FORGE.ARTEFACT=40;
     RARITY_MIN_FORGE.LEGENDAIRE=45;
     RARITY_MIN_FORGE.INFERNAL=45;
     RARITY_MIN_FORGE.IMMORTEL=45;
@@ -221,8 +222,44 @@ function migrate(){
 migrate();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',migrate,{once:true});else setTimeout(migrate,0);
 
+/* V427 · Artefact is a Forge-40 rarity. A historical core migration renamed
+   legacy Héroïque gear to Artefact before the current Forge gate existed, which
+   can leave a modern save visibly owning an impossible Artefact below Forge 40.
+   Repair only the rarity/name after all equipment power migrations have run:
+   every stat, affix, upgrade level and item id stays exactly as owned. */
+var ARTEFACT_UNLOCK_LEVEL_V427=40;
+function repairPrematureArtefactsV427(){
+  try{
+    if(typeof S==='undefined'||!S||!S.forge)return 0;
+    var level=Math.max(1,Math.floor(Number(S.forge.level)||1));
+    if(level>=ARTEFACT_UNLOCK_LEVEL_V427)return 0;
+    var changed=0;
+    function repair(it){
+      if(!it||it.rarity!=='ARTEFACT')return;
+      it.rarity='HEROIQUE';
+      if(typeof it.name==='string'&&/ Artefact$/.test(it.name))it.name=it.name.replace(/ Artefact$/,' Héroïque');
+      it.prematureArtefactRepairV427=true;
+      changed++;
+    }
+    (S.inventory||[]).forEach(repair);
+    if(S.equipped)Object.keys(S.equipped).forEach(function(k){repair(S.equipped[k]);});
+    if(!changed)return 0;
+    if(typeof computePower==='function')S.power=computePower(S);
+    if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);
+    if(typeof dirty!=='undefined')dirty=true;
+    if(typeof scheduleRender==='function')scheduleRender();
+    if(typeof saveNow==='function')saveNow();
+    return changed;
+  }catch(_){return 0;}
+}
+/* Defer the owned-item repair until DOM ready / next task so V283 and the rest
+   of the equipment migration chain have already finished. */
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',repairPrematureArtefactsV427,{once:true});
+else setTimeout(repairPrematureArtefactsV427,0);
+
 window.__srEquipmentBalanceV224={
   fixedBase:FIXED_BASE,targetMean:TARGET_MEAN,perfectChance:PERFECT,qualityRoll:qualityRoll,pruneRebirth:pruneRebirth,
-  forgeRarityV323:{base:FORGE_BASE_RARITIES_V323,stars:FORGE_STAR_RARITIES_V323,rates:forgeRatesV323,requiredStars:forgeRequiredStarsV323,starUnlockLevel:45,starStartChance:.25,starMaxChance:1}
+  forgeRarityV323:{base:FORGE_BASE_RARITIES_V323,stars:FORGE_STAR_RARITIES_V323,rates:forgeRatesV323,requiredStars:forgeRequiredStarsV323,artefactUnlockLevel:ARTEFACT_UNLOCK_LEVEL_V427,starUnlockLevel:45,starStartChance:.25,starMaxChance:1},
+  repairPrematureArtefactsV427:repairPrematureArtefactsV427
 };
 })();
