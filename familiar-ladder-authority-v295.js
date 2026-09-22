@@ -35,19 +35,21 @@ window.__srNormalizeFamiliarLadderV295=normalizeFamiliarLadder;
 window.__srFamiliarLadderConfigV295={order:APPROVED_ORDER.slice(),fusion:{COMMUN:4,PEU_COMMUN:4,RARE:5,EPIQUE:5,MYTHIQUE:5,ANCESTRAL:6},ancestralDirectSummon:false,rateOwner:'V296'};
 })();
 
-/* V335 · Gold economy balance
-   Gold Autonomy base: 25% -> 15% of Raid Or reward per hour.
+/* V420 · Gold economy balance
+   Gold Autonomy base stays at 15% of Raid Or reward per hour.
    Gain/Or Autonomy nodes stay +1.25% per level.
-   Global Gold nodes rise slightly from +1% to +1.25% per level. */
+   Global Gold nodes use tier caps +5% / +10% / +15% / +20% (+50% total). */
 (function(){'use strict';
 if(window.__srGoldEconomyBalanceV335)return;window.__srGoldEconomyBalanceV335=true;
 var AUTO=['n1_07','n2_07','n3_07','n4_07'];
 var GLOBAL=['n1_06','n2_06','n3_06','n4_06'];
 var R={n1_07:'I',n2_07:'II',n3_07:'III',n4_07:'IV'};
+var GLOBAL_PER={n1_06:1,n2_06:2,n3_06:3,n4_06:4};
+var GLOBAL_CAP={n1_06:5,n2_06:10,n3_06:15,n4_06:20};
 try{
   if(typeof TREE_BY_ID!=='undefined'&&TREE_BY_ID){
     AUTO.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=1.25;n.label='Or d’Autonomie '+R[id];n.short='Or Auton. '+R[id];n.note='+1,25 % d’or d’Autonomie par niveau · Max +6,25 %';});
-    GLOBAL.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=1.25;n.note='+1,25 % d’or global par niveau · Max +6,25 %';});
+    GLOBAL.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=GLOBAL_PER[id];n.tierScale=false;n.note='+'+GLOBAL_PER[id]+' % d’or global par niveau · Max +'+GLOBAL_CAP[id]+' %';});
   }
 }catch(_){ }
 try{
@@ -57,6 +59,6 @@ try{
     harvestRates.__srGoldEconomyV335=true;
   }
 }catch(_){ }
-window.__srGoldEconomyConfigV335={autonomyBaseRaidSharePerHour:15,autonomyNodePerLevelPct:1.25,autonomyBranchMaxPct:25,autonomyEffectiveRaidShareAtMaxPct:18.75,globalGoldPerLevelPct:1.25,globalGoldBranchMaxPct:25};
+window.__srGoldEconomyConfigV335={autonomyBaseRaidSharePerHour:15,autonomyNodePerLevelPct:1.25,autonomyBranchMaxPct:25,autonomyEffectiveRaidShareAtMaxPct:18.75,globalGoldTierCapsPct:[5,10,15,20],globalGoldBranchMaxPct:50};
 try{if(typeof scheduleRender==='function')scheduleRender();}catch(_){ }
 })();
