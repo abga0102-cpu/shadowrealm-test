@@ -11,6 +11,11 @@
    Design rule:
    - The floor determines enemy power. Current player stats are never sampled.
    - Existing curves, identities, tiers and relative Boss/Mega-Boss ratios stay intact.
+   V425 smooths Campaign damage from visible stage Difficile 3-10 (floor 150):
+   - target is another -50% on base Campaign damage from that point onward;
+   - the transition is clamped to at least +0.5% per internal floor, so the new
+     balance never makes a later floor's base damage lower than the floor before it;
+   - HP, Raids, rewards and player stats are untouched.
 */
 (function(){
   'use strict';
@@ -41,6 +46,10 @@
   var RAID_HP_MUL=RAID_BASE_HP_MUL_V324*GLOBAL_HP_MUL_V380;
   var RAID_DAMAGE_MUL_V380=RAID_BASE_DAMAGE_MUL_V324*GLOBAL_DAMAGE_MUL_V380;
   var RAID_DAMAGE_MUL=RAID_BASE_DAMAGE_MUL_V324*GLOBAL_DAMAGE_MUL_V381;
+  var DIFFICILE_3_10_FLOOR_V425=150;
+  var DIFFICILE_3_10_DAMAGE_MUL_V425=0.50;
+  var DIFFICILE_3_10_MIN_STAGE_GROWTH_V425=1.005;
+  var CAMPAIGN_DAMAGE_CACHE_V425={};
 
   var REFERENCE_DAMAGE={
     1:30,3:80,5:150,10:350,15:800,20:2500,30:23000,40:180000,50:900000,
@@ -88,7 +97,30 @@
     return Math.max(1,Math.round(expectedHP(f)/TARGET_HITS_TO_DEFEAT_REFERENCE));
   }
   function campaignEnemyHP(f){return Math.max(1,Math.round(previousCampaignEnemyHP(f)*CAMPAIGN_HP_MUL));}
-  function campaignEnemyDamage(f){return Math.max(1,Math.round(previousCampaignEnemyDamage(f)*CAMPAIGN_DAMAGE_MUL));}
+  function campaignEnemyDamageBeforeV425(f){
+    return Math.max(1,Math.round(previousCampaignEnemyDamage(f)*CAMPAIGN_DAMAGE_MUL));
+  }
+  function campaignEnemyDamage(f){
+    f=Math.max(1,Math.min(maxFloor(),Math.round(Number(f)||1)));
+    var raw=campaignEnemyDamageBeforeV425(f);
+    if(f<DIFFICILE_3_10_FLOOR_V425)return raw;
+    if(CAMPAIGN_DAMAGE_CACHE_V425[f])return CAMPAIGN_DAMAGE_CACHE_V425[f];
+
+    /* Start from the live damage immediately before Difficile 3-10, then walk
+       forward with a tiny guaranteed rise. This allows a strong late-game nerf
+       without creating a backwards difficulty step at the exact cutover. */
+    var prev=campaignEnemyDamageBeforeV425(DIFFICILE_3_10_FLOOR_V425-1);
+    for(var floor=DIFFICILE_3_10_FLOOR_V425;floor<=f;floor++){
+      if(CAMPAIGN_DAMAGE_CACHE_V425[floor]){
+        prev=CAMPAIGN_DAMAGE_CACHE_V425[floor];
+        continue;
+      }
+      var target=Math.max(1,Math.round(campaignEnemyDamageBeforeV425(floor)*DIFFICILE_3_10_DAMAGE_MUL_V425));
+      prev=Math.max(target,Math.ceil(prev*DIFFICILE_3_10_MIN_STAGE_GROWTH_V425));
+      CAMPAIGN_DAMAGE_CACHE_V425[floor]=prev;
+    }
+    return CAMPAIGN_DAMAGE_CACHE_V425[f];
+  }
 
   /* Boss HP has a separate final authority (V288). Scale its source by the same
      factor so boss ratios and final post-spawn targets stay consistent instead
@@ -131,7 +163,7 @@
   }catch(_){ }
 
   window.__srEnemyDamageConfigV289={
-    version:325,maxFloor:800,legacyMaxFloor:400,semanticLegacyFloor:semanticLegacyFloor,
+    version:425,maxFloor:800,legacyMaxFloor:400,semanticLegacyFloor:semanticLegacyFloor,
     referenceDamage:REFERENCE_DAMAGE,referenceHP:REFERENCE_HP,
     targetHitsToKill:TARGET_HITS_TO_KILL,targetHitsToDefeatReference:TARGET_HITS_TO_DEFEAT_REFERENCE,
     expectedPlayerDamage:expectedDamage,expectedPlayerHP:expectedHP,
@@ -149,6 +181,15 @@
       effectiveVsV379:GLOBAL_DAMAGE_MUL_V381,
       totalReductionVsV379Pct:70,
       appliesTo:['normal','elite','boss','raid','mega-boss']
+    },
+    difficile310DamageV425:{
+      visibleStage:'Difficile 3-10',
+      startFloor:DIFFICILE_3_10_FLOOR_V425,
+      targetDamageMul:DIFFICILE_3_10_DAMAGE_MUL_V425,
+      minStageGrowthPct:(DIFFICILE_3_10_MIN_STAGE_GROWTH_V425-1)*100,
+      sourceDamage:campaignEnemyDamageBeforeV425,
+      appliesTo:['campaign-normal','campaign-elite','campaign-boss','mega-boss'],
+      raidsChanged:false,hpChanged:false
     },
     forgeTutorialException:{visibleStage:'1-2',internalFloor:2,owner:'V321',beforeFirstForge:true},
     scaling:'floor-only-no-player-rubber-band',
