@@ -465,6 +465,15 @@ const STATS = {
   CRIT:    { key: "crit",    label: "Chance Critique", perPoint: 0, icon: "bolt" },
   CRITRED: { key: "critred", label: "Réduc. Crit", perPoint: 0.40, icon: "shield" },
 };
+const HERO_STAT_POWER_PER_POINT_PCT = 3;
+function heroAllocatedStatPoints(s) {
+  const st = (s && s.stats) || {};
+  return ["sante", "degats", "critred"].reduce((sum, key) =>
+    sum + Math.max(0, Math.floor(Number(st[key]) || 0)), 0);
+}
+function heroStatPowerBonusPct(s) {
+  return heroAllocatedStatPoints(s) * HERO_STAT_POWER_PER_POINT_PCT;
+}
 const CRIT_CHANCE_CAP = 60, CRIT_RED_CAP = 80;
 const SKILL_SUMMON_COST = 25;  // base cost per Compétence invocation; Tree reductions apply afterwards
 const PET_SUMMON_COST = 50;    // fixed cost per Familier egg invocation
@@ -2656,7 +2665,11 @@ function computeDerived(s) {
     (1 + critPressure * (1 - Math.min(CRIT_RED_CAP, critRed) / 100));
   const effectiveHP = maxHP * mitigation * blockFactor * sustainFactor * critDefenseFactor;
   const skillLevelScore = activeSkillLevelScore(s);
-  const power = Math.floor(Math.sqrt(Math.max(1, offense) * Math.max(1, effectiveHP)) * 1.5) + skillLevelScore;
+  const rawPower = Math.floor(Math.sqrt(Math.max(1, offense) * Math.max(1, effectiveHP)) * 1.5) + skillLevelScore;
+  const heroStatPoints = heroAllocatedStatPoints(s);
+  const heroStatPowerBonusPct = heroStatPoints * HERO_STAT_POWER_PER_POINT_PCT;
+  const heroStatPowerMul = 1 + heroStatPowerBonusPct / 100;
+  const power = Math.floor(rawPower * heroStatPowerMul);
 
   return {
     maxHP, damage, attackSpeed, moveSpeed, critChance, critMult, critRed,
@@ -2669,6 +2682,7 @@ function computeDerived(s) {
     meleeDmg: A("melee"), rangedDmg: A("ranged"),
     skillCdCut: Math.min(80, A("skillcd")),
     skillPowerFactor, skillLevelScore,
+    heroStatPoints, heroStatPowerBonusPct, heroStatPowerMul,
     affixes: af,
     // No retired Rebirth multiplier may affect rewards.
     expBonus: 0,
