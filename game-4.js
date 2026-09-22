@@ -1354,7 +1354,7 @@ function scrArbre() {
       '<div class="sect" style="margin:16px 0 9px">Bonus actifs</div>' +
       '<div class="card">' + bonusRows +
         '<div class="kv"><span class="dim">Multiplicateur de Forge</span><b style="color:var(--goldLit)">×' + forgeBatch(S) + "</b></div>" +
-        '<div class="kv"><span class="dim">Plafond AFK</span><b style="color:var(--goldLit)">' + afkCapHours(S) + " h</b></div>" +
+        '<div class="kv"><span class="dim">Plafond Autonomie</span><b style="color:var(--goldLit)">' + afkCapHours(S) + " h actuelles · 16 h max</b></div>" +
         '<div class="kv"><span class="dim">Slots éclosion</span><b style="color:var(--goldLit)">' + S.eggSlots + "/" + RULES.EGG_SLOT_MAX + "</b></div>" +
         (raidKeyGrants(S) > 0
           ? '<div class="kv"><span class="dim">Clés quotidiennes</span><b style="color:var(--goldLit)">' +
