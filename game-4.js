@@ -506,13 +506,19 @@ function scrInventaire() {
 
 /* ---------------- ÉQUIPEMENT UNIFIÉ ---------------- */
 function scrHerosStats() {
+  const allocatedStatPoints = heroAllocatedStatPoints(S);
+  const statPowerBonusPct = heroStatPowerBonusPct(S);
   return topbar("Héros", '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">' +
       ic("chart", 11) + fmt(S.statPoints || 0) + " point" + ((S.statPoints || 0) > 1 ? "s" : "") + "</span>") +
     '<div class="pad mt8">' +
-      '<div class="sect" style="margin:4px 0 8px">Points de statistiques</div>' +
+      '<div class="notice" style="border-color:#3FB95066"><div class="between"><div><div class="b small" style="color:var(--greenLit)">Puissance des points de niveau</div>' +
+        '<div class="mute tiny mt2">Chaque point dépensé donne aussi <b style="color:var(--greenLit)">+3 % de Puissance globale</b>.</div></div>' +
+        '<div class="right"><div class="bb" style="color:var(--greenLit);font-size:18px">+' + fmt(statPowerBonusPct) + '%</div>' +
+        '<div class="mute tiny">' + fmt(allocatedStatPoints) + ' point' + (allocatedStatPoints !== 1 ? 's' : '') + ' dépensé' + (allocatedStatPoints !== 1 ? 's' : '') + '</div></div></div></div>' +
+      '<div class="sect" style="margin:12px 0 8px">Points de statistiques</div>' +
       '<div class="duo">' + STAT_META.map((m) =>
         '<div class="card" style="padding:9px 9px"><div class="between"><div class="b small" style="color:' + m.color + '">' +
-          m.label + '</div><b>' + S.stats[m.key] + '</b></div><div class="row gap4 mt8">' +
+          m.label + '</div><b>' + S.stats[m.key] + '</b></div><div class="mute tiny mt3">' + m.desc + ' · +3% Puissance</div><div class="row gap4 mt8">' +
           btn("+1", { small:true, act:"alloc", arg:m.key, arg2:1, dis:S.statPoints<1 }) +
           btn("+5", { small:true, act:"alloc", arg:m.key, arg2:5, dis:S.statPoints<5 }) +
           btn("Max", { small:true, act:"alloc", arg:m.key, arg2:"max", dis:S.statPoints<1 }) +
