@@ -26,22 +26,22 @@ function css(){
 #srMergeFx178{position:fixed;inset:0;z-index:99990;pointer-events:none;overflow:hidden;--x:50vw;--y:50vh;--mc:#F5C542;--size:78px;--veil:.26;--shake:2px}\
 #srMergeFx178 .veil{position:absolute;inset:0;background:radial-gradient(circle at var(--x) var(--y),color-mix(in srgb,var(--mc) 72%,white) 0,color-mix(in srgb,var(--mc) 45%,transparent) 7%,transparent 30%);animation:srMFVeil .72s ease-out both;opacity:var(--veil)}\
 #srMergeFx178 .beam{position:absolute;left:var(--x);top:calc(var(--y) - 42vh);width:2px;height:84vh;transform:translateX(-50%) scaleY(.2);transform-origin:50% 50%;background:linear-gradient(transparent,color-mix(in srgb,var(--mc) 82%,white),transparent);box-shadow:0 0 15px var(--mc),0 0 38px color-mix(in srgb,var(--mc) 65%,transparent);animation:srMFBeam .68s ease-out both}\
-#srMergeFx178 .core{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);margin-left:calc(var(--size) / -2);margin-top:calc(var(--size) / -2);border-radius:50%;border:2px solid color-mix(in srgb,var(--mc) 75%,white);background:radial-gradient(circle,color-mix(in srgb,var(--mc) 35%,white) 0,color-mix(in srgb,var(--mc) 72%,transparent) 30%,transparent 72%);box-shadow:0 0 18px var(--mc),0 0 52px color-mix(in srgb,var(--mc) 72%,transparent);animation:srMFCore .78s cubic-bezier(.17,.86,.27,1.14) both}\
-#srMergeFx178 .ring{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);margin-left:calc(var(--size) / -2);margin-top:calc(var(--size) / -2);border-radius:50%;border:2px solid var(--mc);box-shadow:0 0 10px color-mix(in srgb,var(--mc) 70%,transparent);animation:srMFRing var(--rd,.78s) ease-out var(--delay,0s) both}\
+#srMergeFx178 .core{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);border-radius:50%;border:2px solid color-mix(in srgb,var(--mc) 75%,white);background:radial-gradient(circle,color-mix(in srgb,var(--mc) 35%,white) 0,color-mix(in srgb,var(--mc) 72%,transparent) 30%,transparent 72%);box-shadow:0 0 18px var(--mc),0 0 52px color-mix(in srgb,var(--mc) 72%,transparent);animation:srMFCore .78s cubic-bezier(.17,.86,.27,1.14) both}\
+#srMergeFx178 .ring{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);border-radius:50%;border:2px solid var(--mc);box-shadow:0 0 10px color-mix(in srgb,var(--mc) 70%,transparent);animation:srMFRing var(--rd,.78s) ease-out var(--delay,0s) both}\
 #srMergeFx178 .spark{position:absolute;left:var(--x);top:var(--y);width:4px;height:18px;margin-left:-2px;margin-top:-9px;border-radius:8px;background:linear-gradient(#fff,var(--mc));box-shadow:0 0 8px var(--mc);transform-origin:2px calc(50% + var(--d));animation:srMFSpark var(--sd,.78s) ease-out var(--delay,0s) both}\
 #srMergeFx178 .star{position:absolute;left:var(--x);top:var(--y);width:7px;height:7px;margin:-3.5px;background:#fff;clip-path:polygon(50% 0,61% 36%,100% 50%,61% 64%,50% 100%,39% 64%,0 50%,39% 36%);filter:drop-shadow(0 0 5px var(--mc));animation:srMFStar var(--td,.9s) ease-out var(--delay,0s) both}\
 #srMergeFx178 .label{position:absolute;left:12px;right:12px;top:clamp(74px,calc(var(--y) + 62px),calc(100vh - 92px));text-align:center;font-weight:1000;letter-spacing:.8px;text-shadow:0 2px 4px #000,0 0 20px var(--mc);animation:srMFLabel .96s ease-out both}\
 #srMergeFx178 .label .up{font-size:10px;color:#fff;opacity:.92}\
 #srMergeFx178 .label .rar{font-size:var(--label,18px);color:var(--mc);margin-top:2px}\
 #app.srMergeImpact178{animation:srMFShake .34s ease-out}\
-@keyframes srMFCore{0%{transform:scale(.15) rotate(-12deg);opacity:0}28%{transform:scale(1.24);opacity:1}62%{transform:scale(.92);opacity:.95}100%{transform:scale(.58);opacity:0}}\
-@keyframes srMFRing{0%{transform:scale(.25);opacity:.96}100%{transform:scale(var(--rs,4.1));opacity:0}}\
+@keyframes srMFCore{0%{transform:translate(-50%,-50%) scale(.15) rotate(-12deg);opacity:0}28%{transform:translate(-50%,-50%) scale(1.24);opacity:1}62%{transform:translate(-50%,-50%) scale(.92);opacity:.95}100%{transform:translate(-50%,-50%) scale(.58);opacity:0}}\
+@keyframes srMFRing{0%{transform:translate(-50%,-50%) scale(.25);opacity:.96}100%{transform:translate(-50%,-50%) scale(var(--rs,4.1));opacity:0}}\
 @keyframes srMFSpark{0%{transform:rotate(var(--a)) translateY(0) scale(.35);opacity:1}100%{transform:rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(var(--ss,1));opacity:0}}\
 @keyframes srMFStar{0%{transform:rotate(var(--a)) translateY(0) scale(.2);opacity:1}70%{opacity:1}100%{transform:rotate(var(--a)) translateY(calc(var(--d) * -1)) rotate(180deg) scale(var(--ts,1.2));opacity:0}}\
 @keyframes srMFBeam{0%{transform:translateX(-50%) scaleY(.1);opacity:0}20%{transform:translateX(-50%) scaleY(1);opacity:.92}100%{transform:translateX(-50%) scaleY(.55);opacity:0}}\
 @keyframes srMFVeil{0%{opacity:0}16%{opacity:var(--veil)}100%{opacity:0}}\
 @keyframes srMFLabel{0%{transform:translateY(12px) scale(.93);opacity:0}20%{transform:translateY(0) scale(1.06);opacity:1}72%{opacity:1}100%{transform:translateY(-9px) scale(1);opacity:0}}\
-@keyframes srMFShake{0%,100%{transform:translate3d(0,0,0)}20%{transform:translate3d(calc(var(--srMergeShake,var(--shake)) * -1),1px,0)}42%{transform:translate3d(var(--srMergeShake,var(--shake)),-1px,0)}66%{transform:translate3d(calc(var(--srMergeShake,var(--shake)) * -.55),0,0)}82%{transform:translate3d(calc(var(--srMergeShake,var(--shake)) * .35),0,0)}}\
+@keyframes srMFShake{0%,100%{transform:translate3d(0,0,0)}20%{transform:translate3d(var(--srMergeShakeNeg,-2px),1px,0)}42%{transform:translate3d(var(--srMergeShake,2px),-1px,0)}66%{transform:translate3d(var(--srMergeShakeHalfNeg,-1px),0,0)}82%{transform:translate3d(var(--srMergeShakeThird,1px),0,0)}}\
 @media(prefers-reduced-motion:reduce){#srMergeFx178 .spark,#srMergeFx178 .ring,#srMergeFx178 .star,#srMergeFx178 .beam{display:none}#srMergeFx178 .core,#srMergeFx178 .veil,#srMergeFx178 .label{animation-duration:.25s!important}#app.srMergeImpact178{animation:none}}';
   document.head.appendChild(s);
 }
@@ -89,9 +89,9 @@ function fx(r,anchor){
 
   var app=document.getElementById('app');
   if(app&&!reduced()){
-    app.style.setProperty('--srMergeShake',shake);
+    app.style.setProperty('--srMergeShake',shake);app.style.setProperty('--srMergeShakeNeg',(-parseFloat(shake))+'px');app.style.setProperty('--srMergeShakeHalfNeg',(-parseFloat(shake)*.55)+'px');app.style.setProperty('--srMergeShakeThird',(parseFloat(shake)*.35)+'px');
     app.classList.remove('srMergeImpact178');void app.offsetWidth;app.classList.add('srMergeImpact178');
-    setTimeout(function(){app.classList.remove('srMergeImpact178');app.style.removeProperty('--srMergeShake');},380);
+    setTimeout(function(){app.classList.remove('srMergeImpact178');app.style.removeProperty('--srMergeShake');app.style.removeProperty('--srMergeShakeNeg');app.style.removeProperty('--srMergeShakeHalfNeg');app.style.removeProperty('--srMergeShakeThird');},380);
   }
   if(navigator.vibrate&&!reduced()){
     try{
