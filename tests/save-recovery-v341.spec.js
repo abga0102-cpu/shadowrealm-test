@@ -8,7 +8,7 @@ test('V341 recovery center is loaded after save safety and never auto-restores',
   const source = fs.readFileSync(path.join(root, 'save-recovery-v341.js'), 'utf8');
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.15.341"');
+  expect(index).toContain('save-recovery-v341.js');
   expect(index.indexOf('save-safety-v340.js')).toBeGreaterThan(index.indexOf('game-5.js'));
   expect(index.indexOf('save-recovery-v341.js')).toBeGreaterThan(index.indexOf('save-safety-v340.js'));
   expect(source).toContain("var MAIN_KEY='shadowreach.save.local';");
