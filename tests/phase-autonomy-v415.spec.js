@@ -27,7 +27,7 @@ test('V415 Autonomy caps at 16h with exactly +100% Tree boost', async()=>{
   expect(authority).toContain('window.__srAutonomyTimeConfigV421={baseHours:8,tierCapsPct:[10,20,30,40],branchMaxPct:100,maxHours:16};');
   expect(g4).toContain('Plafond Autonomie');
   expect(g4).toContain('h actuelles · 16 h max');
-  expect(index).toContain("var V='2026.09.22.422'");
+  expect(index).toContain("var V='2026.09.22.425'");
   expect(index).toContain('game-1.js?v=2026.09.22.422a');
   expect(index).toContain('game-3.js?v=2026.09.22.417a');
   expect(index).toContain('game-4.js?v=2026.09.22.421a');
