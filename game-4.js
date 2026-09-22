@@ -1190,8 +1190,8 @@ function scrSanctuaire() {
 
   const board=st.mergeBoard.map((r,i)=>{
     if(!r) return '<div class="card center sanctMergeCell sanctMergeEmpty" data-sanct-slot="'+i+'" style="height:72px;padding:7px;border-style:dashed;opacity:.55"><div style="font-size:18px">＋</div><div class="mute" style="font-size:8px">VIDE</div></div>';
-    const c=SANCT_MERGE_COLOR[r];
-    return '<div class="card center sanctMergeCell sanctMergePiece" data-sanct-slot="'+i+'" data-sanct-rarity="'+r+'" style="height:72px;padding:7px;border-color:'+c+'">'+sanctMergeOrb(r,'')+'<div class="b" style="font-size:8.5px;color:'+c+';margin-top:4px">'+SANCT_MERGE_NAME[r].toUpperCase()+'</div></div>';
+    const c=SANCT_MERGE_COLOR[r], ready=sanctMergeCount(st,r)>=2 && !!sanctMergeNext(r);
+    return '<div class="card center sanctMergeCell sanctMergePiece'+(ready?' srMergeReady181':'')+'" data-sanct-slot="'+i+'" data-sanct-rarity="'+r+'" style="height:72px;padding:7px;border-color:'+c+';--srReady:'+c+';--srReadyDelay:-'+((i%4)*0.13)+'s">'+sanctMergeOrb(r,'')+'<div class="b" style="font-size:8.5px;color:'+c+';margin-top:4px">'+SANCT_MERGE_NAME[r].toUpperCase()+'</div></div>';
   }).join('');
 
   const recipes=SANCT_MERGE_RECIPES.map((r)=>{
