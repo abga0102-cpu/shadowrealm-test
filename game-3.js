@@ -19,10 +19,7 @@ const HERO_EQUIP_V410_ENABLED = (() => {
 if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410_ENABLED;
 
 /* ---- Dynamic Hero Equipment Layer Manager ---- */
-/* V409: the V2 PNGs are cropped 192px-wide atlas slices, not 192x192
-   full-canvas sprites. Keep their native aspect ratio and place each slice
-   on an explicit 192x192 hero coordinate system. */
-/* V415 calibration: atlas/* V418: equipment anchors use the live 64x64 hero coordinate system.
+/* V418: equipment anchors use the live 64x64 hero coordinate system.
    Atlas rows are local transparent sprites: each row is attached to an
    anatomical region instead of being positioned on the old 192x192 atlas. */
 const EQUIP_CANVAS = 64;
@@ -38,7 +35,9 @@ const EQUIP_PARTS_CONFIG = [
   { part: "collier",              slot: "collier",  plane: "front", x: 22, y: 17, w: 20, h: 10 },
   { part: "gants",                slot: "gants",    plane: "front", x:  9, y: 26, w: 46, h: 14 },
   { part: "anneau",               slot: "anneau",   plane: "front", x: 45, y: 29, w:  7, h:  6 }
-];arity) {
+];
+
+function normRarityKey(rarity) {
   if (!rarity) return null;
   const s = String(rarity).trim().toLowerCase();
   if (s === "peu_commun" || s === "peu commun" || s === "peu-commun") return "peu_commun";
