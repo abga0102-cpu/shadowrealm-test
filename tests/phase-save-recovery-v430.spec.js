@@ -100,7 +100,7 @@ test('V431 forced recovery link opens the local save inventory even without a st
     button: document.getElementById('srSaveRecoveryButtonV341')?.textContent || '',
   }));
   expect(result.panel).toContain('Récupération de sauvegarde');
-  expect(result.panel).toContain('V432');
+  expect(result.panel).toContain('V433');
   expect(result.panel).toContain('Actuelle');
   expect(result.button).toBe('Sauvegardes locales');
 });
@@ -120,7 +120,7 @@ test('V432 opens recovery automatically for a suspicious low-level reset with pr
     panel: document.getElementById('srSaveRecoveryPanelV341')?.innerText || '',
     button: document.getElementById('srSaveRecoveryButtonV341')?.textContent || '',
   }));
-  expect(result.panel).toContain('V432');
+  expect(result.panel).toContain('V433');
   expect(result.button).toContain('Vérifier l’ancienne partie');
 });
 
@@ -134,4 +134,80 @@ test('V432 keeps manual save access visible for a normal active save', async ({ 
   await page.goto('/index.html?v=v432-manual-save-access-test');
   await page.waitForSelector('#srSaveRecoveryButtonV341');
   await expect(page.locator('#srSaveRecoveryButtonV341')).toHaveText('Sauvegardes locales');
+});
+
+
+test('V433 exposes a complete local diagnostic export', async ({ page }) => {
+  const active = state({ level: 2, floor: 1, recordFloor: 2, power: 2998 });
+  await page.addInitScript((save) => {
+    localStorage.clear();
+    localStorage.setItem('shadowreach.save.local', JSON.stringify(save));
+  }, active);
+
+  await page.goto('/index.html?recovery=1&v=v433-complete-export-test');
+  await page.waitForSelector('#srSaveRecoveryPanelV341');
+
+  const result = await page.evaluate(() => ({
+    api: typeof window.__srSaveRecoveryV341?.exportAllLocalData,
+    panel: document.getElementById('srSaveRecoveryPanelV341')?.innerText || '',
+  }));
+  expect(result.api).toBe('function');
+  expect(result.panel).toContain('Exporter toutes les données locales');
+});
+
+test('V433 rate-limits rotating backups while pinning the strongest state', async ({ page }) => {
+  const active = state({ level: 20, floor: 35, recordFloor: 40, power: 500000 });
+  await page.addInitScript((save) => {
+    localStorage.clear();
+    localStorage.setItem('shadowreach.save.local', JSON.stringify(save));
+  }, active);
+
+  await page.goto('/index.html?v=v433-durable-backup-test');
+  await page.waitForFunction(() => window.__srSaveSafetyV340 && !window.__srSaveSafetyV340.smokeIsolated);
+
+  const result = await page.evaluate(() => {
+    for (let i = 1; i <= 20; i++) {
+      const next = JSON.parse(localStorage.getItem('shadowreach.save.local'));
+      next.level = 20 + i;
+      next.floor = 35 + i;
+      next.recordFloor = 40 + i;
+      next.power = 500000 + i * 10000;
+      next.lastSeen = Date.now() + i;
+      window.__srSaveSafetyV340.snapshot(JSON.stringify(next));
+    }
+    const backupKeys = Object.keys(localStorage).filter((key) => key.indexOf('shadowreach.save.backup.v340.') === 0);
+    return {
+      slots: backupKeys.length,
+      configuredSlots: window.__srSaveSafetyV340.backupSlots,
+      interval: window.__srSaveSafetyV340.minInterval,
+      best: JSON.parse(localStorage.getItem('shadowreach.save.best.v433')),
+    };
+  });
+  expect(result.slots).toBe(1);
+  expect(result.configuredSlots).toBe(12);
+  expect(result.interval).toBe(5 * 60 * 1000);
+  expect(result.best.recordFloor).toBe(60);
+});
+
+test('V433 pins ancestral familiars outside rotating saves', async ({ page }) => {
+  const ancestral = { id: 'ancestral-dragon', species: 'dragon', rarity: 'ANCESTRAL', level: 37 };
+  const active = state({
+    level: 45,
+    floor: 104,
+    recordFloor: 120,
+    power: 17000000,
+    pets: [ancestral],
+    activePetId: ancestral.id,
+  });
+  await page.addInitScript((save) => {
+    localStorage.clear();
+    localStorage.setItem('shadowreach.save.local', JSON.stringify(save));
+  }, active);
+
+  await page.goto('/index.html?v=v433-ancestral-pin-test');
+  await page.waitForFunction(() => window.__srSaveSafetyV340 && !window.__srSaveSafetyV340.smokeIsolated);
+
+  const pinned = await page.evaluate(() => JSON.parse(localStorage.getItem('shadowreach.familiar.ancestral.v433')));
+  expect(pinned.pets).toHaveLength(1);
+  expect(pinned.pets[0]).toMatchObject({ id: 'ancestral-dragon', rarity: 'ANCESTRAL', level: 37 });
 });
