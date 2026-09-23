@@ -1,4 +1,4 @@
-/* SHADOWREACH V341 · Non-destructive save recovery center
+/* SHADOWREACH V341/V430 · Non-destructive save recovery center
    Scans same-origin localStorage for plausible Shadowreach saves, including
    V340 rotating backups. Never restores automatically. Every candidate can be
    exported first; restore requires explicit confirmation and snapshots the
@@ -9,7 +9,8 @@
 
   var MAIN_KEY='shadowreach.save.local';
   var BACKUP_PREFIX='shadowreach.save.backup.v340.';
-  var BUILD='V341';
+  var RESCUE_KEY='shadowreach.save.rescue.v430';
+  var BUILD='V430';
   var BUTTON_ID='srSaveRecoveryButtonV341';
   var PANEL_ID='srSaveRecoveryPanelV341';
 
@@ -67,7 +68,7 @@
         var raw=localStorage.getItem(key);
         var s=parse(raw);
         if(!looksLikeSave(s))continue;
-        var source=key===MAIN_KEY?'active':(key.indexOf(BACKUP_PREFIX)===0?'backup-v340':'legacy-local');
+        var source=key===MAIN_KEY?'active':(key===RESCUE_KEY?'rescue-v430':(key.indexOf(BACKUP_PREFIX)===0?'backup-v340':'legacy-local'));
         out.push(summarize(key,raw,s,source));
       }
     }catch(_){ }
@@ -94,6 +95,38 @@
     if(candidate.inventory!==active.inventory)return candidate.inventory>active.inventory;
     if(candidate.pets!==active.pets)return candidate.pets>active.pets;
     return false;
+  }
+
+  function bestAhead(list,active){
+    var best=null;
+    for(var i=0;i<list.length;i++){
+      var c=list[i];
+      if(!aheadOf(c,active))continue;
+      if(!best||c.recordFloor>best.recordFloor||
+        (c.recordFloor===best.recordFloor&&c.level>best.level)||
+        (c.recordFloor===best.recordFloor&&c.level===best.level&&c.power>best.power)||
+        (c.recordFloor===best.recordFloor&&c.level===best.level&&c.power===best.power&&c.lastSeen>best.lastSeen))best=c;
+    }
+    return best;
+  }
+
+  /* Pin the strongest older state before the five rotating slots can evict it.
+     The rescue key is never rotated and is replaced only by a stronger state. */
+  function pinBest(){
+    try{
+      var list=scan(),active=activeOf(list),candidate=bestAhead(list,active);
+      if(!candidate)return null;
+      var pinned=null;
+      for(var i=0;i<list.length;i++)if(list[i].key===RESCUE_KEY){pinned=list[i];break;}
+      var replace=!pinned||candidate.recordFloor>pinned.recordFloor||
+        (candidate.recordFloor===pinned.recordFloor&&candidate.level>pinned.level)||
+        (candidate.recordFloor===pinned.recordFloor&&candidate.level===pinned.level&&candidate.power>pinned.power);
+      if(replace&&candidate.key!==RESCUE_KEY){
+        localStorage.setItem(RESCUE_KEY,candidate.raw);
+        return summarize(RESCUE_KEY,candidate.raw,candidate.state,'rescue-v430');
+      }
+      return pinned||candidate;
+    }catch(_){return null;}
   }
 
   function dateLabel(ms){
@@ -141,6 +174,7 @@
   function esc(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
   function sourceLabel(c){
     if(c.source==='active')return 'Actuelle';
+    if(c.source==='rescue-v430')return 'Copie protégée V430';
     if(c.source==='backup-v340')return 'Secours V340';
     return 'Ancienne copie locale';
   }
@@ -155,7 +189,9 @@
     overlay.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(3,7,14,.88);display:flex;align-items:flex-end;justify-content:center;padding:12px;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#fff';
     var box=document.createElement('div');
     box.style.cssText='width:min(680px,100%);max-height:88vh;overflow:auto;background:#111827;border:1px solid #334155;border-radius:18px;padding:16px;box-sizing:border-box;box-shadow:0 20px 70px rgba(0,0,0,.5)';
-    var html='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:18px;font-weight:900">Récupération de sauvegarde</div><div style="font-size:12px;color:#94a3b8;margin-top:3px">'+BUILD+' · aucune restauration automatique</div></div><button data-sr-close style="border:0;border-radius:10px;padding:8px 11px;background:#243044;color:#fff;font-weight:800">Fermer</button></div>';
+    var guard=window.__srSaveLoadGuardV430||{};
+    var html='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:18px;font-weight:900">Récupération de sauvegarde</div><div style="font-size:12px;color:#94a3b8;margin-top:3px">'+BUILD+' · restauration uniquement après confirmation</div></div><button data-sr-close style="border:0;border-radius:10px;padding:8px 11px;background:#243044;color:#fff;font-weight:800">Fermer</button></div>';
+    if(guard.blocked)html+='<div style="margin-top:12px;padding:11px;border-radius:11px;background:#3a1d22;border:1px solid #d45b68;color:#ffd7dc;font-size:12px;line-height:1.45"><b>Protection active :</b> le chargement principal a échoué. Les sauvegardes automatiques sont bloquées pour éviter d’écraser ton ancienne partie.</div>';
     if(!list.length){
       html+='<div style="margin-top:14px;padding:14px;border-radius:12px;background:#182234;color:#cbd5e1">Aucune sauvegarde Shadow exploitable trouvée dans le stockage de ce navigateur.</div>';
     }else{
@@ -182,10 +218,21 @@
   function mountButton(){
     var old=document.getElementById(BUTTON_ID);
     if(old&&old.parentNode)old.parentNode.removeChild(old);
+    var list=scan(),active=activeOf(list),better=bestAhead(list,active);
+    var guard=window.__srSaveLoadGuardV430||{};
+    if(!better&&!guard.blocked)return;
+    var button=document.createElement('button');
+    button.id=BUTTON_ID;
+    button.type='button';
+    button.textContent=better?'⚠ Récupérer mon ancienne partie':'⚠ Vérifier la sauvegarde';
+    button.style.cssText='position:fixed;z-index:99998;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 112px);margin:auto;max-width:520px;border:1px solid #ffd166;border-radius:13px;padding:11px 14px;background:linear-gradient(180deg,#62430e,#3f2908);color:#fff7d6;font:900 13px/1.2 system-ui,-apple-system,Segoe UI,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.45);letter-spacing:.1px';
+    button.addEventListener('click',openPanel);
+    document.body.appendChild(button);
   }
 
-  window.__srSaveRecoveryV341={scan:scan,open:openPanel,exportCandidate:exportCandidate,restoreCandidate:restoreCandidate,aheadOf:aheadOf};
+  window.__srSaveRecoveryV341={scan:scan,open:openPanel,exportCandidate:exportCandidate,restoreCandidate:restoreCandidate,aheadOf:aheadOf,pinBest:pinBest,rescueKey:RESCUE_KEY};
   if(typeof SMOKE!=='undefined'&&SMOKE)return;
+  pinBest();
   if(document.readyState==='complete')setTimeout(mountButton,0);
   else window.addEventListener('load',function(){setTimeout(mountButton,0);},{once:true});
 })();
