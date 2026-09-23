@@ -1,4 +1,4 @@
-/* SHADOWREACH V341/V430 · Non-destructive save recovery center
+/* SHADOWREACH V341/V431 · Non-destructive save recovery center
    Scans same-origin localStorage for plausible Shadowreach saves, including
    V340 rotating backups. Never restores automatically. Every candidate can be
    exported first; restore requires explicit confirmation and snapshots the
@@ -10,9 +10,10 @@
   var MAIN_KEY='shadowreach.save.local';
   var BACKUP_PREFIX='shadowreach.save.backup.v340.';
   var RESCUE_KEY='shadowreach.save.rescue.v430';
-  var BUILD='V430';
+  var BUILD='V431';
   var BUTTON_ID='srSaveRecoveryButtonV341';
   var PANEL_ID='srSaveRecoveryPanelV341';
+  var FORCE_RECOVERY=/(?:^|[?&])recovery=1(?:&|$)/.test(location.search);
 
   function num(v,fallback){
     var n=Number(v);
@@ -220,11 +221,11 @@
     if(old&&old.parentNode)old.parentNode.removeChild(old);
     var list=scan(),active=activeOf(list),better=bestAhead(list,active);
     var guard=window.__srSaveLoadGuardV430||{};
-    if(!better&&!guard.blocked)return;
+    if(!better&&!guard.blocked&&!FORCE_RECOVERY)return;
     var button=document.createElement('button');
     button.id=BUTTON_ID;
     button.type='button';
-    button.textContent=better?'⚠ Récupérer mon ancienne partie':'⚠ Vérifier la sauvegarde';
+    button.textContent=better?'⚠ Récupérer mon ancienne partie':(guard.blocked?'⚠ Vérifier la sauvegarde':'Sauvegardes locales');
     button.style.cssText='position:fixed;z-index:99998;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 112px);margin:auto;max-width:520px;border:1px solid #ffd166;border-radius:13px;padding:11px 14px;background:linear-gradient(180deg,#62430e,#3f2908);color:#fff7d6;font:900 13px/1.2 system-ui,-apple-system,Segoe UI,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.45);letter-spacing:.1px';
     button.addEventListener('click',openPanel);
     document.body.appendChild(button);
@@ -233,6 +234,10 @@
   window.__srSaveRecoveryV341={scan:scan,open:openPanel,exportCandidate:exportCandidate,restoreCandidate:restoreCandidate,aheadOf:aheadOf,pinBest:pinBest,rescueKey:RESCUE_KEY};
   if(typeof SMOKE!=='undefined'&&SMOKE)return;
   pinBest();
-  if(document.readyState==='complete')setTimeout(mountButton,0);
-  else window.addEventListener('load',function(){setTimeout(mountButton,0);},{once:true});
+  function mountRecovery(){
+    mountButton();
+    if(FORCE_RECOVERY)openPanel();
+  }
+  if(document.readyState==='complete')setTimeout(mountRecovery,0);
+  else window.addEventListener('load',function(){setTimeout(mountRecovery,0);},{once:true});
 })();

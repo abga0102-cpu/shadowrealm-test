@@ -84,3 +84,23 @@ test('V430 still permits a genuine first save when no recovery data exists', asy
   expect(result.guard.blocked).toBe(false);
   expect(result.main).not.toBeNull();
 });
+
+test('V431 forced recovery link opens the local save inventory even without a stronger backup', async ({ page }) => {
+  const active = state({ gold: 124, exp: 48, power: 2940 });
+  await page.addInitScript((save) => {
+    localStorage.clear();
+    localStorage.setItem('shadowreach.save.local', JSON.stringify(save));
+  }, active);
+
+  await page.goto('/index.html?recovery=1&v=v431-forced-recovery-test');
+  await page.waitForSelector('#srSaveRecoveryPanelV341');
+
+  const result = await page.evaluate(() => ({
+    panel: document.getElementById('srSaveRecoveryPanelV341')?.innerText || '',
+    button: document.getElementById('srSaveRecoveryButtonV341')?.textContent || '',
+  }));
+  expect(result.panel).toContain('Récupération de sauvegarde');
+  expect(result.panel).toContain('V431');
+  expect(result.panel).toContain('Actuelle');
+  expect(result.button).toBe('Sauvegardes locales');
+});
