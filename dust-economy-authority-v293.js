@@ -82,6 +82,8 @@
       normalizedDust.__srV429=true;
       normalizedDust.__srPrevious=dustValue;
       dustValue=normalizedDust;
+      try{window.dustValue=normalizedDust;}catch(_){}
+      try{globalThis.dustValue=normalizedDust;}catch(_){}
     }
   }catch(_){ }
 
