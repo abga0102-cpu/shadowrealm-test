@@ -100,7 +100,38 @@ test('V431 forced recovery link opens the local save inventory even without a st
     button: document.getElementById('srSaveRecoveryButtonV341')?.textContent || '',
   }));
   expect(result.panel).toContain('Récupération de sauvegarde');
-  expect(result.panel).toContain('V431');
+  expect(result.panel).toContain('V432');
   expect(result.panel).toContain('Actuelle');
   expect(result.button).toBe('Sauvegardes locales');
+});
+
+test('V432 opens recovery automatically for a suspicious low-level reset with preserved power', async ({ page }) => {
+  const active = state({ level: 2, floor: 1, recordFloor: 1, gold: 148, exp: 33, power: 50 });
+  await page.addInitScript((save) => {
+    localStorage.clear();
+    localStorage.setItem('shadowreach.save.local', JSON.stringify(save));
+    localStorage.setItem('shadowreach.power.sources.v256', JSON.stringify({ at: Date.now(), power: 3000, sources: {} }));
+  }, active);
+
+  await page.goto('/index.html?v=v432-suspicious-reset-test');
+  await page.waitForSelector('#srSaveRecoveryPanelV341');
+
+  const result = await page.evaluate(() => ({
+    panel: document.getElementById('srSaveRecoveryPanelV341')?.innerText || '',
+    button: document.getElementById('srSaveRecoveryButtonV341')?.textContent || '',
+  }));
+  expect(result.panel).toContain('V432');
+  expect(result.button).toContain('Vérifier l’ancienne partie');
+});
+
+test('V432 keeps manual save access visible for a normal active save', async ({ page }) => {
+  const active = state({ level: 20, floor: 35, recordFloor: 40, power: 500000 });
+  await page.addInitScript((save) => {
+    localStorage.clear();
+    localStorage.setItem('shadowreach.save.local', JSON.stringify(save));
+  }, active);
+
+  await page.goto('/index.html?v=v432-manual-save-access-test');
+  await page.waitForSelector('#srSaveRecoveryButtonV341');
+  await expect(page.locator('#srSaveRecoveryButtonV341')).toHaveText('Sauvegardes locales');
 });
