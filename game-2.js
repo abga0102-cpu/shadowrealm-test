@@ -2182,11 +2182,11 @@ function itemUpgradePreview(it) {
   let current, next, label;
   if (it.baseDamage) {
     current = Number(it.damage || 0);
-    next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.005) * 100) / 100;
+    next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.01) * 100) / 100;
     label = "ATQ";
   } else {
     current = Number(it.hp || 0);
-    next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.005) * 100) / 100;
+    next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.01) * 100) / 100;
     label = "PV";
   }
   return { label, current, next, gain: Math.round((next - current) * 100) / 100 };
@@ -2220,13 +2220,13 @@ function upgradeItem(id) {
     result={ok:true, success:Math.random()*100 < chance, chance:chance, seals:seals};
     if (!result.success) return;
     it.level += 1;
-    /* Poussière additive : +0,35 % de la stat de référence par niveau réussi.
-       Les anciennes pièces gardent leur puissance acquise : leur valeur au moment
-       de la migration devient l'ancre des améliorations futures. */
+    /* V429 · Poussière rare mais réellement impactante : chaque amélioration
+       réussie ajoute +1 % de la stat de référence. Les anciennes pièces gardent
+       leur puissance acquise : leur valeur au moment de la migration reste l'ancre. */
     const anchorLevel = it.upgradeBaseLevel || 0;
     const steps = Math.max(0, it.level - anchorLevel);
-    if (it.baseDamage) it.damage = Math.round(it.baseDamage * (1 + steps * 0.0035) * 100) / 100;
-    if (it.baseHp) it.hp = Math.round(it.baseHp * (1 + steps * 0.0035) * 100) / 100;
+    if (it.baseDamage) it.damage = Math.round(it.baseDamage * (1 + steps * 0.01) * 100) / 100;
+    if (it.baseHp) it.hp = Math.round(it.baseHp * (1 + steps * 0.01) * 100) / 100;
     it.power = Math.round((it.damage + it.hp) * 100) / 100;
     result.statGain = Math.round(((it.damage - beforeDamage) + (it.hp - beforeHp)) * 100) / 100;
     result.statLabel = it.baseDamage ? "ATQ" : "PV";
