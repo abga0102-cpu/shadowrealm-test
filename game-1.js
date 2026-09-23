@@ -186,7 +186,8 @@ const RARITY = {
   RARE:       { c: "#3FA7FF", label: "Rare" },
   EPIQUE:     { c: "#B15CF6", label: "Épique" },
   MYTHIQUE:   { c: "#FF7A3D", label: "Mythique" },
-  /* HEROIQUE / ANCESTRAL restent lisibles uniquement pour migrer les anciennes sauvegardes. */
+  /* HÉROÏQUE reste lisible pour les anciennes sauvegardes d'équipement.
+     ANCESTRAL est aussi un palier actif de fusion des Familiers. */
   HEROIQUE:   { c: "#FF4D6A", label: "Héroïque" },
   ANCESTRAL:  { c: "#3FE0C0", label: "Ancestral" },
   ARTEFACT:   { c: "#43C98B", label: "Artefact" },
@@ -197,7 +198,11 @@ const RARITY = {
 };
 /* Core ladder — used by Skills. Familiars use their own ladder below. */
 const RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "LEGENDAIRE", "DIVIN"];
-const PET_RARITY_ORDER = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "LEGENDAIRE", "DIVIN"];
+/* Ancestral must exist in the boot-time core ladder, not only in the later
+   Familiar authority. loadSave() migrates pets before that authority loads;
+   omitting the tier here made every save containing an Ancestral pet fail
+   migration and fall back to a fresh level-1 state. */
+const PET_RARITY_ORDER = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "ANCESTRAL", "LEGENDAIRE", "DIVIN"];
 /* EQUIPMENT has its own, longer ladder with Héroïque and Ancestral inserted
    between Mythique and Légendaire. Only gear ever rolls these two. */
 /* what each quarter of its health buys it */
@@ -1108,7 +1113,7 @@ function petArt(p) {
       || ASSETS.pet_dragonnet_normal;
 }
 
-const PET_BASE = { COMMUN: 3, PEU_COMMUN: 9, RARE: 18, EPIQUE: 108, MYTHIQUE: 648, LEGENDAIRE: 2200, DIVIN: 6408 };
+const PET_BASE = { COMMUN: 3, PEU_COMMUN: 9, RARE: 18, EPIQUE: 108, MYTHIQUE: 648, ANCESTRAL: 0, LEGENDAIRE: 2200, DIVIN: 6408 };
 /* Existing caps and per-level power gains are preserved. Peu commun is simply
    inserted between Commun and Rare and follows the same 10-level track as
    Commun. Upgrade PRICES are deliberately absent here: at an equal level every
@@ -1119,6 +1124,10 @@ const PET_UP = {
   RARE:       { max: 12, per: 3.0 },
   EPIQUE:     { max: 15, per: 14.4 },
   MYTHIQUE:   { max: 18, per: 34.5 },
+  /* Apple levels are retired by V286. This boot-safe entry exists so legacy
+     and current Ancestral saves can migrate before V286 installs its flat-stat
+     authority. The historical level remains available as legacyLevel. */
+  ANCESTRAL:  { max: 0, per: 0 },
   LEGENDAIRE: { max: 20, per: 84 },
   DIVIN:      { max: 25, per: 150 },
 };
@@ -1128,7 +1137,7 @@ const PET_UP = {
 const PET_UPGRADE_BASE = 2;
 const PET_UPGRADE_GROWTH = 1.29;
 /* How many identical familiars fuse into the next rarity. */
-const PET_FUSE_NEED = { COMMUN: 6, PEU_COMMUN: 6, RARE: 7, EPIQUE: 8, MYTHIQUE: 9, LEGENDAIRE: 10 };
+const PET_FUSE_NEED = { COMMUN: 4, PEU_COMMUN: 4, RARE: 5, EPIQUE: 5, MYTHIQUE: 5, ANCESTRAL: 6 };
 
 function petMaxLevel(rarity) { return PET_UP[rarity].max; }
 function petBonusAt(rarity, level, stars) {
@@ -2271,6 +2280,9 @@ function migrate(s, name) {
   // Pets from before investment tracking reconstruct the exact cost of their levels.
   merged.pets = (merged.pets || []).map((p) => {
     const q = Object.assign({ level: 0, species: randSpecies(), element: randElement() }, p);
+    if (q.rarity === "ANCESTRAL" && q.legacyLevel == null) {
+      q.legacyLevel = Math.max(0, Number(q.level) || 0);
+    }
     q.level = Math.min(Math.max(0, q.level || 0), petMaxLevel(q.rarity));
     q.applesInvested = Number.isFinite(p.applesInvested)
       ? Math.max(0, Math.floor(p.applesInvested))
