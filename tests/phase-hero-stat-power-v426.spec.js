@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
-test('V426 each allocated level stat point adds +3% global Power bonus', async ({ page }) => {
+test('V428 each level stat point adds +5% global Power bonus', async ({ page }) => {
   await page.goto('/index.html?smoke=1');
   await page.waitForFunction(() =>
     typeof heroAllocatedStatPoints === 'function' &&
@@ -11,7 +11,7 @@ test('V426 each allocated level stat point adds +3% global Power bonus', async (
   );
 
   const data = await page.evaluate(() => {
-    const fresh = defaultState('V426');
+    const fresh = defaultState('V428');
     fresh.statPoints = 50;
     const unspentPoints = heroLevelStatPoints(fresh);
     const unspentBonus = heroStatPowerBonusPct(fresh);
@@ -25,7 +25,7 @@ test('V426 each allocated level stat point adds +3% global Power bonus', async (
     const bonus = heroStatPowerBonusPct(fresh);
     const derived = computeDerived(fresh);
 
-    const one = defaultState('V426-one');
+    const one = defaultState('V428-one');
     const basePower = computePower(one);
     one.statPoints = 1;
     const oneAvailablePointPower = computePower(one);
@@ -68,31 +68,31 @@ test('V426 each allocated level stat point adds +3% global Power bonus', async (
   });
 
   expect(data.unspentPoints).toBe(50);
-  expect(data.unspentBonus).toBe(150);
+  expect(data.unspentBonus).toBe(250);
   expect(data.allocated).toBe(9);
   expect(data.totalPoints).toBe(59);
-  expect(data.bonus).toBe(177);
-  expect(data.derivedBonus).toBe(177);
-  expect(data.derivedMul).toBeCloseTo(2.77, 8);
+  expect(data.bonus).toBe(295);
+  expect(data.derivedBonus).toBe(295);
+  expect(data.derivedMul).toBeCloseTo(3.95, 8);
 
-  expect(data.oneAvailablePointBonus).toBe(3);
+  expect(data.oneAvailablePointBonus).toBe(5);
   expect(data.oneAvailablePointPower).toBeGreaterThan(data.basePower);
-  expect(data.onePointBonus).toBe(3);
+  expect(data.onePointBonus).toBe(5);
   expect(data.onePointPower).toBeGreaterThan(data.basePower);
 
   expect(data.spent).toBe(1);
   expect(data.remaining).toBe(0);
   expect(data.afterAlloc).toBeGreaterThan(data.beforeAlloc);
 
-  expect(data.heroText).toContain('+3 % de Puissance globale');
+  expect(data.heroText).toContain('+5 % de Puissance globale');
   expect(data.heroText).toContain('disponible ou dépensé');
-  expect(data.heroText).toContain('+3% Puissance');
+  expect(data.heroText).toContain('+5% Puissance');
 });
 
 test('V426 source applies the +3% multiplier to the final global Power score', async ({ page }) => {
   await page.goto('/index.html?smoke=1');
   const source = await page.evaluate(async () => (await fetch('game-1.js?v=test')).text());
-  expect(source).toContain('const HERO_STAT_POWER_PER_POINT_PCT = 3;');
+  expect(source).toContain('const HERO_STAT_POWER_PER_POINT_PCT = 5;');
   expect(source).toContain('return heroAllocatedStatPoints(s) + Math.max(0, Math.floor(Number(s && s.statPoints) || 0));');
   expect(source).toContain('const heroStatPowerMul = 1 + heroStatPowerBonusPct / 100;');
   expect(source).toContain('const power = Math.floor(rawPower * heroStatPowerMul);');
