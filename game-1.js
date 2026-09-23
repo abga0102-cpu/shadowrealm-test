@@ -465,7 +465,7 @@ const STATS = {
   CRIT:    { key: "crit",    label: "Chance Critique", perPoint: 0, icon: "bolt" },
   CRITRED: { key: "critred", label: "Réduc. Crit", perPoint: 0.40, icon: "shield" },
 };
-const HERO_STAT_POWER_PER_POINT_PCT = 3;
+const HERO_STAT_POWER_PER_POINT_PCT = 5;
 function heroAllocatedStatPoints(s) {
   const st = (s && s.stats) || {};
   return ["sante", "degats", "critred"].reduce((sum, key) =>
