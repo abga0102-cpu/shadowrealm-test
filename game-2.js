@@ -79,21 +79,79 @@ function refreshDerived() { D = computeDerived(S); }
    make every combat check fail for reasons that have nothing to do with the
    code being tested. */
 const SMOKE = /[?&]smoke=1(?:&|$)/.test(location.search);
+const SAVE_BACKUP_PREFIX = "shadowreach.save.backup.v340.";
+const SAVE_RESCUE_KEY = "shadowreach.save.rescue.v430";
+let saveLoadGuardV430 = { status: "pending", blocked: false, reason: "", error: "" };
+
+function hasLocalRecoveryV430() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) || "";
+      if (key === SAVE_RESCUE_KEY || key.indexOf(SAVE_BACKUP_PREFIX) === 0) {
+        const raw = localStorage.getItem(key);
+        if (raw && typeof JSON.parse(raw) === "object") return true;
+      }
+    }
+  } catch (_) { }
+  return false;
+}
+
+function publishSaveLoadGuardV430() {
+  try {
+    window.__srSaveLoadGuardV430 = Object.assign({}, saveLoadGuardV430, {
+      allowWrite: function () {
+        saveLoadGuardV430.blocked = false;
+        saveLoadGuardV430.reason = "user-authorized";
+        publishSaveLoadGuardV430();
+      }
+    });
+  } catch (_) { }
+}
+
 function saveNow() {
   if (SMOKE) { dirty = false; return; }
+  if (saveLoadGuardV430.blocked) {
+    console.warn("save blocked after failed local save load", saveLoadGuardV430.reason);
+    return false;
+  }
   try {
     S.lastSeen = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(S));
     dirty = false;
+    return true;
   } catch (e) { console.warn("save failed", e); }
+  return false;
 }
 function loadSave() {
-  if (SMOKE) return null;
+  if (SMOKE) {
+    saveLoadGuardV430 = { status: "smoke", blocked: false, reason: "", error: "" };
+    publishSaveLoadGuardV430();
+    return null;
+  }
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-    return migrate(JSON.parse(raw), "Héros");
-  } catch (e) { return null; }
+    if (!raw) {
+      const recoverable = hasLocalRecoveryV430();
+      saveLoadGuardV430 = {
+        status: "missing", blocked: recoverable,
+        reason: recoverable ? "main-missing-recovery-present" : "new-player", error: ""
+      };
+      publishSaveLoadGuardV430();
+      return null;
+    }
+    const loaded = migrate(JSON.parse(raw), "Héros");
+    saveLoadGuardV430 = { status: "loaded", blocked: false, reason: "", error: "" };
+    publishSaveLoadGuardV430();
+    return loaded;
+  } catch (e) {
+    saveLoadGuardV430 = {
+      status: "error", blocked: true, reason: "main-unreadable",
+      error: String(e && e.message || e || "unknown")
+    };
+    publishSaveLoadGuardV430();
+    console.warn("save load failed; automatic writes are blocked", e);
+    return null;
+  }
 }
 
 /* -------- daily reset & offline -------- */
@@ -2561,6 +2619,9 @@ function spendGems(amount, cb) {
 }
 
 function resetGame() {
+  if (window.__srSaveLoadGuardV430 && typeof window.__srSaveLoadGuardV430.allowWrite === "function") {
+    window.__srSaveLoadGuardV430.allowWrite();
+  }
   S = defaultState("Héros");
   S.power = computePower(S);
   refreshDerived();
