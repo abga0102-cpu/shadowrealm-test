@@ -108,7 +108,8 @@ test('V429 one successful Dust upgrade adds exactly +1% of the base equipment st
       power: 10000,
       level: 0,
       upgradeBaseLevel: 0,
-      affixes: []
+      affixes: [],
+      powerCurveVersion: 372
     };
     S.inventory = [item];
     S.poussiere = 1000;
