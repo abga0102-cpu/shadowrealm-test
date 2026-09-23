@@ -45,7 +45,7 @@ async function runOneAutoCycle(page, forgeImpl) {
   }, { forgeImplSource: forgeImpl.toString() });
 }
 
-test('V350 Dust rarity table returns the canonical values', async ({ page }) => {
+test('V429 Dust rarity table returns the scarce canonical values', async ({ page }) => {
   await openCleanGame(page);
   const values = await page.evaluate(() => {
     const cfg = window.__srDustEconomyConfigV293;
@@ -55,14 +55,14 @@ test('V350 Dust rarity table returns the canonical values', async ({ page }) => 
 
   expect(values).toEqual({
     COMMUN: 1,
-    RARE: 2,
-    EPIQUE: 4,
-    MYTHIQUE: 10,
-    ARTEFACT: 25,
+    RARE: 4,
+    EPIQUE: 8,
+    MYTHIQUE: 20,
+    ARTEFACT: 35,
     LEGENDAIRE: 60,
-    INFERNAL: 150,
-    IMMORTEL: 400,
-    DIVIN: 1000,
+    INFERNAL: 100,
+    IMMORTEL: 160,
+    DIVIN: 250,
   });
 });
 
@@ -84,8 +84,8 @@ test('V350 Auto-Forge overrides stale +1 payload with canonical rarity value', a
   });
 
   expect(result.canonical).toBe(true);
-  expect(result.missing).toBe(2);
-  expect(result.dust).toBe(6002);
+  expect(result.missing).toBe(4);
+  expect(result.dust).toBe(6004);
 });
 
 test('V350 Auto-Forge scheduler restores canonical Dust when result was not credited', async ({ page }) => {
@@ -95,18 +95,18 @@ test('V350 Auto-Forge scheduler restores canonical Dust when result was not cred
   });
 
   expect(result.authority350).toBe(true);
-  expect(result.dust).toBe(10);
+  expect(result.dust).toBe(20);
 });
 
 test('V350 Auto-Forge never double-credits canonical Dust already paid by forgeSummon', async ({ page }) => {
   await openCleanGame(page);
   const result = await runOneAutoCycle(page, function () {
-    S.poussiere += 4;
+    S.poussiere += 8;
     return [{ rarity: 'EPIQUE', slot: 'gants', recycled: true, dust: 1 }];
   });
 
   expect(result.authority350).toBe(true);
-  expect(result.dust).toBe(4);
+  expect(result.dust).toBe(8);
 });
 
 test('V351 global Dust authority normalizes rarity names and never falls back unknown rarity to +1', async ({ page }) => {
@@ -126,14 +126,14 @@ test('V351 global Dust authority normalizes rarity names and never falls back un
 
   expect(values).toEqual({
     commun: 1,
-    rare: 2,
-    epiqueAccent: 4,
-    mythique: 10,
-    artefact: 25,
+    rare: 4,
+    epiqueAccent: 8,
+    mythique: 20,
+    artefact: 35,
     legendaireAccent: 60,
-    infernal: 150,
-    immortel: 400,
-    divin: 1000,
+    infernal: 100,
+    immortel: 160,
+    divin: 250,
     unknown: 0,
   });
 });
@@ -151,5 +151,5 @@ test('V351 final integrity layer overrides stale +1 result payload by rarity', a
     };
   });
 
-  expect(values).toEqual({ loaded: true, rare: 2, epique: 4, mythique: 10, divin: 1000 });
+  expect(values).toEqual({ loaded: true, rare: 4, epique: 8, mythique: 20, divin: 250 });
 });

@@ -1,11 +1,10 @@
-/* SHADOWREACH V344 / V364 · Forge dust integrity + one-time compensation
+/* SHADOWREACH V344 / V429 · Forge Dust integrity
    Final authority loaded after every Forge/Dust layer.
-   - V364 validates recycled Dust from the item's ORIGINAL power + rarity rank.
-   - Auto-Forge and manual recycling therefore use the same base-value system.
-   - Upgraded power and dustInvested never inflate the base recycle value.
+   - V429 validates the new fixed rarity-based Dust values.
+   - Auto-Forge and manual recycling stay identical.
+   - Equipment power and upgrades never inflate recycling value.
    - Tops up only a missing delta, so an already-correct credit is never doubled.
-   - Compensation total remains 7500 Dust: saves that already received 6000 get
-     only the +1500 difference.
+   - Historical 7500-Dust compensation is retired in the scarce economy.
 */
 (function(){
   'use strict';
@@ -13,11 +12,11 @@
   window.__srForgeDustIntegrityV344=true;
   if(typeof S==='undefined'||!S.forge)return;
 
-  var COMPENSATION=7500;
-  var RANK_BY_RARITY={
-    COMMUN:0,RARE:1,EPIQUE:2,MYTHIQUE:3,ARTEFACT:4,
-    LEGENDAIRE:5,INFERNAL:6,IMMORTEL:7,DIVIN:8,
-    HEROIQUE:4,ANCESTRAL:6,PEU_COMMUN:1
+  var COMPENSATION=0;
+  var DUST_BY_RARITY={
+    COMMUN:1,PEU_COMMUN:2,RARE:4,EPIQUE:8,HEROIQUE:12,MYTHIQUE:20,
+    ARTEFACT:35,LEGENDAIRE:60,INFERNAL:100,IMMORTEL:160,DIVIN:250,
+    ANCESTRAL:100
   };
   var audit={forgeTopups:0,recycleTopups:0,compensation:0};
 
@@ -39,17 +38,11 @@
   function localItemDust(it){
     if(!it||!it.rarity)return 0;
     var key=normalizeRarity(it.rarity);
-    var rank=Number(RANK_BY_RARITY[key]);
-    if(!isFinite(rank)||rank<0)rank=0;
-    var original=it.originalPower!=null?Number(it.originalPower):NaN;
-    if(!isFinite(original)){
-      original=(Number(it.baseDamage)||0)+(Number(it.baseHp)||0);
-      if(!(original>0))original=Number(it.power)||0;
-    }
-    original=Math.max(0,Number(original)||0);
+    var base=Number(DUST_BY_RARITY[key]);
+    if(!isFinite(base)||base<=0)return 0;
     var bonus=0;
     try{if(typeof treeSum==='function')bonus=Math.max(0,Number(treeSum(S,'dust'))||0);}catch(_){}
-    return Math.max(0,Math.floor(((rank+1)*5+original*0.2)*(1+bonus/100)));
+    return Math.max(0,Math.floor(base*(1+bonus/100)));
   }
 
   function itemDust(it){
@@ -155,4 +148,5 @@
   window.__srForgeDustIntegrityV351={version:351,value:expectedResultDust,rarityValue:function(){return 0;},audit:audit};
   window.__srForgeDustIntegrityV363={version:363,value:expectedResultDust,rarityValue:function(){return 0;},audit:audit,compensation:COMPENSATION};
   window.__srForgeDustIntegrityV364={version:364,value:expectedResultDust,itemValue:itemDust,audit:audit,compensation:COMPENSATION};
+  window.__srForgeDustIntegrityV429={version:429,value:expectedResultDust,itemValue:itemDust,audit:audit,compensation:COMPENSATION,byRarity:DUST_BY_RARITY};
 })();
