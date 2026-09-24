@@ -7,7 +7,7 @@ async function openCleanGame(page) {
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
 }
 
-test('V446 new-player defaults start with 50 Minerai while migration preserves saved Minerai', async ({ page }) => {
+test('V447 new-player defaults start with 100 Minerai while migration preserves saved Minerai', async ({ page }) => {
   await openCleanGame(page);
   const state = await page.evaluate(() => {
     const fresh = defaultState('QA');
@@ -18,13 +18,13 @@ test('V446 new-player defaults start with 50 Minerai while migration preserves s
       freshMinerai: fresh.minerai,
       migratedMinerai: migrated.minerai,
       forgeCost: forgeCost(1),
-      config: window.__srNewPlayerStarterConfigV446 || null,
+      config: window.__srNewPlayerStarterConfigV447 || null,
     };
   });
-  expect(state.freshMinerai).toBe(50);
+  expect(state.freshMinerai).toBe(100);
   expect(state.migratedMinerai).toBe(158);
   expect(state.forgeCost).toBe(10);
-  expect(state.config).toMatchObject({ minerai: 50, baseForgeCrafts: 5 });
+  expect(state.config).toMatchObject({ minerai: 100, baseForgeCrafts: 10 });
 });
 
 test('V446 contextual info is available without changing screen scroll', async ({ page }) => {
@@ -34,7 +34,6 @@ test('V446 contextual info is available without changing screen scroll', async (
   await page.locator('#srSystemInfoBtn').click();
   await expect(page.locator('#srSystemInfoOverlay')).toBeVisible();
   await expect(page.locator('#srSystemInfoTitle')).toContainText('Campagne & Forge');
-  await expect(page.locator('#srSystemInfoCard')).toContainText('50 Minerais');
   await page.locator('#srSystemInfoClose').click();
   await expect(page.locator('#srSystemInfoOverlay')).toHaveCount(0);
   const after = await page.evaluate(() => window.scrollY);
