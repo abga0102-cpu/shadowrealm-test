@@ -18,7 +18,10 @@ assert(!renderBody.includes('sc.scrollTop = keep'), 'base render must not indepe
 const stabilityStart = src.indexOf('// SCROLL_STABILITY_V47');
 const stability = src.slice(stabilityStart);
 assert(stability.includes('const beforeTop = screen ? screen.scrollTop : 0;'), 'scroll stability owner must capture scroll once');
-assert(stability.includes('sc.scrollTop = Math.min(beforeTop, max);'), 'scroll stability owner must restore the bounded position once');
+assert(stability.includes('sc.scrollTop = beforeTop;'), 'scroll stability owner must immediately preserve the prior position');
+assert((stability.match(/requestAnimationFrame\(function\(\)/g)||[]).length >= 2, 'scroll stability owner must wait for two layout frames');
+assert(stability.includes('settled.scrollTop = Math.min(beforeTop, Math.max(0, settled.scrollHeight-settled.clientHeight));'),
+  'scroll stability owner must apply one final bounded restore after layout settles');
 
 console.log('V435 screen stability source contract OK');
 
