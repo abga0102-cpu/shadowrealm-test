@@ -10,7 +10,8 @@ async function openCleanGame(page) {
     typeof S !== 'undefined' &&
     window.__srForgeLifetimeMasteryV445 &&
     window.__srEquipmentCurveAuthority &&
-    window.__srEquipmentCurveAuthority.version >= 445
+    window.__srEquipmentCurveAuthority.version === 372 &&
+    window.__srEquipmentCurveAuthority.forgeLifetimeMasteryVersion === 445
   );
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
