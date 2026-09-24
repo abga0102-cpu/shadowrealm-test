@@ -1923,7 +1923,8 @@ function defaultState(name) {
     equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null,
       collier: null, anneau: null, ceinture: null },
     inventory: [],
-    forge: { level: 1, summonCount: 0, masteryLevel: 0, masteryProgress: 0, autoForge: false, upgradeEnd: 0,
+    forge: { level: 1, summonCount: 0, lifetimeCount: 0, lifetimeMasteryVersion: 0,
+      masteryLevel: 0, masteryProgress: 0, autoForge: false, upgradeEnd: 0,
       // section 14: nothing is filtered out until the player says so
       filter: false, keep: forgeKeepAll() },
     skills: {}, skillSlots: [null, null, null, null, null],
@@ -1996,6 +1997,16 @@ function migrate(s, name) {
     stars: Object.assign({}, base.stars, s.stars || {}),
     recommendationDismissed: Object.assign({}, base.recommendationDismissed, s.recommendationDismissed || {}),
   });
+
+  /* V445: paid lifetime Forge count is permanent and never reset by Forge
+     Ascension. Old saves did not journal completed historical cycles, so only
+     the paid forge count still provable in the save is carried forward. */
+  const savedLifetimeForge = s.forge && s.forge.lifetimeCount != null
+    ? Math.max(0, Math.floor(Number(s.forge.lifetimeCount) || 0)) : null;
+  const currentCycleForges = Math.max(0, Math.floor(Number(merged.forge.summonCount) || 0));
+  merged.forge.lifetimeCount = savedLifetimeForge == null
+    ? currentCycleForges : Math.max(savedLifetimeForge, currentCycleForges);
+  merged.forge.lifetimeMasteryVersion = Math.max(0, Math.floor(Number(merged.forge.lifetimeMasteryVersion) || 0));
 
   /* V397: old saves counted only PAID Familiar summons toward Mastery even
      when Double Œuf produced a second egg. The old save did not journal each

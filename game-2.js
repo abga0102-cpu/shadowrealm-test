@@ -2052,23 +2052,34 @@ function showRarityInfo() {
 }
 function forgeSummon(n) {
   const results = [];
+  let lifetimeUnlock = null;
   update((st) => {
     for (let i = 0; i < n; i++) {
       const cost = forgeCost(st.forge.level);
       if (st.minerai < cost) break;
       st.minerai -= cost;
+
+      // One PAID forge = one permanent lifetime credit. The Tree's free bonus
+      // result is deliberately created later and never increments this count.
+      const masteryApi = window.__srForgeLifetimeMasteryV445;
+      const beforeMastery = masteryApi && masteryApi.info ? masteryApi.info(st) : null;
+      st.forge.summonCount += 1;
+      st.forge.lifetimeCount = Math.max(0, Math.floor(Number(st.forge.lifetimeCount) || 0)) + 1;
+      const afterMastery = masteryApi && masteryApi.info ? masteryApi.info(st) : null;
+      if (beforeMastery && afterMastery && afterMastery.rank > beforeMastery.rank) {
+        if (masteryApi.applyState) masteryApi.applyState(st);
+        lifetimeUnlock = afterMastery;
+      }
+
       const rates = gateForgeRates(
         getRates("forge", st.forge.level, st.ascension, starsOf(st, "forge")), st.forge.level);
       Object.keys(rates).forEach((r) => { if (!rarityAllowed(r, st.forge.level, st)) rates[r] = 0; });
       const rateSum = Object.values(rates).reduce((a,b) => a + (Number(b)||0), 0) || 1;
       Object.keys(rates).forEach((r) => { rates[r] = rates[r] / rateSum * 100; });
-      // one paid forge; the tree's "Forge gratuite" nodes may add a second
-      // result at no extra cost
       const extra = Math.random() * 100 < treeSum(st, "forgeFree") ? 1 : 0;
       for (let k = 0; k <= extra; k++) {
         const rar = capRarityForForge(rollRarity(rates, EQUIP_RARITY_ORDER), st.forge.level);
         const item = makeItem(SLOTS[Math.floor(Math.random() * SLOTS.length)], rar, st.forge.level);
-        // a rarity the filter does not keep never reaches the bag
         if (forgeKeeps(st, rar)) {
           st.inventory.push(item);
           results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0 });
@@ -2079,10 +2090,12 @@ function forgeSummon(n) {
             recycled: true, dust: dust });
         }
       }
-      st.forge.summonCount += 1;
     }
     st.eventProgress.forge = (st.eventProgress.forge || 0) + results.length;
   });
+  if (lifetimeUnlock && typeof toast === "function") {
+    toast("Maîtrise équipement " + lifetimeUnlock.roman + " · +" + lifetimeUnlock.bonusPct + "% de base", true);
+  }
   return results;
 }
 
