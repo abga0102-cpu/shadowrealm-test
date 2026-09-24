@@ -423,21 +423,16 @@ function run(W) {
       poussiere: H.S.poussiere, gems: H.S.gems, gold: H.S.gold, pe: H.S.pe,
       eggSlots: H.S.eggSlots };
   }
-  check("Raid Minerai suit 300 -> 400 puis +5 jusqu'à 695", function () {
+  check("Raid Minerai suit 500 puis +5 par niveau jusqu'à 845", function () {
     const bad = [];
-    const expected = { 1: 300, 5: 340, 10: 390, 11: 400, 12: 405, 20: 445, 30: 495, 40: 545, 50: 595, 60: 645, 70: 695 };
+    const expected = { 1: 500, 5: 520, 10: 545, 11: 550, 20: 595, 30: 645, 40: 695, 50: 745, 60: 795, 70: 845 };
     Object.keys(expected).forEach(function (l) {
       const got = W.raidReward("minerai", +l);
       if (got !== expected[l]) bad.push("niv" + l + " " + got + "≠" + expected[l]);
     });
-    for (let l = 1; l < 11; l++) {
-      if (W.raidReward("minerai", l + 1) - W.raidReward("minerai", l) !== 10) {
-        bad.push("le pas avant 400 n'est pas +10 au niveau " + l); break;
-      }
-    }
-    for (let l = 11; l < 70; l++) {
+    for (let l = 1; l < 70; l++) {
       if (W.raidReward("minerai", l + 1) - W.raidReward("minerai", l) !== 5) {
-        bad.push("le pas après 400 n'est pas +5 au niveau " + l); break;
+        bad.push("le pas n'est pas +5 au niveau " + l); break;
       }
     }
     return bad.length ? bad.slice(0, 3).join(", ") : true;

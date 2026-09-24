@@ -19,8 +19,7 @@
 
   function mineraiReward(level){
     var lv=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
-    if(lv<=11)return 300+10*(lv-1);
-    return 400+5*(lv-11);
+    return 500+5*(lv-1);
   }
 
   function competenceReward(level){
@@ -51,7 +50,7 @@
 
   window.__srRaidRewardConfigV396={
     or:{level1:5000,level10:10000,level15:15000,level20:20000,growthAfter20:GOLD_GROWTH},
-    minerai:{level1:300,perLevelTo400:10,level11:400,perLevelAfter400:5,level70:695},
+    minerai:{level1:500,perLevel:5,level70:845},
     competence:{level1:250,perLevel:10},
     familier:{level1:200,perLevelTo250:5,level11:250,perLevelAfter250:2,level70:368},
     evolution:{level1:150,perLevel:3},

@@ -45,10 +45,10 @@ test('V444 Familiar Raid Essence is 200, +5 to 250, then +2 through 368', async 
   expect(cfg).toMatchObject({level1:200,level11:250,perLevelAfter250:2,level70:368});
 });
 
-test('V444 Minerai Raid is 300, +10 to 400, then +5 through 695 and Autonomy follows it', async ({ page }) => {
+test('V444 Minerai Raid starts at 500 and gains +5 through 845; Autonomy follows it', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
-    const levels=[1,5,10,11,12,20,50,70];
+    const levels=[1,5,10,11,20,50,70];
     const rewards=levels.map((lv) => raidReward('minerai',lv));
     const cfg=window.__srRaidRewardConfigV396.minerai;
     const st=JSON.parse(JSON.stringify(S));
@@ -57,9 +57,9 @@ test('V444 Minerai Raid is 300, +10 to 400, then +5 through 695 and Autonomy fol
     const baseAutonomy=harvestRates(st).minerai;
     return {rewards,cfg,baseAutonomy};
   });
-  expect(out.rewards).toEqual([300,340,390,400,405,445,595,695]);
-  expect(out.cfg).toMatchObject({level1:300,level11:400,perLevelAfter400:5,level70:695});
-  expect(out.baseAutonomy).toBeCloseTo(34.75,8);
+  expect(out.rewards).toEqual([500,520,545,550,595,745,845]);
+  expect(out.cfg).toMatchObject({level1:500,perLevel:5,level70:845});
+  expect(out.baseAutonomy).toBeCloseTo(42.25,8);
 });
 
 test('V444 Campaign gate follows the agreed 2x mapping', async ({ page }) => {
