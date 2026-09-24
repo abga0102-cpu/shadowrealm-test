@@ -2030,19 +2030,23 @@ if (SMOKE) {
 // synchrone de scrollTop est faite : plus de second restore en requestAnimationFrame
 // et plus de "collage" automatique au bas de page qui entraient en conflit avec le doigt.
 // V439 · Equipment interaction state survives any unavoidable screen rebuild.
-let equipmentUiStateV439 = { slotsLeft: 0, statsMoreOpen: false };
+let equipmentUiStateV439 = { slotsLeft: 0, filterLeft: 0, statsMoreOpen: false };
 function captureEquipmentUiV439(){
   if (typeof route === "undefined" || route !== "equipement") return;
   const scroller=document.querySelector('[data-equip-slots-scroll="1"]');
+  const filter=document.querySelector('[data-equip-filter-scroll="1"]');
   const more=document.querySelector('.equipStatsMore');
   if(scroller) equipmentUiStateV439.slotsLeft=scroller.scrollLeft;
+  if(filter) equipmentUiStateV439.filterLeft=filter.scrollLeft;
   if(more) equipmentUiStateV439.statsMoreOpen=!!more.open;
 }
 function restoreEquipmentUiV439(){
   if (typeof route === "undefined" || route !== "equipement") return;
   const scroller=document.querySelector('[data-equip-slots-scroll="1"]');
+  const filter=document.querySelector('[data-equip-filter-scroll="1"]');
   const more=document.querySelector('.equipStatsMore');
   if(scroller) scroller.scrollLeft=equipmentUiStateV439.slotsLeft;
+  if(filter) filter.scrollLeft=equipmentUiStateV439.filterLeft;
   if(more) more.open=equipmentUiStateV439.statsMoreOpen;
 }
 const renderBaseV47 = render;
