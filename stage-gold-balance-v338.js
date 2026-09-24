@@ -115,21 +115,20 @@
   else window.addEventListener('load',startAfterBoot,{once:true});
 })();
 
-/* V446 · New-player starter Minerai.
-   This file is parsed after game-1.js but before game-2.js creates S, so the
-   default is corrected at its source without touching live state. migrate()
-   overlays saved fields on this base, therefore every existing save keeps its
-   exact stored Minerai amount. */
+/* V447 · New-player starter Minerai.
+   Only the default for a genuinely new state changes. migrate() overlays saved
+   fields on this base, so existing saves keep their exact Minerai amount. No
+   raid/unlock/progression condition is changed. */
 (function(){
   'use strict';
-  if(window.__srNewPlayerStarterV446)return;
-  window.__srNewPlayerStarterV446=true;
+  if(window.__srNewPlayerStarterV447)return;
+  window.__srNewPlayerStarterV447=true;
   if(typeof defaultState!=='function')return;
   var previousDefaultState=defaultState;
   defaultState=function(name){
     var state=previousDefaultState.apply(this,arguments);
-    state.minerai=50;
+    state.minerai=100;
     return state;
   };
-  window.__srNewPlayerStarterConfigV446={minerai:50,baseForgeCrafts:5};
+  window.__srNewPlayerStarterConfigV447={minerai:100,baseForgeCrafts:10};
 })();
