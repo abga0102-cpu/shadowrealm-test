@@ -107,4 +107,15 @@
     /* Re-check after normal navigation/render settles as well. */
     window.addEventListener('load', function(){ scheduleTutorialCheck(300); }, {once:true});
   }
+
+  /* V446: permanent contextual help complements the one-time tutorial. It is
+     loaded here so it stays independent from screen renderers and can be reused
+     by every system without duplicating modal logic. */
+  if (!window.__srSystemInfoV446 && !document.querySelector('script[data-sr-system-info-v446]')) {
+    var helpScript = document.createElement('script');
+    helpScript.src = 'system-info-v446.js?v=2026.09.24.446';
+    helpScript.async = false;
+    helpScript.setAttribute('data-sr-system-info-v446', '1');
+    document.body.appendChild(helpScript);
+  }
 })();
