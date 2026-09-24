@@ -1,7 +1,11 @@
 /* SHADOWREACH V396 · Final Raid reward authority
    Loaded after all legacy raid economy modules so no older wrapper can restore
    superseded reward curves. This file owns reward output only; raid difficulty,
-   keys, summon prices and the permanent 1-1 -> 7-10 ladder stay owned elsewhere. */
+   keys, summon prices and the permanent 1-1 -> 7-10 ladder stay owned elsewhere.
+
+   V446: Raid access is independent from Campaign progression again. Campaign
+   references remain strictly as difficulty calibration / informational labels;
+   they must never lock a Raid level. */
 (function(){
   'use strict';
   if(window.__srRaidRewardAuthorityV396)return;
@@ -47,6 +51,19 @@
     return 0;
   };
   raidReward.__srFinalAuthorityV396=true;
+
+  /* V446 · Campaign no longer gates Raid access.
+     Keep raidReferenceCampaignFloor/Label untouched because V444 difficulty
+     still uses them to scale the 70 Raid levels. Only the access predicate is
+     neutralised. ACT.startRaid and scrRaid both read this global predicate, so
+     gameplay and UI stay aligned. */
+  raidCampaignReady=function(){return true;};
+  raidCampaignReady.__srIndependentV446=true;
+  if(window.__srRaidCampaignLinkedV444){
+    window.__srRaidCampaignLinkedV444.campaignReady=raidCampaignReady;
+    window.__srRaidCampaignLinkedV444.campaignGate=false;
+  }
+  window.__srRaidAccessV446={version:446,campaignGate:false,campaignReady:raidCampaignReady};
 
   window.__srRaidRewardConfigV396={
     or:{level1:5000,level10:10000,level15:15000,level20:20000,growthAfter20:GOLD_GROWTH},
