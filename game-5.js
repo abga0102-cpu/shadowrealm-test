@@ -1055,12 +1055,10 @@ function render() {
   checkTutorial();
   checkLevelUp();
   const sc = document.getElementById("screen");
-  const keep = sc.scrollTop;
   const fn = SCREENS[route] || scrAccueil;
   sc.className = (route === "accueil" || (route === "arena" && combat && combat.ctx === "arenaLive")) ? "fixed" : "";
   sc.innerHTML = fn();
   attachArena();
-  sc.scrollTop = keep;
   requestAnimationFrame(syncEquipPreviewSpacer);
   if (tutorialCurrentKey) requestAnimationFrame(updateTutorialGuide);
 }
@@ -2036,6 +2034,7 @@ let scrollRenderTimerV47 = 0;
 let scrollLastMoveV47 = -1e9;
 let scrollDeferredV47 = false;
 let scrollBypassV47 = false;
+let scrollPointerActiveV435 = false;
 
 (function initScrollStabilityV47(){
   const sc = document.getElementById("screen");
@@ -2056,13 +2055,34 @@ let scrollBypassV47 = false;
   sc.addEventListener("scroll", mark, {passive:true});
   sc.addEventListener("touchmove", mark, {passive:true});
   sc.addEventListener("wheel", mark, {passive:true});
+  // V435: do not replace the complete screen while a finger/pointer is still
+  // interacting with it. On iOS/WebKit, replacing #screen children between
+  // pointerdown and click can move the viewport even when scrollTop is restored.
+  sc.addEventListener("pointerdown", function(e){
+    if (e.pointerType === "touch" || e.pointerType === "pen") scrollPointerActiveV435 = true;
+  }, {passive:true});
+  const releasePointer = function(){
+    if (!scrollPointerActiveV435) return;
+    scrollPointerActiveV435 = false;
+    if (!scrollDeferredV47) return;
+    clearTimeout(scrollRenderTimerV47);
+    scrollRenderTimerV47 = setTimeout(function(){
+      scrollRenderTimerV47 = 0;
+      if (!scrollDeferredV47) return;
+      scrollDeferredV47 = false;
+      scrollBypassV47 = true;
+      try { render(); } finally { scrollBypassV47 = false; }
+    }, 0);
+  };
+  sc.addEventListener("pointerup", releasePointer, {passive:true});
+  sc.addEventListener("pointercancel", releasePointer, {passive:true});
 })();
 
 render = function(){
   const screen = document.getElementById("screen");
   const beforeRoute = typeof route !== "undefined" ? route : null;
   const now = (typeof performance !== "undefined" ? performance.now() : Date.now());
-  const activelyScrolling = !scrollBypassV47 && screen && (now - scrollLastMoveV47 < 150);
+  const activelyScrolling = !scrollBypassV47 && screen && (scrollPointerActiveV435 || (now - scrollLastMoveV47 < 150));
 
   // Important: ne jamais remplacer les enfants du conteneur pendant l'inertie.
   if (activelyScrolling) {
