@@ -736,6 +736,35 @@ const MASTERY_STAT = { arme: "dmg", gants: "dmg", collier: "dmg", anneau: "dmg",
   casque: "hp", armure: "hp", bottes: "hp", ceinture: "hp" };
 const SLOT_ICON  = { arme: "sword", casque: "helm", armure: "armor", gants: "glove",
   bottes: "boot", collier: "gem", anneau: "ring", ceinture: "chain" };
+
+/* V435 · Permanent Defense is derived from the HP actually carried by defensive
+   equipment. It is intentionally not persisted: old saves gain the exact same
+   rule immediately, Forge stars and Dust upgrades keep their value, and there
+   is no schema migration that can damage owned gear. The logarithmic rating
+   keeps early gear light while preventing late-game HP values from turning into
+   near-invulnerability. */
+const DEFENSE_RATING_K = 100;
+const DEFENSE_REDUCTION_CAP = 70;
+const DEFENSE_HP_SCALE = 10000;
+const DEFENSE_LOG_FACTOR = 5;
+function equipmentDefenseRating(it) {
+  if (!it || MASTERY_STAT[it.slot] !== "hp") return 0;
+  const hp = Math.max(0, Number(it.hp) || 0);
+  return hp > 0 ? DEFENSE_LOG_FACTOR * Math.log1p(hp / DEFENSE_HP_SCALE) : 0;
+}
+function defenseReductionPct(rating) {
+  const r = Math.max(0, Number(rating) || 0);
+  return r > 0 ? Math.min(DEFENSE_REDUCTION_CAP, (r / (r + DEFENSE_RATING_K)) * 100) : 0;
+}
+window.__srDefenseSystemV435 = {
+  version: 435,
+  ratingK: DEFENSE_RATING_K,
+  capPct: DEFENSE_REDUCTION_CAP,
+  hpScale: DEFENSE_HP_SCALE,
+  logFactor: DEFENSE_LOG_FACTOR,
+  equipmentDefenseRating,
+  defenseReductionPct,
+};
 /* La rareté porte surtout la STAT DE BASE. Les bonus secondaires restent fortement
    chevauchants afin qu'un excellent Mythique puisse battre les bonus d'un Infernal
    médiocre, tout en laissant l'Infernal très tentant grâce à sa base. */
@@ -2602,10 +2631,11 @@ function activeSkillLevelScore(s) {
 }
 
 function computeDerived(s) {
-  let equipHP = 0, equipDmg = 0;
+  let equipHP = 0, equipDmg = 0, equipDefense = 0;
   Object.keys(s.equipped).forEach((slot) => {
     const it = s.equipped[slot];
     if (!it) return;
+    equipDefense += equipmentDefenseRating(it);
     /* "Arme Bonus Degats" scales your weapon, not your total damage. It read as
        a flat percentage while there were no slots to attach it to; now that all
        eight exist it belongs on the piece it names. Both branches scale the one
@@ -2644,6 +2674,8 @@ function computeDerived(s) {
   const heroDmgStatFlat = heroDmgStatPoints * STATS.DEGATS.perPointFlat;
   const maxHP = Math.floor(((BASE.hp + equipHP) * heroHpStatMul + heroHpStatFlat) * lifeMul * (1 + A("hp") / 100));
   const damage = Math.floor(((BASE.damage + equipDmg) * heroDmgStatMul + heroDmgStatFlat) * dmgMul * (1 + A("dmg") / 100));
+  const defense = Math.max(0, Math.round(equipDefense));
+  const defenseReduction = defenseReductionPct(defense);
   const critChance = Math.min(CRIT_CHANCE_CAP, BASE.critChance + A("crit"));
   const critMult = BASE.critMult + A("critdmg") / 100;
   const critRed = Math.min(CRIT_RED_CAP, Math.max(0, Number(s.stats.critred) || 0) * STATS.CRITRED.perPoint);
@@ -2669,7 +2701,8 @@ function computeDerived(s) {
   const blockNow = Math.min(75, A("block"));
   const lifeStealNow = Math.max(0, A("lifesteal"));
   const regenNow = 0;
-  const mitigation = 1 / Math.max(0.15, 1 - dmgRedNow / 100);
+  const defenseMitigation = 1 / Math.max(0.30, 1 - defenseReduction / 100);
+  const mitigation = defenseMitigation / Math.max(0.15, 1 - dmgRedNow / 100);
   const blockFactor = 1 + blockNow / 200;
   const sustainFactor = 1 + Math.min(50, lifeStealNow) / 200 + Math.min(50, regenNow) / 250;
   /* Normal enemies crit about 8% of the time for roughly +60% damage. Reflect
@@ -2689,7 +2722,7 @@ function computeDerived(s) {
   const power = Math.floor(rawPower * heroStatPowerMul);
 
   return {
-    maxHP, damage, attackSpeed, moveSpeed, critChance, critMult, critRed,
+    maxHP, damage, defense, defenseReduction, attackSpeed, moveSpeed, critChance, critMult, critRed,
     dmgRed: 0, regen: 0,
     lifesteal: A("lifesteal"),
     bossDmg: 0,

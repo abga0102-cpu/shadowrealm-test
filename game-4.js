@@ -547,13 +547,15 @@ function scrEquipement() {
     const col = shown ? RARITY[shown.rarity].c : "var(--border)";
     return '<div class="eqSlot' + (shown ? " rf" : "") + '" data-act="itemDetail" data-arg="' + (shown ? shown.id : "") + '" data-arg2="' + slot + '" style="border-color:' + col + (shown ? ';--rc:' + col : ';opacity:.7') + (prev ? ';box-shadow:0 0 0 2px #78B7FF,0 0 18px #78B7FF66' : '') + '">' +
       slotIcon(slot, 27, shown) + '<div class="nm" style="color:' + (shown ? RARITY[shown.rarity].c : 'var(--textMute)') + '">' + SLOT_LABEL[slot] + '</div>' +
-      (shown ? '<div class="st row gap4" style="justify-content:center">' + (MASTERY_STAT[slot] === "dmg" ? ic("sword",9)+fmtEquipStat(shown.damage) : ic("heart",9)+fmtEquipStat(shown.hp)) + '</div>' +
+      (shown ? '<div class="st row gap4" style="justify-content:center">' + (MASTERY_STAT[slot] === "dmg" ? ic("sword",9)+fmtEquipStat(shown.damage) : ic("heart",9)+fmtEquipStat(shown.hp)+' · '+ic("shield",9)+Math.round(equipmentDefenseRating(shown))) + '</div>' +
        (prev ? '<div class="st bb" style="color:#78B7FF">TEST</div>' : (shown.level ? '<div class="st bb" style="color:var(--goldLit)">+'+shown.level+'</div>' : '')) : '<div class="st">vide</div>') + '</div>';
   }).join('');
 
   const statCell = (label, cur, next, color, key) => {
     const changed = next != null && String(next) !== String(cur);
-    return '<div class="col" style="width:25%;padding:6px 2px;cursor:pointer" data-act="statInfo" data-arg="'+key+'">' +
+    const hasInfo = key && typeof STAT_INFO !== "undefined" && !!STAT_INFO[key];
+    return '<div class="col" style="width:25%;padding:6px 2px;'+(hasInfo?'cursor:pointer':'')+'"'+
+      (hasInfo?' data-act="statInfo" data-arg="'+key+'"':'')+'>' +
       '<div class="mute tiny b" style="letter-spacing:.3px;text-transform:uppercase">'+label+'</div>' +
       '<div class="bb" style="font-size:13.5px;color:'+color+'">'+cur+'</div>' +
       (changed ? '<div class="tiny bb" style="color:#78B7FF">→ '+next+'</div>' : '') + '</div>';
@@ -561,6 +563,7 @@ function scrEquipement() {
   const d2 = PD || D;
   const stats = [
     ["PV Max",fmt(D.maxHP),fmt(d2.maxHP),"#E5484D","maxhp"],["Dégâts",fmt(D.damage),fmt(d2.damage),"#F0883E","damage"],
+    ["Défense",fmt(D.defense),fmt(d2.defense),"#72A7E8","defense"],["Réduc. Défense",D.defenseReduction.toFixed(1)+"%",d2.defenseReduction.toFixed(1)+"%","#4A90D9","defensered"],
     ["Vit. Attaque",D.attackSpeed.toFixed(2),d2.attackSpeed.toFixed(2),"#F5C542","atkspeed"],["Crit.",D.critChance.toFixed(1)+"%",d2.critChance.toFixed(1)+"%","#F5C542","crit"],
     ["Dégâts Crit.","x"+D.critMult.toFixed(2),"x"+d2.critMult.toFixed(2),"#FF5AA0","critmult"],["Réduc. Dégâts",D.dmgRed.toFixed(1)+"%",d2.dmgRed.toFixed(1)+"%","#4A90D9","dmgred"],
     ["Vol de Vie",D.lifesteal.toFixed(2)+"%",d2.lifesteal.toFixed(2)+"%","#3FA7FF","lifesteal"],["Double attaque",D.doubleAtk.toFixed(1)+"%",d2.doubleAtk.toFixed(1)+"%","#F5C542","doubleatk"],
@@ -584,14 +587,14 @@ function scrEquipement() {
     const key=x[4];
     if(key==='weapon') return String(x[1])===String(x[2])?0:0.35;
     const raw={
-      maxhp:[D.maxHP,d2.maxHP],damage:[D.damage,d2.damage],atkspeed:[D.attackSpeed,d2.attackSpeed],crit:[D.critChance,d2.critChance],
+      maxhp:[D.maxHP,d2.maxHP],damage:[D.damage,d2.damage],defense:[D.defense,d2.defense],defensered:[D.defenseReduction,d2.defenseReduction],atkspeed:[D.attackSpeed,d2.attackSpeed],crit:[D.critChance,d2.critChance],
       critmult:[D.critMult,d2.critMult],dmgred:[D.dmgRed,d2.dmgRed],lifesteal:[D.lifesteal,d2.lifesteal],doubleatk:[D.doubleAtk,d2.doubleAtk],
       movespeed:[D.moveSpeed,d2.moveSpeed],critred:[D.critRed,d2.critRed],regen:[D.regen,d2.regen],bossdmg:[D.bossDmg,d2.bossDmg],
       block:[D.blockChance,d2.blockChance],melee:[D.meleeDmg,d2.meleeDmg],ranged:[D.rangedDmg,d2.rangedDmg],skilldmg:[D.skillDmgBonus,d2.skillDmgBonus],skillcd:[D.skillCdCut,d2.skillCdCut]
     }[key];
     if(!raw) return 0;
     const a=Number(raw[0])||0,b=Number(raw[1])||0,delta=Math.abs(b-a);
-    const pctKeys=['crit','dmgred','lifesteal','doubleatk','critred','regen','bossdmg','block','melee','ranged','skilldmg','skillcd'];
+    const pctKeys=['crit','defensered','dmgred','lifesteal','doubleatk','critred','regen','bossdmg','block','melee','ranged','skilldmg','skillcd'];
     const base=pctKeys.includes(key)?Math.max(10,Math.abs(a)):Math.max(1,Math.abs(a));
     return delta/base;
   };
