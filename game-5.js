@@ -348,7 +348,7 @@ function scrClassement() {
         '<div class="kv"><span class="dim row gap6">' + ic("target", 13) + "Dernier checkpoint</span><b>" + S.checkpoint + "</b></div>" +
         '<div class="kv"><span class="dim row gap6">' + ic("skull", 13) + "Boss vaincus</span><b>" + Object.keys(S.bossClears).length + "</b></div>" +
         RAID_IDS.map((id) => '<div class="kv"><span class="dim row gap6">' + ic(RAIDS[id].icon, 13) + RAIDS[id].name +
-          '</span><b>niv. ' + S.raids[id].record + "</b></div>").join("") +
+          '</span><b>niv. ' + (S.raids[id].record > 0 ? raidLevelLabel(S.raids[id].record) : "—") + "</b></div>").join("") +
       "</div></div>" +
     '<div style="height:2px"></div></div>';
 }
@@ -1509,8 +1509,8 @@ function showRaidResult(r) {
   openModal('<div class="center">' + ic(r.won ? "trophy" : "skull", 40) + "</div>" +
     '<div class="modalT mt6" style="color:' + (r.won ? "var(--goldLit)" : "var(--redLit)") +
       ';text-shadow:0 2px 0 #000,0 0 18px ' + col + '80">' + (r.won ? "VICTOIRE" : "DÉFAITE") + "</div>" +
-    '<div class="dim small center" style="margin-bottom:12px;line-height:1.55">' + meta.name + " · niveau " + r.level + "<br>" +
-    (r.won ? rewardLine + "Niveau de raid suivant débloqué."
+    '<div class="dim small center" style="margin-bottom:12px;line-height:1.55">' + meta.name + " · niveau " + raidLevelLabel(r.level) + "<br>" +
+    (r.won ? rewardLine + (r.level >= RULES.RAID_MAX_LEVEL ? "Palier maximum 7-10 atteint." : "Niveau de raid suivant débloqué.")
       : "Aucune clé consommée. Renforce ton personnage et réessaie.") + "</div>" +
     btn("Continuer", { cls: r.won ? "green" : "ghost", act: "closeRaid" }),
     r.won ? "Raid terminé" : "Raid échoué");
@@ -1581,17 +1581,6 @@ const ACT = {
   goModal: (a) => { closeModal(); nav(a); },
   harvest: () => showHarvestModal(),
   ascendAsk: (a) => showAscendModal(a),
-  ascendRaidAsk: (a) => showRaidAscendModal(a),
-  ascendRaidDo: (a) => {
-    const r = doAscendRaid(a);
-    closeModal();
-    if (!r.ok) {
-      toast(r.maxed ? "Ascension Raid déjà au maximum (★" + RULES.RAID_ASCEND_MAX_STARS + ")"
-        : "Ce raid n'est pas encore au niveau " + RULES.RAID_MAX_LEVEL);
-      return;
-    }
-    toast("Ascension " + RAIDS[a].reward + " ★ " + r.stars, true);
-  },
   ascendDo: (a) => {
     const r = doAscendMastery(a);
     closeModal();
@@ -1786,6 +1775,11 @@ const ACT = {
 
   // raids
   startRaid: (a, b) => {
+    const level = S.raids[a] ? S.raids[a].level : 1;
+    if (!raidCampaignReady(S, level)) {
+      toast("Campagne " + raidReferenceCampaignLabel(level) + " requise");
+      return;
+    }
     const ok = startRaid(a, b === "1", (won, reward) => {
       raidResult = { raidId: a, won, reward, level: S.raids[a].record || S.raids[a].level };
       showRaidResult(raidResult);

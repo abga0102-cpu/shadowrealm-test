@@ -1,7 +1,7 @@
 /* SHADOWREACH V394 · Skill/Familiar summon economy authority
    - Raid Compétence remains 250 at lvl1, +10 per level.
-   - Raid Familier starts at 300, gains +3 per level through lvl10,
-     then +1 per level from lvl11 through lvl50.
+   - Raid Familier starts at 200, gains +5 per level until 250 at lvl11,
+     then +2 per level through the permanent lvl70 / 7-10 ceiling.
    V322A changes only the PAID Familiar invocation price from 25 to 50 Essence.
    Tree Double Œuf stays a free extra result and never pays a second 50 Essence.
    Skill costs, raid keys, reward curves and all other raids remain unchanged. */
@@ -18,9 +18,9 @@
   }
 
   function familiarReward(level){
-    level=Math.max(1,Math.floor(Number(level)||1));
-    if(level<=10) return 300+3*(level-1);
-    return 327+(level-10);
+    level=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
+    if(level<=11) return 200+5*(level-1);
+    return 250+2*(level-11);
   }
 
   try{
@@ -124,7 +124,7 @@
   window.__srFamiliarSummonCostV322A=FAMILIAR_SUMMON_COST_V322A;
   window.__srRaidSummonEconomyConfigV291={
     competence:{base:250,perLevel:10},
-    familier:{base:300,perLevelTo10:3,perLevelAfter10:1,level10:327,level50:367,paidSummonCost:FAMILIAR_SUMMON_COST_V322A},
-    expectedPaidSummonsPerBaseRaidWin:{level1:6,level50:7.34}
+    familier:{base:200,perLevelTo250:5,level11:250,perLevelAfter250:2,level70:368,paidSummonCost:FAMILIAR_SUMMON_COST_V322A},
+    expectedPaidSummonsPerBaseRaidWin:{level1:4,level11:5,level70:7.36}
   };
 })();

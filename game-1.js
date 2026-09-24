@@ -446,7 +446,7 @@ const RULES = {
   SKILL_SLOTS_BASE: 3, SKILL_SLOT_5_LEVEL: 100,
   RAID_UNLOCK_LEVEL: 5, CHAT_UNLOCK_LEVEL: 3, MAX_ENEMIES: 3,
   FORGE_MAX: 50, SKILL_MAX_LEVEL: 50, MASTERY_MAX: 50, EGG_SLOT_MAX: 5,
-  RAID_MAX_LEVEL: 50, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6, RAID_ASCEND_MAX_STARS: 1,
+  RAID_MAX_LEVEL: 70, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6, RAID_ASCEND_MAX_STARS: 0,
   UNIVERSAL_KEY_DAILY: 3, UNIVERSAL_KEY_CAP: 6, AFK_BASE_HOURS: 8,
   WAR_POINTS_PER_PR: 30, // legacy compatibility only
   FORGE_BATCH_BASE: 1, FORGE_BATCH_MAX: 10,
@@ -882,31 +882,12 @@ function canAscend(s, sys) {
   return masteryLevel(s, sys) >= masteryMax(sys) && belowStarCap;
 }
 
-/* ---------------------------- Ascension de Raid ----------------------------
-   The fourth track. Each raid keeps its own level from 1 to 50, and section 5
-   measures the new difficulty against "le niveau 1 du meme Raid", so each raid
-   carries its own star and ascends on its own. Ascending one leaves the other
-   four exactly where they were.
-
-   What it takes: the level, and only the level. Keys are what you spend to
-   enter a raid, so they survive for the same reason Essence and Minerai do --
-   a player who ascends should be able to start climbing again immediately. The
-   record stands as well; it is history, not progress. */
-function raidStars(s, rid) { return (s.raids[rid] && s.raids[rid].stars) || 0; }
-function canAscendRaid(s, rid) {
-  const r = s.raids[rid];
-  return !!r && r.level >= RULES.RAID_MAX_LEVEL && raidStars(s, rid) < RULES.RAID_ASCEND_MAX_STARS;
-}
-function doAscendRaid(rid) {
-  if (!canAscendRaid(S, rid)) return { ok: false, maxed: raidStars(S, rid) >= RULES.RAID_ASCEND_MAX_STARS };
-  update((st) => {
-    const r = st.raids[rid];
-    r.stars = (r.stars || 0) + 1;
-    r.level = 1;
-    // r.keys and r.record are deliberately untouched
-  });
-  return { ok: true, stars: raidStars(S, rid) };
-}
+/* ---------------------------- Raid Ascension retired V444 -----------------
+   Raids now have one permanent 70-level ladder (1-1 -> 7-10). Historical
+   stars are migrated into linear progress and kept only as legacy evidence. */
+function raidStars() { return 0; }
+function canAscendRaid() { return false; }
+function doAscendRaid() { return { ok: false, retired: true, maxed: true }; }
 
 /* What each Ascension costs and what it spares. The rule from the brief: every
    resource and every piece of progress the system produced is wiped, EXCEPT the
@@ -1334,61 +1315,116 @@ const RAIDS = {
   evolution:  { name: "Raid Évolution",  icon: "chart",   color: "#3FCFD6", reward: "PE" },
 };
 const RAID_IDS = ["or", "minerai", "competence", "familier", "evolution"];
-/* ---------------------------- raid difficulty -----------------------------
-   Calibrated so raid level L is roughly the ceiling for a character at level
-   2L — i.e. raid 25 around character 50, raid 50 (the cap) around character
-   100. Measured against a reference build (40/40/10/10 stat split, forge at
-   level/2, a full set of level-appropriate gear and one un-upgraded pet):
+/* ---------------------------- raid difficulty V444 ------------------------
+   Raid progression is now a 70-level ladder displayed 1-1 -> 7-10.
+   Each Raid level is linked to a Campaign reference exactly two chapter/stage
+   steps farther: Raid 2-1 -> Campaign Facile 4-2, for example.
 
-     player DPS  grows ~1.079 per character level
-     player HP   grows ~1.074 per character level
-
-   so at char 2L that is 1.079^2L = RAID_HP_GROWTH^L. The wave is then sized
-   to take TTK_TARGET seconds of that DPS while leaving the player about
-   TTD_TARGET seconds of life — a ~20% margin at the intended level.
-
-   Everything below is a knob; nothing else in the file hardcodes raid scaling.
+   Difficulty is calibrated from the EXPECTED PLAYER stats at that Campaign
+   reference, not from that floor's concrete normal/Elite/Boss enemy. This
+   avoids artificial jumps on Campaign Boss stages while keeping Raid pressure
+   tied to the main progression. The Raid asks 15% more than its reference.
+   The existing per-Raid identities remain: Or = long attrition, Evolution =
+   hardest, Minerai = tanky boss, Competence/Familier = neutral baseline.
    -------------------------------------------------------------------------- */
-/* Recalibrated against the REAL combat engine (headless tick loop), not a
-   closed-form model. Measured ceilings for a DEVELOPED character-100 build
-   (4 skills, pet maxed inside its rarity, tree partly grown):
-       damage 620k   HP 1.30M
-   versus a BARE character-100 build (stats + gear only):
-       damage 113k   HP 467k
-   The wave budget is sized so raid 50 is the ceiling for the developed build,
-   which puts a bare build around raid 33 — raids are now a real check on how
-   built your character is, not just on level. Growth is steep rather than the
-   base being large, so raid 1 stays approachable for a new character. */
+const RAID_LEVELS_PER_CHAPTER = 10;
+const RAID_CAMPAIGN_STEP_MULT = 2;
+const RAID_REFERENCE_PRESSURE_MUL = 1.15;
+const RAID_REFERENCE_GROWTH_CAP = 1.22;
+/* The linked Campaign curve has deliberate difficulty jumps. A Raid chapter
+   may feel stronger, but a single Raid click must never become a wall, so each
+   expected-stat axis can grow by at most +22% from one Raid level to the next.
+   After the existing global Raid modifiers in V289, a neutral Raid lands near
+   ~9 reference basic hits to clear and ~14 combined enemy hits to lose before
+   Defense/sustain. */
+const RAID_REFERENCE_TTK_UNITS = 6.5;
+const RAID_REFERENCE_TTD_DIV = 6;
+
+function raidLevelLabel(level) {
+  const lv = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(level) || 1)));
+  return (Math.floor((lv - 1) / RAID_LEVELS_PER_CHAPTER) + 1) + "-" +
+    (((lv - 1) % RAID_LEVELS_PER_CHAPTER) + 1);
+}
+function raidReferenceCampaignFloor(level) {
+  const lv = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(level) || 1)));
+  const chapter = Math.floor((lv - 1) / RAID_LEVELS_PER_CHAPTER) + 1;
+  const step = ((lv - 1) % RAID_LEVELS_PER_CHAPTER) + 1;
+  const campaignGlobalChapter = chapter * RAID_CAMPAIGN_STEP_MULT;
+  const campaignStage = step * RAID_CAMPAIGN_STEP_MULT;
+  return Math.min(800, (campaignGlobalChapter - 1) * 20 + campaignStage);
+}
+function raidReferenceCampaignLabel(level) {
+  const f = raidReferenceCampaignFloor(level);
+  try {
+    if (typeof window.__srCampaignLabel === "function") return window.__srCampaignLabel(f).replace(" · ", " ");
+  } catch (_) {}
+  return "Étage " + f;
+}
+function raidCampaignReady(s, level) {
+  return Math.max(1, Number(s && s.recordFloor) || 1) >= raidReferenceCampaignFloor(level);
+}
+function raidRawExpectedPlayerDamage(level) {
+  const f = raidReferenceCampaignFloor(level);
+  try {
+    const cfg = window.__srEnemyDamageConfigV289;
+    if (cfg && typeof cfg.expectedPlayerDamage === "function")
+      return Math.max(1, Number(cfg.expectedPlayerDamage(f)) || 1);
+    if (typeof window.__srV323ExpectedPlayerDamage === "function")
+      return Math.max(1, Number(window.__srV323ExpectedPlayerDamage(f)) || 1);
+  } catch (_) {}
+  return Math.max(1, RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, Math.max(1, Number(level) || 1)) / RAID_REFERENCE_TTK_UNITS);
+}
+function raidRawExpectedPlayerHP(level) {
+  const f = raidReferenceCampaignFloor(level);
+  try {
+    const cfg = window.__srEnemyDamageConfigV289;
+    if (cfg && typeof cfg.expectedPlayerHP === "function")
+      return Math.max(1, Number(cfg.expectedPlayerHP(f)) || 1);
+    if (typeof window.__srV323ExpectedPlayerHP === "function")
+      return Math.max(1, Number(window.__srV323ExpectedPlayerHP(f)) || 1);
+  } catch (_) {}
+  return Math.max(1, RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, Math.max(1, Number(level) || 1)) * RAID_REFERENCE_TTD_DIV);
+}
+function raidSmoothExpected(level, reader) {
+  const lv = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(level) || 1)));
+  let value = reader(1);
+  for (let i = 2; i <= lv; i++) {
+    const target = reader(i);
+    if (target > value) value = Math.min(target, value * RAID_REFERENCE_GROWTH_CAP);
+  }
+  return Math.max(1, value);
+}
+function raidExpectedPlayerDamage(level) { return raidSmoothExpected(level, raidRawExpectedPlayerDamage); }
+function raidExpectedPlayerHP(level) { return raidSmoothExpected(level, raidRawExpectedPlayerHP); }
+/* Legacy constants remain only as safe pre-authority fallbacks during boot. */
 const RAID_HP_BASE = 464, RAID_HP_GROWTH = 1.2723;
 const RAID_DMG_BASE = 38.1, RAID_DMG_GROWTH = 1.1806;
 const RAID_TUNE = {
-  // "or" runs five SEQUENTIAL single-enemy waves, so the player only ever
-  // faces one at a time — it needs a bigger HP budget to gate at the same level
   or:         { hp: 2.00, dmg: 0.70 },
-  // Évolution is the gate on the personal tree, so it is the stiffest raid
   evolution:  { hp: 1.45, dmg: 1.20 },
-  minerai:    { hp: 1.25, dmg: 1.15 },   // one tanky golem
+  minerai:    { hp: 1.25, dmg: 1.15 },
   competence: { hp: 1.00, dmg: 1.00 },
   familier:   { hp: 1.00, dmg: 1.00 },
 };
-/* Section 6 makes Raid Minerai linear: a flat base, then ten more a level. The
-   base is the only thing an Ascension changes -- 750 unstarred, 1275 after the
-   first -- so level 15 with a star lands on 990, which was the unstarred
-   ceiling, and level 16 is the first to beat it. The second star is left
-   undefined and the base holds, as everywhere else in this update. */
-const RAID_MINERAI_BASE = [750, 1275];
-const RAID_MINERAI_PER_LEVEL = 15;
-function raidMineraiBase(s) {
-  const st = (s && s.raids && s.raids.minerai && s.raids.minerai.stars) || 0;
-  return RAID_MINERAI_BASE[Math.min(Math.max(0, st), RAID_MINERAI_BASE.length - 1)];
-}
+window.__srRaidCampaignLinkedV444 = {
+  maxLevel: 70, displayMax: "7-10", pressureMul: RAID_REFERENCE_PRESSURE_MUL,
+  growthCap: RAID_REFERENCE_GROWTH_CAP,
+  referenceFloor: raidReferenceCampaignFloor, levelLabel: raidLevelLabel,
+  campaignReady: raidCampaignReady
+};
+
+/* Raid Minerai reward ownership is finalized later by V396. Raid Ascension is
+   retired, so this compatibility base no longer reads a Raid star. */
+const RAID_MINERAI_BASE = 500;
+const RAID_MINERAI_PER_LEVEL = 5;
+function raidMineraiBase() { return RAID_MINERAI_BASE; }
 function raidReward(raid, level) {
   const lv = Math.max(1, Math.floor(Number(level) || 1));
   // V396 canonical Raid reward curves. A final authority loaded at the end of
   // index.html mirrors these values so legacy wrappers cannot restore old ones.
   if (raid === "evolution") return 150 + 3 * (lv - 1);
   if (raid === "competence") return 250 + 10 * (lv - 1);
-  if (raid === "familier") return lv <= 10 ? 300 + 3 * (lv - 1) : 327 + (lv - 10);
+  if (raid === "familier") return lv <= 11 ? 200 + 5 * (lv - 1) : 250 + 2 * (lv - 11);
   if (raid === "or") {
     if (lv <= 10) return Math.round(5000 + 5000 * ((lv - 1) / 9));
     if (lv <= 15) return 10000 + (lv - 10) * 1000;
@@ -1396,42 +1432,25 @@ function raidReward(raid, level) {
     return Math.floor(20000 * Math.pow(1.057, lv - 20));
   }
   if (raid === "minerai") {
-    const early = [600, 630, 660, 690, 720, 750, 780, 810, 830, 850];
-    return lv <= 10 ? early[lv - 1] : 850 + (lv - 10) * 10;
+    const capped = Math.min(RULES.RAID_MAX_LEVEL, lv);
+    return 500 + 5 * (capped - 1);
   }
   const base = RAID_BASE[raid] || 8;
   return Math.floor(base * Math.pow(RAID_GROWTH, lv - 1));
 }
-/* Section 5: a raid's first Ascension makes its level 1 exactly five times the
-   difficulty of the same raid's un-starred level 1. It applies here, on the
-   wave budget, because that is where this system already expresses "how hard is
-   this wave" -- raidEnemyHP and raidEnemyDamage then split the budget across
-   however many enemies are present, exactly as before. No individual statistic
-   is multiplied, and the per-level growth curve is untouched, so the existing
-   progression carries on from the new base.
-
-   Like the power multiplier, the second star is deliberately left undefined and
-   the value holds rather than compounding into a number nobody chose. */
-const RAID_ASCEND_DIFF_MUL = [1, 5];
-function raidDiffMul(s, raid) {
-  const st = (s && s.raids && s.raids[raid] && s.raids[raid].stars) || 0;
-  return RAID_ASCEND_DIFF_MUL[Math.min(Math.max(0, st), RAID_ASCEND_DIFF_MUL.length - 1)];
-}
-/* total HP / damage-per-second budget for the whole wave at this raid level */
-function raidIntroDifficultyMul(raid, level) {
-  // Les deux premiers niveaux servent d’introduction. Dès le niveau 3, la
-  // courbe historique reprend exactement à 100 %, donc le développement futur
-  // et la difficulté des niveaux avancés restent inchangés.
-  if (raid !== "evolution" && raid !== "competence" && raid !== "familier") return 1;
-  if (level <= 1) return 0.65;
-  if (level === 2) return 0.80;
-  return 1;
-}
+/* V444: Raid Ascension is retired. Difficulty now comes exclusively from the
+   Campaign-linked 1-1 -> 7-10 ladder. */
+function raidDiffMul() { return 1; }
+function raidIntroDifficultyMul() { return 1; }
 function raidWaveHP(raid, level) {
-  return RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, level) * RAID_TUNE[raid].hp * raidDiffMul(S, raid) * raidIntroDifficultyMul(raid, level);
+  const tune = RAID_TUNE[raid] || RAID_TUNE.familier;
+  return raidExpectedPlayerDamage(level) * RAID_REFERENCE_TTK_UNITS *
+    RAID_REFERENCE_PRESSURE_MUL * tune.hp;
 }
 function raidWaveDamage(raid, level) {
-  return RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, level) * RAID_TUNE[raid].dmg * raidDiffMul(S, raid) * raidIntroDifficultyMul(raid, level);
+  const tune = RAID_TUNE[raid] || RAID_TUNE.familier;
+  return raidExpectedPlayerHP(level) / RAID_REFERENCE_TTD_DIV *
+    RAID_REFERENCE_PRESSURE_MUL * tune.dmg;
 }
 function raidEnemyCount(raid, level) {
   if (raid === "or") return 5;
@@ -1441,12 +1460,15 @@ function raidEnemyCount(raid, level) {
   if (level < 20) return 2;
   return 3;
 }
-/* the budget split across the enemies actually present */
+/* Or has five sequential waves, not five simultaneous attackers. */
+function raidConcurrentEnemyCount(raid, level) {
+  return raid === "or" ? 1 : raidEnemyCount(raid, level);
+}
 function raidEnemyHP(raid, level) {
   return Math.max(1, Math.floor(raidWaveHP(raid, level) / raidEnemyCount(raid, level)));
 }
 function raidEnemyDamage(raid, level) {
-  return Math.max(1, Math.floor(raidWaveDamage(raid, level) / raidEnemyCount(raid, level)));
+  return Math.max(1, Math.floor(raidWaveDamage(raid, level) / raidConcurrentEnemyCount(raid, level)));
 }
 /* Rebirth and PR are retired from gameplay.
    These zero-value names stay only as compatibility shims for old saves and
@@ -2066,9 +2088,32 @@ function migrate(s, name) {
 
   delete merged.testDays;
   delete merged._raidStars;
-  Object.keys(merged.raids).forEach((rid) => {
-    if (typeof merged.raids[rid].stars !== "number") merged.raids[rid].stars = 0;
-  });
+  /* V444: convert the old 1..50 + Raid Ascension ladder into one permanent
+     1..70 ladder without discarding proven progress. A star proves one full
+     historical 50-level ladder; the current level proves wins after it.
+     Historical values are retained for diagnostics/migration evidence only. */
+  if (!merged.raidAscensionRetiredV444) {
+    Object.keys(merged.raids).forEach((rid) => {
+      const r = merged.raids[rid] || (merged.raids[rid] = {});
+      const oldStars = Math.max(0, Math.floor(Number(r.stars) || 0));
+      const oldLevel = Math.max(1, Math.min(50, Math.floor(Number(r.level) || 1)));
+      const oldRecord = Math.max(0, Math.min(50, Math.floor(Number(r.record) || 0)));
+      r.legacyRaidProgressV444 = { level: oldLevel, record: oldRecord, stars: oldStars };
+      const currentWins = oldStars > 0 ? Math.max(0, oldLevel - 1) : Math.max(oldRecord, oldLevel - 1);
+      const completed = Math.max(0, oldStars * 50 + currentWins);
+      r.level = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, completed + 1));
+      r.record = Math.max(0, Math.min(RULES.RAID_MAX_LEVEL, completed));
+      r.stars = 0;
+    });
+    merged.raidAscensionRetiredV444 = true;
+  } else {
+    Object.keys(merged.raids).forEach((rid) => {
+      const r = merged.raids[rid] || (merged.raids[rid] = {});
+      r.level = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(r.level) || 1)));
+      r.record = Math.max(0, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(r.record) || 0)));
+      r.stars = 0;
+    });
+  }
 
   if (!merged.tree.levels || typeof merged.tree.levels !== "object") merged.tree.levels = {};
   merged.stars.pet = Math.min(PET_ASCEND_MAX_STARS, Math.max(0, merged.stars.pet || 0));
@@ -2207,10 +2252,15 @@ function migrate(s, name) {
     if (!merged.economyDebt || typeof merged.economyDebt !== "object") merged.economyDebt = { eclat: 0, essence: 0 };
     const provenRaidWins = (rid) => {
       const r = (merged.raids && merged.raids[rid]) || {};
-      const stars = Math.max(0, Number(r.stars) || 0);
-      const level = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Number(r.level) || 1));
+      const legacy = r.legacyRaidProgressV444 || null;
+      const stars = Math.max(0, Number(legacy ? legacy.stars : r.stars) || 0);
+      const level = Math.max(1, Math.min(legacy ? 50 : RULES.RAID_MAX_LEVEL,
+        Number(legacy ? legacy.level : r.level) || 1));
+      const record = Math.max(0, Math.min(legacy ? 50 : RULES.RAID_MAX_LEVEL,
+        Number(legacy ? legacy.record : r.record) || 0));
+      if (legacy && stars > 0) return stars * 50 + Math.max(0, level - 1);
       if (stars > 0) return stars * RULES.RAID_MAX_LEVEL + Math.max(0, level - 1);
-      return Math.max(Math.max(0, level - 1), Math.max(0, Math.min(RULES.RAID_MAX_LEVEL, Number(r.record) || 0)));
+      return Math.max(Math.max(0, level - 1), record);
     };
     const skillWins = provenRaidWins("competence");
     const petWins = provenRaidWins("familier");

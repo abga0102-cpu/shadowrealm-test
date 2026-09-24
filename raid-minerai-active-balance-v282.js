@@ -1,19 +1,18 @@
-/* Shadowreach V394 — Raid Minerai active-play balance
-   Design authority:
-   - Raid Minerai rewards: 600 at level 1, preserving the existing progression shape.
-   - Level 10 = 850; from level 11 onward: +10 Minerai per raid level.
-   - Minerai Autonomy: 25% of the authoritative current Raid Minerai reward per hour.
-   Other raid/autonomy resources and progression rules remain unchanged.
+/* Shadowreach V444 — Raid Minerai economy compatibility
+   Final reward ownership is V396. This earlier-loaded compatibility layer mirrors
+   the same curve so no transient/legacy path can restore the old generous values:
+   - 500 Minerai at 1-1;
+   - +5 per level across the full permanent ladder;
+   - 845 Minerai at 7-10 / internal level 70.
+   Current Autonomy is owned by harvestRates() and consumes raidReward().
 */
 (function(){
   'use strict';
   var MINERAI_AUTONOMY_SHARE = 0.25;
-  var EARLY_REWARDS = [600, 630, 660, 690, 720, 750, 780, 810, 830, 850];
 
   function mineraiReward(level) {
-    var lv = Math.max(1, Math.floor(Number(level) || 1));
-    if (lv <= EARLY_REWARDS.length) return EARLY_REWARDS[lv - 1];
-    return 850 + (lv - 10) * 10;
+    var lv = Math.max(1, Math.min(70, Math.floor(Number(level) || 1)));
+    return 500 + 5 * (lv - 1);
   }
 
   /* Minerai now owns its explicit V323 reward curve. All other raid reward
@@ -52,10 +51,10 @@
 
   try {
     window.__shadowreachRaidMineraiBalance = {
-      version: 394,
-      level1: 600,
-      level10: 850,
-      postLevel10PerLevel: 10,
+      version: 444,
+      level1: 500,
+      perLevel: 5,
+      level70: 845,
       autonomySharePerHour: MINERAI_AUTONOMY_SHARE
     };
   } catch (_) {}

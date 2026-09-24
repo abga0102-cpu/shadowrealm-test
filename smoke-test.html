@@ -379,24 +379,21 @@ function run(W) {
     const ok = !!(H.ASCENSION && W.canAscendRaid && W.doAscendRaid);
     return ok ? true : "une piste manque";
   });
-  check("chaque raid ascensionne seul, clés et record conservés", function () {
+  check("l'Ascension Raid est retirée sans muter la progression existante", function () {
     set(function (st) {
       st.level = 60;
       Object.keys(st.raids).forEach(function (r) {
-        st.raids[r].level = 10; st.raids[r].keys = 4; st.raids[r].record = 33; st.raids[r].stars = 0;
+        st.raids[r].level = 10; st.raids[r].keys = 4; st.raids[r].record = 9; st.raids[r].stars = 0;
       });
       st.raids.minerai.level = H.RULES.RAID_MAX_LEVEL;
+      st.raids.minerai.record = H.RULES.RAID_MAX_LEVEL;
     });
-    if (W.canAscendRaid(H.S, "or")) return "un raid à 10 peut ascensionner";
-    if (!W.canAscendRaid(H.S, "minerai")) return "un raid à 50 ne peut pas ascensionner";
-    W.doAscendRaid("minerai");
-    const m = H.S.raids.minerai;
-    if (m.level !== 1) return "le niveau n'est pas revenu à 1";
-    if (m.stars !== 1) return "l'étoile n'a pas été accordée";
-    if (m.keys !== 4 || m.record !== 33) return "clés ou record perdus";
-    const others = ["or", "competence", "familier", "evolution"];
-    const moved = others.filter(function (k) { return H.S.raids[k].level !== 10 || H.S.raids[k].stars !== 0; });
-    return moved.length ? "raids touchés à tort : " + moved.join(", ") : true;
+    const before = JSON.stringify(H.S.raids);
+    if (W.canAscendRaid(H.S, "minerai")) return "un Raid propose encore une Ascension";
+    const out = W.doAscendRaid("minerai");
+    if (!out || out.ok !== false || !out.retired) return "l'ancien appel n'est pas neutralisé";
+    const after = JSON.stringify(H.S.raids);
+    return before === after ? true : "l'appel retiré a modifié un Raid";
   });
   /* Section 2 in one place: fill the save, ascend one feature, and prove that it
      took its own items, left every currency alone, and did not reach into the
@@ -426,29 +423,18 @@ function run(W) {
       poussiere: H.S.poussiere, gems: H.S.gems, gold: H.S.gold, pe: H.S.pe,
       eggSlots: H.S.eggSlots };
   }
-  check("Raid Minerai suit 500 + 10 par niveau, 850 après une étoile", function () {
+  check("Raid Minerai suit 500 puis +5 par niveau jusqu'à 845", function () {
     const bad = [];
-    const sans = { 1: 500, 10: 590, 20: 690, 30: 790, 40: 890, 50: 990 };
-    const avec = { 1: 850, 14: 980, 15: 990, 16: 1000, 20: 1040, 30: 1140, 40: 1240, 50: 1340 };
-    set(function (st) { st.raids.minerai.stars = 0; });
-    Object.keys(sans).forEach(function (l) {
+    const expected = { 1: 500, 5: 520, 10: 545, 11: 550, 20: 595, 30: 645, 40: 695, 50: 745, 60: 795, 70: 845 };
+    Object.keys(expected).forEach(function (l) {
       const got = W.raidReward("minerai", +l);
-      if (got !== sans[l]) bad.push("niv" + l + " " + got + "≠" + sans[l]);
+      if (got !== expected[l]) bad.push("niv" + l + " " + got + "≠" + expected[l]);
     });
-    const plafond = W.raidReward("minerai", 50);
-    set(function (st) { st.raids.minerai.stars = 1; });
-    Object.keys(avec).forEach(function (l) {
-      const got = W.raidReward("minerai", +l);
-      if (got !== avec[l]) bad.push("★niv" + l + " " + got + "≠" + avec[l]);
-    });
-    if (W.raidReward("minerai", 15) !== plafond) bad.push("niv15 étoilé n'égale pas l'ancien plafond");
-    if (W.raidReward("minerai", 16) <= plafond) bad.push("niv16 ne dépasse pas l'ancien plafond");
-    for (let l = 1; l < 50; l++) {
-      if (W.raidReward("minerai", l + 1) - W.raidReward("minerai", l) !== 10) {
-        bad.push("le pas n'est pas +10 au niveau " + l); break;
+    for (let l = 1; l < 70; l++) {
+      if (W.raidReward("minerai", l + 1) - W.raidReward("minerai", l) !== 5) {
+        bad.push("le pas n'est pas +5 au niveau " + l); break;
       }
     }
-    set(function (st) { st.raids.minerai.stars = 0; });
     return bad.length ? bad.slice(0, 3).join(", ") : true;
   });
   group("FORGE");
@@ -1051,7 +1037,7 @@ function run(W) {
     bad = bad.concat(verify(0.20));
     return bad.length ? bad.join(", ") : true;
   });
-  check("l'Ascension d'un raid quintuple exactement sa difficulté", function () {
+  check("les anciennes étoiles Raid n'influencent plus la difficulté", function () {
     const bad = [];
     H.RAID_IDS.forEach(function (rid) {
       set(function (st) { st.raids[rid].stars = 0; });
@@ -1060,8 +1046,8 @@ function run(W) {
       set(function (st) { st.raids[rid].stars = 1; });
       const hp1 = W.raidWaveHP(rid, 1), dm1 = W.raidWaveDamage(rid, 1);
       const n1 = W.raidEnemyCount(rid, 1);
-      if (Math.abs(hp1 / hp0 - 5) > 1e-9) bad.push(rid + " PV ×" + (hp1 / hp0).toFixed(3));
-      if (Math.abs(dm1 / dm0 - 5) > 1e-9) bad.push(rid + " dégâts ×" + (dm1 / dm0).toFixed(3));
+      if (Math.abs(hp1 / hp0 - 1) > 1e-9) bad.push(rid + " PV ×" + (hp1 / hp0).toFixed(3));
+      if (Math.abs(dm1 / dm0 - 1) > 1e-9) bad.push(rid + " dégâts ×" + (dm1 / dm0).toFixed(3));
       if (n0 !== n1) bad.push(rid + " le nombre d'ennemis a changé");
       set(function (st) { st.raids[rid].stars = 0; });
     });
