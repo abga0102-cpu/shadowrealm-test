@@ -7,5 +7,7 @@ assert(css.includes('height:100%; height:100svh'),'app/body stable viewport fall
 assert(home.includes('function stableResizeSchedule()'),'V436 resize guard must exist');
 assert(home.includes('if(width===lastViewportWidth)return;'),'height-only Safari resize must not schedule Home layout');
 assert(home.includes("window.addEventListener('orientationchange'"),'orientation changes must remain handled');
-assert(index.includes('2026.09.24.436'),'V436 build stamp must be present');
+const build=index.match(/shadowreach-build" content="(\d{4}\.\d{2}\.\d{2}\.(\d+))"/);
+assert(build,'shadowreach build stamp must remain present');
+assert(Number(build[2])>=436,'mobile viewport stability must remain present in builds after V436');
 console.log('V436 mobile viewport stability contract OK');
