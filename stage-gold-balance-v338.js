@@ -44,7 +44,7 @@
       if(floor<=500){
         value=at300*Math.pow(1.006,floor-300);
       }else{
-        var at500=at300*Math.pow(1.006,floor-300);
+        var at500=at300*Math.pow(1.006,500-300);
         if(floor<=750){
           value=at500*Math.pow(1.001,floor-500);
         }else{
