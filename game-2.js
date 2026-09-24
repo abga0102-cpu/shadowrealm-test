@@ -1229,6 +1229,7 @@ function startRaid(raidId, useUniversal, onEnd) {
   if (!useUniversal && raid.keys <= 0) return false;
   if (useUniversal && S.universalKeys <= 0) return false;
   const level = raid.level;
+  if (!raidCampaignReady(S, level)) return false;
   const dv = D;
   const wave = spawnRaidWave(raidId, level);
   const reward = raidReward(raidId, level);

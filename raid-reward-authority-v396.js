@@ -1,7 +1,7 @@
 /* SHADOWREACH V396 · Final Raid reward authority
    Loaded after all legacy raid economy modules so no older wrapper can restore
    superseded reward curves. This file owns reward output only; raid difficulty,
-   keys, summon prices, Ascension and all other progression rules stay unchanged. */
+   keys, summon prices and the permanent 1-1 -> 7-10 ladder stay owned elsewhere. */
 (function(){
   'use strict';
   if(window.__srRaidRewardAuthorityV396)return;
@@ -30,9 +30,9 @@
   }
 
   function familiarReward(level){
-    var lv=Math.max(1,Math.floor(Number(level)||1));
-    if(lv<=10)return 300+3*(lv-1);
-    return 327+(lv-10);
+    var lv=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
+    if(lv<=11)return 200+5*(lv-1);
+    return 250+2*(lv-11);
   }
 
   function evolutionReward(level){
@@ -54,7 +54,7 @@
     or:{level1:5000,level10:10000,level15:15000,level20:20000,growthAfter20:GOLD_GROWTH},
     minerai:{level1:600,level10:850,perLevelAfter10:10},
     competence:{level1:250,perLevel:10},
-    familier:{level1:300,perLevelTo10:3,level10:327,perLevelAfter10:1,level50:367},
+    familier:{level1:200,perLevelTo250:5,level11:250,perLevelAfter250:2,level70:368},
     evolution:{level1:150,perLevel:3},
     reward:raidReward
   };

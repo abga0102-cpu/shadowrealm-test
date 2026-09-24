@@ -951,17 +951,14 @@ function scrFamiliers() {
 /* ---------------- RAID ---------------- */
 function scrRaid() {
   const running = combat && combat.ctx === "raid" && !combat.trial;
-  if (S.level < RULES.RAID_UNLOCK_LEVEL) {
-    return topbar("Raids") + '<div class="pad mt6"><div class="notice center">Les Raids se débloquent au Niveau ' +
-      RULES.RAID_UNLOCK_LEVEL + ".</div></div>";
-  }
   if (running) {
     const rm = RAIDS[combat.raidId];
     return topbar(rm.name) + '<div id="arenaSlot"></div>' + combatBarHTML() +
       '<div class="pad mt6"><div class="card frame center">' +
       '<div class="row gap8" style="justify-content:center">' + ic(rm.icon, 22) +
       '<span class="bb gt" style="font-size:14px;letter-spacing:1.2px">RAID EN COURS</span></div>' +
-      '<div class="mute small mt6">Niveau ' + combat.raidLevel + " · récompense " +
+      '<div class="mute small mt6">Niveau ' + raidLevelLabel(combat.raidLevel) +
+      ' · réf. ' + esc(raidReferenceCampaignLabel(combat.raidLevel)) + " · récompense " +
       '<b style="color:' + rm.color + '">' + fmt(raidReward(combat.raidId, combat.raidLevel)) + " " + rm.reward + "</b></div>" +
       '<div class="mt10">' + btn("Abandonner", { cls: "dark", small: true, act: "abortRaid" }) + "</div></div></div>";
   }
@@ -969,10 +966,13 @@ function scrRaid() {
     const r = S.raids[id], meta = RAIDS[id];
     const bonus = (S.raidKeyAlloc || {})[id] || 0;
     const cap = RULES.RAID_KEY_CAP + bonus;
-    const st = raidStars(S, id);
-    const detail = (st ? "★" + st + " · " : "") +
-      "Niv " + r.level + "/" + RULES.RAID_MAX_LEVEL + " · rec " + r.record +
-      " · " + raidEnemyCount(id, r.level) + " ennemis · " + fmt(raidEnemyHP(id, r.level)) + " PV";
+    const ready = raidCampaignReady(S, r.level);
+    const label = raidLevelLabel(r.level);
+    const recordLabel = r.record > 0 ? raidLevelLabel(r.record) : "—";
+    const refLabel = raidReferenceCampaignLabel(r.level);
+    const detail = "Niv " + label + "/7-10 · rec " + recordLabel +
+      " · réf. " + refLabel + " · " + raidEnemyCount(id, r.level) +
+      " ennemis · " + fmt(raidEnemyHP(id, r.level)) + " PV";
     return '<div class="raidCard" style="border-left-color:' + meta.color + '" title="' + esc(detail) +
       " · " + fmt(raidEnemyDamage(id, r.level)) + ' dégâts">' +
       '<div class="row gap8">' +
@@ -983,16 +983,14 @@ function scrRaid() {
           '<span style="color:' + meta.color + ';flex:0 0 auto">+' + fmt(raidReward(id, r.level)) + " " + meta.reward + "</span></div>" +
         '<div class="mute tiny b row gap4">' + ic("key", 10) + r.keys + "/" + cap + " · " + detail + "</div></div>" +
         btn(ic("key", 12) + "Lancer", { small: true, cls: "green", act: "startRaid", arg: id, arg2: "0",
-          dis: r.keys <= 0, style: "width:auto;padding:5px 9px" }) +
+          dis: r.keys <= 0 || !ready, style: "width:auto;padding:5px 9px" }) +
         btn(ic("star", 12), { small: true, cls: "ghost", act: "startRaid", arg: id, arg2: "1",
-          dis: S.universalKeys <= 0, style: "width:auto;padding:5px 8px" }) +
+          dis: S.universalKeys <= 0 || !ready, style: "width:auto;padding:5px 8px" }) +
       "</div>" +
-      // a raid at its ceiling offers its own Ascension, and only that raid's
-      (canAscendRaid(S, id)
-        ? '<div class="mt6">' + btn(ic("star", 13) + "ASCENSION ★ — niveau maximum",
-            { cls: "purple", small: true, act: "ascendRaidAsk", arg: id }) + "</div>"
-        : (st >= RULES.RAID_ASCEND_MAX_STARS && r.level >= RULES.RAID_MAX_LEVEL
-          ? '<div class="mt6"><div class="notice center tiny b" style="padding:6px;color:var(--goldLit)">★ Ascension maximale atteinte</div></div>'
+      (!ready
+        ? '<div class="notice mt6 tiny b" style="padding:6px">🔒 Campagne requise : ' + esc(refLabel) + "</div>"
+        : (r.level >= RULES.RAID_MAX_LEVEL && r.record >= RULES.RAID_MAX_LEVEL
+          ? '<div class="notice mt6 tiny b center" style="padding:6px;color:var(--goldLit)">Palier maximum 7-10 atteint · rejouable pour les récompenses</div>'
           : "")) +
       "</div>";
   }).join("");
@@ -1008,9 +1006,9 @@ function scrRaid() {
         '<div class="mt8">' + meter((S.universalKeys / RULES.UNIVERSAL_KEY_CAP) * 100, C.gold,
           S.universalKeys + " / " + RULES.UNIVERSAL_KEY_CAP) + "</div>" +
         '<div class="mute tiny mt6">' + RULES.RAID_FREE_KEYS + " clés gratuites par raid chaque jour, plafond " +
-        RULES.RAID_KEY_CAP + ". L\'étoile lance avec une clé universelle.</div></div>" +
-      '<div class="sect">Raids disponibles</div>' + cards +
-      '<div class="mute tiny center mt6">Victoire : la clé est consommée, +1 niveau et la récompense. Défaite ou abandon : clé conservée, niveau inchangé.</div>' +
+        RULES.RAID_KEY_CAP + ". Le bouton ★ utilise une clé universelle.</div></div>" +
+      '<div class="sect">Raids disponibles · 1-1 → 7-10</div>' + cards +
+      '<div class="mute tiny center mt6">Chaque niveau Raid correspond à une progression Campagne environ 2× plus loin. Victoire : clé consommée, récompense et niveau suivant. Défaite/abandon : clé conservée.</div>' +
     '<div style="height:2px"></div></div>';
 }
 
