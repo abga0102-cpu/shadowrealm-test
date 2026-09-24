@@ -31,11 +31,12 @@ test('V442 owns permanent Defense without adding a save field or a parallel runt
   expect((g2.match(/c\.heroHP\s*-=|c\.heroHP-=/g) || []).length).toBe(1);
 
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const build = index.match(/shadowreach-build" content="(\\d{4}\\.\\d{2}\\.\\d{2}\\.(\\d+))"/);
-  expect(build).not.toBeNull();
-  expect(Number(build[2])).toBeGreaterThanOrEqual(442);
-  ['game-1.js?v=','game-2.js?v=','game-4.js?v=','game-5.js?v=','forge-comparison-authority-v146.js?v=']
-    .forEach((src) => expect(index).toContain(src));
+  expect(index).toContain('shadowreach-build" content="2026.09.24.442"');
+  expect(index).toContain('game-1.js?v=2026.09.24.442a');
+  expect(index).toContain('game-2.js?v=2026.09.24.442b');
+  expect(index).toContain('game-4.js?v=2026.09.24.442c');
+  expect(index).toContain('game-5.js?v=2026.09.24.442d');
+  expect(index).toContain('forge-comparison-authority-v146.js?v=2026.09.24.442e');
 });
 
 test('V442 derives Defense from legacy-compatible HP gear and caps permanent reduction at 70%', async ({ page }) => {
