@@ -67,7 +67,7 @@ function update(fn, opts) {
   const delta = Math.round(S.power - beforePower);
   if (delta && !(opts && opts.suppressPowerDelta)) queuePowerDelta(delta);
   dirty = true;
-  scheduleRender();
+  if (!(opts && opts.skipRender)) scheduleRender();
 }
 function refreshDerived() { D = computeDerived(S); }
 
@@ -1900,7 +1900,10 @@ function flushRewards() {
     addPaidFloorRewards(c.floor, paidGold, paidExp);
     rewardAcc.gold = 0; rewardAcc.exp = 0;
     grantLevels(st);
-  });
+  }, { skipRender: route !== "accueil" });
+  // Background campaign rewards must not destroy the interactive DOM of other
+  // screens. Keep the persistent HUD current without rebuilding #screen.
+  if (route !== "accueil") renderHUD();
 }
 
 /* =========================================================================
