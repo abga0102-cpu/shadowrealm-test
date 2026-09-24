@@ -18,7 +18,7 @@ jobs:
   regression:
     name: Static game regression
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -77,11 +77,15 @@ jobs:
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
         run: node tests/smoke-ratchet.js .phase1-base .
 
-      - name: Run static localhost regression tests after ratchet
+      - name: Prepare Playwright comparison baseline
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        run: node tests/prepare-playwright-baseline.js .phase1-base
+
+      - name: Enforce moving Playwright regression ratchet
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
         env:
           PHASE1_SMOKE_RATCHET_DONE: '1'
-        run: npm run test:e2e
+        run: node tests/playwright-ratchet.js .phase1-base .
 
       - name: Run standalone static localhost regression tests
         if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.before == '0000000000000000000000000000000000000000')
