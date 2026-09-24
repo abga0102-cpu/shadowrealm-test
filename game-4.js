@@ -604,7 +604,7 @@ function scrEquipement() {
     '</div>' : '';
 
   return topbar("Équipement", '<span class="pill">'+S.inventory.length+' objets</span>') + '<div class="pad mt6">' +
-    '<div class="sect" style="margin:4px 0 6px">Équipement porté</div><div class="slotGrid">'+cells+'</div>' +
+    '<div class="sect" style="margin:4px 0 6px">Équipement porté</div><div class="slotGrid" data-equip-slots-scroll="1">'+cells+'</div>' +
     (hasPreview ? '<div class="notice mt8"><div class="between"><span><b style="color:#78B7FF">Mode test :</b> '+previewItems.length+' pièce'+(previewItems.length>1?'s':'')+'</span><span class="row gap4">'+btn("Annuler",{small:true,cls:"ghost",act:"clearEquipPreview"})+btn("Équiper le set",{small:true,cls:"green",act:"equipPreviewSet"})+'</span></div><div class="mute tiny mt4">Tu peux tester une pièce par emplacement avant de valider tout le set.</div></div>' : '') +
     '<div class="equipCompareSticky">' +
     '<div class="card frame"><div class="between"><div><div class="mute tiny b">PUISSANCE TOTALE</div><div class="bb gt" style="font-size:22px">'+fmt(S.power)+'</div></div>' +
