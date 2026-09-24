@@ -2122,9 +2122,22 @@ render = function(){
   captureEquipmentUiV439();
   const out = renderBaseV47.apply(this, arguments);
   const sc = document.getElementById("screen");
-  if (sc && beforeRoute === (typeof route !== "undefined" ? route : null)) {
-    const max = Math.max(0, sc.scrollHeight - sc.clientHeight);
-    sc.scrollTop = Math.min(beforeTop, max);
+  const sameRoute = beforeRoute === (typeof route !== "undefined" ? route : null);
+  if (sc && sameRoute) {
+    // V441: the rebuilt screen can have a transiently smaller scrollHeight until
+    // layout-dependent content settles. Never permanently clamp the user's old
+    // position against that intermediate height.
+    sc.scrollTop = beforeTop;
+    requestAnimationFrame(function(){
+      const live=document.getElementById("screen");
+      if(!live || beforeRoute !== (typeof route !== "undefined" ? route : null)) return;
+      live.scrollTop = beforeTop;
+      requestAnimationFrame(function(){
+        const settled=document.getElementById("screen");
+        if(!settled || beforeRoute !== (typeof route !== "undefined" ? route : null)) return;
+        settled.scrollTop = Math.min(beforeTop, Math.max(0, settled.scrollHeight-settled.clientHeight));
+      });
+    });
   }
   restoreEquipmentUiV439();
   return out;
