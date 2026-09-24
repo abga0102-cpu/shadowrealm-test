@@ -8,7 +8,6 @@
   window.__srRaidRewardAuthorityV396=true;
 
   var GOLD_GROWTH=1.057;
-  var MINERAI_EARLY=[600,630,660,690,720,750,780,810,830,850];
 
   function goldReward(level){
     var lv=Math.max(1,Math.floor(Number(level)||1));
@@ -19,9 +18,9 @@
   }
 
   function mineraiReward(level){
-    var lv=Math.max(1,Math.floor(Number(level)||1));
-    if(lv<=10)return MINERAI_EARLY[lv-1];
-    return 850+(lv-10)*10;
+    var lv=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
+    if(lv<=11)return 300+10*(lv-1);
+    return 400+5*(lv-11);
   }
 
   function competenceReward(level){
@@ -52,7 +51,7 @@
 
   window.__srRaidRewardConfigV396={
     or:{level1:5000,level10:10000,level15:15000,level20:20000,growthAfter20:GOLD_GROWTH},
-    minerai:{level1:600,level10:850,perLevelAfter10:10},
+    minerai:{level1:300,perLevelTo400:10,level11:400,perLevelAfter400:5,level70:695},
     competence:{level1:250,perLevel:10},
     familier:{level1:200,perLevelTo250:5,level11:250,perLevelAfter250:2,level70:368},
     evolution:{level1:150,perLevel:3},
