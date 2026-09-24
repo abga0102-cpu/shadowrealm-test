@@ -5,6 +5,7 @@
 'use strict';
 if(window.__srProgressionOverhaulV283)return;window.__srProgressionOverhaulV283=true;
 
+/* V442: canonical equipment power curve. Do not duplicate or replace this table in base generators. */
 var EQUIP_BASE={COMMUN:500,PEU_COMMUN:1000,RARE:2000,EPIQUE:8000,HEROIQUE:16000,MYTHIQUE:32000,ARTEFACT:128000,LEGENDAIRE:512000,INFERNAL:2048000,IMMORTEL:8192000,DIVIN:32768000,ANCESTRAL:2048000};
 var EQ_MEAN={COMMUN:.40,PEU_COMMUN:.425,RARE:.45,EPIQUE:.50,HEROIQUE:.53,MYTHIQUE:.56,ARTEFACT:.62,LEGENDAIRE:.68,INFERNAL:.73,IMMORTEL:.78,DIVIN:.83,ANCESTRAL:.73};
 var EQ_PERF={COMMUN:.0001,PEU_COMMUN:.0002,RARE:.0003,EPIQUE:.0008,HEROIQUE:.0013,MYTHIQUE:.002,ARTEFACT:.01,LEGENDAIRE:.02,INFERNAL:.035,IMMORTEL:.055,DIVIN:.08,ANCESTRAL:.035};
@@ -35,4 +36,5 @@ function migrateItem(it){if(!it||!it.rarity)return;var targetVersion=372;if(Numb
 function migrate(){try{if(typeof S==='undefined'||!S)return;if(Number(S.progressionOverhaulVersion)>=372)return;(S.inventory||[]).forEach(migrateItem);if(S.equipped)Object.keys(S.equipped).forEach(function(k){migrateItem(S.equipped[k]);});(S.pets||[]).forEach(function(p){if(!p)return;p.legacyLevel=p.legacyLevel==null?(Number(p.level)||0):p.legacyLevel;p.level=0;p.petCurveVersion=283;});S.progressionOverhaulVersion=372;if(typeof computePower==='function')S.power=computePower(S);if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}catch(_){ }}
 migrate();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',migrate,{once:true});else setTimeout(migrate,0);
 window.__srProgressionOverhaulConfigV283={equipmentBase:EQUIP_BASE,petOrder:PET_ORDER,petFuse:PET_FUSE,dustCost:window.__srV283DustCost,upgradeChance:window.__srV283UpgradeChance};
+window.__srEquipmentCurveAuthority={version:372,equipmentBase:EQUIP_BASE,ownsMakeItem:!!(typeof makeItem==='function'&&makeItem.__srV283)};
 })();
