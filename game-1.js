@@ -2479,6 +2479,14 @@ function migrate(s, name) {
     merged.sanctuaryGoldRebaseNoticeV35 = { level:lvl, progress, purchases, oldSpent, fairSpent, refundGold };
   }
 
+  /* V445 import/live migration hook. progression-overhaul-v283.js loads after
+     the base engine, so normal boot applies this later; imports happen after
+     all runtime owners are loaded and can apply the mastery immediately. */
+  try {
+    const masteryApi = window.__srForgeLifetimeMasteryV445;
+    if (masteryApi && typeof masteryApi.applyState === "function") masteryApi.applyState(merged);
+  } catch (_) {}
+
   return merged;
 }
 
