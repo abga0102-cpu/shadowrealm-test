@@ -153,7 +153,17 @@ var queued=false;function schedule(){if(queued)return;queued=true;requestAnimati
 window.__srApplyHomeCompatV119=decorate;
 window.__srSyncHomeLayoutV219=sync;window.__srSyncHomeFramePhase2B=sync;
 window.addEventListener('sr:bottomnavrendered',schedule);
-window.addEventListener('resize',schedule,{passive:true});window.addEventListener('orientationchange',schedule,{passive:true});
+var lastViewportWidth=Math.round(window.innerWidth||0);
+function stableResizeSchedule(){
+  var width=Math.round(window.innerWidth||0);
+  // V436: Safari's address/tool bars change the visible height while scrolling.
+  // Home geometry is flex-based, so a height-only resize must not redecorate
+  // the whole Home tree. Width/orientation changes remain real layout changes.
+  if(width===lastViewportWidth)return;
+  lastViewportWidth=width;
+  schedule();
+}
+window.addEventListener('resize',stableResizeSchedule,{passive:true});window.addEventListener('orientationchange',function(){lastViewportWidth=Math.round(window.innerWidth||0);schedule();},{passive:true});
 try{var homeObserver=new MutationObserver(schedule);homeObserver.observe(screen,{childList:true,subtree:false});}catch(_){}
 var eggTicker=setInterval(function(){if(app&&app.classList.contains('srHomeFullArena'))schedule();},1000);
 window.addEventListener('pagehide',function(){try{clearInterval(eggTicker);}catch(_){}});sync();

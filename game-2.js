@@ -67,7 +67,7 @@ function update(fn, opts) {
   const delta = Math.round(S.power - beforePower);
   if (delta && !(opts && opts.suppressPowerDelta)) queuePowerDelta(delta);
   dirty = true;
-  scheduleRender();
+  if (!(opts && opts.skipRender)) scheduleRender();
 }
 function refreshDerived() { D = computeDerived(S); }
 
@@ -305,9 +305,8 @@ const ELITE_ABIL = {
     onLand(c, e) {
       if (!e.stored) return;
       // capped, so a long channel into the crystal cannot one-shot the hero
-      const back = enemyAbilityDamageV381(Math.min(Math.floor(c.heroMaxHP * 0.30), Math.floor(e.stored * 0.6)));
+      const back = damageHero(c, enemyAbilityDamageV381(Math.min(Math.floor(c.heroMaxHP * 0.30), Math.floor(e.stored * 0.6))));
       e.stored = 0;
-      c.heroHP -= back;
       addShake(c, 6);
       c.floats.push({ id: rid(), x: c.heroX, val: back, crit: true, color: "#3FA7FF", born: Date.now() });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
@@ -326,9 +325,9 @@ const ELITE_ABIL = {
         c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX, color: "#B15CF6", kind: "magic", life: 0.35 });
         scheduleHit(c, 0.15 + k * 0.09, () => {
           if (c.status !== "fight") return;
-          c.heroHP -= each;
+          const dealt = damageHero(c, each);
           c.heroHit = 0.2;
-          c.floats.push({ id: rid(), x: c.heroX, val: each, crit: false, color: "#B15CF6", born: Date.now() });
+          c.floats.push({ id: rid(), x: c.heroX, val: dealt, crit: false, color: "#B15CF6", born: Date.now() });
           if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
         });
       }
@@ -419,8 +418,7 @@ const ELITE_ABIL = {
       e.stompCd = 12;
       addShake(c, 9);
       addBurst(c, "crit", c.heroX, "#E8B44A");
-      const hit = enemyAbilityDamageV381(c.heroMaxHP * 0.08);
-      c.heroHP -= hit;
+      const hit = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.08));
       c.floats.push({ id: rid(), x: c.heroX, val: hit, crit: true, color: "#E8B44A", born: Date.now() });
       // knocked back to the edge: melee has to walk the whole way in again,
       // which is the point -- a bow keeps firing, a dagger does not
@@ -478,8 +476,7 @@ const ELITE_ABIL = {
       if (dmg <= 0 || src !== "weapon") return dmg;
       const mult = (D && D.critMult) || BASE.critMult;
       const physical = crit && mult > 1 ? dmg / mult : dmg;
-      const back = enemyAbilityDamageV381(physical * 0.05);
-      c.heroHP -= back;
+      const back = damageHero(c, enemyAbilityDamageV381(physical * 0.05));
       c.floats.push({ id: rid(), x: c.heroX, val: back, crit: false, color: "#CFE0FF", born: Date.now() });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
       return dmg;
@@ -496,8 +493,7 @@ const ELITE_ABIL = {
       e._zone = (e._zone || 0) + dt;
       if (e._zone < 1) return;
       e._zone = 0;
-      const b = enemyAbilityDamageV381(c.heroMaxHP * 0.02);
-      c.heroHP -= b;
+      const b = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.02));
       c.floats.push({ id: rid(), x: c.heroX, val: b, crit: false, color: "#FF7A3D", born: Date.now() });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
     },
@@ -553,8 +549,7 @@ const ELITE_ABIL = {
         // two seconds of warning, then 40% of the hero's maximum, less whatever
         // he put up in the meantime -- Rempart or a heal is the answer
         const raw = Math.floor(c.heroMaxHP * 0.4);
-        const d = enemyAbilityDamageV381(raw * (1 - heroDmgRed(c) / 100));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(raw * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.3;
         addShake(c, 11);
         addBurst(c, "crit", c.heroX, "#FF7A3D");
@@ -584,9 +579,9 @@ const ELITE_ABIL = {
         const d = Math.max(1, Math.floor(e.dmg * 0.8 * (1 - heroDmgRed(c) / 100)));
         scheduleHit(c, HIT_DELAY_RANGED, () => {
           if (c.status !== "fight") return;
-          c.heroHP -= d;
+          const dealt = damageHero(c, d);
           c.heroHit = 0.22;
-          c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#FF7A3D", born: Date.now() });
+          c.floats.push({ id: rid(), x: c.heroX, val: dealt, crit: false, color: "#FF7A3D", born: Date.now() });
           if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
         });
         return;
@@ -679,8 +674,7 @@ const ELITE_ABIL = {
       if (e.quakeWind > 0) {
         e.quakeWind = Math.max(0, e.quakeWind - dt);
         if (e.quakeWind > 0) return;
-        const d = enemyAbilityDamageV381(c.heroMaxHP * 0.25 * (1 - heroDmgRed(c) / 100));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.25 * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.3;
         c.heroX = 24;
         c.heroStun = 2;
@@ -713,8 +707,7 @@ const ELITE_ABIL = {
         e._ch = (e._ch || 0) + dt;
         if (e._ch < 0.5) return;
         e._ch = 0;
-        const d = enemyAbilityDamageV381(c.heroMaxHP * 0.07 * (1 - heroDmgRed(c) / 100));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.07 * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.2;
         c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX, color: "#FF7A3D", kind: "magic", life: 0.3 });
         c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#FF7A3D", born: Date.now() });
@@ -831,8 +824,7 @@ const ELITE_ABIL = {
         // it detonates where he stands: the closer you are, the worse it is
         const dist = Math.max(0, e.x - c.heroX);
         const near = Math.max(0, Math.min(1, 1 - dist / 220));
-        const d = enemyAbilityDamageV381(c.heroMaxHP * (0.05 + 0.25 * near) * (1 - heroDmgRed(c) / 100));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * (0.05 + 0.25 * near) * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.3;
         addShake(c, 10);
         addBurst(c, "crit", c.heroX, "#FF5A5A");
@@ -862,8 +854,7 @@ const ELITE_ABIL = {
         if (e._claw < 1) return;
         e._claw = 0;
         // your own familiar, clawing at you
-        const d = enemyAbilityDamageV381(c.heroMaxHP * 0.03);
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.03));
         c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#B15CF6", born: Date.now() });
         if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
         return;
@@ -885,8 +876,7 @@ const ELITE_ABIL = {
         e.leapWind = Math.max(0, e.leapWind - dt);
         if (e.leapWind > 0) return;
         e.x = c.heroX + 34;                       // lands on top of him
-        const d = enemyAbilityDamageV381(c.heroMaxHP * 0.18 * (1 - heroDmgRed(c) / 100));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.18 * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.3;
         addShake(c, 10);
         addBurst(c, "crit", e.x, "#B15CF6");
@@ -936,8 +926,7 @@ const ELITE_ABIL = {
     filter(c, e, dmg, src) {
       if ((e.mutations || 0) >= 2) dmg = Math.max(1, Math.floor(dmg * 0.65));
       if ((e.mutations || 0) >= 3 && dmg > 0 && src !== "dot") {
-        const back = enemyAbilityDamageV381(dmg * 0.3);
-        c.heroHP -= back;
+        const back = damageHero(c, enemyAbilityDamageV381(dmg * 0.3));
         c.floats.push({ id: rid(), x: c.heroX, val: back, crit: false, color: "#8FEFF4", born: Date.now() });
         if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
       }
@@ -970,8 +959,7 @@ const ELITE_ABIL = {
         e._grip = (e._grip || 0) + dt;
         if (e._grip < 0.5) return;
         e._grip = 0;
-        const d = enemyAbilityDamageV381(c.heroMaxHP * 0.04 * (1 - heroDmgRed(c) / 100));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.04 * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.2;
         c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#8FEFF4", born: Date.now() });
         if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
@@ -1358,6 +1346,21 @@ function petElemOf(c, dv) {
 function heroDmgRed(c) {
   return Math.min(85, (D.dmgRed || 0) + fxVal(c, "buffs", "rempart"));
 }
+/* V435 · One permanent-Defense sink for every packet that reaches the hero.
+   Existing Crit/Rempart/ability semantics stay where they already are; this
+   final layer only applies the new gear Defense once, so normal attacks, Boss
+   mechanics, Raids, Mega-Bosses and Arena live combat cannot drift apart. */
+function damageHero(c, amount, opts) {
+  let dealt = Math.max(0, Number(amount) || 0);
+  if (!c || dealt <= 0) return 0;
+  if (!(opts && opts.ignoreDefense)) {
+    const red = Math.min(DEFENSE_REDUCTION_CAP, Math.max(0, Number(D && D.defenseReduction) || 0));
+    if (red > 0) dealt = Math.max(1, Math.floor(dealt * (1 - red / 100)));
+  }
+  c.heroHP -= dealt;
+  return dealt;
+}
+window.__srDamageHeroV435 = damageHero;
 function fxList(c, bag) {
   const out = [], now = Date.now();
   const src = (c && c[bag]) || {};
@@ -1429,6 +1432,7 @@ function applyDamageToEnemy(c, e, dmg, crit, color, src) {
       dmg=dmg/Math.max(1,D.critMult||1)*eff;
     }
     const extraRed=(e._arenaRempart&&Date.now()<e._arenaRempart.until)?e._arenaRempart.value:0;
+    dmg*=1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,Number(ap.defenseReduction)||0))/100;
     dmg*=1-Math.min(85,Math.max(0,(ap.dmgRed||0)+extraRed))/100;
   }
   if (damageSrc !== "weapon") dmg *= 1 + fxVal(c, "debuffs", "vuln") / 100;
@@ -1484,7 +1488,7 @@ function resolveArenaBotBasicHit(c,e,dv,abs,delayExtra=0) {
   }
   scheduleHit(c,(e.ranged?HIT_DELAY_RANGED:HIT_DELAY_MELEE)+delayExtra,()=>{
     if(c.status!=="fight")return;
-    c.heroHP-=dmg;
+    dmg=damageHero(c,dmg);
     if(ap.lifesteal>0)e.hp=Math.min(e.maxHP,e.hp+dmg*ap.lifesteal/100);
     c.heroHit=0.22;
     abs.forEach((a)=>{if(a.onLand)a.onLand(c,e);});
@@ -1523,11 +1527,11 @@ function tick() {
       const ap=ae.arenaProfile,nowA=Date.now();
       const regBuff=(ae._arenaRegen&&nowA<ae._arenaRegen.until)?ae._arenaRegen.value:0;
       const reg=(ap.regen||0)+regBuff;if(reg>0)ae.hp=Math.min(ae.maxHP,ae.hp+ae.maxHP*(reg/100)*dt);
-      if(ap.petElem==="feu"){c._arenaBotBurn=(c._arenaBotBurn||0)+dt;if(c._arenaBotBurn>=1){c._arenaBotBurn=0;let bd=ap.damage*.06*(ap.petElem==="toxique"?1.10:1);bd*=1-heroDmgRed(c)/100;c.heroHP-=Math.max(1,Math.floor(bd));if(c.heroHP<=0){c.heroHP=0;c.status="lost";}}}
+      if(ap.petElem==="feu"){c._arenaBotBurn=(c._arenaBotBurn||0)+dt;if(c._arenaBotBurn>=1){c._arenaBotBurn=0;let bd=ap.damage*.06*(ap.petElem==="toxique"?1.10:1);bd*=1-heroDmgRed(c)/100;damageHero(c,Math.max(1,Math.floor(bd)));if(c.heroHP<=0){c.heroHP=0;c.status="lost";}}}
       const poison=(c._arenaHeroPoison&&nowA<c._arenaHeroPoison.until)?c._arenaHeroPoison.value:0;
-      if(poison>0){c._arenaPoisonTick=(c._arenaPoisonTick||0)+dt;if(c._arenaPoisonTick>=1){c._arenaPoisonTick=0;let pd=c.heroMaxHP*(poison/100)/8*(ap.petElem==="toxique"?1.10:1);pd*=1-heroDmgRed(c)/100;c.heroHP-=Math.max(1,Math.floor(pd));if(c.heroHP<=0){c.heroHP=0;c.status="lost";}}}
+      if(poison>0){c._arenaPoisonTick=(c._arenaPoisonTick||0)+dt;if(c._arenaPoisonTick>=1){c._arenaPoisonTick=0;let pd=c.heroMaxHP*(poison/100)/8*(ap.petElem==="toxique"?1.10:1);pd*=1-heroDmgRed(c)/100;damageHero(c,Math.max(1,Math.floor(pd)));if(c.heroHP<=0){c.heroHP=0;c.status="lost";}}}
       (ap.skills||[]).forEach((entry,i)=>{const def=entry.def||entry;if(!def)return;const key='b'+i;if(c.botSkillCds[key]==null)c.botSkillCds[key]=.8+i*.55;c.botSkillCds[key]-=dt;if(c.botSkillCds[key]>0)return;const lv=entry.level||1,stars=entry.stars||0,cd=Math.max(1,def.cd*(1-Math.min(80,ap.skillCd||0)/100));c.botSkillCds[key]=cd;
-        if(def.mult){const mult=skillMult(def)*(1+(lv-1)*SKILL_LEVEL_GROWTH)*ascendPowerMul(stars,'skill');let sd=ap.damage*mult*(1+(ap.skillDmg||0)/100);sd*=1-heroDmgRed(c)/100;if(ap.petElem==='toxique')sd*=1.10;const vuln=(c._arenaHeroVuln&&nowA<c._arenaHeroVuln.until)?c._arenaHeroVuln.value:0;sd*=1+vuln/100;c.heroHP-=Math.max(1,Math.floor(sd));c.floats.push({id:rid(),x:c.heroX,val:Math.floor(sd),crit:false,color:def.color||'#C79BFF',born:nowA,text:def.name});if(c.heroHP<=0){c.heroHP=0;c.status='lost';}}
+        if(def.mult){const mult=skillMult(def)*(1+(lv-1)*SKILL_LEVEL_GROWTH)*ascendPowerMul(stars,'skill');let sd=ap.damage*mult*(1+(ap.skillDmg||0)/100);sd*=1-heroDmgRed(c)/100;if(ap.petElem==='toxique')sd*=1.10;const vuln=(c._arenaHeroVuln&&nowA<c._arenaHeroVuln.until)?c._arenaHeroVuln.value:0;sd*=1+vuln/100;sd=damageHero(c,Math.max(1,Math.floor(sd)));c.floats.push({id:rid(),x:c.heroX,val:sd,crit:false,color:def.color||'#C79BFF',born:nowA,text:def.name});if(c.heroHP<=0){c.heroHP=0;c.status='lost';}}
         if(def.heal){const h=ae.maxHP*skillHeal(def,lv)/100;ae.hp=Math.min(ae.maxHP,ae.hp+h);}
         if(def.eff){const ef=skillEff(def,lv),until=nowA+ef.dur*1000;if(ef.stat==='dmg')ae._arenaForce={value:ef.value,until};else if(ef.stat==='dmgRed')ae._arenaRempart={value:ef.value,until};else if(ef.stat==='haste')ae._arenaHaste={value:ef.value,until};else if(ef.stat==='regen')ae._arenaRegen={value:ef.value,until};else if(ef.stat==='slow')c._arenaHeroSlow={value:ef.value,until};else if(ef.stat==='vuln')c._arenaHeroVuln={value:ef.value,until};else if(ef.stat==='poison')c._arenaHeroPoison={value:ef.value,until};}
       });
@@ -1548,8 +1552,7 @@ function tick() {
     c._burnHero = (c._burnHero || 0) + dt;
     if (c._burnHero >= 1) {
       c._burnHero = 0;
-      const b = enemyAbilityDamageV381(c.heroMaxHP * 0.005 * c.burn);
-      c.heroHP -= b;
+      const b = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.005 * c.burn));
       c.floats.push({ id: rid(), x: c.heroX, val: b, crit: false, color: "#FF7A3D", born: now });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
     }
@@ -1734,7 +1737,7 @@ function tick() {
         // not, so a mage's bolt landed before it had left his hand
         scheduleHit(c, e.ranged ? HIT_DELAY_RANGED : HIT_DELAY_MELEE, () => {
           if (c.status !== "fight") return;
-          c.heroHP -= dmg;
+          dmg = damageHero(c, dmg);
           c.heroHit = 0.22;
           abs.forEach((a) => { if (a.onLand) a.onLand(c, e); });
           addShake(c, crit ? 4 : 2);
@@ -1882,7 +1885,11 @@ function handleCombatEnd(c) {
       else s.floor = Math.max(cp, s.floor - 1);
       s.step = 1;
     }
-  });
+  }, { skipRender: route !== "accueil" });
+  // V438: campaign progression is autonomous. Completing a wave while the
+  // player is inspecting Equipment (or another interactive screen) must not
+  // replace #screen and destroy open panels / horizontal scroll positions.
+  if (route !== "accueil") renderHUD();
   setTimeout(startCampaign, 40);
 }
 
@@ -1900,7 +1907,10 @@ function flushRewards() {
     addPaidFloorRewards(c.floor, paidGold, paidExp);
     rewardAcc.gold = 0; rewardAcc.exp = 0;
     grantLevels(st);
-  });
+  }, { skipRender: route !== "accueil" });
+  // Background campaign rewards must not destroy the interactive DOM of other
+  // screens. Keep the persistent HUD current without rebuilding #screen.
+  if (route !== "accueil") renderHUD();
 }
 
 /* =========================================================================

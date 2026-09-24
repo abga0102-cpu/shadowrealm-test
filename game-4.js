@@ -547,13 +547,15 @@ function scrEquipement() {
     const col = shown ? RARITY[shown.rarity].c : "var(--border)";
     return '<div class="eqSlot' + (shown ? " rf" : "") + '" data-act="itemDetail" data-arg="' + (shown ? shown.id : "") + '" data-arg2="' + slot + '" style="border-color:' + col + (shown ? ';--rc:' + col : ';opacity:.7') + (prev ? ';box-shadow:0 0 0 2px #78B7FF,0 0 18px #78B7FF66' : '') + '">' +
       slotIcon(slot, 27, shown) + '<div class="nm" style="color:' + (shown ? RARITY[shown.rarity].c : 'var(--textMute)') + '">' + SLOT_LABEL[slot] + '</div>' +
-      (shown ? '<div class="st row gap4" style="justify-content:center">' + (MASTERY_STAT[slot] === "dmg" ? ic("sword",9)+fmtEquipStat(shown.damage) : ic("heart",9)+fmtEquipStat(shown.hp)) + '</div>' +
+      (shown ? '<div class="st row gap4" style="justify-content:center">' + (MASTERY_STAT[slot] === "dmg" ? ic("sword",9)+fmtEquipStat(shown.damage) : ic("heart",9)+fmtEquipStat(shown.hp)+' · '+ic("shield",9)+Math.round(equipmentDefenseRating(shown))) + '</div>' +
        (prev ? '<div class="st bb" style="color:#78B7FF">TEST</div>' : (shown.level ? '<div class="st bb" style="color:var(--goldLit)">+'+shown.level+'</div>' : '')) : '<div class="st">vide</div>') + '</div>';
   }).join('');
 
   const statCell = (label, cur, next, color, key) => {
     const changed = next != null && String(next) !== String(cur);
-    return '<div class="col" style="width:25%;padding:6px 2px;cursor:pointer" data-act="statInfo" data-arg="'+key+'">' +
+    const hasInfo = key && typeof STAT_INFO !== "undefined" && !!STAT_INFO[key];
+    return '<div class="col" style="width:25%;padding:6px 2px;'+(hasInfo?'cursor:pointer':'')+'"'+
+      (hasInfo?' data-act="statInfo" data-arg="'+key+'"':'')+'>' +
       '<div class="mute tiny b" style="letter-spacing:.3px;text-transform:uppercase">'+label+'</div>' +
       '<div class="bb" style="font-size:13.5px;color:'+color+'">'+cur+'</div>' +
       (changed ? '<div class="tiny bb" style="color:#78B7FF">→ '+next+'</div>' : '') + '</div>';
@@ -561,6 +563,7 @@ function scrEquipement() {
   const d2 = PD || D;
   const stats = [
     ["PV Max",fmt(D.maxHP),fmt(d2.maxHP),"#E5484D","maxhp"],["Dégâts",fmt(D.damage),fmt(d2.damage),"#F0883E","damage"],
+    ["Défense",fmt(D.defense),fmt(d2.defense),"#72A7E8","defense"],["Réduc. Défense",D.defenseReduction.toFixed(1)+"%",d2.defenseReduction.toFixed(1)+"%","#4A90D9","defensered"],
     ["Vit. Attaque",D.attackSpeed.toFixed(2),d2.attackSpeed.toFixed(2),"#F5C542","atkspeed"],["Crit.",D.critChance.toFixed(1)+"%",d2.critChance.toFixed(1)+"%","#F5C542","crit"],
     ["Dégâts Crit.","x"+D.critMult.toFixed(2),"x"+d2.critMult.toFixed(2),"#FF5AA0","critmult"],["Réduc. Dégâts",D.dmgRed.toFixed(1)+"%",d2.dmgRed.toFixed(1)+"%","#4A90D9","dmgred"],
     ["Vol de Vie",D.lifesteal.toFixed(2)+"%",d2.lifesteal.toFixed(2)+"%","#3FA7FF","lifesteal"],["Double attaque",D.doubleAtk.toFixed(1)+"%",d2.doubleAtk.toFixed(1)+"%","#F5C542","doubleatk"],
@@ -584,14 +587,14 @@ function scrEquipement() {
     const key=x[4];
     if(key==='weapon') return String(x[1])===String(x[2])?0:0.35;
     const raw={
-      maxhp:[D.maxHP,d2.maxHP],damage:[D.damage,d2.damage],atkspeed:[D.attackSpeed,d2.attackSpeed],crit:[D.critChance,d2.critChance],
+      maxhp:[D.maxHP,d2.maxHP],damage:[D.damage,d2.damage],defense:[D.defense,d2.defense],defensered:[D.defenseReduction,d2.defenseReduction],atkspeed:[D.attackSpeed,d2.attackSpeed],crit:[D.critChance,d2.critChance],
       critmult:[D.critMult,d2.critMult],dmgred:[D.dmgRed,d2.dmgRed],lifesteal:[D.lifesteal,d2.lifesteal],doubleatk:[D.doubleAtk,d2.doubleAtk],
       movespeed:[D.moveSpeed,d2.moveSpeed],critred:[D.critRed,d2.critRed],regen:[D.regen,d2.regen],bossdmg:[D.bossDmg,d2.bossDmg],
       block:[D.blockChance,d2.blockChance],melee:[D.meleeDmg,d2.meleeDmg],ranged:[D.rangedDmg,d2.rangedDmg],skilldmg:[D.skillDmgBonus,d2.skillDmgBonus],skillcd:[D.skillCdCut,d2.skillCdCut]
     }[key];
     if(!raw) return 0;
     const a=Number(raw[0])||0,b=Number(raw[1])||0,delta=Math.abs(b-a);
-    const pctKeys=['crit','dmgred','lifesteal','doubleatk','critred','regen','bossdmg','block','melee','ranged','skilldmg','skillcd'];
+    const pctKeys=['crit','defensered','dmgred','lifesteal','doubleatk','critred','regen','bossdmg','block','melee','ranged','skilldmg','skillcd'];
     const base=pctKeys.includes(key)?Math.max(10,Math.abs(a)):Math.max(1,Math.abs(a));
     return delta/base;
   };
@@ -604,14 +607,14 @@ function scrEquipement() {
     '</div>' : '';
 
   return topbar("Équipement", '<span class="pill">'+S.inventory.length+' objets</span>') + '<div class="pad mt6">' +
-    '<div class="sect" style="margin:4px 0 6px">Équipement porté</div><div class="slotGrid">'+cells+'</div>' +
+    '<div class="sect" style="margin:4px 0 6px">Équipement porté</div><div class="slotGrid" data-equip-slots-scroll="1">'+cells+'</div>' +
     (hasPreview ? '<div class="notice mt8"><div class="between"><span><b style="color:#78B7FF">Mode test :</b> '+previewItems.length+' pièce'+(previewItems.length>1?'s':'')+'</span><span class="row gap4">'+btn("Annuler",{small:true,cls:"ghost",act:"clearEquipPreview"})+btn("Équiper le set",{small:true,cls:"green",act:"equipPreviewSet"})+'</span></div><div class="mute tiny mt4">Tu peux tester une pièce par emplacement avant de valider tout le set.</div></div>' : '') +
     '<div class="equipCompareSticky">' +
     '<div class="card frame"><div class="between"><div><div class="mute tiny b">PUISSANCE TOTALE</div><div class="bb gt" style="font-size:22px">'+fmt(S.power)+'</div></div>' +
     (hasPreview ? '<div class="col" style="align-items:flex-end"><div class="mute tiny b">APRÈS TEST</div><div class="bb" style="font-size:20px;color:'+(previewDelta>=0?'#63E889':'#FF6B72')+'">'+fmt(previewPower)+' ('+(previewDelta>=0?'+':'')+fmt(previewDelta)+')</div></div>' : '') + '</div></div>' +
     '<div class="sect" style="margin:10px 0 6px">Statistiques de combat</div><div class="card frame" style="padding:6px 8px"><div class="row" style="flex-wrap:wrap">'+stats.slice(0,8).map(x=>statCell(...x)).join('')+'</div>' +
     '<details class="equipStatsMore"'+(hasPreview && stats.slice(8).some(x=>String(x[1])!==String(x[2]))?' open':'')+'><summary>Voir toutes les statistiques</summary><div class="row" style="flex-wrap:wrap">'+stats.slice(8).map(x=>statCell(...x)).join('')+'</div></details></div></div>' +
-    '<div class="sect" style="margin:14px 0 8px">Équipements stockés</div><div class="seg">'+filters.map((f)=>'<span class="'+(invFilter===f?'on':'')+'" data-act="invFilter" data-arg="'+f+'">'+(f==='ALL'?'Tout':SLOT_LABEL[f])+'</span>').join('')+'</div>' +
+    '<div class="sect" style="margin:14px 0 8px">Équipements stockés</div><div class="seg equipFilterScroll" data-equip-filter-scroll="1">'+filters.map((f)=>'<span class="'+(invFilter===f?'on':'')+'" data-act="invFilter" data-arg="'+f+'">'+(f==='ALL'?'Tout':SLOT_LABEL[f])+'</span>').join('')+'</div>' +
     '<div class="row gap6 mt6">'+btn(recycleSelectMode?'Annuler sélection':'Sélection manuelle',{small:true,cls:recycleSelectMode?'blue':'ghost',act:'toggleRecycleSelect'})+btn('Recycler catégories',{small:true,cls:'dark',act:'recycleSlotsPicker'})+'</div>' +
     (recycleSelectMode ? '<div class="row gap6 mt6">'+btn('Tout sélectionner'+(invFilter==='ALL'?'':' · '+SLOT_LABEL[invFilter]),{small:true,cls:'ghost',act:'selectVisibleRecycle',dis:!sorted.length})+btn(ic('trash',11)+' Recycler '+recycleSelectedIds.size+' · +'+fmt(selectedRecycleItems().reduce((a,x)=>a+recycleValue(x),0))+' Poussière',{small:true,cls:'red',act:'askRecycleSelected',dis:!recycleSelectedIds.size})+'</div>' : '') +
     (sorted.length===0 ? '<div class="notice center mt8">Aucun objet disponible.</div>' : sorted.map((it)=>'<div class="itemRow" '+(recycleSelectMode?'data-act="toggleRecycleItem" data-arg="'+it.id+'" ':'')+'style="border-left-color:'+RARITY[it.rarity].c+(recycleSelectedIds.has(it.id)?';box-shadow:inset 0 0 0 2px #B15CF6':'')+'"><div class="imini" style="width:32px;height:32px;border-color:'+RARITY[it.rarity].c+'80">'+slotIcon(it.slot,20,it)+'</div><div class="flex1"><div class="b small">'+esc(it.name)+(it.level?' <span style="color:var(--goldLit)">+'+it.level+'</span>':'')+'</div><div class="mute tiny">'+(MASTERY_STAT[it.slot]==='dmg'?ic('sword',9)+'+'+fmtEquipStat(it.damage):ic('heart',9)+'+'+fmtEquipStat(it.hp))+(it.weaponType?' · '+esc(WEAPON_TYPES[it.weaponType]?.name||it.weaponType):'')+'</div>'+(it.affixes&&it.affixes.length?'<div class="equipAffixes">'+it.affixes.slice(0,3).map((a)=>'<span class="tag" style="color:'+affixColor(a)+';border-color:'+affixColor(a)+'66">'+affixText(a)+'</span>').join('')+'</div>':'')+'</div>'+rtag(it.rarity)+(recycleSelectMode?'<span class="pill" style="color:'+(recycleSelectedIds.has(it.id)?'var(--greenLit)':'var(--textMute)')+';border-color:'+(recycleSelectedIds.has(it.id)?'#3FB950':'var(--line)')+'">'+(recycleSelectedIds.has(it.id)?'Choisi':'Choisir')+'</span>':'<div class="col gap4">'+btn(previewBySlot[it.slot]&&previewBySlot[it.slot].id===it.id?"Testé":"Tester",{small:true,cls:"blue",act:"previewEquip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn("Équiper",{small:true,cls:"green",act:"equip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn(ic("cycle",10)+recycleValue(it),{small:true,cls:"dark",act:"recycle",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+'</div>')+'</div>').join('')) +

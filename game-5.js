@@ -438,6 +438,7 @@ function arenaPlayerProfile() {
   const active=S.skillSlots.slice(0,skillSlotCount(S)).map(id=>SKILL_BY_ID[id]&&S.skills[id]?{def:SKILL_BY_ID[id],level:S.skills[id].level||1,stars:starsOf(S,"skill")}:null)
     .filter(Boolean);
   return {name:S.playerName||"Héros",maxHP:Math.max(1,D.maxHP),damage:Math.max(1,D.damage),
+    defense:Math.max(0,D.defense||0),defenseReduction:Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,D.defenseReduction||0)),
     attackSpeed:Math.max(.1,D.attackSpeed*(wt.speed||1)),hit:wt.hit||1,critChance:Math.max(0,D.critChance||0),
     critMult:Math.max(1,D.critMult||1.5),critRed:Math.max(0,D.critRed||0),dmgRed:Math.min(85,Math.max(0,D.dmgRed||0)),
     blockChance:Math.min(75,Math.max(0,D.blockChance||0)),doubleAtk:Math.min(100,Math.max(0,D.doubleAtk||0)),
@@ -449,7 +450,8 @@ function arenaProfilePower(p) {
   const crit=1+(p.critChance/100)*Math.max(0,p.critMult-1), dbl=1+Math.min(100,p.doubleAtk)/100;
   const style=1+Math.max(0,p.styleBonus)/100, skill=1+(Math.max(0,p.skillDmg)/100)*.25+(Math.max(0,p.skillCd)/100)*.25;
   const offense=p.damage*p.attackSpeed*(p.hit||1)*crit*dbl*style*skill;
-  const mitigation=1/Math.max(.15,1-Math.min(85,p.dmgRed)/100), block=1+Math.min(75,p.blockChance)/200;
+  const defenseMitigation=1/Math.max(.30,1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,p.defenseReduction||0))/100);
+  const mitigation=defenseMitigation/Math.max(.15,1-Math.min(85,p.dmgRed)/100), block=1+Math.min(75,p.blockChance)/200;
   const sustain=1+Math.min(50,p.lifesteal)/200+Math.min(50,p.regen)/250;
   return Math.max(1,Math.floor(Math.sqrt(Math.max(1,offense)*Math.max(1,p.maxHP*mitigation*block*sustain))*1.5));
 }
@@ -470,6 +472,7 @@ function arenaItemScore(it){
   const p={maxHP:Math.max(1,BASE.hp+it.hp),damage:Math.max(1,BASE.damage+it.damage),
     attackSpeed:BASE.attackSpeed*(1+Math.min(20,A("atkspeed"))/100)*(wt.speed||1),hit:wt.hit||1,
     critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+A("crit")),critMult:BASE.critMult+A("critdmg")/100,critRed:0,
+    defense:equipmentDefenseRating(it),defenseReduction:defenseReductionPct(equipmentDefenseRating(it)),
     dmgRed:0,blockChance:Math.min(75,A("block")),doubleAtk:Math.min(100,A("double")),lifesteal:Math.max(0,A("lifesteal")),regen:0,
     styleBonus:wt.attackType==="MELEE"?A("melee"):A("ranged"),skillDmg:A("skilldmg"),skillCd:Math.min(80,A("skillcd"))};
   p.maxHP=Math.floor(p.maxHP*(1+A("hp")/100));p.damage=Math.floor(p.damage*(1+A("dmg")/100));return arenaProfilePower(p);
@@ -490,8 +493,8 @@ function arenaSyntheticSkills(prog,kind){
     .map(def=>({def,level:Math.max(1,Math.round(prog.skillLevel*(.85+Math.random()*.3))),stars:prog.skillStars||0}));
 }
 function arenaSyntheticBase(prog,kind){
-  const gear=arenaSyntheticGear(prog);let hp=BASE.hp,dmg=BASE.damage,af={};let weapon="epee";
-  Object.values(gear).forEach(it=>{hp+=it.hp;dmg+=it.damage;if(it.slot==="arme")weapon=it.weaponType||weapon;(it.affixes||[]).forEach(a=>af[a.key]=(af[a.key]||0)+a.value);});
+  const gear=arenaSyntheticGear(prog);let hp=BASE.hp,dmg=BASE.damage,defense=0,af={};let weapon="epee";
+  Object.values(gear).forEach(it=>{hp+=it.hp;dmg+=it.damage;defense+=equipmentDefenseRating(it);if(it.slot==="arme")weapon=it.weaponType||weapon;(it.affixes||[]).forEach(a=>af[a.key]=(af[a.key]||0)+a.value);});
   const A=k=>af[k]||0, pts=prog.statPts;
   let hpPts=.50,dmgPts=.40,critRedPts=.10;
   if(kind==="tank"){hpPts=.70;dmgPts=.20;critRedPts=.10}
@@ -508,6 +511,7 @@ function arenaSyntheticBase(prog,kind){
   dmg*=(1+petDmgPct/100+forgePct/100+(tree.passDmg||0)/100);
   const wt=WEAPON_TYPES[weapon]||WEAPON_TYPES.epee;
   let p={name:"Bot",maxHP:Math.max(1,Math.floor(hp*(1+A("hp")/100))),damage:Math.max(1,Math.floor(dmg*(1+A("dmg")/100))),
+    defense:Math.max(0,Math.round(defense)),defenseReduction:defenseReductionPct(Math.max(0,Math.round(defense))),
     attackSpeed:BASE.attackSpeed*(1+Math.min(20,A("atkspeed"))/100)*(elem==="electrique"?1.08:1)*(wt.speed||1),hit:wt.hit||1,
     critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+A("crit")),critMult:BASE.critMult+A("critdmg")/100,
     critRed:Math.min(CRIT_RED_CAP,pts*critRedPts*STATS.CRITRED.perPoint),
@@ -536,9 +540,10 @@ function arenaExpectedBasicDps(att, def){
   const doubleMul=1+Math.min(100,Math.max(0,att.doubleAtk||0))/100;
   const blockMul=1-Math.min(75,Math.max(0,def.blockChance||0))/100;
   const mitigation=1-Math.min(85,Math.max(0,def.dmgRed||0))/100;
+  const defenseMul=1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,def.defenseReduction||0))/100;
   const tox=att.petElem==="toxique"?1.10:1;
   return Math.max(0,(att.damage||1)*(att.hit||1)*Math.max(.1,att.attackSpeed||1)*
-    (1+Math.max(0,att.styleBonus||0)/100)*critMul*doubleMul*blockMul*mitigation*tox);
+    (1+Math.max(0,att.styleBonus||0)/100)*critMul*doubleMul*blockMul*mitigation*defenseMul*tox);
 }
 function arenaSkillPressure(p){
   /* V3.2: les effets continus restent moyennés pour garder 1 000 simulations
@@ -568,7 +573,7 @@ function arenaStrike(att,def){
   if(Math.random()*100<def.blockChance)return{dmg:0,heal:0};
   let dmg=att.damage*(att.hit||1)*(1+Math.max(0,att.styleBonus)/100);
   if(Math.random()*100<att.critChance)dmg*=1+Math.max(0,att.critMult-1)*(1-Math.min(80,def.critRed)/100);
-  dmg*=1-Math.min(85,def.dmgRed)/100;dmg*=.90+Math.random()*.20;if(Math.random()*100<att.doubleAtk)dmg*=2;dmg=Math.max(1,dmg);
+  dmg*=1-Math.min(85,def.dmgRed)/100;dmg*=1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,def.defenseReduction||0))/100;dmg*=.90+Math.random()*.20;if(Math.random()*100<att.doubleAtk)dmg*=2;dmg=Math.max(1,dmg);
   return{dmg,heal:dmg*Math.max(0,att.lifesteal)/100};
 }
 function arenaDuel(player,bot){
@@ -587,7 +592,7 @@ function arenaDuel(player,bot){
     ah=Math.min(player.maxHP,ah+player.maxHP*(Math.max(0,player.regen)/100)*dt+aps.heal*dt);
     bh=Math.min(bot.maxHP,bh+bot.maxHP*(Math.max(0,bot.regen)/100)*dt+bps.heal*dt);
 
-    const aMit=1-Math.min(85,aDef.dmgRed)/100,bMit=1-Math.min(85,bDef.dmgRed)/100;
+    const aMit=(1-Math.min(85,aDef.dmgRed)/100)*(1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,aDef.defenseReduction||0))/100),bMit=(1-Math.min(85,bDef.dmgRed)/100)*(1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,bDef.defenseReduction||0))/100);
     const aVuln=1+aps.vuln/100,bVuln=1+bps.vuln/100;
     const aTox=player.petElem==="toxique"?1.10:1,bTox=bot.petElem==="toxique"?1.10:1;
     /* V3.3 : Malédiction et Toxique amplifient toutes les sources offensives,
@@ -1055,12 +1060,10 @@ function render() {
   checkTutorial();
   checkLevelUp();
   const sc = document.getElementById("screen");
-  const keep = sc.scrollTop;
   const fn = SCREENS[route] || scrAccueil;
   sc.className = (route === "accueil" || (route === "arena" && combat && combat.ctx === "arenaLive")) ? "fixed" : "";
   sc.innerHTML = fn();
   attachArena();
-  sc.scrollTop = keep;
   requestAnimationFrame(syncEquipPreviewSpacer);
   if (tutorialCurrentKey) requestAnimationFrame(updateTutorialGuide);
 }
@@ -1153,6 +1156,7 @@ function showItemDetail(id, slot) {
   const basePrimary = Number(isWeaponStat ? (it.baseDamage || it.damage || 0) : (it.baseHp || it.hp || 0));
   const currentPrimary = Number(isWeaponStat ? (it.damage || 0) : (it.hp || 0));
   const addedPrimary = Math.max(0, currentPrimary - basePrimary);
+  const itemDefense = equipmentDefenseRating(it);
   openModal('<div class="row gap10" style="margin-bottom:10px">' +
       '<div class="imini rf" style="width:46px;height:46px;border-color:' + rc + ";--rc:" + rc + '">' +
       '<span style="position:relative;z-index:1">' + slotIcon(it.slot, 27, it) + "</span></div>" +
@@ -1164,6 +1168,7 @@ function showItemDetail(id, slot) {
         ? st("ATTAQUE DE BASE", "+" + equipStat(basePrimary), "#FF9C6B")
         : st("SANTÉ DE BASE", "+" + equipStat(basePrimary), "var(--redLit)")) +
       st(it.baseDamage ? "BONUS D'ATTAQUE" : "BONUS DE SANTÉ", "+" + equipStat(addedPrimary), "var(--greenLit)") +
+      (itemDefense > 0 ? st("DÉFENSE", "+" + Math.round(itemDefense), "#72A7E8") : "") +
       st("PUISSANCE TOTALE", equipStat(it.power), "var(--goldLit)") +
       (wt ? st("TYPE D'ARME", wt.name + " · " + (wt.attackType === "MELEE" ? "mêlée" : "distance"), "var(--blueLit)") +
         st("PORTÉE · VITESSE", wt.range + " · ×" + wt.speed, "var(--blueLit)") : "") +
@@ -2031,11 +2036,32 @@ if (SMOKE) {
 // rejoué juste après la fin du scroll. Quand un rendu a lieu, une seule restauration
 // synchrone de scrollTop est faite : plus de second restore en requestAnimationFrame
 // et plus de "collage" automatique au bas de page qui entraient en conflit avec le doigt.
+// V439 · Equipment interaction state survives any unavoidable screen rebuild.
+let equipmentUiStateV439 = { slotsLeft: 0, filterLeft: 0, statsMoreOpen: false };
+function captureEquipmentUiV439(){
+  if (typeof route === "undefined" || route !== "equipement") return;
+  const scroller=document.querySelector('[data-equip-slots-scroll="1"]');
+  const filter=document.querySelector('[data-equip-filter-scroll="1"]');
+  const more=document.querySelector('.equipStatsMore');
+  if(scroller) equipmentUiStateV439.slotsLeft=scroller.scrollLeft;
+  if(filter) equipmentUiStateV439.filterLeft=filter.scrollLeft;
+  if(more) equipmentUiStateV439.statsMoreOpen=!!more.open;
+}
+function restoreEquipmentUiV439(){
+  if (typeof route === "undefined" || route !== "equipement") return;
+  const scroller=document.querySelector('[data-equip-slots-scroll="1"]');
+  const filter=document.querySelector('[data-equip-filter-scroll="1"]');
+  const more=document.querySelector('.equipStatsMore');
+  if(scroller) scroller.scrollLeft=equipmentUiStateV439.slotsLeft;
+  if(filter) filter.scrollLeft=equipmentUiStateV439.filterLeft;
+  if(more) more.open=equipmentUiStateV439.statsMoreOpen;
+}
 const renderBaseV47 = render;
 let scrollRenderTimerV47 = 0;
 let scrollLastMoveV47 = -1e9;
 let scrollDeferredV47 = false;
 let scrollBypassV47 = false;
+let scrollPointerActiveV435 = false;
 
 (function initScrollStabilityV47(){
   const sc = document.getElementById("screen");
@@ -2056,13 +2082,34 @@ let scrollBypassV47 = false;
   sc.addEventListener("scroll", mark, {passive:true});
   sc.addEventListener("touchmove", mark, {passive:true});
   sc.addEventListener("wheel", mark, {passive:true});
+  // V435: do not replace the complete screen while a finger/pointer is still
+  // interacting with it. On iOS/WebKit, replacing #screen children between
+  // pointerdown and click can move the viewport even when scrollTop is restored.
+  sc.addEventListener("pointerdown", function(e){
+    if (e.pointerType === "touch" || e.pointerType === "pen") scrollPointerActiveV435 = true;
+  }, {passive:true});
+  const releasePointer = function(){
+    if (!scrollPointerActiveV435) return;
+    scrollPointerActiveV435 = false;
+    if (!scrollDeferredV47) return;
+    clearTimeout(scrollRenderTimerV47);
+    scrollRenderTimerV47 = setTimeout(function(){
+      scrollRenderTimerV47 = 0;
+      if (!scrollDeferredV47) return;
+      scrollDeferredV47 = false;
+      scrollBypassV47 = true;
+      try { render(); } finally { scrollBypassV47 = false; }
+    }, 0);
+  };
+  sc.addEventListener("pointerup", releasePointer, {passive:true});
+  sc.addEventListener("pointercancel", releasePointer, {passive:true});
 })();
 
 render = function(){
   const screen = document.getElementById("screen");
   const beforeRoute = typeof route !== "undefined" ? route : null;
   const now = (typeof performance !== "undefined" ? performance.now() : Date.now());
-  const activelyScrolling = !scrollBypassV47 && screen && (now - scrollLastMoveV47 < 150);
+  const activelyScrolling = !scrollBypassV47 && screen && (scrollPointerActiveV435 || (now - scrollLastMoveV47 < 150));
 
   // Important: ne jamais remplacer les enfants du conteneur pendant l'inertie.
   if (activelyScrolling) {
@@ -2079,12 +2126,27 @@ render = function(){
   }
 
   const beforeTop = screen ? screen.scrollTop : 0;
+  captureEquipmentUiV439();
   const out = renderBaseV47.apply(this, arguments);
   const sc = document.getElementById("screen");
-  if (sc && beforeRoute === (typeof route !== "undefined" ? route : null)) {
-    const max = Math.max(0, sc.scrollHeight - sc.clientHeight);
-    sc.scrollTop = Math.min(beforeTop, max);
+  const sameRoute = beforeRoute === (typeof route !== "undefined" ? route : null);
+  if (sc && sameRoute) {
+    // V441: the rebuilt screen can have a transiently smaller scrollHeight until
+    // layout-dependent content settles. Never permanently clamp the user's old
+    // position against that intermediate height.
+    sc.scrollTop = beforeTop;
+    requestAnimationFrame(function(){
+      const live=document.getElementById("screen");
+      if(!live || beforeRoute !== (typeof route !== "undefined" ? route : null)) return;
+      live.scrollTop = beforeTop;
+      requestAnimationFrame(function(){
+        const settled=document.getElementById("screen");
+        if(!settled || beforeRoute !== (typeof route !== "undefined" ? route : null)) return;
+        settled.scrollTop = Math.min(beforeTop, Math.max(0, settled.scrollHeight-settled.clientHeight));
+      });
+    });
   }
+  restoreEquipmentUiV439();
   return out;
 };
 
