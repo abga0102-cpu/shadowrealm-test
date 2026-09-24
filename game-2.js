@@ -1882,7 +1882,11 @@ function handleCombatEnd(c) {
       else s.floor = Math.max(cp, s.floor - 1);
       s.step = 1;
     }
-  });
+  }, { skipRender: route !== "accueil" });
+  // V438: campaign progression is autonomous. Completing a wave while the
+  // player is inspecting Equipment (or another interactive screen) must not
+  // replace #screen and destroy open panels / horizontal scroll positions.
+  if (route !== "accueil") renderHUD();
   setTimeout(startCampaign, 40);
 }
 
