@@ -129,10 +129,11 @@ try{if(typeof upgradePet==='function')upgradePet=function(){return {ok:false,rea
 function hash(s){s=String(s||'legacy');var h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function seeded(x){return function(){x=(Math.imul(x,1664525)+1013904223)>>>0;return x/4294967296;};}
 function migrateItem(it,s){
+  var targetVersion=372;
   if(!it||!it.rarity)return;
-  if(!EQUIP_BASE[it.rarity]){it.powerCurveVersion=372;return;}
+  if(!EQUIP_BASE[it.rarity]){it.powerCurveVersion=targetVersion;return;}
   applyForgeLifetimeMasteryItem(it,s);
-  it.powerCurveVersion=372;
+  it.powerCurveVersion=targetVersion;
 }
 function migrate(){try{
   if(typeof S==='undefined'||!S)return;
@@ -168,5 +169,5 @@ window.__srForgeLifetimeMasteryV445={
   applyState:applyForgeLifetimeMasteryState
 };
 window.__srProgressionOverhaulConfigV283={equipmentBase:EQUIP_BASE,petOrder:PET_ORDER,petFuse:PET_FUSE,dustCost:window.__srV283DustCost,upgradeChance:window.__srV283UpgradeChance,forgeLifetimeMastery:window.__srForgeLifetimeMasteryV445};
-window.__srEquipmentCurveAuthority={version:445,equipmentBase:EQUIP_BASE,ownsMakeItem:!!(typeof makeItem==='function'&&makeItem.__srV283),forgeLifetimeMastery:true};
+window.__srEquipmentCurveAuthority={version:372,equipmentBase:EQUIP_BASE,ownsMakeItem:!!(typeof makeItem==='function'&&makeItem.__srV283),forgeLifetimeMastery:true,forgeLifetimeMasteryVersion:445};
 })();
