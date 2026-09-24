@@ -21,3 +21,14 @@ assert(stability.includes('const beforeTop = screen ? screen.scrollTop : 0;'), '
 assert(stability.includes('sc.scrollTop = Math.min(beforeTop, max);'), 'scroll stability owner must restore the bounded position once');
 
 console.log('V435 screen stability source contract OK');
+
+const index = fs.readFileSync('index.html', 'utf8');
+[
+  'rebirth-upgrades-cleanup-v223.js',
+  'rebirth-floor-skip-balance-v225.js',
+  'rebirth-removal-ui-v279.js',
+  'rebirth-spectacle-v222.js',
+  'rebirth-scroll-natural-v221.js',
+  'rebirth-ui-cleanup-v224.js'
+].forEach(file => assert(!index.includes(file), file + ' must stay retired from runtime'));
+assert(index.includes('rebirth-removal-authority-v281.js'), 'final Rebirth retirement authority must remain loaded');
