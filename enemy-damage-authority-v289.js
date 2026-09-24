@@ -11,11 +11,11 @@
    Design rule:
    - The floor determines enemy power. Current player stats are never sampled.
    - Existing curves, identities, tiers and relative Boss/Mega-Boss ratios stay intact.
-   V425 smooths Campaign damage from visible stage Difficile 3-10 (floor 150):
-   - target is another -50% on base Campaign damage from that point onward;
-   - the transition is clamped to at least +0.5% per internal floor, so the new
-     balance never makes a later floor's base damage lower than the floor before it;
-   - HP, Raids, rewards and player stats are untouched.
+   V425 smooths Campaign damage from visible stage Difficile 3-10 (floor 150).
+   V448 adds a self-contained early-game pressure window from visible stage 1-3
+   through 4-18 (floors 3..78). It raises durability much more than damage,
+   peaks around the middle of the window, then blends back into the canonical
+   curve by 4-18 so 4-19 does not create an artificial difficulty cliff.
 */
 (function(){
   'use strict';
@@ -27,6 +27,7 @@
   window.__srCampaignPowerSourceV362=true;
   window.__srGlobalEnemyNerfV380=true;
   window.__srAdditionalEnemyDamageNerfV381=true;
+  window.__srEarlyCampaignPressureV448=true;
 
   var LEGACY_MAX=400;
   var V362_CAMPAIGN_POWER_MUL=0.60;
@@ -50,6 +51,18 @@
   var DIFFICILE_3_10_DAMAGE_MUL_V425=0.50;
   var DIFFICILE_3_10_MIN_STAGE_GROWTH_V425=1.005;
   var CAMPAIGN_DAMAGE_CACHE_V425={};
+
+  /* V448: 1-1/1-2 stay untouched for onboarding. Pressure starts at 1-3,
+     reaches its strongest point around 2-20, then progressively gives the
+     authority back to the existing curve. At 4-18 the modifier is exactly 1,
+     making 4-19 a normal continuation rather than a sudden nerf. */
+  var EARLY_START_V448=3;
+  var EARLY_PEAK_V448=40;
+  var EARLY_END_V448=78;
+  var EARLY_START_HP_MUL_V448=1.08;
+  var EARLY_PEAK_HP_MUL_V448=1.28;
+  var EARLY_START_DAMAGE_MUL_V448=1.02;
+  var EARLY_PEAK_DAMAGE_MUL_V448=1.10;
 
   var REFERENCE_DAMAGE={
     1:30,3:80,5:150,10:350,15:800,20:2500,30:23000,40:180000,50:900000,
@@ -96,19 +109,29 @@
     if(isIntroFloor(f))return INTRO_FLOOR_DAMAGE;
     return Math.max(1,Math.round(expectedHP(f)/TARGET_HITS_TO_DEFEAT_REFERENCE));
   }
-  function campaignEnemyHP(f){return Math.max(1,Math.round(previousCampaignEnemyHP(f)*CAMPAIGN_HP_MUL));}
+  function earlyPressureV448(f,startMul,peakMul){
+    f=Math.max(1,Math.round(Number(f)||1));
+    if(f<EARLY_START_V448||f>=EARLY_END_V448)return 1;
+    if(f<=EARLY_PEAK_V448){
+      var up=(f-EARLY_START_V448)/Math.max(1,EARLY_PEAK_V448-EARLY_START_V448);
+      return startMul+(peakMul-startMul)*up;
+    }
+    var down=(f-EARLY_PEAK_V448)/Math.max(1,EARLY_END_V448-EARLY_PEAK_V448);
+    return peakMul+(1-peakMul)*down;
+  }
+  function earlyHpMulV448(f){return earlyPressureV448(f,EARLY_START_HP_MUL_V448,EARLY_PEAK_HP_MUL_V448);}
+  function earlyDamageMulV448(f){return earlyPressureV448(f,EARLY_START_DAMAGE_MUL_V448,EARLY_PEAK_DAMAGE_MUL_V448);}
+  function campaignEnemyHP(f){
+    return Math.max(1,Math.round(previousCampaignEnemyHP(f)*CAMPAIGN_HP_MUL*earlyHpMulV448(f)));
+  }
   function campaignEnemyDamageBeforeV425(f){
-    return Math.max(1,Math.round(previousCampaignEnemyDamage(f)*CAMPAIGN_DAMAGE_MUL));
+    return Math.max(1,Math.round(previousCampaignEnemyDamage(f)*CAMPAIGN_DAMAGE_MUL*earlyDamageMulV448(f)));
   }
   function campaignEnemyDamage(f){
     f=Math.max(1,Math.min(maxFloor(),Math.round(Number(f)||1)));
     var raw=campaignEnemyDamageBeforeV425(f);
     if(f<DIFFICILE_3_10_FLOOR_V425)return raw;
     if(CAMPAIGN_DAMAGE_CACHE_V425[f])return CAMPAIGN_DAMAGE_CACHE_V425[f];
-
-    /* Start from the live damage immediately before Difficile 3-10, then walk
-       forward with a tiny guaranteed rise. This allows a strong late-game nerf
-       without creating a backwards difficulty step at the exact cutover. */
     var prev=campaignEnemyDamageBeforeV425(DIFFICILE_3_10_FLOOR_V425-1);
     for(var floor=DIFFICILE_3_10_FLOOR_V425;floor<=f;floor++){
       if(CAMPAIGN_DAMAGE_CACHE_V425[floor]){
@@ -122,14 +145,11 @@
     return CAMPAIGN_DAMAGE_CACHE_V425[f];
   }
 
-  /* Boss HP has a separate final authority (V288). Scale its source by the same
-     factor so boss ratios and final post-spawn targets stay consistent instead
-     of cancelling the normal-enemy reduction. */
   var previousBossHP=typeof window.__srV285BossHP==='function'?window.__srV285BossHP:null;
   function campaignBossHP(f){
     if(!previousBossHP)return null;
     var v=Number(previousBossHP(f));
-    return isFinite(v)&&v>0?Math.max(1,Math.round(v*CAMPAIGN_HP_MUL)):v;
+    return isFinite(v)&&v>0?Math.max(1,Math.round(v*CAMPAIGN_HP_MUL*earlyHpMulV448(f))):v;
   }
 
   window.__srV285EnemyHP=campaignEnemyHP;
@@ -144,9 +164,6 @@
   try{if(typeof enemyHP==='function')enemyHP=campaignEnemyHP;}catch(_){ }
   try{if(typeof enemyDamage==='function')enemyDamage=campaignEnemyDamage;}catch(_){ }
 
-  /* Keep the V324 Raid relationship, then apply the same V380 global nerf.
-     This covers normal Raid enemies and named Raid bosses without flattening
-     their existing relative difficulty. */
   try{
     if(typeof makeEnemy==='function'){
       var makeEnemyBeforeRaidV324=makeEnemy;
@@ -163,7 +180,7 @@
   }catch(_){ }
 
   window.__srEnemyDamageConfigV289={
-    version:425,maxFloor:800,legacyMaxFloor:400,semanticLegacyFloor:semanticLegacyFloor,
+    version:448,maxFloor:800,legacyMaxFloor:400,semanticLegacyFloor:semanticLegacyFloor,
     referenceDamage:REFERENCE_DAMAGE,referenceHP:REFERENCE_HP,
     targetHitsToKill:TARGET_HITS_TO_KILL,targetHitsToDefeatReference:TARGET_HITS_TO_DEFEAT_REFERENCE,
     expectedPlayerDamage:expectedDamage,expectedPlayerHP:expectedHP,
@@ -171,6 +188,14 @@
     campaignPowerMul:V362_CAMPAIGN_POWER_MUL,sourceReductionV362:true,
     campaignHpMulV380:CAMPAIGN_HP_MUL,campaignDamageMulV380:CAMPAIGN_DAMAGE_MUL_V380,
     campaignDamageMulV381:CAMPAIGN_DAMAGE_MUL,
+    earlyCampaignPressureV448:{
+      visibleStart:'1-3',visiblePeak:'2-20',visibleEnd:'4-18',
+      startFloor:EARLY_START_V448,peakFloor:EARLY_PEAK_V448,endFloor:EARLY_END_V448,
+      startHpMul:EARLY_START_HP_MUL_V448,peakHpMul:EARLY_PEAK_HP_MUL_V448,
+      startDamageMul:EARLY_START_DAMAGE_MUL_V448,peakDamageMul:EARLY_PEAK_DAMAGE_MUL_V448,
+      hpMultiplier:earlyHpMulV448,damageMultiplier:earlyDamageMulV448,
+      raidsChanged:false,onboardingStagesChanged:false
+    },
     globalEnemyNerfV380:{
       hpMul:GLOBAL_HP_MUL_V380,damageMul:GLOBAL_DAMAGE_MUL_V380,
       appliesTo:['normal','elite','boss','raid','mega-boss'],
@@ -183,8 +208,7 @@
       appliesTo:['normal','elite','boss','raid','mega-boss']
     },
     difficile310DamageV425:{
-      visibleStage:'Difficile 3-10',
-      startFloor:DIFFICILE_3_10_FLOOR_V425,
+      visibleStage:'Difficile 3-10',startFloor:DIFFICILE_3_10_FLOOR_V425,
       targetDamageMul:DIFFICILE_3_10_DAMAGE_MUL_V425,
       minStageGrowthPct:(DIFFICILE_3_10_MIN_STAGE_GROWTH_V425-1)*100,
       sourceDamage:campaignEnemyDamageBeforeV425,
@@ -193,11 +217,10 @@
     },
     forgeTutorialException:{visibleStage:'1-2',internalFloor:2,owner:'V321',beforeFirstForge:true},
     scaling:'floor-only-no-player-rubber-band',
-    earlyCampaign:'1-1-onboarding-then-gear-pressure',
+    earlyCampaign:'1-1/1-2-onboarding-then-v448-pressure-through-4-18',
     introFloor:{floor:1,hp:Math.max(1,Math.round(INTRO_FLOOR_HP*CAMPAIGN_HP_MUL)),damage:Math.max(1,Math.round(INTRO_FLOOR_DAMAGE*CAMPAIGN_DAMAGE_MUL))},
     raidPowerV324:{
-      hpMul:RAID_HP_MUL,damageMul:RAID_DAMAGE_MUL_V380,
-      effectiveDamageMulV381:RAID_DAMAGE_MUL,
+      hpMul:RAID_HP_MUL,damageMul:RAID_DAMAGE_MUL_V380,effectiveDamageMulV381:RAID_DAMAGE_MUL,
       baseHpMul:RAID_BASE_HP_MUL_V324,baseDamageMul:RAID_BASE_DAMAGE_MUL_V324,
       globalNerfAppliedV380:true,additionalDamageNerfAppliedV381:true
     },
