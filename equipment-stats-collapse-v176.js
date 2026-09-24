@@ -18,7 +18,7 @@ function apply(){
   var card=title.nextElementSibling;if(!card||!card.classList.contains('card'))return;
   title.setAttribute('data-stats-v176','1');title.style.cursor='pointer';title.style.display='flex';title.style.alignItems='center';title.style.justifyContent='space-between';title.style.gap='8px';
   var action=document.createElement('span');action.className='pill';action.style.cursor='pointer';action.style.flex='0 0 auto';action.style.color='var(--cyanLit,#8FEFF4)';action.style.borderColor='var(--cyan,#3FCFD6)';title.appendChild(action);
-  function sync(open){card.style.display=open?'':'none';action.textContent=open?'Masquer ▲':'Afficher ▼';title.setAttribute('aria-expanded',open?'true':'false');}
+  function sync(open){card.style.display=open?'':'none';action.textContent=open?'Masquer ▲':'Afficher ▼';title.setAttribute('aria-expanded',open?'true':'false');}\n  // V439: do not let this legacy wrapper collapse the native details state after a rerender.\n  var nativeMore=card.querySelector('.equipStatsMore');\n  if(nativeMore&&typeof equipmentUiStateV439!=='undefined') nativeMore.open=!!equipmentUiStateV439.statsMoreOpen;
   sync(pref());
   title.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var open=card.style.display==='none';setPref(open);sync(open);});
 }
