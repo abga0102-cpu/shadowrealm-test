@@ -44,7 +44,7 @@
       if(floor<=500){
         value=at300*Math.pow(1.006,floor-300);
       }else{
-        var at500=at300*Math.pow(1.006,500-300);
+        var at500=at300*Math.pow(1.006,floor-300);
         if(floor<=750){
           value=at500*Math.pow(1.001,floor-500);
         }else{
@@ -113,4 +113,23 @@
   window.__srStageGoldCompensationStartupSafeV340=true;
   if(document.readyState==='complete')startAfterBoot();
   else window.addEventListener('load',startAfterBoot,{once:true});
+})();
+
+/* V446 · New-player starter Minerai.
+   This file is parsed after game-1.js but before game-2.js creates S, so the
+   default is corrected at its source without touching live state. migrate()
+   overlays saved fields on this base, therefore every existing save keeps its
+   exact stored Minerai amount. */
+(function(){
+  'use strict';
+  if(window.__srNewPlayerStarterV446)return;
+  window.__srNewPlayerStarterV446=true;
+  if(typeof defaultState!=='function')return;
+  var previousDefaultState=defaultState;
+  defaultState=function(name){
+    var state=previousDefaultState.apply(this,arguments);
+    state.minerai=50;
+    return state;
+  };
+  window.__srNewPlayerStarterConfigV446={minerai:50,baseForgeCrafts:5};
 })();
