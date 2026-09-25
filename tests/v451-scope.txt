@@ -1,0 +1,1 @@
+Scope: forge drop initialization only. No migration of existing items. No rarity/economy/save schema change.
