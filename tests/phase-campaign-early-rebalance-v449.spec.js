@@ -1,0 +1,13 @@
+const fs=require('fs'),assert=require('assert');
+const s=fs.readFileSync('campaign-early-rebalance-v449.js','utf8');
+assert(s.includes('FIRST=2, FIRST_END=84'),'first window must be Facile 1-2 through 5-4');
+assert(s.includes('SECOND_START=85, SECOND_END=99'),'second window must contain exactly the next 15 stages');
+assert(s.includes('{hp:0.80,dmg:1.30,band:1}'),'first window must be -20% HP / +30% damage');
+assert(s.includes('{hp:0.70,dmg:1.00,band:2}'),'second window must be -30% HP only');
+assert(s.includes("mode!=='campaign'"),'authority must not modify raids');
+assert(s.includes('opts.megaBoss'),'authority must not modify Mega-Bosses');
+assert(s.includes('postBossException:postBoss'),'post-Boss easing exception must remain explicit');
+const html=fs.readFileSync('index.html','utf8');
+assert(html.includes('campaign-tier-balance-v352.js')&&html.indexOf('campaign-early-rebalance-v449.js')>html.indexOf('campaign-tier-balance-v352.js'),'V449 must load after Campaign smoothing');
+assert(html.includes('function chain(list,done){var i=0;function next()')&&html.includes('load(list[i++],next);}next();}'),'dynamic loader must remain intact');
+console.log('V449 early Campaign rebalance contract OK');
