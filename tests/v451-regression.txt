@@ -1,0 +1,1 @@
+Regression guard: V451 must not rewrite inventory/equipped items and must load after game-2.js.
