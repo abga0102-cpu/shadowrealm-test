@@ -112,10 +112,10 @@ try{if(typeof arenaItem==='function'){arenaItem=function(slot,rar,forge,stars){
     damage:x.d,hp:x.h,affixes:rollAffixes(rar),statQuality:Math.round(q*10000)/10000};
 };}}catch(_){ }
 
-/* Poussiere: old live formula (20 + 12*level) x3. No level cap. Chance may reach 0%.
-   Security papers are deliberately NOT introduced in this build. */
+/* Poussiere: old live formula (20 + 12*level) x3. No level cap. V446 moves the
+   existing upgrade-chance curve from +70 to +25; Dust cost and upgrade power stay unchanged. */
 window.__srV283DustCost=function(level){return Math.max(0,Math.round(60+36*Math.max(0,Number(level)||0)));};
-window.__srV283UpgradeChance=function(level){level=Math.max(0,Math.floor(Number(level)||0));if(level<70)return 100;return Math.max(0,95-5*Math.floor((level-70)/2));};
+window.__srV283UpgradeChance=function(level){level=Math.max(0,Math.floor(Number(level)||0));if(level<25)return 100;return Math.max(0,95-5*Math.floor((level-25)/2));};
 try{if(typeof itemUpgradeCost==='function')itemUpgradeCost=function(it){return window.__srV283DustCost((it&&it.level)||0);};}catch(_){ }
 try{if(typeof itemUpgradeChance==='function')itemUpgradeChance=function(it){return window.__srV283UpgradeChance((it&&it.level)||0);};}catch(_){ }
 
