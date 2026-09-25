@@ -5,16 +5,17 @@
 (function () {
   "use strict";
 
-  if (typeof window.forgeSummon !== "function" || typeof window.makeItem !== "function") return;
+  if (typeof forgeSummon !== "function" || typeof makeItem !== "function") return;
   if (window.__srForgeDropMasteryLevelV451) return;
 
-  const originalForgeSummon = window.forgeSummon;
-  const originalMakeItem = window.makeItem;
+  const originalForgeSummon = forgeSummon;
+  const originalMakeItem = makeItem;
 
   function currentMasteryRank() {
     const api = window.__srForgeLifetimeMasteryV445;
-    if (!api || typeof api.info !== "function" || typeof window.S === "undefined") return 0;
-    const info = api.info(window.S) || {};
+    const state = typeof S !== "undefined" ? S : null;
+    if (!api || typeof api.info !== "function" || !state) return 0;
+    const info = api.info(state) || {};
     return Math.max(0, Math.floor(Number(info.rank) || 0));
   }
 
@@ -29,13 +30,13 @@
     return item;
   }
 
-  window.forgeSummon = function forgeSummonV451(n) {
-    const previousMakeItem = window.makeItem;
-    window.makeItem = makeForgedItemAtMasteryRank;
+  forgeSummon = function forgeSummonV451(n) {
+    const previousMakeItem = makeItem;
+    makeItem = makeForgedItemAtMasteryRank;
     try {
       return originalForgeSummon.call(this, n);
     } finally {
-      window.makeItem = previousMakeItem;
+      makeItem = previousMakeItem;
     }
   };
 
