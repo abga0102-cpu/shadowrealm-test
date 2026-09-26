@@ -197,8 +197,31 @@ function scrAccueil() {
   const wArt = ASSETS["weapon_" + D.weapon];
   const wRar = S.equipped.arme ? RARITY[S.equipped.arme.rarity] : null;
   const wCol = wRar ? wRar.c : "#d6dae4";
+
+  /* V461 · Dense starter pacing stays inside the arena layer, so it never
+     steals vertical space from combat/skills/Forge on short phones. */
+  const starterApi = window.__srStarterPacingV461;
+  const starterStep = starterApi && typeof starterApi.nextStep === "function" ? starterApi.nextStep(S) : null;
+  const starterPct = starterStep ? Math.max(0, Math.min(100,
+    Math.round((Number(starterStep.now) || 0) / Math.max(1, Number(starterStep.max) || 1) * 100))) : 0;
+  const starterAct = starterStep
+    ? (starterStep.go && starterStep.go !== "accueil" ? "go" : (starterStep.id === "forge" && starterStep.ready ? "focusForge" : ""))
+    : "";
+  const starterCard = starterStep
+    ? '<div class="srStarterRoadmapV461' + (starterStep.ready ? ' ready' : '') + '"' +
+        (starterAct ? ' data-act="' + starterAct + '"' : '') +
+        (starterAct === "go" ? ' data-arg="' + esc(starterStep.go) + '"' : '') + '>' +
+        '<div class="srStarterKickerV461">' + ic(starterStep.ready ? "sparkle" : "target", 10) +
+          ' DÉBUT RAPIDE <span>' + starterPct + '%</span></div>' +
+        '<b>' + esc(starterStep.title) + '</b>' +
+        '<small>' + esc(starterStep.note) + '</small>' +
+        '<div class="srStarterBarV461"><i style="width:' + starterPct + '%"></i></div>' +
+        (starterAct ? '<em>' + (starterStep.ready ? 'OUVRIR' : 'VOIR') + ' ›</em>' : '') +
+      '</div>'
+    : "";
   return recommendedCard + '<div class="campaignWorld">' +
       '<div id="arenaSlot"></div>' +
+      starterCard +
       '<div class="worldNavLayer">' +
         worldAction(worldPrimary[0], "worldDev") +
         worldAction(worldPrimary[1], "worldDefis") +
@@ -728,6 +751,11 @@ function scrCompetences() {
   const rates = getRates("skill", S.skillMastery.level, S.ascension, starsOf(S, "skill"));
   const mreq = masteryReq(S.skillMastery.level);
   const owned = SKILL_DEFS.filter((d) => S.skills[d.id]);
+  const summonCost = skillSummonCost(S);
+  const starterFree = !!(window.__srStarterPacingV461 &&
+    typeof window.__srStarterPacingV461.freeSkillAvailable === "function" &&
+    window.__srStarterPacingV461.freeSkillAvailable(S));
+  const tenCost = starterFree ? summonCost * 9 : summonCost * 10;
 
   let slots = "";
   const openSlots = skillSlotCount(S);
@@ -752,9 +780,13 @@ function scrCompetences() {
           ratesTable(rates, S.skillMastery.level < RULES.MASTERY_MAX ? getRates("skill", S.skillMastery.level + 1, S.ascension, starsOf(S, "skill")) : null,
             "Actuel", "Niv." + (S.skillMastery.level + 1)), "margin:2px 0 0") +
         '<div class="row gap6 mt6">' +
-          btn(ic("sparkle", 14) + "Invoquer · " + skillSummonCost(S), { cls: "purple", small: true, act: "summonSkill", arg: 1, dis: S.eclat < skillSummonCost(S) }) +
-          btn("x10 · " + skillSummonCost(S) * 10, { cls: "purple", small: true, act: "summonSkill", arg: 10, dis: S.eclat < skillSummonCost(S) * 10, style: "max-width:96px" }) +
-        "</div></div>" +
+          btn(ic("sparkle", 14) + "Invoquer · " + (starterFree ? "GRATUIT" : summonCost),
+            { cls: "purple", small: true, act: "summonSkill", arg: 1, dis: !starterFree && S.eclat < summonCost }) +
+          btn(starterFree ? "x10 · 1 offerte + " + tenCost : "x10 · " + tenCost,
+            { cls: "purple", small: true, act: "summonSkill", arg: 10, dis: S.eclat < tenCost, style: "max-width:116px" }) +
+        "</div>" +
+        (starterFree ? '<div class="notice tiny mt6"><b>Première invocation offerte</b> · aucun Éclat consommé.</div>' : '') +
+        "</div>" +
       '<div class="sect" style="margin:16px 0 9px">Emplacements actifs</div>' +
       '<div class="row gap6">' + slots + "</div>" +
       '<div class="mute tiny mt4">Les compétences équipées se déclenchent seules dès que leur recharge est finie.</div>' +
