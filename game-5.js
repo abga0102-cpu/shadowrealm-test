@@ -1152,6 +1152,8 @@ function showItemDetail(id, slot) {
     '</span><b style="color:' + (col || "var(--text)") + '">' + val + "</b></div>";
   const equipStat = fmtEquipStat;
   const upgradePreview = itemUpgradePreview(it);
+  const globalEquipLevel = Math.max(0, Math.floor(Number(S.equipmentUpgradeLevel) || 0), Math.floor(Number(it.level) || 0));
+  const globalEquipRoman = equipmentRomanLevel(globalEquipLevel) || "0";
   const isWeaponStat = !!it.baseDamage;
   const basePrimary = Number(isWeaponStat ? (it.baseDamage || it.damage || 0) : (it.baseHp || it.hp || 0));
   const currentPrimary = Number(isWeaponStat ? (it.damage || 0) : (it.hp || 0));
@@ -1203,13 +1205,15 @@ function showItemDetail(id, slot) {
       '<span class="pill" style="color:var(--greenLit);border-color:#3FB95066">+' + equipStat(upgradePreview.gain) + '</span></div>' +
     '</div>' +
     '<div class="orn"><i></i><b></b><i></i></div>' +
+    '<div class="notice tiny" style="border-color:#C79BFF55"><b style="color:#C79BFF">NIVEAU D’ÉQUIPEMENT GLOBAL · ' + esc(globalEquipRoman) + '</b><div class="mt3">Une amélioration réussie monte tous tes équipements au même niveau, y compris les pièces déjà portées, celles de l’inventaire et les prochains drops de Forge.</div></div>' +
+    '<div class="orn"><i></i><b></b><i></i></div>' +
     '<div class="row between" style="font-size:10.5px;font-weight:800">' +
       '<span class="mute">COÛT D\'AMÉLIORATION</span>' +
       '<span class="row gap4" style="color:' + (S.poussiere >= cost ? "#C79BFF" : "var(--textMute)") + '">' +
       ic("poussiere", 12) + fmt(cost) + " / " + fmt(S.poussiere) + "</span></div>" +
     '<div class="mt6">' + meter(Math.min(100, (S.poussiere / cost) * 100), "#9B5CF6") + "</div>" +
     '<div class="col gap6 mt10">' +
-      btn(ic("sparkle", 14) + "Améliorer", { cls: "blue", small: true, act: "upgradeItem", arg: it.id, dis: S.poussiere < cost }) +
+      btn(ic("sparkle", 14) + "Améliorer tous les équipements", { cls: "blue", small: true, act: "upgradeItem", arg: it.id, dis: S.poussiere < cost }) +
       '<div class="row gap6">' +
       (equipped ? btn("Démonter", { cls: "ghost", small: true, act: "unequip", arg: it.slot })
                 : btn("Équiper", { cls: "green", small: true, act: "equip", arg: it.id })) +
