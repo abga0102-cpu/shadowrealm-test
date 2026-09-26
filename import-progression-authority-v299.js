@@ -43,6 +43,12 @@ function normalizeState(s){
   (s.inventory||[]).forEach(function(it){normalizeItem(it,s);});
   if(s.equipped)Object.keys(s.equipped).forEach(function(k){normalizeItem(s.equipped[k],s);});
   (s.pets||[]).forEach(function(p){if(!p)return;p.legacyLevel=p.legacyLevel==null?(Number(p.level)||0):p.legacyLevel;p.level=0;p.petCurveVersion=Math.max(286,Number(p.petCurveVersion)||0);});
+  /* V455: an imported save inherits the highest equipment enhancement it
+     already owned, then every old/current piece is synchronized to it. */
+  try{
+    var globalApi=window.__srGlobalEquipmentUpgradeV455;
+    if(globalApi&&typeof globalApi.syncState==='function')globalApi.syncState(s);
+  }catch(_){ }
   s.progressionOverhaulVersion=Math.max(283,Number(s.progressionOverhaulVersion)||0);
   s.importProgressionVersion=299;
   return s;
