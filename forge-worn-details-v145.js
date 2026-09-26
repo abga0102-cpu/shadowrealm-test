@@ -1,6 +1,6 @@
 /* SHADOWREACH · Forge worn details v145
    Additive presentation layer. Keeps every previous Forge patch loaded.
-   Adds the equipped item's icon, Poussiere-upgrade count (item.level), and affixes
+   Adds the equipped item's icon, Poussiere-upgrade count (item.upgradeLevel), and affixes
    to the live Forge comparison. Also enriches the v144 synthetic test preview.
    No economy, drop, recycling, inventory or save rules are changed. */
 (function(){
@@ -31,7 +31,7 @@ function clearAll(){queue=[];current=null;remove();}
 function enqueue(r){var it=byId(r&&r.id);if(!it)return;var idx=-1;for(var i=0;i<queue.length;i++){var qi=byId(queue[i].id);if(qi&&qi.slot===it.slot){idx=i;break;}}if(idx>=0){var old=byId(queue[idx].id);if(!old||score(it)>score(old))queue[idx]=r;return;}queue.push(r);if(queue.length>MAX_QUEUE){queue.sort(function(a,b){return score(byId(b.id))-score(byId(a.id));});queue=queue.slice(0,MAX_QUEUE);}}
 function wornCard(cur,worn,pd){
  if(!cur)return '<div style="padding:6px;border-radius:8px;background:#0b1220"><div style="font-size:8px;color:#8493aa;font-weight:900">PORTÉ</div><div style="font-size:10px;font-weight:900;color:#9dacbf;margin-top:4px">Aucun</div></div>';
- var cr=rarity(cur),lv=Math.max(0,Number(cur.level)||0);
+ var cr=rarity(cur),lv=(typeof equipmentUpgradeLevel==='function'?equipmentUpgradeLevel(cur):Math.max(0,Number(cur.upgradeLevel)||0));
  return '<div style="padding:6px;border-radius:8px;background:#0b1220;min-width:0">'+
   '<div style="font-size:8px;color:#8493aa;font-weight:900">PORTÉ</div>'+
   '<div style="display:flex;gap:6px;align-items:center;margin-top:3px">'+
