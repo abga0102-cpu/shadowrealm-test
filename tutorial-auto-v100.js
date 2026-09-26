@@ -1,7 +1,7 @@
-/* SHADOWREACH · tutorial sequencing + AUTO unlock v100 · Phase 2C
+/* SHADOWREACH · tutorial sequencing + AUTO unlock v100 / V459 · Phase 2C
    - Tutorial cards never stack over a modal/result window.
+   - V459 introductions are route-aware and trigger as soon as the destination system mounts.
    - Tutorial sequencing consumes the canonical modal lifecycle instead of DOM mutation.
-   - The next tutorial step waits for the previous UI to be fully closed.
    - Automatic skill casting unlocks at character level 10.
 */
 (function(){
@@ -67,20 +67,20 @@
 
     function scheduleTutorialCheck(delay){
       clearTimeout(tutorialTimer);
-      tutorialTimer = setTimeout(function(){
-        if (blockingUiOpen()) return;
-        if (typeof route !== 'undefined' && route !== 'accueil') return;
+      var wait=Math.max(0,Number(delay)||0);
+      tutorialTimer=setTimeout(function(){
+        tutorialTimer=0;
+        if(blockingUiOpen())return;
         nativeCheckTutorial();
-      }, Math.max(0, Number(delay)||0));
+      },wait);
     }
 
     checkTutorial = function(){
-      /* A forge result, item detail, reward popup, research popup, etc. owns the
-         screen until it is closed. Never insert a tutorial under/over it. */
+      /* A modal/result owns the screen until it closes. Otherwise the system
+         renderer has already mounted the destination, so route-aware onboarding
+         should appear immediately rather than waiting for a return to Home. */
       if (blockingUiOpen()) return;
-      if (document.getElementById('tutorialCard')) return;
-      /* Delay one short beat so a modal opened by the same click has time to mount. */
-      scheduleTutorialCheck(180);
+      scheduleTutorialCheck(0);
     };
 
     function removeTutorialBehindModal(){
@@ -100,12 +100,12 @@
         clearTimeout(tutorialTimer);
         removeTutorialBehindModal();
       } else {
-        scheduleTutorialCheck(220);
+        scheduleTutorialCheck(0);
       }
     });
 
-    /* Re-check after normal navigation/render settles as well. */
-    window.addEventListener('load', function(){ scheduleTutorialCheck(300); }, {once:true});
+    /* Initial boot still waits for the first renderer; later navigation is immediate. */
+    window.addEventListener('load', function(){ scheduleTutorialCheck(80); }, {once:true});
   }
 
   /* V446: permanent contextual help complements the one-time tutorial. It is
