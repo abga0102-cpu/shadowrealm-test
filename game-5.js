@@ -985,11 +985,13 @@ function tutorialStepForKey(key) {
   const seen = S.tutorial.seen || (S.tutorial.seen = {});
   if (seen[key]) return null;
   if (key === "combat") return {key:"combat",title:"Combat automatique",sub:"Bats les ennemis pour monter les étages et gagner Or + EXP."};
-  if (key === "equipement" && (S.inventory.length || SLOTS.some((k)=>S.equipped[k])))
+  /* V460 · Full-screen system introductions explain the system before the
+     player interacts with it. Entry itself is the trigger, not owned content. */
+  if (key === "equipement")
     return {key:"equipement",title:"Équipement",sub:"Ici, l’inventaire, les pièces portées et les statistiques sont réunis. Utilise Tester pour comparer avant d’équiper."};
-  if (key === "competence" && Object.keys(S.skills || {}).length)
+  if (key === "competence")
     return {key:"competence",title:"Compétences",sub:"Équipe tes compétences actives, améliore-les avec les doublons et compare leur impact sur ta Puissance."};
-  if (key === "familier" && ((S.pets||[]).length || (S.eggs||[]).length))
+  if (key === "familier")
     return {key:"familier",title:"Familiers",sub:"Gère ici tes œufs, tes éclosions et tes familiers. Chaque œuf conserve sa vraie rareté jusqu’à l’éclosion."};
   if (key === "forge" && S.minerai >= FORGE_CRAFT_COST)
     return {key:"forge",title:"Forge",sub:"Le Minerai fabrique l’équipement. L’Or améliore le niveau de Forge."};
@@ -1000,7 +1002,7 @@ function tutorialStepForKey(key) {
   }
   if (key === "megaBoss" && megaRaidUnlocked(S))
     return {key:"megaBoss",title:"Méga Boss",sub:"Les Méga-Boss reprennent d’anciens Boss avec une puissance fortement augmentée et leurs propres récompenses."};
-  if (key === "tree" && (S.pe||0) > 0)
+  if (key === "tree")
     return {key:"tree",title:"Arbre personnel",sub:"Les PE gagnés en Raid Évolution servent ici à débloquer et améliorer des bonus permanents."};
   return null;
 }
@@ -1035,8 +1037,9 @@ function pendingTutorialStepForRoute(currentRoute) {
   }
   return null;
 }
-function checkTutorial() {
+function checkTutorial(expectedRoute) {
   if (!S.tutorial) return;
+  if (expectedRoute && expectedRoute !== route) return;
   const existing = document.getElementById("tutorialCard");
   const allowed = tutorialKeysForRoute(route);
   if (existing) {
@@ -1110,7 +1113,9 @@ function render() {
   attachArena();
   requestAnimationFrame(() => {
     syncEquipPreviewSpacer();
-    checkTutorial();
+    /* V460 · The destination owns its intro on the first frame after mount.
+       This happens before any tap inside that system can occur. */
+    checkTutorial(route);
     if (tutorialCurrentKey) updateTutorialGuide();
   });
 }
