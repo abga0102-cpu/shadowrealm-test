@@ -2302,15 +2302,24 @@ function upgradeItem(id) {
     const beforeHp = Number(it.hp || 0);
     result={ok:true, success:Math.random()*100 < chance, chance:chance, seals:seals};
     if (!result.success) return;
-    it.level += 1;
-    /* V429 · Poussière rare mais réellement impactante : chaque amélioration
-       réussie ajoute +1 % de la stat de référence. Les anciennes pièces gardent
-       leur puissance acquise : leur valeur au moment de la migration reste l'ancre. */
-    const anchorLevel = it.upgradeBaseLevel || 0;
-    const steps = Math.max(0, it.level - anchorLevel);
-    if (it.baseDamage) it.damage = Math.round(it.baseDamage * (1 + steps * 0.01) * 100) / 100;
-    if (it.baseHp) it.hp = Math.round(it.baseHp * (1 + steps * 0.01) * 100) / 100;
-    it.power = Math.round((it.damage + it.hp) * 100) / 100;
+    /* V455 · The Dust level is shared by every equipment piece. One successful
+       upgrade raises the account-wide equipment level, immediately updates worn
+       gear + inventory, and future Forge drops inherit the same level. */
+    const currentGlobal = Math.max(0, Math.floor(Number(s.equipmentUpgradeLevel) || 0), Math.floor(Number(it.level) || 0));
+    const nextGlobal = currentGlobal + 1;
+    const globalApi = window.__srGlobalEquipmentUpgradeV455;
+    if (globalApi && typeof globalApi.syncState === "function") {
+      globalApi.syncState(s, nextGlobal);
+    } else {
+      s.equipmentUpgradeLevel = nextGlobal;
+      it.level = nextGlobal;
+      const anchorLevel = it.upgradeBaseLevel || 0;
+      const steps = Math.max(0, it.level - anchorLevel);
+      if (it.baseDamage) it.damage = Math.round(it.baseDamage * (1 + steps * 0.01) * 100) / 100;
+      if (it.baseHp) it.hp = Math.round(it.baseHp * (1 + steps * 0.01) * 100) / 100;
+      it.power = Math.round((it.damage + it.hp) * 100) / 100;
+    }
+    result.globalLevel = nextGlobal;
     result.statGain = Math.round(((it.damage - beforeDamage) + (it.hp - beforeHp)) * 100) / 100;
     result.statLabel = it.baseDamage ? "ATQ" : "PV";
   });
