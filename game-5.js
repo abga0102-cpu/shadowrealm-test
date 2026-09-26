@@ -1450,7 +1450,7 @@ function showSkillResult(res) {
     const levelInfo = r.dup
       ? (r.leveled
           ? '<div class="tiny bb" style="color:var(--greenLit)">Niv. ' + r.beforeLevel + ' → ' + r.afterLevel + '</div>' +
-            '<div class="tiny b" style="color:var(--goldLit)">+10 % puissance</div>' +
+            '<div class="tiny b" style="color:var(--goldLit)">+20 % puissance</div>' +
             (r.globalPowerGain > 0 ? '<div class="tiny b" style="color:#8FEFF4">+' + fmt(r.globalPowerGain) + ' puissance globale</div>' : '')
           : '<div class="tiny b" style="color:var(--textMute)">' +
             (r.need ? r.count + ' / ' + r.need + ' vers Niv. ' + (r.afterLevel + 1) : 'Niveau maximum') + '</div>')
@@ -1467,7 +1467,7 @@ function showSkillResult(res) {
   const totalPowerGain = levelUps.reduce((sum, r) => sum + Math.max(0, Number(r.globalPowerGain) || 0), 0);
   let summary;
   if (levelUps.length) {
-    summary = levelUps.length + " montée" + (levelUps.length > 1 ? "s" : "") + " de niveau · +10 % puissance par niveau" +
+    summary = levelUps.length + " montée" + (levelUps.length > 1 ? "s" : "") + " de niveau · +20 % puissance par niveau" +
       (totalPowerGain > 0 ? " · +" + fmt(totalPowerGain) + " puissance globale" : "");
     if (news) summary = news + " nouvelle" + (news > 1 ? "s" : "") + " · " + summary;
   } else if (news) {
@@ -1482,20 +1482,41 @@ function showSkillResult(res) {
     '<div class="dim small center" style="margin-bottom:10px">' + summary + "</div>" +
     btn("Continuer", { cls: "purple", act: "closeModal" }), "Résultat d’invocation");
 }
+function skillPowerTransitionText(pv) {
+  if (!pv) return "";
+  return "Puissance " + fmt(pv.before) + " → " + fmt(pv.after) +
+    " (" + (pv.delta > 0 ? "+" : "") + fmt(pv.delta) + ")";
+}
+function announceSkillPowerChange(r, label) {
+  if (!r) return;
+  toast(label || "Compétence modifiée", r.delta >= 0, skillPowerTransitionText(r));
+}
 function showSkillSlotPicker(idx) {
   const owned = SKILL_DEFS.filter((d) => S.skills[d.id]);
+  const powerLine = (pv) => {
+    if (!pv) return "";
+    const col = pv.delta > 0 ? "var(--greenLit)" : pv.delta < 0 ? "var(--redLit)" : "var(--textMute)";
+    return '<div class="tiny b mt2" style="color:' + col + '">' + skillPowerTransitionText(pv) + "</div>";
+  };
+  const rows = owned.map((d) => {
+    const pv = typeof skillEquipPowerPreview === "function" ? skillEquipPowerPreview(idx, d.id) : null;
+    return '<div class="itemRow" style="border-left-color:' + d.color + ';cursor:pointer" data-act="setSkill" data-arg="' + idx +
+      '" data-arg2="' + d.id + '">' +
+      '<div class="imini" style="width:32px;height:32px;background:linear-gradient(180deg,' + shade(d.color, 18) + "," +
+      shade(d.color, -38) + ');border-color:' + d.color + '">' + ic(d.icon, 20) + "</div>" +
+      '<div class="flex1">' +
+      '<div class="b small">' + d.name + '</div><div class="mute tiny b">Niv.' + S.skills[d.id].level + " · CD " + d.cd + "s</div>" +
+      powerLine(pv) + "</div>" +
+      (S.skillSlots[idx] === d.id ? '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">Actuelle</span>'
+        : ic("chevron", 11)) + "</div>";
+  }).join("");
+  const removePreview = S.skillSlots[idx] && typeof skillEquipPowerPreview === "function"
+    ? skillEquipPowerPreview(idx, null) : null;
   openModal((owned.length === 0 ? '<div class="dim small center" style="margin-bottom:12px">Aucune compétence possédée.</div>'
-      : '<div class="scroller">' + owned.map((d) =>
-        '<div class="itemRow" style="border-left-color:' + d.color + ';cursor:pointer" data-act="setSkill" data-arg="' + idx +
-        '" data-arg2="' + d.id + '">' +
-        '<div class="imini" style="width:32px;height:32px;background:linear-gradient(180deg,' + shade(d.color, 18) + "," +
-        shade(d.color, -38) + ');border-color:' + d.color + '">' + ic(d.icon, 20) + "</div>" +
-        '<div class="flex1">' +
-        '<div class="b small">' + d.name + '</div><div class="mute tiny b">Niv.' + S.skills[d.id].level + " · CD " + d.cd + "s</div></div>" +
-        (S.skillSlots[idx] === d.id ? '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">Actuelle</span>'
-          : ic("chevron", 11)) + "</div>").join("") + "</div>") +
+      : '<div class="scroller">' + rows + "</div>") +
     '<div class="col gap6 mt10">' +
-      (S.skillSlots[idx] ? btn("Vider l'emplacement", { cls: "dark", small: true, act: "setSkill", arg: idx, arg2: "" }) : "") +
+      (S.skillSlots[idx] ? btn("Vider l'emplacement" + (removePreview ? " · " + skillPowerTransitionText(removePreview) : ""),
+        { cls: "dark", small: true, act: "setSkill", arg: idx, arg2: "" }) : "") +
       btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
     "Emplacement " + (idx + 1));
 }
@@ -1720,8 +1741,11 @@ const ACT = {
   skillFilter: (a) => { skillFilter = a; render(); },
   skillCard: (a) => showSkillCard(a),
   unequipSkill: (a) => {
-    update((s) => { const i = s.skillSlots.indexOf(a); if (i >= 0) s.skillSlots[i] = null; });
-    closeModal(); toast("Déséquipé"); render();
+    const i = S.skillSlots.indexOf(a);
+    const r = i >= 0 ? equipSkill(i, null) : null;
+    closeModal();
+    if (r) announceSkillPowerChange(r, "Compétence retirée");
+    render();
   },
 
   // skills
@@ -1734,12 +1758,16 @@ const ACT = {
     }
   },
   skillSlot: (a) => showSkillSlotPicker(parseInt(a, 10)),
-  setSkill: (a, b) => { equipSkill(parseInt(a, 10), b || null); closeModal(); },
+  setSkill: (a, b) => {
+    const r = equipSkill(parseInt(a, 10), b || null);
+    closeModal();
+    announceSkillPowerChange(r, r && !r.skillId ? "Emplacement vidé" : r && r.replaced ? "Compétence remplacée" : "Compétence équipée");
+  },
   autoEquipSkill: (a) => {
     const empty = S.skillSlots.slice(0, skillSlotCount(S)).indexOf(null);
-    equipSkill(empty >= 0 ? empty : 0, a);
+    const r = equipSkill(empty >= 0 ? empty : 0, a);
     closeModal();
-    toast("Compétence équipée", true);
+    announceSkillPowerChange(r, r && r.replaced ? "Compétence remplacée" : "Compétence équipée");
   },
 
   // pets
