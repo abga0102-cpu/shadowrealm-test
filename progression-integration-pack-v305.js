@@ -232,7 +232,7 @@ window.__srProgressionUnlocksV321=window.__srProgressionUnlocksV316;
 window.__srForgeIntroTutorialV321=forgeIntroTutorialV321;
 
 /* ---------- V317 Forge -> Raid onboarding ---------- */
-var V317_START_MINERAI=250,V317_LEGACY_START=400,V317_FRESH_MS=5*60*1000;
+var V317_START_MINERAI=0,V317_LEGACY_START=400,V317_FRESH_MS=5*60*1000;
 var V317_LEGACY_RAID_LEVEL=(typeof RULES!=='undefined'&&Number(RULES.RAID_UNLOCK_LEVEL))||5;
 function v317HeroLevel(s){return Math.max(1,Math.floor(Number(s&&s.level)||1));}
 function v317CraftCost(s){try{return Math.max(1,Number(forgeCost(s&&s.forge?s.forge.level:1))||10);}catch(_){return 10;}}
@@ -350,7 +350,7 @@ try{
 }catch(_){ }
 window.__srV317EnsureOnboarding=function(s){v317Apply(s);return s;};
 window.__srV317RaidUnlocked=v317RaidUnlocked;
-window.__srForgeRaidOnboardingConfigV317={startMinerai:V317_START_MINERAI,craftCost:10,paidCraftsBeforeRaid:25,forgeUnlockLevel:V317_RAID_FORGE_LEVEL,raidDepletionMinHeroLevel:V317_RAID_FORGE_LEVEL,actualForgeUnlockFloor:FORGE_UNLOCK_FLOOR,actualForgeUnlockStage:'1-2',legacyRaidLevel:V317_LEGACY_RAID_LEVEL};
+window.__srForgeRaidOnboardingConfigV317={startMinerai:V317_START_MINERAI,craftCost:10,paidCraftsBeforeRaid:10,forgeUnlockLevel:V317_RAID_FORGE_LEVEL,raidDepletionMinHeroLevel:V317_RAID_FORGE_LEVEL,actualForgeUnlockFloor:FORGE_UNLOCK_FLOOR,actualForgeUnlockStage:'1-2',legacyRaidLevel:V317_LEGACY_RAID_LEVEL};
 
 /* ---------- V461 · Dense first minutes ---------- */
 var V461_FRESH_MS=30*60*1000,V461_STARTER_EGG_FLOOR=3,V461_STARTER_HATCH_SECS=30,V461_FIRST_BOSS_FLOOR=5;

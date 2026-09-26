@@ -7,7 +7,7 @@ async function openCleanGame(page) {
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
 }
 
-test('V447 new-player defaults start with 100 Minerai while migration preserves saved Minerai', async ({ page }) => {
+test('V447 new-player defaults wait for the 100 Minerai Forge reward while migration preserves saved Minerai', async ({ page }) => {
   await openCleanGame(page);
   const state = await page.evaluate(() => {
     const fresh = defaultState('QA');
@@ -18,13 +18,13 @@ test('V447 new-player defaults start with 100 Minerai while migration preserves 
       freshMinerai: fresh.minerai,
       migratedMinerai: migrated.minerai,
       forgeCost: forgeCost(1),
-      config: window.__srNewPlayerStarterConfigV447 || null,
+      config: window.__srForgeIntroCombatConfigV321 || null,
     };
   });
-  expect(state.freshMinerai).toBe(100);
+  expect(state.freshMinerai).toBe(0);
   expect(state.migratedMinerai).toBe(158);
   expect(state.forgeCost).toBe(10);
-  expect(state.config).toMatchObject({ minerai: 100, baseForgeCrafts: 10 });
+  expect(state.config).toMatchObject({ mineraiReward: 100 });
 });
 
 test('V446 contextual info is available without changing screen scroll', async ({ page }) => {

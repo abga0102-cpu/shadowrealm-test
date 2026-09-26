@@ -2018,7 +2018,7 @@ function defaultState(name) {
     version: SAVE_VERSION, playerName: name,
     level: 1, exp: 0, statPoints: 0,
     stats: { sante: 0, degats: 0, crit: 0, critred: 0 },
-    gold: 100, gems: 0, minerai: 400, poussiere: 0, eclat: 0, essence: 0, apples: 0,
+    gold: 100, gems: 0, minerai: 0, poussiere: 0, eclat: 0, essence: 0, apples: 0,
     floor: 1, step: 1, recordFloor: 1, checkpoint: 1, bossClears: {}, megaBossClears: {},
     equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null,
       collier: null, anneau: null, ceinture: null },

@@ -16,6 +16,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Combat cadence / impact compatibility | `combat-consolidated-v156.js` | Active combat compatibility owner. |
 | Combat readability overlays | `combat-polish-v157.js` | Visual/readability responsibility only. |
 | Combat animation | `combat-animation-v169.js` | Locomotion, weapon choreography, `drawArena` animation wrapping. |
+| Starter Minerai / Forge teaching reward | `combat-progression-authority-v285.js` | Owns the one-time 100 Minerai reward after the teaching defeat at 1-2, protected by the existing V323 grant marker. `game-1.js` and `progression-integration-pack-v305.js` start new states at zero; stage-gold no longer wraps starter defaults. Existing saved balances remain intact. |
 | Campaign combat progression | `combat-progression-authority-v285.js` | Current enemy/boss HP progression authority. |
 | Raid Évolution PE reward | `raid-pe-authority-v290.js` | Sole canonical Evolution raid PE reward owner: 100 PE at level 1, then +3 PE per raid level. Historical Tree auditing now lives in `personal-tree-radial-v82.js` and must remain observational; retired `tree-safety-v83.js` must not regain `raidReward` ownership. |
 | Save import | `import-save-guard-v207.js` | Sole authoritative `ACT.importSave` owner. |
