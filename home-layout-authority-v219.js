@@ -37,17 +37,21 @@ style.textContent=`
 #app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:8px!important;line-height:1!important;white-space:nowrap!important}
 #app.srHomeFullArena .worldRebirth .worldDot,#app.srHomeFullArena .worldDefis .worldDot{width:7px!important;height:7px!important;top:1px!important;right:1px!important}
 #app.srHomeFullArena .worldMenu{left:8px!important;top:auto!important;bottom:7px!important;right:auto!important}
-#app.srHomeFullArena .srStarterRoadmapV461{position:absolute;z-index:34;right:8px;top:calc(var(--srHudH) + 72px);width:min(176px,46vw);box-sizing:border-box;padding:7px 8px 6px;border:1px solid #4b7097;border-left:3px solid #8feff4;border-radius:10px;background:linear-gradient(145deg,#122a3fe8,#091522ee);box-shadow:0 4px 12px #0009,inset 0 1px #ffffff12;color:var(--text);pointer-events:none;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+#app.srHomeFullArena .srStarterRoadmapV461{position:absolute;z-index:34;right:7px;top:calc(var(--srHudH) + 92px);width:min(148px,40vw);box-sizing:border-box;padding:5px 6px 5px;border:1px solid #4b7097;border-left:3px solid #8feff4;border-radius:9px;background:linear-gradient(145deg,#122a3fe8,#091522ee);box-shadow:0 3px 9px #0008,inset 0 1px #ffffff12;color:var(--text);pointer-events:none;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 #app.srHomeFullArena .srStarterRoadmapV461[data-act]{pointer-events:auto;cursor:pointer}
 #app.srHomeFullArena .srStarterRoadmapV461.ready{border-color:#54c885;border-left-color:#65e39b;box-shadow:0 4px 12px #0009,0 0 13px #45d58a24,inset 0 1px #ffffff12}
-#app.srHomeFullArena .srStarterKickerV461{display:flex;align-items:center;gap:4px;color:#8feff4;font:900 7px/1 system-ui;letter-spacing:.55px}
+#app.srHomeFullArena .srStarterKickerV461{display:flex;align-items:center;gap:3px;color:#8feff4;font:900 6.3px/1 system-ui;letter-spacing:.42px}
 #app.srHomeFullArena .srStarterKickerV461 span{margin-left:auto;color:#d6e8f4}
-#app.srHomeFullArena .srStarterRoadmapV461>b{display:block;margin-top:4px;color:#fff0bd;font:900 10.5px/1.1 Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#app.srHomeFullArena .srStarterRoadmapV461>small{display:block;margin-top:3px;color:#b7c7d9;font:700 7.6px/1.2 system-ui}
-#app.srHomeFullArena .srStarterBarV461{height:3px;margin-top:5px;border-radius:999px;background:#ffffff12;overflow:hidden}
+#app.srHomeFullArena .srStarterRoadmapV461>b{display:block;margin-top:3px;color:#fff0bd;font:900 9.4px/1.05 Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app.srHomeFullArena .srStarterRoadmapV461>small{display:block;margin-top:2px;color:#b7c7d9;font:700 6.8px/1.15 system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app.srHomeFullArena .srStarterBarV461{height:2px;margin-top:4px;border-radius:999px;background:#ffffff12;overflow:hidden}
 #app.srHomeFullArena .srStarterBarV461>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#55b8e8,#8feff4)}
 #app.srHomeFullArena .srStarterRoadmapV461.ready .srStarterBarV461>i{background:linear-gradient(90deg,#3fb950,#65e39b)}
-#app.srHomeFullArena .srStarterRoadmapV461>em{display:block;margin-top:4px;color:#7eeea8;font:900 7px/1 system-ui;font-style:normal;text-align:right;letter-spacing:.45px}
+#app.srHomeFullArena .srStarterRoadmapV461>em{display:block;margin-top:3px;color:#7eeea8;font:900 6.2px/1 system-ui;font-style:normal;text-align:right;letter-spacing:.35px}
+#app.srHomeFullArena .srStarterRoadmapV461.srStarterTightV463{width:min(126px,36vw);padding:4px 5px}
+#app.srHomeFullArena .srStarterRoadmapV461.srStarterTightV463>small,#app.srHomeFullArena .srStarterRoadmapV461.srStarterTightV463 .srStarterBarV461{display:none!important}
+#app.srHomeFullArena .srStarterRoadmapV461.srStarterTightV463>b{font-size:8.8px;margin-top:2px}
+#app.srHomeFullArena .srStarterRoadmapV461.srStarterTightV463>em{margin-top:2px}
 #app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 2px)!important;bottom:auto!important;z-index:22!important;gap:3px!important}
 #app.srHomeFullArena #arena .floorTxt{font-size:15px!important}
 #app.srHomeFullArena #arena .fTrack{transform:scale(.90)!important;transform-origin:center!important}
@@ -80,8 +84,9 @@ style.textContent=`
 #toast{max-width:calc(100% - 24px)!important;left:12px!important;right:12px!important;margin:0 auto!important}
 #app.srHomeFullArena #tutorialCard{bottom:calc(var(--srForgeH) + var(--srSkillH) + 68px + env(safe-area-inset-bottom))!important}
 #app.srHomeFullArena:has(#tutorialCard) #toast{bottom:calc(var(--srForgeH) + var(--srSkillH) + 160px + env(safe-area-inset-bottom))!important}
-@media(max-width:370px){#app.srHomeFullArena{--srHudH:104px;--srSkillH:58px;--srForgeH:180px}#app.srHomeFullArena .srStarterRoadmapV461{right:6px;width:min(164px,47vw);padding:6px 7px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
-@media(max-height:720px){#app.srHomeFullArena{--srHudH:100px;--srSkillH:56px;--srForgeH:174px}#app.srHomeFullArena .srStarterRoadmapV461{top:calc(var(--srHudH) + 64px);padding:5px 7px}#app.srHomeFullArena .srStarterRoadmapV461>small{font-size:7px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
+@media(max-width:430px){#app.srHomeFullArena .srStarterRoadmapV461{right:6px;width:min(142px,39vw);padding:5px 6px}#app.srHomeFullArena .srStarterRoadmapV461>small{font-size:6.6px}}
+@media(max-width:370px){#app.srHomeFullArena{--srHudH:104px;--srSkillH:58px;--srForgeH:180px}#app.srHomeFullArena .srStarterRoadmapV461{right:5px;width:min(132px,40vw);padding:4px 5px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
+@media(max-height:720px){#app.srHomeFullArena{--srHudH:100px;--srSkillH:56px;--srForgeH:174px}#app.srHomeFullArena .srStarterRoadmapV461{padding:4px 5px}#app.srHomeFullArena .srStarterRoadmapV461>small{font-size:6.4px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
 `;
 document.head.appendChild(style);
 var app=document.getElementById('app'),screen=document.getElementById('screen');
@@ -140,9 +145,40 @@ function decorateEggReady(){
   world.appendChild(card);
 }
 
+function positionStarterRoadmapV463(){
+  if(!screen)return;
+  var world=screen.querySelector('.campaignWorld');
+  var card=screen.querySelector('.srStarterRoadmapV461');
+  var floor=screen.querySelector('#arena .floorTag');
+  if(!world||!card||!floor)return;
+
+  /* The stage label is gameplay information and always wins over onboarding UI.
+     Place the compact roadmap below the ENTIRE floor tag (title + progress + wave
+     chips), regardless of horizontal overlap. This fixes cases where a narrow
+     right-hand card still covered "FACILE x-x" on iPhone-sized viewports. */
+  card.classList.remove('srStarterTightV463');
+  var wr=world.getBoundingClientRect(),fr=floor.getBoundingClientRect();
+  var gap=8;
+  var desired=Math.ceil(fr.bottom-wr.top+gap);
+  card.style.setProperty('top',desired+'px','important');
+
+  var cr=card.getBoundingClientRect();
+  if(cr.bottom>wr.bottom-8){
+    card.classList.add('srStarterTightV463');
+    cr=card.getBoundingClientRect();
+    var maxTop=Math.max(8,Math.floor(wr.height-cr.height-8));
+    desired=Math.min(desired,maxTop);
+    /* Never move it back into the protected stage band when room exists below. */
+    if(wr.height-(fr.bottom-wr.top)>=cr.height+gap)desired=Math.ceil(fr.bottom-wr.top+gap);
+    card.style.setProperty('top',desired+'px','important');
+  }
+  card.setAttribute('data-stage-safe-v463','1');
+}
+
 function decorate(){
   if(!screen)return;
   decorateEggReady();
+  positionStarterRoadmapV463();
   var info=screen.querySelector('.homeForge .iBtn');
   if(info){
     ['width','height','min-width','min-height','max-width','max-height'].forEach(function(p){important(info,p,'28px');});
@@ -164,6 +200,7 @@ function sync(){
 }
 var queued=false;function schedule(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;sync();});}
 window.__srApplyHomeCompatV119=decorate;
+window.__srPositionStarterRoadmapV463=positionStarterRoadmapV463;
 window.__srSyncHomeLayoutV219=sync;window.__srSyncHomeFramePhase2B=sync;
 window.addEventListener('sr:bottomnavrendered',schedule);
 var lastViewportWidth=Math.round(window.innerWidth||0);
