@@ -927,8 +927,9 @@ function checkTimerNotifications() {
 let tutorialCurrentKey = null;
 let tutorialGuideTarget = null;
 
-/* Guided tutorial flows. Grouped systems deliberately use two visual steps:
-   first the parent hub on Combat, then the exact sub-feature inside that hub. */
+/* V459 · System introductions are contextual.
+   They no longer begin on Home and then ask the player to navigate through a
+   hub. A one-time intro is shown when the player actually enters that system. */
 const TUTORIAL_FLOWS = {
   competence: { parent: "developpement", parentLabel: "Développement", child: "competences", childLabel: "Compétences" },
   familier:   { parent: "developpement", parentLabel: "Développement", child: "familiers", childLabel: "Familiers" },
@@ -936,24 +937,22 @@ const TUTORIAL_FLOWS = {
   raid:       { parent: "defis", parentLabel: "Défis", child: "raid", childLabel: "Raids" },
   megaBoss:   { parent: "defis", parentLabel: "Défis", child: "mega", childLabel: "Méga-Boss" },
 };
+const TUTORIAL_ROUTE_KEYS = {
+  accueil: ["combat", "forge"],
+  equipement: ["equipement"],
+  competences: ["competence"],
+  familiers: ["familier"],
+  raid: ["raid"],
+  mega: ["megaBoss"],
+  arbre: ["tree"],
+};
 
 function tutorialGuideInfo(key) {
-  const flow = TUTORIAL_FLOWS[key];
-  if (flow) {
-    if (route === flow.parent) {
-      return { selector: '[data-act="go"][data-arg="' + flow.child + '"]', next: flow.child, label: "Ouvrir " + flow.childLabel };
-    }
-    if (route === flow.child) return { selector: null, next: null, label: "Compris" };
-    return { selector: '[data-act="go"][data-arg="' + flow.parent + '"]', next: flow.parent, label: "Ouvrir " + flow.parentLabel };
-  }
-  const direct = {
-    combat: { selector: '#arenaSlot', next: null, label: "Compris" },
-    equipement: route === "equipement"
-      ? { selector: null, next: null, label: "Compris" }
-      : { selector: '[data-act="go"][data-arg="equipement"]', next: "equipement", label: "Ouvrir Équipement" },
-    forge: { selector: '[data-act="forge"][data-arg="1"]', next: null, label: "Compris" }
-  };
-  return direct[key] || { selector: null, next: null, label: "Compris" };
+  /* Only Home systems still need a target arrow. Every full-screen system
+     already opened before its intro appears, so its CTA is simply Compris. */
+  if (key === "combat" && route === "accueil") return { selector: "#arenaSlot", next: null, label: "Compris" };
+  if (key === "forge" && route === "accueil") return { selector: '[data-act="forge"][data-arg="1"]', next: null, label: "Compris" };
+  return { selector: null, next: null, label: "Compris" };
 }
 function clearTutorialGuide() {
   if (tutorialGuideTarget) tutorialGuideTarget.classList.remove('tutorialTarget');
@@ -981,39 +980,85 @@ function updateTutorialGuide() {
   g.innerHTML = '<div class="arrow' + (above ? '' : ' down') + '"></div>';
   document.body.appendChild(g);
 }
-function pendingTutorialStep() {
+function tutorialStepForKey(key) {
   if (!S.tutorial) return null;
   const seen = S.tutorial.seen || (S.tutorial.seen = {});
-  if (!seen.combat) return {key:"combat",title:"Combat automatique",sub:"Bats les ennemis pour monter les étages et gagner Or + EXP."};
-  if (!seen.equipement && (S.inventory.length || SLOTS.some((k)=>S.equipped[k]))) return {key:"equipement",title:"Équipement",sub:"Ouvre Équipement : inventaire, pièces portées et statistiques sont réunis au même endroit. Utilise Tester pour comparer avant d’équiper."};
-  if (!seen.competence && Object.keys(S.skills || {}).length) return {key:"competence",title:"Compétences",sub:"Suis les flèches : ouvre Développement, puis Compétences. Tu disposes de 3 emplacements actifs."};
-  if (!seen.familier && ((S.pets||[]).length || (S.eggs||[]).length)) return {key:"familier",title:"Familiers",sub:"Suis les flèches : ouvre Développement, puis Familiers. Tes œufs sont stockés individuellement avec leur vraie rareté."};
-  if (!seen.forge && S.minerai >= FORGE_CRAFT_COST) return {key:"forge",title:"Forge",sub:"Le Minerai fabrique l'équipement. L'Or améliore le niveau de Forge."};
-  if (!seen.raid && S.level >= RULES.RAID_UNLOCK_LEVEL) return {key:"raid",title:"Raids",sub:"Suis les flèches : ouvre Défis, puis Raids pour utiliser tes clés et obtenir des ressources spécialisées."};
-  if (!seen.megaBoss && megaRaidUnlocked(S)) return {key:"megaBoss",title:"Méga Boss",sub:"Suis les flèches : ouvre Défis, puis Méga-Boss. Chaque Méga reprend un ancien Boss avec une puissance fortement augmentée."};
-  if (!seen.tree && (S.pe||0) > 0) return {key:"tree",title:"Arbre personnel",sub:"Suis les flèches : ouvre Développement, puis Arbre personnel. Les PE du Raid Évolution servent à améliorer ses nœuds."};
+  if (seen[key]) return null;
+  if (key === "combat") return {key:"combat",title:"Combat automatique",sub:"Bats les ennemis pour monter les étages et gagner Or + EXP."};
+  if (key === "equipement" && (S.inventory.length || SLOTS.some((k)=>S.equipped[k])))
+    return {key:"equipement",title:"Équipement",sub:"Ici, l’inventaire, les pièces portées et les statistiques sont réunis. Utilise Tester pour comparer avant d’équiper."};
+  if (key === "competence" && Object.keys(S.skills || {}).length)
+    return {key:"competence",title:"Compétences",sub:"Équipe tes compétences actives, améliore-les avec les doublons et compare leur impact sur ta Puissance."};
+  if (key === "familier" && ((S.pets||[]).length || (S.eggs||[]).length))
+    return {key:"familier",title:"Familiers",sub:"Gère ici tes œufs, tes éclosions et tes familiers. Chaque œuf conserve sa vraie rareté jusqu’à l’éclosion."};
+  if (key === "forge" && S.minerai >= FORGE_CRAFT_COST)
+    return {key:"forge",title:"Forge",sub:"Le Minerai fabrique l’équipement. L’Or améliore le niveau de Forge."};
+  if (key === "raid") {
+    let unlocked = S.level >= RULES.RAID_UNLOCK_LEVEL;
+    try { if (typeof window.__srV317RaidUnlocked === "function") unlocked = !!window.__srV317RaidUnlocked(S); } catch (_) {}
+    if (unlocked) return {key:"raid",title:"Raids",sub:"Utilise tes clés pour lancer des Raids spécialisés et obtenir les ressources propres à chaque type de Raid."};
+  }
+  if (key === "megaBoss" && megaRaidUnlocked(S))
+    return {key:"megaBoss",title:"Méga Boss",sub:"Les Méga-Boss reprennent d’anciens Boss avec une puissance fortement augmentée et leurs propres récompenses."};
+  if (key === "tree" && (S.pe||0) > 0)
+    return {key:"tree",title:"Arbre personnel",sub:"Les PE gagnés en Raid Évolution servent ici à débloquer et améliorer des bonus permanents."};
+  return null;
+}
+function pendingTutorialStep() {
+  const order = ["combat","equipement","competence","familier","forge","raid","megaBoss","tree"];
+  for (const key of order) {
+    const step = tutorialStepForKey(key);
+    if (step) return step;
+  }
+  return null;
+}
+function tutorialKeysForRoute(currentRoute) {
+  return TUTORIAL_ROUTE_KEYS[currentRoute] || [];
+}
+function pendingTutorialStepForRoute(currentRoute) {
+  if (!S.tutorial) return null;
+  const allowed = tutorialKeysForRoute(currentRoute);
+  if (!allowed.length) return null;
+
+  /* Preserve late onboarding authorities (notably the special Forge lesson and
+     Raid unlock wording) whenever the globally patched step belongs here. */
+  let patched = null;
+  try { patched = pendingTutorialStep(); } catch (_) {}
+  if (patched && allowed.includes(patched.key)) return patched;
+
+  for (const key of allowed) {
+    /* V321 owns when the Forge lesson is allowed to exist. Never revive the
+       generic Forge intro while that onboarding authority intentionally hides it. */
+    if (key === "forge" && window.__srProgressionIntegrationV305) continue;
+    const step = tutorialStepForKey(key);
+    if (step) return step;
+  }
   return null;
 }
 function checkTutorial() {
-  if (!S.tutorial || document.getElementById("tutorialCard") || route !== "accueil") return;
-  const step = pendingTutorialStep();
+  if (!S.tutorial) return;
+  const existing = document.getElementById("tutorialCard");
+  const allowed = tutorialKeysForRoute(route);
+  if (existing) {
+    if (tutorialCurrentKey && allowed.includes(tutorialCurrentKey)) return;
+    clearTutorialGuide();
+    existing.remove();
+    tutorialCurrentKey = null;
+  }
+  const step = pendingTutorialStepForRoute(route);
   if (!step) return;
   tutorialCurrentKey = step.key;
   const el = document.createElement("div");
   el.id = "tutorialCard";
+  el.setAttribute("data-tutorial-key", step.key);
+  el.setAttribute("data-tutorial-route", route);
   el.innerHTML = '<div class="tt">TUTORIEL · ' + esc(step.title) + '</div><div class="ts">' + esc(step.sub) +
-    '</div><div class="td"><button class="btn sm green" data-act="tutorialNext">Continuer</button></div>';
+    '</div><div class="td"><button class="btn sm green" data-act="tutorialNext">Compris</button></div>';
   document.getElementById("app").appendChild(el);
   requestAnimationFrame(updateTutorialGuide);
 }
 function tutorialNext() {
   if (!tutorialCurrentKey) return;
-  const info = tutorialGuideInfo(tutorialCurrentKey);
-  if (info.next) {
-    nav(info.next);
-    requestAnimationFrame(updateTutorialGuide);
-    return;
-  }
   dismissTutorial();
 }
 function dismissTutorial() {
@@ -1025,7 +1070,7 @@ function dismissTutorial() {
   }
   const el = document.getElementById("tutorialCard");
   if (el) el.remove();
-  setTimeout(checkTutorial, 120);
+  requestAnimationFrame(checkTutorial);
 }
 
 function checkLevelUp() {
@@ -1057,15 +1102,17 @@ function render() {
   checkBossReward();
   checkNotable();
   checkSkipNotice();
-  checkTutorial();
   checkLevelUp();
   const sc = document.getElementById("screen");
   const fn = SCREENS[route] || scrAccueil;
   sc.className = (route === "accueil" || (route === "arena" && combat && combat.ctx === "arenaLive")) ? "fixed" : "";
   sc.innerHTML = fn();
   attachArena();
-  requestAnimationFrame(syncEquipPreviewSpacer);
-  if (tutorialCurrentKey) requestAnimationFrame(updateTutorialGuide);
+  requestAnimationFrame(() => {
+    syncEquipPreviewSpacer();
+    checkTutorial();
+    if (tutorialCurrentKey) updateTutorialGuide();
+  });
 }
 
 function attachArena() {
