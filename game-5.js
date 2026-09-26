@@ -988,12 +988,22 @@ function tutorialStepForKey(key) {
   if (key === "combat") return {key:"combat",title:"Combat automatique",sub:"Bats les ennemis pour monter les étages et gagner Or + EXP."};
   /* V460 · Full-screen system introductions explain the system before the
      player interacts with it. Entry itself is the trigger, not owned content. */
-  if (key === "equipement")
+  if (key === "equipement") {
+    const starter = window.__srStarterPacingV462 || window.__srStarterPacingV461;
+    if (starter && typeof starter.buildIntroReady === "function" && !starter.buildIntroReady(S)) return null;
+    if (starter && typeof starter.active === "function" && starter.active(S))
+      return {key:"equipement",title:"Prépare ton build",sub:"Le Boss de Facile 1-5 est plus exigeant. Compare tes pièces et équipe les meilleures avant de l’affronter."};
     return {key:"equipement",title:"Équipement",sub:"Ici, l’inventaire, les pièces portées et les statistiques sont réunis. Utilise Tester pour comparer avant d’équiper."};
+  }
   if (key === "competence")
     return {key:"competence",title:"Compétences",sub:"Équipe tes compétences actives, améliore-les avec les doublons et compare leur impact sur ta Puissance."};
-  if (key === "familier")
+  if (key === "familier") {
+    const starter = window.__srStarterPacingV462 || window.__srStarterPacingV461;
+    if (starter && typeof starter.familiarIntroReady === "function" && !starter.familiarIntroReady(S)) return null;
+    if (starter && typeof starter.active === "function" && starter.active(S))
+      return {key:"familier",title:"Familiers",sub:"Tu viens de recevoir ton premier œuf. Choisis-le dans Œufs en stock puis appuie sur Lancer l’éclosion : c’est toi qui démarres le minuteur."};
     return {key:"familier",title:"Familiers",sub:"Gère ici tes œufs, tes éclosions et tes familiers. Chaque œuf conserve sa vraie rareté jusqu’à l’éclosion."};
+  }
   if (key === "forge" && S.minerai >= FORGE_CRAFT_COST)
     return {key:"forge",title:"Forge",sub:"Le Minerai fabrique l’équipement. L’Or améliore le niveau de Forge."};
   if (key === "raid") {
