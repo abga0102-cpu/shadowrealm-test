@@ -245,7 +245,7 @@ function fmtEquipStat(v) {
    The Roman equipment level is the permanent Equipment Mastery rank (I → IX).
    Hero level is unrelated. Dust progression stays separate in item.upgradeLevel. */
 const EQUIPMENT_MASTERY_TIERS = [
-  { need:0, rank:0, roman:"", bonusPct:0 },
+  { need:0, rank:0, roman:"—", bonusPct:0 },
   { need:100, rank:1, roman:"I", bonusPct:10 },
   { need:300, rank:2, roman:"II", bonusPct:20 },
   { need:600, rank:3, roman:"III", bonusPct:30 },
