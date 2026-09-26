@@ -1,6 +1,6 @@
-/* SHADOWREACH V301 · Dust chance minimum authority
-   Restores the approved minimum 5% upgrade chance after V300 temporarily
-   removed it. Additive authority only: prior versions remain preserved.
+/* SHADOWREACH V301 / V453 · Dust chance minimum authority
+   Keeps the approved 5% minimum while preserving V446's +25 risk threshold.
+   This is the final runtime chance authority loaded after progression-overhaul.
 */
 (function(){
   'use strict';
@@ -9,8 +9,8 @@
 
   function chance(level){
     level=Math.max(0,Math.floor(Number(level)||0));
-    if(level<70)return 100;
-    return Math.max(5,95-5*Math.floor((level-70)/2));
+    if(level<25)return 100;
+    return Math.max(5,95-5*Math.floor((level-25)/2));
   }
 
   window.__srV301UpgradeChance=chance;

@@ -2256,7 +2256,8 @@ function recycleItem(id) {
   });
   return dust;
 }
-function itemUpgradeCost(it) { return Math.round(20 + it.level * 12); }
+/* V453 fallback: kept aligned with the final equipment upgrade authority. */
+function itemUpgradeCost(it) { return Math.round(30 + it.level * 18); }
 function itemUpgradePreview(it) {
   if (!it) return { label:"Stat", current:0, next:0, gain:0 };
   const anchorLevel = it.upgradeBaseLevel || 0;
