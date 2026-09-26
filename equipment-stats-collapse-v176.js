@@ -1,7 +1,7 @@
 /* SHADOWREACH · Equipment presentation authority V176 / V450
    UI-only: combat statistics are collapsed by default and can be expanded on demand.
-   V450: a fresh equipment item has no level suffix. Upgraded equipment is displayed
-   as "Nom | I", "Nom | II", etc. The saved numeric item.level remains unchanged. */
+   V450/V455: equipment displays the Hero-synchronised item.level in Roman numerals.
+   Dust enhancement is separate in item.upgradeLevel and never changes this label. */
 (function(){
 'use strict';
 if(window.__srEquipmentStatsCollapseV176)return;
