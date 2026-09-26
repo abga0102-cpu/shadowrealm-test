@@ -658,6 +658,10 @@ function showSkillCard(id) {
   const equipped = slotIdx >= 0;
   const openSlots = skillSlotCount(S);
   const freeSlot = S.skillSlots.slice(0, openSlots).indexOf(null);
+  const fmtSkillPowerChange = (pv) => pv
+    ? "Puissance " + fmt(pv.before) + " → " + fmt(pv.after) +
+      " (" + (pv.delta > 0 ? "+" : "") + fmt(pv.delta) + ")"
+    : "";
 
   let action, note = "";
   if (!sk) {
@@ -666,14 +670,18 @@ function showSkillCard(id) {
       " : " + (getRates("skill", S.skillMastery.level, S.ascension, starsOf(S, "skill"))[def.rarity] || 0).toFixed(1) +
       "% par invocation à ta Maîtrise actuelle.";
   } else if (equipped) {
+    const pv = typeof skillEquipPowerPreview === "function" ? skillEquipPowerPreview(slotIdx, null) : null;
     action = btn(ic("cross", 13) + "Retirer de l'emplacement " + (slotIdx + 1),
       { cls: "dark", small: true, act: "unequipSkill", arg: id });
+    note = pv ? "Retrait · " + fmtSkillPowerChange(pv) : "";
   } else if (freeSlot >= 0) {
+    const pv = typeof skillEquipPowerPreview === "function" ? skillEquipPowerPreview(freeSlot, id) : null;
     action = btn(ic("check", 13) + "Équiper · emplacement " + (freeSlot + 1),
       { cls: "green", small: true, act: "autoEquipSkill", arg: id });
+    note = pv ? "Équiper · " + fmtSkillPowerChange(pv) : "";
   } else {
     action = btn(ic("swords", 13) + "Remplacer une compétence", { cls: "blue", small: true, act: "skillSlot", arg: "0" });
-    note = "Tous les emplacements sont occupés — choisis lequel remplacer.";
+    note = "Tous les emplacements sont occupés. La puissance après remplacement est affichée pour chaque choix.";
   }
 
   openModal(
