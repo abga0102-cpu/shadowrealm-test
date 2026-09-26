@@ -76,7 +76,11 @@ function scrAccueil() {
 
   // Une recommandation n'existe que lorsqu'un événement utile le justifie.
   // Aucun objectif général n'est poussé en permanence.
-  const tutorialPending = typeof pendingTutorialStep === "function" && !!pendingTutorialStep();
+  /* V459: only a tutorial that actually belongs on Home suppresses Home recommendations.
+     Unseen Familiars/Skills/Raid/etc. wait for entry into their own system. */
+  const tutorialPending = typeof pendingTutorialStepForRoute === "function"
+    ? !!pendingTutorialStepForRoute("accueil")
+    : (typeof pendingTutorialStep === "function" && !!pendingTutorialStep());
   const recommended = tutorialPending ? null : contextualHomeRecommendation();
   const showRecommendation = recommended && !recommendationDismissed(recommended);
   const recommendedCard = showRecommendation ?
