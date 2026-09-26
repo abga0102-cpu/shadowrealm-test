@@ -70,4 +70,5 @@ test('V453 index build stamp is unique and cache-busts every changed runtime own
   expect(index).toContain('equipment-stats-collapse-v176.js?v=2026.09.26.453c');
   expect(index).toContain('progression-overhaul-v283.js?v=2026.09.26.453d');
   expect(index).toContain('dust-chance-floor-v301.js?v=2026.09.26.453e');
+  expect(index).toContain("var V='2026.09.26.453'");
 });
