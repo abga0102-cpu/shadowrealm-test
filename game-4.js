@@ -200,7 +200,7 @@ function scrAccueil() {
 
   /* V461 · Dense starter pacing stays inside the arena layer, so it never
      steals vertical space from combat/skills/Forge on short phones. */
-  const starterApi = window.__srStarterPacingV461;
+  const starterApi = window.__srStarterPacingV462 || window.__srStarterPacingV461;
   const starterStep = starterApi && typeof starterApi.nextStep === "function" ? starterApi.nextStep(S) : null;
   const starterPct = starterStep ? Math.max(0, Math.min(100,
     Math.round((Number(starterStep.now) || 0) / Math.max(1, Number(starterStep.max) || 1) * 100))) : 0;
@@ -929,8 +929,8 @@ function scrFamiliers() {
             (art ? '<img src="' + art + '" style="width:34px;height:34px;object-fit:contain;display:block;margin:0 auto;filter:drop-shadow(0 2px 5px #000a)">' : ic("egg", 28)) +
           '</div>' + rtag(r) +
           '<div class="tiny b mt4" style="color:' + petElement(e).c + '">' + ic(petElement(e).icon, 9) + petElement(e).label + '</div>' +
-          '<div class="mute tiny mt4">' + fmtTime(EGG_TIMERS[r] / hatchSpeedFor(S,r)) + '</div>' +
-          '<div class="mt6">' + btn("Éclore", { small:true, cls:"green", act:"startEgg", arg:e.id, dis:full, style:"padding:5px 9px;font-size:10.5px" }) + '</div>' +
+          '<div class="mute tiny mt4">' + fmtTime(Number(e.starterHatchSeconds)>0 ? Number(e.starterHatchSeconds) : EGG_TIMERS[r] / hatchSpeedFor(S,r)) + '</div>' +
+          '<div class="mt6">' + btn("Lancer l’éclosion", { small:true, cls:"green", act:"startEgg", arg:e.id, dis:full, style:"padding:5px 9px;font-size:10.5px" }) + '</div>' +
         '</div>';
       }).join("") + '</div>' : '<div class="mute tiny center">Aucun œuf en stock.</div>') +
       '<div class="sect" style="margin:16px 0 9px">Éclosion (' + hatching.length + "/" + S.eggSlots +
