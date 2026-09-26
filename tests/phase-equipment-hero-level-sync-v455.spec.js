@@ -155,11 +155,13 @@ test('V455 Dust improvement increments upgradeLevel only, never Hero equipment l
   });
 });
 
-test('V455 Forge result visibly shows the Hero-synchronised Roman level', async ({ page }) => {
+test('V455 Forge result visibly shows the synced Roman level for drop and worn gear', async ({ page }) => {
   await openCleanGame(page);
   const id = await page.evaluate(() => {
     S.level = 24;
+    const worn = makeItem('armure','RARE',S.forge.level);
     const item = makeItem('armure','COMMUN',S.forge.level);
+    S.equipped.armure = worn;
     S.inventory = [item];
     showForgeResult([{id:item.id,rarity:item.rarity,slot:item.slot,power:item.power,recycled:false}]);
     return item.id;
@@ -167,9 +169,17 @@ test('V455 Forge result visibly shows the Hero-synchronised Roman level', async 
   const pop = page.locator('#srForgeArenaPreview146');
   await expect(pop).toBeVisible();
   await expect(pop).toContainText('Armure | XXIV');
+  await expect(pop).toContainText('Rare | XXIV');
   await expect(pop).toContainText('Non amélioré');
   expect(await page.evaluate((itemId) => {
     const it=S.inventory.find(x=>x.id===itemId);
-    return {level:it.level,upgradeLevel:it.upgradeLevel};
-  }, id)).toEqual({level:24,upgradeLevel:0});
+    const worn=S.equipped.armure;
+    return {
+      drop:{level:it.level,upgradeLevel:it.upgradeLevel},
+      worn:{level:worn.level,upgradeLevel:worn.upgradeLevel}
+    };
+  }, id)).toEqual({
+    drop:{level:24,upgradeLevel:0},
+    worn:{level:24,upgradeLevel:0}
+  });
 });
