@@ -10,31 +10,16 @@ var KEY='sr:equipmentCombatStatsExpanded:v176';
 function pref(){try{return localStorage.getItem(KEY)==='1';}catch(_){return false;}}
 function setPref(v){try{localStorage.setItem(KEY,v?'1':'0');}catch(_){}}
 function textOf(el){return String(el&&el.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();}
-function roman(n){
- n=Math.max(0,Math.floor(Number(n)||0));if(!n)return '';
- var map=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']],out='';
- for(var i=0;i<map.length;i++)while(n>=map[i][0]){out+=map[i][1];n-=map[i][0];}
- return out;
-}
-function equipmentDisplayName(it){
- if(!it)return '';var name=String(it.name||'Équipement'),lv=Math.max(0,Math.floor(Number(it.level)||0));
- return lv>0?name+' | '+roman(lv):name;
-}
-window.__srEquipmentDisplayV450={version:450,roman:roman,name:equipmentDisplayName,freshHasSuffix:false};
-function itemById(id){
- try{var eq=Object.values((typeof S!=='undefined'&&S.equipped)||{}).find(function(x){return x&&String(x.id)===String(id);});if(eq)return eq;return ((typeof S!=='undefined'&&S.inventory)||[]).find(function(x){return x&&String(x.id)===String(id);})||null;}catch(_){return null;}
-}
-function decorateEquipmentNames(){
- var root=document.getElementById('screen');if(!root)return;
- Array.prototype.forEach.call(root.querySelectorAll('.itemRow'),function(row){
-  var action=row.querySelector('[data-act="equip"][data-arg], [data-act="itemDetail"][data-arg], [data-act="equipPreview"][data-arg]');
-  if(!action)return;var it=itemById(action.getAttribute('data-arg'));if(!it)return;
-  var name=row.querySelector('.flex1 > .b.small');if(!name)return;
-  var label=equipmentDisplayName(it);if(name.textContent!==label)name.textContent=label;
- });
-}
+/* V454: equipment names are now rendered canonically by game-4/game-5.
+   Keep this compatibility API for tests/other callers, but do not rewrite the DOM. */
+window.__srEquipmentDisplayV450={
+ version:454,
+ roman:function(n){return typeof equipmentRomanLevel==='function'?equipmentRomanLevel(n):'';},
+ name:function(it){return typeof equipmentDisplayName==='function'?equipmentDisplayName(it):String(it&&it.name||'Équipement');},
+ freshHasSuffix:false,
+ canonicalRenderer:true
+};
 function apply(){
-  decorateEquipmentNames();
   if(typeof route!=='undefined'&&route!=='equipement'&&route!=='personnage'&&route!=='inventaire')return;
   var root=document.getElementById('screen');if(!root)return;
   var sections=Array.prototype.slice.call(root.querySelectorAll('.sect'));

@@ -6,7 +6,8 @@
    - V323 extends Forge Ascension to 4★ only for the rarity ladder:
      ★ Légendaire, ★★ Infernal, ★★★ Immortel, ★★★★ Divin.
    - Raid rewards keep the approved V290/V291 curves.
-   - Dust upgrade keeps the approved V301 5% minimum and V283 cost curve.
+   - Dust upgrade ownership stays in V283 (cost) + V301 (chance); this late layer
+     must never overwrite those live authorities.
    This layer changes no save schema and performs no destructive migration. */
 (function(){'use strict';
 if(window.__srProgressionStabilityV304)return;window.__srProgressionStabilityV304=true;
@@ -79,10 +80,8 @@ try{
   }
 }catch(_){ }
 
-function dustChance(level){level=Math.max(0,Math.floor(Number(level)||0));if(level<70)return 100;return Math.max(5,95-5*Math.floor((level-70)/2));}
-function dustCost(level){return Math.max(0,Math.round(60+36*Math.max(0,Number(level)||0)));}
-try{if(typeof itemUpgradeChance==='function')itemUpgradeChance=function(it){return dustChance((it&&it.level)||0);};}catch(_){ }
-try{if(typeof itemUpgradeCost==='function')itemUpgradeCost=function(it){return dustCost((it&&it.level)||0);};}catch(_){ }
+/* V454: Dust cost/chance intentionally delegated to their canonical owners.
+   V304 is loaded late, so overriding them here would silently undo newer balance. */
 
 try{
   if(typeof S!=='undefined'&&S){
@@ -98,7 +97,7 @@ window.__srProgressionStabilityConfigV304={
   stars:{forge:FORGE_STAR,skill:SKILL_STAR,pet:PET_STAR},
   forgeRarityAscensionV323:{maxStars:FORGE_ASCEND_MAX_STARS_V323,rarityByStar:FORGE_RARITY_BY_STAR_V323,powerStopsGrowingAfterStar:1},
   raids:{evolution:{base:100,perLevel:3},competence:{base:250,perLevel:10},familier:{base:250,perLevel:10}},
-  dust:{minimumChance:5,costBase:60,costPerLevel:36},
+  dust:{delegated:true,costOwner:'progression-overhaul-v283.js',chanceOwner:'dust-chance-floor-v301.js'},
   destructiveMigration:false
 };
 })();

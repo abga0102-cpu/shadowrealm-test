@@ -10,12 +10,13 @@ async function openCleanGame(page) {
     typeof itemUpgradeChance === 'function' &&
     window.__srEquipmentDisplayV450 &&
     window.__srV283DustCost &&
-    window.__srDustChanceFloorV301
+    window.__srDustChanceFloorV301 &&
+    window.__srProgressionAuditV307
   );
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V453 halves the live Dust upgrade cost without changing upgrade power', async ({ page }) => {
+test('Published build halves the live Dust upgrade cost without changing upgrade power', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => ({
     level0: itemUpgradeCost({ level: 0 }),
@@ -31,7 +32,7 @@ test('V453 halves the live Dust upgrade cost without changing upgrade power', as
   });
 });
 
-test('V453 keeps the +25 risk threshold and historical 5 percent floor', async ({ page }) => {
+test('Published build keeps the +25 risk threshold and historical 5 percent floor', async ({ page }) => {
   await openCleanGame(page);
   const chances = await page.evaluate(() => ({
     l24: itemUpgradeChance({ level: 24 }),
@@ -43,17 +44,17 @@ test('V453 keeps the +25 risk threshold and historical 5 percent floor', async (
   expect(chances).toEqual({ l24: 100, l25: 95, l26: 95, l27: 90, l100: 5 });
 });
 
-test('V453 browser loads fresh Roman-level, Sanctuary and Dust authorities', async ({ page }) => {
+test('Published build loads fresh Roman-level, Sanctuary and Dust authorities', async ({ page }) => {
   await openCleanGame(page);
   const loaded = await page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name));
-  expect(loaded.some(u => u.includes('equipment-stats-collapse-v176.js?v=2026.09.26.453c'))).toBe(true);
-  expect(loaded.some(u => u.includes('sanctuary-endgame-v130.js?v=2026.09.26.453b'))).toBe(true);
-  expect(loaded.some(u => u.includes('progression-overhaul-v283.js?v=2026.09.26.453d'))).toBe(true);
-  expect(loaded.some(u => u.includes('dust-chance-floor-v301.js?v=2026.09.26.453e'))).toBe(true);
+  expect(loaded.some(u => u.includes('equipment-stats-collapse-v176.js?v=2026.09.26.454d'))).toBe(true);
+  expect(loaded.some(u => u.includes('sanctuary-endgame-v130.js?v=2026.09.26.454e'))).toBe(true);
+  expect(loaded.some(u => u.includes('progression-overhaul-v283.js?v=2026.09.26.454g'))).toBe(true);
+  expect(loaded.some(u => u.includes('dust-chance-floor-v301.js?v=2026.09.26.454h'))).toBe(true);
   expect(await page.evaluate(() => window.__srEquipmentDisplayV450.name({ name:'Casque', level:3 }))).toBe('Casque | III');
 });
 
-test('V453 source keeps the four validated V452 Sanctuary rewards', async () => {
+test('Published source keeps the four validated V452 Sanctuary rewards', async () => {
   const src = fs.readFileSync('sanctuary-endgame-v130.js', 'utf8');
   expect(src).toContain('EPIQUE_I:{accel:1,qty:1}');
   expect(src).toContain('EPIQUE_II:{accel:5,qty:1}');
@@ -62,13 +63,15 @@ test('V453 source keeps the four validated V452 Sanctuary rewards', async () => 
   expect(src).toContain('if(r.dust)S.poussiere=(S.poussiere||0)+r.dust');
 });
 
-test('V453 index build stamp is unique and cache-busts every changed runtime owner', async () => {
+test('Published index build stamp is unique and cache-busts every changed runtime owner', async () => {
   const index = fs.readFileSync('index.html', 'utf8');
-  expect(index).toContain('shadowreach-build" content="2026.09.26.453"');
-  expect(index).toContain('game-2.js?v=2026.09.26.453a');
-  expect(index).toContain('sanctuary-endgame-v130.js?v=2026.09.26.453b');
-  expect(index).toContain('equipment-stats-collapse-v176.js?v=2026.09.26.453c');
-  expect(index).toContain('progression-overhaul-v283.js?v=2026.09.26.453d');
-  expect(index).toContain('dust-chance-floor-v301.js?v=2026.09.26.453e');
-  expect(index).toContain("var V='2026.09.26.453'");
+  expect(index).toContain('shadowreach-build" content="2026.09.26.454"');
+  expect(index).toContain('game-2.js?v=2026.09.26.454b');
+  expect(index).toContain('sanctuary-endgame-v130.js?v=2026.09.26.454e');
+  expect(index).toContain('equipment-stats-collapse-v176.js?v=2026.09.26.454d');
+  expect(index).toContain('progression-overhaul-v283.js?v=2026.09.26.454g');
+  expect(index).toContain('dust-chance-floor-v301.js?v=2026.09.26.454h');
+  expect(index).toContain('progression-stability-authority-v304.js?v=2026.09.26.454i');
+  expect(index).toContain('progression-batch-qa-v307.js?v=2026.09.26.454j');
+  expect(index).toContain("var V='2026.09.26.454'");
 });

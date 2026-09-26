@@ -1161,7 +1161,7 @@ function showItemDetail(id, slot) {
       '<div class="imini rf" style="width:46px;height:46px;border-color:' + rc + ";--rc:" + rc + '">' +
       '<span style="position:relative;z-index:1">' + slotIcon(it.slot, 27, it) + "</span></div>" +
       '<div class="flex1"><div class="bb" style="font-size:14px;color:' + rc + ';text-shadow:0 0 12px ' + rc + '66">' +
-      esc(it.name) + (it.level ? ' <span style="color:var(--goldLit)">+' + it.level + "</span>" : "") + "</div>" +
+      esc(equipmentDisplayName(it)) + "</div>" +
       '<div class="mt6">' + rtag(it.rarity) + '<span class="pill" style="margin-left:5px">' + SLOT_LABEL[it.slot] + "</span></div></div></div>" +
     '<div class="card" style="padding:9px 11px">' +
       (MASTERY_STAT[it.slot] === "dmg"
@@ -1191,12 +1191,12 @@ function showItemDetail(id, slot) {
     (itemUpgradeChance(it)<100 ? (function(){
       const base=itemUpgradeChance(it), planned=itemSealCount(it.id), owned=(S.sanctuary&&S.sanctuary.stabilitySeals)||0;
       const used=Math.min(planned,owned,Math.ceil((100-base)/5)), chance=Math.min(100,base+used*5);
-      return '<div class="card" style="padding:8px 9px;border-color:#9B5CF666"><div class="between"><div><div class="b small">CHANCE DE RÉUSSITE</div><div class="mute tiny">À partir de +100 · échec = niveau conservé</div></div><b style="color:'+(chance>=90?'#57C785':chance>=70?'#F5C542':'#FF7A3D')+'">'+chance+'%</b></div>'+meter(chance,'#9B5CF6')+
+      return '<div class="card" style="padding:8px 9px;border-color:#9B5CF666"><div class="between"><div><div class="b small">CHANCE DE RÉUSSITE</div><div class="mute tiny">À partir de +25 · échec = niveau conservé</div></div><b style="color:'+(chance>=90?'#57C785':chance>=70?'#F5C542':'#FF7A3D')+'">'+chance+'%</b></div>'+meter(chance,'#9B5CF6')+
         '<div class="between mt6"><span class="tiny b">🛡️ Sceaux de stabilité · '+owned+'</span><div class="row gap4">'+
         btn('−',{cls:'dark',small:true,act:'itemSealMinus',arg:it.id,dis:used<=0,style:'width:34px'})+
         '<span class="pill">'+used+' utilisé'+(used>1?'s':'')+' · +'+(used*5)+'%</span>'+ 
         btn('+',{cls:'purple',small:true,act:'itemSealPlus',arg:it.id,dis:used>=owned||chance>=100,style:'width:34px'})+'</div></div></div>';
-    })() : '<div class="notice tiny"><b>Réussite garantie à 100 %</b> jusqu’au niveau +100.</div>') +
+    })() : '<div class="notice tiny"><b>Réussite garantie à 100 %</b> jusqu’au niveau +24.</div>') +
     '<div class="orn"><i></i><b></b><i></i></div>' +
     '<div class="card" style="padding:8px 9px;border-color:#3FA7FF66">' +
       '<div class="between"><div><div class="mute tiny b">PROCHAINE AMÉLIORATION</div><div class="b small mt4">' + upgradePreview.label + ' · ' + equipStat(upgradePreview.current) + ' → <span style="color:#78B7FF">' + equipStat(upgradePreview.next) + '</span></div></div>' +

@@ -241,6 +241,22 @@ function fmtEquipStat(v) {
   if (Number.isInteger(n)) return fmt(n);
   return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+/* V454 · Canonical equipment level presentation.
+   Numeric item.level remains the saved authority; Roman numerals are display-only. */
+function equipmentRomanLevel(level) {
+  let n = Math.max(0, Math.floor(Number(level) || 0));
+  if (!n) return "";
+  const map = [[1000,"M"],[900,"CM"],[500,"D"],[400,"CD"],[100,"C"],[90,"XC"],[50,"L"],[40,"XL"],[10,"X"],[9,"IX"],[5,"V"],[4,"IV"],[1,"I"]];
+  let out = "";
+  map.forEach(([value, glyph]) => { while (n >= value) { out += glyph; n -= value; } });
+  return out;
+}
+function equipmentDisplayName(it) {
+  if (!it) return "";
+  const name = String(it.name || "Équipement");
+  const roman = equipmentRomanLevel(it.level);
+  return roman ? name + " | " + roman : name;
+}
 function fmtTime(secs) {
   secs = Math.max(0, Math.floor(secs));
   const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
