@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
-test('V385 gives +10% skill power per level and global Power reflects active skill levels', async ({ page }) => {
+test('V457 gives +20% skill power per level and global Power reflects active skill levels', async ({ page }) => {
   await page.goto('/index.html?smoke=1');
   await page.waitForFunction(() => window.__srSkillOverhaulConfigV284 && typeof computePower === 'function');
 
@@ -11,7 +11,7 @@ test('V385 gives +10% skill power per level and global Power reflects active ski
     const combat1 = skillDamageMult(1000, 1);
     const combat2 = skillDamageMult(1000, 2);
 
-    const s = defaultState('V385');
+    const s = defaultState('V457');
     s.skills.taillade = { level: 1, count: 0 };
     s.skillSlots[0] = 'taillade';
     const power1 = computePower(s);
@@ -21,7 +21,7 @@ test('V385 gives +10% skill power per level and global Power reflects active ski
     showSkillResult([{
       id:'taillade', rarity:'COMMUN', dup:true,
       beforeLevel:1, afterLevel:2, leveled:true,
-      count:0, need:4, levelPowerPct:10, globalPowerGain:power2-power1
+      count:0, need:2, levelPowerPct:20, globalPowerGain:power2-power1
     }]);
 
     return {
@@ -31,15 +31,15 @@ test('V385 gives +10% skill power per level and global Power reflects active ski
     };
   });
 
-  expect(data.config.levelGrowthPct).toBe(10);
-  expect(data.intrinsic2 / data.intrinsic1).toBeCloseTo(1.10, 2);
-  expect(data.combat2 / data.combat1).toBeCloseTo(1.10, 8);
+  expect(data.config.levelGrowthPct).toBe(20);
+  expect(data.intrinsic2 / data.intrinsic1).toBeCloseTo(1.20, 2);
+  expect(data.combat2 / data.combat1).toBeCloseTo(1.20, 8);
   expect(data.power2).toBeGreaterThan(data.power1);
   expect(data.text).toContain('Niv. 1 → 2');
-  expect(data.text).toContain('+10 % puissance');
+  expect(data.text).toContain('+20 % puissance');
 });
 
-test('V385 shows duplicate progress when the level does not increase', async ({ page }) => {
+test('V457 shows duplicate progress when the level does not increase', async ({ page }) => {
   await page.goto('/index.html?smoke=1');
   await page.waitForFunction(() => typeof showSkillResult === 'function');
   const text = await page.evaluate(() => {
