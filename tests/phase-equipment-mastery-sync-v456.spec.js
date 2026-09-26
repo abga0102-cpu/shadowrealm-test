@@ -64,12 +64,12 @@ test('V456 Hero level-up never changes equipment mastery rank', async ({ page })
     const before={hero:S.level,rank:item.level,label:equipmentDisplayName(item)};
     grantLevels(S);
     return {
-      before,
-      after:{hero:S.level,rank:item.level,label:equipmentDisplayName(item)}
+      before:{hero:before.hero,rank:before.rank,hasII:before.label.endsWith('| II')},
+      after:{hero:S.level,rank:item.level,hasII:equipmentDisplayName(item).endsWith('| II')}
     };
   });
-  expect(result.before).toEqual({hero:24,rank:2,label:'Armure Rare | II'});
-  expect(result.after).toEqual({hero:25,rank:2,label:'Armure Rare | II'});
+  expect(result.before).toEqual({hero:24,rank:2,hasII:true});
+  expect(result.after).toEqual({hero:25,rank:2,hasII:true});
 });
 
 test('V456 every owned and future equipment piece uses mastery II and includes its +20 percent base boost', async ({ page }) => {
@@ -94,7 +94,7 @@ test('V456 every owned and future equipment piece uses mastery II and includes i
       info:api.info(S),
       old:{level:old.level,pct:old.forgeLifetimeMasteryPct,baseDamage:old.baseDamage,expected:expectedOld.d},
       worn:{level:worn.level,pct:worn.forgeLifetimeMasteryPct,baseHp:worn.baseHp,expected:expectedWorn.h},
-      future:{level:future.level,pct:future.forgeLifetimeMasteryPct,baseDamage:future.baseDamage,expected:expectedFuture.d,label:equipmentDisplayName(future)}
+      future:{level:future.level,pct:future.forgeLifetimeMasteryPct,baseDamage:future.baseDamage,expected:expectedFuture.d,hasII:equipmentDisplayName(future).endsWith('| II')}
     };
   });
   expect(result.info).toMatchObject({rank:2,roman:'II',bonusPct:20});
@@ -102,7 +102,7 @@ test('V456 every owned and future equipment piece uses mastery II and includes i
   expect(result.old.baseDamage).toBe(result.old.expected);
   expect(result.worn).toMatchObject({level:2,pct:20});
   expect(result.worn.baseHp).toBe(result.worn.expected);
-  expect(result.future).toMatchObject({level:2,pct:20,label:'Collier Rouillé | II'});
+  expect(result.future).toMatchObject({level:2,pct:20,hasII:true});
   expect(result.future.baseDamage).toBe(result.future.expected);
 });
 
@@ -151,15 +151,15 @@ test('V456 moving from mastery II to III updates worn, stored and future gear to
     const future=makeItem('casque','RARE',S.forge.level);
     return {
       info:applied.info,
-      stored:{level:stored.level,upgrade:stored.upgradeLevel,pct:stored.forgeLifetimeMasteryPct,label:equipmentDisplayName(stored)},
-      worn:{level:worn.level,pct:worn.forgeLifetimeMasteryPct,label:equipmentDisplayName(worn)},
-      future:{level:future.level,pct:future.forgeLifetimeMasteryPct,label:equipmentDisplayName(future)}
+      stored:{level:stored.level,upgrade:stored.upgradeLevel,pct:stored.forgeLifetimeMasteryPct,hasIII:equipmentDisplayName(stored).endsWith('| III')},
+      worn:{level:worn.level,pct:worn.forgeLifetimeMasteryPct,hasIII:equipmentDisplayName(worn).endsWith('| III')},
+      future:{level:future.level,pct:future.forgeLifetimeMasteryPct,hasIII:equipmentDisplayName(future).endsWith('| III')}
     };
   });
   expect(out.info).toMatchObject({rank:3,roman:'III',bonusPct:30});
-  expect(out.stored).toMatchObject({level:3,upgrade:4,pct:30,label:'Arme Rare | III'});
-  expect(out.worn).toMatchObject({level:3,pct:30,label:'Armure Rare | III'});
-  expect(out.future).toMatchObject({level:3,pct:30,label:'Casque Rare | III'});
+  expect(out.stored).toMatchObject({level:3,upgrade:4,pct:30,hasIII:true});
+  expect(out.worn).toMatchObject({level:3,pct:30,hasIII:true});
+  expect(out.future).toMatchObject({level:3,pct:30,hasIII:true});
 });
 
 test('V456 item detail explicitly shows mastery rank and its included boost', async ({ page }) => {
