@@ -98,8 +98,10 @@ var audit={
   raidSkill50:safe(function(){return raidReward('competence',50);}),
   raidPet1:safe(function(){return raidReward('familier',1);}),
   raidPet50:safe(function(){return raidReward('familier',50);}),
+  dustChance25:safe(function(){return itemUpgradeChance({level:25});}),
   dustChanceHigh:safe(function(){return itemUpgradeChance({level:999});}),
   dustCost0:safe(function(){return itemUpgradeCost({level:0});}),
+  dustCost10:safe(function(){return itemUpgradeCost({level:10});}),
   forgeStar1:safe(function(){return ascendPowerMul(1,'forge');}),
   skillStar1:safe(function(){return ascendPowerMul(1,'skill');}),
   petStars:safe(function(){return [ascendPowerMul(1,'pet'),ascendPowerMul(2,'pet'),ascendPowerMul(3,'pet')];}),
@@ -108,7 +110,8 @@ var audit={
 audit.ok=!!(
   audit.ancestralHatchSeconds===57600&&audit.ancestralRateBeforeMax===0&&Math.abs(audit.ancestralRateAtMax-5)<1e-6&&
   audit.raidEvolution1===100&&audit.raidEvolution50===247&&audit.raidSkill1===250&&audit.raidSkill50===740&&
-  audit.raidPet1===250&&audit.raidPet50===740&&audit.dustChanceHigh===5&&audit.dustCost0===60&&
+  audit.raidPet1===250&&audit.raidPet50===740&&audit.dustChance25===95&&audit.dustChanceHigh===5&&
+  audit.dustCost0===30&&audit.dustCost10===210&&
   audit.forgeStar1===2&&audit.skillStar1===1.5&&Array.isArray(audit.petStars)&&audit.petStars[0]===1.5&&audit.petStars[1]===2.1&&audit.petStars[2]===3
 );
 window.__srProgressionAuditV307=audit;
