@@ -134,11 +134,19 @@ test('V455 imported equipment is synchronized by the import authority', async ({
   expect(result.levels).toEqual([5, 5]);
 });
 
-test('V455 Forge comparison shows the inherited Roman level and compares upgraded stats', async () => {
-  const src = fs.readFileSync('forge-comparison-authority-v146.js', 'utf8');
-  expect(src).toContain("return 'Niveau '+(roman||lv)");
-  expect(src).toContain("equipmentRomanLevel(lv)");
-  expect(src).toContain("it.damage!=null?it.damage");
-  expect(src).toContain("it.hp!=null?it.hp");
-  expect(src).toContain("esc2(upgradeText(it))");
+test('V455 Forge comparison and item detail explain the inherited shared level', async () => {
+  const forge = fs.readFileSync('forge-comparison-authority-v146.js', 'utf8');
+  const detail = fs.readFileSync('game-5.js', 'utf8');
+  const index = fs.readFileSync('index.html', 'utf8');
+
+  expect(forge).toContain("return 'Niveau '+(roman||lv)");
+  expect(forge).toContain("equipmentRomanLevel(lv)");
+  expect(forge).toContain("it.damage!=null?it.damage");
+  expect(forge).toContain("it.hp!=null?it.hp");
+  expect(forge).toContain("esc2(upgradeText(it))");
+  expect(detail).toContain('NIVEAU D’ÉQUIPEMENT GLOBAL');
+  expect(detail).toContain('Améliorer tous les équipements');
+  expect(index).toContain('shadowreach-build" content="2026.09.26.455"');
+  expect(index).toContain('game-5.js?v=2026.09.26.455h');
+  expect(index).toContain("var V='2026.09.26.455'");
 });
