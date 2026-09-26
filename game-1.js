@@ -1393,11 +1393,16 @@ SKILL_DEFS.forEach((d) => { (SKILLS_BY_RARITY[d.rarity] = SKILLS_BY_RARITY[d.rar
 const SKILL_BY_ID = {};
 SKILL_DEFS.forEach((d) => { SKILL_BY_ID[d.id] = d; });
 
-function skillDupesNeeded(level) { return Math.min(12, 1 + Math.floor(level / 5)); }
-/* V385 · Duplicate progression is intentionally more rewarding.
-   Every skill level adds +10% of the level-1 skill power. The late V284 owner
-   uses the same value, so combat, previews and summon feedback stay aligned. */
-const SKILL_LEVEL_GROWTH = 0.10;
+/* V457 · Duplicate ladder: 1 / 2 / 3 / 4 / 5 / 6, then capped at 6.
+   The current skill level determines how many duplicates are required for the
+   next level: level 1 needs 1, level 2 needs 2, ... level 6+ needs 6. */
+function skillDupesNeeded(level) {
+  return Math.min(6, Math.max(1, Math.floor(Number(level) || 1)));
+}
+/* V457 · Every skill level adds +20% of its level-1 power. The late V284 owner
+   uses the same value, so combat, previews, global Power and summon feedback
+   stay aligned. */
+const SKILL_LEVEL_GROWTH = 0.20;
 function skillDamageMult(base, level) {
   return base * (1 + (level - 1) * SKILL_LEVEL_GROWTH) * starMul(S, "skill");
 }
@@ -2781,10 +2786,10 @@ function activeSkillPowerFactor(s) {
   return Math.min(3, 1 + slotBaseline + progression);
 }
 
-/* V405 · An equipped skill level-up must always remain visible in the integer
-   Puissance HUD. Combat scaling stays at +10% per skill level; this tiny
-   additive score only prevents a real equipped-skill gain disappearing to
-   integer rounding. */
+/* V457 · An equipped skill level-up must always remain visible in the integer
+   Puissance HUD. Combat scaling is +20% per skill level; this tiny additive
+   score only prevents a real equipped-skill gain disappearing to integer
+   rounding. */
 function activeSkillLevelScore(s) {
   const seen = {};
   return (s.skillSlots || []).reduce((sum, id) => {
