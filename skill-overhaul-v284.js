@@ -32,13 +32,14 @@ function normalizeOwnedSkillDupesV457(state){
 }
 try{
  if(typeof S!=='undefined'&&S&&S.skills){
+  var oldCurveVersion=Number(S.skillDupeCurveVersion)||0;
   var migration=normalizeOwnedSkillDupesV457(S);
   if(migration.changed){
    try{if(typeof computePower==='function')S.power=computePower(S);}catch(_){}
    try{if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);}catch(_){}
-   try{if(typeof saveNow==='function')saveNow();}catch(_){}
    try{if(typeof scheduleRender==='function')scheduleRender();}catch(_){}
-  }else if(Number(S.skillDupeCurveVersion)!==457){S.skillDupeCurveVersion=457;try{if(typeof saveNow==='function')saveNow();}catch(_){}}
+  }
+  if(migration.changed||oldCurveVersion!==457){try{if(typeof saveNow==='function')saveNow();}catch(_){}}
  }
 }catch(_){ }
 /* Keep the old function callable for UI/support code, but its argument is now intrinsic base power. */
