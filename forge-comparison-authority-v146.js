@@ -25,8 +25,10 @@ function rarity(it){return (typeof RARITY!=='undefined'&&RARITY[it.rarity])||{c:
 function slotName(it){return (typeof SLOT_LABEL!=='undefined'&&SLOT_LABEL[it.slot])||it.slot||'Équipement';}
 function primary(it){
  if(!it)return 0;
- try{if(typeof MASTERY_STAT!=='undefined'&&MASTERY_STAT[it.slot]==='dmg')return Number(it.baseDamage!=null?it.baseDamage:(it.damage||0));}catch(_){}
- return Number(it.baseHp!=null?it.baseHp:(it.hp||0));
+ /* V455: compare what the item really contributes after the shared equipment
+    level, not its pre-upgrade base stat. */
+ try{if(typeof MASTERY_STAT!=='undefined'&&MASTERY_STAT[it.slot]==='dmg')return Number(it.damage!=null?it.damage:(it.baseDamage||0));}catch(_){}
+ return Number(it.hp!=null?it.hp:(it.baseHp||0));
 }
 function primaryLabel(it){try{return typeof MASTERY_STAT!=='undefined'&&MASTERY_STAT[it.slot]==='dmg'?'ATQ':'PV';}catch(_){return 'STAT';}}
 function defenseValue(it){try{return typeof equipmentDefenseRating==='function'?Math.round(equipmentDefenseRating(it)):0;}catch(_){return 0;}}
@@ -57,7 +59,7 @@ function fmt2(v){return typeof fmt==='function'?fmt(v):String(v);}
 function signed(v){v=Math.round(Number(v)||0);return(v>0?'+':'')+fmt2(v);}
 function esc2(v){return typeof esc==='function'?esc(String(v==null?'':v)):String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'})[c];});}
 function iconHtml(it,size){if(!it)return '';try{if(typeof slotIcon==='function')return slotIcon(it.slot,size||22,it);}catch(_){}return '⚔';}
-function upgradeText(it){var lv=Math.max(0,Number(it&&it.level)||0);return lv===0?'Non amélioré':'+'+lv+' amélioration'+(lv>1?'s':'');}
+function upgradeText(it){var lv=Math.max(0,Math.floor(Number(it&&it.level)||0));if(lv===0)return 'Non amélioré';var roman='';try{roman=typeof equipmentRomanLevel==='function'?equipmentRomanLevel(lv):'';}catch(_){}return 'Niveau '+(roman||lv);}
 function affixValue(a,def){
  try{if(typeof formatAffixValue==='function')return formatAffixValue(a,def);}catch(_){}
  if(a&&a.display!=null)return String(a.display);
@@ -148,7 +150,7 @@ function render(){
  var currentMini=cur&&!worn?('<div style="font-size:7px;color:#8493aa;font-weight:900;margin-top:3px">PORTÉ</div><div style="font-size:8px;font-weight:900;color:'+(RARITY[cur.rarity]?RARITY[cur.rarity].c:'#9dacbf')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(RARITY[cur.rarity]?RARITY[cur.rarity].label:cur.rarity)+' · '+primaryLabel(cur)+' '+fmt2(primary(cur))+' · '+esc2(upgradeText(cur))+'</div>'):'';
  root.innerHTML='<div style="background:rgba(7,12,21,.97);border:1px solid '+r.c+'88;border-radius:12px;box-shadow:0 8px 24px #0009;padding:7px;overflow:hidden">'+
   '<div style="display:flex;align-items:center;gap:6px"><div style="width:30px;height:30px;flex:0 0 30px;border:1px solid '+r.c+'99;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#0b1220">'+iconHtml(it,20)+'</div><div style="min-width:0;flex:1"><div style="font-size:8px;font-weight:900;letter-spacing:.6px;color:'+r.c+'">FORGE · '+esc2(r.label).toUpperCase()+'</div><div style="font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(slotName(it))+'</div></div>'+queueBadge+'<button data-sr-fp146="closeAll" aria-label="Fermer toute la file" style="border:0;background:transparent;color:#9dacbf;font-size:19px;padding:0 4px">×</button></div>'+
-  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px"><div style="padding:5px;border-radius:8px;background:#0b1220"><div style="font-size:7px;color:#8493aa;font-weight:900">NOUVEAU</div><div style="font-size:10px;font-weight:900;color:'+r.c+'">'+primaryLabel(it)+' '+fmt2(nb)+'</div><div style="font-size:8px;font-weight:800;color:'+(bd>0?'#6ee7a0':bd<0?'#ff7474':'#9dacbf')+'">'+primaryLabel(it)+' '+signed(bd)+' vs actuel</div>'+defenseHtml(it)+'<div style="font-size:7px;color:#8493aa;font-weight:900;margin:3px 0 2px">BONUS</div>'+affixHtml(it)+'</div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px"><div style="padding:5px;border-radius:8px;background:#0b1220"><div style="font-size:7px;color:#8493aa;font-weight:900">NOUVEAU</div><div style="font-size:10px;font-weight:900;color:'+r.c+'">'+primaryLabel(it)+' '+fmt2(nb)+'</div><div style="font-size:7px;font-weight:900;color:#f0c96a">'+esc2(upgradeText(it))+'</div><div style="font-size:8px;font-weight:800;color:'+(bd>0?'#6ee7a0':bd<0?'#ff7474':'#9dacbf')+'">'+primaryLabel(it)+' '+signed(bd)+' vs actuel</div>'+defenseHtml(it)+'<div style="font-size:7px;color:#8493aa;font-weight:900;margin:3px 0 2px">BONUS</div>'+affixHtml(it)+'</div>'+
   '<div style="padding:5px;border-radius:8px;background:#0b1220;min-width:0"><div style="font-size:7px;color:#8493aa;font-weight:900">ACTUEL</div><div style="display:flex;gap:4px;align-items:center;margin-top:2px">'+(cur?'<div style="width:25px;height:25px;flex:0 0 25px;border:1px solid '+((RARITY[cur.rarity]&&RARITY[cur.rarity].c)||'#9dacbf')+'88;border-radius:7px;display:flex;align-items:center;justify-content:center;background:#08101d">'+iconHtml(cur,17)+'</div>':'')+'<div style="min-width:0;flex:1">'+(cur?'<div style="font-size:8px;font-weight:900;color:'+((RARITY[cur.rarity]&&RARITY[cur.rarity].c)||'#9dacbf')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2((RARITY[cur.rarity]&&RARITY[cur.rarity].label)||cur.rarity)+' · '+primaryLabel(cur)+' '+fmt2(primary(cur))+'</div><div style="font-size:7px;font-weight:900;color:#f0c96a">'+esc2(upgradeText(cur))+'</div>':'<div style="font-size:8px;font-weight:900;color:#9dacbf">Emplacement vide</div>')+'</div></div><div style="font-size:7px;color:#8493aa;font-weight:900;margin:3px 0 2px">BONUS</div>'+(cur?affixHtml(cur):'<span style="font-size:8px;color:#65758d">Aucun</span>')+'</div></div>'+
   tradeoffHtml(it,cur&&!worn?cur:null)+powerCompareHtml(pv,worn)+weaponHtml(it)+
   '<div style="display:grid;grid-template-columns:1.05fr .9fr 1fr;gap:5px;margin-top:6px">'+
