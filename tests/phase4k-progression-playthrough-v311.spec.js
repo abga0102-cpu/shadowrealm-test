@@ -249,11 +249,11 @@ test('V311 Forge long-run economy preserves the approved 1→50 gold ladder and 
     totalGold: FORGE_UPGRADE_GOLD_COSTS.reduce((sum, cost) => sum + cost, 0),
     firstGold: FORGE_UPGRADE_GOLD_COSTS[0],
     lastGold: FORGE_UPGRADE_GOLD_COSTS[FORGE_UPGRADE_GOLD_COSTS.length - 1],
-    dustCost0: itemUpgradeCost({ level: 0 }),
-    dustCost10: itemUpgradeCost({ level: 10 }),
-    dustChance24: itemUpgradeChance({ level: 24 }),
-    dustChance25: itemUpgradeChance({ level: 25 }),
-    dustChance999: itemUpgradeChance({ level: 999 }),
+    dustCost0: itemUpgradeCost({ level: 24, upgradeLevel: 0 }),
+    dustCost10: itemUpgradeCost({ level: 24, upgradeLevel: 10 }),
+    dustChance24: itemUpgradeChance({ level: 24, upgradeLevel: 24 }),
+    dustChance25: itemUpgradeChance({ level: 24, upgradeLevel: 25 }),
+    dustChance999: itemUpgradeChance({ level: 24, upgradeLevel: 999 }),
     forgeStar1: ascendPowerMul(1, 'forge'),
   }));
 
