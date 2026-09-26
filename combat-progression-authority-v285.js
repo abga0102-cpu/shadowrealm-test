@@ -20,7 +20,7 @@ window.__srForgeIntroCombatV321=true;
 var CAMPAIGN_MAX=800;
 var LEGACY_CAMPAIGN_MAX=400;
 var FORGE_INTRO_FLOOR_V321=2;
-var FORGE_INTRO_MINERAI_REWARD_V407=250;
+var FORGE_INTRO_MINERAI_REWARD_V407=100;
 var DIFFICULTIES=[
   {id:'normal',label:'Facile',start:1,end:100},
   {id:'difficile',label:'Difficile',start:101,end:200},
@@ -278,7 +278,7 @@ function normalizeCampaignState(){
 }
 normalizeCampaignState();
 /* V407 restores the intended onboarding economy: a genuinely fresh pre-Forge
-   player enters 1-2 with 0 Minerai, then receives exactly 250 after the first
+   player enters 1-2 with 0 Minerai, then receives exactly 100 after the first
    forced defeat. The historical V323 save flag is preserved to prevent any
    duplicate grant for players who already received it. */
 try{

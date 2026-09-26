@@ -94,15 +94,15 @@ test('V321 stage 1-2 forces the pre-Forge teaching loss and then surfaces the Fo
   expect(result.afterLoss.defeats).toBe(1);
   expect(result.afterLoss.recordFloor).toBeGreaterThanOrEqual(2);
   expect(result.afterLoss.forgeUnlocked).toBe(true);
-  expect(result.afterLoss.mineraiOnce).toBe(250);
-  expect(result.afterLoss.mineraiTwice).toBe(250);
+  expect(result.afterLoss.mineraiOnce).toBe(100);
+  expect(result.afterLoss.mineraiTwice).toBe(100);
   expect(result.afterLoss.mineralGranted).toBe(true);
   expect(result.tutorial).toMatchObject({ key: 'forge', title: 'Forge ton équipement' });
   expect(result.tutorial.sub).toContain('Puissance');
   expect(result.config).toMatchObject({ floor: 2, stage: '1-2', hpVsHero: 1000, damageVsHero: 20 });
 });
 
-test('V408 reload recovers 250 mineral for a save that already lost 1-2 during the regression', async ({ page }) => {
+test('V408 reload recovers 100 mineral for a save that already lost 1-2 during the regression', async ({ page }) => {
   await openCleanGame(page);
 
   await page.evaluate(() => {
@@ -128,7 +128,7 @@ test('V408 reload recovers 250 mineral for a save that already lost 1-2 during t
     ready: !!(S.tutorial && S.tutorial.forgeIntroReadyV321),
   }));
 
-  expect(recovered).toEqual({ minerai: 250, granted: true, ready: true });
+  expect(recovered).toEqual({ minerai: 100, granted: true, ready: true });
 });
 
 test('V321 first Forge craft raises fresh equipment Power, restores normal 1-2 and leaves Raid gate unchanged', async ({ page }) => {
@@ -141,7 +141,7 @@ test('V321 first Forge craft raises fresh equipment Power, restores normal 1-2 a
     S.step = 1;
     S.pendingBossFloor = 0;
     S.level = 1;
-    S.minerai = 250;
+    S.minerai = 100;
     S.inventory = [];
     Object.keys(S.equipped || {}).forEach((slot) => { S.equipped[slot] = null; });
     S.forge.summonCount = 0;
@@ -205,7 +205,7 @@ test('V321 first Forge craft raises fresh equipment Power, restores normal 1-2 a
 
   expect(result.crafted).toBe(true);
   expect(result.summonCount).toBe(1);
-  expect(result.minerai).toBe(240);
+  expect(result.minerai).toBe(90);
   expect(result.powerAfter).toBeGreaterThan(result.powerBefore);
   expect(result.introCompleted).toBe(true);
   expect(result.forgeSeen).toBe(true);

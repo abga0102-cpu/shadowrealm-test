@@ -114,21 +114,3 @@
   if(document.readyState==='complete')startAfterBoot();
   else window.addEventListener('load',startAfterBoot,{once:true});
 })();
-
-/* V447 · New-player starter Minerai.
-   Only the default for a genuinely new state changes. migrate() overlays saved
-   fields on this base, so existing saves keep their exact Minerai amount. No
-   raid/unlock/progression condition is changed. */
-(function(){
-  'use strict';
-  if(window.__srNewPlayerStarterV447)return;
-  window.__srNewPlayerStarterV447=true;
-  if(typeof defaultState!=='function')return;
-  var previousDefaultState=defaultState;
-  defaultState=function(name){
-    var state=previousDefaultState.apply(this,arguments);
-    state.minerai=100;
-    return state;
-  };
-  window.__srNewPlayerStarterConfigV447={minerai:100,baseForgeCrafts:10};
-})();
