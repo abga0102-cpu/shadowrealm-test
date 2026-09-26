@@ -45,7 +45,10 @@ test('V312/V318 tutorial runway follows current progression and never revives re
     };
 
     setSeen({ raid: false });
-    S.level = Math.max(Number(S.level) || 1, RULES.RAID_UNLOCK_LEVEL);
+    S.level = Math.max(Number(S.level) || 1, Number(__srForgeRaidOnboardingConfigV317.raidDepletionMinHeroLevel) || 3);
+    S.minerai = 0;
+    delete S.onboardingV317;
+    __srV317EnsureOnboarding(S);
     const raid = pendingTutorialStep();
 
     setSeen({ megaBoss: false });

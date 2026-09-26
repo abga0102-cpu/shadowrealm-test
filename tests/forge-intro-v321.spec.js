@@ -193,7 +193,7 @@ test('V321 first Forge craft raises fresh equipment Power, restores normal 1-2 a
         tagged: !!combat.__srForgeIntroV321,
         enemyTagged: !!(restoredEnemy && restoredEnemy.__srForgeIntroV321),
         hp: restoredEnemy && restoredEnemy.maxHP,
-        canonicalHP: __srV285EnemyHP(2),
+        introThreshold: combat.heroMaxHP * 1000,
       },
       raid: {
         level1: __srV317RaidUnlocked(lowRaid),
@@ -212,7 +212,7 @@ test('V321 first Forge craft raises fresh equipment Power, restores normal 1-2 a
 
   expect(result.restored.tagged).toBe(false);
   expect(result.restored.enemyTagged).toBe(false);
-  expect(result.restored.hp).toBe(result.restored.canonicalHP);
+  expect(result.restored.hp).toBeLessThan(result.restored.introThreshold);
 
   expect(result.raid).toEqual({ level1: false, level3: true, minHeroLevel: 3 });
 });

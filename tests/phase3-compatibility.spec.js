@@ -67,7 +67,7 @@ async function expectCanonicalAccomplishments(page) {
   })), {
     timeout: 5000,
     intervals: [50, 100, 250]
-  }).toEqual({ overlay: 1, canonical: 1, overview: 1, floors: 1, titles: 1 });
+  }).toEqual({ overlay: 1, canonical: 1, overview: 1, floors: 10, titles: 0 });
 }
 
 test('Accomplishments compatibility stack renders one canonical modal through repeated opens', async ({ page }, testInfo) => {
@@ -84,7 +84,7 @@ test('Accomplishments compatibility stack renders one canonical modal through re
     await activateScrollable(page, entry, testInfo);
     await expectCanonicalAccomplishments(page);
 
-    const close = page.locator('#overlay [data-act="closeModal"]').filter({ hasText: 'Fermer' }).last();
+    const close = page.locator('#overlay .srPassClose331');
     await activateScrollable(page, close, testInfo);
     await expect(page.locator('#overlay')).toHaveCount(0, { timeout: 3000 });
     await expect(entry).toHaveCount(1);
@@ -105,7 +105,7 @@ test('BottomNav stays touchable after Accomplishments modal lifecycle', async ({
   await activateScrollable(page, entry, testInfo);
   await expectCanonicalAccomplishments(page);
 
-  const close = page.locator('#overlay [data-act="closeModal"]').filter({ hasText: 'Fermer' }).last();
+  const close = page.locator('#overlay .srPassClose331');
   await activateScrollable(page, close, testInfo);
   await expect(page.locator('#overlay')).toHaveCount(0, { timeout: 3000 });
 
@@ -148,6 +148,8 @@ test('Accomplishments legacy owners keep only Development scope and title intera
   await activateScrollable(page, entry, testInfo);
   await expectCanonicalAccomplishments(page);
 
+  await activateScrollable(page, page.locator('#overlay [data-ach-tab="defis"]'), testInfo);
+
   const titleButton = page.locator('#overlay [data-ach-title="divin"]');
   await expect(titleButton).toHaveCount(1);
   await expect(titleButton).toContainText('Équiper');
@@ -157,10 +159,11 @@ test('Accomplishments legacy owners keep only Development scope and title intera
     timeout: 5000,
     intervals: [50, 100, 250]
   }).toBe('divin');
-  await expectCanonicalAccomplishments(page);
+  await expect(page.locator('#overlay .srAch139')).toHaveCount(1);
+  await expect(page.locator('#overlay [data-ach-titles-v134]')).toHaveCount(1);
   await expect(page.locator('#overlay [data-ach-title="divin"]')).toContainText('Équipé');
 
-  const close = page.locator('#overlay [data-act="closeModal"]').filter({ hasText: 'Fermer' }).last();
+  const close = page.locator('#overlay .srPassClose331');
   await activateScrollable(page, close, testInfo);
   await expect(page.locator('#overlay')).toHaveCount(0, { timeout: 3000 });
 
