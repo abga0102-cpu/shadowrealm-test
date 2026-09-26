@@ -182,13 +182,13 @@ function applyOffline(s) {
   return s;
 }
 function grantLevels(s) {
-  const beforeLevel = Math.max(1, Math.floor(Number(s.level) || 1));
   while (s.level < RULES.MAX_LEVEL && s.exp >= expToNext(s.level)) {
     s.exp -= expToNext(s.level);
     s.level += 1;
     s.statPoints += RULES.STAT_POINTS_PER_LEVEL;
   }
-  if (s.level !== beforeLevel && typeof syncEquipmentLevels === "function") syncEquipmentLevels(s);
+  /* V456: Hero level never changes the Roman equipment rank.
+     Equipment rank is owned exclusively by permanent Equipment Mastery. */
   if (s.level >= RULES.MAX_LEVEL) { s.exp = 0; s.ascensionAvailable = true; }
   return s;
 }
@@ -2258,8 +2258,8 @@ function recycleItem(id) {
   });
   return dust;
 }
-/* V455 fallback: Hero-synchronised equipment level and Dust enhancement level
-   are separate. Dust economy reads upgradeLevel only. */
+/* V456 fallback: Equipment Mastery rank and Dust enhancement level are
+   separate. Dust economy reads upgradeLevel only. */
 function itemUpgradeCost(it) { return Math.round(30 + equipmentUpgradeLevel(it) * 18); }
 function itemUpgradePreview(it) {
   if (!it) return { label:"Stat", current:0, next:0, gain:0 };
@@ -2305,9 +2305,9 @@ function upgradeItem(id) {
     result={ok:true, success:Math.random()*100 < chance, chance:chance, seals:seals};
     if (!result.success) return;
     it.upgradeLevel = equipmentUpgradeLevel(it) + 1;
-    /* V429/V455 · Poussière rare mais réellement impactante : chaque
-       amélioration réussie ajoute +1 % de la stat de référence. Hero level is
-       independent and remains synchronised with the player. */
+    /* V429/V456 · Poussière rare mais réellement impactante : chaque
+       amélioration réussie ajoute +1 % de la stat de référence. Equipment
+       Mastery rank is independent and remains unchanged. */
     const anchorLevel = it.upgradeBaseLevel || 0;
     const steps = Math.max(0, it.upgradeLevel - anchorLevel);
     if (it.baseDamage) it.damage = Math.round(it.baseDamage * (1 + steps * 0.01) * 100) / 100;
