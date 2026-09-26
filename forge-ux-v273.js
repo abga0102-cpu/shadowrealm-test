@@ -1,8 +1,8 @@
-/* SHADOWREACH · Forge UX V273 / V371
+/* SHADOWREACH · Forge UX V273 / V371 / V458
    Event-driven Forge loot authority: bounded queue, background-safe kept stack,
    comparison-aware AUTO feedback, and no permanent 140ms watcher while idle.
-   AUTO batch sizing remains owned by auto-forge-compare; manual forge quantities are untouched.
-   No economy/progression/save changes. No overlay, no hot-loader.
+   V458 retires the fragile DOM injection for AUTO batch controls; the canonical
+   Forge filter modal now renders them directly. No economy/progression/save changes.
 */
 (function(){
 'use strict';
@@ -11,7 +11,6 @@ if(typeof S==='undefined'||!S.forge||typeof forgeSummon!=='function')return;
 
 var reduced=false;try{reduced=!!matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(_){}
 var nativeForgeSummon=forgeSummon;
-var nativeFilter=(typeof showForgeFilterPicker==='function')?showForgeFilterPicker:null;
 var nativeAutoAct=(typeof ACT!=='undefined'&&ACT&&typeof ACT.autoForge==='function')?ACT.autoForge:null;
 var BATCHES=[1,3,5,10],MAX_VISIBLE=5,KEEP_LIMIT=30,MAX_TRANSIENT=4,MAX_PENDING=12;
 var STACK_START_X=34,STACK_STEP_X=24,STACK_START_Y=4,STACK_STEP_Y=1;
@@ -65,9 +64,20 @@ function startWatch(){if(watchTimer||document.hidden||!needsFastWatch())return;w
 
 forgeSummon=function(){var out=nativeForgeSummon.apply(this,arguments);try{enqueue(out);}catch(e){console.warn('forge queue V273 skipped',e);}return out;};
 try{window.forgeSummon=forgeSummon;}catch(_){}
-if(typeof ACT!=='undefined'&&ACT){if(nativeAutoAct){ACT.autoForge=function(){var out=nativeAutoAct.apply(this,arguments);later(function(){if(reserve()){mountRoot();restoreSuspended();syncTool();if(S.forge.autoForge)startWatch();else stopWatch();}},0);return out;};}ACT.autoForgeBatch266=function(a){persistBatch(a);try{if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}if(S.forge.autoForge&&typeof scheduleAutoForge==='function'&&!(window.__srAutoForgePausedForCompareV199&&window.__srAutoForgePausedForCompareV199()))scheduleAutoForge(180);}catch(_){}if(nativeFilter)showForgeFilterPicker();};}
-function injectBatch(){var toggle=document.querySelector('[data-act="forgeFilterToggle"]');if(!toggle)return;var row=toggle.parentElement;if(!row||document.getElementById('srAutoBatch266'))return;var box=document.createElement('div');box.id='srAutoBatch266';box.innerHTML='<div class="b small">Auto-Forge simultanée</div><div class="mute tiny mt2">Nombre de pièces forgées à chaque cycle AUTO.</div><div class="srBatchBtns266">'+BATCHES.map(function(n){return '<button type="button" class="srBatch266 '+(batch()===n?'on':'')+'" data-act="autoForgeBatch266" data-arg="'+n+'">×'+n+'</button>';}).join('')+'</div><div class="mute tiny mt3">Le coût reste normal par pièce. Les valeurs non débloquées sont verrouillées par ta progression.</div>';row.insertAdjacentElement('afterend',box);}
-if(nativeFilter){showForgeFilterPicker=function(){var r=nativeFilter.apply(this,arguments);requestAnimationFrame(injectBatch);return r;};try{window.showForgeFilterPicker=showForgeFilterPicker;}catch(_){} }
+if(typeof ACT!=='undefined'&&ACT){
+ if(nativeAutoAct){ACT.autoForge=function(){var out=nativeAutoAct.apply(this,arguments);later(function(){if(reserve()){mountRoot();restoreSuspended();syncTool();if(S.forge.autoForge)startWatch();else stopWatch();}},0);return out;};}
+ ACT.autoForgeBatch266=function(a){
+  persistBatch(a);
+  try{
+   if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}
+   if(S.forge.autoForge&&typeof scheduleAutoForge==='function'&&!(window.__srAutoForgePausedForCompareV199&&window.__srAutoForgePausedForCompareV199()))scheduleAutoForge(180);
+  }catch(_){}
+  if(typeof showForgeFilterPicker==='function')showForgeFilterPicker();
+ };
+}
+/* V458: #srAutoBatch266 is rendered directly by showForgeFilterPicker().
+   Keeping injection here created a second layout owner and could place controls
+   outside the visible modal body on short mobile screens. */
 
 document.addEventListener('click',function(e){var go=e.target&&e.target.closest?e.target.closest('[data-act="go"],[data-act="nav"]'):null;if(go)later(scheduleRemount,0);},true);
 document.addEventListener('visibilitychange',function(){if(document.hidden){suspendVisuals();stopWatch();return;}if(reserve()&&(kept.length||suspendedKept.length||S.forge.autoForge)){mountRoot();restoreSuspended();syncTool();if(needsFastWatch())startWatch();}});
