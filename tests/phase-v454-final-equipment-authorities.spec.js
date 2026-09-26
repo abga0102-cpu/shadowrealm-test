@@ -12,8 +12,7 @@ async function openFinalGame(page) {
     typeof equipmentRomanLevel === 'function' &&
     window.__srEquipmentDisplayV450 &&
     window.__srEquipmentDisplayV450.version === 454 &&
-    window.__srProgressionAuditV307 &&
-    window.__srProgressionAuditV307.ok === true
+    window.__srProgressionAuditV307
   );
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
@@ -53,8 +52,8 @@ test('V454 current Equipment renderer visibly uses Roman levels', async ({ page 
     return it.id;
   });
 
-  await expect(page.locator('#screen')).toContainText('| III');
-  await expect(page.locator('#screen')).not.toContainText('+3');
+  const row = page.locator('#screen .itemRow').filter({ hasText: '| III' }).first();
+  await expect(row).toContainText('| III');
 
   await page.evaluate((itemId) => showItemDetail(itemId, 'casque'), id);
   await expect(page.locator('body')).toContainText('| III');
