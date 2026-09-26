@@ -14,6 +14,6 @@
   }
 
   window.__srV301UpgradeChance=chance;
-  try{ if(typeof itemUpgradeChance==='function') itemUpgradeChance=function(it){return chance((it&&it.level)||0);}; }catch(_){ }
+  try{ if(typeof itemUpgradeChance==='function') itemUpgradeChance=function(it){var lv=typeof equipmentUpgradeLevel==='function'?equipmentUpgradeLevel(it):Math.max(0,Number(it&&it.upgradeLevel)||0);return chance(lv);}; }catch(_){ }
   try{ window.__srProgressionOverhaulConfigV301={minimumUpgradeChance:5,upgradeChance:chance}; }catch(_){ }
 })();

@@ -241,8 +241,9 @@ function fmtEquipStat(v) {
   if (Number.isInteger(n)) return fmt(n);
   return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-/* V454 · Canonical equipment level presentation.
-   Numeric item.level remains the saved authority; Roman numerals are display-only. */
+/* V455 · Equipment level model.
+   item.level follows the Hero level for every owned/new item.
+   Dust progression is separate in item.upgradeLevel so old investments survive. */
 function equipmentRomanLevel(level) {
   let n = Math.max(0, Math.floor(Number(level) || 0));
   if (!n) return "";
@@ -251,11 +252,48 @@ function equipmentRomanLevel(level) {
   map.forEach(([value, glyph]) => { while (n >= value) { out += glyph; n -= value; } });
   return out;
 }
+function equipmentUpgradeLevel(it) {
+  if (!it) return 0;
+  const explicit = Number(it.upgradeLevel);
+  if (Number.isFinite(explicit)) return Math.max(0, Math.floor(explicit));
+  /* Pre-V455 saves stored Dust upgrades in item.level. */
+  return Math.max(0, Math.floor(Number(it.level) || 0));
+}
+function syncEquipmentLevelItem(it, heroLevel) {
+  if (!it) return false;
+  const target = Math.max(1, Math.floor(Number(heroLevel) || 1));
+  let changed = false;
+  if (!Number.isFinite(Number(it.upgradeLevel))) {
+    it.upgradeLevel = Math.max(0, Math.floor(Number(it.level) || 0));
+    changed = true;
+  } else {
+    const cleanUpgrade = Math.max(0, Math.floor(Number(it.upgradeLevel) || 0));
+    if (it.upgradeLevel !== cleanUpgrade) { it.upgradeLevel = cleanUpgrade; changed = true; }
+  }
+  if (!Number.isFinite(Number(it.upgradeBaseLevel))) { it.upgradeBaseLevel = 0; changed = true; }
+  if (Number(it.level) !== target) { it.level = target; changed = true; }
+  if (it.equipmentLevelModelVersion !== 455) { it.equipmentLevelModelVersion = 455; changed = true; }
+  return changed;
+}
+function syncEquipmentLevels(s) {
+  if (!s) return false;
+  let changed = false;
+  (s.inventory || []).forEach((it) => { if (syncEquipmentLevelItem(it, s.level)) changed = true; });
+  if (s.equipped) Object.keys(s.equipped).forEach((slot) => {
+    if (syncEquipmentLevelItem(s.equipped[slot], s.level)) changed = true;
+  });
+  s.equipmentLevelSyncVersion = 455;
+  return changed;
+}
 function equipmentDisplayName(it) {
   if (!it) return "";
   const name = String(it.name || "Équipement");
   const roman = equipmentRomanLevel(it.level);
   return roman ? name + " | " + roman : name;
+}
+function equipmentUpgradeText(it) {
+  const lv = equipmentUpgradeLevel(it);
+  return lv > 0 ? "+" + lv + " amélioration" + (lv > 1 ? "s" : "") : "Non amélioré";
 }
 function fmtTime(secs) {
   secs = Math.max(0, Math.floor(secs));
@@ -2495,12 +2533,17 @@ function migrate(s, name) {
     merged.sanctuaryGoldRebaseNoticeV35 = { level:lvl, progress, purchases, oldSpent, fairSpent, refundGold };
   }
 
-  /* V445 import/live migration hook. progression-overhaul-v283.js loads after
-     the base engine, so normal boot applies this later; imports happen after
-     all runtime owners are loaded and can apply the mastery immediately. */
+  /* V445/V455 import-live migration hooks. Runtime authorities load after the
+     base engine, so imports explicitly apply both Forge mastery and the
+     Hero-synchronised equipment-level model before the imported state is used. */
   try {
     const masteryApi = window.__srForgeLifetimeMasteryV445;
     if (masteryApi && typeof masteryApi.applyState === "function") masteryApi.applyState(merged);
+  } catch (_) {}
+  try {
+    const levelApi = window.__srEquipmentLevelSyncV455;
+    if (levelApi && typeof levelApi.applyState === "function") levelApi.applyState(merged);
+    else syncEquipmentLevels(merged);
   } catch (_) {}
 
   return merged;
@@ -2972,7 +3015,9 @@ function makeItem(slot, rarity, forgeLevel) {
   const dmg = MASTERY_STAT[slot] === "dmg" ? Math.floor(base * mul * roll) : 0;
   const hp = MASTERY_STAT[slot] === "hp" ? Math.floor(base * mul * 4 * roll) : 0;
   const name = SLOT_LABEL[slot] + " " + (RARITY_NAMES[equipRank(rarity)] || "");
-  return { id: rid(), slot, rarity, weaponType: wt, damage: dmg, hp, level: 0,
+  return { id: rid(), slot, rarity, weaponType: wt, damage: dmg, hp,
+    level: Math.max(1, Math.floor(Number(S && S.level) || 1)), upgradeLevel: 0,
     baseDamage: dmg, baseHp: hp, upgradeBaseLevel: 0, originalPower: dmg + hp,
-    power: dmg + hp, name: name.trim(), affixes: rollAffixes(rarity) };
+    power: dmg + hp, name: name.trim(), affixes: rollAffixes(rarity),
+    equipmentLevelModelVersion: 455 };
 }

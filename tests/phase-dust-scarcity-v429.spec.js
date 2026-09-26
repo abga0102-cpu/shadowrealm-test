@@ -106,7 +106,8 @@ test('V429 one successful Dust upgrade adds exactly +1% of the base equipment st
       baseHp: 0,
       originalPower: 10000,
       power: 10000,
-      level: 0,
+      level: 24,
+      upgradeLevel: 0,
       upgradeBaseLevel: 0,
       affixes: [],
       powerCurveVersion: 372
@@ -133,17 +134,19 @@ test('V429 one successful Dust upgrade adds exactly +1% of the base equipment st
       afterDust: S.poussiere,
       outcome,
       level: item.level,
+      upgradeLevel: item.upgradeLevel,
       damage: item.damage,
       gain: item.damage - 10000,
     };
   });
 
   expect(result.preview.gain).toBe(100);
-  expect(result.cost).toBe(60);
-  expect(result.afterDust).toBe(result.beforeDust - 60);
+  expect(result.cost).toBe(30);
+  expect(result.afterDust).toBe(result.beforeDust - 30);
   expect(result.outcome.ok).toBe(true);
   expect(result.outcome.success).toBe(true);
-  expect(result.level).toBe(1);
+  expect(result.level).toBe(24);
+  expect(result.upgradeLevel).toBe(1);
   expect(result.damage).toBe(10100);
   expect(result.gain).toBe(100);
 });
