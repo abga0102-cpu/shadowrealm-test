@@ -1990,34 +1990,63 @@ function capRarityForForge(rarity, forgeLevel) {
    would change nothing today and everything the day it unlocks. */
 function showForgeFilterPicker() {
   const lv = S.forge.level;
+  const batches = [1, 3, 5, 10];
+  const unlockedBatch = Math.max(1, Math.floor(typeof forgeBatch === "function" ? forgeBatch(S) : 1));
+  const selectedBatch = Math.max(1, Math.floor(Number(S.forge.autoBatch) || 1));
+  const discarded = typeof forgeDiscarded === "function" ? forgeDiscarded(S) : [];
   const rows = EQUIP_RARITY_ORDER.map((r) => {
     const c = RARITY[r].c;
     const kept = S.forge.keep[r] !== false;
     const reachable = rarityAllowed(r, lv);
-    return '<div class="itemRow" style="border-left-color:' + c + ";opacity:" + (reachable ? 1 : 0.45) +
-      '" data-act="forgeKeep" data-arg="' + r + '">' +
-      '<div class="imini" style="width:22px;height:22px;border-color:' + c + '80">' +
-        ic(kept ? "bag" : "trash", 12) + "</div>" +
-      '<div class="flex1"><div class="b small" style="color:' + c + '">' + RARITY[r].label + "</div>" +
-      '<div class="mute tiny b">' + (kept ? "gardé · va dans l'Inventaire"
-        : "recyclé en poussière") +
-        (reachable ? "" : " · " + forgeRarityRequirement(r).text + " requis") + "</div></div>" +
-      '<div class="tgl ' + (kept ? "on" : "off") + '" style="pointer-events:none"><i></i></div>' +
-      "</div>";
+    const req = forgeRarityRequirement(r);
+    return '<button type="button" class="srForgeRarity458 ' + (kept ? "keep" : "recycle") +
+      (reachable ? "" : " locked") + '" style="--rc:' + c + '" data-act="forgeKeep" data-arg="' + r + '">' +
+      '<span class="srForgeRarityIcon458">' + ic(kept ? "bag" : "trash", 13) + "</span>" +
+      '<span class="srForgeRarityText458"><b>' + RARITY[r].label + '</b><small>' +
+        (kept ? "GARDÉ" : "RECYCLÉ") + (reachable ? "" : " · " + req.pill) + "</small></span>" +
+      '<span class="srForgeRarityState458">' + (kept ? "✓" : "♻") + "</span></button>";
   }).join("");
+  const batchButtons = batches.map((n) => {
+    const locked = n > unlockedBatch;
+    return '<button type="button" class="srBatch266 ' + (!locked && selectedBatch === n ? "on" : "") +
+      (locked ? " srBatchLocked266" : "") + '" data-act="autoForgeBatch266" data-arg="' + n + '"' +
+      (locked ? ' disabled aria-disabled="true"' : "") + ">" + (locked ? "🔒 " : "") + "×" + n + "</button>";
+  }).join("");
+
   openModal(
-    '<div class="mute tiny" style="line-height:1.45;margin-bottom:2px">' +
-      "Les raretés décochées sont recyclées dès la sortie de la Forge, " +
-      "pour la même poussière que l'Inventaire aurait payée.</div>" +
-    '<div class="row gap6 mt8">' +
-      btn(ic(S.forge.filter ? "check" : "cross", 13) +
-          (S.forge.filter ? "Filtre actif" : "Filtre inactif"),
-        { cls: S.forge.filter ? "purple" : "dark", small: true, act: "forgeFilterToggle" }) +
-      btn("Tout garder", { cls: "ghost", small: true, act: "forgeKeepAll" }) +
+    '<div class="srForgeFilterModal458">' +
+      '<section class="srForgeFilterSection458 auto">' +
+        '<div class="srForgeFilterSectionHead458"><div><b>AUTO-FORGE</b><small>Réglages de la forge automatique</small></div>' +
+          '<span class="pill" style="color:' + (S.forge.autoForge ? "var(--greenLit)" : "var(--dim)") +
+          ';border-color:' + (S.forge.autoForge ? "var(--green)" : "var(--line)") + '">' +
+          (S.forge.autoForge ? "ACTIF" : "INACTIF") + "</span></div>" +
+        '<div class="srForgeAutoTop458">' +
+          '<div class="tgl ' + (S.forge.autoForge ? "on" : "off") + '" data-act="autoForge"><span>' +
+            (S.forge.autoForge ? "● AUTO" : "AUTO") + "</span><i></i></div>" +
+          '<div class="srForgeAutoCycle458"><span>Pièces / cycle</span><b>×' + selectedBatch + "</b></div>" +
+        "</div>" +
+        '<div id="srAutoBatch266" class="srAutoBatch458">' +
+          '<div class="srBatchBtns266">' + batchButtons + "</div>" +
+          '<div class="srBatchGateNote266 mute tiny mt3">Maximum actuellement débloqué : ×' + unlockedBatch + ".</div>" +
+        "</div>" +
+      "</section>" +
+
+      '<section class="srForgeFilterSection458 filter">' +
+        '<div class="srForgeFilterSectionHead458"><div><b>FILTRE AUTO-RECYCLAGE</b><small>Choisis ce que la Forge garde ou recycle</small></div>' +
+          '<span class="pill" style="color:' + (S.forge.filter ? "var(--purpleLit)" : "var(--dim)") +
+          ';border-color:' + (S.forge.filter ? "var(--purple)" : "var(--line)") + '">' +
+          (S.forge.filter ? discarded.length + " recyclée" + (discarded.length > 1 ? "s" : "") : "INACTIF") + "</span></div>" +
+        '<div class="srForgeFilterActions458">' +
+          btn(ic(S.forge.filter ? "check" : "cross", 13) + (S.forge.filter ? "Filtre actif" : "Activer le filtre"),
+            { cls: S.forge.filter ? "purple" : "dark", small: true, act: "forgeFilterToggle" }) +
+          btn("Tout garder", { cls: "ghost", small: true, act: "forgeKeepAll" }) +
+        "</div>" +
+        '<div class="srForgeFilterHint458">Les raretés marquées <b>RECYCLÉ</b> deviennent automatiquement de la Poussière dès leur sortie de Forge.</div>' +
+        '<div class="srForgeRarityGrid458">' + rows + "</div>" +
+      "</section>" +
     "</div>" +
-    '<div class="mt6">' + rows + "</div>" +
-    '<div class="mt6">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
-    "Filtre de Forge");
+    '<div class="srForgeFilterFooter458">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
+    "Auto-Forge & filtre");
 }
 function showRarityInfo() {
   const lv = S.forge.level;
