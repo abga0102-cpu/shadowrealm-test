@@ -182,11 +182,13 @@ function applyOffline(s) {
   return s;
 }
 function grantLevels(s) {
+  const beforeLevel = Math.max(1, Math.floor(Number(s.level) || 1));
   while (s.level < RULES.MAX_LEVEL && s.exp >= expToNext(s.level)) {
     s.exp -= expToNext(s.level);
     s.level += 1;
     s.statPoints += RULES.STAT_POINTS_PER_LEVEL;
   }
+  if (s.level !== beforeLevel && typeof syncEquipmentLevels === "function") syncEquipmentLevels(s);
   if (s.level >= RULES.MAX_LEVEL) { s.exp = 0; s.ascensionAvailable = true; }
   return s;
 }
@@ -2256,12 +2258,13 @@ function recycleItem(id) {
   });
   return dust;
 }
-/* V453 fallback: kept aligned with the final equipment upgrade authority. */
-function itemUpgradeCost(it) { return Math.round(30 + it.level * 18); }
+/* V455 fallback: Hero-synchronised equipment level and Dust enhancement level
+   are separate. Dust economy reads upgradeLevel only. */
+function itemUpgradeCost(it) { return Math.round(30 + equipmentUpgradeLevel(it) * 18); }
 function itemUpgradePreview(it) {
   if (!it) return { label:"Stat", current:0, next:0, gain:0 };
   const anchorLevel = it.upgradeBaseLevel || 0;
-  const steps = Math.max(0, (it.level || 0) + 1 - anchorLevel);
+  const steps = Math.max(0, equipmentUpgradeLevel(it) + 1 - anchorLevel);
   let current, next, label;
   if (it.baseDamage) {
     current = Number(it.damage || 0);
@@ -2274,13 +2277,12 @@ function itemUpgradePreview(it) {
   }
   return { label, current, next, gain: Math.round((next - current) * 100) / 100 };
 }
-/* Jusqu'à +99, l'amélioration est garantie. À partir de +100, -5 points de
-   réussite tous les 10 niveaux, avec un plancher de 35 %. Les Sceaux de
-   stabilité ajoutent +5 points chacun. Un échec ne détruit ni l'objet ni son
-   niveau : seule la Poussière (et les Sceaux choisis) est consommée. */
+/* Canonical late authority moves risk to Dust enhancement +25; this fallback
+   only guarantees a safe pre-authority value during boot. */
 function itemUpgradeChance(it) {
-  if ((it.level || 0) < 100) return 100;
-  return Math.max(35, 95 - Math.floor(((it.level || 0) - 100) / 10) * 5);
+  const lv = equipmentUpgradeLevel(it);
+  if (lv < 25) return 100;
+  return Math.max(5, 95 - 5 * Math.floor((lv - 25) / 2));
 }
 const itemSealPlan = {};
 function itemSealCount(id) { return Math.max(0, itemSealPlan[id] || 0); }
@@ -2302,12 +2304,12 @@ function upgradeItem(id) {
     const beforeHp = Number(it.hp || 0);
     result={ok:true, success:Math.random()*100 < chance, chance:chance, seals:seals};
     if (!result.success) return;
-    it.level += 1;
-    /* V429 · Poussière rare mais réellement impactante : chaque amélioration
-       réussie ajoute +1 % de la stat de référence. Les anciennes pièces gardent
-       leur puissance acquise : leur valeur au moment de la migration reste l'ancre. */
+    it.upgradeLevel = equipmentUpgradeLevel(it) + 1;
+    /* V429/V455 · Poussière rare mais réellement impactante : chaque
+       amélioration réussie ajoute +1 % de la stat de référence. Hero level is
+       independent and remains synchronised with the player. */
     const anchorLevel = it.upgradeBaseLevel || 0;
-    const steps = Math.max(0, it.level - anchorLevel);
+    const steps = Math.max(0, it.upgradeLevel - anchorLevel);
     if (it.baseDamage) it.damage = Math.round(it.baseDamage * (1 + steps * 0.01) * 100) / 100;
     if (it.baseHp) it.hp = Math.round(it.baseHp * (1 + steps * 0.01) * 100) / 100;
     it.power = Math.round((it.damage + it.hp) * 100) / 100;
