@@ -47,9 +47,9 @@ test('Published build keeps the +25 risk threshold and historical 5 percent floo
 test('Published build loads fresh Roman-level, Sanctuary and Dust authorities', async ({ page }) => {
   await openCleanGame(page);
   const loaded = await page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name));
-  expect(loaded.some(u => u.includes('equipment-stats-collapse-v176.js?v=2026.09.26.455f'))).toBe(true);
+  expect(loaded.some(u => u.includes('equipment-stats-collapse-v176.js?v=2026.09.26.456d'))).toBe(true);
   expect(loaded.some(u => u.includes('sanctuary-endgame-v130.js?v=2026.09.26.454e'))).toBe(true);
-  expect(loaded.some(u => u.includes('progression-overhaul-v283.js?v=2026.09.26.455h'))).toBe(true);
+  expect(loaded.some(u => u.includes('progression-overhaul-v283.js?v=2026.09.26.456e'))).toBe(true);
   expect(loaded.some(u => u.includes('dust-chance-floor-v301.js?v=2026.09.26.455j'))).toBe(true);
   expect(await page.evaluate(() => window.__srEquipmentDisplayV450.name({ name:'Casque', level:3 }))).toBe('Casque | III');
 });
@@ -65,15 +65,17 @@ test('Published source keeps the four validated V452 Sanctuary rewards', async (
 
 test('Published index build stamp is unique and cache-busts every changed runtime owner', async () => {
   const index = fs.readFileSync('index.html', 'utf8');
-  expect(index).toContain('shadowreach-build" content="2026.09.26.455"');
-  expect(index).toContain('game-2.js?v=2026.09.26.455b');
+  expect(index).toContain('shadowreach-build" content="2026.09.26.456"');
+  expect(index).toContain('game-2.js?v=2026.09.26.456b');
+  expect(index).toContain('game-1.js?v=2026.09.26.456a');
+  expect(index).toContain('game-5.js?v=2026.09.26.456c');
   expect(index).toContain('sanctuary-endgame-v130.js?v=2026.09.26.454e');
-  expect(index).toContain('equipment-stats-collapse-v176.js?v=2026.09.26.455f');
-  expect(index).toContain('progression-overhaul-v283.js?v=2026.09.26.455h');
+  expect(index).toContain('equipment-stats-collapse-v176.js?v=2026.09.26.456d');
+  expect(index).toContain('progression-overhaul-v283.js?v=2026.09.26.456e');
   expect(index).toContain('dust-chance-floor-v301.js?v=2026.09.26.455j');
   expect(index).toContain('progression-stability-authority-v304.js?v=2026.09.26.454i');
   expect(index).toContain('progression-batch-qa-v307.js?v=2026.09.26.455k');
   expect(index).toContain('forge-comparison-authority-v146.js?v=2026.09.26.455e');
   expect(index).toContain('power-source-integrity-v256.js?v=2026.09.26.455g');
-  expect(index).toContain("var V='2026.09.26.455'");
+  expect(index).toContain("var V='2026.09.26.456'");
 });

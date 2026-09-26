@@ -1157,12 +1157,15 @@ function showItemDetail(id, slot) {
   const currentPrimary = Number(isWeaponStat ? (it.damage || 0) : (it.hp || 0));
   const addedPrimary = Math.max(0, currentPrimary - basePrimary);
   const itemDefense = equipmentDefenseRating(it);
+  const masteryInfo = equipmentMasteryInfo(S);
+  const masteryRoman = masteryInfo.rank ? masteryInfo.roman : "—";
   openModal('<div class="row gap10" style="margin-bottom:10px">' +
       '<div class="imini rf" style="width:46px;height:46px;border-color:' + rc + ";--rc:" + rc + '">' +
       '<span style="position:relative;z-index:1">' + slotIcon(it.slot, 27, it) + "</span></div>" +
       '<div class="flex1"><div class="bb" style="font-size:14px;color:' + rc + ';text-shadow:0 0 12px ' + rc + '66">' +
       esc(equipmentDisplayName(it)) + "</div>" +
       '<div class="mt6">' + rtag(it.rarity) + '<span class="pill" style="margin-left:5px">' + SLOT_LABEL[it.slot] + '</span><span class="pill" style="margin-left:5px;color:var(--goldLit);border-color:var(--goldDim)">' + esc(equipmentUpgradeText(it)) + "</span></div></div></div>" +
+    '<div class="notice tiny" style="border-color:#E8B44A66;margin-bottom:8px"><b style="color:var(--goldLit)">MAÎTRISE ÉQUIPEMENT ' + masteryRoman + ' · +' + masteryInfo.bonusPct + '% base</b><div class="mt3">Ce rang définit le niveau romain de tous les équipements et son bonus de base.</div></div>' +
     '<div class="card" style="padding:9px 11px">' +
       (MASTERY_STAT[it.slot] === "dmg"
         ? st("ATTAQUE DE BASE", "+" + equipStat(basePrimary), "#FF9C6B")
