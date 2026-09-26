@@ -2369,7 +2369,7 @@ function summonSkill(n) {
             beforeLevel, afterLevel: existing.level, leveled,
             count: existing.count,
             need: existing.level < RULES.SKILL_MAX_LEVEL ? skillDupesNeeded(existing.level) : 0,
-            levelPowerPct: leveled ? 10 : 0,
+            levelPowerPct: leveled ? 20 : 0,
             globalPowerGain: leveled ? Math.max(0, Math.round(afterGlobalPower - beforeGlobalPower)) : 0
           });
         } else {
@@ -2393,11 +2393,34 @@ function summonSkill(n) {
     .reduce((sum, r) => sum + Math.max(0, Number(r.globalPowerGain) || 0), 0);
   return results;
 }
+function skillEquipPowerPreview(slotIdx, skillId, state) {
+  const s = state || S;
+  const before = Math.round(Number(s.power || computePower(s) || 0));
+  const slots = (s.skillSlots || []).slice();
+  const idx = Math.max(0, Math.min(slots.length - 1, Math.floor(Number(slotIdx) || 0)));
+  if (skillId) {
+    for (let i = 0; i < slots.length; i++) if (slots[i] === skillId) slots[i] = null;
+  }
+  const previousId = slots[idx] || null;
+  slots[idx] = skillId || null;
+  const after = Math.round(Number(computePower(Object.assign({}, s, { skillSlots: slots })) || 0));
+  return { before, after, delta: after - before, slotIdx: idx, previousId, skillId: skillId || null };
+}
 function equipSkill(slotIdx, skillId) {
+  const preview = skillEquipPowerPreview(slotIdx, skillId, S);
   update((s) => {
     if (skillId) s.skillSlots = s.skillSlots.map((x) => (x === skillId ? null : x));
-    s.skillSlots[slotIdx] = skillId;
+    s.skillSlots[preview.slotIdx] = skillId || null;
   });
+  return {
+    before: preview.before,
+    after: Math.round(Number(S.power) || 0),
+    delta: Math.round((Number(S.power) || 0) - preview.before),
+    slotIdx: preview.slotIdx,
+    previousId: preview.previousId,
+    skillId: skillId || null,
+    replaced: !!preview.previousId && preview.previousId !== (skillId || null)
+  };
 }
 
 /* An egg is hatching when it carries a hatchEnd, and stored when it does not.
