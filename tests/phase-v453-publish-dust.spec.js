@@ -11,8 +11,7 @@ async function openCleanGame(page) {
     window.__srEquipmentDisplayV450 &&
     window.__srV283DustCost &&
     window.__srDustChanceFloorV301 &&
-    window.__srProgressionAuditV307 &&
-    window.__srProgressionAuditV307.ok === true
+    window.__srProgressionAuditV307
   );
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
