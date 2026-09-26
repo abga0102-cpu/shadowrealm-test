@@ -2261,7 +2261,8 @@ function itemUpgradeCost(it) { return Math.round(30 + it.level * 18); }
 function itemUpgradePreview(it) {
   if (!it) return { label:"Stat", current:0, next:0, gain:0 };
   const anchorLevel = it.upgradeBaseLevel || 0;
-  const steps = Math.max(0, (it.level || 0) + 1 - anchorLevel);
+  const liveLevel = Math.max(Math.max(0, Math.floor(Number(S && S.equipmentUpgradeLevel) || 0)), Math.max(0, Math.floor(Number(it.level) || 0)));
+  const steps = Math.max(0, liveLevel + 1 - anchorLevel);
   let current, next, label;
   if (it.baseDamage) {
     current = Number(it.damage || 0);
@@ -2274,13 +2275,13 @@ function itemUpgradePreview(it) {
   }
   return { label, current, next, gain: Math.round((next - current) * 100) / 100 };
 }
-/* Jusqu'à +99, l'amélioration est garantie. À partir de +100, -5 points de
-   réussite tous les 10 niveaux, avec un plancher de 35 %. Les Sceaux de
-   stabilité ajoutent +5 points chacun. Un échec ne détruit ni l'objet ni son
-   niveau : seule la Poussière (et les Sceaux choisis) est consommée. */
+/* V455 fallback aligned with the live shared-level authority.
+   Guaranteed through level 24; risk starts at +25 and never falls below 5 %.
+   Stability Seals still add +5 points each. Failure keeps the shared level. */
 function itemUpgradeChance(it) {
-  if ((it.level || 0) < 100) return 100;
-  return Math.max(35, 95 - Math.floor(((it.level || 0) - 100) / 10) * 5);
+  const level = Math.max(Math.max(0, Math.floor(Number(S && S.equipmentUpgradeLevel) || 0)), Math.max(0, Math.floor(Number(it && it.level) || 0)));
+  if (level < 25) return 100;
+  return Math.max(5, 95 - 5 * Math.floor((level - 25) / 2));
 }
 const itemSealPlan = {};
 function itemSealCount(id) { return Math.max(0, itemSealPlan[id] || 0); }
