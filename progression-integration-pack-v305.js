@@ -565,7 +565,8 @@ try{
     var onboardingChanged=v317Apply(S);
     var starterResult=v461ApplyMilestones(S,false);
     onboardingChanged=onboardingChanged||starterResult.changed;
-    S.progressionIntegrationVersion=461;
+    S.progressionIntegrationVersion=Math.max(305,Number(S.progressionIntegrationVersion)||0);
+    S.starterPacingVersion=461;
     if(typeof computePower==='function')S.power=computePower(S);
     if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);
     if(typeof saveNow==='function'&&onboardingChanged)saveNow();
