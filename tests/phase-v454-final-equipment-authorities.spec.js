@@ -11,7 +11,7 @@ async function openFinalGame(page) {
     typeof equipmentDisplayName === 'function' &&
     typeof equipmentRomanLevel === 'function' &&
     window.__srEquipmentDisplayV450 &&
-    window.__srEquipmentDisplayV450.version === 454 &&
+    window.__srEquipmentDisplayV450.version >= 454 &&
     window.__srProgressionAuditV307
   );
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
@@ -20,13 +20,13 @@ async function openFinalGame(page) {
 test('V454 final runtime keeps half Dust cost and +25 risk after every late authority', async ({ page }) => {
   await openFinalGame(page);
   const result = await page.evaluate(() => ({
-    cost0: itemUpgradeCost({ level: 0 }),
-    cost1: itemUpgradeCost({ level: 1 }),
-    cost10: itemUpgradeCost({ level: 10 }),
-    chance24: itemUpgradeChance({ level: 24 }),
-    chance25: itemUpgradeChance({ level: 25 }),
-    chance27: itemUpgradeChance({ level: 27 }),
-    chance999: itemUpgradeChance({ level: 999 }),
+    cost0: itemUpgradeCost({ level: 24, upgradeLevel: 0 }),
+    cost1: itemUpgradeCost({ level: 24, upgradeLevel: 1 }),
+    cost10: itemUpgradeCost({ level: 24, upgradeLevel: 10 }),
+    chance24: itemUpgradeChance({ level: 24, upgradeLevel: 24 }),
+    chance25: itemUpgradeChance({ level: 24, upgradeLevel: 25 }),
+    chance27: itemUpgradeChance({ level: 24, upgradeLevel: 27 }),
+    chance999: itemUpgradeChance({ level: 24, upgradeLevel: 999 }),
     audit: window.__srProgressionAuditV307
   }));
   expect(result.cost0).toBe(30);
@@ -99,6 +99,6 @@ test('V454 removes the stale late Dust override and stale Sanctuary mastery valu
   expect(v304).not.toContain('level<70');
   expect(v132).toContain("if(r==='MYTHIQUE_III')out.mineral=1500");
   expect(v132).toContain("var acc={EPIQUE_I:1,EPIQUE_II:5,MYTHIQUE_III:30");
-  expect(game5).toContain('À partir de +25 · échec = niveau conservé');
-  expect(game5).toContain('jusqu’au niveau +24.');
+  expect(game5).toContain('À partir de l’amélioration +25 · échec = équipement conservé');
+  expect(game5).toContain('jusqu’à l’amélioration +24.');
 });
