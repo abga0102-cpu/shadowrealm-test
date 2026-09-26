@@ -1,4 +1,4 @@
-/* SHADOWREACH V449 · Early Campaign rebalance authority
+/* SHADOWREACH V449 / V457 · Early Campaign rebalance authority
    Requested balance window, applied LAST after the existing Campaign authorities.
 
    Visible Campaign mapping: 20 stages per chapter.
