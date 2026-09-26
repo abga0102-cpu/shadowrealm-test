@@ -1939,6 +1939,9 @@ function defaultState(name) {
     equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null,
       collier: null, anneau: null, ceinture: null },
     inventory: [],
+    /* V455 · Poussière upgrades are account-wide for equipment. Every owned
+       piece and every future Forge drop inherits this shared level. */
+    equipmentUpgradeLevel: 0,
     forge: { level: 1, summonCount: 0, lifetimeCount: 0, lifetimeMasteryVersion: 0,
       masteryLevel: 0, masteryProgress: 0, autoForge: false, upgradeEnd: 0,
       // section 14: nothing is filtered out until the player says so
