@@ -15,21 +15,25 @@ try{if(typeof skillDupesNeeded==='function')skillDupesNeeded=window.__srV284Dupe
 /* V457 migration: duplicates already earned under the old 2/4/6/8/10 curve
    are never discarded. If an existing counter now clears one or more cheaper
    thresholds, convert those earned duplicates into levels immediately. */
+function normalizeOwnedSkillDupesV457(state){
+ var s=state,changed=false,ups=0;if(!s||!s.skills)return {changed:false,levelUps:0};
+ Object.keys(s.skills).forEach(function(id){
+  var sk=s.skills[id];if(!sk)return;
+  sk.level=Math.max(1,Math.floor(Number(sk.level)||1));
+  sk.count=Math.max(0,Math.floor(Number(sk.count)||0));
+  while(sk.level<(typeof RULES!=='undefined'?RULES.SKILL_MAX_LEVEL:50)){
+   var need=window.__srV284DupesNeeded(sk.level);
+   if(sk.count<need)break;
+   sk.count-=need;sk.level+=1;changed=true;ups+=1;
+  }
+ });
+ s.skillDupeCurveVersion=457;
+ return {changed:changed,levelUps:ups};
+}
 try{
  if(typeof S!=='undefined'&&S&&S.skills){
-  var changed=false,ups=0;
-  Object.keys(S.skills).forEach(function(id){
-   var sk=S.skills[id];if(!sk)return;
-   sk.level=Math.max(1,Math.floor(Number(sk.level)||1));
-   sk.count=Math.max(0,Math.floor(Number(sk.count)||0));
-   while(sk.level<(typeof RULES!=='undefined'?RULES.SKILL_MAX_LEVEL:50)){
-    var need=window.__srV284DupesNeeded(sk.level);
-    if(sk.count<need)break;
-    sk.count-=need;sk.level+=1;changed=true;ups+=1;
-   }
-  });
-  if(changed){
-   S.skillDupeCurveVersion=457;
+  var migration=normalizeOwnedSkillDupesV457(S);
+  if(migration.changed){
    try{if(typeof computePower==='function')S.power=computePower(S);}catch(_){}
    try{if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);}catch(_){}
    try{if(typeof saveNow==='function')saveNow();}catch(_){}
@@ -51,5 +55,5 @@ try{if(typeof SKILL_DEFS!=='undefined'&&!SKILL_DEFS.some(function(d){return d.id
 var A={0:{COMMUN:100,RARE:0,EPIQUE:0,MYTHIQUE:0,ARTEFACT:0,LEGENDAIRE:0,DIVIN:0},10:{COMMUN:65,RARE:27,EPIQUE:8,MYTHIQUE:0,ARTEFACT:0,LEGENDAIRE:0,DIVIN:0},20:{COMMUN:45,RARE:30,EPIQUE:20,MYTHIQUE:5,ARTEFACT:0,LEGENDAIRE:0,DIVIN:0},30:{COMMUN:35,RARE:27,EPIQUE:24,MYTHIQUE:12,ARTEFACT:2,LEGENDAIRE:0,DIVIN:0},40:{COMMUN:30,RARE:25,EPIQUE:24,MYTHIQUE:16,ARTEFACT:5,LEGENDAIRE:0,DIVIN:0},50:{COMMUN:27,RARE:25,EPIQUE:23,MYTHIQUE:18,ARTEFACT:7,LEGENDAIRE:0,DIVIN:0}};
 function interp(m){m=Math.max(0,Math.min(50,Number(m)||0));var ks=[0,10,20,30,40,50],lo=0,hi=0;for(var i=1;i<ks.length;i++){if(m<=ks[i]){lo=ks[i-1];hi=ks[i];break;}}if(m===0){lo=hi=0;}var t=hi===lo?0:(m-lo)/(hi-lo),o={};Object.keys(A[lo]).forEach(function(r){o[r]=A[lo][r]+(A[hi][r]-A[lo][r])*t;});if(stars()>=1&&m>=50){o={COMMUN:25,RARE:23,EPIQUE:22,MYTHIQUE:18,ARTEFACT:7,LEGENDAIRE:5,DIVIN:0};}return o;}
 try{if(typeof getRates==='function'&&!getRates.__srV284){var oldRates=getRates;getRates=function(system,m,a,s){if(system==='skill')return interp(m);return oldRates(system,m,a,s);};getRates.__srV284=true;}}catch(_){ }
-window.__srSkillOverhaulConfigV284={base:BASE,rarityBase:RAR,rates:A,levelGrowthPct:20,maxDupes:6,dupeCurve:[1,2,3,4,5,6],revision:457,kameha:{targets:3,cooldown:10}};
+window.__srSkillOverhaulConfigV284={base:BASE,rarityBase:RAR,rates:A,levelGrowthPct:20,maxDupes:6,dupeCurve:[1,2,3,4,5,6],revision:457,normalizeDupes:normalizeOwnedSkillDupesV457,kameha:{targets:3,cooldown:10}};
 })();
