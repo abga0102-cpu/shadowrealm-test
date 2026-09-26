@@ -100,8 +100,10 @@ function applyForgeLifetimeMasteryState(s){
 try{if(typeof makeItem==='function'&&!makeItem.__srV283){var oldMake=makeItem;makeItem=function(slot,rar,forge){
   var it=oldMake(slot,rar,forge),q=qroll(rar),pct=forgeLifetimeBonusPct(typeof S!=='undefined'?S:null);
   var x=equipStats(slot,rar,q,equipStar(),pct);
-  it.damage=x.d;it.hp=x.h;it.baseDamage=x.d;it.baseHp=x.h;it.level=0;it.upgradeBaseLevel=0;
-  it.originalPower=x.rawD+x.rawH;it.power=x.d+x.h;it.statQuality=Math.round(q*10000)/10000;
+  var lv=Math.max(0,Math.floor(Number(typeof S!=='undefined'&&S&&S.equipmentUpgradeLevel)||0)),growth=1+.01*lv;
+  it.baseDamage=x.d;it.baseHp=x.h;it.damage=Math.round(x.d*growth*100)/100;it.hp=Math.round(x.h*growth*100)/100;
+  it.level=lv;it.upgradeBaseLevel=0;
+  it.originalPower=x.rawD+x.rawH;it.power=it.damage+it.hp;it.statQuality=Math.round(q*10000)/10000;
   it.powerCurveVersion=372;it.forgeLifetimeMasteryPct=pct;it.forgeLifetimeMasteryVersion=445;
   return it;
 };makeItem.__srV283=true;}}catch(_){ }
@@ -117,8 +119,12 @@ try{if(typeof arenaItem==='function'){arenaItem=function(slot,rar,forge,stars){
    Upgrade power is unchanged. The +25 risk threshold keeps the historical 5% floor. */
 window.__srV283DustCost=function(level){return Math.max(0,Math.round(30+18*Math.max(0,Number(level)||0)));};
 window.__srV283UpgradeChance=function(level){level=Math.max(0,Math.floor(Number(level)||0));if(level<25)return 100;return Math.max(5,95-5*Math.floor((level-25)/2));};
-try{if(typeof itemUpgradeCost==='function')itemUpgradeCost=function(it){return window.__srV283DustCost((it&&it.level)||0);};}catch(_){ }
-try{if(typeof itemUpgradeChance==='function')itemUpgradeChance=function(it){return window.__srV283UpgradeChance((it&&it.level)||0);};}catch(_){ }
+function sharedEquipmentLevelV455(it){
+  var g=0;try{g=Math.max(0,Math.floor(Number(S&&S.equipmentUpgradeLevel)||0));}catch(_){ }
+  return Math.max(g,Math.max(0,Math.floor(Number(it&&it.level)||0)));
+}
+try{if(typeof itemUpgradeCost==='function')itemUpgradeCost=function(it){return window.__srV283DustCost(sharedEquipmentLevelV455(it));};}catch(_){ }
+try{if(typeof itemUpgradeChance==='function')itemUpgradeChance=function(it){return window.__srV283UpgradeChance(sharedEquipmentLevelV455(it));};}catch(_){ }
 
 /* Familiar ladder/fusion. Apple levelling is disabled; familiar levels become inert legacy data. */
 var PET_ORDER=['COMMUN','PEU_COMMUN','RARE','EPIQUE','MYTHIQUE','ANCESTRAL','LEGENDAIRE','DIVIN'];
