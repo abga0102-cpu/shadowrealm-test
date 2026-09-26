@@ -28,6 +28,7 @@
   window.__srGlobalEnemyNerfV380=true;
   window.__srAdditionalEnemyDamageNerfV381=true;
   window.__srEarlyCampaignPressureV448=true;
+  window.__srStarterBossPressureV462=true;
 
   var LEGACY_MAX=400;
   var V362_CAMPAIGN_POWER_MUL=0.60;
@@ -63,6 +64,9 @@
   var EARLY_PEAK_HP_MUL_V448=1.28;
   var EARLY_START_DAMAGE_MUL_V448=1.02;
   var EARLY_PEAK_DAMAGE_MUL_V448=1.10;
+  var STARTER_BOSS_FLOOR_V462=5;
+  var STARTER_BOSS_HP_MUL_V462=1.40;
+  var STARTER_BOSS_DAMAGE_MUL_V462=1.20;
 
   var REFERENCE_DAMAGE={
     1:30,3:80,5:150,10:350,15:800,20:2500,30:23000,40:180000,50:900000,
@@ -169,6 +173,12 @@
       var makeEnemyBeforeRaidV324=makeEnemy;
       makeEnemy=function(mode,opts){
         var enemy=makeEnemyBeforeRaidV324(mode,opts);
+        if(mode==='campaign' && enemy && opts && opts.boss &&
+           Math.round(Number(opts.floor)||0)===STARTER_BOSS_FLOOR_V462 && !opts.noFastback){
+          enemy.hp=enemy.maxHP=Math.max(1,Math.floor(enemy.maxHP*STARTER_BOSS_HP_MUL_V462));
+          enemy.dmg=Math.max(1,Math.floor(enemy.dmg*STARTER_BOSS_DAMAGE_MUL_V462));
+          enemy.__srStarterBossV462=true;
+        }
         if(mode==='raid' && enemy){
           enemy.hp=enemy.maxHP=Math.max(1,Math.floor(enemy.maxHP*RAID_HP_MUL));
           enemy.dmg=Math.max(1,Math.floor(enemy.dmg*RAID_DAMAGE_MUL));
@@ -188,6 +198,7 @@
     campaignPowerMul:V362_CAMPAIGN_POWER_MUL,sourceReductionV362:true,
     campaignHpMulV380:CAMPAIGN_HP_MUL,campaignDamageMulV380:CAMPAIGN_DAMAGE_MUL_V380,
     campaignDamageMulV381:CAMPAIGN_DAMAGE_MUL,
+    starterBossV462:{visibleStage:'Facile 1-5',floor:STARTER_BOSS_FLOOR_V462,hpMul:STARTER_BOSS_HP_MUL_V462,damageMul:STARTER_BOSS_DAMAGE_MUL_V462,megaBossChanged:false},
     earlyCampaignPressureV448:{
       visibleStart:'1-3',visiblePeak:'2-20',visibleEnd:'4-18',
       startFloor:EARLY_START_V448,peakFloor:EARLY_PEAK_V448,endFloor:EARLY_END_V448,
