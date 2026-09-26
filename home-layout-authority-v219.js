@@ -1,4 +1,4 @@
-/* SHADOWREACH · Home layout authority V219 / V379 · Lean consolidation
+/* SHADOWREACH · Home layout authority V219 / V379 / V461 · Lean consolidation
    Sole Home geometry, render lifecycle and UI compatibility authority.
    V119 compatibility decoration is absorbed here so Home has one runtime owner.
    UI-only: no combat values, economy, progression or save data are changed. */
@@ -6,6 +6,7 @@
 'use strict';
 if(window.__srHomeLayoutAuthorityV219)return;
 window.__srHomeLayoutAuthorityV219=true;
+window.__srStarterRoadmapLayoutV461=true;
 window.__srHomeFramePhase2B=true;
 window.__srHomeLayoutPhase2B=true;
 window.__srHomeLayoutCompatV119=true;
@@ -36,6 +37,17 @@ style.textContent=`
 #app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:8px!important;line-height:1!important;white-space:nowrap!important}
 #app.srHomeFullArena .worldRebirth .worldDot,#app.srHomeFullArena .worldDefis .worldDot{width:7px!important;height:7px!important;top:1px!important;right:1px!important}
 #app.srHomeFullArena .worldMenu{left:8px!important;top:auto!important;bottom:7px!important;right:auto!important}
+#app.srHomeFullArena .srStarterRoadmapV461{position:absolute;z-index:34;right:8px;top:calc(var(--srHudH) + 7px);width:min(176px,46vw);box-sizing:border-box;padding:7px 8px 6px;border:1px solid #4b7097;border-left:3px solid #8feff4;border-radius:10px;background:linear-gradient(145deg,#122a3fe8,#091522ee);box-shadow:0 4px 12px #0009,inset 0 1px #ffffff12;color:var(--text);pointer-events:none;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+#app.srHomeFullArena .srStarterRoadmapV461[data-act]{pointer-events:auto;cursor:pointer}
+#app.srHomeFullArena .srStarterRoadmapV461.ready{border-color:#54c885;border-left-color:#65e39b;box-shadow:0 4px 12px #0009,0 0 13px #45d58a24,inset 0 1px #ffffff12}
+#app.srHomeFullArena .srStarterKickerV461{display:flex;align-items:center;gap:4px;color:#8feff4;font:900 7px/1 system-ui;letter-spacing:.55px}
+#app.srHomeFullArena .srStarterKickerV461 span{margin-left:auto;color:#d6e8f4}
+#app.srHomeFullArena .srStarterRoadmapV461>b{display:block;margin-top:4px;color:#fff0bd;font:900 10.5px/1.1 Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app.srHomeFullArena .srStarterRoadmapV461>small{display:block;margin-top:3px;color:#b7c7d9;font:700 7.6px/1.2 system-ui}
+#app.srHomeFullArena .srStarterBarV461{height:3px;margin-top:5px;border-radius:999px;background:#ffffff12;overflow:hidden}
+#app.srHomeFullArena .srStarterBarV461>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#55b8e8,#8feff4)}
+#app.srHomeFullArena .srStarterRoadmapV461.ready .srStarterBarV461>i{background:linear-gradient(90deg,#3fb950,#65e39b)}
+#app.srHomeFullArena .srStarterRoadmapV461>em{display:block;margin-top:4px;color:#7eeea8;font:900 7px/1 system-ui;font-style:normal;text-align:right;letter-spacing:.45px}
 #app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 2px)!important;bottom:auto!important;z-index:22!important;gap:3px!important}
 #app.srHomeFullArena #arena .floorTxt{font-size:15px!important}
 #app.srHomeFullArena #arena .fTrack{transform:scale(.90)!important;transform-origin:center!important}
@@ -68,8 +80,8 @@ style.textContent=`
 #toast{max-width:calc(100% - 24px)!important;left:12px!important;right:12px!important;margin:0 auto!important}
 #app.srHomeFullArena #tutorialCard{bottom:calc(var(--srForgeH) + var(--srSkillH) + 68px + env(safe-area-inset-bottom))!important}
 #app.srHomeFullArena:has(#tutorialCard) #toast{bottom:calc(var(--srForgeH) + var(--srSkillH) + 160px + env(safe-area-inset-bottom))!important}
-@media(max-width:370px){#app.srHomeFullArena{--srHudH:104px;--srSkillH:58px;--srForgeH:180px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
-@media(max-height:720px){#app.srHomeFullArena{--srHudH:100px;--srSkillH:56px;--srForgeH:174px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
+@media(max-width:370px){#app.srHomeFullArena{--srHudH:104px;--srSkillH:58px;--srForgeH:180px}#app.srHomeFullArena .srStarterRoadmapV461{right:6px;width:min(164px,47vw);padding:6px 7px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
+@media(max-height:720px){#app.srHomeFullArena{--srHudH:100px;--srSkillH:56px;--srForgeH:174px}#app.srHomeFullArena .srStarterRoadmapV461{top:calc(var(--srHudH) + 4px);padding:5px 7px}#app.srHomeFullArena .srStarterRoadmapV461>small{font-size:7px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
 `;
 document.head.appendChild(style);
 var app=document.getElementById('app'),screen=document.getElementById('screen');
