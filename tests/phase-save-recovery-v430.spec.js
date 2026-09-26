@@ -46,7 +46,7 @@ test('V430 pins a stronger rotating backup and exposes recovery', async ({ page 
   }));
   expect(result.pinned.recordFloor).toBe(120);
   expect(result.pinned.level).toBe(45);
-  expect(result.button).toContain('Récupérer mon ancienne partie');
+  expect(result.button).toBe('');
   expect(result.candidates).toContainEqual({ source: 'rescue-v430', record: 120 });
 });
 
@@ -102,7 +102,7 @@ test('V431 forced recovery link opens the local save inventory even without a st
   expect(result.panel).toContain('Récupération de sauvegarde');
   expect(result.panel).toContain('V433');
   expect(result.panel).toContain('Actuelle');
-  expect(result.button).toBe('Sauvegardes locales');
+  expect(result.button).toBe('');
 });
 
 test('V432 opens recovery automatically for a suspicious low-level reset with preserved power', async ({ page }) => {
@@ -121,10 +121,10 @@ test('V432 opens recovery automatically for a suspicious low-level reset with pr
     button: document.getElementById('srSaveRecoveryButtonV341')?.textContent || '',
   }));
   expect(result.panel).toContain('V433');
-  expect(result.button).toContain('Vérifier l’ancienne partie');
+  expect(result.button).toBe('');
 });
 
-test('V432 keeps manual save access visible for a normal active save', async ({ page }) => {
+test('recovery stays accessible in Settings without covering Home', async ({ page }) => {
   const active = state({ level: 20, floor: 35, recordFloor: 40, power: 500000 });
   await page.addInitScript((save) => {
     localStorage.clear();
@@ -132,8 +132,14 @@ test('V432 keeps manual save access visible for a normal active save', async ({ 
   }, active);
 
   await page.goto('/index.html?v=v432-manual-save-access-test');
-  await page.waitForSelector('#srSaveRecoveryButtonV341');
-  await expect(page.locator('#srSaveRecoveryButtonV341')).toHaveText('Sauvegardes locales');
+  await page.waitForFunction(() => window.__srSaveRecoveryV341 && document.readyState === 'complete');
+  await expect(page.locator('#srSaveRecoveryButtonV341')).toHaveCount(0);
+  await page.evaluate(() => { nav('parametres'); });
+  await page.locator('[data-act="recoverSave"]').click();
+  await expect(page.locator('#srSaveRecoveryPanelV341')).toContainText('Récupération de sauvegarde');
+  await page.locator('[data-sr-close]').click();
+  await page.evaluate(() => nav('accueil'));
+  await expect(page.locator('#srSaveRecoveryButtonV341')).toHaveCount(0);
 });
 
 

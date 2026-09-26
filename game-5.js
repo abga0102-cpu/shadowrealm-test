@@ -394,6 +394,7 @@ function scrParametres() {
           btn(ic("save", 14) + "Sauver", { small: true, cls: "green", act: "saveNow" }) +
           btn(ic("upload", 14) + "Exporter", { small: true, cls: "ghost", act: "exportSave" }) +
           btn(ic("download", 14) + "Importer", { small: true, cls: "ghost", act: "importSave" }) +
+        '</div><div class="mt10">' + btn("Récupérer une ancienne partie", { small: true, cls: "ghost", act: "recoverSave" }) +
         '</div><div class="divider"></div><div class="between"><span class="dim tiny">Version web · ' + APP_BUILD + '</span>' +
           btn("Forcer la mise à jour", { small: true, cls: "blue", act: "freshReload", style: "width:auto;padding:5px 10px" }) +
         "</div></div>") +
@@ -1994,6 +1995,7 @@ const ACT = {
   claimEvent: (a) => { claimEvent(a); toast(S.eventClaims[a] ? "Récompense réclamée" : "Objectif non atteint", S.eventClaims[a]); },
 
   // settings
+  recoverSave: () => { if (window.__srSaveRecoveryV341) window.__srSaveRecoveryV341.open(); },
   saveNow: () => { saveNow(); toast("Sauvegardé", true); },
   freshReload: () => forceFreshReload(),
   rename: () => {

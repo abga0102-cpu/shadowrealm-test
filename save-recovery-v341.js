@@ -11,7 +11,6 @@
   var BACKUP_PREFIX='shadowreach.save.backup.v340.';
   var RESCUE_KEY='shadowreach.save.rescue.v430';
   var BUILD='V433';
-  var BUTTON_ID='srSaveRecoveryButtonV341';
   var PANEL_ID='srSaveRecoveryPanelV341';
   var FORCE_RECOVERY=/(?:^|[?&])recovery=1(?:&|$)/.test(location.search);
   var STARTUP_INTEGRITY_POWER=integrityPower();
@@ -283,25 +282,10 @@
     });
   }
 
-  function mountButton(){
-    var old=document.getElementById(BUTTON_ID);
-    if(old&&old.parentNode)old.parentNode.removeChild(old);
-    var list=scan(),active=activeOf(list),better=bestAhead(list,active);
-    var guard=window.__srSaveLoadGuardV430||{};
-    var button=document.createElement('button');
-    button.id=BUTTON_ID;
-    button.type='button';
-    button.textContent=better?'⚠ Récupérer mon ancienne partie':((guard.blocked||suspiciousReset(active))?'⚠ Vérifier l’ancienne partie':'Sauvegardes locales');
-    button.style.cssText='position:fixed;z-index:99998;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 112px);margin:auto;max-width:520px;border:1px solid #ffd166;border-radius:13px;padding:11px 14px;background:linear-gradient(180deg,#62430e,#3f2908);color:#fff7d6;font:900 13px/1.2 system-ui,-apple-system,Segoe UI,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.45);letter-spacing:.1px';
-    button.addEventListener('click',openPanel);
-    document.body.appendChild(button);
-  }
-
   window.__srSaveRecoveryV341={scan:scan,open:openPanel,exportCandidate:exportCandidate,exportAllLocalData:exportAllLocalData,restoreCandidate:restoreCandidate,aheadOf:aheadOf,pinBest:pinBest,rescueKey:RESCUE_KEY};
   if(typeof SMOKE!=='undefined'&&SMOKE)return;
   pinBest();
   function mountRecovery(){
-    mountButton();
     var list=scan(),active=activeOf(list);
     if(FORCE_RECOVERY||suspiciousReset(active))openPanel();
   }
