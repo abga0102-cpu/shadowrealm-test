@@ -1,7 +1,7 @@
-/* SHADOWREACH · Forge Panel Authority V266
+/* SHADOWREACH · Forge Panel Authority V266 / V458
    Canonical renderer-level Home Forge authority.
-   Keeps bottom controls visible and the loot zone elastic.
-   UI-only: no economy/progression/save changes.
+   V458 restores the always-visible Auto-Forge filter and owns the organized
+   Auto-Forge/filter modal layout. UI-only: no economy/progression/save changes.
 */
 (function(){
 'use strict';
@@ -14,7 +14,7 @@ function esc2(s){return String(s==null?'':s).replace(/[&<>\"]/g,function(c){retu
 function speedOpen(){try{return sessionStorage.getItem(SPEED_KEY)==='1';}catch(_){return false;}}
 function setSpeedOpen(v){try{sessionStorage.setItem(SPEED_KEY,v?'1':'0');}catch(_){} }
 function forgeAccelHTML(){try{var arr=(typeof ACCEL_DEFS!=='undefined'?ACCEL_DEFS:[]).filter(function(a){return (S.accels&&S.accels[a.key]||0)>0;});if(!arr.length)return '<span class="mute tiny">Aucun accélérateur disponible</span>';return arr.map(function(a){return '<button type="button" class="srForgeSpeedChip266" data-act="accel" data-arg="'+esc2(a.key)+'" data-arg2="forge">⚡ '+esc2(a.label)+' <b>×'+Number(S.accels[a.key]||0)+'</b></button>';}).join('');}catch(_){return '<span class="mute tiny">Aucun accélérateur disponible</span>';}}
-function filterLabel(){try{var d=(typeof forgeDiscarded==='function'?forgeDiscarded(S):[]);if(!S.forge.filter||!d.length)return 'Filtre · tout est conservé';return 'Filtre · '+d.map(function(r){return RARITY&&RARITY[r]?RARITY[r].label:String(r);}).join(', ')+' → poussière';}catch(_){return 'Filtre';}}
+function filterLabel(){try{var d=(typeof forgeDiscarded==='function'?forgeDiscarded(S):[]);if(!S.forge.filter||!d.length)return 'Auto-filtre · tout est conservé';return 'Auto-filtre · '+d.length+' rareté'+(d.length>1?'s':'')+' recyclée'+(d.length>1?'s':'');}catch(_){return 'Auto-filtre';}}
 function speedPopover(){var open=speedOpen();return '<div class="srForgeSpeedPop266 '+(open?'open':'')+'" aria-hidden="'+(open?'false':'true')+'"><div class="srForgeSpeedPopHead266"><b>Accélérateurs</b><button type="button" class="srForgeSpeedClose266" aria-label="Fermer">×</button></div><div class="srForgeSpeedList266">'+forgeAccelHTML()+'</div></div>';}
 function speedBtn(){return '<button type="button" class="srForgeSpeedBtn266 '+(speedOpen()?'open':'')+'" aria-expanded="'+(speedOpen()?'true':'false')+'">⚡<span>Vitesse</span></button>';}
 function lifetimeMasteryHTML(){
@@ -112,6 +112,56 @@ try{
   window.__srForgeMobileLayoutV384=true;
 }catch(_){}
 
+/* V458 · Compact Home Forge geometry + organized Auto-Forge/filter sheet.
+   The fixed Home Forge lane was created before the mastery row existed; the
+   accumulated rows could push the filter below the lane's clipped bottom.
+   Keep every control in-flow and make only the rarity list scroll inside the modal. */
+try{
+  var layout458=document.getElementById('srForgeFilterLayoutV458Style')||document.createElement('style');
+  layout458.id='srForgeFilterLayoutV458Style';
+  layout458.textContent='\
+#homeForge.srForgePanel266{padding:4px 7px 6px!important;display:flex!important;flex-direction:column!important;min-height:0!important}\
+#homeForge.srForgePanel266 .srForgeHead266{height:22px!important;flex:0 0 22px!important}\
+#homeForge.srForgePanel266 .srForgeLifetime445{margin-top:2px!important;padding:3px 6px!important;flex:0 0 auto!important}\
+#homeForge.srForgePanel266 .srForgeLifetimeBar445{height:2px!important;margin-top:3px!important}\
+#homeForge.srForgePanel266 .srForgeLifetimeMeta445{margin-top:2px!important}\
+#homeForge.srForgePanel266 .srForgeUpgrade266{margin-top:2px!important;min-height:28px!important;flex:0 0 28px!important;padding-top:2px!important;padding-bottom:2px!important}\
+#homeForge.srForgePanel266 .srForgeLootReserve266{margin-top:2px!important;min-height:58px!important;height:58px!important;flex:0 0 58px!important;overflow:hidden!important}\
+#homeForge.srForgePanel266 .srForgeLootReserve266 #srForgeLoot273{height:58px!important;max-height:58px!important}\
+#homeForge.srForgePanel266 .srForgeActions266{margin-top:4px!important;height:38px!important;min-height:38px!important;flex:0 0 38px!important;gap:6px!important}\
+#homeForge.srForgePanel266 .srForgeActions266>.btn,#homeForge.srForgePanel266 .srForgeActions266 .tgl{height:38px!important;min-height:38px!important}\
+#homeForge.srForgePanel266 .srForgeFilter266{display:flex!important;visibility:visible!important;opacity:1!important;margin-top:4px!important;height:30px!important;min-height:30px!important;max-height:30px!important;flex:0 0 30px!important;padding:4px 8px!important;border-color:#684fa3!important;background:linear-gradient(180deg,#18142a,#0f1220)!important}\
+#homeForge.srForgePanel266 .srForgeFilter266>.flex1{font-size:8.5px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}\
+#homeForge.srForgePanel266 .srForgeFilter266 .pill{font-size:7.5px!important;padding:3px 6px!important}\
+#overlay>.card>.mbody:has(.srForgeFilterModal458){padding:10px 10px 9px!important;overflow:hidden!important}\
+.srForgeFilterModal458{display:flex;flex-direction:column;gap:8px;max-height:calc(88vh - 96px);min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:2px;scrollbar-width:thin}\
+.srForgeFilterSection458{border:1px solid #2e4668;border-radius:11px;background:linear-gradient(180deg,#111c2f,#0a1424);padding:8px;box-sizing:border-box}\
+.srForgeFilterSection458.auto{border-color:#386b59;background:linear-gradient(180deg,#10251f,#0a1718)}\
+.srForgeFilterSection458.filter{border-color:#5c477c}\
+.srForgeFilterSectionHead458{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}\
+.srForgeFilterSectionHead458>div{min-width:0}.srForgeFilterSectionHead458 b{display:block;font:900 10px/1.1 Georgia,serif;letter-spacing:.55px;color:var(--goldLit)}\
+.srForgeFilterSectionHead458 small{display:block;margin-top:2px;font:700 8px/1.15 system-ui;color:var(--textDim)}\
+.srForgeAutoTop458{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:stretch}\
+.srForgeAutoTop458 .tgl{width:100%!important;min-width:0!important;height:34px!important;min-height:34px!important;box-sizing:border-box!important}\
+.srForgeAutoCycle458{height:34px;border:1px solid #31556e;border-radius:9px;background:#0b1827;padding:4px 8px;display:flex;align-items:center;justify-content:space-between;gap:7px;box-sizing:border-box}\
+.srForgeAutoCycle458 span{font-size:8px;font-weight:800;color:var(--textDim)}.srForgeAutoCycle458 b{font-size:12px;color:#8feff4}\
+.srAutoBatch458{margin-top:6px!important;padding:0!important;border:0!important;background:transparent!important}\
+.srAutoBatch458 .srBatchBtns266{margin-top:0!important}.srAutoBatch458 .srBatchGateNote266{margin-top:4px!important;font-size:7.5px!important}\
+.srForgeFilterActions458{display:grid;grid-template-columns:1fr 1fr;gap:6px}.srForgeFilterActions458>.btn{width:100%!important;min-width:0!important}\
+.srForgeFilterHint458{margin-top:6px;padding:5px 7px;border-radius:8px;background:#0a1120;border:1px solid #202f48;color:var(--textDim);font-size:7.8px;line-height:1.3}\
+.srForgeRarityGrid458{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:7px}\
+.srForgeRarity458{appearance:none;min-width:0;min-height:39px;border:1px solid color-mix(in srgb,var(--rc) 42%,#31425d);border-left:3px solid var(--rc);border-radius:9px;background:#0b1423;color:var(--text);padding:5px 6px;display:grid;grid-template-columns:23px minmax(0,1fr) 18px;align-items:center;gap:5px;text-align:left;box-sizing:border-box}\
+.srForgeRarity458.recycle{background:linear-gradient(180deg,#241322,#130e18);border-color:#7b405a}.srForgeRarity458.locked{opacity:.48}\
+.srForgeRarityIcon458{width:22px;height:22px;border-radius:6px;border:1px solid color-mix(in srgb,var(--rc) 50%,#34455f);display:grid;place-items:center;color:var(--rc)}\
+.srForgeRarityText458{min-width:0}.srForgeRarityText458 b{display:block;color:var(--rc);font-size:8.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.srForgeRarityText458 small{display:block;margin-top:2px;color:var(--textDim);font-size:6.8px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\
+.srForgeRarityState458{font-size:11px;font-weight:900;color:var(--greenLit);text-align:center}.srForgeRarity458.recycle .srForgeRarityState458{color:#ff8290}\
+.srForgeFilterFooter458{position:sticky;bottom:-9px;z-index:4;margin:8px -10px -9px;padding:7px 10px 0;background:linear-gradient(180deg,transparent,#0a1220 30%)}\
+.srForgeFilterFooter458>.btn{width:100%!important}\
+@media(max-width:390px){.srForgeRarityGrid458{gap:4px}.srForgeRarity458{padding:4px 5px;grid-template-columns:21px minmax(0,1fr) 16px}.srForgeFilterSection458{padding:7px}.srForgeFilterModal458{gap:6px}}\
+@media(max-height:700px){#homeForge.srForgePanel266 .srForgeLifetimeMeta445{display:none!important}#homeForge.srForgePanel266 .srForgeLootReserve266{min-height:52px!important;height:52px!important;flex-basis:52px!important}#homeForge.srForgePanel266 .srForgeLootReserve266 #srForgeLoot273{height:52px!important;max-height:52px!important}.srForgeFilterModal458{max-height:calc(86vh - 86px)}.srForgeRarity458{min-height:36px}}';
+  if(!layout458.parentNode)document.head.appendChild(layout458);
+}catch(_){}
+
 try{if(typeof render==='function')render();}catch(_){}
-window.__srForgePanelAuthorityV266={version:266,build:forgeHTML,forgeLifetimeMasteryV445:true};
+window.__srForgePanelAuthorityV266={version:266,revision:458,build:forgeHTML,forgeLifetimeMasteryV445:true,filterLayoutV458:true};
 })();
