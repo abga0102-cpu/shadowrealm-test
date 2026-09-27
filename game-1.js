@@ -247,14 +247,14 @@ function fmtEquipStat(v) {
 const EQUIPMENT_MASTERY_REWARD_VERSION = 467;
 const EQUIPMENT_MASTERY_TIERS = [
   { need:0, rank:0, roman:"—", bonusPct:0, rewardDust:0 },
-  { need:100, rank:1, roman:"I", bonusPct:10, rewardDust:800 },
-  { need:300, rank:2, roman:"II", bonusPct:20, rewardDust:100 },
-  { need:600, rank:3, roman:"III", bonusPct:30, rewardDust:600 },
-  { need:1000, rank:4, roman:"IV", bonusPct:40, rewardDust:200 },
+  { need:100, rank:1, roman:"I", bonusPct:10, rewardDust:100 },
+  { need:300, rank:2, roman:"II", bonusPct:20, rewardDust:200 },
+  { need:600, rank:3, roman:"III", bonusPct:30, rewardDust:300 },
+  { need:1000, rank:4, roman:"IV", bonusPct:40, rewardDust:400 },
   { need:1500, rank:5, roman:"V", bonusPct:50, rewardDust:500 },
-  { need:2500, rank:6, roman:"VI", bonusPct:60, rewardDust:300 },
+  { need:2500, rank:6, roman:"VI", bonusPct:60, rewardDust:600 },
   { need:4000, rank:7, roman:"VII", bonusPct:70, rewardDust:700 },
-  { need:6500, rank:8, roman:"VIII", bonusPct:75, rewardDust:400 },
+  { need:6500, rank:8, roman:"VIII", bonusPct:75, rewardDust:800 },
   { need:10000, rank:9, roman:"IX", bonusPct:80, rewardDust:900 }
 ];
 function equipmentMasteryInfoFromCount(count) {
