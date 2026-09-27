@@ -1,4 +1,4 @@
-/* SHADOWREACH V344 / V429 · Forge Dust integrity
+/* SHADOWREACH V344 / V467 · Forge Dust integrity
    Final authority loaded after every Forge/Dust layer.
    - V429 validates the new fixed rarity-based Dust values.
    - Auto-Forge and manual recycling stay identical.
@@ -14,9 +14,9 @@
 
   var COMPENSATION=0;
   var DUST_BY_RARITY={
-    COMMUN:1,PEU_COMMUN:2,RARE:4,EPIQUE:8,HEROIQUE:12,MYTHIQUE:20,
-    ARTEFACT:35,LEGENDAIRE:60,INFERNAL:100,IMMORTEL:160,DIVIN:250,
-    ANCESTRAL:100
+    COMMUN:2,PEU_COMMUN:4,RARE:8,EPIQUE:16,HEROIQUE:24,MYTHIQUE:40,
+    ARTEFACT:70,LEGENDAIRE:120,INFERNAL:200,IMMORTEL:320,DIVIN:500,
+    ANCESTRAL:200
   };
   var audit={forgeTopups:0,recycleTopups:0,compensation:0};
 
@@ -149,4 +149,5 @@
   window.__srForgeDustIntegrityV363={version:363,value:expectedResultDust,rarityValue:function(){return 0;},audit:audit,compensation:COMPENSATION};
   window.__srForgeDustIntegrityV364={version:364,value:expectedResultDust,itemValue:itemDust,audit:audit,compensation:COMPENSATION};
   window.__srForgeDustIntegrityV429={version:429,value:expectedResultDust,itemValue:itemDust,audit:audit,compensation:COMPENSATION,byRarity:DUST_BY_RARITY};
+  window.__srForgeDustIntegrityV467={version:467,multiplier:2,value:expectedResultDust,itemValue:itemDust,audit:audit,compensation:COMPENSATION,byRarity:DUST_BY_RARITY};
 })();
