@@ -1,9 +1,12 @@
-/* SHADOWREACH V449 / V457 · Early Campaign rebalance authority
+/* SHADOWREACH V449 / V465 · Early Campaign rebalance authority
    Requested balance window, applied LAST after the existing Campaign authorities.
 
    Visible Campaign mapping: 20 stages per chapter.
    - Facile 1-2 .. Facile 5-4  => HP -40%, damage +60%.
-   - Next 15 stages (5-5 .. 5-19) => HP -30% only.
+   - Next 15 stages (5-5 .. 5-19) => HP -30% and target damage -30%.
+   - 5-5 is continuity-protected at -15% damage because a full -30% there would
+     make that Boss hit softer than the 5-4 Elite. From 5-6 through 5-19 the
+     full -30% damage multiplier applies.
    - Everything else unchanged.
 
    Progression invariant: outside the intentional post-Boss reset, the canonical
@@ -16,10 +19,18 @@ if(window.__srCampaignEarlyRebalanceV449)return;
 window.__srCampaignEarlyRebalanceV449=true;
 
 var FIRST=2, FIRST_END=84, SECOND_START=85, SECOND_END=99, BOSS_EVERY=5;
+var SECOND_DAMAGE_MUL=0.70;
+/* V465 continuity guard: the previous stage (5-4) is an Elite still carrying
+   the +60% early-pressure damage. A raw x0.70 on the 5-5 Boss would make the
+   higher Boss weaker than that Elite. x0.85 is the smallest clean margin used
+   here; the full x0.70 begins immediately after the Boss, where a drop is
+   explicitly allowed by the progression rule. */
+var SECOND_ENTRY_DAMAGE_MUL=0.85;
 function multipliers(f){
   f=Math.max(1,Math.floor(Number(f)||1));
   if(f>=FIRST&&f<=FIRST_END)return {hp:0.60,dmg:1.60,band:1};
-  if(f>=SECOND_START&&f<=SECOND_END)return {hp:0.70,dmg:1.00,band:2};
+  if(f===SECOND_START)return {hp:0.70,dmg:SECOND_ENTRY_DAMAGE_MUL,band:2,continuityGuard:true};
+  if(f>SECOND_START&&f<=SECOND_END)return {hp:0.70,dmg:SECOND_DAMAGE_MUL,band:2};
   return {hp:1,dmg:1,band:0};
 }
 function isBossFloor(f){return Math.max(1,Math.floor(Number(f)||1))%BOSS_EVERY===0;}
@@ -49,8 +60,9 @@ try{
 }catch(_){}
 
 window.__srCampaignEarlyRebalanceConfigV449={
-  version:457,first:{from:2,to:84,visible:'Facile 1-2 → Facile 5-4',hpMul:.60,damageMul:1.60},
-  second:{from:85,to:99,visible:'15 étages suivants (Facile 5-5 → Facile 5-19)',hpMul:.70,damageMul:1},
+  version:465,first:{from:2,to:84,visible:'Facile 1-2 → Facile 5-4',hpMul:.60,damageMul:1.60},
+  second:{from:85,to:99,visible:'15 étages suivants (Facile 5-5 → Facile 5-19)',hpMul:.70,damageMul:SECOND_DAMAGE_MUL,
+    entryFloor:SECOND_START,entryDamageMul:SECOND_ENTRY_DAMAGE_MUL,fullDamageFrom:SECOND_START+1},
   multipliers:multipliers,isBossFloor:isBossFloor,postBossException:postBoss,
   invariant:'no-higher-stage-easier-except-stage-after-boss',raidsChanged:false,megaBossChanged:false
 };
