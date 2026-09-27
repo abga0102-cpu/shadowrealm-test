@@ -241,20 +241,21 @@ function fmtEquipStat(v) {
   if (Number.isInteger(n)) return fmt(n);
   return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-/* V456 · Equipment level model.
-   The Roman equipment level is the permanent Equipment Mastery rank (I → IX).
-   Hero level is unrelated. Dust progression stays separate in item.upgradeLevel. */
+/* V464 · Equipment Mastery owns both the permanent Roman rank and its
+   one-time Dust reward. The thresholds stay exactly as V456: reward changes
+   must never move a player's Roman rank. Dust upgrades remain independent. */
+const EQUIPMENT_MASTERY_REWARD_VERSION = 464;
 const EQUIPMENT_MASTERY_TIERS = [
-  { need:0, rank:0, roman:"—", bonusPct:0 },
-  { need:100, rank:1, roman:"I", bonusPct:10 },
-  { need:300, rank:2, roman:"II", bonusPct:20 },
-  { need:600, rank:3, roman:"III", bonusPct:30 },
-  { need:1000, rank:4, roman:"IV", bonusPct:40 },
-  { need:1500, rank:5, roman:"V", bonusPct:50 },
-  { need:2500, rank:6, roman:"VI", bonusPct:60 },
-  { need:4000, rank:7, roman:"VII", bonusPct:70 },
-  { need:6500, rank:8, roman:"VIII", bonusPct:75 },
-  { need:10000, rank:9, roman:"IX", bonusPct:80 }
+  { need:0, rank:0, roman:"—", bonusPct:0, rewardDust:0 },
+  { need:100, rank:1, roman:"I", bonusPct:10, rewardDust:50 },
+  { need:300, rank:2, roman:"II", bonusPct:20, rewardDust:100 },
+  { need:600, rank:3, roman:"III", bonusPct:30, rewardDust:150 },
+  { need:1000, rank:4, roman:"IV", bonusPct:40, rewardDust:200 },
+  { need:1500, rank:5, roman:"V", bonusPct:50, rewardDust:250 },
+  { need:2500, rank:6, roman:"VI", bonusPct:60, rewardDust:300 },
+  { need:4000, rank:7, roman:"VII", bonusPct:70, rewardDust:350 },
+  { need:6500, rank:8, roman:"VIII", bonusPct:75, rewardDust:400 },
+  { need:10000, rank:9, roman:"IX", bonusPct:80, rewardDust:450 }
 ];
 function equipmentMasteryInfoFromCount(count) {
   const n = Math.max(0, Math.floor(Number(count) || 0));
@@ -268,9 +269,33 @@ function equipmentMasteryInfoFromCount(count) {
     : 100;
   return {
     count:n, rank:current.rank, roman:current.roman, bonusPct:current.bonusPct,
+    rewardDust:current.rewardDust || 0,
     currentNeed:current.need, nextNeed:next ? next.need : null,
-    nextRoman:next ? next.roman : null, progressPct, maxed:!next
+    nextRoman:next ? next.roman : null,
+    nextRewardDust:next ? (next.rewardDust || 0) : 0,
+    progressPct, maxed:!next
   };
+}
+function equipmentMasteryDustRewardForRank(rank) {
+  const r = Math.max(0, Math.min(9, Math.floor(Number(rank) || 0)));
+  const tier = EQUIPMENT_MASTERY_TIERS.find((t) => t.rank === r);
+  return tier ? Math.max(0, Number(tier.rewardDust) || 0) : 0;
+}
+function claimEquipmentMasteryDustRewards(s) {
+  if (!s || !s.forge) return { dust:0, fromRank:0, toRank:0, claimedRank:0 };
+  const current = equipmentMasteryInfoFromCount(s.forge.lifetimeCount).rank;
+  let claimed = Number(s.forge.masteryDustClaimedRank);
+  claimed = Number.isFinite(claimed) ? Math.max(0, Math.min(9, Math.floor(claimed))) : 0;
+  let dust = 0;
+  if (current > claimed) {
+    for (let rank=claimed+1; rank<=current; rank++) dust += equipmentMasteryDustRewardForRank(rank);
+    s.poussiere = Math.max(0, Number(s.poussiere) || 0) + dust;
+    s.forge.masteryDustClaimedRank = current;
+  } else {
+    s.forge.masteryDustClaimedRank = claimed;
+  }
+  s.forge.masteryDustRewardVersion = EQUIPMENT_MASTERY_REWARD_VERSION;
+  return { dust, fromRank:claimed+1, toRank:current, claimedRank:s.forge.masteryDustClaimedRank };
 }
 function equipmentMasteryInfo(s) {
   try {
@@ -2024,6 +2049,7 @@ function defaultState(name) {
       collier: null, anneau: null, ceinture: null },
     inventory: [],
     forge: { level: 1, summonCount: 0, lifetimeCount: 0, lifetimeMasteryVersion: 0,
+      masteryDustClaimedRank: 0, masteryDustRewardVersion: EQUIPMENT_MASTERY_REWARD_VERSION,
       masteryLevel: 0, masteryProgress: 0, autoForge: false, upgradeEnd: 0,
       // section 14: nothing is filtered out until the player says so
       filter: false, keep: forgeKeepAll() },
@@ -2107,6 +2133,13 @@ function migrate(s, name) {
   merged.forge.lifetimeCount = savedLifetimeForge == null
     ? currentCycleForges : Math.max(savedLifetimeForge, currentCycleForges);
   merged.forge.lifetimeMasteryVersion = Math.max(0, Math.floor(Number(merged.forge.lifetimeMasteryVersion) || 0));
+
+  /* V464: Main never paid the Roman-rank Dust rewards before this migration.
+     Missing claim state therefore means "nothing was paid yet": credit all
+     reached ranks once (I=50, II=100 => a rank-II save receives 150 total).
+     Saves coming from an experimental build that already persisted a claimed
+     rank keep that marker and receive only genuinely missing later ranks. */
+  claimEquipmentMasteryDustRewards(merged);
 
   /* V397: old saves counted only PAID Familiar summons toward Mastery even
      when Double Œuf produced a second egg. The old save did not journal each

@@ -2084,6 +2084,7 @@ function showRarityInfo() {
 function forgeSummon(n) {
   const results = [];
   let lifetimeUnlock = null;
+  let masteryDustGrant = 0;
   update((st) => {
     for (let i = 0; i < n; i++) {
       const cost = forgeCost(st.forge.level);
@@ -2099,6 +2100,10 @@ function forgeSummon(n) {
       const afterMastery = masteryApi && masteryApi.info ? masteryApi.info(st) : null;
       if (beforeMastery && afterMastery && afterMastery.rank > beforeMastery.rank) {
         if (masteryApi.applyState) masteryApi.applyState(st);
+        if (typeof claimEquipmentMasteryDustRewards === "function") {
+          const grant = claimEquipmentMasteryDustRewards(st);
+          masteryDustGrant += Math.max(0, Number(grant && grant.dust) || 0);
+        }
         lifetimeUnlock = afterMastery;
       }
 
@@ -2125,7 +2130,8 @@ function forgeSummon(n) {
     st.eventProgress.forge = (st.eventProgress.forge || 0) + results.length;
   });
   if (lifetimeUnlock && typeof toast === "function") {
-    toast("Maîtrise équipement " + lifetimeUnlock.roman + " · +" + lifetimeUnlock.bonusPct + "% de base", true);
+    toast("Maîtrise équipement " + lifetimeUnlock.roman + " · +" + lifetimeUnlock.bonusPct + "% de base" +
+      (masteryDustGrant > 0 ? " · +" + fmt(masteryDustGrant) + " poussières" : ""), true);
   }
   return results;
 }
