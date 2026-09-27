@@ -22,12 +22,13 @@ function lifetimeMasteryHTML(){
     var api=window.__srForgeLifetimeMasteryV445;if(!api||typeof api.info!=='function')return '';
     var m=api.info(S),rank=m.rank?m.roman:'—';
     var meta=m.maxed?fmt(m.count)+' forges · MAX':fmt(m.count)+' / '+fmt(m.nextNeed)+' forges';
+    var nextMeta=m.maxed?'Rang IX':('→ '+m.nextRoman+(Number(m.nextRewardDust)>0?' · +'+fmt(m.nextRewardDust)+' poussières':''));
     var progress=Math.max(0,Math.min(100,Number(m.progressPct)||0));
-    return '<div class="srForgeLifetime445" title="Chaque forge payée compte. Les objets bonus gratuits ne comptent pas.">'+
+    return '<div class="srForgeLifetime445" title="Chaque forge payée compte. Les objets bonus gratuits ne comptent pas. Chaque rang atteint paie sa récompense en poussières une seule fois.">'+
       '<div class="srForgeLifetimeTop445"><b>MAÎTRISE ÉQUIPEMENT '+rank+'</b>'+
       '<span>+'+m.bonusPct+'% base</span></div>'+
       '<div class="srForgeLifetimeBar445"><i style="width:'+progress+'%"></i></div>'+
-      '<div class="srForgeLifetimeMeta445"><span>'+meta+'</span><span>'+(m.maxed?'Rang IX':('→ '+m.nextRoman))+'</span></div></div>';
+      '<div class="srForgeLifetimeMeta445"><span>'+meta+'</span><span>'+nextMeta+'</span></div></div>';
   },'');
 }
 function upgradeHTML(){var atMax=safe(function(){return S.forge.level>=RULES.FORGE_MAX;},false);if(atMax)return '<div class="srForgeUpgrade266 max"><b>Forge au niveau maximum</b></div>';var now=Date.now(),end=Number(S.forge.upgradeEnd||0),upgrading=end>now,done=end>0&&!upgrading;if(done)return '<div class="srForgeUpgrade266"><div class="srForgeUpText266"><b>Amélioration terminée</b><span class="mute tiny">Niv.'+(S.forge.level+1)+' prêt</span></div>'+safe(function(){return btn('Récupérer',{cls:'green',small:true,act:'forgeCollect',style:'width:auto;flex:0 0 auto'});},'<button data-act="forgeCollect">Récupérer</button>')+'</div>';if(upgrading){var total=Math.max(1,safe(function(){return forgeUpgTimeFor(S);},1)),remain=Math.max(0,(end-now)/1000),pct=Math.max(0,Math.min(100,100-remain/total*100));var progress=safe(function(){return bar(pct,C.gold,3);},'<div class="srForgeProgressFallback266"><i style="width:'+pct+'%"></i></div>');return '<div class="srForgeUpgrade266 running"><div class="srForgeUpText266 flex1"><div class="srForgeUpLine266"><b>Niv.'+(S.forge.level+1)+'</b><span>'+safe(function(){return fmtTime(remain);},Math.ceil(remain)+'s')+'</span></div>'+progress+'</div>'+speedBtn()+speedPopover()+'</div>';}var cost=safe(function(){return forgeUpgCostFor(S);},0),ok=Number(S.gold||0)>=cost,time=safe(function(){return forgeUpgTimeFor(S);},0);return '<div class="srForgeUpgrade266"><div class="srForgeUpText266"><span class="mute tiny">Prochaine amélioration</span><b>Niv.'+(S.forge.level+1)+' · '+safe(function(){return fmt(cost);},cost)+' or · '+(time<=0?'Instantané':safe(function(){return fmtTime(time);},time+'s'))+'</b></div>'+safe(function(){return btn('Améliorer',{small:true,cls:ok?'green':'',act:'forgeUpgradeAsk',dis:!ok,style:'width:auto;flex:0 0 auto'});},'<button data-act="forgeUpgradeAsk" '+(!ok?'disabled':'')+'>Améliorer</button>')+'</div>';}
