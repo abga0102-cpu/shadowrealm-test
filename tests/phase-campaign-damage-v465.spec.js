@@ -58,7 +58,6 @@ test('V465 keeps 5-5 stronger than 5-4, then applies full -30% after the Boss', 
   expect(byFloor[85].dmg).toBeGreaterThan(byFloor[84].dmg);
   expect(byFloor[85].rebalance).toMatchObject({floor:85,hpMul:0.70,dmgMul:0.85,band:2});
   expect(byFloor[86].rebalance).toMatchObject({floor:86,hpMul:0.70,dmgMul:0.70,band:2});
-  expect(window).toBeDefined;
 });
 
 test('V465 keeps later pre-Boss steps coherent and 5-20 resumes the uncut curve', async ({ page }) => {
