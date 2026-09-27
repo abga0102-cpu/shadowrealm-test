@@ -6,12 +6,12 @@ async function openCleanGame(page) {
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
   await page.waitForFunction(() =>
     window.__srDustEconomyConfigV293 &&
-    window.__srDustEconomyConfigV293.revision === 429 &&
+    window.__srDustEconomyConfigV293.revision === 467 &&
     typeof upgradeItem === 'function'
   );
 }
 
-test('V429 recycling is rarity-based and independent of equipment power', async ({ page }) => {
+test('V467 recycling keeps rarity-only scaling and doubles every gain', async ({ page }) => {
   await openCleanGame(page);
 
   const values = await page.evaluate(() => {
@@ -39,20 +39,20 @@ test('V429 recycling is rarity-based and independent of equipment power', async 
   });
 
   expect(values.table).toEqual({
-    commun: 1,
-    peuCommun: 2,
-    rare: 4,
-    epique: 8,
-    heroique: 12,
-    mythique: 20,
-    artefact: 35,
-    legendaire: 60,
-    infernal: 100,
-    immortel: 160,
-    divin: 250,
+    commun: 2,
+    peuCommun: 4,
+    rare: 8,
+    epique: 16,
+    heroique: 24,
+    mythique: 40,
+    artefact: 70,
+    legendaire: 120,
+    infernal: 200,
+    immortel: 320,
+    divin: 500,
   });
-  expect(values.tiny).toBe(250);
-  expect(values.huge).toBe(250);
+  expect(values.tiny).toBe(500);
+  expect(values.huge).toBe(500);
   expect(values.powerIndependent).toBe(true);
 });
 

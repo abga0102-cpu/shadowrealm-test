@@ -1,27 +1,29 @@
-/* SHADOWREACH V293 / V429 · Dust scarcity economy authority
+/* SHADOWREACH V293 / V467 · Dust scarcity economy authority
    V429 makes Dust a scarce, rarity-driven resource instead of deriving it from
    equipment power. Recycling value is now fixed by rarity (Tree bonus still
    applies), so a huge late-game item can no longer create millions of Dust.
    Existing Dust balances are converted once at 1:100 to the new economy.
+   V467 doubles every new recycling gain while leaving owned balances and upgrade costs untouched.
 */
 (function(){
   'use strict';
   if(window.__srDustEconomyAuthorityV293)return;
   window.__srDustEconomyAuthorityV293=true;
+  window.__srDustGainsV467={version:467,multiplier:2};
 
   var DUST_BY_RARITY={
-    COMMUN:1,
-    PEU_COMMUN:2,
-    RARE:4,
-    EPIQUE:8,
-    HEROIQUE:12,
-    MYTHIQUE:20,
-    ARTEFACT:35,
-    LEGENDAIRE:60,
-    INFERNAL:100,
-    IMMORTEL:160,
-    DIVIN:250,
-    /* legacy alias */ ANCESTRAL:100
+    COMMUN:2,
+    PEU_COMMUN:4,
+    RARE:8,
+    EPIQUE:16,
+    HEROIQUE:24,
+    MYTHIQUE:40,
+    ARTEFACT:70,
+    LEGENDAIRE:120,
+    INFERNAL:200,
+    IMMORTEL:320,
+    DIVIN:500,
+    /* legacy alias */ ANCESTRAL:200
   };
   var STOCK_DIVISOR_V429=100;
 
@@ -92,7 +94,7 @@
   try{
     window.__srDustEconomyConfigV293={
       version:293,
-      revision:429,
+      revision:467,
       byRarity:DUST_BY_RARITY,
       normalizeRarity:normalizeRarity,
       valueForRarity:valueForRarity,
@@ -101,7 +103,8 @@
       migrateStockV429:migrateStockV429,
       migration:migration,
       powerIndependent:true,
-      treeBonusPreserved:true
+      treeBonusPreserved:true,
+      gainMultiplier:2
     };
   }catch(_){ }
 })();
