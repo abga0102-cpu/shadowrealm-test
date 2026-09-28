@@ -1,7 +1,6 @@
-/* SHADOWREACH · Fusion milestone Gold rewards authority v357
-   Approved Gold ladder.
-   Free / Premium: 50=50k/10k, 150=100k/20k, 250=150k/30k,
-   350=200k/40k, 500=300k/60k, 1000=600k/120k, 1500=1M/200k.
+/* SHADOWREACH · Fusion milestone rewards authority v468
+   V468 Free lane: 50=500 Minéraux, 150=750, 250=1 000, 350=1 500, 500=2 000.
+   Premium remains Gold: 10k / 20k / 30k / 40k / 60k. 1000/1500 keep their Gold payouts.
    V357: removes the global DOM MutationObserver that could create a render loop
    through update() -> scheduleRender() -> DOM mutation -> observer. */
 (function(){
@@ -9,18 +8,19 @@
 if(window.__srFusionGoldRewardsV357)return;
 window.__srFusionGoldRewardsV357=true;
 window.__srFusionGoldRewardsV355=true;
+window.__srFusionMilestoneRewardsV468=true;
 
 var LADDER={
- fusion50:{target:50,free:50000,premium:10000,title:'50 Fusions'},
- fusion150:{target:150,free:100000,premium:20000,title:'150 Fusions'},
- fusion250:{target:250,free:150000,premium:30000,title:'250 Fusions'},
- fusion350:{target:350,free:200000,premium:40000,title:'350 Fusions'},
- fusion500:{target:500,free:300000,premium:60000,title:'500 Fusions'},
- fusion1000:{target:1000,free:600000,premium:120000,title:'1 000 Fusions'},
- fusion1500:{target:1500,free:1000000,premium:200000,title:'1 500 Fusions'}
+ fusion50:{target:50,free:500,freeType:'minerai',premium:10000,title:'50 Fusions'},
+ fusion150:{target:150,free:750,freeType:'minerai',premium:20000,title:'150 Fusions'},
+ fusion250:{target:250,free:1000,freeType:'minerai',premium:30000,title:'250 Fusions'},
+ fusion350:{target:350,free:1500,freeType:'minerai',premium:40000,title:'350 Fusions'},
+ fusion500:{target:500,free:2000,freeType:'minerai',premium:60000,title:'500 Fusions'},
+ fusion1000:{target:1000,free:600000,freeType:'gold',premium:120000,title:'1 000 Fusions'},
+ fusion1500:{target:1500,free:1000000,freeType:'gold',premium:200000,title:'1 500 Fusions'}
 };
 var TITLE_TO_ID={};Object.keys(LADDER).forEach(function(id){TITLE_TO_ID[LADDER[id].title]=id;});
-var RESET_IDS=['fusion50','fusion150'];
+var RESET_IDS=[]; /* V468: no repeatable design-reset claims. */
 
 function n(v){return Math.max(0,Math.floor(Number(v)||0));}
 function ensure(s){
@@ -32,14 +32,14 @@ function ensure(s){
 }
 function count(s){var st=(s&&s.sanctuary)||{},a=(s&&s.accomplishments)||{};return Math.max(n(st.mergeCrafts),n(st.fusions),n(a.fusionCount));}
 function premiumOwned(a){return !!(a&&(a.premiumPass||a.premiumPassOwned));}
-function fmt(v){return Math.round(Number(v)||0).toLocaleString('fr-FR')+' Or';}
+function fmtReward(v,type){return Math.round(Number(v)||0).toLocaleString('fr-FR')+(type==='minerai'?' Minéraux':' Or');}
 function refresh(id,premium){
  try{if(typeof toast==='function')toast(premium?'Bonus Premium reçu !':'Récompense reçue !',true);}catch(_){}
  try{window.dispatchEvent(new CustomEvent('sr:accomplishmentclaimed',{detail:{id:id,choice:'',premium:!!premium}}));}catch(_){}
  try{if(typeof ACT!=='undefined'&&ACT&&typeof ACT.accomplishments==='function')ACT.accomplishments();}catch(_){}
  setTimeout(patchUI,0);
 }
-function grantGold(s,amount){s.gold=(Number(s.gold)||0)+amount;}
+function grantReward(s,amount,type){if(type==='minerai')s.minerai=(Number(s.minerai)||0)+amount;else s.gold=(Number(s.gold)||0)+amount;}
 function claim(id,premium){
  var cfg=LADDER[id];if(!cfg||typeof S==='undefined'||!S||count(S)<cfg.target)return false;
  var a=ensure(S);if(premium){if(!premiumOwned(a)||a.premiumClaimed[id])return false;}else if(a.claimed[id])return false;
@@ -49,12 +49,12 @@ function claim(id,premium){
    var x=ensure(s);if(count(s)<cfg.target)return;
    if(premium){if(!premiumOwned(x)||x.premiumClaimed[id])return;}else if(x.claimed[id])return;
    var st=s.sanctuary||{};x.fusionCount=Math.max(n(x.fusionCount),n(st.mergeCrafts),n(st.fusions));
-   grantGold(s,premium?cfg.premium:cfg.free);
+   grantReward(s,premium?cfg.premium:cfg.free,premium?'gold':cfg.freeType);
    if(premium)x.premiumClaimed[id]=true;else x.claimed[id]=true;
    granted=true;
   });
  }else{
-  grantGold(S,premium?cfg.premium:cfg.free);
+  grantReward(S,premium?cfg.premium:cfg.free,premium?'gold':cfg.freeType);
   a.fusionCount=Math.max(n(a.fusionCount),n(S.sanctuary&&S.sanctuary.mergeCrafts),n(S.sanctuary&&S.sanctuary.fusions));
   if(premium)a.premiumClaimed[id]=true;else a.claimed[id]=true;
   try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}
@@ -102,8 +102,8 @@ function patchUI(){
    var row=rows[i],title=row.querySelector('.achObjective b');if(!title)continue;
    var id=TITLE_TO_ID[String(title.textContent||'').trim()];if(!id)continue;
    var rewards=row.querySelectorAll('.achReward'),cfg=LADDER[id];
-   if(rewards[0]){var ft=rewards[0].querySelector('.achRewardText');if(ft&&ft.textContent!==fmt(cfg.free))ft.textContent=fmt(cfg.free);}
-   if(rewards[1]){var pt=rewards[1].querySelector('.achRewardText');if(pt&&pt.textContent!==fmt(cfg.premium))pt.textContent=fmt(cfg.premium);}
+   if(rewards[0]){var ft=rewards[0].querySelector('.achRewardText'),freeText=fmtReward(cfg.free,cfg.freeType);if(ft&&ft.textContent!==freeText)ft.textContent=freeText;}
+   if(rewards[1]){var pt=rewards[1].querySelector('.achRewardText'),premiumText=fmtReward(cfg.premium,'gold');if(pt&&pt.textContent!==premiumText)pt.textContent=premiumText;}
    if(RESET_IDS.indexOf(id)>=0){
     var done=count(S)>=cfg.target;
     if(rewards[0]){var freeState=rewards[0].querySelector('.achState,.btn');if(freeState)freeState.outerHTML=done?'<button class="btn sm" data-ach="'+id+'" data-primary="true">Récupérer</button>':'<span class="achState">En cours</span>';}
@@ -124,4 +124,5 @@ try{
  window.addEventListener('sr:accomplishmentclaimed',function(){setTimeout(patchUI,0);});
  setTimeout(patchUI,100);setTimeout(patchUI,400);setTimeout(patchUI,1000);
 }catch(_){}
+window.__srFusionMilestoneRewardsV468Api={ladder:LADDER,claim:claim};
 })();

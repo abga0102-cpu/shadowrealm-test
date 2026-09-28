@@ -10,12 +10,12 @@ if(window.__srAccomplishmentsClaimV140)return;
 window.__srAccomplishmentsClaimV140=true;
 var REWARDS={
  forge10:{gold:7500},forge15:{gold:10000},forge20:{gold:20000},forge25:{gold:30000},forge30:{gold:75000},forge35:{gold:100000},forge40:{gold:200000},forge45:{gold:300000},forge50:{gold:500000},
- fusion50:{merge:{COMMUN:15}},fusion150:{merge:{PEU_COMMUN:15}},fusion250:{merge:{RARE:15},boosts:{gold10_30:1}},fusion350:{merge:{RARE:15}},fusion500:{merge:{EPIQUE:20},boosts:{gold10_30:1}},fusion1000:{gold:100000,merge:{MYTHIQUE:20}},fusion1500:{merge:{MYTHIQUE:20},boosts:{gold50_30:1}},
+ fusion50:{minerai:500},fusion150:{minerai:750},fusion250:{minerai:1000},fusion350:{minerai:1500},fusion500:{minerai:2000},fusion1000:{gold:600000},fusion1500:{gold:1000000},
  raid10:{gold:5000},raid20:{gold:15000},raid50:{gold:50000},raid100:{gold:250000,validatedRaid100:true},
  floor25:{essence:250},floor50:{minerai:2000,gold:5000},floor75:{gold:50000,eclat:500,merge:{COMMUN:30}},floor100:{gold:100000,eclat:500,essence:500,merge:{COMMUN:30}},floor150:{gold:150000,eclat:750,essence:750,merge:{RARE:15}},floor200:{eclat:1000,essence:1000,merge:{RARE:20}},floor250:{eclat:1250,essence:1250,merge:{EPIQUE:10}},floor300:{eclat:1500,essence:1500,merge:{EPIQUE:15}},floor350:{eclat:2000,essence:2000,merge:{MYTHIQUE:10}},floor400:{eclat:2500,essence:2500,merge:{MYTHIQUE:20},universal:1}
 };
 var PREMIUM_REWARDS={
- fusion50:{merge:{COMMUN:5}},fusion150:{merge:{PEU_COMMUN:5}},fusion250:{merge:{RARE:5}},fusion350:{merge:{RARE:5}},fusion500:{merge:{EPIQUE:5}},fusion1000:{gold:25000,merge:{MYTHIQUE:5}},fusion1500:{merge:{MYTHIQUE:5}},
+ fusion50:{gold:10000},fusion150:{gold:20000},fusion250:{gold:30000},fusion350:{gold:40000},fusion500:{gold:60000},fusion1000:{gold:120000},fusion1500:{gold:200000},
  raid10:{gold:2500},raid20:{gold:5000},raid50:{gold:25000},raid100:{gold:75000},
  floor25:{essence:100},floor50:{minerai:750,gold:2500},floor75:{eclat:200,merge:{COMMUN:10}},floor100:{eclat:200,essence:200,merge:{COMMUN:10}},floor150:{eclat:250,essence:250,merge:{RARE:5}},floor200:{eclat:300,essence:300,merge:{RARE:5}},floor250:{eclat:350,essence:350,merge:{EPIQUE:3}},floor300:{eclat:400,essence:400,merge:{EPIQUE:4}},floor350:{eclat:500,essence:500,merge:{MYTHIQUE:3}},floor400:{eclat:750,essence:750,merge:{MYTHIQUE:5}}
 };
