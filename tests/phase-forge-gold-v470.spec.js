@@ -13,7 +13,7 @@ async function clean(page) {
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V470 Forge Gold table scales by rarity and existing Gold nodes cap at 20 percent', async ({ page }) => {
+test('V470 Forge Gold table scales by rarity and existing Gold nodes cap at 50 percent', async ({ page }) => {
   await clean(page);
   const out = await page.evaluate(() => {
     const api = window.__srForgeGoldV470;
@@ -31,9 +31,9 @@ test('V470 Forge Gold table scales by rarity and existing Gold nodes cap at 20 p
     COMMUN:10, PEU_COMMUN:15, RARE:18, EPIQUE:33, HEROIQUE:45, MYTHIQUE:60,
     ARTEFACT:105, LEGENDAIRE:180, INFERNAL:300, IMMORTEL:450, DIVIN:650
   });
-  expect(out.goldBonus).toBeCloseTo(20, 6);
-  expect(out.divinWithTree).toBe(780);
-  expect(out.communWithTree).toBe(12);
+  expect(out.goldBonus).toBeCloseTo(50, 6);
+  expect(out.divinWithTree).toBe(975);
+  expect(out.communWithTree).toBe(15);
 });
 
 test('V470 pays Gold once per paid Forge and not for the free bonus result', async ({ page }) => {
