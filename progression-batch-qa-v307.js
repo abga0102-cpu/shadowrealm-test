@@ -16,9 +16,8 @@ if(window.__srProgressionBatchQAV307)return;window.__srProgressionBatchQAV307=tr
 /* ---------- Familiar Ancestral hatch integration ---------- */
 try{
   if(typeof EGG_TIMERS!=='undefined'&&EGG_TIMERS){
-    /* Geometric midpoint between Mythique (10h) and Legendaire (24h), rounded
-       to a clean gameplay value. This only fills the previously missing tier. */
-    if(!(Number(EGG_TIMERS.ANCESTRAL)>0))EGG_TIMERS.ANCESTRAL=16*3600;
+    /* V476 canonical direct Ancestral egg duration: 2 days. */
+    EGG_TIMERS.ANCESTRAL=48*3600;
   }
 }catch(_){ }
 
@@ -108,7 +107,7 @@ var audit={
   treeTotalPE:safe(function(){return treeTotalPE();})
 };
 audit.ok=!!(
-  audit.ancestralHatchSeconds===57600&&audit.ancestralRateBeforeMax===0&&Math.abs(audit.ancestralRateAtMax-5)<1e-6&&
+  audit.ancestralHatchSeconds===172800&&audit.ancestralRateBeforeMax===0&&Math.abs(audit.ancestralRateAtMax-5)<1e-6&&
   audit.raidEvolution1===100&&audit.raidEvolution50===247&&audit.raidSkill1===250&&audit.raidSkill50===740&&
   audit.raidPet1===250&&audit.raidPet50===740&&audit.dustChance25===95&&audit.dustChanceHigh===5&&
   audit.dustCost0===30&&audit.dustCost10===210&&
@@ -118,7 +117,7 @@ window.__srProgressionAuditV307=audit;
 
 try{if(typeof S!=='undefined'&&S){S.progressionBatchQAVersion=307;if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}}catch(_){ }
 window.__srProgressionBatchQAConfigV307={
-  ancestralHatchHours:16,
+  ancestralHatchHours:48,
   ancestralDirectRateAtMax:5,
   invalidRarityGuard:true,
   familiarRateOwner:'V296',
