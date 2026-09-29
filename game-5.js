@@ -1763,7 +1763,7 @@ const ACT = {
     const r=upgradeItem(a);
     if (!r.ok) { toast(r.reason==="dust" ? "Poussière insuffisante" : "Objet introuvable"); return; }
     showItemDetail(a, null);
-    toast(r.success ? "Amélioration réussie · " + (r.statLabel || "Stat") + " +" + (r.statGain || 0).toLocaleString("fr-FR", {minimumFractionDigits:2, maximumFractionDigits:2}) : "Échec · objet conservé", r.success);
+    toast(r.success ? "Amélioration réussie · " + (r.statLabel || "Stat") + " +" + (r.statGain || 0).toLocaleString("fr-FR", {minimumFractionDigits:2, maximumFractionDigits:2}) + (Number(r.globalPowerGain)>0 ? " · Puissance +" + fmt(r.globalPowerGain) : "") : "Échec · objet conservé", r.success);
   },
   itemSealMinus: (a) => { itemSealPlan[a]=Math.max(0,itemSealCount(a)-1); showItemDetail(a,null); },
   itemSealPlus: (a) => {
