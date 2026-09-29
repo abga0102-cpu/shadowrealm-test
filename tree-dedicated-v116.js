@@ -6,10 +6,10 @@
 if(window.__srTreeDedicatedV116)return;
 window.__srTreeDedicatedV116=true;
 if(typeof TREE_NODES==='undefined'||typeof treeLv!=='function'||typeof treeReqOk!=='function')return;
-/* V117's naming-only gold labels now live with the canonical dedicated Tree renderer.
-   This changes labels only; effects, requirements, costs, levels, timers and saves stay untouched. */
+/* V470 · Keep the existing Global Gold family visibly named "Or obtenu".
+   Autonomy-yield nodes keep their Rendement Autonomie names. */
 if(typeof TREE_BY_ID!=='undefined'){
-  var clearerGoldLabels={n1_07:'Gain d’Or I',n2_07:'Gain d’Or II',n3_07:'Gain d’Or III',n4_07:'Gain d’Or IV'};
+  var clearerGoldLabels={n1_06:'Or obtenu I',n2_06:'Or obtenu II',n3_06:'Or obtenu III',n4_06:'Or obtenu IV'};
   Object.keys(clearerGoldLabels).forEach(function(id){var n=TREE_BY_ID[id];if(n){n.label=clearerGoldLabels[id];n.short=clearerGoldLabels[id];}});
 }
 var branches=[
