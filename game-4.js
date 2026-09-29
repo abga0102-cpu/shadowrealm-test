@@ -1067,9 +1067,9 @@ function scrMegaRaid() {
       '<div class="pad mt6"><div class="card frame center" style="border-left-color:#E5484D">' +
         '<div class="row gap8" style="justify-content:center">' + ic("skull", 22) +
           '<span class="bb gt" style="font-size:14px;letter-spacing:1.2px">MÉGA-BOSS EN COURS</span></div>' +
-        '<div class="mute small mt6">Méga niveau ' + megaLevelForFloor(combat.floor) + " · Méga-" + esc(def.name) +
+        '<div class="mute small mt6">Étage Méga ' + megaLevelForFloor(combat.floor) + " · Méga-" + esc(def.name) +
           " · référence Boss normal étage " + fmtInt(combat.floor) +
-          ' · <b style="color:var(--redLit)">PV ×10 · dégâts ×10</b></div>' +
+          ' · <b style="color:var(--redLit)">Boss uniquement · PV ×10 · dégâts ×10</b></div>' +
         '<div class="tiny b mt6" style="color:#A9E06F">' +
           (already ? "Boss déjà vaincu · replay : 0 Pomme"
             : "Première victoire : +" + fmt(megaAppleFirstClearReward(combat.floor, S)) + " 🍎") + "</div>" +
@@ -1093,15 +1093,16 @@ function scrMegaRaid() {
     challenge = '<div class="card frame" style="border-left-color:#E5484D">' +
       '<div class="between"><div class="row gap9">' +
         '<div class="imini" style="width:38px;height:38px;border-color:#E5484D;background:#E5484D1f">' + ic("skull", 22) + "</div>" +
-        '<div><div class="bb" style="color:var(--redLit);font-size:14px">Méga niveau ' + megaLevelForFloor(next) + " · Méga-" + esc(def.name) + "</div>" +
-        '<div class="mute tiny b">Référence : Boss normal étage ' + fmtInt(next) + " · prochain défi</div></div></div>" +
+        '<div><div class="bb" style="color:var(--redLit);font-size:14px">Étage Méga ' + megaLevelForFloor(next) + " · Méga-" + esc(def.name) + "</div>" +
+        '<div class="mute tiny b">100 % Boss · aucune Élite · référence Boss normal étage ' + fmtInt(next) + "</div></div></div>" +
         '<span class="pill" style="color:#A9E06F;border-color:#6FA83C">+' + fmt(reward) + " 🍎</span></div>" +
       '<div class="row gap6 mt8" style="flex-wrap:wrap">' +
         '<span class="pill">' + ic("heart", 10) + fmt(preview.maxHP) + " PV</span>" +
         '<span class="pill">' + ic("flame", 10) + fmt(preview.dmg) + " dégâts</span>" +
         '<span class="pill" style="color:var(--redLit);border-color:#E5484D">PV ×10 · dégâts ×10</span></div>' +
-      '<div class="notice mt8 tiny">Méga niveau ' + megaLevelForFloor(next) + " = 10× la puissance du Boss normal de l’étage " + fmtInt(next) + ". " +
-        "Aucune clé requise. La première victoire donne les Pommes et 2× les accélérateurs de ce Boss normal.</div>" +
+      '<div class="notice mt8 tiny">Chaque étage Méga est un Boss. Étage Méga ' + megaLevelForFloor(next) +
+        " = 10× la puissance du Boss normal de l’étage " + fmtInt(next) + ". " +
+        "Aucune Élite, aucune clé requise. La première victoire donne les Pommes et 2× les accélérateurs de ce Boss normal.</div>" +
       '<div class="mt8">' + btn(ic("skull", 14) + "Affronter", { cls: "red", act: "startMega", arg: next }) +
         "</div></div>";
   } else {
@@ -1109,13 +1110,13 @@ function scrMegaRaid() {
     challenge = '<div class="card frame center" style="border-left-color:#3FB950">' + ic("trophy", 30) +
       '<div class="bb gt mt6" style="font-size:14px">TOUS LES MÉGA-BOSS DISPONIBLES SONT VAINCUS</div>' +
       '<div class="mute small mt6">Vaincs le Boss normal de l’étage ' + fmtInt(nextNormal) +
-        " pour rendre disponible le Méga niveau " + megaLevelForFloor(nextNormal) + ".</div></div>";
+        " pour rendre disponible l’étage Méga " + megaLevelForFloor(nextNormal) + ".</div></div>";
   }
 
   const history = cleared.slice().reverse().slice(0, 5).map((floor) => {
     const def = bossFor(floor);
     return '<div class="card mt6" style="padding:6px 8px"><div class="between"><div>' +
-      '<div class="b small">Méga niveau ' + megaLevelForFloor(floor) + " · Méga-" + esc(def.name) +
+      '<div class="b small">Étage Méga ' + megaLevelForFloor(floor) + " · Méga-" + esc(def.name) +
       " · réf. étage " + fmtInt(floor) + "</div>" +
       '<div class="mute tiny">Première récompense récupérée · replay : 0 Pomme</div></div>' +
       btn("Rejouer", { small: true, cls: "ghost", act: "startMega", arg: floor,
@@ -1125,8 +1126,8 @@ function scrMegaRaid() {
   return topbar("Méga Boss", '<span class="pill" data-act="resInfo" data-arg="apples" ' +
     'style="cursor:pointer;color:#A9E06F;border-color:#6FA83C">🍎 ' + fmt(S.apples || 0) + "</span>") +
     '<div class="pad mt6">' +
-      '<div class="card"><div class="between"><div><div class="bb small">Progression Méga Boss</div>' +
-        '<div class="mute tiny b">' + cleared.length + "/" + floors.length + " premières victoires</div></div>" +
+      '<div class="card"><div class="between"><div><div class="bb small">Progression Méga Boss · Boss uniquement</div>' +
+        '<div class="mute tiny b">' + cleared.length + "/" + floors.length + " étages Boss vaincus · aucune Élite</div></div>" +
         '<span class="pill" style="color:#A9E06F;border-color:#6FA83C">Gain Pommes +' + appleBoost + "%</span></div>" +
         '<div class="mt8">' + meter(floors.length ? cleared.length / floors.length * 100 : 0, C.red,
           cleared.length + " / " + floors.length) + "</div>" +

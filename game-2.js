@@ -1185,6 +1185,9 @@ function makeMegaBossEnemy(floor) {
     floor, boss: true, abils: def.abils, noFastback: true, x: AW - 60 });
   enemy.hp = enemy.maxHP = Math.max(1, Math.floor(enemy.maxHP * 10));
   enemy.dmg = Math.max(1, Math.floor(enemy.dmg * 10));
+  /* V480 invariant: every Mega stage is one Boss, never an Elite. */
+  enemy.boss = true;
+  enemy.elite = false;
   enemy.mega = true;
   return enemy;
 }
