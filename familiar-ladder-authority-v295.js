@@ -38,7 +38,7 @@ window.__srFamiliarLadderConfigV295={order:APPROVED_ORDER.slice(),fusion:{COMMUN
 /* V422 · Autonomy hourly yield + preserved Gold/Time authority
    - Universal Autonomy yield: 5%/h base, 20%/h hard maximum with the Tree.
    - Yield applies equally to Minerai, Essence, Compétence and Or reserves.
-   - Global Gold remains +5% / +10% / +15% / +20% by tier (+50% total).
+   - V470: existing Global Gold nodes cap at +2% / +4% / +6% / +8% by tier (+20% total).
    - Time Autonomy remains 8h base -> 16h maximum. */
 (function(){'use strict';
 if(window.__srGoldEconomyBalanceV335)return;window.__srGoldEconomyBalanceV335=true;
@@ -50,13 +50,13 @@ var AUTO_PER={n1_07:0.3,n2_07:0.6,n3_07:0.9,n4_07:1.2};
 var AUTO_CAP={n1_07:1.5,n2_07:3,n3_07:4.5,n4_07:6};
 var TIME_PER={n1_08:2,n2_08:4,n3_08:6,n4_08:8};
 var TIME_CAP={n1_08:10,n2_08:20,n3_08:30,n4_08:40};
-var GLOBAL_PER={n1_06:1,n2_06:2,n3_06:3,n4_06:4};
-var GLOBAL_CAP={n1_06:5,n2_06:10,n3_06:15,n4_06:20};
+var GLOBAL_PER={n1_06:0.4,n2_06:0.8,n3_06:1.2,n4_06:1.6};
+var GLOBAL_CAP={n1_06:2,n2_06:4,n3_06:6,n4_06:8};
 try{
   if(typeof TREE_BY_ID!=='undefined'&&TREE_BY_ID){
     AUTO.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=AUTO_PER[id];n.tierScale=false;n.label='Rendement Autonomie '+R[id];n.short='Rend. Auton. '+R[id];n.note='+'+String(AUTO_PER[id]).replace('.',',')+' point de %/h par niveau · Max +'+String(AUTO_CAP[id]).replace('.',',')+' points';});
     TIME.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=TIME_PER[id];n.tierScale=false;n.note='+'+TIME_PER[id]+' % de durée par niveau · Max +'+TIME_CAP[id]+' % · Plafond global 16 h';});
-    GLOBAL.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=GLOBAL_PER[id];n.tierScale=false;n.note='+'+GLOBAL_PER[id]+' % d’or global par niveau · Max +'+GLOBAL_CAP[id]+' %';});
+    GLOBAL.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=GLOBAL_PER[id];n.tierScale=false;n.label='Or obtenu '+R[id];n.short='Or obtenu '+R[id];n.note='+'+String(GLOBAL_PER[id]).replace('.',',')+' % d’or obtenu par niveau · Max +'+GLOBAL_CAP[id]+' %';});
   }
 }catch(_){ }
 try{
@@ -82,8 +82,8 @@ window.__srGoldEconomyConfigV335={
   autonomyYieldTierCapsPctPoints:[1.5,3,4.5,6],
   autonomyYieldBranchMaxPctPoints:15,
   autonomyYieldMaxPctPerHour:20,
-  globalGoldTierCapsPct:[5,10,15,20],
-  globalGoldBranchMaxPct:50
+  globalGoldTierCapsPct:[2,4,6,8],
+  globalGoldBranchMaxPct:20
 };
 window.__srAutonomyTimeConfigV421={baseHours:8,tierCapsPct:[10,20,30,40],branchMaxPct:100,maxHours:16};
 window.__srAutonomyYieldConfigV422={basePctPerHour:5,maxPctPerHour:20,treeAddsPctPoints:15,resources:['minerai','essence','eclat','gold']};
