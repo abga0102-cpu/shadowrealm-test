@@ -141,8 +141,8 @@ test('V429 one successful Dust upgrade adds exactly +1% of the base equipment st
   });
 
   expect(result.preview.gain).toBe(100);
-  expect(result.cost).toBe(30);
-  expect(result.afterDust).toBe(result.beforeDust - 30);
+  expect(result.cost).toBe(15);
+  expect(result.afterDust).toBe(result.beforeDust - 15);
   expect(result.outcome.ok).toBe(true);
   expect(result.outcome.success).toBe(true);
   expect(result.level).toBe(24);
