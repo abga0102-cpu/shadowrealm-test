@@ -308,16 +308,16 @@ function run(W) {
 
   // ---------------------------------------------------------------- tree
   group("ARBRE — la fiche de référence fait foi");
-  check("130 nœuds : 120 normaux + 10 spéciaux", function () {
-    const n = H.TREE_NODES.length;
-    const norm = H.TREE_NODES.filter(function (x) { return !x.special; }).length;
-    return (n === 130 && norm === 120) ? true : n + " nœuds dont " + norm + " normaux";
+  check("V476 : 154 nœuds de palier dont 144 normaux", function () {
+    const palierNodes = H.TREE_NODES.filter(function (x) { return !x.masteryKey; });
+    const norm = palierNodes.filter(function (x) { return !x.special; }).length;
+    return (palierNodes.length === 154 && norm === 144) ? true : palierNodes.length + " nœuds de palier dont " + norm + " normaux";
   });
-  check("30 familles présentes une fois par palier", function () {
+  check("36 familles présentes une fois par palier", function () {
     const bad = [];
     for (let p = 1; p <= 4; p++) {
       const pal = H.TREE_NODES.filter(function (x) { return !x.special && x.tier === p; });
-      if (pal.length !== 30) bad.push("palier " + p + " : " + pal.length);
+      if (pal.length !== 36) bad.push("palier " + p + " : " + pal.length);
       const eff = {}; pal.forEach(function (x) { eff[x.effect] = (eff[x.effect] || 0) + 1; });
       const dup = Object.keys(eff).filter(function (k) { return eff[k] !== 1; });
       if (dup.length) bad.push("palier " + p + " doublons : " + dup.slice(0, 2));
@@ -1012,32 +1012,34 @@ function run(W) {
     set(function (st) { st.raids.minerai.level = 1; st.raids.minerai.stars = 0; });
     return bad.length ? bad.join(", ") : true;
   });
-  check("toutes les ressources Autonomie partagent 5 %/h, puis 20 %/h au boost max", function () {
-    const ids = ["n1_07", "n2_07", "n3_07", "n4_07"];
-    const verify = function (share) {
-      const r = W.harvestRates(H.S);
-      const expected = {
-        minerai: W.raidReward("minerai", H.S.raids.minerai.level) * share,
-        essence: W.raidReward("familier", H.S.raids.familier.level) * share,
-        eclat: W.raidReward("competence", H.S.raids.competence.level) * share,
-        gold: W.raidReward("or", H.S.raids.or.level) * share
-      };
-      const bad = [];
-      Object.keys(expected).forEach(function (k) {
-        if (Math.abs(r[k] - expected[k]) > 1e-9) bad.push(k + "=" + r[k] + " au lieu de " + expected[k]);
-      });
-      return bad;
+  check("V476 : chaque ressource Autonomie progresse indépendamment de 5 à 20 %/h", function () {
+    const branches = {
+      gold:["n1_07","n2_07","n3_07","n4_07"],
+      minerai:["n1_am","n2_am","n3_am","n4_am"],
+      essence:["n1_ae","n2_ae","n3_ae","n4_ae"],
+      eclat:["n1_as","n2_as","n3_as","n4_as"]
     };
     set(function (st) {
       st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
       st.floor = 40;
     });
-    let bad = verify(0.05);
-    set(function (st) {
-      ids.forEach(function (id) { st.tree.levels[id] = 5; });
-    });
-    bad = bad.concat(verify(0.20));
-    return bad.length ? bad.join(", ") : true;
+    const base=W.harvestRates(H.S);
+    const refs={
+      gold:W.raidReward("or",H.S.raids.or.level),
+      minerai:W.raidReward("minerai",H.S.raids.minerai.level),
+      essence:W.raidReward("familier",H.S.raids.familier.level),
+      eclat:W.raidReward("competence",H.S.raids.competence.level)
+    };
+    const bad=[];
+    Object.keys(refs).forEach(function(k){if(Math.abs(base[k]-refs[k]*.05)>1e-9)bad.push(k+" base");});
+    set(function(st){branches.minerai.forEach(function(id){st.tree.levels[id]=5;});});
+    const onlyMin=W.harvestRates(H.S);
+    if(Math.abs(onlyMin.minerai-refs.minerai*.20)>1e-9)bad.push("minerai max");
+    ["gold","essence","eclat"].forEach(function(k){if(Math.abs(onlyMin[k]-refs[k]*.05)>1e-9)bad.push(k+" ne reste pas à 5%");});
+    set(function(st){Object.keys(branches).forEach(function(k){branches[k].forEach(function(id){st.tree.levels[id]=5;});});});
+    const all=W.harvestRates(H.S);
+    Object.keys(refs).forEach(function(k){if(Math.abs(all[k]-refs[k]*.20)>1e-9)bad.push(k+" max");});
+    return bad.length?bad.join(", "):true;
   });
   check("les anciennes étoiles Raid n'influencent plus la difficulté", function () {
     const bad = [];
