@@ -241,21 +241,23 @@ function fmtEquipStat(v) {
   if (Number.isInteger(n)) return fmt(n);
   return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-/* V467 · Equipment Mastery keeps the permanent Roman rank and doubles its
-   one-time Dust rewards. The thresholds stay exactly as V456: reward changes
-   must never move a player's Roman rank. Dust upgrades remain independent. */
-const EQUIPMENT_MASTERY_REWARD_VERSION = 467;
+/* V474 · Equipment Mastery X.
+   Paid lifetime Forge thresholds now run I→X with the validated 30% early /
+   20% late progression. Each rank reward also gains +50 Dust versus the V467
+   reward ladder. Dust upgrades remain independent from the Roman rank. */
+const EQUIPMENT_MASTERY_REWARD_VERSION = 474;
 const EQUIPMENT_MASTERY_TIERS = [
   { need:0, rank:0, roman:"—", bonusPct:0, rewardDust:0 },
-  { need:100, rank:1, roman:"I", bonusPct:10, rewardDust:100 },
-  { need:300, rank:2, roman:"II", bonusPct:20, rewardDust:200 },
-  { need:600, rank:3, roman:"III", bonusPct:30, rewardDust:300 },
-  { need:1000, rank:4, roman:"IV", bonusPct:40, rewardDust:400 },
-  { need:1500, rank:5, roman:"V", bonusPct:50, rewardDust:500 },
-  { need:2500, rank:6, roman:"VI", bonusPct:60, rewardDust:600 },
-  { need:4000, rank:7, roman:"VII", bonusPct:70, rewardDust:700 },
-  { need:6500, rank:8, roman:"VIII", bonusPct:75, rewardDust:800 },
-  { need:10000, rank:9, roman:"IX", bonusPct:80, rewardDust:900 }
+  { need:200, rank:1, roman:"I", bonusPct:30, rewardDust:150 },
+  { need:600, rank:2, roman:"II", bonusPct:60, rewardDust:250 },
+  { need:1200, rank:3, roman:"III", bonusPct:90, rewardDust:350 },
+  { need:2500, rank:4, roman:"IV", bonusPct:120, rewardDust:450 },
+  { need:5000, rank:5, roman:"V", bonusPct:140, rewardDust:550 },
+  { need:10000, rank:6, roman:"VI", bonusPct:160, rewardDust:650 },
+  { need:20000, rank:7, roman:"VII", bonusPct:180, rewardDust:750 },
+  { need:30000, rank:8, roman:"VIII", bonusPct:200, rewardDust:850 },
+  { need:40000, rank:9, roman:"IX", bonusPct:220, rewardDust:950 },
+  { need:50000, rank:10, roman:"X", bonusPct:240, rewardDust:1050 }
 ];
 function equipmentMasteryInfoFromCount(count) {
   const n = Math.max(0, Math.floor(Number(count) || 0));
@@ -277,25 +279,48 @@ function equipmentMasteryInfoFromCount(count) {
   };
 }
 function equipmentMasteryDustRewardForRank(rank) {
-  const r = Math.max(0, Math.min(9, Math.floor(Number(rank) || 0)));
+  const maxRank = EQUIPMENT_MASTERY_TIERS[EQUIPMENT_MASTERY_TIERS.length - 1].rank;
+  const r = Math.max(0, Math.min(maxRank, Math.floor(Number(rank) || 0)));
   const tier = EQUIPMENT_MASTERY_TIERS.find((t) => t.rank === r);
   return tier ? Math.max(0, Number(tier.rewardDust) || 0) : 0;
+}
+function equipmentMasteryDustEntitlement(rank) {
+  const maxRank = EQUIPMENT_MASTERY_TIERS[EQUIPMENT_MASTERY_TIERS.length - 1].rank;
+  const r = Math.max(0, Math.min(maxRank, Math.floor(Number(rank) || 0)));
+  let total = 0;
+  for (let i=1; i<=r; i++) total += equipmentMasteryDustRewardForRank(i);
+  return total;
+}
+function legacyEquipmentMasteryDustPaid(forge) {
+  forge = forge || {};
+  const claimed = Math.max(0, Math.min(9, Math.floor(Number(forge.masteryDustClaimedRank) || 0)));
+  const version = Math.max(0, Math.floor(Number(forge.masteryDustRewardVersion) || 0));
+  /* V467 paid 100/200/.../900. Pre-V467 Roman rewards used the original
+     50/100/.../450 ladder. This inference lets V474 migrate without replaying
+     historical rewards even though the new Forge thresholds are much later. */
+  const unit = version >= 467 ? 100 : 50;
+  return unit * claimed * (claimed + 1) / 2;
 }
 function claimEquipmentMasteryDustRewards(s) {
   if (!s || !s.forge) return { dust:0, fromRank:0, toRank:0, claimedRank:0 };
   const current = equipmentMasteryInfoFromCount(s.forge.lifetimeCount).rank;
-  let claimed = Number(s.forge.masteryDustClaimedRank);
-  claimed = Number.isFinite(claimed) ? Math.max(0, Math.min(9, Math.floor(claimed))) : 0;
-  let dust = 0;
-  if (current > claimed) {
-    for (let rank=claimed+1; rank<=current; rank++) dust += equipmentMasteryDustRewardForRank(rank);
-    s.poussiere = Math.max(0, Number(s.poussiere) || 0) + dust;
-    s.forge.masteryDustClaimedRank = current;
-  } else {
-    s.forge.masteryDustClaimedRank = claimed;
-  }
+  let paid = Number(s.forge.masteryDustPaidTotal);
+  if (!Number.isFinite(paid)) paid = legacyEquipmentMasteryDustPaid(s.forge);
+  paid = Math.max(0, Math.floor(paid));
+  const entitlement = equipmentMasteryDustEntitlement(current);
+  const dust = Math.max(0, entitlement - paid);
+  if (dust > 0) s.poussiere = Math.max(0, Number(s.poussiere) || 0) + dust;
+  s.forge.masteryDustPaidTotal = Math.max(paid, entitlement);
+  s.forge.masteryDustClaimedRank = current;
   s.forge.masteryDustRewardVersion = EQUIPMENT_MASTERY_REWARD_VERSION;
-  return { dust, fromRank:claimed+1, toRank:current, claimedRank:s.forge.masteryDustClaimedRank };
+  return {
+    dust,
+    fromRank:Math.max(1, current),
+    toRank:current,
+    claimedRank:current,
+    paidTotal:s.forge.masteryDustPaidTotal,
+    entitlement
+  };
 }
 function equipmentMasteryInfo(s) {
   try {
@@ -321,7 +346,8 @@ function equipmentUpgradeLevel(it) {
 }
 function syncEquipmentLevelItem(it, masteryRank) {
   if (!it) return false;
-  const target = Math.max(0, Math.min(9, Math.floor(Number(masteryRank) || 0)));
+  const maxRank = EQUIPMENT_MASTERY_TIERS[EQUIPMENT_MASTERY_TIERS.length - 1].rank;
+  const target = Math.max(0, Math.min(maxRank, Math.floor(Number(masteryRank) || 0)));
   let changed = false;
   if (!Number.isFinite(Number(it.upgradeLevel))) {
     it.upgradeLevel = Number(it.equipmentLevelModelVersion) >= 455
@@ -2051,6 +2077,7 @@ function defaultState(name) {
     inventory: [],
     forge: { level: 1, summonCount: 0, lifetimeCount: 0, lifetimeMasteryVersion: 0,
       masteryDustClaimedRank: 0, masteryDustRewardVersion: EQUIPMENT_MASTERY_REWARD_VERSION,
+      masteryDustPaidTotal: 0,
       masteryLevel: 0, masteryProgress: 0, autoForge: false, upgradeEnd: 0,
       // section 14: nothing is filtered out until the player says so
       filter: false, keep: forgeKeepAll() },
