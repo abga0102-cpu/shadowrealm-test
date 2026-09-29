@@ -1746,8 +1746,8 @@ function treeEffectivePer(node) {
   return node.per * mul;
 }
 
-/* V470 · Existing Global Gold nodes now total exactly +20%:
-   I +2%, II +4%, III +6%, IV +8% when each 5-level node is maxed.
+/* V476 · Existing Global Gold nodes now total exactly +50%:
+   I +5%, II +10%, III +15%, IV +20% when each 5-level node is maxed.
    These nodes opt out of the generic tier multiplier. */
 const TREE_GOLD_TIER_CAPS = [5, 10, 15, 20];
 /* Autonomy target caps by Tree tier: I +10%, II +20%, III +30%, IV +40%.
@@ -2804,9 +2804,9 @@ function afkGainMul(s) { return autonomyYieldPct(s, "afkGold") / AUTONOMY_BASE_Y
 function harvestCapSeconds(s) { return afkCapHours(s) * 3600; }
 function harvestEfficiency(s) { return Math.min(100, treeSum(s, "harvestEff")); }
 
-/* V422: every Autonomy resource uses the same hourly yield share.
-   Base = 5%/h. The Tree adds up to +15 percentage points, capped at 20%/h.
-   This changes Autonomy only: Global Gold and equipment are not part of this formula. */
+/* V476: Autonomy resources have independent hourly-yield branches.
+   Each starts at 5%/h and its own Tree branch adds up to +15 points,
+   capped at 20%/h. Global Gold and equipment are not part of this formula. */
 function harvestRates(s) {
   return {
     minerai: raidReward("minerai", s.raids.minerai.level) * autonomyYieldPct(s, "afkMinerai") / 100,
