@@ -2,8 +2,10 @@
    - Keeps the existing Facile smoothing from floor 61 to 100.
    - V473 bridges Difficile 1-1 -> Difficile 2-10 (floors 101..130) instead of
      removing the Facile multipliers in one frame at floor 101.
-   - The bridge starts from the exact Facile 5-20 endpoint and returns
-     progressively to the normal campaign curve by floor 130.
+   - The post-Boss handoff gives the opening of Difficile a short breathing
+     window, then returns progressively to the normal campaign curve by floor 130.
+   - Difficile 1-5 is calibrated near +55..60% over the Facile 5-20 Boss,
+     instead of the previous multi-fold jump.
    - The global -40% campaign reduction remains owned by enemy-damage-authority-v289.js.
    - Ranks, rewards, progression and Raid/Mega balance remain unchanged. */
 (function(){
@@ -22,6 +24,8 @@
   var EASY_NORMAL_HP_END=0.52;
   var EASY_BOSS_HP_END=0.45;
   var EASY_DAMAGE_END=0.60;
+  var DIFFICILE_BOSS_HP_START=0.42;
+  var DIFFICILE_DAMAGE_START=0.50;
 
   function clamp01(v){return Math.max(0,Math.min(1,Number(v)||0));}
   function lerp(a,b,t){return a+(b-a)*clamp01(t);}
@@ -34,7 +38,7 @@
       return isBoss?lerp(1,EASY_BOSS_HP_END,t):lerp(1,EASY_NORMAL_HP_END,t);
     }
     if(floor<=DIFFICILE_BRIDGE_END){
-      var b=bridgeT(floor),start=isBoss?EASY_BOSS_HP_END:EASY_NORMAL_HP_END;
+      var b=bridgeT(floor),start=isBoss?DIFFICILE_BOSS_HP_START:EASY_NORMAL_HP_END;
       return lerp(start,1,b);
     }
     return 1;
@@ -42,7 +46,7 @@
   function smoothDamageMul(floor){
     floor=Number(floor)||0;
     if(floor<=SMOOTH_END)return lerp(1,EASY_DAMAGE_END,smoothT(floor));
-    if(floor<=DIFFICILE_BRIDGE_END)return lerp(EASY_DAMAGE_END,1,bridgeT(floor));
+    if(floor<=DIFFICILE_BRIDGE_END)return lerp(DIFFICILE_DAMAGE_START,1,bridgeT(floor));
     return 1;
   }
 
@@ -109,8 +113,10 @@
     visibleFrom:'Difficile 1-1',
     visibleTo:'Difficile 2-10',
     startNormalHpMul:EASY_NORMAL_HP_END,
-    startBossHpMul:EASY_BOSS_HP_END,
-    startDamageMul:EASY_DAMAGE_END,
+    startBossHpMul:DIFFICILE_BOSS_HP_START,
+    facileBossHpMulEnd:EASY_BOSS_HP_END,
+    startDamageMul:DIFFICILE_DAMAGE_START,
+    facileDamageMulEnd:EASY_DAMAGE_END,
     hpMultiplier:smoothHpMul,
     damageMultiplier:smoothDamageMul
   };
