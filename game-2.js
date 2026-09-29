@@ -2081,6 +2081,25 @@ function showRarityInfo() {
     '<div class="mt8">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
     "Raretés d\'équipement");
 }
+const FORGE_GOLD_BY_RARITY_V470 = {
+  COMMUN:10, PEU_COMMUN:15, RARE:18, EPIQUE:33, HEROIQUE:45, MYTHIQUE:60,
+  ARTEFACT:105, LEGENDAIRE:180, INFERNAL:300, IMMORTEL:500, DIVIN:800,
+  ANCESTRAL:300
+};
+function forgeGoldRewardV470(s, rarity) {
+  const base = Math.max(0, Number(FORGE_GOLD_BY_RARITY_V470[rarity]) || 0);
+  return Math.max(0, Math.floor(base * goldMul(s)));
+}
+if (typeof window !== "undefined") {
+  window.__srForgeGoldV470 = {
+    version:470,
+    baseByRarity:Object.assign({}, FORGE_GOLD_BY_RARITY_V470),
+    reward:forgeGoldRewardV470,
+    paidForgeOnly:true,
+    globalGoldBonus:true
+  };
+}
+
 function forgeSummon(n) {
   const results = [];
   let lifetimeUnlock = null;
@@ -2116,14 +2135,18 @@ function forgeSummon(n) {
       for (let k = 0; k <= extra; k++) {
         const rar = capRarityForForge(rollRarity(rates, EQUIP_RARITY_ORDER), st.forge.level);
         const item = makeItem(SLOTS[Math.floor(Math.random() * SLOTS.length)], rar, st.forge.level);
+        // V470: only the primary item of each paid Forge grants Gold. The Tree's
+        // bonus free item stays free of extra currency to protect the Gold economy.
+        const forgeGold = k === 0 ? forgeGoldRewardV470(st, rar) : 0;
+        if (forgeGold > 0) st.gold += forgeGold;
         if (forgeKeeps(st, rar)) {
           st.inventory.push(item);
-          results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0 });
+          results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0, gold: forgeGold });
         } else {
           const dust = dustValue(st, item);
           st.poussiere += dust;
           results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0,
-            recycled: true, dust: dust });
+            recycled: true, dust: dust, gold: forgeGold });
         }
       }
     }
