@@ -423,16 +423,18 @@ function run(W) {
       poussiere: H.S.poussiere, gems: H.S.gems, gold: H.S.gold, pe: H.S.pe,
       eggSlots: H.S.eggSlots };
   }
-  check("Raid Minerai suit 500 puis +5 par niveau jusqu'à 845", function () {
+  check("Raid Minerai suit +25 jusqu'à 10, +10 jusqu'à 50, puis +5", function () {
     const bad = [];
-    const expected = { 1: 500, 5: 520, 10: 545, 11: 550, 20: 595, 30: 645, 40: 695, 50: 745, 60: 795, 70: 845 };
+    const expected = { 1: 500, 5: 600, 10: 725, 11: 735, 20: 825, 30: 925, 40: 1025, 50: 1125, 51: 1130, 60: 1175, 70: 1225 };
     Object.keys(expected).forEach(function (l) {
       const got = W.raidReward("minerai", +l);
       if (got !== expected[l]) bad.push("niv" + l + " " + got + "≠" + expected[l]);
     });
     for (let l = 1; l < 70; l++) {
-      if (W.raidReward("minerai", l + 1) - W.raidReward("minerai", l) !== 5) {
-        bad.push("le pas n'est pas +5 au niveau " + l); break;
+      const expectedStep = l < 10 ? 25 : l < 50 ? 10 : 5;
+      const gotStep = W.raidReward("minerai", l + 1) - W.raidReward("minerai", l);
+      if (gotStep !== expectedStep) {
+        bad.push("pas niv" + l + "→" + (l + 1) + " " + gotStep + "≠" + expectedStep); break;
       }
     }
     return bad.length ? bad.slice(0, 3).join(", ") : true;
