@@ -231,6 +231,24 @@ function floorTrack(floor) {
   return h;
 }
 
+/* V480 · Mega-Boss has its own progression track. Every Mega stage is a Boss;
+   never reuse the Campaign track because its odd 5-floor markers are Elites. */
+function megaBossTrack(floor) {
+  const level = megaLevelForFloor(floor);
+  const block = 10;
+  const base = Math.floor((level - 1) / block) * block + 1;
+  let h = "";
+  for (let i = 0; i < block; i++) {
+    const lv = base + i;
+    if (i) h += '<i class="' + (lv <= level ? "on" : "") + '"></i>';
+    let cls = "sdot boss";
+    if (lv < level) cls += " on";
+    if (lv === level) cls += " cur";
+    h += '<span class="' + cls + '">' + MINI_SKULL + "</span>";
+  }
+  return h;
+}
+
 
 /* ---- weapon visual (port of WeaponVisual) ---- */
 /* The weapon hangs off the hero's hand, and the hand moves with the pose. Each
@@ -569,7 +587,8 @@ function drawArena() {
     : c.raidId ? RAIDS[c.raidId].name : "Épreuve d'Ascension";
   if (arenaNodes.label.textContent !== label) arenaNodes.label.textContent = label;
 
-  const track = c.ctx === "campaign" || c.ctx === "mega" ? floorTrack(c.floor) : "";
+  const track = c.ctx === "campaign" ? floorTrack(c.floor)
+    : c.ctx === "mega" ? megaBossTrack(c.floor) : "";
   if (lastTrack !== track) { arenaNodes.track.innerHTML = track; lastTrack = track; }
 
   const alive = c.enemies.filter((e) => e.alive).length;
@@ -582,7 +601,7 @@ function drawArena() {
         : c.elite ? '<span class="fPill elite">' + ic("crown", 10) + "ÉLITE</span>" : "");
   } else if (c.ctx === "mega") {
     sub = '<span class="fPill boss">' + ic("skull", 10) + "MÉGA-BOSS ×10</span>" +
-      '<span class="fPill">Étage ' + fmtInt(c.floor) + "</span>";
+      '<span class="fPill boss">' + ic("skull", 10) + "Étage Méga " + megaLevelForFloor(c.floor) + "</span>";
   } else if (c.ctx === "arenaLive") {
     const ae=c.enemies.find(e=>e.arenaProfile),ap=ae&&ae.arenaProfile;
     sub='<span class="fPill">'+ic("swords",10)+'TEMPS RÉEL</span>'+(ap?'<span class="fPill">'+esc(ARENA_BUILDS[ap.kind]?.label||"Bot")+' · '+fmt(ap.power||arenaProfilePower(ap))+' P</span>':'');
