@@ -1216,13 +1216,10 @@ function forgeUpgradeTime(level) {
   return 3600 + (level - 10) * 900;
 }
 
-/* Per-rarity hatch reduction. Three tiers stack (3 + 4 + 5 % a level over
-   5 levels each = 60% at most), so a fully researched rarity hatches in 40% of
-   its base time -- a real gain that still leaves a wait. */
-/* Speed, not a cut. Four nodes at +50% make hatching three times as fast, so
-   the timer is divided rather than shaved -- no ceiling, and the fourth node is
-   worth as much as the first. hatchCutFor still answers in "percent removed"
-   because that is what its callers want. */
+/* V476 · Per-rarity hatch speed. Each rarity owns four 5-level Tree nodes
+   at +6% per level: +30% per Palier, +120% total. Speed divides the timer, so
+   +120% means x2.2 hatch speed (base time / 2.2), never a negative timer.
+   hatchCutFor still answers in "percent removed" for older UI callers. */
 function hatchSpeedFor(s, rarity) { return 1 + Math.min(120, Math.max(0, treeSum(s, "hatch_" + rarity))) / 100; }
 function hatchCutFor(s, rarity) {
   return Math.round((1 - 1 / hatchSpeedFor(s, rarity)) * 1000) / 10;
