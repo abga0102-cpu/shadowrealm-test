@@ -1303,7 +1303,10 @@ function scrArbre() {
     ["research", "Recherche technologique · vitesse", "+"],
     ["techCost", "Nœud technologique · coût", ""],
     ["goldAll", "Or global", "+"],
-    ["afkGain", "Récompense Autonomie", "+"],
+    ["afkGold", "Autonomie · Or", "+"],
+    ["afkMinerai", "Autonomie · Minéraux", "+"],
+    ["afkEssence", "Autonomie · Essence", "+"],
+    ["afkEclat", "Autonomie · Étincelles", "+"],
     ["afkTime", "Temps Récompense Autonomie", "+"],
     ["skillDmg", "Compétence · dégâts", "+"],
     ["passDmg", "Compétence passive · base dégâts", "+"],
@@ -1389,7 +1392,7 @@ function scrArbre() {
       /* the sheet's bottom bar: what the tree is made of, and where you are */
       '<div class="card mt8" style="padding:9px 11px">' +
         '<div class="mute tiny b" style="letter-spacing:.6px;margin-bottom:6px">RÉCAPITULATIF</div>' +
-        [["31 familles × 4 profondeurs", TREE_NODES.filter((n) => !n.special).length + " / 124 nœuds"],
+        [["36 familles × 4 profondeurs", TREE_NODES.filter((n) => !n.special).length + " / 144 nœuds"],
          ["Clés Raid", TREE_NODES.filter((n) => n.effect === "raidKey").length + " × +1"],
          ["Slots d'Éclosion", TREE_NODES.filter((n) => n.effect === "eggSlot").length + " × +1"],
          ["Multiplicateurs Forge", "+1 → +3 → +5 → +10"],

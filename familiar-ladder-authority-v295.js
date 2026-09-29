@@ -1,7 +1,8 @@
 /* SHADOWREACH V295 · Familiar ladder authority
    Restores the approved Familiar ladder without rewriting legacy saves:
    Commun -> Peu commun -> Rare -> Epique -> Mythique -> Ancestral -> Legendaire -> Divin.
-   Ancestral is a fusion progression tier (not a direct pre-Ascension summon).
+   Ancestral remains a fusion progression tier and can also be summoned directly
+   at max Familiar mastery through the V296 rate authority.
    Approved fusion requirements through Ancestral -> Legendaire: 4 / 4 / 5 / 5 / 5 / 6.
    Familiar summon-rate policy is owned by V296.
 
@@ -32,60 +33,102 @@ try{
 }catch(_){ }
 try{if(typeof S!=='undefined'&&S){S.familiarLadderVersion=295;if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}}catch(_){ }
 window.__srNormalizeFamiliarLadderV295=normalizeFamiliarLadder;
-window.__srFamiliarLadderConfigV295={order:APPROVED_ORDER.slice(),fusion:{COMMUN:4,PEU_COMMUN:4,RARE:5,EPIQUE:5,MYTHIQUE:5,ANCESTRAL:6},ancestralDirectSummon:false,rateOwner:'V296'};
+window.__srFamiliarLadderConfigV295={order:APPROVED_ORDER.slice(),fusion:{COMMUN:4,PEU_COMMUN:4,RARE:5,EPIQUE:5,MYTHIQUE:5,ANCESTRAL:6},ancestralDirectSummonAtMaxMastery:true,rateOwner:'V296'};
 })();
 
-/* V422 · Autonomy hourly yield + preserved Gold/Time authority
-   - Universal Autonomy yield: 5%/h base, 20%/h hard maximum with the Tree.
-   - Yield applies equally to Minerai, Essence, Compétence and Or reserves.
-   - V470: existing Global Gold nodes cap at +2% / +4% / +6% / +8% by tier (+20% total).
+/* V476 · Split Autonomy yields + restored Global Gold authority
+   - Or, Minerai, Essence and Étincelles each have their own 5%/h -> 20%/h branch.
+   - Existing universal Autonomy investment is copied into all four branches once,
+     preserving the yield an old save had before the split.
+   - Existing Global Gold nodes now cap at +5% / +10% / +15% / +20% by tier
+     for exactly +50% total.
    - Time Autonomy remains 8h base -> 16h maximum. */
 (function(){'use strict';
 if(window.__srGoldEconomyBalanceV335)return;window.__srGoldEconomyBalanceV335=true;
-var AUTO=['n1_07','n2_07','n3_07','n4_07'];
+var TIERS=[1,2,3,4];
 var TIME=['n1_08','n2_08','n3_08','n4_08'];
 var GLOBAL=['n1_06','n2_06','n3_06','n4_06'];
-var R={n1_07:'I',n2_07:'II',n3_07:'III',n4_07:'IV',n1_06:'I',n2_06:'II',n3_06:'III',n4_06:'IV'};
-var AUTO_PER={n1_07:0.3,n2_07:0.6,n3_07:0.9,n4_07:1.2};
-var AUTO_CAP={n1_07:1.5,n2_07:3,n3_07:4.5,n4_07:6};
-var TIME_PER={n1_08:2,n2_08:4,n3_08:6,n4_08:8};
-var TIME_CAP={n1_08:10,n2_08:20,n3_08:30,n4_08:40};
-var GLOBAL_PER={n1_06:0.4,n2_06:0.8,n3_06:1.2,n4_06:1.6};
-var GLOBAL_CAP={n1_06:2,n2_06:4,n3_06:6,n4_06:8};
+var GOLD=['n1_07','n2_07','n3_07','n4_07'];
+var MIN=['n1_afkmin','n2_afkmin','n3_afkmin','n4_afkmin'];
+var ESS=['n1_afkess','n2_afkess','n3_afkess','n4_afkess'];
+var ECL=['n1_afkecl','n2_afkecl','n3_afkecl','n4_afkecl'];
+var ROM=['I','II','III','IV'];
+var AUTO_PER=[0.3,0.6,0.9,1.2];
+var AUTO_CAP=[1.5,3,4.5,6];
+var TIME_PER=[2,4,6,8];
+var TIME_CAP=[10,20,30,40];
+var GLOBAL_PER=[1,2,3,4];
+var GLOBAL_CAP=[5,10,15,20];
+
+function tuneAutonomy(ids,label,short){
+  ids.forEach(function(id,i){
+    var n=TREE_BY_ID&&TREE_BY_ID[id];if(!n)return;
+    n.per=AUTO_PER[i];n.tierScale=false;
+    n.label=label+' '+ROM[i];n.short=short+' '+ROM[i];
+    n.note='+'+String(AUTO_PER[i]).replace('.',',')+' point de %/h par niveau · Max 20 %/h avec la base';
+  });
+}
 try{
   if(typeof TREE_BY_ID!=='undefined'&&TREE_BY_ID){
-    AUTO.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=AUTO_PER[id];n.tierScale=false;n.label='Rendement Autonomie '+R[id];n.short='Rend. Auton. '+R[id];n.note='+'+String(AUTO_PER[id]).replace('.',',')+' point de %/h par niveau · Max +'+String(AUTO_CAP[id]).replace('.',',')+' points';});
-    TIME.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=TIME_PER[id];n.tierScale=false;n.note='+'+TIME_PER[id]+' % de durée par niveau · Max +'+TIME_CAP[id]+' % · Plafond global 16 h';});
-    GLOBAL.forEach(function(id){var n=TREE_BY_ID[id];if(!n)return;n.per=GLOBAL_PER[id];n.tierScale=false;n.label='Or obtenu '+R[id];n.short='Or obtenu '+R[id];n.note='+'+String(GLOBAL_PER[id]).replace('.',',')+' % d’or obtenu par niveau · Max +'+GLOBAL_CAP[id]+' %';});
+    tuneAutonomy(GOLD,'Autonomie Or','Auton. Or');
+    tuneAutonomy(MIN,'Autonomie Minéraux','Auton. Min.');
+    tuneAutonomy(ESS,'Autonomie Essence','Auton. Ess.');
+    tuneAutonomy(ECL,'Autonomie Étincelles','Auton. Étinc.');
+    TIME.forEach(function(id,i){var n=TREE_BY_ID[id];if(!n)return;n.per=TIME_PER[i];n.tierScale=false;n.note='+'+TIME_PER[i]+' % de durée par niveau · Max +'+TIME_CAP[i]+' % · Plafond global 16 h';});
+    GLOBAL.forEach(function(id,i){var n=TREE_BY_ID[id];if(!n)return;n.per=GLOBAL_PER[i];n.tierScale=false;n.label='Or obtenu '+ROM[i];n.short='Or obtenu '+ROM[i];n.note='+'+GLOBAL_PER[i]+' % d’or obtenu par niveau · Max +'+GLOBAL_CAP[i]+' %';});
   }
 }catch(_){ }
+
+/* Old nX_07 nodes affected all four resources. Copy their saved level once to
+   the three newly-created branches while nX_07 itself becomes the Or branch. */
 try{
-  if(typeof harvestRates==='function'&&!harvestRates.__srAutonomyYieldV422){
+  if(typeof S!=='undefined'&&S&&S.tree&&S.tree.levels&&!S.autonomySplitV476){
+    for(var i=0;i<TIERS.length;i++){
+      var lv=Math.max(0,Math.min(5,Math.floor(Number(S.tree.levels[GOLD[i]])||0)));
+      [MIN[i],ESS[i],ECL[i]].forEach(function(id){
+        S.tree.levels[id]=Math.max(Number(S.tree.levels[id])||0,lv);
+      });
+    }
+    S.autonomySplitV476=true;
+    if(typeof saveNow==='function')saveNow();
+  }
+}catch(_){ }
+
+function branchShare(s,effect){
+  var bonus=0;
+  try{bonus=Math.max(0,Number(treeSum(s,effect))||0);}catch(_){ }
+  return Math.min(20,5+bonus)/100;
+}
+try{
+  if(typeof harvestRates==='function'&&!harvestRates.__srAutonomyYieldV476){
     var oldHarvestRates=harvestRates;
     harvestRates=function(s){
-      var bonus=0;
-      try{bonus=Math.max(0,Number(treeSum(s,'afkGain'))||0);}catch(_){ }
-      var share=Math.min(20,5+bonus)/100;
       return {
-        minerai:raidReward('minerai',s.raids.minerai.level)*share,
-        essence:raidReward('familier',s.raids.familier.level)*share,
-        eclat:raidReward('competence',s.raids.competence.level)*share,
-        gold:raidReward('or',s.raids.or.level)*share
+        minerai:raidReward('minerai',s.raids.minerai.level)*branchShare(s,'afkMinerai'),
+        essence:raidReward('familier',s.raids.familier.level)*branchShare(s,'afkEssence'),
+        eclat:raidReward('competence',s.raids.competence.level)*branchShare(s,'afkEclat'),
+        gold:raidReward('or',s.raids.or.level)*branchShare(s,'afkGold')
       };
     };
-    harvestRates.__srAutonomyYieldV422=true;
+    harvestRates.__srAutonomyYieldV476=true;
     harvestRates.__srPrevious=oldHarvestRates;
   }
 }catch(_){ }
 window.__srGoldEconomyConfigV335={
+  version:476,
   autonomyBaseYieldPctPerHour:5,
   autonomyYieldTierCapsPctPoints:[1.5,3,4.5,6],
   autonomyYieldBranchMaxPctPoints:15,
   autonomyYieldMaxPctPerHour:20,
-  globalGoldTierCapsPct:[2,4,6,8],
-  globalGoldBranchMaxPct:20
+  autonomyResources:['minerai','essence','eclat','gold'],
+  globalGoldTierCapsPct:[5,10,15,20],
+  globalGoldBranchMaxPct:50
 };
 window.__srAutonomyTimeConfigV421={baseHours:8,tierCapsPct:[10,20,30,40],branchMaxPct:100,maxHours:16};
-window.__srAutonomyYieldConfigV422={basePctPerHour:5,maxPctPerHour:20,treeAddsPctPoints:15,resources:['minerai','essence','eclat','gold']};
+window.__srAutonomyYieldConfigV476={
+  basePctPerHour:5,maxPctPerHour:20,treeAddsPctPoints:15,
+  effects:{minerai:'afkMinerai',essence:'afkEssence',eclat:'afkEclat',gold:'afkGold'},
+  legacyUniversalNodeMigrated:true
+};
 try{if(typeof scheduleRender==='function')scheduleRender();}catch(_){ }
 })();

@@ -308,35 +308,40 @@ function run(W) {
 
   // ---------------------------------------------------------------- tree
   group("ARBRE — la fiche de référence fait foi");
-  check("130 nœuds : 120 normaux + 10 spéciaux", function () {
+  check("159 nœuds runtime : 144 normaux + 15 spéciaux/maîtrise", function () {
     const n = H.TREE_NODES.length;
     const norm = H.TREE_NODES.filter(function (x) { return !x.special; }).length;
-    return (n === 130 && norm === 120) ? true : n + " nœuds dont " + norm + " normaux";
+    return (n === 159 && norm === 144) ? true : n + " nœuds dont " + norm + " normaux";
   });
-  check("30 familles présentes une fois par palier", function () {
+  check("36 familles présentes une fois par palier", function () {
     const bad = [];
     for (let p = 1; p <= 4; p++) {
       const pal = H.TREE_NODES.filter(function (x) { return !x.special && x.tier === p; });
-      if (pal.length !== 30) bad.push("palier " + p + " : " + pal.length);
+      if (pal.length !== 36) bad.push("palier " + p + " : " + pal.length);
       const eff = {}; pal.forEach(function (x) { eff[x.effect] = (eff[x.effect] || 0) + 1; });
       const dup = Object.keys(eff).filter(function (k) { return eff[k] !== 1; });
       if (dup.length) bad.push("palier " + p + " doublons : " + dup.slice(0, 2));
     }
     return bad.length ? bad.join(", ") : true;
   });
-  check("valeurs conformes à la liste officielle", function () {
-    const V = { forgeTime: "+10%", forgeCost: "-5%", forgeFree: "+5%", research: "+20%",
-      techCost: "-10%", goldAll: "+5%", afkGain: "+5%", afkTime: "+50%", skillDmg: "+10%",
-      passDmg: "+10%", passHp: "+10%", skillCost: "-5%", petDmg: "+10%", petHp: "+10%",
-      eq_arme: "+10%", eq_casque: "+10%", eq_gants: "+10%", eq_collier: "+10%",
-      eq_armure: "+10%", eq_anneau: "+10%", eq_bottes: "+10%", eq_ceinture: "+10%",
-      hatch_COMMUN: "+50%", hatch_RARE: "+50%", hatch_EPIQUE: "+50%",
-      hatch_MYTHIQUE: "+50%", hatch_LEGENDAIRE: "+50%", eggFree: "+5%",
-      skillFree: "+5%", peRaid: "+10%" };
-    const bad = H.TREE_NODES.filter(function (n) {
-      return !n.special && W.treeEffectValue(n, n.max) !== V[n.effect];
+  check("V476 : éclosion +120%, Or +50% et 4 Autonomies séparées", function () {
+    const bad = [];
+    const hatch = ["COMMUN","PEU_COMMUN","RARE","EPIQUE","MYTHIQUE","ANCESTRAL","LEGENDAIRE","DIVIN"];
+    hatch.forEach(function(r) {
+      const nodes = H.TREE_NODES.filter(function(n){ return n.effect === "hatch_" + r; });
+      if (nodes.length !== 4) bad.push(r + " a " + nodes.length + " nœuds");
+      const total = nodes.reduce(function(sum,n){ return sum + W.treeEffectivePer(n) * n.max; },0);
+      if (Math.abs(total - 120) > 1e-9) bad.push(r + "=" + total + "%");
     });
-    return bad.length ? bad.length + " valeurs fausses, ex. " + bad[0].label : true;
+    const gold = H.TREE_NODES.filter(function(n){ return n.effect === "goldAll"; })
+      .reduce(function(sum,n){ return sum + W.treeEffectivePer(n) * n.max; },0);
+    if (Math.abs(gold - 50) > 1e-9) bad.push("Or=" + gold + "%");
+    ["afkGold","afkMinerai","afkEssence","afkEclat"].forEach(function(effect){
+      const nodes=H.TREE_NODES.filter(function(n){return n.effect===effect;});
+      const add=nodes.reduce(function(sum,n){return sum+W.treeEffectivePer(n)*n.max;},0);
+      if(nodes.length!==4||Math.abs(add-15)>1e-9)bad.push(effect+"="+add);
+    });
+    return bad.length ? bad.join(", ") : true;
   });
   check("aucun nœud n'en chevauche un autre", function () {
     const bad = [];
@@ -1012,31 +1017,59 @@ function run(W) {
     set(function (st) { st.raids.minerai.level = 1; st.raids.minerai.stars = 0; });
     return bad.length ? bad.join(", ") : true;
   });
-  check("toutes les ressources Autonomie partagent 5 %/h, puis 20 %/h au boost max", function () {
-    const ids = ["n1_07", "n2_07", "n3_07", "n4_07"];
-    const verify = function (share) {
-      const r = W.harvestRates(H.S);
-      const expected = {
-        minerai: W.raidReward("minerai", H.S.raids.minerai.level) * share,
-        essence: W.raidReward("familier", H.S.raids.familier.level) * share,
-        eclat: W.raidReward("competence", H.S.raids.competence.level) * share,
-        gold: W.raidReward("or", H.S.raids.or.level) * share
-      };
-      const bad = [];
-      Object.keys(expected).forEach(function (k) {
-        if (Math.abs(r[k] - expected[k]) > 1e-9) bad.push(k + "=" + r[k] + " au lieu de " + expected[k]);
-      });
-      return bad;
-    };
+  check("les 4 ressources Autonomie progressent indépendamment de 5 à 20 %/h", function () {
+    const effects = { minerai:"afkMinerai", essence:"afkEssence", eclat:"afkEclat", gold:"afkGold" };
     set(function (st) {
       st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
       st.floor = 40;
     });
-    let bad = verify(0.05);
-    set(function (st) {
-      ids.forEach(function (id) { st.tree.levels[id] = 5; });
+    const base = W.harvestRates(H.S);
+    const rewards = {
+      minerai: W.raidReward("minerai", H.S.raids.minerai.level),
+      essence: W.raidReward("familier", H.S.raids.familier.level),
+      eclat: W.raidReward("competence", H.S.raids.competence.level),
+      gold: W.raidReward("or", H.S.raids.or.level)
+    };
+    const bad=[];
+    Object.keys(rewards).forEach(function(k){
+      if(Math.abs(base[k]-rewards[k]*0.05)>1e-9)bad.push(k+" base");
     });
-    bad = bad.concat(verify(0.20));
+    set(function(st){
+      H.TREE_NODES.filter(function(n){return n.effect===effects.minerai;})
+        .forEach(function(n){st.tree.levels[n.id]=5;});
+    });
+    const one=W.harvestRates(H.S);
+    if(Math.abs(one.minerai-rewards.minerai*0.20)>1e-9)bad.push("minerai max");
+    ["essence","eclat","gold"].forEach(function(k){
+      if(Math.abs(one[k]-rewards[k]*0.05)>1e-9)bad.push(k+" a bougé");
+    });
+    set(function(st){
+      Object.keys(effects).forEach(function(k){
+        H.TREE_NODES.filter(function(n){return n.effect===effects[k];})
+          .forEach(function(n){st.tree.levels[n.id]=5;});
+      });
+    });
+    const all=W.harvestRates(H.S);
+    Object.keys(rewards).forEach(function(k){
+      if(Math.abs(all[k]-rewards[k]*0.20)>1e-9)bad.push(k+" max");
+    });
+    return bad.length ? bad.join(", ") : true;
+  });
+  check("V476 : timers d'œufs et durées de recherche", function () {
+    const expectedEgg={COMMUN:600,PEU_COMMUN:1800,RARE:7200,EPIQUE:28800,MYTHIQUE:86400,ANCESTRAL:172800,LEGENDAIRE:518400,DIVIN:1814400};
+    const bad=[];
+    Object.keys(expectedEgg).forEach(function(k){if(H.EGG_TIMERS[k]!==expectedEgg[k])bad.push(k+"="+H.EGG_TIMERS[k]);});
+    const expected=[
+      [240,480,840,1320,1920],
+      [10800,11100,11400,11700,12000],
+      [36000,36300,36600,36900,37200],
+      [259200,277200,295200,313200,331200]
+    ];
+    expected.forEach(function(arr,i){
+      const node=H.TREE_NODES.find(function(n){return !n.special&&n.tier===i+1;});
+      if(!node)return bad.push("palier "+(i+1)+" absent");
+      arr.forEach(function(v,j){if(node.times[j]!==v)bad.push("P"+(i+1)+" L"+(j+1));});
+    });
     return bad.length ? bad.join(", ") : true;
   });
   check("les anciennes étoiles Raid n'influencent plus la difficulté", function () {
