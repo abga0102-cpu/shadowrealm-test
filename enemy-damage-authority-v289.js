@@ -12,6 +12,9 @@
    - The floor determines enemy power. Current player stats are never sampled.
    - Existing curves, identities, tiers and relative Boss/Mega-Boss ratios stay intact.
    V425 smooths Campaign damage from visible stage Difficile 3-10 (floor 150).
+   V475 reduces Campaign damage by 30% from Difficile 1-7 (floor 107) through
+   the end. A monotonic guard prevents the reduced value from ever falling below
+   the previous Campaign floor; Raids and Mega-Bosses are explicitly excluded.
    V448 adds a self-contained early-game pressure window from visible stage 1-3
    through 4-18 (floors 3..78). It raises durability much more than damage,
    peaks around the middle of the window, then blends back into the canonical
@@ -29,6 +32,7 @@
   window.__srAdditionalEnemyDamageNerfV381=true;
   window.__srEarlyCampaignPressureV448=true;
   window.__srStarterBossPressureV462=true;
+  window.__srDifficile17DamageV475=true;
 
   var LEGACY_MAX=400;
   var V362_CAMPAIGN_POWER_MUL=0.60;
@@ -52,6 +56,9 @@
   var DIFFICILE_3_10_DAMAGE_MUL_V425=0.50;
   var DIFFICILE_3_10_MIN_STAGE_GROWTH_V425=1.005;
   var CAMPAIGN_DAMAGE_CACHE_V425={};
+  var DIFFICILE_1_7_FLOOR_V475=107;
+  var DIFFICILE_1_7_DAMAGE_MUL_V475=0.70;
+  var CAMPAIGN_DAMAGE_CACHE_V475={};
 
   /* V448: 1-1/1-2 stay untouched for onboarding. Pressure starts at 1-3,
      reaches its strongest point around 2-20, then progressively gives the
@@ -131,7 +138,7 @@
   function campaignEnemyDamageBeforeV425(f){
     return Math.max(1,Math.round(previousCampaignEnemyDamage(f)*CAMPAIGN_DAMAGE_MUL*earlyDamageMulV448(f)));
   }
-  function campaignEnemyDamage(f){
+  function campaignEnemyDamageBeforeV475(f){
     f=Math.max(1,Math.min(maxFloor(),Math.round(Number(f)||1)));
     var raw=campaignEnemyDamageBeforeV425(f);
     if(f<DIFFICILE_3_10_FLOOR_V425)return raw;
@@ -147,6 +154,28 @@
       CAMPAIGN_DAMAGE_CACHE_V425[floor]=prev;
     }
     return CAMPAIGN_DAMAGE_CACHE_V425[f];
+  }
+  function campaignEnemyDamage(f){
+    f=Math.max(1,Math.min(maxFloor(),Math.round(Number(f)||1)));
+    var current=campaignEnemyDamageBeforeV475(f);
+    if(f<DIFFICILE_1_7_FLOOR_V475)return current;
+    if(CAMPAIGN_DAMAGE_CACHE_V475[f])return CAMPAIGN_DAMAGE_CACHE_V475[f];
+
+    /* Start from the untouched previous floor. The requested -30% is used as
+       the target, but never at the cost of making a later floor hit softer than
+       the floor immediately before it. Once the 70% target catches the curve,
+       the full reduction remains active naturally. */
+    var prev=campaignEnemyDamageBeforeV475(DIFFICILE_1_7_FLOOR_V475-1);
+    for(var floor=DIFFICILE_1_7_FLOOR_V475;floor<=f;floor++){
+      if(CAMPAIGN_DAMAGE_CACHE_V475[floor]){
+        prev=CAMPAIGN_DAMAGE_CACHE_V475[floor];
+        continue;
+      }
+      var target=Math.max(1,Math.round(campaignEnemyDamageBeforeV475(floor)*DIFFICILE_1_7_DAMAGE_MUL_V475));
+      prev=Math.max(target,prev);
+      CAMPAIGN_DAMAGE_CACHE_V475[floor]=prev;
+    }
+    return CAMPAIGN_DAMAGE_CACHE_V475[f];
   }
 
   var previousBossHP=typeof window.__srV285BossHP==='function'?window.__srV285BossHP:null;
@@ -190,7 +219,7 @@
   }catch(_){ }
 
   window.__srEnemyDamageConfigV289={
-    version:448,maxFloor:800,legacyMaxFloor:400,semanticLegacyFloor:semanticLegacyFloor,
+    version:475,maxFloor:800,legacyMaxFloor:400,semanticLegacyFloor:semanticLegacyFloor,
     referenceDamage:REFERENCE_DAMAGE,referenceHP:REFERENCE_HP,
     targetHitsToKill:TARGET_HITS_TO_KILL,targetHitsToDefeatReference:TARGET_HITS_TO_DEFEAT_REFERENCE,
     expectedPlayerDamage:expectedDamage,expectedPlayerHP:expectedHP,
@@ -225,6 +254,15 @@
       sourceDamage:campaignEnemyDamageBeforeV425,
       appliesTo:['campaign-normal','campaign-elite','campaign-boss','mega-boss'],
       raidsChanged:false,hpChanged:false
+    },
+    difficile17DamageV475:{
+      visibleStage:'Difficile 1-7',startFloor:DIFFICILE_1_7_FLOOR_V475,
+      targetDamageMul:DIFFICILE_1_7_DAMAGE_MUL_V475,
+      sourceDamage:campaignEnemyDamageBeforeV475,
+      finalDamage:campaignEnemyDamage,
+      monotonicGuard:true,
+      appliesTo:['campaign-normal','campaign-elite','campaign-boss'],
+      raidsChanged:false,megaBossChanged:false,hpChanged:false
     },
     forgeTutorialException:{visibleStage:'1-2',internalFloor:2,owner:'V321',beforeFirstForge:true},
     scaling:'floor-only-no-player-rubber-band',
