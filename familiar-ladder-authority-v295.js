@@ -1,7 +1,8 @@
 /* SHADOWREACH V295 · Familiar ladder authority
    Restores the approved Familiar ladder without rewriting legacy saves:
    Commun -> Peu commun -> Rare -> Epique -> Mythique -> Ancestral -> Legendaire -> Divin.
-   Ancestral is a fusion progression tier (not a direct pre-Ascension summon).
+   Ancestral remains a fusion progression tier and can also be summoned directly
+   at max Familiar mastery through the V296 rate authority.
    Approved fusion requirements through Ancestral -> Legendaire: 4 / 4 / 5 / 5 / 5 / 6.
    Familiar summon-rate policy is owned by V296.
 
@@ -32,7 +33,7 @@ try{
 }catch(_){ }
 try{if(typeof S!=='undefined'&&S){S.familiarLadderVersion=295;if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}}catch(_){ }
 window.__srNormalizeFamiliarLadderV295=normalizeFamiliarLadder;
-window.__srFamiliarLadderConfigV295={order:APPROVED_ORDER.slice(),fusion:{COMMUN:4,PEU_COMMUN:4,RARE:5,EPIQUE:5,MYTHIQUE:5,ANCESTRAL:6},ancestralDirectSummon:false,rateOwner:'V296'};
+window.__srFamiliarLadderConfigV295={order:APPROVED_ORDER.slice(),fusion:{COMMUN:4,PEU_COMMUN:4,RARE:5,EPIQUE:5,MYTHIQUE:5,ANCESTRAL:6},ancestralDirectSummonAtMaxMastery:true,rateOwner:'V296'};
 })();
 
 /* V476 · Split Autonomy yields + restored Global Gold authority
