@@ -14,7 +14,7 @@ async function clean(page) {
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V467 doubles new Dust gains without multiplying owned Dust or upgrade costs', async ({ page }) => {
+test('V467 doubles new Dust gains while V469 halves equipment upgrade costs', async ({ page }) => {
   await clean(page);
   const out = await page.evaluate(() => {
     S.poussiere = 321;
@@ -37,8 +37,8 @@ test('V467 doubles new Dust gains without multiplying owned Dust or upgrade cost
     migrationChanged:false,
     recycle:8,
     infused:16,
-    cost0:30,
-    cost10:210
+    cost0:15,
+    cost10:105
   });
 });
 
