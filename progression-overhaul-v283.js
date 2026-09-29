@@ -36,12 +36,17 @@ function nextEquipRarity(rar){
   return i>=0&&i<EQUIP_ORDER.length-1?EQUIP_ORDER[i+1]:null;
 }
 function equipStats(slot,rar,q,star,bonusPct){
-  var raw=rawEquipStats(slot,rar,q,star),mul=1+Math.max(0,Math.min(80,Number(bonusPct)||0))/100;
+  var maxBonus=Number(FORGE_LIFETIME_TIERS[FORGE_LIFETIME_TIERS.length-1]&&FORGE_LIFETIME_TIERS[FORGE_LIFETIME_TIERS.length-1].bonusPct)||0;
+  var raw=rawEquipStats(slot,rar,q,star),mul=1+Math.max(0,Math.min(maxBonus,Number(bonusPct)||0))/100;
   var d=Math.floor(raw.d*mul),h=Math.floor(raw.h*mul),next=nextEquipRarity(rar);
+  /* All rarities receive the same Mastery multiplier. Compare against the
+     next rarity with that same multiplier so +240% remains real without ever
+     letting a lower rarity overtake the next one at equal quality. */
   if(next){
-    var cap=rawEquipStats(slot,next,q,star);
-    if(d&&cap.d)d=Math.min(d,Math.max(0,cap.d-1));
-    if(h&&cap.h)h=Math.min(h,Math.max(0,cap.h-1));
+    var capRaw=rawEquipStats(slot,next,q,star);
+    var capD=Math.floor(capRaw.d*mul),capH=Math.floor(capRaw.h*mul);
+    if(d&&capD)d=Math.min(d,Math.max(0,capD-1));
+    if(h&&capH)h=Math.min(h,Math.max(0,capH-1));
   }
   return {d:d,h:h,rawD:raw.d,rawH:raw.h};
 }
@@ -170,6 +175,8 @@ function migrate(){try{
 migrate();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',migrate,{once:true});else setTimeout(migrate,0);
 window.__srForgeLifetimeMasteryV445={
   version:445,
+  revision:474,
+  maxBonusPct:Number(FORGE_LIFETIME_TIERS[FORGE_LIFETIME_TIERS.length-1].bonusPct)||0,
   equipmentLevelModelVersion:456,
   tiers:FORGE_LIFETIME_TIERS.map(function(t){return Object.assign({},t);}),
   info:forgeLifetimeInfo,
@@ -196,5 +203,5 @@ window.__srEquipmentMasterySyncV456={
    semantics are now mastery-owned rather than Hero-owned. */
 window.__srEquipmentLevelSyncV455=window.__srEquipmentMasterySyncV456;
 window.__srProgressionOverhaulConfigV283={equipmentBase:EQUIP_BASE,petOrder:PET_ORDER,petFuse:PET_FUSE,dustCost:window.__srV283DustCost,upgradeChance:window.__srV283UpgradeChance,forgeLifetimeMastery:window.__srForgeLifetimeMasteryV445};
-window.__srEquipmentCurveAuthority={version:372,equipmentBase:EQUIP_BASE,ownsMakeItem:!!(typeof makeItem==='function'&&makeItem.__srV283),forgeLifetimeMastery:true,forgeLifetimeMasteryVersion:445};
+window.__srEquipmentCurveAuthority={version:372,equipmentBase:EQUIP_BASE,ownsMakeItem:!!(typeof makeItem==='function'&&makeItem.__srV283),forgeLifetimeMastery:true,forgeLifetimeMasteryVersion:445,forgeLifetimeMasteryRevision:474};
 })();

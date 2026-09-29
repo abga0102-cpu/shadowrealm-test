@@ -22,7 +22,7 @@ function lifetimeMasteryHTML(){
     var api=window.__srForgeLifetimeMasteryV445;if(!api||typeof api.info!=='function')return '';
     var m=api.info(S),rank=m.rank?m.roman:'—';
     var meta=m.maxed?fmt(m.count)+' forges · MAX':fmt(m.count)+' / '+fmt(m.nextNeed)+' forges';
-    var nextMeta=m.maxed?'Rang IX':('→ '+m.nextRoman+(Number(m.nextRewardDust)>0?' · +'+fmt(m.nextRewardDust)+' poussières':''));
+    var nextMeta=m.maxed?'Rang X':('→ '+m.nextRoman+(Number(m.nextRewardDust)>0?' · +'+fmt(m.nextRewardDust)+' poussières':''));
     var progress=Math.max(0,Math.min(100,Number(m.progressPct)||0));
     return '<div class="srForgeLifetime445" title="Chaque forge payée compte. Les objets bonus gratuits ne comptent pas. Chaque rang atteint paie sa récompense en poussières une seule fois.">'+
       '<div class="srForgeLifetimeTop445"><b>MAÎTRISE ÉQUIPEMENT '+rank+'</b>'+
