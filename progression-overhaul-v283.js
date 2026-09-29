@@ -99,10 +99,11 @@ try{if(typeof arenaItem==='function'){arenaItem=function(slot,rar,forge,stars){
     damage:x.d,hp:x.h,affixes:rollAffixes(rar),statQuality:Math.round(q*10000)/10000};
 };}}catch(_){ }
 
-/* V456 · Equipment Dust upgrade authority.
+/* V469 · Equipment Dust upgrade authority.
    item.level is the Equipment Mastery rank. Dust cost/chance are owned
-   exclusively by item.upgradeLevel. */
-window.__srV283DustCost=function(level){return Math.max(0,Math.round(30+18*Math.max(0,Number(level)||0)));};
+   exclusively by item.upgradeLevel. V469 halves the V453 cost curve again
+   without changing upgrade power or success chance. */
+window.__srV283DustCost=function(level){return Math.max(0,Math.round(15+9*Math.max(0,Number(level)||0)));};
 window.__srV283UpgradeChance=function(level){level=Math.max(0,Math.floor(Number(level)||0));if(level<25)return 100;return Math.max(5,95-5*Math.floor((level-25)/2));};
 try{if(typeof itemUpgradeCost==='function')itemUpgradeCost=function(it){return window.__srV283DustCost(typeof equipmentUpgradeLevel==='function'?equipmentUpgradeLevel(it):Math.max(0,Number(it&&it.upgradeLevel)||0));};}catch(_){ }
 try{if(typeof itemUpgradeChance==='function')itemUpgradeChance=function(it){return window.__srV283UpgradeChance(typeof equipmentUpgradeLevel==='function'?equipmentUpgradeLevel(it):Math.max(0,Number(it&&it.upgradeLevel)||0));};}catch(_){ }
