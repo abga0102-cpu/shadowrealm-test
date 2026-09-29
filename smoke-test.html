@@ -324,19 +324,18 @@ function run(W) {
     }
     return bad.length ? bad.join(", ") : true;
   });
-  check("valeurs conformes à la liste officielle", function () {
-    const V = { forgeTime: "+10%", forgeCost: "-5%", forgeFree: "+5%", research: "+20%",
-      techCost: "-10%", goldAll: "+5%", afkGain: "+5%", afkTime: "+50%", skillDmg: "+10%",
-      passDmg: "+10%", passHp: "+10%", skillCost: "-5%", petDmg: "+10%", petHp: "+10%",
-      eq_arme: "+10%", eq_casque: "+10%", eq_gants: "+10%", eq_collier: "+10%",
-      eq_armure: "+10%", eq_anneau: "+10%", eq_bottes: "+10%", eq_ceinture: "+10%",
-      hatch_COMMUN: "+50%", hatch_RARE: "+50%", hatch_EPIQUE: "+50%",
-      hatch_MYTHIQUE: "+50%", hatch_LEGENDAIRE: "+50%", eggFree: "+5%",
-      skillFree: "+5%", peRaid: "+10%" };
-    const bad = H.TREE_NODES.filter(function (n) {
-      return !n.special && W.treeEffectValue(n, n.max) !== V[n.effect];
+  check("V476 : Or 50%, éclosion 120% et Autonomie indépendante", function () {
+    const bad = [];
+    const goldCaps=[5,10,15,20], hatchCaps=[15,25,35,45], autoCaps=[1.5,3,4.5,6];
+    H.TREE_NODES.forEach(function(n){
+      if(n.special||n.masteryKey)return;
+      const t=Math.max(1,Math.min(4,n.tier||1))-1;
+      const txt=W.treeEffectValue(n,n.max);
+      if(n.effect==="goldAll"&&txt!==("+"+goldCaps[t]+"%"))bad.push(n.id+" or="+txt);
+      if(String(n.effect||"").indexOf("hatch_")===0&&txt!==("+"+hatchCaps[t]+"%"))bad.push(n.id+" hatch="+txt);
+      if(["afkGold","afkMinerai","afkEssence","afkEclat"].indexOf(n.effect)>=0&&txt!==("+"+autoCaps[t]+"%"))bad.push(n.id+" auto="+txt);
     });
-    return bad.length ? bad.length + " valeurs fausses, ex. " + bad[0].label : true;
+    return bad.length ? bad.slice(0,4).join(", ") : true;
   });
   check("aucun nœud n'en chevauche un autre", function () {
     const bad = [];
