@@ -1,4 +1,4 @@
-/* SHADOWREACH V287 · Progression QA authority
+/* SHADOWREACH V287 · Progression QA authority / V472 equipment upgrade power
    Fixes three integration gaps found after V283-V286:
    1) Poussiere upgrades apply from the separate upgradeLevel counter.
    2) Offensive skills really use intrinsic power instead of player damage.
@@ -47,6 +47,6 @@ var style=document.createElement('style');style.id='sr-v287-familiar-clean';styl
 
 /* Recompute after save migration + authority installation. */
 try{if(typeof S!=='undefined'&&S){S.progressionQAVersion=287;if(typeof computePower==='function')S.power=computePower(S);if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}}catch(_){ }
-window.__srEquipmentUpgradePowerV472={version:472,perLevelPct:3,retroactiveUpwardOnly:true};
+window.__srEquipmentUpgradePowerV472={version:472,perLevelPct:3,retroactiveUpwardOnly:true,applyGrowth:applyGrowth};
 window.__srProgressionQAConfigV287={intrinsic:INTRINSIC,equipmentPerLevel:.03,kamehaTargets:3};
 })();
