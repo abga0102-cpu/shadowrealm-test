@@ -48,7 +48,7 @@ test('V444 Familiar Raid Essence is 200, +5 to 250, then +2 through 368', async 
 test('V471 Minerai Raid uses +25 to 10, +10 to 50, then +5; Autonomy follows it', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
-    const levels=[1,5,10,11,20,50,70];
+    const levels=[1,5,10,11,20,50,51,70];
     const rewards=levels.map((lv) => raidReward('minerai',lv));
     const cfg=window.__srRaidRewardConfigV396.minerai;
     const st=JSON.parse(JSON.stringify(S));
@@ -57,7 +57,7 @@ test('V471 Minerai Raid uses +25 to 10, +10 to 50, then +5; Autonomy follows it'
     const baseAutonomy=harvestRates(st).minerai;
     return {rewards,cfg,baseAutonomy};
   });
-  expect(out.rewards).toEqual([500,600,725,735,825,1125,1225]);
+  expect(out.rewards).toEqual([500,600,725,735,825,1125,1130,1225]);
   expect(out.cfg).toMatchObject({curveVersion:471,level1:500,perLevelTo10:25,level10:725,perLevelTo50:10,level50:1125,perLevelAfter50:5,level70:1225});
   expect(out.baseAutonomy).toBeCloseTo(61.25,8);
 });
