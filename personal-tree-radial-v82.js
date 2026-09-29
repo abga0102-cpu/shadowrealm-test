@@ -124,7 +124,10 @@
     if(n.masteryKey) return 'key';
     if(e==='petDmg'||e==='petHp') return 'familier';
     if(e==='eggFree'||e==='eggSlot'||e.indexOf('hatch_')===0) return 'eggs';
-    if(e==='goldAll'||e==='afkGain') return 'or';
+    if(e==='goldAll'||e==='afkGold') return 'or';
+    if(e==='afkMinerai') return 'forge';
+    if(e==='afkEssence') return 'familier';
+    if(e==='afkEclat') return 'competence';
     if(e==='afkTime') return 'autonomie';
     if(e==='forgeTime'||e==='forgeCost'||e==='forgeFree'||e==='forgeMult') return 'forge';
     if(e==='peRaid') return 'pe';
