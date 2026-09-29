@@ -16,28 +16,30 @@ async function openCleanGame(page) {
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V445 uses the exact I-IX lifetime Forge ladder and caps at +80%', async ({ page }) => {
+test('V474 uses the exact I-X lifetime Forge ladder and caps at +240%', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
     const api=window.__srForgeLifetimeMasteryV445;
-    const counts=[0,99,100,299,300,599,600,999,1000,1499,1500,2499,2500,3999,4000,6499,6500,9999,10000,20000];
+    const counts=[0,199,200,599,600,1199,1200,2499,2500,4999,5000,9999,10000,19999,20000,29999,30000,39999,40000,49999,50000,60000];
     return {
       tiers:api.tiers,
       infos:counts.map((count)=>{const s={forge:{lifetimeCount:count}};const i=api.info(s);return {count,rank:i.rank,roman:i.roman,bonus:i.bonusPct,maxed:i.maxed};})
     };
   });
   expect(out.tiers.map(t=>[t.need,t.roman,t.bonusPct])).toEqual([
-    [0,'—',0],[100,'I',10],[300,'II',20],[600,'III',30],[1000,'IV',40],
-    [1500,'V',50],[2500,'VI',60],[4000,'VII',70],[6500,'VIII',75],[10000,'IX',80]
+    [0,'—',0],[200,'I',30],[600,'II',60],[1200,'III',90],[2500,'IV',120],
+    [5000,'V',140],[10000,'VI',160],[20000,'VII',180],[30000,'VIII',200],
+    [40000,'IX',220],[50000,'X',240]
   ]);
-  expect(out.infos.find(x=>x.count===10000)).toMatchObject({rank:9,roman:'IX',bonus:80,maxed:true});
-  expect(out.infos.find(x=>x.count===20000)).toMatchObject({rank:9,roman:'IX',bonus:80,maxed:true});
+  expect(out.infos.find(x=>x.count===40000)).toMatchObject({rank:9,roman:'IX',bonus:220,maxed:false});
+  expect(out.infos.find(x=>x.count===50000)).toMatchObject({rank:10,roman:'X',bonus:240,maxed:true});
+  expect(out.infos.find(x=>x.count===60000)).toMatchObject({rank:10,roman:'X',bonus:240,maxed:true});
 });
 
-test('V445 100th paid forge instantly boosts owned equipment and does not inflate Dust recycling', async ({ page }) => {
+test('V474 200th paid forge instantly boosts owned equipment and does not inflate Dust recycling', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
-    S.forge.lifetimeCount=99;
+    S.forge.lifetimeCount=199;
     S.forge.summonCount=0;
     S.forge.lifetimeMasteryVersion=445;
     S.minerai=100000;
@@ -60,11 +62,11 @@ test('V445 100th paid forge instantly boosts owned equipment and does not inflat
       sameId:after.id===id
     };
   });
-  expect(out.count).toBe(100);
+  expect(out.count).toBe(200);
   expect(out.summonCount).toBe(1);
-  expect(out.bonus).toBe(10);
+  expect(out.bonus).toBe(30);
   expect(out.afterBase).toBeGreaterThan(out.beforeBase);
-  expect(out.afterBase / out.beforeBase).toBeLessThanOrEqual(1.101);
+  expect(out.afterBase / out.beforeBase).toBeLessThanOrEqual(1.301);
   expect(out.afterOriginal).toBe(out.beforeOriginal);
   expect(out.afterDust).toBe(out.beforeDust);
   expect(out.afterPower).toBeGreaterThan(out.beforePower);
@@ -81,7 +83,7 @@ test('V445 preserves Dust upgrade ratio when a lifetime tier changes', async ({ 
     it.damage=it.baseDamage*1.37;
     it.power=it.damage+it.hp;
     const beforeRatio=it.damage/it.baseDamage;
-    S.forge.lifetimeCount=6500;
+    S.forge.lifetimeCount=5000;
     api.applyState(S);
     return {
       beforeRatio,
@@ -90,8 +92,8 @@ test('V445 preserves Dust upgrade ratio when a lifetime tier changes', async ({ 
       masteryPct:it.forgeLifetimeMasteryPct
     };
   });
-  expect(out.bonus).toBe(75);
-  expect(out.masteryPct).toBe(75);
+  expect(out.bonus).toBe(140);
+  expect(out.masteryPct).toBe(140);
   expect(out.afterRatio).toBeCloseTo(out.beforeRatio,8);
 });
 
@@ -101,8 +103,8 @@ test('V445 never lets a rarity reach the same-quality base of the next rarity', 
     const api=window.__srForgeLifetimeMasteryV445;
     const order=['COMMUN','PEU_COMMUN','RARE','EPIQUE','HEROIQUE','MYTHIQUE','ARTEFACT','LEGENDAIRE','INFERNAL','IMMORTEL','DIVIN'];
     return order.slice(0,-1).map((rar,i)=>{
-      const cur=api.statsFor('arme',rar,1,1,80);
-      const next=api.rawStats('arme',order[i+1],1,1);
+      const cur=api.statsFor('arme',rar,1,1,240);
+      const next=api.statsFor('arme',order[i+1],1,1,240);
       return {rar,cur:cur.d,next:next.d};
     });
   });
@@ -114,7 +116,7 @@ test('V445 Forge Ascension resets the cycle but keeps lifetime mastery', async (
   const out = await page.evaluate(() => {
     S.forge.level=RULES.FORGE_MAX;
     S.forge.summonCount=777;
-    S.forge.lifetimeCount=6500;
+    S.forge.lifetimeCount=30000;
     S.stars.forge=0;
     const r=doAscendMastery('forge');
     return {
@@ -125,7 +127,7 @@ test('V445 Forge Ascension resets the cycle but keeps lifetime mastery', async (
       bonus:window.__srForgeLifetimeMasteryV445.info(S).bonusPct
     };
   });
-  expect(out).toEqual({ok:true,level:1,summonCount:0,lifetimeCount:6500,bonus:75});
+  expect(out).toEqual({ok:true,level:1,summonCount:0,lifetimeCount:30000,bonus:200});
 });
 
 test('V445 migrates old saves conservatively from the provable current paid Forge count', async ({ page }) => {
@@ -144,11 +146,11 @@ test('V445 migrates old saves conservatively from the provable current paid Forg
 test('V445 Forge panel exposes lifetime mastery progress', async ({ page }) => {
   await openCleanGame(page);
   await page.evaluate(() => {
-    S.forge.lifetimeCount=1000;
+    S.forge.lifetimeCount=2500;
     nav('accueil');
     render();
   });
   await expect(page.locator('#homeForge')).toContainText('MAÎTRISE ÉQUIPEMENT IV');
-  await expect(page.locator('#homeForge')).toContainText('+40% base');
-  await expect(page.locator('#homeForge')).toContainText('1 000 / 1 500 forges');
+  await expect(page.locator('#homeForge')).toContainText('+120% base');
+  await expect(page.locator('#homeForge')).toContainText('2 500 / 5 000 forges');
 });
