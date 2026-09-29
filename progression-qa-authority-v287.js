@@ -1,4 +1,4 @@
-/* SHADOWREACH V287 · Progression QA authority
+/* SHADOWREACH V287 · Progression QA authority / V472 equipment upgrade power
    Fixes three integration gaps found after V283-V286:
    1) Poussiere upgrades apply from the separate upgradeLevel counter.
    2) Offensive skills really use intrinsic power instead of player damage.
@@ -9,10 +9,10 @@
 /* ---------- equipment upgrade authority ---------- */
 function itemFind(s,id){var it=null;try{it=Object.values(s.equipped||{}).find(function(x){return x&&x.id===id;})||(s.inventory||[]).find(function(x){return x&&x.id===id;})||null;}catch(_){ }return it;}
 function upgradeLv(it){try{return typeof equipmentUpgradeLevel==='function'?equipmentUpgradeLevel(it):Math.max(0,Math.floor(Number(it&&it.upgradeLevel)||0));}catch(_){return 0;}}
-function applyGrowth(it){if(!it)return;var lv=upgradeLv(it),mul=1+.01*lv;if(Number(it.baseDamage)>0)it.damage=Math.max(Number(it.damage)||0,Math.round(Number(it.baseDamage)*mul*100)/100);if(Number(it.baseHp)>0)it.hp=Math.max(Number(it.hp)||0,Math.round(Number(it.baseHp)*mul*100)/100);it.power=Math.round(((Number(it.damage)||0)+(Number(it.hp)||0))*100)/100;it.equipmentGrowthVersion=455;}
-try{if(typeof itemUpgradePreview==='function')itemUpgradePreview=function(it){if(!it)return {label:'Stat',current:0,next:0,gain:0};var lv=upgradeLv(it),mul=1+.01*(lv+1),current,next,label;if(Number(it.baseDamage)>0){current=Number(it.damage)||0;next=Math.round(Number(it.baseDamage)*mul*100)/100;label='ATQ';}else{current=Number(it.hp)||0;next=Math.round(Number(it.baseHp)*mul*100)/100;label='PV';}next=Math.max(current,next);return {label:label,current:current,next:next,gain:Math.round((next-current)*100)/100};};}catch(_){ }
-try{if(typeof upgradeItem==='function'&&!upgradeItem.__srV287){var oldUpgradeItem=upgradeItem;upgradeItem=function(id){var before=itemFind(S,id),beforeStat=before?((Number(before.damage)||0)+(Number(before.hp)||0)):0;var res=oldUpgradeItem(id);if(res&&res.ok){update(function(s){applyGrowth(itemFind(s,id));});var after=itemFind(S,id),afterStat=after?((Number(after.damage)||0)+(Number(after.hp)||0)):beforeStat;res.statGain=Math.round((afterStat-beforeStat)*100)/100;res.statLabel=after&&Number(after.baseDamage)>0?'ATQ':'PV';}return res;};upgradeItem.__srV287=true;}}catch(_){ }
-try{if(typeof S!=='undefined'&&S){(S.inventory||[]).forEach(applyGrowth);if(S.equipped)Object.keys(S.equipped).forEach(function(k){applyGrowth(S.equipped[k]);});S.equipmentGrowthVersion=287;}}catch(_){ }
+function applyGrowth(it){if(!it)return;var lv=upgradeLv(it),mul=1+.03*lv;if(Number(it.baseDamage)>0)it.damage=Math.max(Number(it.damage)||0,Math.round(Number(it.baseDamage)*mul*100)/100);if(Number(it.baseHp)>0)it.hp=Math.max(Number(it.hp)||0,Math.round(Number(it.baseHp)*mul*100)/100);it.power=Math.round(((Number(it.damage)||0)+(Number(it.hp)||0))*100)/100;it.equipmentGrowthVersion=472;}
+try{if(typeof itemUpgradePreview==='function')itemUpgradePreview=function(it){if(!it)return {label:'Stat',current:0,next:0,gain:0};var lv=upgradeLv(it),mul=1+.03*(lv+1),current,next,label;if(Number(it.baseDamage)>0){current=Number(it.damage)||0;next=Math.round(Number(it.baseDamage)*mul*100)/100;label='ATQ';}else{current=Number(it.hp)||0;next=Math.round(Number(it.baseHp)*mul*100)/100;label='PV';}next=Math.max(current,next);return {label:label,current:current,next:next,gain:Math.round((next-current)*100)/100};};}catch(_){ }
+try{if(typeof upgradeItem==='function'&&!upgradeItem.__srV287){var oldUpgradeItem=upgradeItem;upgradeItem=function(id){var before=itemFind(S,id),beforeStat=before?((Number(before.damage)||0)+(Number(before.hp)||0)):0,beforePower=typeof computePower==='function'?Number(computePower(S))||0:Number(S&&S.power)||0;var res=oldUpgradeItem(id);if(res&&res.ok){update(function(s){applyGrowth(itemFind(s,id));});var after=itemFind(S,id),afterStat=after?((Number(after.damage)||0)+(Number(after.hp)||0)):beforeStat,afterPower=typeof computePower==='function'?Number(computePower(S))||0:Number(S&&S.power)||0;res.statGain=Math.round((afterStat-beforeStat)*100)/100;res.statLabel=after&&Number(after.baseDamage)>0?'ATQ':'PV';res.globalPowerGain=res.success?Math.max(0,Math.round(afterPower-beforePower)):0;}return res;};upgradeItem.__srV287=true;}}catch(_){ }
+try{if(typeof S!=='undefined'&&S){(S.inventory||[]).forEach(applyGrowth);if(S.equipped)Object.keys(S.equipped).forEach(function(k){applyGrowth(S.equipped[k]);});S.equipmentGrowthVersion=472;}}catch(_){ }
 
 /* ---------- intrinsic offensive skill damage ---------- */
 var INTRINSIC={taillade:2000,frappe:10000,frappe_sombre:10000,percee:50000,meteore:5000000,kameha:50000000,execution:250000000,cataclysme:1000000000};
@@ -47,5 +47,6 @@ var style=document.createElement('style');style.id='sr-v287-familiar-clean';styl
 
 /* Recompute after save migration + authority installation. */
 try{if(typeof S!=='undefined'&&S){S.progressionQAVersion=287;if(typeof computePower==='function')S.power=computePower(S);if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}}catch(_){ }
-window.__srProgressionQAConfigV287={intrinsic:INTRINSIC,equipmentPerLevel:.02,kamehaTargets:3};
+window.__srEquipmentUpgradePowerV472={version:472,perLevelPct:3,retroactiveUpwardOnly:true,applyGrowth:applyGrowth};
+window.__srProgressionQAConfigV287={intrinsic:INTRINSIC,equipmentPerLevel:.03,kamehaTargets:3};
 })();
