@@ -88,6 +88,6 @@ test('V472 leaves Dust cost and success chance economy unchanged and publishes P
   expect(chance).toContain('if(level<25)return 100');
   expect(chance).toContain('Math.max(5,95-5*Math.floor((level-25)/2))');
   expect(ui).toContain('" · Puissance +" + fmt(r.globalPowerGain)');
-  expect(index).toContain('shadowreach-build" content="2026.09.29.472"');
+  expect(index).toContain('shadowreach-build" content="2026.09.29.473"');
   expect(index).toContain('progression-qa-authority-v287.js?v=2026.09.29.472c');
 });
