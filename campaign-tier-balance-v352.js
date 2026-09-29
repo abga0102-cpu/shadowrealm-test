@@ -1,8 +1,11 @@
-/* SHADOWREACH V362 · campaign smoothing after source-level -40% power
-   - Keeps the existing smooth monster curve from floor 61 to 100.
-   - The global -40% campaign reduction now lives in enemy-damage-authority-v289.js.
-   - Does not apply a second 0.60 multiplier here.
-   - Keeps ranks, bosses, rewards, progression and Pass behavior unchanged. */
+/* SHADOWREACH V362 / V473 · campaign smoothing after source-level -40% power
+   - Keeps the existing Facile smoothing from floor 61 to 100.
+   - V473 bridges Difficile 1-1 -> Difficile 2-10 (floors 101..130) instead of
+     removing the Facile multipliers in one frame at floor 101.
+   - The bridge starts from the exact Facile 5-20 endpoint and returns
+     progressively to the normal campaign curve by floor 130.
+   - The global -40% campaign reduction remains owned by enemy-damage-authority-v289.js.
+   - Ranks, rewards, progression and Raid/Mega balance remain unchanged. */
 (function(){
   'use strict';
   if(window.__srCampaignTierBalanceV362)return;
@@ -14,15 +17,34 @@
 
   var SMOOTH_START=61;
   var SMOOTH_END=100;
+  var DIFFICILE_BRIDGE_START=101;
+  var DIFFICILE_BRIDGE_END=130;
+  var EASY_NORMAL_HP_END=0.52;
+  var EASY_BOSS_HP_END=0.45;
+  var EASY_DAMAGE_END=0.60;
 
   function clamp01(v){return Math.max(0,Math.min(1,Number(v)||0));}
   function lerp(a,b,t){return a+(b-a)*clamp01(t);}
   function smoothT(floor){return clamp01((Number(floor)-SMOOTH_START)/(SMOOTH_END-SMOOTH_START));}
+  function bridgeT(floor){return clamp01((Number(floor)-DIFFICILE_BRIDGE_START)/(DIFFICILE_BRIDGE_END-DIFFICILE_BRIDGE_START));}
   function smoothHpMul(floor,isBoss){
-    var t=smoothT(floor);
-    return isBoss?lerp(1,0.45,t):lerp(1,0.52,t);
+    floor=Number(floor)||0;
+    if(floor<=SMOOTH_END){
+      var t=smoothT(floor);
+      return isBoss?lerp(1,EASY_BOSS_HP_END,t):lerp(1,EASY_NORMAL_HP_END,t);
+    }
+    if(floor<=DIFFICILE_BRIDGE_END){
+      var b=bridgeT(floor),start=isBoss?EASY_BOSS_HP_END:EASY_NORMAL_HP_END;
+      return lerp(start,1,b);
+    }
+    return 1;
   }
-  function smoothDamageMul(floor){return lerp(1,0.60,smoothT(floor));}
+  function smoothDamageMul(floor){
+    floor=Number(floor)||0;
+    if(floor<=SMOOTH_END)return lerp(1,EASY_DAMAGE_END,smoothT(floor));
+    if(floor<=DIFFICILE_BRIDGE_END)return lerp(EASY_DAMAGE_END,1,bridgeT(floor));
+    return 1;
+  }
 
   try{
     if(typeof makeEnemy==='function'&&!makeEnemy.__srCampaignTierBalanceV362){
@@ -32,7 +54,7 @@
         if(mode!=='campaign'||!opts||!enemy)return enemy;
 
         var floor=Number(opts.floor)||0;
-        if(floor<SMOOTH_START||floor>SMOOTH_END)return enemy;
+        if(floor<SMOOTH_START||floor>DIFFICILE_BRIDGE_END)return enemy;
 
         /* V334 already tapers 76..100. Undo it first so only this established
            smooth curve applies on top of the source-level campaign balance. */
@@ -54,7 +76,8 @@
           hpMul:hpMul,
           dmgMul:dmgMul,
           sourcePowerMul:(window.__srEnemyDamageConfigV289&&Number(window.__srEnemyDamageConfigV289.campaignPowerMul))||0.60,
-          smoothApplied:true
+          smoothApplied:true,
+          difficileBridgeV473:floor>=DIFFICILE_BRIDGE_START
         };
         return enemy;
       };
@@ -79,12 +102,25 @@
   window.__srCampaignRankForFloor=rankForFloor;
   window.__srCampaignFloorLabel=function(floor){floor=Math.max(1,Math.floor(Number(floor)||1));return rankForFloor(floor)+' · Étage '+floor;};
 
+  window.__srCampaignDifficultyBridgeV473={
+    version:473,
+    fromFloor:DIFFICILE_BRIDGE_START,
+    toFloor:DIFFICILE_BRIDGE_END,
+    visibleFrom:'Difficile 1-1',
+    visibleTo:'Difficile 2-10',
+    startNormalHpMul:EASY_NORMAL_HP_END,
+    startBossHpMul:EASY_BOSS_HP_END,
+    startDamageMul:EASY_DAMAGE_END,
+    hpMultiplier:smoothHpMul,
+    damageMultiplier:smoothDamageMul
+  };
   window.__srCampaignTierBalanceConfigV362={
     smoothStartFloor:SMOOTH_START,
     smoothEndFloor:SMOOTH_END,
-    normalHpMulEnd:0.52,
-    bossHpMulEnd:0.45,
-    smoothDamageMulEnd:0.60,
+    difficileBridgeEndFloor:DIFFICILE_BRIDGE_END,
+    normalHpMulEnd:EASY_NORMAL_HP_END,
+    bossHpMulEnd:EASY_BOSS_HP_END,
+    smoothDamageMulEnd:EASY_DAMAGE_END,
     globalPowerMulHere:1,
     sourcePowerAuthority:'enemy-damage-authority-v289.js V362',
     ranks:RANKS,
