@@ -8,7 +8,8 @@ async function clean(page){
     window.__srAutonomyYieldConfigV476 &&
     typeof hatchSpeedFor === 'function' &&
     typeof treeTime === 'function' &&
-    typeof goldMul === 'function'
+    typeof goldMul === 'function' &&
+    window.__srTreeResearchV477 === true
   );
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
