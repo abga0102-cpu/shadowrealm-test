@@ -1,9 +1,10 @@
-/* Shadowreach V444 — Raid Minerai economy compatibility
+/* Shadowreach V471 — Raid Minerai economy compatibility
    Final reward ownership is V396. This earlier-loaded compatibility layer mirrors
-   the same curve so no transient/legacy path can restore the old generous values:
-   - 500 Minerai at 1-1;
-   - +5 per level across the full permanent ladder;
-   - 845 Minerai at 7-10 / internal level 70.
+   the same curve so no transient/legacy path can restore an older reward table:
+   - level 1 = 500 Minerai;
+   - +25 per level through level 10 (725);
+   - +10 per level through level 50 (1 125);
+   - +5 per level after level 50 (1 225 at level 70).
    Current Autonomy is owned by harvestRates() and consumes raidReward().
 */
 (function(){
@@ -12,7 +13,9 @@
 
   function mineraiReward(level) {
     var lv = Math.max(1, Math.min(70, Math.floor(Number(level) || 1)));
-    return 500 + 5 * (lv - 1);
+    if (lv <= 10) return 500 + 25 * (lv - 1);
+    if (lv <= 50) return 725 + 10 * (lv - 10);
+    return 1125 + 5 * (lv - 50);
   }
 
   /* Minerai now owns its explicit V323 reward curve. All other raid reward
@@ -51,10 +54,14 @@
 
   try {
     window.__shadowreachRaidMineraiBalance = {
-      version: 444,
+      version: 471,
       level1: 500,
-      perLevel: 5,
-      level70: 845,
+      perLevelTo10: 25,
+      level10: 725,
+      perLevelTo50: 10,
+      level50: 1125,
+      perLevelAfter50: 5,
+      level70: 1225,
       autonomySharePerHour: MINERAI_AUTONOMY_SHARE
     };
   } catch (_) {}
