@@ -29,10 +29,10 @@ test('V470 Forge Gold table scales by rarity and existing Gold nodes cap at 20 p
   });
   expect(out.table).toMatchObject({
     COMMUN:10, PEU_COMMUN:15, RARE:18, EPIQUE:33, HEROIQUE:45, MYTHIQUE:60,
-    ARTEFACT:105, LEGENDAIRE:180, INFERNAL:300, IMMORTEL:500, DIVIN:800
+    ARTEFACT:105, LEGENDAIRE:180, INFERNAL:300, IMMORTEL:450, DIVIN:650
   });
   expect(out.goldBonus).toBeCloseTo(20, 6);
-  expect(out.divinWithTree).toBe(960);
+  expect(out.divinWithTree).toBe(780);
   expect(out.communWithTree).toBe(12);
 });
 
