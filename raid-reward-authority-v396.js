@@ -1,4 +1,4 @@
-/* SHADOWREACH V396 · Final Raid reward authority / V471 Minerai curve
+/* SHADOWREACH V396 · Final Raid reward authority / V471 Minerai / V486 Évolution curve
    Loaded after all legacy raid economy modules so no older wrapper can restore
    superseded reward curves. This file owns reward output only; raid difficulty,
    keys, summon prices and the permanent 1-1 -> 7-10 ladder stay owned elsewhere.
@@ -40,8 +40,9 @@
   }
 
   function evolutionReward(level){
-    var lv=Math.max(1,Math.floor(Number(level)||1));
-    return 150+3*(lv-1);
+    var lv=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
+    if(lv<=14)return 150+10*(lv-1);
+    return 280+5*(lv-14);
   }
 
   raidReward=function(type,level){
@@ -72,7 +73,7 @@
     minerai:{curveVersion:471,level1:500,perLevelTo10:25,level10:725,perLevelTo50:10,level50:1125,perLevelAfter50:5,level70:1225},
     competence:{level1:250,perLevel:10},
     familier:{level1:200,perLevelTo250:5,level11:250,perLevelAfter250:2,level70:368},
-    evolution:{level1:150,perLevel:3},
+    evolution:{curveVersion:486,level1:150,perLevelTo14:10,level14:280,perLevelFrom15:5,level15:285,level70:560},
     reward:raidReward
   };
 })();
