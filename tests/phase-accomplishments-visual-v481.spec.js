@@ -88,3 +88,57 @@ test('V481 gives challenge rows obvious status and reward lanes without changing
   }));
   expect(before.forge15).toBe(false);
 });
+
+
+test('V482 keeps Gratuit and Premium equally wide and never breaks Essences letter by letter', async ({ page }) => {
+  await boot(page);
+  await page.setViewportSize({ width: 353, height: 844 });
+  await seedFloorRewards(page);
+
+  const row = page.locator('#overlay .srPassFloor331').first();
+  const metrics = await row.evaluate(el => {
+    const rewards = [...el.querySelectorAll('.achReward')];
+    const widths = rewards.map(r => r.getBoundingClientRect().width);
+    const premiumCopy = rewards[1] && rewards[1].querySelector('.srRewardCopy331');
+    const text = premiumCopy && premiumCopy.firstChild;
+    let essenceRects = 0;
+    let wordBreak = '';
+    let overflowWrap = '';
+    if (premiumCopy) {
+      const cs = getComputedStyle(premiumCopy);
+      wordBreak = cs.wordBreak;
+      overflowWrap = cs.overflowWrap;
+    }
+    if (text && text.nodeType === Node.TEXT_NODE) {
+      const raw = text.nodeValue || '';
+      const start = raw.indexOf('Essences');
+      if (start >= 0) {
+        const range = document.createRange();
+        range.setStart(text, start);
+        range.setEnd(text, start + 'Essences'.length);
+        essenceRects = range.getClientRects().length;
+      }
+    }
+    return { widths, essenceRects, wordBreak, overflowWrap };
+  });
+
+  expect(metrics.widths).toHaveLength(2);
+  expect(Math.abs(metrics.widths[0] - metrics.widths[1])).toBeLessThanOrEqual(2);
+  expect(metrics.essenceRects).toBe(1);
+  expect(metrics.wordBreak).toBe('normal');
+  expect(['break-word', 'normal']).toContain(metrics.overflowWrap);
+});
+
+async function seedFloorRewards(page) {
+  await page.evaluate(() => {
+    S.recordFloor = 100;
+    S.bossClears = S.bossClears || {};
+    S.bossClears['45'] = true;
+    S.bossClears['100'] = true;
+    S.accomplishments = S.accomplishments || {};
+    S.accomplishments.claimed = {};
+    S.accomplishments.premiumClaimed = {};
+    ACT.accomplishments();
+  });
+  await page.waitForFunction(() => document.querySelector('#overlay .srPassFloor331 .srRewardCopy331'));
+}
