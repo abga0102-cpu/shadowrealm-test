@@ -1572,6 +1572,15 @@ window.__srRaidCampaignLinkedV444 = {
     multiplier:raidPowerStepMultiplierV485,
     level70Multiplier:raidPowerStepMultiplierV485(70),
     campaignReferenceAffectsPower:false
+  },
+  /* Compatibility alias for any late UI/test still reading the V484 property. */
+  powerStepV484:{
+    everyLevels:RAID_POWER_STEP_LEVELS_V485,
+    addPct:RAID_POWER_STEP_PCT_V485*100,
+    multiplier:raidPowerStepMultiplierV485,
+    level70Multiplier:raidPowerStepMultiplierV485(70),
+    campaignReferenceAffectsPower:false,
+    supersededBy:485
   }
 };
 
