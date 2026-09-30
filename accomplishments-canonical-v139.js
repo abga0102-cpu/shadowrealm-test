@@ -3,8 +3,10 @@
    per difficulty; Boss milestones require the actual Boss clear.
    V326: Arena-facing Pass Progression with Étages / Défis and a visible Premium lane.
    V342: Forge milestones follow the approved Gold-only ladder.
-   V466: premium visual hierarchy, per-objective progress and claim feedback only;
-   reward values, completion conditions and save semantics remain unchanged. */
+   V466: premium visual hierarchy, per-objective progress and claim feedback only.
+   V481: exposes an explicit visual marker consumed by the canonical v138 decorator
+   so the mobile redesign survives its post-render decoration.
+   Reward values, completion conditions and save semantics remain unchanged. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsCanonicalV139)return;
@@ -165,7 +167,7 @@ function claimFlash(){
  if(!lastClaimFx||Date.now()-lastClaimFx.at>2600)return '';
  return '<div class="achClaimFlash466" role="status">✦ '+(lastClaimFx.premium?'Bonus Premium récupéré':'Récompense récupérée')+' ✦</div>';
 }
-function html(){return '<div class="srAch139" data-ach-canonical-v139="1" data-ach-visual-v466="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+claimFlash()+'<div class="achTabs"><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages">Étages</button><button class="achTab '+(activeTab==='defis'?'on':'')+'" data-ach-tab="defis">Défis</button></div>'+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Forge :</b> récompenses en Or uniquement selon les 9 paliers dédiés. <b>Premium :</b> ajoute un bonus sur les autres jalons éligibles sans remplacer la voie gratuite.</div><div class="mt10"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
+function html(){return '<div class="srAch139" data-ach-canonical-v139="1" data-ach-visual-v466="1" data-ach-visual-v481="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+claimFlash()+'<div class="achTabs"><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages">Étages</button><button class="achTab '+(activeTab==='defis'?'on':'')+'" data-ach-tab="defis">Défis</button></div>'+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Forge :</b> récompenses en Or uniquement selon les 9 paliers dédiés. <b>Premium :</b> ajoute un bonus sur les autres jalons éligibles sans remplacer la voie gratuite.</div><div class="mt10"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
 function reopen(){try{if(typeof openModal==='function')openModal(html(),'Pass Progression');}catch(_){} }
 function installInteractions(){
  if(window.__srAccomplishmentsPassInteractionV139)return;window.__srAccomplishmentsPassInteractionV139=true;
