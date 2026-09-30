@@ -1,0 +1,28 @@
+/* SHADOWREACH V488 · Combat enemy nameplate readability
+   Presentation only: preserve a dedicated vertical lane for ability/state,
+   enemy name and HP. No combat, HP, save or progression logic changes. */
+.unit .hpMini.foe{
+  top:-10px !important;
+  z-index:8 !important;
+}
+.unit .foeTag{
+  top:-31px !important;
+  z-index:9 !important;
+  left:50% !important;
+  transform:translateX(-50%) !important;
+  width:max-content !important;
+  max-width:calc(100% + 54px) !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  pointer-events:none;
+}
+.unit .foeAbil{
+  top:-49px !important;
+  z-index:10 !important;
+  max-width:calc(100% + 54px) !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  pointer-events:none;
+}
