@@ -4,11 +4,11 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 
-test.describe('Progression Pass V331/V466/V481 visual presentation', () => {
+test.describe('Progression Pass V331/V466/V481/V482 visual presentation', () => {
   test('stays in the existing stability owner and decorates the live pass', async ({ page }) => {
     const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     const source = fs.readFileSync(path.join(root, 'accomplishments-stability-v138.js'), 'utf8');
-    expect(index).toContain('accomplishments-stability-v138.js?v=2026.09.30.481');
+    expect(index).toContain('accomplishments-stability-v138.js?v=2026.09.30.482');
     expect(index).toContain('accomplishments-canonical-v139.js?v=2026.09.30.481');
     expect(index).not.toContain('accomplishments-visual-v331.js');
     expect(source).toContain('srPassOverlay331');
@@ -20,6 +20,8 @@ test.describe('Progression Pass V331/V466/V481 visual presentation', () => {
     expect(source).toContain('srPassRibbon481');
     expect(source).toContain('srRewardLane481');
     expect(source).toContain('srStageProgress481');
+    expect(source).toContain('overflow-wrap:break-word!important');
+    expect(source).toContain('grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important');
     expect(source).toContain('srAchLaunchTrack');
     expect(source).not.toContain('ACT.accomplishments=');
     expect(source).not.toContain('openModal=');
