@@ -1593,7 +1593,10 @@ function raidReward(raid, level) {
   const lv = Math.max(1, Math.floor(Number(level) || 1));
   // V396 canonical Raid reward curves. A final authority loaded at the end of
   // index.html mirrors these values so legacy wrappers cannot restore old ones.
-  if (raid === "evolution") return 150 + 3 * (lv - 1);
+  if (raid === "evolution") {
+    const capped = Math.min(RULES.RAID_MAX_LEVEL, lv);
+    return capped <= 14 ? 150 + 10 * (capped - 1) : 280 + 5 * (capped - 14);
+  }
   if (raid === "competence") return 250 + 10 * (lv - 1);
   if (raid === "familier") return lv <= 11 ? 200 + 5 * (lv - 1) : 250 + 2 * (lv - 11);
   if (raid === "or") {
