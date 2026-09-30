@@ -70,7 +70,7 @@ try{
          Keep this sequential instead of folding 1.30 into m.dmg: at very low
          integer damage values, recomputing from the pre-V465 source would not
          represent +30% of what the player is actually fighting today. */
-      var currentDamageBoost=currentDamageBoostMultiplier(f);
+      var currentDamageBoost=opts.noFastback?1:currentDamageBoostMultiplier(f);
       if(currentDamageBoost!==1)enemy.dmg=Math.max(1,Math.floor(enemy.dmg*currentDamageBoost));
       enemy.__srCampaignEarlyRebalanceV449={floor:f,hpMul:m.hp,dmgMul:m.dmg,band:m.band};
       return enemy;
