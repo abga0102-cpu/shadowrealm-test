@@ -1472,25 +1472,25 @@ const RAIDS = {
   evolution:  { name: "Raid Évolution",  icon: "chart",   color: "#3FCFD6", reward: "PE" },
 };
 const RAID_IDS = ["or", "minerai", "competence", "familier", "evolution"];
-/* ---------------------------- raid difficulty V444 / V484 -----------------
+/* ---------------------------- raid difficulty V444 / V484 / V485 ----------
    Raid progression remains a 70-level ladder displayed 1-1 -> 7-10.
    The historical Campaign reference mapping is kept for labels/context only.
 
-   V484 retires the old "up to +22% per Raid level" smoothing. Raid combat power
-   now follows a simple deterministic staircase: +5 percentage points every
-   5 levels (5, 10, 15 ... 70), relative to Raid level 1. The same staircase
-   scales the expected damage and HP axes so total Raid tuning remains coherent.
+   V484 retired the old "up to +22% per Raid level" smoothing. V485 keeps that
+   deterministic staircase but raises each 5-level step from +5 to +7.5
+   percentage points, relative to Raid level 1. The same staircase scales the
+   expected damage and HP axes so total Raid tuning remains coherent.
    Existing per-Raid identities remain: Or = long attrition, Evolution = hardest,
    Minerai = tanky boss, Competence/Familier = neutral baseline.
    -------------------------------------------------------------------------- */
 const RAID_LEVELS_PER_CHAPTER = 10;
 const RAID_CAMPAIGN_STEP_MULT = 2;
 const RAID_REFERENCE_PRESSURE_MUL = 1.15;
-const RAID_POWER_STEP_LEVELS_V484 = 5;
-const RAID_POWER_STEP_PCT_V484 = 0.05;
-/* V484: no Campaign-derived jumps. Every fifth Raid level adds exactly +5
+const RAID_POWER_STEP_LEVELS_V485 = 5;
+const RAID_POWER_STEP_PCT_V485 = 0.075;
+/* V485: no Campaign-derived jumps. Every fifth Raid level adds exactly +7.5
    percentage points to both Raid power axes versus level 1:
-   1-4 = x1.00, 5-9 = x1.05, 10-14 = x1.10 ... level 70 = x1.70.
+   1-4 = x1.00, 5-9 = x1.075, 10-14 = x1.15 ... level 70 = x2.05.
    The global Raid modifiers in V289 and per-Raid identity tuning still apply
    afterwards exactly as before. */
 const RAID_REFERENCE_TTK_UNITS = 6.5;
@@ -1541,15 +1541,15 @@ function raidRawExpectedPlayerHP(level) {
   } catch (_) {}
   return Math.max(1, RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, Math.max(1, Number(level) || 1)) * RAID_REFERENCE_TTD_DIV);
 }
-function raidPowerStepMultiplierV484(level) {
+function raidPowerStepMultiplierV485(level) {
   const lv = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(level) || 1)));
-  return 1 + Math.floor(lv / RAID_POWER_STEP_LEVELS_V484) * RAID_POWER_STEP_PCT_V484;
+  return 1 + Math.floor(lv / RAID_POWER_STEP_LEVELS_V485) * RAID_POWER_STEP_PCT_V485;
 }
 function raidExpectedPlayerDamage(level) {
-  return Math.max(1, raidRawExpectedPlayerDamage(1) * raidPowerStepMultiplierV484(level));
+  return Math.max(1, raidRawExpectedPlayerDamage(1) * raidPowerStepMultiplierV485(level));
 }
 function raidExpectedPlayerHP(level) {
-  return Math.max(1, raidRawExpectedPlayerHP(1) * raidPowerStepMultiplierV484(level));
+  return Math.max(1, raidRawExpectedPlayerHP(1) * raidPowerStepMultiplierV485(level));
 }
 /* Legacy constants remain only as safe pre-authority fallbacks during boot. */
 const RAID_HP_BASE = 464, RAID_HP_GROWTH = 1.2723;
@@ -1566,11 +1566,11 @@ window.__srRaidCampaignLinkedV444 = {
   growthCap: null,
   referenceFloor: raidReferenceCampaignFloor, levelLabel: raidLevelLabel,
   campaignReady: raidCampaignReady,
-  powerStepV484:{
-    everyLevels:RAID_POWER_STEP_LEVELS_V484,
-    addPct:RAID_POWER_STEP_PCT_V484*100,
-    multiplier:raidPowerStepMultiplierV484,
-    level70Multiplier:raidPowerStepMultiplierV484(70),
+  powerStepV485:{
+    everyLevels:RAID_POWER_STEP_LEVELS_V485,
+    addPct:RAID_POWER_STEP_PCT_V485*100,
+    multiplier:raidPowerStepMultiplierV485,
+    level70Multiplier:raidPowerStepMultiplierV485(70),
     campaignReferenceAffectsPower:false
   }
 };
