@@ -101,35 +101,38 @@ test('V444 migrates old Raid stars into linear progress without deleting evidenc
   });
 });
 
-test('V484 Raid difficulty is +5% every 5 levels; Campaign references are context only', async ({ page }) => {
+test('V485 Raid difficulty is +7.5% every 5 levels; Campaign references are context only', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
-    const levels=[1,4,5,9,10,14,15,69,70];
+    const levels=[1,4,5,9,10,14,15,20,40,50,69,70];
     const rows=levels.map(lv=>({
       lv,
       hp:raidWaveHP('familier',lv),
       dmg:raidWaveDamage('familier',lv),
       ref:raidReferenceCampaignFloor(lv),
-      mul:window.__srRaidCampaignLinkedV444.powerStepV484.multiplier(lv)
+      mul:window.__srRaidCampaignLinkedV444.powerStepV485.multiplier(lv)
     }));
     return {
       rows,
       cap:window.__srRaidCampaignLinkedV444.growthCap,
-      step:window.__srRaidCampaignLinkedV444.powerStepV484
+      step:window.__srRaidCampaignLinkedV444.powerStepV485,
+      compat:window.__srRaidCampaignLinkedV444.powerStepV484
     };
   });
   expect(out.cap).toBeNull();
   expect(out.step).toMatchObject({
-    everyLevels:5,addPct:5,level70Multiplier:1.70,campaignReferenceAffectsPower:false
+    everyLevels:5,addPct:7.5,level70Multiplier:2.05,campaignReferenceAffectsPower:false
   });
-  expect(out.rows.map(r=>r.mul)).toEqual([1,1,1.05,1.05,1.10,1.10,1.15,1.65,1.70]);
+  expect(out.compat).toMatchObject({addPct:7.5,level70Multiplier:2.05,supersededBy:485});
+  const expected=[1,1,1.075,1.075,1.15,1.15,1.225,1.30,1.60,1.75,1.975,2.05];
+  out.rows.forEach((r,i)=>expect(r.mul).toBeCloseTo(expected[i],10));
   const baseHP=out.rows[0].hp,baseDmg=out.rows[0].dmg;
   for(const r of out.rows){
     expect(r.hp/baseHP).toBeCloseTo(r.mul,8);
     expect(r.dmg/baseDmg).toBeCloseTo(r.mul,8);
   }
   expect(out.rows[2].ref).toBeGreaterThan(out.rows[1].ref);
-  expect(out.rows[8].ref).toBe(280);
+  expect(out.rows[out.rows.length-1].ref).toBe(280);
 });
 
 
