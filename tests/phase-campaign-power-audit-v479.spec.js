@@ -1,14 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const fs=require('fs'),path=require('path'),crypto=require('crypto');
-
-const PRE_V478_V465_BLOB='450cd7820689c93de637a1ccad9ef99c99fa0318';
-
-function gitBlobSha(text){
-  const body=Buffer.from(text,'utf8');
-  return crypto.createHash('sha1').update(Buffer.concat([
-    Buffer.from('blob '+body.length+'\0','utf8'),body
-  ])).digest('hex');
-}
+const fs=require('fs'),path=require('path');
 
 async function openCleanGame(page){
   await page.route('**/npm/**', route => route.abort());
@@ -21,17 +12,18 @@ async function openCleanGame(page){
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V479 restores campaign-early-rebalance byte-for-byte to the pre-V478 V465 runtime', async()=>{
+test('V483 keeps V479 runtime-diagnostic removal while allowing intentional balance edits', async()=>{
   const root=path.join(__dirname,'..');
   const src=fs.readFileSync(path.join(root,'campaign-early-rebalance-v449.js'),'utf8');
   const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  expect(gitBlobSha(src)).toBe(PRE_V478_V465_BLOB);
   expect(src).toContain('if(!m.band)return enemy;');
+  expect(src).toContain('CURRENT_DAMAGE_BOOST_MUL=1.30');
+  expect(src).toContain('applyCurrentDamageBoost');
   expect(src).not.toContain('FINAL_RULES');
   expect(src).not.toContain('__srCampaignPowerFinalV478');
   expect(src).not.toContain('__srCampaignPowerAuthorityConfigV478');
-  expect(index).toContain('shadowreach-build" content="2026.09.29.479"');
-  expect(index).toContain('campaign-early-rebalance-v449.js?v=2026.09.29.479a');
+  expect(index).toContain('shadowreach-build" content="2026.09.30.483"');
+  expect(index).toContain('campaign-early-rebalance-v449.js?v=2026.09.30.483a');
 });
 
 test('V479 audit samples final Campaign values without replacing makeEnemy', async({page})=>{

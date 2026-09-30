@@ -4,7 +4,7 @@ async function boot(page) {
   await page.route('**/npm/**', route => route.abort());
   await page.goto('/index.html?smoke=1');
   await page.waitForFunction(() =>
-    window.__srCampaignEarlyRebalanceConfigV449?.version === 465 &&
+    window.__srCampaignEarlyRebalanceConfigV449?.version === 483 &&
     typeof makeEnemy === 'function' &&
     typeof bossFor === 'function' &&
     typeof eliteFor === 'function'
@@ -86,7 +86,7 @@ test('V465 config exposes the 5-5 continuity guard and full reduction from 5-6',
       postBoss86:c.postBossException(86)
     };
   });
-  expect(cfg.version).toBe(465);
+  expect(cfg.version).toBe(483);
   expect(cfg.second).toMatchObject({
     from:85,to:99,hpMul:0.70,damageMul:0.70,
     entryFloor:85,entryDamageMul:0.85,fullDamageFrom:86
