@@ -1472,28 +1472,27 @@ const RAIDS = {
   evolution:  { name: "Raid Évolution",  icon: "chart",   color: "#3FCFD6", reward: "PE" },
 };
 const RAID_IDS = ["or", "minerai", "competence", "familier", "evolution"];
-/* ---------------------------- raid difficulty V444 ------------------------
-   Raid progression is now a 70-level ladder displayed 1-1 -> 7-10.
-   Each Raid level is linked to a Campaign reference exactly two chapter/stage
-   steps farther: Raid 2-1 -> Campaign Facile 4-2, for example.
+/* ---------------------------- raid difficulty V444 / V484 -----------------
+   Raid progression remains a 70-level ladder displayed 1-1 -> 7-10.
+   The historical Campaign reference mapping is kept for labels/context only.
 
-   Difficulty is calibrated from the EXPECTED PLAYER stats at that Campaign
-   reference, not from that floor's concrete normal/Elite/Boss enemy. This
-   avoids artificial jumps on Campaign Boss stages while keeping Raid pressure
-   tied to the main progression. The Raid asks 15% more than its reference.
-   The existing per-Raid identities remain: Or = long attrition, Evolution =
-   hardest, Minerai = tanky boss, Competence/Familier = neutral baseline.
+   V484 retires the old "up to +22% per Raid level" smoothing. Raid combat power
+   now follows a simple deterministic staircase: +5 percentage points every
+   5 levels (5, 10, 15 ... 70), relative to Raid level 1. The same staircase
+   scales the expected damage and HP axes so total Raid tuning remains coherent.
+   Existing per-Raid identities remain: Or = long attrition, Evolution = hardest,
+   Minerai = tanky boss, Competence/Familier = neutral baseline.
    -------------------------------------------------------------------------- */
 const RAID_LEVELS_PER_CHAPTER = 10;
 const RAID_CAMPAIGN_STEP_MULT = 2;
 const RAID_REFERENCE_PRESSURE_MUL = 1.15;
-const RAID_REFERENCE_GROWTH_CAP = 1.22;
-/* The linked Campaign curve has deliberate difficulty jumps. A Raid chapter
-   may feel stronger, but a single Raid click must never become a wall, so each
-   expected-stat axis can grow by at most +22% from one Raid level to the next.
-   After the existing global Raid modifiers in V289, a neutral Raid lands near
-   ~9 reference basic hits to clear and ~14 combined enemy hits to lose before
-   Defense/sustain. */
+const RAID_POWER_STEP_LEVELS_V484 = 5;
+const RAID_POWER_STEP_PCT_V484 = 0.05;
+/* V484: no Campaign-derived jumps. Every fifth Raid level adds exactly +5
+   percentage points to both Raid power axes versus level 1:
+   1-4 = x1.00, 5-9 = x1.05, 10-14 = x1.10 ... level 70 = x1.70.
+   The global Raid modifiers in V289 and per-Raid identity tuning still apply
+   afterwards exactly as before. */
 const RAID_REFERENCE_TTK_UNITS = 6.5;
 const RAID_REFERENCE_TTD_DIV = 6;
 
@@ -1542,17 +1541,16 @@ function raidRawExpectedPlayerHP(level) {
   } catch (_) {}
   return Math.max(1, RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, Math.max(1, Number(level) || 1)) * RAID_REFERENCE_TTD_DIV);
 }
-function raidSmoothExpected(level, reader) {
+function raidPowerStepMultiplierV484(level) {
   const lv = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(level) || 1)));
-  let value = reader(1);
-  for (let i = 2; i <= lv; i++) {
-    const target = reader(i);
-    if (target > value) value = Math.min(target, value * RAID_REFERENCE_GROWTH_CAP);
-  }
-  return Math.max(1, value);
+  return 1 + Math.floor(lv / RAID_POWER_STEP_LEVELS_V484) * RAID_POWER_STEP_PCT_V484;
 }
-function raidExpectedPlayerDamage(level) { return raidSmoothExpected(level, raidRawExpectedPlayerDamage); }
-function raidExpectedPlayerHP(level) { return raidSmoothExpected(level, raidRawExpectedPlayerHP); }
+function raidExpectedPlayerDamage(level) {
+  return Math.max(1, raidRawExpectedPlayerDamage(1) * raidPowerStepMultiplierV484(level));
+}
+function raidExpectedPlayerHP(level) {
+  return Math.max(1, raidRawExpectedPlayerHP(1) * raidPowerStepMultiplierV484(level));
+}
 /* Legacy constants remain only as safe pre-authority fallbacks during boot. */
 const RAID_HP_BASE = 464, RAID_HP_GROWTH = 1.2723;
 const RAID_DMG_BASE = 38.1, RAID_DMG_GROWTH = 1.1806;
@@ -1565,9 +1563,16 @@ const RAID_TUNE = {
 };
 window.__srRaidCampaignLinkedV444 = {
   maxLevel: 70, displayMax: "7-10", pressureMul: RAID_REFERENCE_PRESSURE_MUL,
-  growthCap: RAID_REFERENCE_GROWTH_CAP,
+  growthCap: null,
   referenceFloor: raidReferenceCampaignFloor, levelLabel: raidLevelLabel,
-  campaignReady: raidCampaignReady
+  campaignReady: raidCampaignReady,
+  powerStepV484:{
+    everyLevels:RAID_POWER_STEP_LEVELS_V484,
+    addPct:RAID_POWER_STEP_PCT_V484*100,
+    multiplier:raidPowerStepMultiplierV484,
+    level70Multiplier:raidPowerStepMultiplierV484(70),
+    campaignReferenceAffectsPower:false
+  }
 };
 
 /* Raid Minerai reward ownership is finalized later by V396. Raid Ascension is

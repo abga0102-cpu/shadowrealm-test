@@ -101,29 +101,35 @@ test('V444 migrates old Raid stars into linear progress without deleting evidenc
   });
 });
 
-test('V444 Raid difficulty follows Campaign references without chapter walls', async ({ page }) => {
+test('V484 Raid difficulty is +5% every 5 levels; Campaign references are context only', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
-    const rows=[];
-    for(let lv=1;lv<=RULES.RAID_MAX_LEVEL;lv++) rows.push({
+    const levels=[1,4,5,9,10,14,15,69,70];
+    const rows=levels.map(lv=>({
       lv,
       hp:raidWaveHP('familier',lv),
       dmg:raidWaveDamage('familier',lv),
-      ref:raidReferenceCampaignFloor(lv)
-    });
-    return { rows, cap: window.__srRaidCampaignLinkedV444.growthCap };
+      ref:raidReferenceCampaignFloor(lv),
+      mul:window.__srRaidCampaignLinkedV444.powerStepV484.multiplier(lv)
+    }));
+    return {
+      rows,
+      cap:window.__srRaidCampaignLinkedV444.growthCap,
+      step:window.__srRaidCampaignLinkedV444.powerStepV484
+    };
   });
-  expect(out.cap).toBeCloseTo(1.22,8);
-  for(let i=1;i<out.rows.length;i++){
-    const prev=out.rows[i-1],cur=out.rows[i];
-    expect(cur.hp).toBeGreaterThanOrEqual(prev.hp);
-    expect(cur.dmg).toBeGreaterThanOrEqual(prev.dmg);
-    expect(cur.hp/prev.hp).toBeLessThanOrEqual(1.220001);
-    expect(cur.dmg/prev.dmg).toBeLessThanOrEqual(1.220001);
-    expect(cur.ref).toBeGreaterThan(prev.ref);
+  expect(out.cap).toBeNull();
+  expect(out.step).toMatchObject({
+    everyLevels:5,addPct:5,level70Multiplier:1.70,campaignReferenceAffectsPower:false
+  });
+  expect(out.rows.map(r=>r.mul)).toEqual([1,1,1.05,1.05,1.10,1.10,1.15,1.65,1.70]);
+  const baseHP=out.rows[0].hp,baseDmg=out.rows[0].dmg;
+  for(const r of out.rows){
+    expect(r.hp/baseHP).toBeCloseTo(r.mul,8);
+    expect(r.dmg/baseDmg).toBeCloseTo(r.mul,8);
   }
-  expect(out.rows[10].ref).toBe(62);
-  expect(out.rows[69].ref).toBe(280);
+  expect(out.rows[2].ref).toBeGreaterThan(out.rows[1].ref);
+  expect(out.rows[8].ref).toBe(280);
 });
 
 
