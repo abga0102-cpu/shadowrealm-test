@@ -51,7 +51,7 @@
        V470 crédite encore l'Or au moment du drop dans le moteur historique.
        On annule exactement ces crédits, puis on paie uniquement les résultats
        réellement recyclés. Le paiement de recyclage vaut 150% de l'ancienne
-       valeur de drop et conserve le bonus global d'Or via forgeGoldRewardV470. */
+       valeur de drop et conserve le bonus global d'Or via forgeGoldRewardV470.\n       Le résultat bonus gratuit conserve la règle V470 : aucune création d'Or. */
     var oldDropGold=0, recycleGold=0;
     res.forEach(function(r){
       if(!r)return;
@@ -141,5 +141,5 @@
     if(itemById(id)) showItemDetail(id);
   };
 
-  window.__srForgeRecycleGoldV489={version:489,multiplier:1.5,dropGold:false,recycleOnly:true};
+  window.__srForgeRecycleGoldV489={version:489,multiplier:1.5,dropGold:false,recycleOnly:true,freeBonusGold:false};
 })();
