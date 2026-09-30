@@ -1,5 +1,5 @@
-/* SHADOWREACH V394 · Raid Évolution PE authority
-   Level 1 = 150 PE, then +3 PE per raid level.
+/* SHADOWREACH V394 / V486 · Raid Évolution PE compatibility authority
+   Level 1 = 150 PE; +10 per level through level 14, then +5 per level through level 70.
    Only the Evolution raid reward is changed; Minerai, Or, Éclat, Essence and
    Autonomy remain under their existing authorities. */
 (function(){
@@ -8,8 +8,9 @@
   window.__srRaidPEV290=true;
 
   function peReward(level){
-    level=Math.max(1,Math.floor(Number(level)||1));
-    return 150+3*(level-1);
+    level=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
+    if(level<=14)return 150+10*(level-1);
+    return 280+5*(level-14);
   }
 
   try{
@@ -25,5 +26,5 @@
     }
   }catch(_){ }
 
-  window.__srRaidPEConfigV290={level1:150,perLevel:3,reward:peReward};
+  window.__srRaidPEConfigV290={curveVersion:486,level1:150,perLevelTo14:10,level14:280,perLevelFrom15:5,level15:285,level70:560,reward:peReward};
 })();
