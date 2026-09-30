@@ -34,6 +34,12 @@ function currentDamageBoostMultiplier(f){
   if(f>=CURRENT_DAMAGE_BOOST_START&&f<=CURRENT_DAMAGE_BOOST_END)return CURRENT_DAMAGE_BOOST_MUL;
   return CURRENT_DAMAGE_EXIT_GUARD[f]||1;
 }
+function applyCurrentDamageBoost(currentDamage,f,excluded){
+  currentDamage=Math.max(1,Math.floor(Number(currentDamage)||1));
+  if(excluded)return currentDamage;
+  var mul=currentDamageBoostMultiplier(f);
+  return mul===1?currentDamage:Math.max(1,Math.floor(currentDamage*mul));
+}
 /* V465 continuity guard: the previous stage (5-4) is an Elite still carrying
    the +60% early-pressure damage. A raw x0.70 on the 5-5 Boss would make the
    higher Boss weaker than that Elite. x0.85 is the smallest clean margin used
@@ -70,8 +76,7 @@ try{
          Keep this sequential instead of folding 1.30 into m.dmg: at very low
          integer damage values, recomputing from the pre-V465 source would not
          represent +30% of what the player is actually fighting today. */
-      var currentDamageBoost=opts.noFastback?1:currentDamageBoostMultiplier(f);
-      if(currentDamageBoost!==1)enemy.dmg=Math.max(1,Math.floor(enemy.dmg*currentDamageBoost));
+      enemy.dmg=applyCurrentDamageBoost(enemy.dmg,f,!!opts.noFastback);
       enemy.__srCampaignEarlyRebalanceV449={floor:f,hpMul:m.hp,dmgMul:m.dmg,band:m.band};
       return enemy;
     };
@@ -90,6 +95,7 @@ window.__srCampaignEarlyRebalanceConfigV449={
     hpChanged:false,raidsChanged:false,megaBossChanged:false
   },
   currentDamageBoostMultiplier:currentDamageBoostMultiplier,
+  applyCurrentDamageBoost:applyCurrentDamageBoost,
   multipliers:multipliers,isBossFloor:isBossFloor,postBossException:postBoss,
   invariant:'no-higher-stage-easier-except-stage-after-boss',raidsChanged:false,megaBossChanged:false
 };
