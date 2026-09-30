@@ -2,7 +2,7 @@
 (function(){
   'use strict';
 
-  const UNLOCK_LEVEL=18;
+  const UNLOCK_LEVEL=15;
   const STATE_VERSION=329;
   const MILESTONES={
     1:{level:1,rarity:'COMMUN',pieces:5,mins:1,qty:5},
