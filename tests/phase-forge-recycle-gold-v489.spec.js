@@ -14,14 +14,26 @@ test('V490 makes Forge gold strictly recycle-only at +50%',async()=>{
  expect(src).toContain('absoluteGoldSnapshot:true');
 });
 
+test('V490 pays Gold when a kept item is manually recycled',async()=>{
+ const src=fs.readFileSync(path.join(root,'forge-compare-v95.js'),'utf8');
+ expect(src).toContain('nativeRecycleItem');
+ expect(src).toContain('nativeRecycleBatch');
+ expect(src).toContain('nativeRecycleItemsByIds');
+ expect(src).toContain('payRecycleGoldV490');
+ expect(src).toContain('manualRecycleGold:true');
+});
+
 test('V490 feedback reports only recycled gold',async()=>{
  const src=fs.readFileSync(path.join(root,'forge-compare-v95.js'),'utf8');
  expect(src).toContain("+' or'");
  expect(src).toContain("var gold=melted.reduce");
 });
 
-test('V490 free Forge results never create Gold even when recycled',async()=>{
+test('V490 free Forge results never create Gold even when recycled later',async()=>{
  const src=fs.readFileSync(path.join(root,'forge-compare-v95.js'),'utf8');
  expect(src).toContain('if(r.recycled&&!r.free)');
+ expect(src).toContain('if(r.free) hit.freeForgeBonus=true');
+ expect(src).toContain('if(!it || it.freeForgeBonus) return sum');
  expect(src).toContain('freeBonusGold:false');
+ expect(src).toContain('freeOriginPersistent:true');
 });
