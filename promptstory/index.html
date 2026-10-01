@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b10">
+<title>PromptStory Mobile</title>
+<style>
+:root{color-scheme:dark;--bg:#09090d;--card:#14141b;--line:#292936;--txt:#f7f7fb;--muted:#9c9cab;--a:#8b5cf6}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,#42206b55,transparent 34%),var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;padding:0 14px 40px}
+main{max-width:760px;margin:auto}.top{padding:28px 2px 14px}.badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.12em;color:#d8b4fe;border:1px solid #8b5cf655;background:#8b5cf612;border-radius:999px;padding:7px 10px}
+h1{font-size:clamp(38px,11vw,62px);line-height:.98;letter-spacing:-.055em;margin:15px 0 12px}h1 span{color:#b794f6}.sub{color:var(--muted);line-height:1.5;font-size:14px}
+.card{background:linear-gradient(180deg,#15151d,#111117);border:1px solid var(--line);border-radius:22px;padding:16px;margin-top:14px}
+label{display:block;font-size:11px;color:#b7b7c5;margin:10px 0 6px}textarea,select{width:100%;background:#0b0b10;color:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;font:inherit;outline:none}textarea{min-height:135px;resize:vertical;font-size:16px;line-height:1.45}select{font-size:13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.go{width:100%;margin-top:14px;border:0;border-radius:16px;padding:15px;color:#fff;background:linear-gradient(135deg,#7c3aed,#9333ea);font-weight:900;font-size:15px}.go:active{transform:scale(.99)}
+#status{min-height:20px;margin-top:9px;color:#c4b5fd;font-size:12px}.result{display:none}.result.show{display:block}.result h2{font-size:29px;margin:4px 0 8px;letter-spacing:-.035em}.hook{background:#0b0b11;border:1px solid #8b5cf650;border-radius:14px;padding:12px;margin:12px 0}.hook small{display:block;color:#a78bfa;font-weight:800;letter-spacing:.1em;margin-bottom:5px}.scene{background:#111118;border:1px solid var(--line);border-radius:18px;padding:14px;margin:10px 0}.scenehead{display:flex;justify-content:space-between;align-items:center}.num{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:10px;background:#7c3aed22;border:1px solid #7c3aed55;color:#d8b4fe;font-weight:900}.phase{font-size:10px;color:#aaa;letter-spacing:.08em;font-weight:800}.narr{font-size:16px;line-height:1.48;margin:12px 0}.prompt{white-space:pre-wrap;font-size:12px;line-height:1.55;color:#d1d1da;background:#0b0b10;border-radius:12px;padding:11px;margin-top:8px}.copy{border:1px solid var(--line);background:#191923;color:#ddd;border-radius:999px;padding:8px 11px;font-size:11px;margin-top:8px}.tabs{display:flex;gap:7px;overflow:auto;margin:12px 0}.tabs button{border:1px solid var(--line);background:#15151d;color:#aaa;border-radius:999px;padding:9px 12px}.tabs button.active{color:#fff;border-color:#7c3aed77;background:#241a31}.panel{display:none}.panel.active{display:block}pre{white-space:pre-wrap;font:13px/1.6 inherit;color:#ddd}.foot{color:#70707d;font-size:11px;text-align:center;margin:20px 0}
+@media(min-width:700px){body{padding-left:22px;padding-right:22px}.grid{grid-template-columns:repeat(4,1fr)}.card{padding:20px}}
+</style>
+</head>
+<body>
+<main>
+<section class="top">
+<span class="badge">PROMPTSTORY MOBILE · V1.1</span>
+<h1>Une idée.<br><span>Une histoire visuelle.</span></h1>
+<div class="sub">Écris ton concept. Le moteur local crée une narration, un découpage scène par scène et des prompts image/vidéo directement sur ton téléphone.</div>
+</section>
+
+<section class="card">
+<label for="idea">TON IDÉE</label>
+<textarea id="idea" placeholder="Ex : Une mère retrouve une cassette enregistrée par son fils disparu dix ans plus tôt."></textarea>
+<div class="grid">
+<div><label for="genre">Genre</label><select id="genre"><option>Drame</option><option>Thriller</option><option>Horreur</option><option>Romance</option><option>Fantastique</option><option>Science-fiction</option><option>Comédie noire</option></select></div>
+<div><label for="tone">Ton</label><select id="tone"><option>Émotionnel</option><option>Sombre</option><option>Cinématographique</option><option>Nostalgique</option><option>Tendu</option><option>Poétique</option></select></div>
+<div><label for="duration">Durée</label><select id="duration"><option value="30">30 s</option><option value="45">45 s</option><option value="60" selected>60 s</option><option value="90">90 s</option></select></div>
+<div><label for="sceneCount">Scènes</label><select id="sceneCount"><option>5</option><option>6</option><option selected>7</option><option>8</option><option>10</option></select></div>
+</div>
+<button id="generate" class="go" type="button">✦ Générer l’histoire</button>
+<div id="status" aria-live="polite"></div>
+</section>
+
+<section id="result" class="result">
+<div class="card">
+<small style="color:#a78bfa;font-weight:800;letter-spacing:.1em">STORY PACKAGE</small>
+<h2 id="title"></h2>
+<div id="summary" class="sub"></div>
+<div class="hook"><small>HOOK</small><strong id="hook"></strong></div>
+<div class="tabs">
+<button class="tab active" data-tab="scenes">Scènes</button>
+<button class="tab" data-tab="story">Histoire</button>
+<button class="tab" data-tab="master">Master prompt</button>
+</div>
+</div>
+<div id="panel-scenes" class="panel active"></div>
+<div id="panel-story" class="panel card"><pre id="story"></pre><button class="copy" data-copy="story">Copier l’histoire</button></div>
+<div id="panel-master" class="panel card"><pre id="master"></pre><button class="copy" data-copy="master">Copier le master prompt</button></div>
+</section>
+
+<div class="foot">Fonctionne localement dans Safari/Chrome. Aucune clé API requise pour cette version.</div>
+</main>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const templates={
+"Drame":{hooks:["Il ne savait pas encore que c’était la dernière fois.","Elle avait gardé ce message pendant dix ans.","Il ne lui restait qu’une seule chose à offrir."],turns:["ce qu’il croyait avoir perdu avait été transmis à quelqu’un d’autre","son sacrifice avait protégé la personne qu’il aimait","la personne qu’il voulait sauver avait déjà fait un choix pour lui"]},
+"Thriller":{hooks:["Le message venait de son propre numéro.","À 03:17, la porte s’est ouverte toute seule.","La caméra montrait quelqu’un qui n’était pas encore arrivé."],turns:["un détail prouve qu’il est observé","le danger vient d’une personne qu’il connaît","la menace était en réalité un avertissement"]},
+"Horreur":{hooks:["Chaque nuit, la photo changeait légèrement.","Elle entendait quelqu’un respirer dans la pièce vide.","Le miroir avait une seconde de retard."],turns:["la présence connaît un souvenir impossible à connaître","il comprend qu’il n’est pas seul depuis le début","la dernière image montre que quelque chose l’a suivi"]},
+"Romance":{hooks:["Ils se sont reconnus avant même de se souvenir d’où.","Elle avait gardé le ticket pendant douze ans.","Il lui écrivait tous les ans sans jamais envoyer la lettre."],turns:["un souvenir partagé revient au même instant","l’un des deux avait protégé l’autre en silence","leur séparation venait d’un malentendu"]},
+"Fantastique":{hooks:["Depuis son enfance, il voyait une lumière que personne d’autre ne voyait.","La vieille clé n’ouvrait aucune porte normale.","Quand l’horloge s’est arrêtée, tout le monde s’est figé sauf elle."],turns:["le pouvoir exige un sacrifice personnel","l’objet appartenait autrefois à sa famille","le monde magique réagit à une émotion réelle"]},
+"Science-fiction":{hooks:["Le système l’a déclaré mort alors qu’il était encore debout.","Son clone a appelé pour lui demander de ne pas rentrer chez lui.","La station reçut un message envoyé dans vingt ans."],turns:["la technologie révèle une conséquence humaine inattendue","la copie possède un souvenir que l’original a oublié","la solution technique oblige à un choix moral"]},
+"Comédie noire":{hooks:["Il avait préparé le mensonge parfait. Tout le monde l’a cru.","Son plan pour économiser dix euros lui en coûta trois cents.","Il voulait juste éviter une conversation gênante."],turns:["la solution empire spectaculairement le problème","quelqu’un prend la situation beaucoup trop au sérieux","la conséquence absurde révèle une vraie émotion"]}
+};
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function pick(a,n){return a[Math.abs(n)%a.length]}
+function cut(s,n){const a=String(s).trim().split(/\s+/);return a.length>n?a.slice(0,n).join(" ")+"…":a.join(" ")}
+function ending(i){return ["Et là, il comprend que ce qu’il prenait pour une perte était en réalité le dernier geste d’amour qu’on lui avait laissé.","Son téléphone vibre une dernière fois. Le nouveau message contient une photo prise derrière lui.","Il arrive enfin à l’endroit qu’il cherchait. Mais il n’y a plus personne pour l’attendre.","Pour la première fois depuis longtemps, il sourit sans avoir besoin de faire semblant."][i%4]}
+function build(o){
+const seed=hash(o.idea+o.genre+o.tone),t=templates[o.genre]||templates.Drame,hook=pick(t.hooks,seed),turn=pick(t.turns,seed>>3);
+const beats=[
+["HOOK",hook,"Une image forte immédiatement compréhensible, sans exposition."],
+["CONTEXTE","Tout a commencé avec quelque chose de très simple : "+o.idea.trim().replace(/[.!?]+$/,"").toLowerCase()+".","Présenter le personnage, le lieu et l’élément central en une composition."],
+["ATTACHEMENT","Au début, ce détail paraît sans importance. Pourtant, c’est la seule chose à laquelle il s’accroche.","Créer de l’attachement avec un geste concret, un objet ou un regard."],
+["DÉCISION","Puis il fait un choix minuscule. Un choix que personne autour de lui ne remarque.","Montrer précisément l’action qui fait basculer l’histoire."],
+["RETOURNEMENT","C’est à ce moment-là qu’il comprend : "+turn+".","Révéler visuellement l’information qui change le sens des scènes précédentes."],
+["CONSÉQUENCE","Il pourrait encore revenir en arrière. Mais cette fois, il reste immobile.","Laisser l’émotion prendre la place de l’action."],
+["FIN",ending(seed),"Terminer sur une image autonome, forte et mémorable."]
+];
+while(beats.length<o.scenes)beats.splice(beats.length-1,0,["ESCALADE","Chaque seconde ajoute un nouveau détail qui rend son choix plus difficile.","Ajouter un obstacle concret sans répéter l’information précédente."]);
+const selected=beats.slice(0,o.scenes),seg=o.duration/o.scenes;
+const scenes=selected.map((b,i)=>{const start=Math.round(i*seg),end=i===selected.length-1?o.duration:Math.round((i+1)*seg);return{n:i+1,phase:b[0],time:start+"-"+end+"s",narr:b[1],image:o.tone.toLowerCase()+", cinéma réaliste, format vertical 9:16. Même personnage, même visage, même âge apparent, mêmes vêtements et mêmes accessoires dans toutes les scènes. Scène "+(i+1)+" : "+b[2]+" Contexte : "+cut(o.idea,30)+". Expression naturelle, posture lisible, lumière cinématographique motivée par le décor, profondeur de champ naturelle, aucun texte dans l’image.",video:(i===0?"Lent push-in naturel. Respiration, clignements et micro-mouvements réalistes.":b[0]==="RETOURNEMENT"?"Très léger mouvement vers le détail révélateur puis quasi-arrêt pour laisser comprendre le twist.":"Petit travelling ou push-in discret. Gestes humains naturels uniquement.")+" Conserver strictement visage, vêtements, accessoires, décor et géométrie.",negative:"visage différent, changement de tenue, changement d’âge, mains déformées, doigts supplémentaires, texte, sous-titres, logo, watermark, décor incohérent"}})
+return{title:pick(["La dernière promesse","Après le silence","Le détail oublié","Une seconde trop tard","Ce qu’il restait","Le message"],seed),hook,summary:cut(o.idea,34)+" Une histoire "+o.tone.toLowerCase()+" pensée pour déclencher une image claire à chaque étape.",scenes,story:scenes.map(s=>s.narr).join("\n\n"),master:"Créer un univers cinéma réaliste, "+o.tone.toLowerCase()+", format vertical 9:16. Continuité stricte du même personnage : même visage, même coupe de cheveux, même âge apparent, mêmes vêtements, mêmes accessoires. Chaque image doit traduire littéralement la narration de sa scène et ne jamais introduire un événement d’une autre scène. Expressions naturelles, composition lisible sur smartphone, profondeur cinématographique, aucun texte ni watermark."}}
+function copy(text){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>setStatus("Copié ✓")).catch(()=>setStatus("Copie impossible ici"))}else setStatus("Copie impossible ici")}
+function setStatus(t){$("status").textContent=t}
+function render(r){
+$("result").className="result show";$("title").textContent=r.title;$("summary").textContent=r.summary;$("hook").textContent=r.hook;$("story").textContent=r.story;$("master").textContent=r.master;
+$("panel-scenes").innerHTML=r.scenes.map(s=>'<article class="scene"><div class="scenehead"><div><span class="num">'+s.n+'</span> <span class="phase">'+s.phase+'</span></div><span class="phase">'+s.time+'</span></div><div class="narr">'+s.narr+'</div><details open><summary>Prompt image</summary><div class="prompt" id="img'+s.n+'">'+s.image+'</div><button class="copy" data-copy-id="img'+s.n+'">Copier image</button></details><details><summary>Prompt image → vidéo</summary><div class="prompt" id="vid'+s.n+'">'+s.video+'</div><button class="copy" data-copy-id="vid'+s.n+'">Copier vidéo</button></details><details><summary>À éviter</summary><div class="prompt">'+s.negative+'</div></details></article>').join("");
+document.querySelectorAll("[data-copy-id]").forEach(b=>b.onclick=()=>copy($(b.dataset.copyId).textContent));
+window.scrollTo({top:$("result").offsetTop-12,behavior:"smooth"})
+}
+$("generate").addEventListener("click",function(){
+try{
+const idea=$("idea").value.trim();if(!idea){setStatus("Écris d’abord une idée.");$("idea").focus();return}
+setStatus("Génération…");
+const o={idea,genre:$("genre").value,tone:$("tone").value,duration:Number($("duration").value),scenes:Number($("sceneCount").value)};
+const r=build(o);render(r);setStatus("Histoire générée ✓")
+}catch(err){console.error(err);setStatus("Erreur : "+(err&&err.message?err.message:"inconnue"))}
+});
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",function(){document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));b.classList.add("active");$("panel-"+b.dataset.tab).classList.add("active")}));
+document.querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",()=>copy($(b.dataset.copy).textContent)));
+})();
+</script>
+</body>
+</html>
