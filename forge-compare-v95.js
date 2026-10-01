@@ -1,7 +1,7 @@
 /* SHADOWREACH · forge comparison v95
    Résultats de Forge : compare immédiatement la pièce obtenue avec celle portée,
    affiche d'abord la stat de base et permet d'équiper sans passer par l'Inventaire.
-   V490: l'Or de Forge est versé uniquement lors d'un recyclage payant, avec +50%.
+   V490: l'Or de Forge est versé uniquement lors d'un recyclage, avec +50%.
 */
 (function(){
   'use strict';
@@ -13,6 +13,9 @@
 
   var lastForgeResults = null;
   var nativeForgeSummon = forgeSummon;
+  var nativeRecycleItem = typeof recycleItem === 'function' ? recycleItem : null;
+  var nativeRecycleBatch = typeof recycleBatch === 'function' ? recycleBatch : null;
+  var nativeRecycleItemsByIds = typeof recycleItemsByIds === 'function' ? recycleItemsByIds : null;
 
   function itemById(id){
     if (!id) return null;
@@ -40,6 +43,14 @@
     if(typeof forgeGoldRewardV470!=='function') return 0;
     return Math.max(0,Math.floor(forgeGoldRewardV470(S,rarity)*1.5));
   }
+  function payRecycleGoldV490(items){
+    var gold=(items||[]).reduce(function(sum,it){
+      if(!it || it.free) return sum;
+      return sum+recycleGoldV490(it.rarity);
+    },0);
+    if(gold>0) update(function(st){st.gold=(Number(st.gold)||0)+gold;});
+    return gold;
+  }
 
   // Le moteur historique ne renvoyait que rareté/slot/puissance. On rattache ici
   // chaque ligne au véritable objet ajouté au sac, sans toucher au tirage lui-même.
@@ -47,8 +58,8 @@
     /* V490: snapshot de l'Or AVANT d'appeler le moteur historique.
        On ne dépend plus de r.gold pour annuler le paiement du drop : quelle que
        soit la façon dont le moteur crédite l'Or, le solde revient exactement au
-       niveau d'avant Forge, puis seul un recyclage PAYANT reçoit son +50%.
-       Un résultat gratuit ne crée jamais d'Or, recyclé ou conservé. */
+       niveau d'avant Forge, puis seul un recyclage reçoit son +50%.
+       Un résultat bonus gratuit ne crée jamais d'Or au recyclage automatique. */
     var goldBefore=Math.max(0,Number(S.gold)||0);
     var before = new Set((S.inventory || []).map(function(x){ return x.id; }));
     var res = nativeForgeSummon.apply(this, arguments) || [];
@@ -78,6 +89,35 @@
     });
     return res;
   };
+
+  /* V490: un équipement conservé ne paie rien au drop. S'il est recyclé plus
+     tard depuis l'Inventaire, l'Or est versé à ce moment précis. Les trois
+     chemins de recyclage manuel utilisent la même formule que le filtre Forge. */
+  if(nativeRecycleItem){
+    recycleItem=function(id){
+      var it=(S.inventory||[]).find(function(x){return x&&x.id===id;});
+      var dust=nativeRecycleItem.apply(this,arguments);
+      if(it&&dust>0) payRecycleGoldV490([it]);
+      return dust;
+    };
+  }
+  if(nativeRecycleBatch){
+    recycleBatch=function(rarity){
+      var items=(S.inventory||[]).filter(function(x){return x&&x.rarity===rarity;});
+      var out=nativeRecycleBatch.apply(this,arguments);
+      if(out&&out.n>0) out.gold=payRecycleGoldV490(items);
+      return out;
+    };
+  }
+  if(nativeRecycleItemsByIds){
+    recycleItemsByIds=function(ids){
+      var set=new Set(ids||[]);
+      var items=(S.inventory||[]).filter(function(x){return x&&set.has(x.id);});
+      var out=nativeRecycleItemsByIds.apply(this,arguments);
+      if(out&&out.n>0) out.gold=payRecycleGoldV490(items);
+      return out;
+    };
+  }
 
   function resultCard(r){
     var it=itemById(r.id);
@@ -140,5 +180,5 @@
     if(itemById(id)) showItemDetail(id);
   };
 
-  window.__srForgeRecycleGoldV490={version:490,multiplier:1.5,dropGold:false,recycleOnly:true,freeBonusGold:false,absoluteGoldSnapshot:true};
+  window.__srForgeRecycleGoldV490={version:490,multiplier:1.5,dropGold:false,recycleOnly:true,freeBonusGold:false,absoluteGoldSnapshot:true,manualRecycleGold:true};
 })();
