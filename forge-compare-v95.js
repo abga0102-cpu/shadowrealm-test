@@ -1,7 +1,7 @@
 /* SHADOWREACH · forge comparison v95
    Résultats de Forge : compare immédiatement la pièce obtenue avec celle portée,
    affiche d'abord la stat de base et permet d'équiper sans passer par l'Inventaire.
-   V489: l'Or de Forge est versé uniquement lors d'un recyclage, avec +50%.
+   V490: l'Or de Forge est versé uniquement lors d'un recyclage payant, avec +50%.
 */
 (function(){
   'use strict';
@@ -36,7 +36,7 @@
     return Math.round(computePower(trial) - before);
   }
 
-  function recycleGoldV489(rarity){
+  function recycleGoldV490(rarity){
     if(typeof forgeGoldRewardV470!=='function') return 0;
     return Math.max(0,Math.floor(forgeGoldRewardV470(S,rarity)*1.5));
   }
@@ -44,27 +44,26 @@
   // Le moteur historique ne renvoyait que rareté/slot/puissance. On rattache ici
   // chaque ligne au véritable objet ajouté au sac, sans toucher au tirage lui-même.
   forgeSummon = function(n){
+    /* V490: snapshot de l'Or AVANT d'appeler le moteur historique.
+       On ne dépend plus de r.gold pour annuler le paiement du drop : quelle que
+       soit la façon dont le moteur crédite l'Or, le solde revient exactement au
+       niveau d'avant Forge, puis seul un recyclage PAYANT reçoit son +50%.
+       Un résultat gratuit ne crée jamais d'Or, recyclé ou conservé. */
+    var goldBefore=Math.max(0,Number(S.gold)||0);
     var before = new Set((S.inventory || []).map(function(x){ return x.id; }));
     var res = nativeForgeSummon.apply(this, arguments) || [];
-
-    /* V489 · Source d'Or de Forge unique : recyclage.
-       V470 crédite encore l'Or au moment du drop dans le moteur historique.
-       On annule exactement ces crédits, puis on paie uniquement les résultats
-       réellement recyclés. Le paiement de recyclage vaut 150% de l'ancienne
-       valeur de drop et conserve le bonus global d'Or via forgeGoldRewardV470.\n       Le résultat bonus gratuit conserve la règle V470 : aucune création d'Or. */
-    var oldDropGold=0, recycleGold=0;
+    var recycleGold=0;
     res.forEach(function(r){
       if(!r)return;
-      oldDropGold+=Math.max(0,Number(r.gold)||0);
       r.gold=0;
-      if(r.recycled){
-        var g=recycleGoldV489(r.rarity);
+      if(r.recycled&&!r.free){
+        var g=recycleGoldV490(r.rarity);
         recycleGold+=g;
         r.gold=g;
       }
     });
-    if(oldDropGold||recycleGold){
-      update(function(st){st.gold=Math.max(0,(Number(st.gold)||0)-oldDropGold+recycleGold);});
+    if((Number(S.gold)||0)!==goldBefore||recycleGold){
+      update(function(st){st.gold=goldBefore+recycleGold;});
     }
 
     var fresh = (S.inventory || []).filter(function(x){ return !before.has(x.id); });
@@ -141,5 +140,5 @@
     if(itemById(id)) showItemDetail(id);
   };
 
-  window.__srForgeRecycleGoldV489={version:489,multiplier:1.5,dropGold:false,recycleOnly:true,freeBonusGold:false};
+  window.__srForgeRecycleGoldV490={version:490,multiplier:1.5,dropGold:false,recycleOnly:true,freeBonusGold:false,absoluteGoldSnapshot:true};
 })();
