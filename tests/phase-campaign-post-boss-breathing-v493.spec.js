@@ -7,7 +7,10 @@ assert(src.includes("visibleFrom:'Facile 3-16'"),'V493 must start at Facile 3-16
 assert(src.includes('var refFloor=bossFloor-3+offset; /* B-2 for B+1; B-1 for B+2 */'),'B+1/B+2 must reference B-2/B-1');
 assert(src.includes('secondHP*BREATHING_EXIT_MAX_MUL'),'B+3 HP must be capped against B+2 target');
 assert(src.includes('secondDmg*BREATHING_EXIT_MAX_MUL'),'B+3 damage must be capped against B+2 target');
-assert(src.includes("stats:['hp','damage'],bossChanged:false,raidsChanged:false,megaBossChanged:false"),'V493 scope must exclude bosses, raids and mega-bosses');
+assert(src.includes("stats:['hp','damage'],bossChanged:false,raidsChanged:false,megaBossChanged:false,rngNeutralReferences:true"),'V493 scope must exclude bosses/raids/mega-bosses and keep reference spawns RNG-neutral');
+assert(src.includes('var realRandom=Math.random,ref=null;'),'V493 reference construction must preserve the live RNG function');
+assert(src.includes('Math.random=function(){return 0.5;};'),'V493 reference construction must use deterministic local randomness');
+assert(src.includes('Math.random=realRandom;'),'V493 must restore live RNG after reference construction');
 
 function offset(f){if(f<56)return 0;const r=f%5;return r>=1&&r<=3?r:0;}
 assert.strictEqual(offset(55),0,'Facile 3-15 Boss unchanged');
