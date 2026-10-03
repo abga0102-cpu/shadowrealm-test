@@ -43,11 +43,6 @@ function applyCurrentDamageBoost(currentDamage,f,excluded){
   var mul=currentDamageBoostMultiplier(f);
   return mul===1?currentDamage:Math.max(1,Math.floor(currentDamage*mul));
 }
-/* V465 continuity guard: the previous stage (5-4) is an Elite still carrying
-   the +60% early-pressure damage. A raw x0.70 on the 5-5 Boss would make the
-   higher Boss weaker than that Elite. x0.85 is the smallest clean margin used
-   here; the full x0.70 begins immediately after the Boss, where a drop is
-   explicitly allowed by the progression rule. */
 var SECOND_ENTRY_DAMAGE_MUL=0.85;
 function multipliers(f){
   f=Math.max(1,Math.floor(Number(f)||1));
@@ -86,7 +81,18 @@ function referenceEnemy(previousMakeEnemy,opts,f){
   var flags=stageKindFlags(f);
   ropts.boss=flags.boss;
   ropts.elite=flags.elite;
-  var ref=previousMakeEnemy('campaign',ropts);
+  /* Reference-only spawns must not advance the live combat RNG stream. V493
+     originally called makeEnemy extra times with the global Math.random, which
+     changed later encounters and could make the historical floor-110 combat
+     fail. A fixed local random source keeps reference construction deterministic
+     while leaving the real encounter sequence untouched. */
+  var realRandom=Math.random,ref=null;
+  try{
+    Math.random=function(){return 0.5;};
+    ref=previousMakeEnemy('campaign',ropts);
+  }finally{
+    Math.random=realRandom;
+  }
   return applyLegacyBalance(ref,f,ropts);
 }
 function capEnemyTo(enemy,targetHP,targetDmg,meta){
@@ -100,10 +106,6 @@ function capEnemyTo(enemy,targetHP,targetDmg,meta){
   return enemy;
 }
 
-/* Final-spawn authority. This intentionally sits after V288/V289/V333/V362 so
-   the percentages are relative to the balance the player actually had before
-   V449, rather than resurrecting an obsolete source curve. V493 stays inside
-   this same final owner instead of adding another competing Campaign wrapper. */
 try{
   if(typeof makeEnemy==='function'&&!makeEnemy.__srCampaignEarlyRebalanceV449){
     var previousMakeEnemy=makeEnemy;
@@ -128,10 +130,6 @@ try{
         );
       }
 
-      /* Third floor: normal progression is allowed to return, but never by more
-         than +15% over the second breathing floor's target. That target itself
-         is derived from B-1, so this remains deterministic and does not depend
-         on what the player happened to fight in the previous combat. */
       var secondRef=referenceEnemy(previousMakeEnemy,opts,bossFloor-1);
       if(!secondRef)return enemy;
       var secondHP=Number(secondRef.maxHP||secondRef.hp||1)*BREATHING_REFERENCE_MUL;
@@ -161,7 +159,7 @@ window.__srCampaignEarlyRebalanceConfigV449={
     from:BREATHING_START,visibleFrom:'Facile 3-16',bossCadence:BOSS_EVERY,
     firstTwo:{reference:'two floors immediately before Boss',relativeMul:BREATHING_REFERENCE_MUL},
     third:{normalCurve:true,maxIncreaseVsSecond:BREATHING_EXIT_MAX_MUL},
-    stats:['hp','damage'],bossChanged:false,raidsChanged:false,megaBossChanged:false
+    stats:['hp','damage'],bossChanged:false,raidsChanged:false,megaBossChanged:false,rngNeutralReferences:true
   },
   currentDamageBoostMultiplier:currentDamageBoostMultiplier,
   applyCurrentDamageBoost:applyCurrentDamageBoost,
