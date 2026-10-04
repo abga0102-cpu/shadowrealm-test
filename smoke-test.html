@@ -324,7 +324,7 @@ function run(W) {
     }
     return bad.length ? bad.join(", ") : true;
   });
-  check("V496 : éclosion +120%, Or +50% et 4 Autonomies 10→20%", function () {
+  check("V496 : éclosion +120%, Or +50% et 4 Autonomies 10→25%", function () {
     const bad = [];
     const hatch = ["COMMUN","PEU_COMMUN","RARE","EPIQUE","MYTHIQUE","ANCESTRAL","LEGENDAIRE","DIVIN"];
     hatch.forEach(function(r) {
@@ -339,7 +339,7 @@ function run(W) {
     ["afkGold","afkMinerai","afkEssence","afkEclat"].forEach(function(effect){
       const nodes=H.TREE_NODES.filter(function(n){return n.effect===effect;});
       const add=nodes.reduce(function(sum,n){return sum+W.treeEffectivePer(n)*n.max;},0);
-      if(nodes.length!==4||Math.abs(add-10)>1e-9)bad.push(effect+"="+add);
+      if(nodes.length!==4||Math.abs(add-15)>1e-9)bad.push(effect+"="+add);
     });
     return bad.length ? bad.join(", ") : true;
   });
@@ -1005,19 +1005,19 @@ function run(W) {
     if (H.S.essence !== 5) return "Essence restante " + H.S.essence + " au lieu de 5";
     return true;
   });
-  check("la Récolte Autonomie produit 5 %/h sans boost", function () {
+  check("la Récolte Autonomie produit 10 %/h sans boost", function () {
     const bad = [];
     set(function (st) { st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 }; });
     [[1, 0], [50, 0], [1, 1], [30, 1]].forEach(function (c) {
       set(function (st) { st.raids.minerai.level = c[0]; st.raids.minerai.stars = c[1]; });
       const r = W.harvestRates(H.S).minerai;
-      const expected = W.raidReward("minerai", c[0]) * 0.05;
+      const expected = W.raidReward("minerai", c[0]) * 0.10;
       if (Math.abs(r - expected) > 1e-9) bad.push("niv" + c[0] + " ★" + c[1] + " : " + r + "/h au lieu de " + expected);
     });
     set(function (st) { st.raids.minerai.level = 1; st.raids.minerai.stars = 0; });
     return bad.length ? bad.join(", ") : true;
   });
-  check("les 4 ressources Autonomie progressent indépendamment de 5 à 20 %/h", function () {
+  check("les 4 ressources Autonomie progressent indépendamment de 10 à 25 %/h", function () {
     const effects = { minerai:"afkMinerai", essence:"afkEssence", eclat:"afkEclat", gold:"afkGold" };
     set(function (st) {
       st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
@@ -1032,16 +1032,16 @@ function run(W) {
     };
     const bad=[];
     Object.keys(rewards).forEach(function(k){
-      if(Math.abs(base[k]-rewards[k]*0.05)>1e-9)bad.push(k+" base");
+      if(Math.abs(base[k]-rewards[k]*0.10)>1e-9)bad.push(k+" base");
     });
     set(function(st){
       H.TREE_NODES.filter(function(n){return n.effect===effects.minerai;})
         .forEach(function(n){st.tree.levels[n.id]=5;});
     });
     const one=W.harvestRates(H.S);
-    if(Math.abs(one.minerai-rewards.minerai*0.20)>1e-9)bad.push("minerai max");
+    if(Math.abs(one.minerai-rewards.minerai*0.25)>1e-9)bad.push("minerai max");
     ["essence","eclat","gold"].forEach(function(k){
-      if(Math.abs(one[k]-rewards[k]*0.05)>1e-9)bad.push(k+" a bougé");
+      if(Math.abs(one[k]-rewards[k]*0.10)>1e-9)bad.push(k+" a bougé");
     });
     set(function(st){
       Object.keys(effects).forEach(function(k){
@@ -1051,7 +1051,7 @@ function run(W) {
     });
     const all=W.harvestRates(H.S);
     Object.keys(rewards).forEach(function(k){
-      if(Math.abs(all[k]-rewards[k]*0.20)>1e-9)bad.push(k+" max");
+      if(Math.abs(all[k]-rewards[k]*0.25)>1e-9)bad.push(k+" max");
     });
     return bad.length ? bad.join(", ") : true;
   });
