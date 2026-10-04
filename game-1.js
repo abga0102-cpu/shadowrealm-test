@@ -1472,27 +1472,26 @@ const RAIDS = {
   evolution:  { name: "Raid Évolution",  icon: "chart",   color: "#3FCFD6", reward: "PE" },
 };
 const RAID_IDS = ["or", "minerai", "competence", "familier", "evolution"];
-/* ---------------------------- raid difficulty V444 / V484 / V485 ----------
+/* ---------------------------- raid difficulty V444 / V496 -----------------
    Raid progression remains a 70-level ladder displayed 1-1 -> 7-10.
-   The historical Campaign reference mapping is kept for labels/context only.
+   Campaign references remain labels/context only and never scale Raid power.
 
-   V484 retired the old "up to +22% per Raid level" smoothing. V485 keeps that
-   deterministic staircase but raises each 5-level step from +5 to +7.5
-   percentage points, relative to Raid level 1. The same staircase scales the
-   expected damage and HP axes so total Raid tuning remains coherent.
-   Existing per-Raid identities remain: Or = long attrition, Evolution = hardest,
-   Minerai = tanky boss, Competence/Familier = neutral baseline.
+   V496 replaces V485's +7.5-point staircase. Every fifth level adds +15
+   percentage points through level 15, then +10 points from level 20 onward.
+   The increase is measured against Raid level 1, matching the existing
+   staircase semantics and avoiding a second stacked/compounded multiplier.
+   Existing per-Raid identities remain unchanged.
    -------------------------------------------------------------------------- */
 const RAID_LEVELS_PER_CHAPTER = 10;
 const RAID_CAMPAIGN_STEP_MULT = 2;
 const RAID_REFERENCE_PRESSURE_MUL = 1.15;
-const RAID_POWER_STEP_LEVELS_V485 = 5;
-const RAID_POWER_STEP_PCT_V485 = 0.075;
-/* V485: no Campaign-derived jumps. Every fifth Raid level adds exactly +7.5
-   percentage points to both Raid power axes versus level 1:
-   1-4 = x1.00, 5-9 = x1.075, 10-14 = x1.15 ... level 70 = x2.05.
-   The global Raid modifiers in V289 and per-Raid identity tuning still apply
-   afterwards exactly as before. */
+const RAID_POWER_STEP_LEVELS_V496 = 5;
+const RAID_POWER_PRE20_PCT_V496 = 0.15;
+const RAID_POWER_FROM20_PCT_V496 = 0.10;
+/* V496:
+   1-4 x1.00, 5-9 x1.15, 10-14 x1.30, 15-19 x1.45,
+   20-24 x1.55, then +0.10 every five levels through level 70 x2.55.
+   Global Raid modifiers in V289 and per-Raid identity tuning still apply. */
 const RAID_REFERENCE_TTK_UNITS = 6.5;
 const RAID_REFERENCE_TTD_DIV = 6;
 
@@ -1541,15 +1540,18 @@ function raidRawExpectedPlayerHP(level) {
   } catch (_) {}
   return Math.max(1, RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, Math.max(1, Number(level) || 1)) * RAID_REFERENCE_TTD_DIV);
 }
-function raidPowerStepMultiplierV485(level) {
+function raidPowerStepMultiplierV496(level) {
   const lv = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(level) || 1)));
-  return 1 + Math.floor(lv / RAID_POWER_STEP_LEVELS_V485) * RAID_POWER_STEP_PCT_V485;
+  const pre20 = Math.min(3, Math.floor(lv / RAID_POWER_STEP_LEVELS_V496));
+  const from20 = lv >= 20 ? Math.floor((lv - 20) / RAID_POWER_STEP_LEVELS_V496) + 1 : 0;
+  return 1 + pre20 * RAID_POWER_PRE20_PCT_V496 + from20 * RAID_POWER_FROM20_PCT_V496;
 }
+function raidPowerStepMultiplierV485(level) { return raidPowerStepMultiplierV496(level); }
 function raidExpectedPlayerDamage(level) {
-  return Math.max(1, raidRawExpectedPlayerDamage(1) * raidPowerStepMultiplierV485(level));
+  return Math.max(1, raidRawExpectedPlayerDamage(1) * raidPowerStepMultiplierV496(level));
 }
 function raidExpectedPlayerHP(level) {
-  return Math.max(1, raidRawExpectedPlayerHP(1) * raidPowerStepMultiplierV485(level));
+  return Math.max(1, raidRawExpectedPlayerHP(1) * raidPowerStepMultiplierV496(level));
 }
 /* Legacy constants remain only as safe pre-authority fallbacks during boot. */
 const RAID_HP_BASE = 464, RAID_HP_GROWTH = 1.2723;
@@ -1566,21 +1568,31 @@ window.__srRaidCampaignLinkedV444 = {
   growthCap: null,
   referenceFloor: raidReferenceCampaignFloor, levelLabel: raidLevelLabel,
   campaignReady: raidCampaignReady,
-  powerStepV485:{
-    everyLevels:RAID_POWER_STEP_LEVELS_V485,
-    addPct:RAID_POWER_STEP_PCT_V485*100,
-    multiplier:raidPowerStepMultiplierV485,
-    level70Multiplier:raidPowerStepMultiplierV485(70),
+  powerStepV496:{
+    everyLevels:RAID_POWER_STEP_LEVELS_V496,
+    addPctBefore20:RAID_POWER_PRE20_PCT_V496*100,
+    addPctFrom20:RAID_POWER_FROM20_PCT_V496*100,
+    multiplier:raidPowerStepMultiplierV496,
+    level70Multiplier:raidPowerStepMultiplierV496(70),
     campaignReferenceAffectsPower:false
   },
-  /* Compatibility alias for any late UI/test still reading the V484 property. */
-  powerStepV484:{
-    everyLevels:RAID_POWER_STEP_LEVELS_V485,
-    addPct:RAID_POWER_STEP_PCT_V485*100,
-    multiplier:raidPowerStepMultiplierV485,
-    level70Multiplier:raidPowerStepMultiplierV485(70),
+  powerStepV485:{
+    everyLevels:RAID_POWER_STEP_LEVELS_V496,
+    addPctBefore20:RAID_POWER_PRE20_PCT_V496*100,
+    addPctFrom20:RAID_POWER_FROM20_PCT_V496*100,
+    multiplier:raidPowerStepMultiplierV496,
+    level70Multiplier:raidPowerStepMultiplierV496(70),
     campaignReferenceAffectsPower:false,
-    supersededBy:485
+    supersededBy:496
+  },
+  powerStepV484:{
+    everyLevels:RAID_POWER_STEP_LEVELS_V496,
+    addPctBefore20:RAID_POWER_PRE20_PCT_V496*100,
+    addPctFrom20:RAID_POWER_FROM20_PCT_V496*100,
+    multiplier:raidPowerStepMultiplierV496,
+    level70Multiplier:raidPowerStepMultiplierV496(70),
+    campaignReferenceAffectsPower:false,
+    supersededBy:496
   }
 };
 
@@ -1597,17 +1609,19 @@ function raidReward(raid, level) {
     const capped = Math.min(RULES.RAID_MAX_LEVEL, lv);
     return capped <= 14 ? 150 + 10 * (capped - 1) : 280 + 5 * (capped - 14);
   }
-  if (raid === "competence") return 250 + 10 * (lv - 1);
-  if (raid === "familier") return lv <= 11 ? 200 + 5 * (lv - 1) : 250 + 2 * (lv - 11);
+  if (raid === "competence") return 300 + 10 * (lv - 1);
+  if (raid === "familier") return lv <= 11 ? 225 + 5 * (lv - 1) : 275 + 2 * (lv - 11);
   if (raid === "or") {
     if (lv <= 10) return Math.round(5000 + 5000 * ((lv - 1) / 9));
-    if (lv <= 15) return 10000 + (lv - 10) * 1000;
-    if (lv <= 20) return 15000 + (lv - 15) * 1000;
-    return Math.floor(20000 * Math.pow(1.057, lv - 20));
+    if (lv <= 15) return Math.round(10000 + 10000 * ((lv - 10) / 5));
+    if (lv <= 20) return Math.round(20000 + 10000 * ((lv - 15) / 5));
+    return Math.floor(30000 * Math.pow(1.05, lv - 20));
   }
   if (raid === "minerai") {
     const capped = Math.min(RULES.RAID_MAX_LEVEL, lv);
-    return 500 + 5 * (capped - 1);
+    if (capped <= 11) return 500 + 50 * (capped - 1);
+    if (capped <= 31) return 1000 + 25 * (capped - 11);
+    return 1500 + 10 * (capped - 31);
   }
   const base = RAID_BASE[raid] || 8;
   return Math.floor(base * Math.pow(RAID_GROWTH, lv - 1));
@@ -1798,7 +1812,7 @@ const TREE_NODES = [
   { id: "n1_02", sect: "Palier I", label: "Forge Amélioration Coût I", short: "Forge Coût I", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_12", "n1_06", "n1_18"], lane: 3, row: 4 },
   { id: "n1_25", sect: "Palier I", label: "Œuf Épique Vitesse d'éclosion I", short: "Œuf Épique I", icon: "egg", color: "#B15CF6", tier: 1, effect: "hatch_EPIQUE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_11", "n1_15", "n1_17"], lane: 4, row: 4 },
   { id: "n1_21", sect: "Palier I", label: "Chaussures Bonus Santé I", short: "Chaussures I", icon: "boot", color: "#57E07A", tier: 1, effect: "eq_bottes", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_26"], lane: 0, row: 5 },
-  { id: "n1_07", sect: "Palier I", label: "Autonomie Or I", short: "Auton. Or I", icon: "gold", color: "#F5C542", tier: 1, effect: "afkGold", per: 0.3, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_08", "n1_26"], lane: 1, row: 5, note: "+0,3 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id: "n1_07", sect: "Palier I", label: "Autonomie Or I", short: "Auton. Or I", icon: "gold", color: "#F5C542", tier: 1, effect: "afkGold", per: 0.2, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_08", "n1_26"], lane: 1, row: 5, note: "+0,2 point de %/h par niveau · Max 20 %/h avec la base" },
   { id: "n1_20", sect: "Palier I", label: "Anneau Bonus Dégâts I", short: "Anneau I", icon: "ring", color: "#FF5A5A", tier: 1, effect: "eq_anneau", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_25"], lane: 2, row: 5 },
   { id: "n1_27", sect: "Palier I", label: "Œuf Légendaire Vitesse d'éclosion I", short: "Œuf Légend. I", icon: "egg", color: "#F5C542", tier: 1, effect: "hatch_LEGENDAIRE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_11", "n1_25", "n1_26", "n1_14"], lane: 3, row: 5 },
   { id: "n1_03", sect: "Palier I", label: "Chance de forger gratuitement I", short: "Forge Grat. I", icon: "hammer", color: "#F5C542", tier: 1, effect: "forgeFree", per: 1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_02"], lane: 4, row: 5 },
@@ -1822,7 +1836,7 @@ const TREE_NODES = [
   { id: "n2_19", sect: "Palier II", label: "Armure Bonus Santé II", short: "Armure II", icon: "armor", color: "#57E07A", tier: 2, effect: "eq_armure", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_21"], lane: 1, row: 9 },
   { id: "n2_13", sect: "Palier II", label: "Animal Bonus Dégâts II", short: "Animal Dég. II", icon: "paw", color: "#FF7A3D", tier: 2, effect: "petDmg", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_08", "n2_15"], lane: 2, row: 9 },
   { id: "n2_04", sect: "Palier II", label: "Recherche Technologique Vitesse du minuteur II", short: "Rech. Vit. II", icon: "clock", color: "#3FCFD6", tier: 2, effect: "research", per: 4, unit: "%", max: 5, times: PAL_T[1], req: ["n2_08"], lane: 3, row: 9 },
-  { id: "n2_07", sect: "Palier II", label: "Autonomie Or II", short: "Auton. Or II", icon: "gold", color: "#F5C542", tier: 2, effect: "afkGold", per: 0.6, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n2_08"], lane: 4, row: 9, note: "+0,6 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id: "n2_07", sect: "Palier II", label: "Autonomie Or II", short: "Auton. Or II", icon: "gold", color: "#F5C542", tier: 2, effect: "afkGold", per: 0.4, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n2_08"], lane: 4, row: 9, note: "+0,4 point de %/h par niveau · Max 20 %/h avec la base" },
   { id: "n2_25", sect: "Palier II", label: "Œuf Épique Vitesse d'éclosion II", short: "Œuf Épique II", icon: "egg", color: "#B15CF6", tier: 2, effect: "hatch_EPIQUE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n2_21", "n2_13", "n2_19"], lane: 0, row: 10 },
   { id: "n2_12", sect: "Palier II", label: "Compétence Invoquer Coût II", short: "Invoq. Coût II", icon: "sparkle", color: "#B15CF6", tier: 2, effect: "skillCost", per: -1, unit: "%", max: 5, times: PAL_T[1], req: ["n2_28", "n2_02"], lane: 1, row: 10 },
   { id: "n2_22", sect: "Palier II", label: "Ceinture Bonus Santé II", short: "Ceinture II", icon: "chain", color: "#57E07A", tier: 2, effect: "eq_ceinture", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_28", "n2_10"], lane: 2, row: 10 },
@@ -1855,7 +1869,7 @@ const TREE_NODES = [
   { id: "n3_01", sect: "Palier III", label: "Forge Amélioration Vitesse du minuteur III", short: "Forge Vit. III", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeTime", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_21"], lane: 4, row: 15 },
   { id: "n3_22", sect: "Palier III", label: "Ceinture Bonus Santé III", short: "Ceinture III", icon: "chain", color: "#57E07A", tier: 3, effect: "eq_ceinture", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_06", "n3_14"], lane: 0, row: 16 },
   { id: "n3_23", sect: "Palier III", label: "Œuf Commun Vitesse d'éclosion III", short: "Œuf Commun III", icon: "egg", color: "#9FB0C8", tier: 3, effect: "hatch_COMMUN", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_24"], lane: 1, row: 16 },
-  { id: "n3_07", sect: "Palier III", label: "Autonomie Or III", short: "Auton. Or III", icon: "gold", color: "#F5C542", tier: 3, effect: "afkGold", per: 0.9, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_21", "n3_24"], lane: 2, row: 16, note: "+0,9 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id: "n3_07", sect: "Palier III", label: "Autonomie Or III", short: "Auton. Or III", icon: "gold", color: "#F5C542", tier: 3, effect: "afkGold", per: 0.6, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_21", "n3_24"], lane: 2, row: 16, note: "+0,6 point de %/h par niveau · Max 20 %/h avec la base" },
   { id: "n3_02", sect: "Palier III", label: "Forge Amélioration Coût III", short: "Forge Coût III", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[2], req: ["n3_19", "n3_12", "n3_01"], lane: 3, row: 16 },
   { id: "n3_20", sect: "Palier III", label: "Anneau Bonus Dégâts III", short: "Anneau III", icon: "ring", color: "#FF5A5A", tier: 3, effect: "eq_anneau", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_24"], lane: 4, row: 16 },
   { id: "n3_17", sect: "Palier III", label: "Gants Bonus Dégâts III", short: "Gants III", icon: "glove", color: "#FF5A5A", tier: 3, effect: "eq_gants", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_23"], lane: 0, row: 17 },
@@ -1894,7 +1908,7 @@ const TREE_NODES = [
   { id: "n4_30", sect: "Palier IV", label: "PE obtenus dans le Raid Évolution IV", short: "PE Raid IV", icon: "gem", color: "#3FB950", tier: 4, effect: "peRaid", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_25"], lane: 2, row: 23 },
   { id: "n4_09", sect: "Palier IV", label: "Compétence Dégâts IV", short: "Comp. Dég. IV", icon: "sparkle", color: "#9B5CF6", tier: 4, effect: "skillDmg", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_14"], lane: 3, row: 23 },
   { id: "n4_22", sect: "Palier IV", label: "Ceinture Bonus Santé IV", short: "Ceinture IV", icon: "chain", color: "#57E07A", tier: 4, effect: "eq_ceinture", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_25", "n4_12", "n4_14"], lane: 4, row: 23 },
-  { id: "n4_07", sect: "Palier IV", label: "Autonomie Or IV", short: "Auton. Or IV", icon: "gold", color: "#F5C542", tier: 4, effect: "afkGold", per: 1.2, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_04"], lane: 0, row: 24, note: "+1,2 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id: "n4_07", sect: "Palier IV", label: "Autonomie Or IV", short: "Auton. Or IV", icon: "gold", color: "#F5C542", tier: 4, effect: "afkGold", per: 0.8, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_04"], lane: 0, row: 24, note: "+0,8 point de %/h par niveau · Max 20 %/h avec la base" },
   { id: "n4_23", sect: "Palier IV", label: "Œuf Commun Vitesse d'éclosion IV", short: "Œuf Commun IV", icon: "egg", color: "#9FB0C8", tier: 4, effect: "hatch_COMMUN", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_12", "n4_19"], lane: 1, row: 24 },
   { id: "n4_27", sect: "Palier IV", label: "Œuf Légendaire Vitesse d'éclosion IV", short: "Œuf Légend. IV", icon: "egg", color: "#F5C542", tier: 4, effect: "hatch_LEGENDAIRE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_25", "n4_22"], lane: 2, row: 24 },
   { id: "n4_03", sect: "Palier IV", label: "Chance de forger gratuitement IV", short: "Forge Grat. IV", icon: "hammer", color: "#F5C542", tier: 4, effect: "forgeFree", per: 1, unit: "%", max: 5, times: PAL_T[3], req: ["n4_04"], lane: 3, row: 24 },
@@ -1924,27 +1938,27 @@ TREE_NODES.forEach((n) => {
 const TREE_V476_EXTRA_NODES = [
   { id:"n1_anc", sect:"Palier I", label:"Œuf Ancestral Vitesse d'éclosion I", short:"Œuf Ancestral I", icon:"egg", color:"#3FE0C0", tier:1, effect:"hatch_ANCESTRAL", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_27"], lane:0, row:7 },
   { id:"n1_div", sect:"Palier I", label:"Œuf Divin Vitesse d'éclosion I", short:"Œuf Divin I", icon:"egg", color:"#FFB52E", tier:1, effect:"hatch_DIVIN", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_anc"], lane:1, row:7 },
-  { id:"n1_afkmin", sect:"Palier I", label:"Autonomie Minéraux I", short:"Auton. Min. I", icon:"minerai", color:"#3FA7FF", tier:1, effect:"afkMinerai", per:0.3, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_08"], lane:2, row:7, note:"+0,3 point de %/h par niveau · Max 20 %/h avec la base" },
-  { id:"n1_afkess", sect:"Palier I", label:"Autonomie Essence I", short:"Auton. Ess. I", icon:"essence", color:"#FF7A3D", tier:1, effect:"afkEssence", per:0.3, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_08"], lane:3, row:7, note:"+0,3 point de %/h par niveau · Max 20 %/h avec la base" },
-  { id:"n1_afkecl", sect:"Palier I", label:"Autonomie Étincelles I", short:"Auton. Étinc. I", icon:"eclat", color:"#9B5CF6", tier:1, effect:"afkEclat", per:0.3, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_08"], lane:4, row:7, note:"+0,3 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n1_afkmin", sect:"Palier I", label:"Autonomie Minéraux I", short:"Auton. Min. I", icon:"minerai", color:"#3FA7FF", tier:1, effect:"afkMinerai", per:0.2, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_08"], lane:2, row:7, note:"+0,2 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n1_afkess", sect:"Palier I", label:"Autonomie Essence I", short:"Auton. Ess. I", icon:"essence", color:"#FF7A3D", tier:1, effect:"afkEssence", per:0.2, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_08"], lane:3, row:7, note:"+0,2 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n1_afkecl", sect:"Palier I", label:"Autonomie Étincelles I", short:"Auton. Étinc. I", icon:"eclat", color:"#9B5CF6", tier:1, effect:"afkEclat", per:0.2, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_08"], lane:4, row:7, note:"+0,2 point de %/h par niveau · Max 20 %/h avec la base" },
 
   { id:"n2_anc", sect:"Palier II", label:"Œuf Ancestral Vitesse d'éclosion II", short:"Œuf Ancestral II", icon:"egg", color:"#3FE0C0", tier:2, effect:"hatch_ANCESTRAL", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_anc","n2_27"], lane:0, row:15 },
   { id:"n2_div", sect:"Palier II", label:"Œuf Divin Vitesse d'éclosion II", short:"Œuf Divin II", icon:"egg", color:"#FFB52E", tier:2, effect:"hatch_DIVIN", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_div","n2_anc"], lane:1, row:15 },
-  { id:"n2_afkmin", sect:"Palier II", label:"Autonomie Minéraux II", short:"Auton. Min. II", icon:"minerai", color:"#3FA7FF", tier:2, effect:"afkMinerai", per:0.6, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_afkmin","n2_08"], lane:2, row:15, note:"+0,6 point de %/h par niveau · Max 20 %/h avec la base" },
-  { id:"n2_afkess", sect:"Palier II", label:"Autonomie Essence II", short:"Auton. Ess. II", icon:"essence", color:"#FF7A3D", tier:2, effect:"afkEssence", per:0.6, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_afkess","n2_08"], lane:3, row:15, note:"+0,6 point de %/h par niveau · Max 20 %/h avec la base" },
-  { id:"n2_afkecl", sect:"Palier II", label:"Autonomie Étincelles II", short:"Auton. Étinc. II", icon:"eclat", color:"#9B5CF6", tier:2, effect:"afkEclat", per:0.6, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_afkecl","n2_08"], lane:4, row:15, note:"+0,6 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n2_afkmin", sect:"Palier II", label:"Autonomie Minéraux II", short:"Auton. Min. II", icon:"minerai", color:"#3FA7FF", tier:2, effect:"afkMinerai", per:0.4, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_afkmin","n2_08"], lane:2, row:15, note:"+0,4 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n2_afkess", sect:"Palier II", label:"Autonomie Essence II", short:"Auton. Ess. II", icon:"essence", color:"#FF7A3D", tier:2, effect:"afkEssence", per:0.4, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_afkess","n2_08"], lane:3, row:15, note:"+0,4 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n2_afkecl", sect:"Palier II", label:"Autonomie Étincelles II", short:"Auton. Étinc. II", icon:"eclat", color:"#9B5CF6", tier:2, effect:"afkEclat", per:0.4, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_afkecl","n2_08"], lane:4, row:15, note:"+0,4 point de %/h par niveau · Max 20 %/h avec la base" },
 
   { id:"n3_anc", sect:"Palier III", label:"Œuf Ancestral Vitesse d'éclosion III", short:"Œuf Ancestral III", icon:"egg", color:"#3FE0C0", tier:3, effect:"hatch_ANCESTRAL", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_anc","n3_27"], lane:0, row:23 },
   { id:"n3_div", sect:"Palier III", label:"Œuf Divin Vitesse d'éclosion III", short:"Œuf Divin III", icon:"egg", color:"#FFB52E", tier:3, effect:"hatch_DIVIN", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_div","n3_anc"], lane:1, row:23 },
-  { id:"n3_afkmin", sect:"Palier III", label:"Autonomie Minéraux III", short:"Auton. Min. III", icon:"minerai", color:"#3FA7FF", tier:3, effect:"afkMinerai", per:0.9, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_afkmin","n3_08"], lane:2, row:23, note:"+0,9 point de %/h par niveau · Max 20 %/h avec la base" },
-  { id:"n3_afkess", sect:"Palier III", label:"Autonomie Essence III", short:"Auton. Ess. III", icon:"essence", color:"#FF7A3D", tier:3, effect:"afkEssence", per:0.9, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_afkess","n3_08"], lane:3, row:23, note:"+0,9 point de %/h par niveau · Max 20 %/h avec la base" },
-  { id:"n3_afkecl", sect:"Palier III", label:"Autonomie Étincelles III", short:"Auton. Étinc. III", icon:"eclat", color:"#9B5CF6", tier:3, effect:"afkEclat", per:0.9, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_afkecl","n3_08"], lane:4, row:23, note:"+0,9 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n3_afkmin", sect:"Palier III", label:"Autonomie Minéraux III", short:"Auton. Min. III", icon:"minerai", color:"#3FA7FF", tier:3, effect:"afkMinerai", per:0.6, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_afkmin","n3_08"], lane:2, row:23, note:"+0,6 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n3_afkess", sect:"Palier III", label:"Autonomie Essence III", short:"Auton. Ess. III", icon:"essence", color:"#FF7A3D", tier:3, effect:"afkEssence", per:0.6, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_afkess","n3_08"], lane:3, row:23, note:"+0,6 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n3_afkecl", sect:"Palier III", label:"Autonomie Étincelles III", short:"Auton. Étinc. III", icon:"eclat", color:"#9B5CF6", tier:3, effect:"afkEclat", per:0.6, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_afkecl","n3_08"], lane:4, row:23, note:"+0,6 point de %/h par niveau · Max 20 %/h avec la base" },
 
   { id:"n4_anc", sect:"Palier IV", label:"Œuf Ancestral Vitesse d'éclosion IV", short:"Œuf Ancestral IV", icon:"egg", color:"#3FE0C0", tier:4, effect:"hatch_ANCESTRAL", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_anc","n4_27"], lane:0, row:31 },
   { id:"n4_div", sect:"Palier IV", label:"Œuf Divin Vitesse d'éclosion IV", short:"Œuf Divin IV", icon:"egg", color:"#FFB52E", tier:4, effect:"hatch_DIVIN", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_div","n4_anc"], lane:1, row:31 },
-  { id:"n4_afkmin", sect:"Palier IV", label:"Autonomie Minéraux IV", short:"Auton. Min. IV", icon:"minerai", color:"#3FA7FF", tier:4, effect:"afkMinerai", per:1.2, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_afkmin","n4_08"], lane:2, row:31, note:"+1,2 point de %/h par niveau · Max 20 %/h avec la base" },
-  { id:"n4_afkess", sect:"Palier IV", label:"Autonomie Essence IV", short:"Auton. Ess. IV", icon:"essence", color:"#FF7A3D", tier:4, effect:"afkEssence", per:1.2, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_afkess","n4_08"], lane:3, row:31, note:"+1,2 point de %/h par niveau · Max 20 %/h avec la base" },
-  { id:"n4_afkecl", sect:"Palier IV", label:"Autonomie Étincelles IV", short:"Auton. Étinc. IV", icon:"eclat", color:"#9B5CF6", tier:4, effect:"afkEclat", per:1.2, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_afkecl","n4_08"], lane:4, row:31, note:"+1,2 point de %/h par niveau · Max 20 %/h avec la base" }
+  { id:"n4_afkmin", sect:"Palier IV", label:"Autonomie Minéraux IV", short:"Auton. Min. IV", icon:"minerai", color:"#3FA7FF", tier:4, effect:"afkMinerai", per:0.8, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_afkmin","n4_08"], lane:2, row:31, note:"+0,8 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n4_afkess", sect:"Palier IV", label:"Autonomie Essence IV", short:"Auton. Ess. IV", icon:"essence", color:"#FF7A3D", tier:4, effect:"afkEssence", per:0.8, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_afkess","n4_08"], lane:3, row:31, note:"+0,8 point de %/h par niveau · Max 20 %/h avec la base" },
+  { id:"n4_afkecl", sect:"Palier IV", label:"Autonomie Étincelles IV", short:"Auton. Étinc. IV", icon:"eclat", color:"#9B5CF6", tier:4, effect:"afkEclat", per:0.8, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_afkecl","n4_08"], lane:4, row:31, note:"+0,8 point de %/h par niveau · Max 20 %/h avec la base" }
 ];
 TREE_NODES.push(...TREE_V476_EXTRA_NODES);
 
@@ -2792,7 +2806,7 @@ function forgeBatch(s) {
 /* Two different families: one lengthens the window, the other fattens what it
    pays. They used to be the same flat "afk" number. */
 function afkCapHours(s) { return Math.min(16, RULES.AFK_BASE_HOURS * (1 + treeSum(s, "afkTime") / 100)); }
-const AUTONOMY_BASE_YIELD_PCT_PER_HOUR = 5;
+const AUTONOMY_BASE_YIELD_PCT_PER_HOUR = 10;
 const AUTONOMY_MAX_YIELD_PCT_PER_HOUR = 20;
 const AUTONOMY_RESOURCE_EFFECT = {
   minerai: "afkMinerai",
@@ -2810,7 +2824,7 @@ function afkGainMul(s, resource) { return autonomyYieldPct(s, resource || "gold"
 function harvestCapSeconds(s) { return afkCapHours(s) * 3600; }
 function harvestEfficiency(s) { return Math.min(100, treeSum(s, "harvestEff")); }
 
-/* V476: each Autonomy reserve has its own 5%/h -> 20%/h Tree branch. */
+/* V496: each Autonomy reserve starts at 10%/h and reaches 20%/h with its Tree branch. */
 function harvestRates(s) {
   return {
     minerai: raidReward("minerai", s.raids.minerai.level) * autonomyYieldPct(s, "minerai") / 100,
