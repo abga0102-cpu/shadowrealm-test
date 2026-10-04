@@ -324,7 +324,7 @@ function run(W) {
     }
     return bad.length ? bad.join(", ") : true;
   });
-  check("V476 : éclosion +120%, Or +50% et 4 Autonomies séparées", function () {
+  check("V496 : éclosion +120%, Or +50% et 4 Autonomies 10→25%", function () {
     const bad = [];
     const hatch = ["COMMUN","PEU_COMMUN","RARE","EPIQUE","MYTHIQUE","ANCESTRAL","LEGENDAIRE","DIVIN"];
     hatch.forEach(function(r) {
@@ -428,15 +428,15 @@ function run(W) {
       poussiere: H.S.poussiere, gems: H.S.gems, gold: H.S.gold, pe: H.S.pe,
       eggSlots: H.S.eggSlots };
   }
-  check("Raid Minerai suit +25 jusqu'à 10, +10 jusqu'à 50, puis +5", function () {
+  check("V496 Raid Minerai suit +50 jusqu'à 1000, +25 jusqu'à 1500, puis +10", function () {
     const bad = [];
-    const expected = { 1: 500, 5: 600, 10: 725, 11: 735, 20: 825, 30: 925, 40: 1025, 50: 1125, 51: 1130, 60: 1175, 70: 1225 };
+    const expected = { 1: 500, 5: 700, 10: 950, 11: 1000, 20: 1225, 30: 1475, 31: 1500, 40: 1590, 50: 1690, 60: 1790, 70: 1890 };
     Object.keys(expected).forEach(function (l) {
       const got = W.raidReward("minerai", +l);
       if (got !== expected[l]) bad.push("niv" + l + " " + got + "≠" + expected[l]);
     });
     for (let l = 1; l < 70; l++) {
-      const expectedStep = l < 10 ? 25 : l < 50 ? 10 : 5;
+      const expectedStep = l < 11 ? 50 : l < 31 ? 25 : 10;
       const gotStep = W.raidReward("minerai", l + 1) - W.raidReward("minerai", l);
       if (gotStep !== expectedStep) {
         bad.push("pas niv" + l + "→" + (l + 1) + " " + gotStep + "≠" + expectedStep); break;
@@ -1005,19 +1005,19 @@ function run(W) {
     if (H.S.essence !== 5) return "Essence restante " + H.S.essence + " au lieu de 5";
     return true;
   });
-  check("la Récolte Autonomie produit 5 %/h sans boost", function () {
+  check("la Récolte Autonomie produit 10 %/h sans boost", function () {
     const bad = [];
     set(function (st) { st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 }; });
     [[1, 0], [50, 0], [1, 1], [30, 1]].forEach(function (c) {
       set(function (st) { st.raids.minerai.level = c[0]; st.raids.minerai.stars = c[1]; });
       const r = W.harvestRates(H.S).minerai;
-      const expected = W.raidReward("minerai", c[0]) * 0.05;
+      const expected = W.raidReward("minerai", c[0]) * 0.10;
       if (Math.abs(r - expected) > 1e-9) bad.push("niv" + c[0] + " ★" + c[1] + " : " + r + "/h au lieu de " + expected);
     });
     set(function (st) { st.raids.minerai.level = 1; st.raids.minerai.stars = 0; });
     return bad.length ? bad.join(", ") : true;
   });
-  check("les 4 ressources Autonomie progressent indépendamment de 5 à 20 %/h", function () {
+  check("les 4 ressources Autonomie progressent indépendamment de 10 à 25 %/h", function () {
     const effects = { minerai:"afkMinerai", essence:"afkEssence", eclat:"afkEclat", gold:"afkGold" };
     set(function (st) {
       st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
@@ -1032,16 +1032,16 @@ function run(W) {
     };
     const bad=[];
     Object.keys(rewards).forEach(function(k){
-      if(Math.abs(base[k]-rewards[k]*0.05)>1e-9)bad.push(k+" base");
+      if(Math.abs(base[k]-rewards[k]*0.10)>1e-9)bad.push(k+" base");
     });
     set(function(st){
       H.TREE_NODES.filter(function(n){return n.effect===effects.minerai;})
         .forEach(function(n){st.tree.levels[n.id]=5;});
     });
     const one=W.harvestRates(H.S);
-    if(Math.abs(one.minerai-rewards.minerai*0.20)>1e-9)bad.push("minerai max");
+    if(Math.abs(one.minerai-rewards.minerai*0.25)>1e-9)bad.push("minerai max");
     ["essence","eclat","gold"].forEach(function(k){
-      if(Math.abs(one[k]-rewards[k]*0.05)>1e-9)bad.push(k+" a bougé");
+      if(Math.abs(one[k]-rewards[k]*0.10)>1e-9)bad.push(k+" a bougé");
     });
     set(function(st){
       Object.keys(effects).forEach(function(k){
@@ -1051,7 +1051,7 @@ function run(W) {
     });
     const all=W.harvestRates(H.S);
     Object.keys(rewards).forEach(function(k){
-      if(Math.abs(all[k]-rewards[k]*0.20)>1e-9)bad.push(k+" max");
+      if(Math.abs(all[k]-rewards[k]*0.25)>1e-9)bad.push(k+" max");
     });
     return bad.length ? bad.join(", ") : true;
   });

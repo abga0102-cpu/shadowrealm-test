@@ -37,12 +37,25 @@ test('V444 links the 70 Raid levels to Campaign progression and retires Raid Asc
   expect(out.ascendDo).toMatchObject({ ok:false, retired:true });
 });
 
-test('V444 Familiar Raid Essence is 200, +5 to 250, then +2 through 368', async ({ page }) => {
+test('V496 Familiar Raid Essence is 225, +5 to 275, then +2 through 393', async ({ page }) => {
   await openCleanGame(page);
   const rewards = await page.evaluate(() => [1,10,11,12,20,50,70].map((lv) => raidReward('familier',lv)));
-  expect(rewards).toEqual([200,245,250,252,268,328,368]);
+  expect(rewards).toEqual([225,270,275,277,293,353,393]);
   const cfg = await page.evaluate(() => window.__srRaidRewardConfigV396.familier);
-  expect(cfg).toMatchObject({level1:200,level11:250,perLevelAfter250:2,level70:368});
+  expect(cfg).toMatchObject({level1:225,level11:275,perLevelAfter11:2,level70:393});
+});
+
+test('V496 Raid Or and Compétence rewards follow the new anchors', async ({ page }) => {
+  await openCleanGame(page);
+  const out = await page.evaluate(() => ({
+    gold:[1,10,15,20,21].map((lv)=>raidReward('or',lv)),
+    skill:[1,2,10].map((lv)=>raidReward('competence',lv)),
+    cfg:window.__srRaidRewardConfigV396
+  }));
+  expect(out.gold).toEqual([5000,10000,20000,30000,31500]);
+  expect(out.skill).toEqual([300,310,390]);
+  expect(out.cfg.or).toMatchObject({level1:5000,level10:10000,level15:20000,level20:30000,growthAfter20:1.05});
+  expect(out.cfg.competence).toMatchObject({level1:300,perLevel:10});
 });
 
 test('V486 Raid Evolution PE is 150, +10 through level 14, then +5 through level 70', async ({ page }) => {
@@ -58,7 +71,7 @@ test('V486 Raid Evolution PE is 150, +10 through level 14, then +5 through level
   });
 });
 
-test('V471 Minerai Raid uses +25 to 10, +10 to 50, then +5; Autonomy follows it', async ({ page }) => {
+test('V496 Minerai Raid uses +50 to 1000, +25 to 1500, then +10; Autonomy starts at 10%', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
     const levels=[1,5,10,11,20,50,51,70];
@@ -70,9 +83,9 @@ test('V471 Minerai Raid uses +25 to 10, +10 to 50, then +5; Autonomy follows it'
     const baseAutonomy=harvestRates(st).minerai;
     return {rewards,cfg,baseAutonomy};
   });
-  expect(out.rewards).toEqual([500,600,725,735,825,1125,1130,1225]);
-  expect(out.cfg).toMatchObject({curveVersion:471,level1:500,perLevelTo10:25,level10:725,perLevelTo50:10,level50:1125,perLevelAfter50:5,level70:1225});
-  expect(out.baseAutonomy).toBeCloseTo(61.25,8);
+  expect(out.rewards).toEqual([500,700,950,1000,1225,1690,1700,1890]);
+  expect(out.cfg).toMatchObject({level1:500,perLevelTo1000:50,level11:1000,perLevelTo1500:25,level31:1500,perLevelAfter1500:10,level70:1890});
+  expect(out.baseAutonomy).toBeCloseTo(189,8);
 });
 
 test('V444 Campaign gate follows the agreed 2x mapping', async ({ page }) => {
@@ -114,7 +127,7 @@ test('V444 migrates old Raid stars into linear progress without deleting evidenc
   });
 });
 
-test('V485 Raid difficulty is +7.5% every 5 levels; Campaign references are context only', async ({ page }) => {
+test('V496 Raid difficulty is +15 points through level 15, then +10 points every 5 levels from 20', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
     const levels=[1,4,5,9,10,14,15,20,40,50,69,70];
@@ -123,21 +136,21 @@ test('V485 Raid difficulty is +7.5% every 5 levels; Campaign references are cont
       hp:raidWaveHP('familier',lv),
       dmg:raidWaveDamage('familier',lv),
       ref:raidReferenceCampaignFloor(lv),
-      mul:window.__srRaidCampaignLinkedV444.powerStepV485.multiplier(lv)
+      mul:window.__srRaidCampaignLinkedV444.powerStepV496.multiplier(lv)
     }));
     return {
       rows,
       cap:window.__srRaidCampaignLinkedV444.growthCap,
-      step:window.__srRaidCampaignLinkedV444.powerStepV485,
-      compat:window.__srRaidCampaignLinkedV444.powerStepV484
+      step:window.__srRaidCampaignLinkedV444.powerStepV496,
+      compat:window.__srRaidCampaignLinkedV444.powerStepV485
     };
   });
   expect(out.cap).toBeNull();
   expect(out.step).toMatchObject({
-    everyLevels:5,addPct:7.5,level70Multiplier:2.05,campaignReferenceAffectsPower:false
+    everyLevels:5,addPctBefore20:15,addPctFrom20:10,level70Multiplier:2.55,campaignReferenceAffectsPower:false
   });
-  expect(out.compat).toMatchObject({addPct:7.5,level70Multiplier:2.05,supersededBy:485});
-  const expected=[1,1,1.075,1.075,1.15,1.15,1.225,1.30,1.60,1.75,1.975,2.05];
+  expect(out.compat).toMatchObject({addPctBefore20:15,addPctFrom20:10,level70Multiplier:2.55,supersededBy:496});
+  const expected=[1,1,1.15,1.15,1.30,1.30,1.45,1.55,1.95,2.15,2.45,2.55];
   out.rows.forEach((r,i)=>expect(r.mul).toBeCloseTo(expected[i],10));
   const baseHP=out.rows[0].hp,baseDmg=out.rows[0].dmg;
   for(const r of out.rows){

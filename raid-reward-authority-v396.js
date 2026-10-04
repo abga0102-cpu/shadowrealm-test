@@ -1,44 +1,30 @@
-/* SHADOWREACH V396 · Final Raid reward authority / V471 Minerai / V486 Évolution curve
-   Loaded after all legacy raid economy modules so no older wrapper can restore
-   superseded reward curves. This file owns reward output only; raid difficulty,
-   keys, summon prices and the permanent 1-1 -> 7-10 ladder stay owned elsewhere.
-
-   V446: Raid access is independent from Campaign progression. Since V485,
-   Campaign references are informational labels only and do not scale Raid power;
-   they must never lock a Raid level. */
+/* SHADOWREACH V396 · Final Raid reward authority / V496 Raid balance
+   Owns final Raid rewards. Raid power staircase is owned canonically by game-1.js. */
 (function(){
   'use strict';
   if(window.__srRaidRewardAuthorityV396)return;
   window.__srRaidRewardAuthorityV396=true;
 
-  var GOLD_GROWTH=1.057;
-
+  var GOLD_GROWTH=1.05;
   function goldReward(level){
     var lv=Math.max(1,Math.floor(Number(level)||1));
-    if(lv<=10) return Math.round(5000+(10000-5000)*((lv-1)/9));
-    if(lv<=15) return 10000+(lv-10)*1000;
-    if(lv<=20) return 15000+(lv-15)*1000;
-    return Math.floor(20000*Math.pow(GOLD_GROWTH,lv-20));
+    if(lv<=10)return Math.round(5000+5000*((lv-1)/9));
+    if(lv<=15)return Math.round(10000+10000*((lv-10)/5));
+    if(lv<=20)return Math.round(20000+10000*((lv-15)/5));
+    return Math.floor(30000*Math.pow(GOLD_GROWTH,lv-20));
   }
-
   function mineraiReward(level){
     var lv=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
-    if(lv<=10)return 500+25*(lv-1);
-    if(lv<=50)return 725+10*(lv-10);
-    return 1125+5*(lv-50);
+    if(lv<=11)return 500+50*(lv-1);
+    if(lv<=31)return 1000+25*(lv-11);
+    return 1500+10*(lv-31);
   }
-
-  function competenceReward(level){
-    var lv=Math.max(1,Math.floor(Number(level)||1));
-    return 250+10*(lv-1);
-  }
-
+  function competenceReward(level){var lv=Math.max(1,Math.floor(Number(level)||1));return 300+10*(lv-1);}
   function familiarReward(level){
     var lv=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
-    if(lv<=11)return 200+5*(lv-1);
-    return 250+2*(lv-11);
+    if(lv<=11)return 225+5*(lv-1);
+    return 275+2*(lv-11);
   }
-
   function evolutionReward(level){
     var lv=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
     if(lv<=14)return 150+10*(lv-1);
@@ -55,25 +41,21 @@
   };
   raidReward.__srFinalAuthorityV396=true;
 
-  /* V446 · Campaign no longer gates Raid access.
-     Keep raidReferenceCampaignFloor/Label untouched for informational context;
-     V485 no longer uses them to scale Raid combat power. Only the access
-     predicate is neutralised. ACT.startRaid and scrRaid both read this global predicate, so
-     gameplay and UI stay aligned. */
+  /* V496 Raid power is not wrapped here: game-1.js is the single power owner. */
+
   raidCampaignReady=function(){return true;};
   raidCampaignReady.__srIndependentV446=true;
-  if(window.__srRaidCampaignLinkedV444){
-    window.__srRaidCampaignLinkedV444.campaignReady=raidCampaignReady;
-    window.__srRaidCampaignLinkedV444.campaignGate=false;
-  }
+  if(window.__srRaidCampaignLinkedV444){window.__srRaidCampaignLinkedV444.campaignReady=raidCampaignReady;window.__srRaidCampaignLinkedV444.campaignGate=false;}
   window.__srRaidAccessV446={version:446,campaignGate:false,campaignReady:raidCampaignReady};
 
   window.__srRaidRewardConfigV396={
-    or:{level1:5000,level10:10000,level15:15000,level20:20000,growthAfter20:GOLD_GROWTH},
-    minerai:{curveVersion:471,level1:500,perLevelTo10:25,level10:725,perLevelTo50:10,level50:1125,perLevelAfter50:5,level70:1225},
-    competence:{level1:250,perLevel:10},
-    familier:{level1:200,perLevelTo250:5,level11:250,perLevelAfter250:2,level70:368},
+    version:496,
+    or:{level1:5000,level10:10000,level15:20000,level20:30000,growthAfter20:GOLD_GROWTH},
+    minerai:{level1:500,perLevelTo1000:50,level11:1000,perLevelTo1500:25,level31:1500,perLevelAfter1500:10,level70:1890},
+    competence:{level1:300,perLevel:10},
+    familier:{level1:225,perLevelTo11:5,level11:275,perLevelAfter11:2,level70:393},
     evolution:{curveVersion:486,level1:150,perLevelTo14:10,level14:280,perLevelFrom15:5,level15:285,level70:560},
+    powerOwner:'game-1.js:raidPowerStepMultiplierV496',
     reward:raidReward
   };
 })();
