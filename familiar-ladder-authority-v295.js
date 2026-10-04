@@ -97,7 +97,7 @@ try{
 function branchShare(s,effect){
   var bonus=0;
   try{bonus=Math.max(0,Number(treeSum(s,effect))||0);}catch(_){ }
-  return Math.min(20,5+bonus)/100;
+  return Math.min(20,10+bonus)/100;
 }
 try{
   if(typeof harvestRates==='function'&&!harvestRates.__srAutonomyYieldV476){
@@ -116,9 +116,9 @@ try{
 }catch(_){ }
 window.__srGoldEconomyConfigV335={
   version:476,
-  autonomyBaseYieldPctPerHour:5,
-  autonomyYieldTierCapsPctPoints:[1.5,3,4.5,6],
-  autonomyYieldBranchMaxPctPoints:15,
+  autonomyBaseYieldPctPerHour:10,
+  autonomyYieldTierCapsPctPoints:[1,2,3,4],
+  autonomyYieldBranchMaxPctPoints:10,
   autonomyYieldMaxPctPerHour:20,
   autonomyResources:['minerai','essence','eclat','gold'],
   globalGoldTierCapsPct:[5,10,15,20],
@@ -126,7 +126,7 @@ window.__srGoldEconomyConfigV335={
 };
 window.__srAutonomyTimeConfigV421={baseHours:8,tierCapsPct:[10,20,30,40],branchMaxPct:100,maxHours:16};
 window.__srAutonomyYieldConfigV476={
-  basePctPerHour:5,maxPctPerHour:20,treeAddsPctPoints:15,
+  basePctPerHour:10,maxPctPerHour:20,treeAddsPctPoints:10,rebalanceVersion:496,
   effects:{minerai:'afkMinerai',essence:'afkEssence',eclat:'afkEclat',gold:'afkGold'},
   legacyUniversalNodeMigrated:true
 };
