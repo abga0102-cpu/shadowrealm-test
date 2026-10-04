@@ -1,0 +1,1 @@
+V494 QA expectations: existing accomplishment categories remain unchanged; hero level uses S.level; free and Premium claims are independent and idempotent; Premium equals 25% of free Minerai; no save schema migration; renderer must not duplicate the level section.
