@@ -80,7 +80,7 @@ test('V476 Palier research times and 0/1 special duration are exact', async ({pa
   expect(out.mastery).toBe(7*24*3600);
 });
 
-test('V476 Global Gold reaches 50 percent and Autonomy resources are independent', async ({page})=>{
+test('V496 Global Gold reaches 50 percent and Autonomy resources stay independent at 10% base', async ({page})=>{
   await clean(page);
   const out=await page.evaluate(()=>{
     S.tree=S.tree||{};S.tree.levels=S.tree.levels||{};
@@ -104,7 +104,7 @@ test('V476 Global Gold reaches 50 percent and Autonomy resources are independent
   expect(out.goldBonus).toBeCloseTo(50,8);
   expect(out.goldMultiplier).toBeCloseTo(1.5,8);
   expect(out.essenceOnly.essence).toBeCloseTo(out.rewards.essence*0.20,8);
-  expect(out.essenceOnly.minerai).toBeCloseTo(out.rewards.minerai*0.05,8);
-  expect(out.essenceOnly.eclat).toBeCloseTo(out.rewards.eclat*0.05,8);
-  expect(out.essenceOnly.gold).toBeCloseTo(out.rewards.gold*0.05,8);
+  expect(out.essenceOnly.minerai).toBeCloseTo(out.rewards.minerai*0.10,8);
+  expect(out.essenceOnly.eclat).toBeCloseTo(out.rewards.eclat*0.10,8);
+  expect(out.essenceOnly.gold).toBeCloseTo(out.rewards.gold*0.10,8);
 });
