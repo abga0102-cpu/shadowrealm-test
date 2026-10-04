@@ -9,7 +9,7 @@ async function clean(page){
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V476 Autonomy has four independent 5%/h -> 20%/h branches', async ({page})=>{
+test('V496 Autonomy has four independent 10%/h -> 20%/h branches', async ({page})=>{
   await clean(page);
   const out=await page.evaluate(()=>{
     const effects={minerai:'afkMinerai',essence:'afkEssence',eclat:'afkEclat',gold:'afkGold'};
@@ -33,15 +33,15 @@ test('V476 Autonomy has four independent 5%/h -> 20%/h branches', async ({page})
     };
   });
   for(const k of ['minerai','essence','eclat','gold']){
-    expect(out.base[k]).toBeCloseTo(out.reward[k]*0.05,8);
+    expect(out.base[k]).toBeCloseTo(out.reward[k]*0.10,8);
     expect(out.allMax[k]).toBeCloseTo(out.reward[k]*0.20,8);
     expect(out.counts[k]).toBe(4);
   }
   expect(out.mineralOnly.minerai).toBeCloseTo(out.reward.minerai*0.20,8);
-  expect(out.mineralOnly.essence).toBeCloseTo(out.reward.essence*0.05,8);
-  expect(out.mineralOnly.eclat).toBeCloseTo(out.reward.eclat*0.05,8);
-  expect(out.mineralOnly.gold).toBeCloseTo(out.reward.gold*0.05,8);
-  expect(out.config).toMatchObject({basePctPerHour:5,maxPctPerHour:20,treeAddsPctPoints:15,legacyUniversalNodeMigrated:true});
+  expect(out.mineralOnly.essence).toBeCloseTo(out.reward.essence*0.10,8);
+  expect(out.mineralOnly.eclat).toBeCloseTo(out.reward.eclat*0.10,8);
+  expect(out.mineralOnly.gold).toBeCloseTo(out.reward.gold*0.10,8);
+  expect(out.config).toMatchObject({basePctPerHour:10,maxPctPerHour:20,treeAddsPctPoints:10,rebalanceVersion:496,legacyUniversalNodeMigrated:true});
 });
 
 test('V476 preserves old universal Autonomy levels through one-time split migration source', async()=>{
