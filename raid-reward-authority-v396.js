@@ -1,5 +1,5 @@
-/* SHADOWREACH V396 · Final Raid authority / V496 Raid balance
-   Owns final Raid rewards and the requested milestone power modifier. */
+/* SHADOWREACH V396 · Final Raid reward authority / V496 Raid balance
+   Owns final Raid rewards. Raid power staircase is owned canonically by game-1.js. */
 (function(){
   'use strict';
   if(window.__srRaidRewardAuthorityV396)return;
@@ -41,32 +41,7 @@
   };
   raidReward.__srFinalAuthorityV396=true;
 
-  /* V496: breathing room inside each 5-level block, followed by a deliberate
-     milestone jump. Levels 5/10/15 add 15% each; level 20 and every fifth
-     level afterwards add 10%. Multipliers compound and apply equally to Raid
-     HP and damage, preserving enemy identity and all existing Raid curves. */
-  function raidMilestonePower(level){
-    var lv=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
-    var pre20=Math.min(3,Math.floor(lv/5));
-    var from20=lv>=20?Math.floor((lv-20)/5)+1:0;
-    return Math.pow(1.15,pre20)*Math.pow(1.10,from20);
-  }
-  if(typeof makeEnemy==='function'&&!makeEnemy.__srRaidMilestonesV496){
-    var makeEnemyBeforeV496=makeEnemy;
-    var makeEnemyV496=function(mode,opts){
-      var enemy=makeEnemyBeforeV496.apply(this,arguments);
-      if(mode==='raid'&&enemy&&opts){
-        var mul=raidMilestonePower(opts.raidLevel);
-        enemy.hp=enemy.maxHP=Math.max(1,Math.floor(enemy.maxHP*mul));
-        enemy.dmg=Math.max(1,Math.floor(enemy.dmg*mul));
-        enemy.__srRaidMilestoneMulV496=mul;
-      }
-      return enemy;
-    };
-    makeEnemyV496.__srRaidMilestonesV496=true;
-    makeEnemyV496.__srPrevious=makeEnemyBeforeV496;
-    makeEnemy=makeEnemyV496;
-  }
+  /* V496 Raid power is not wrapped here: game-1.js is the single power owner. */
 
   raidCampaignReady=function(){return true;};
   raidCampaignReady.__srIndependentV446=true;
@@ -79,8 +54,8 @@
     minerai:{level1:500,perLevelTo1000:50,level11:1000,perLevelTo1500:25,level31:1500,perLevelAfter1500:10,level70:1890},
     competence:{level1:300,perLevel:10},
     familier:{level1:225,perLevelTo11:5,level11:275,perLevelAfter11:2,level70:393},
-    evolution:{level1:150,perLevelTo14:10,level14:280,perLevelFrom15:5,level70:560},
-    milestonePower:{level5:1.15,level10:Math.pow(1.15,2),level15:Math.pow(1.15,3),level20:Math.pow(1.15,3)*1.10,multiplier:raidMilestonePower},
+    evolution:{curveVersion:486,level1:150,perLevelTo14:10,level14:280,perLevelFrom15:5,level15:285,level70:560},
+    powerOwner:'game-1.js:raidPowerStepMultiplierV496',
     reward:raidReward
   };
 })();
