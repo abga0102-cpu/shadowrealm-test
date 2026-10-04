@@ -324,7 +324,7 @@ function run(W) {
     }
     return bad.length ? bad.join(", ") : true;
   });
-  check("V476 : éclosion +120%, Or +50% et 4 Autonomies séparées", function () {
+  check("V496 : éclosion +120%, Or +50% et 4 Autonomies 10→20%", function () {
     const bad = [];
     const hatch = ["COMMUN","PEU_COMMUN","RARE","EPIQUE","MYTHIQUE","ANCESTRAL","LEGENDAIRE","DIVIN"];
     hatch.forEach(function(r) {
@@ -339,7 +339,7 @@ function run(W) {
     ["afkGold","afkMinerai","afkEssence","afkEclat"].forEach(function(effect){
       const nodes=H.TREE_NODES.filter(function(n){return n.effect===effect;});
       const add=nodes.reduce(function(sum,n){return sum+W.treeEffectivePer(n)*n.max;},0);
-      if(nodes.length!==4||Math.abs(add-15)>1e-9)bad.push(effect+"="+add);
+      if(nodes.length!==4||Math.abs(add-10)>1e-9)bad.push(effect+"="+add);
     });
     return bad.length ? bad.join(", ") : true;
   });
@@ -428,15 +428,15 @@ function run(W) {
       poussiere: H.S.poussiere, gems: H.S.gems, gold: H.S.gold, pe: H.S.pe,
       eggSlots: H.S.eggSlots };
   }
-  check("Raid Minerai suit +25 jusqu'à 10, +10 jusqu'à 50, puis +5", function () {
+  check("V496 Raid Minerai suit +50 jusqu'à 1000, +25 jusqu'à 1500, puis +10", function () {
     const bad = [];
-    const expected = { 1: 500, 5: 600, 10: 725, 11: 735, 20: 825, 30: 925, 40: 1025, 50: 1125, 51: 1130, 60: 1175, 70: 1225 };
+    const expected = { 1: 500, 5: 700, 10: 950, 11: 1000, 20: 1225, 30: 1475, 31: 1500, 40: 1590, 50: 1690, 60: 1790, 70: 1890 };
     Object.keys(expected).forEach(function (l) {
       const got = W.raidReward("minerai", +l);
       if (got !== expected[l]) bad.push("niv" + l + " " + got + "≠" + expected[l]);
     });
     for (let l = 1; l < 70; l++) {
-      const expectedStep = l < 10 ? 25 : l < 50 ? 10 : 5;
+      const expectedStep = l < 11 ? 50 : l < 31 ? 25 : 10;
       const gotStep = W.raidReward("minerai", l + 1) - W.raidReward("minerai", l);
       if (gotStep !== expectedStep) {
         bad.push("pas niv" + l + "→" + (l + 1) + " " + gotStep + "≠" + expectedStep); break;
