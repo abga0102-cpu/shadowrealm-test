@@ -1161,17 +1161,42 @@ function retryPendingBoss() {
   return true;
 }
 
-function megaBossFloors(s) {
-  if (!megaRaidUnlocked(s)) return [];
-  return Object.keys((s && s.bossClears) || {}).filter((k) => s.bossClears[k])
-    .map((k) => parseInt(k, 10))
-    .filter((f) => Number.isFinite(f) && isBoss(f))
-    .sort((a, b) => a - b);
+/* V498 · La progression Méga est une vraie échelle séquentielle.
+   Une fois le mode déverrouillé, le niveau suivant dépend uniquement des
+   Méga-Boss déjà vaincus : niveau 10 = 10e combat, donc disponible après
+   les 9 premiers. Les Boss Campagne restent des références de puissance,
+   jamais des verrous supplémentaires. */
+function megaMaxLevel() {
+  const maxCampaignFloor = Math.max(10, Number(window.__srCampaignMaxFloor) || 800);
+  return Math.max(1, Math.floor(maxCampaignFloor / 10));
+}
+function megaContiguousClears(s) {
+  const claimed = (s && s.megaBossClears) || {};
+  const max = megaMaxLevel();
+  let level = 0;
+  while (level < max && claimed[String((level + 1) * 10)]) level++;
+  return level;
 }
 function nextMegaBossFloor(s) {
   if (!megaRaidUnlocked(s)) return null;
+  const nextLevel = megaContiguousClears(s) + 1;
+  return nextLevel <= megaMaxLevel() ? nextLevel * 10 : null;
+}
+function megaBossFloors(s) {
+  if (!megaRaidUnlocked(s)) return [];
   const claimed = (s && s.megaBossClears) || {};
-  return megaBossFloors(s).find((f) => !claimed[String(f)]) || null;
+  const next = nextMegaBossFloor(s);
+  const visibleThrough = next ? megaLevelForFloor(next) : megaMaxLevel();
+  const floors = [];
+  for (let level = 1; level <= visibleThrough; level++) floors.push(level * 10);
+  /* Preserve replay access/visibility for any legitimate legacy clear that
+     sits above a gap, without letting it skip the sequential unlock chain. */
+  Object.keys(claimed).forEach((k) => {
+    const floor = parseInt(k, 10);
+    if (claimed[k] && Number.isFinite(floor) && isBoss(floor) &&
+        floor <= megaMaxLevel() * 10 && !floors.includes(floor)) floors.push(floor);
+  });
+  return floors.sort((a, b) => a - b);
 }
 /* Build from the exact campaign Boss path, then multiply its two combat power
    axes. noFastback is deliberate: a Mega-Boss is a fresh challenge even when
@@ -1196,7 +1221,7 @@ function startMegaBoss(floor, onEnd) {
   floor = parseInt(floor, 10);
   const key = String(floor);
   const claimed = !!(S.megaBossClears && S.megaBossClears[key]);
-  if (!megaRaidUnlocked(S) || !Number.isFinite(floor) || !isBoss(floor) || !S.bossClears[key] ||
+  if (!megaRaidUnlocked(S) || !Number.isFinite(floor) || !isBoss(floor) ||
       (!claimed && floor !== nextMegaBossFloor(S))) return false;
   flushRewards();
   const enemy = makeMegaBossEnemy(floor);

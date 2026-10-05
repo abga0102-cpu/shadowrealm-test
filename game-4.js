@@ -1085,7 +1085,7 @@ function scrMegaRaid() {
   if (!floors.length) {
     challenge = '<div class="card frame center" style="border-left-color:#E5484D">' + ic("lock", 30) +
       '<div class="bb gt mt6" style="font-size:14px">MÉGA BOSS VERROUILLÉ</div>' +
-      '<div class="mute small mt6">Atteins l’étage normal 50 et vaincs son Boss pour déverrouiller le Méga Boss.</div></div>';
+      '<div class="mute small mt6">Atteins le niveau personnage requis pour déverrouiller le Méga Boss.</div></div>';
   } else if (next !== null) {
     const def = bossFor(next);
     const preview = makeMegaBossEnemy(next);
@@ -1106,11 +1106,11 @@ function scrMegaRaid() {
       '<div class="mt8">' + btn(ic("skull", 14) + "Affronter", { cls: "red", act: "startMega", arg: next }) +
         "</div></div>";
   } else {
-    const nextNormal = (floors[floors.length - 1] || 0) + RULES.BOSS_EVERY;
+    const maxMega = floors.length ? megaLevelForFloor(floors[floors.length - 1]) : 0;
     challenge = '<div class="card frame center" style="border-left-color:#3FB950">' + ic("trophy", 30) +
-      '<div class="bb gt mt6" style="font-size:14px">TOUS LES MÉGA-BOSS DISPONIBLES SONT VAINCUS</div>' +
-      '<div class="mute small mt6">Vaincs le Boss normal de l’étage ' + fmtInt(nextNormal) +
-        " pour rendre disponible l’étage Méga " + megaLevelForFloor(nextNormal) + ".</div></div>";
+      '<div class="bb gt mt6" style="font-size:14px">PROGRESSION MÉGA-BOSS TERMINÉE</div>' +
+      '<div class="mute small mt6">Tous les niveaux Méga jusqu’au niveau ' + fmtInt(maxMega) +
+        " sont vaincus. Les Boss de Campagne ne bloquent plus la progression Méga.</div></div>";
   }
 
   const history = cleared.slice().reverse().slice(0, 5).map((floor) => {
@@ -1127,7 +1127,7 @@ function scrMegaRaid() {
     'style="cursor:pointer;color:#A9E06F;border-color:#6FA83C">🍎 ' + fmt(S.apples || 0) + "</span>") +
     '<div class="pad mt6">' +
       '<div class="card"><div class="between"><div><div class="bb small">Progression Méga Boss · Boss uniquement</div>' +
-        '<div class="mute tiny b">' + cleared.length + "/" + floors.length + " étages Boss vaincus · aucune Élite</div></div>" +
+        '<div class="mute tiny b">' + cleared.length + "/" + floors.length + " Boss Méga vaincus vers le prochain niveau · aucune Élite</div></div>" +
         '<span class="pill" style="color:#A9E06F;border-color:#6FA83C">Gain Pommes +' + appleBoost + "%</span></div>" +
         '<div class="mt8">' + meter(floors.length ? cleared.length / floors.length * 100 : 0, C.red,
           cleared.length + " / " + floors.length) + "</div>" +
