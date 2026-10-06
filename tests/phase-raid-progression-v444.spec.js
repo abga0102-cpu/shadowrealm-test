@@ -71,6 +71,25 @@ test('V486 Raid Evolution PE is 150, +10 through level 14, then +5 through level
   });
 });
 
+test('V500 Minerai catch-up adds only the old-to-new difference and cannot be claimed twice', async ({ page }) => {
+  await openCleanGame(page);
+  const out = await page.evaluate(() => {
+    const comp=window.__shadowreachRaidMineraiBalance.compensation;
+    const st=JSON.parse(JSON.stringify(S));
+    st.minerai=2000;
+    st.raids.minerai.record=21;
+    delete st.raidMineraiDifferenceCompensationV500;
+    const first=comp.apply(st);
+    const afterFirst=st.minerai;
+    const second=comp.apply(st);
+    return {first,afterFirst,second,marker:st.raidMineraiDifferenceCompensationV500};
+  });
+  expect(out.first).toMatchObject({applied:true,amount:11875,throughLevel:21});
+  expect(out.afterFirst).toBe(13875);
+  expect(out.second).toMatchObject({applied:false,amount:0});
+  expect(out.marker).toMatchObject({done:true,throughLevel:21,amount:11875,curveFrom:496,curveTo:499});
+});
+
 test('V499 Minerai Raid starts at 1000, reaches 2000/2500/2800, then +5; Autonomy stays 10%', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
