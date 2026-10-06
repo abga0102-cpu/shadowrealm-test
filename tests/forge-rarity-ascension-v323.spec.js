@@ -17,125 +17,117 @@ function closeTo(actual, expected, digits = 8) {
   expect(Number(actual)).toBeCloseTo(expected, digits);
 }
 
-test('V427 keeps Artefact locked until Forge 40 and 0★ still ends at Artefact', async ({ page }) => {
-  await openCleanGame(page);
-
-  const rows = await page.evaluate(() => ({
-    f1: getRates('forge', 1, 0, 0),
-    f5: getRates('forge', 5, 0, 0),
-    f6: getRates('forge', 6, 0, 0),
-    f13: getRates('forge', 13, 0, 0),
-    f14: getRates('forge', 14, 0, 0),
-    f39: getRates('forge', 39, 0, 0),
-    f40: getRates('forge', 40, 0, 0),
-    f50: getRates('forge', 50, 999, 0),
-  }));
-
-  closeTo(rows.f1.RARE, 0.25);
-  closeTo(rows.f5.EPIQUE, 0);
-  closeTo(rows.f6.EPIQUE, 0.25);
-  closeTo(rows.f13.MYTHIQUE, 0);
-  closeTo(rows.f14.MYTHIQUE, 0.25);
-  closeTo(rows.f39.ARTEFACT, 0);
-  closeTo(rows.f40.ARTEFACT, 0.25);
-
-  closeTo(rows.f50.COMMUN, 39);
-  closeTo(rows.f50.RARE, 28);
-  closeTo(rows.f50.EPIQUE, 21);
-  closeTo(rows.f50.MYTHIQUE, 8);
-  closeTo(rows.f50.ARTEFACT, 4);
-  closeTo(rows.f50.LEGENDAIRE, 0);
-  closeTo(rows.f50.INFERNAL, 0);
-  closeTo(rows.f50.IMMORTEL, 0);
-  closeTo(rows.f50.DIVIN, 0);
-  closeTo(Object.values(rows.f50).reduce((sum, value) => sum + Number(value || 0), 0), 100);
-});
-
-test('V323 Forge stars unlock one post-Artefact rarity at Forge 45 from 0.25% to 1% at 50', async ({ page }) => {
+test('V501 unlocks the requested Forge equipment ladder and retires Infernal', async ({ page }) => {
   await openCleanGame(page);
 
   const rows = await page.evaluate(() => {
-    const at = (level, stars) => getRates('forge', level, 0, stars);
+    const at = (level, ascension = 0, stars = 0) => getRates('forge', level, ascension, stars);
     return {
-      s1f44: at(44, 1), s1f45: at(45, 1), s1f50: at(50, 1),
-      s2f44: at(44, 2), s2f45: at(45, 2), s2f50: at(50, 2),
-      s3f45: at(45, 3), s3f50: at(50, 3),
-      s4f45: at(45, 4), s4f50: at(50, 4),
+      e14: at(14), e15: at(15),
+      h21: at(21), h22: at(22),
+      m27: at(27), m28: at(28),
+      a34: at(34), a35: at(35),
+      l39: at(39), l40: at(40),
+      i44: at(44), i45: at(45),
+      d47a1: at(47, 1), d48a0: at(48, 0), d50a1: at(50, 1), d50a3: at(50, 3),
       floors: {
-        legendary: RARITY_MIN_FORGE.LEGENDAIRE,
-        infernal: RARITY_MIN_FORGE.INFERNAL,
-        immortal: RARITY_MIN_FORGE.IMMORTEL,
-        divine: RARITY_MIN_FORGE.DIVIN,
+        epique: RARITY_MIN_FORGE.EPIQUE,
+        heroique: RARITY_MIN_FORGE.HEROIQUE,
+        mythique: RARITY_MIN_FORGE.MYTHIQUE,
+        artefact: RARITY_MIN_FORGE.ARTEFACT,
+        legendaire: RARITY_MIN_FORGE.LEGENDAIRE,
+        immortel: RARITY_MIN_FORGE.IMMORTEL,
+        divin: RARITY_MIN_FORGE.DIVIN,
       },
+      activeOrder: orderFor('forge').slice(),
     };
   });
 
-  expect(rows.floors).toEqual({ legendary: 45, infernal: 45, immortal: 45, divine: 45 });
+  closeTo(rows.e14.EPIQUE, 0); closeTo(rows.e15.EPIQUE, .25);
+  closeTo(rows.h21.HEROIQUE, 0); closeTo(rows.h22.HEROIQUE, .25);
+  closeTo(rows.m27.MYTHIQUE, 0); closeTo(rows.m28.MYTHIQUE, .25);
+  closeTo(rows.a34.ARTEFACT, 0); closeTo(rows.a35.ARTEFACT, .25);
+  closeTo(rows.l39.LEGENDAIRE, 0); closeTo(rows.l40.LEGENDAIRE, .25);
+  closeTo(rows.i44.IMMORTEL, 0); closeTo(rows.i45.IMMORTEL, .25);
+  closeTo(rows.d47a1.DIVIN, 0);
+  closeTo(rows.d48a0.DIVIN, 0);
+  closeTo(rows.d50a1.DIVIN, 2);
+  closeTo(rows.d50a3.DIVIN, 6);
+  expect(rows.floors).toEqual({ epique:15, heroique:22, mythique:28, artefact:35, legendaire:40, immortel:45, divin:48 });
+  expect(rows.activeOrder).toEqual(['COMMUN','PEU_COMMUN','RARE','EPIQUE','HEROIQUE','MYTHIQUE','ARTEFACT','LEGENDAIRE','IMMORTEL','DIVIN']);
 
-  closeTo(rows.s1f44.LEGENDAIRE, 0);
-  closeTo(rows.s1f45.LEGENDAIRE, 0.25);
-  closeTo(rows.s1f50.LEGENDAIRE, 1);
-  closeTo(rows.s1f50.INFERNAL, 0);
-
-  closeTo(rows.s2f44.INFERNAL, 0);
-  closeTo(rows.s2f45.LEGENDAIRE, 0.25);
-  closeTo(rows.s2f45.INFERNAL, 0.25);
-  closeTo(rows.s2f50.LEGENDAIRE, 1);
-  closeTo(rows.s2f50.INFERNAL, 1);
-  closeTo(rows.s2f50.IMMORTEL, 0);
-
-  closeTo(rows.s3f45.IMMORTEL, 0.25);
-  closeTo(rows.s3f50.IMMORTEL, 1);
-  closeTo(rows.s3f50.DIVIN, 0);
-
-  closeTo(rows.s4f45.DIVIN, 0.25);
-  closeTo(rows.s4f50.LEGENDAIRE, 1);
-  closeTo(rows.s4f50.INFERNAL, 1);
-  closeTo(rows.s4f50.IMMORTEL, 1);
-  closeTo(rows.s4f50.DIVIN, 1);
-  closeTo(rows.s4f50.COMMUN, 35);
-  closeTo(Object.values(rows.s4f50).reduce((sum, value) => sum + Number(value || 0), 0), 100);
+  for (const row of [rows.e15, rows.h22, rows.m28, rows.a35, rows.l40, rows.i45, rows.d50a1, rows.d50a3]) {
+    closeTo(row.INFERNAL, 0);
+    closeTo(Object.values(row).reduce((sum, value) => sum + Number(value || 0), 0), 100);
+  }
 });
 
-test('V323 Forge can Ascend to four rarity stars without increasing power beyond the approved first-star x2', async ({ page }) => {
+test('V501 Forge Ascension removes only Commun then Peu commun', async ({ page }) => {
+  await openCleanGame(page);
+
+  const result = await page.evaluate(() => ({
+    zero: getRates('forge', 50, 0, 0),
+    one: getRates('forge', 50, 0, 1),
+    two: getRates('forge', 50, 0, 2),
+    legacyExtra: getRates('forge', 50, 0, 4),
+  }));
+
+  expect(result.zero.COMMUN).toBeGreaterThan(0);
+  expect(result.zero.PEU_COMMUN).toBeGreaterThan(0);
+
+  closeTo(result.one.COMMUN, 0);
+  expect(result.one.PEU_COMMUN).toBeGreaterThan(0);
+
+  closeTo(result.two.COMMUN, 0);
+  closeTo(result.two.PEU_COMMUN, 0);
+  expect(result.two.RARE).toBeGreaterThan(0);
+  expect(result.two.EPIQUE).toBeGreaterThan(0);
+  expect(result.two.HEROIQUE).toBeGreaterThan(0);
+  expect(result.two.MYTHIQUE).toBeGreaterThan(0);
+  expect(result.two.ARTEFACT).toBeGreaterThan(0);
+  expect(result.two.LEGENDAIRE).toBeGreaterThan(0);
+  expect(result.two.IMMORTEL).toBeGreaterThan(0);
+  closeTo(result.two.INFERNAL, 0);
+
+  for (const key of Object.keys(result.two)) closeTo(result.legacyExtra[key], result.two[key]);
+  closeTo(Object.values(result.two).reduce((sum, value) => sum + Number(value || 0), 0), 100);
+});
+
+test('V501 caps equipment Ascension at 2 while preserving the existing first-star x2 power', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
     const can = [];
-    for (let stars = 0; stars <= 4; stars += 1) {
+    for (let stars = 0; stars <= 2; stars += 1) {
       const state = defaultState('QA');
       state.forge.level = RULES.FORGE_MAX;
-      state.stars = state.stars || {};
       state.stars.forge = stars;
       can.push(canAscend(state, 'forge'));
     }
     return {
       can,
-      multipliers: [0, 1, 2, 3, 4].map((stars) => ascendPowerMul(stars, 'forge')),
-      config: window.__srProgressionStabilityConfigV304 && window.__srProgressionStabilityConfigV304.forgeRarityAscensionV323,
-      rarityConfig: window.__srEquipmentBalanceV224 && window.__srEquipmentBalanceV224.forgeRarityV323,
+      multipliers: [0, 1, 2].map((stars) => ascendPowerMul(stars, 'forge')),
+      config: window.__srProgressionStabilityConfigV304 && window.__srProgressionStabilityConfigV304.forgeRarityAscensionV501,
+      rarityConfig: window.__srEquipmentBalanceV224 && window.__srEquipmentBalanceV224.forgeRarityV501,
     };
   });
 
-  expect(result.can).toEqual([true, true, true, true, false]);
-  expect(result.multipliers).toEqual([1, 2, 2, 2, 2]);
-  expect(result.config.maxStars).toBe(4);
-  expect(result.config.rarityByStar).toEqual({ 1: 'Légendaire', 2: 'Infernal', 3: 'Immortel', 4: 'Divin' });
-  expect(result.rarityConfig.artefactUnlockLevel).toBe(40);
-  expect(result.rarityConfig.starUnlockLevel).toBe(45);
-  closeTo(result.rarityConfig.starStartChance, 0.25);
-  closeTo(result.rarityConfig.starMaxChance, 1);
+  expect(result.can).toEqual([true, true, false]);
+  expect(result.multipliers).toEqual([1, 2, 2]);
+  expect(result.config.maxStars).toBe(2);
+  expect(result.config.removedByStar).toEqual({ 1: 'Commun', 2: 'Peu commun' });
+  expect(result.rarityConfig.infernalRetired).toBe(true);
+  expect(result.rarityConfig.divineCharacterAscension).toBe(1);
 });
 
-test('V323 global character Ascension cannot bypass the Forge-star rarity ladder', async ({ page }) => {
+test('V501 Divin depends on character Ascension, not Forge Ascension', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => ({
-    zeroStarWithGlobalAscension: getRates('forge', 50, 999, 0),
-    fourStarsWithoutGlobalAscension: getRates('forge', 50, 0, 4),
+    noCharacterAscensionTwoForgeStars: getRates('forge', 50, 0, 2),
+    characterAscensionOneZeroForgeStars: getRates('forge', 50, 1, 0),
   }));
 
-  closeTo(result.zeroStarWithGlobalAscension.LEGENDAIRE, 0);
-  closeTo(result.zeroStarWithGlobalAscension.DIVIN, 0);
-  closeTo(result.fourStarsWithoutGlobalAscension.DIVIN, 1);
+  closeTo(result.noCharacterAscensionTwoForgeStars.DIVIN, 0);
+  closeTo(result.characterAscensionOneZeroForgeStars.DIVIN, 2);
 });
