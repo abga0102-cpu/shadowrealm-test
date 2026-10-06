@@ -1965,23 +1965,18 @@ function allocStat(key, pts) {
    Each tier now has a floor. A roll above what the Forge can produce steps down
    to the best tier it can, so the odds are never wasted, they just land lower. */
 const RARITY_MIN_FORGE = {
-  COMMUN: 1, PEU_COMMUN: 4, RARE: 12, EPIQUE: 18, HEROIQUE: 24, MYTHIQUE: 30,
-  ARTEFACT: 40, LEGENDAIRE: 40, INFERNAL: 40, IMMORTEL: 40, DIVIN: 48,
+  COMMUN: 1, PEU_COMMUN: 4, RARE: 12, EPIQUE: 15, HEROIQUE: 22, MYTHIQUE: 28,
+  ARTEFACT: 35, LEGENDAIRE: 40, INFERNAL: 999, IMMORTEL: 45, DIVIN: 48,
 };
 function rarityAllowed(rarity, forgeLevel, state) {
   const st = state || S;
+  if (rarity === "INFERNAL") return false;
   if (forgeLevel < (RARITY_MIN_FORGE[rarity] || 1)) return false;
-  const stars = starsOf(st, "forge");
-  if (rarity === "LEGENDAIRE") return stars >= 1;
-  if (rarity === "INFERNAL") return stars >= 2;
-  if (rarity === "IMMORTEL") return stars >= 3;
   if (rarity === "DIVIN") return (st.ascension || 0) >= 1;
   return true;
 }
 function forgeRarityRequirement(rarity) {
-  if (rarity === "LEGENDAIRE") return { text: "Forge ★ · niv. 40", pill: "★ 40" };
-  if (rarity === "INFERNAL") return { text: "Forge ★★ · niv. 40", pill: "★★ 40" };
-  if (rarity === "IMMORTEL") return { text: "Forge ★★★ · niv. 40", pill: "★★★ 40" };
+  if (rarity === "INFERNAL") return { text: "Rareté retirée", pill: "RETIRÉ" };
   if (rarity === "DIVIN") return { text: "Ascension personnage · Forge 48", pill: "ASC." };
   const min = RARITY_MIN_FORGE[rarity] || 1;
   return { text: "Forge " + min, pill: String(min) };
@@ -1995,9 +1990,9 @@ function forgeRarityRequirement(rarity) {
    once, and let the roll and every display read the same table. */
 function gateForgeRates(rates, forgeLevel) {
   const out = Object.assign({}, rates);
-  let top = EQUIP_RARITY_ORDER[0];
-  EQUIP_RARITY_ORDER.forEach((r) => { if (rarityAllowed(r, forgeLevel)) top = r; });
-  EQUIP_RARITY_ORDER.forEach((r) => {
+  let top = orderFor("forge")[0];
+  orderFor("forge").forEach((r) => { if (rarityAllowed(r, forgeLevel)) top = r; });
+  orderFor("forge").forEach((r) => {
     if (rarityAllowed(r, forgeLevel)) return;
     out[top] = (out[top] || 0) + (out[r] || 0);
     out[r] = 0;
@@ -2007,9 +2002,9 @@ function gateForgeRates(rates, forgeLevel) {
 /* Kept as a guard rather than a step: with gated rates a roll can no longer
    land on a locked tier, but nothing downstream should depend on that. */
 function capRarityForForge(rarity, forgeLevel) {
-  let i = EQUIP_RARITY_ORDER.indexOf(rarity);
-  while (i > 0 && !rarityAllowed(EQUIP_RARITY_ORDER[i], forgeLevel)) i -= 1;
-  return EQUIP_RARITY_ORDER[i];
+  let i = orderFor("forge").indexOf(rarity);
+  while (i > 0 && !rarityAllowed(orderFor("forge")[i], forgeLevel)) i -= 1;
+  return orderFor("forge")[i];
 }
 /* What the eight tiers mean, in one place, behind the (i). */
 /* Section 14's filter, one row per rarity. Tapping a row keeps or discards it;
@@ -2022,7 +2017,7 @@ function showForgeFilterPicker() {
   const unlockedBatch = Math.max(1, Math.floor(typeof forgeBatch === "function" ? forgeBatch(S) : 1));
   const selectedBatch = Math.max(1, Math.floor(Number(S.forge.autoBatch) || 1));
   const discarded = typeof forgeDiscarded === "function" ? forgeDiscarded(S) : [];
-  const rows = EQUIP_RARITY_ORDER.map((r) => {
+  const rows = orderFor("forge").map((r) => {
     const c = RARITY[r].c;
     const kept = S.forge.keep[r] !== false;
     const reachable = rarityAllowed(r, lv);
@@ -2079,7 +2074,7 @@ function showForgeFilterPicker() {
 function showRarityInfo() {
   const lv = S.forge.level;
   const rates = gateForgeRates(getRates("forge", lv, S.ascension, starsOf(S, "forge")), lv);
-  const rows = EQUIP_RARITY_ORDER.map((r) => {
+  const rows = orderFor("forge").map((r) => {
     const c = RARITY[r].c;
     const min = RARITY_MIN_FORGE[r] || 1;
     const req = forgeRarityRequirement(r);
@@ -2104,8 +2099,8 @@ function showRarityInfo() {
       "monter sa Maîtrise améliore les chances à l\'intérieur de ceux déjà ouverts.</div>" +
     rows +
     '<div class="mute tiny center mt6">Forge niv.' + lv + " · " +
-      EQUIP_RARITY_ORDER.filter((r) => rarityAllowed(r, lv, S)).length + " paliers sur " +
-      EQUIP_RARITY_ORDER.length + " ouverts</div>" +
+      orderFor("forge").filter((r) => rarityAllowed(r, lv, S)).length + " paliers sur " +
+      orderFor("forge").length + " ouverts</div>" +
     '<div class="mt8">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
     "Raretés d\'équipement");
 }
@@ -2161,7 +2156,7 @@ function forgeSummon(n) {
       Object.keys(rates).forEach((r) => { rates[r] = rates[r] / rateSum * 100; });
       const extra = Math.random() * 100 < treeSum(st, "forgeFree") ? 1 : 0;
       for (let k = 0; k <= extra; k++) {
-        const rar = capRarityForForge(rollRarity(rates, EQUIP_RARITY_ORDER), st.forge.level);
+        const rar = capRarityForForge(rollRarity(rates, orderFor("forge")), st.forge.level);
         const item = makeItem(SLOTS[Math.floor(Math.random() * SLOTS.length)], rar, st.forge.level);
         // V470: only the primary item of each paid Forge grants Gold. The Tree's
         // bonus free item stays free of extra currency to protect the Gold economy.
@@ -2264,7 +2259,7 @@ function toggleAutoForge() {
    the point is not to have to sort afterwards. */
 function forgeFilterOn(s) { return !!s.forge.filter; }
 function forgeKeeps(s, rar) { return !forgeFilterOn(s) || s.forge.keep[rar] !== false; }
-function forgeDiscarded(s) { return EQUIP_RARITY_ORDER.filter((r) => s.forge.keep[r] === false); }
+function forgeDiscarded(s) { return orderFor("forge").filter((r) => s.forge.keep[r] === false); }
 function toggleForgeFilter() {
   update((s) => { s.forge.filter = !s.forge.filter; });
 }
@@ -2272,12 +2267,12 @@ function toggleForgeKeep(rar) {
   update((s) => {
     const next = s.forge.keep[rar] === false;
     // refuse to let the filter throw away everything: one rarity must remain
-    if (!next && EQUIP_RARITY_ORDER.every((r) => r === rar || s.forge.keep[r] === false)) return;
+    if (!next && orderFor("forge").every((r) => r === rar || s.forge.keep[r] === false)) return;
     s.forge.keep[rar] = next;
   });
 }
 function setForgeKeepAll(v) {
-  update((s) => { EQUIP_RARITY_ORDER.forEach((r) => { s.forge.keep[r] = v; }); });
+  update((s) => { orderFor("forge").forEach((r) => { s.forge.keep[r] = v; }); });
 }
 
 /* Section 13: a batch plays ONE animation and then produces everything at once.
