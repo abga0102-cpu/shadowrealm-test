@@ -1,10 +1,10 @@
-/* SHADOWREACH · Game Balance V224 / V323 Forge rarity ladder
+/* SHADOWREACH · Game Balance V224 / V501 Forge rarity ladder
    - Equipment base power is fixed by rarity and no longer scales with Forge level.
    - Rarity-specific stat quality rolls; perfect rolls stay rare through Mythic.
-   - V323: every newly available Forge rarity starts at exactly 0.25%.
-   - V427: 0★ ends at Artefact, strictly locked until Forge 40; Forge stars unlock Légendaire/Infernal/Immortel/Divin.
-   - Removes obsolete Rebirth upgrades (including Regeneration) from active effects/UI registry.
-   - Existing gear is migrated once without lowering owned stats or upgrade investment. */
+   - V501: Forge unlocks Épique 15, Héroïque 22, Mythique 28, Artefact 35, Légendaire 40, Immortel 45.
+   - Infernal is retired from new equipment drops. Divin remains character-Ascension gated at Forge 48.
+   - Forge Ascension I removes Commun; Forge Ascension II removes Peu commun; no higher rarity is removed.
+   - Existing gear is preserved without lowering owned stats or upgrade investment. */
 (function(){
 'use strict';
 if(window.__srGameBalanceV224)return;
@@ -56,69 +56,76 @@ function pruneRebirth(){
 }
 pruneRebirth();
 
-/* V323 Forge rarity progression.
-   Base 0★ ladder keeps the approved Forge-50 targets through Artefact, but every
-   newly introduced rarity now enters at exactly 0.25%. The four post-0★ tiers
-   are earned one per Forge Ascension and all use the same clear endgame ramp:
-   Forge 44 = locked, Forge 45 = 0.25%, Forge 50 = 1.00%.
-   Higher-tier probability is taken only from Commun, preserving the lower-tier
-   Forge-50 targets. At 4★/Forge 50 the table is therefore exactly:
-   C35 / R28 / E21 / M8 / A4 / L1 / I1 / Im1 / D1. */
-var FORGE_BASE_RARITIES_V323=[
-  {key:'RARE',unlock:1,target:28,ease:.70},
-  {key:'EPIQUE',unlock:6,target:21,ease:1.15},
-  {key:'MYTHIQUE',unlock:14,target:8,ease:1.55},
-  {key:'ARTEFACT',unlock:40,target:4,ease:1.85}
+/* V501 Forge rarity progression.
+   The active equipment ladder is now level-driven through Immortel:
+   Peu commun 4, Rare 12, Épique 15, Héroïque 22, Mythique 28,
+   Artefact 35, Légendaire 40, Immortel 45.
+   Infernal is legacy-only and never receives a drop rate.
+   Divin keeps its character-Ascension gate at Forge 48 and reaches 2/4/6%
+   at Forge 50 for character Ascensions 1/2/3.
+   Forge Ascension improves quality by deleting the bottom of the table:
+   ★ removes Commun, ★★ removes Peu commun. Remaining rates are normalized. */
+var FORGE_BASE_RARITIES_V501=[
+  {key:'PEU_COMMUN',unlock:4,target:24,ease:.82},
+  {key:'RARE',unlock:12,target:22,ease:.70},
+  {key:'EPIQUE',unlock:15,target:16,ease:1.15},
+  {key:'HEROIQUE',unlock:22,target:7,ease:1.35},
+  {key:'MYTHIQUE',unlock:28,target:4,ease:1.55},
+  {key:'ARTEFACT',unlock:35,target:2,ease:1.85},
+  {key:'LEGENDAIRE',unlock:40,target:1,ease:2.15},
+  {key:'IMMORTEL',unlock:45,target:1,ease:2.75}
 ];
-var FORGE_STAR_RARITIES_V323=[
-  {key:'LEGENDAIRE',stars:1},
-  {key:'INFERNAL',stars:2},
-  {key:'IMMORTEL',stars:3},
-  {key:'DIVIN',stars:4}
-];
-function forgeBaseRarityChanceV323(level,cfg){
-  level=Math.max(1,Math.min(50,Math.floor(Number(level)||1)));
-  if(level<cfg.unlock)return 0;
-  if(level>=50)return cfg.target;
-  if(cfg.unlock>=50)return .25;
-  var p=(level-cfg.unlock)/(50-cfg.unlock);
-  return .25+(cfg.target-.25)*Math.pow(Math.max(0,Math.min(1,p)),cfg.ease);
-}
-function forgeStarRarityChanceV323(level){
-  level=Math.max(1,Math.min(50,Math.floor(Number(level)||1)));
-  if(level<45)return 0;
-  return .25+.75*((level-45)/5);
-}
-function forgeRatesV323(level,stars){
+function forgeBaseRarityChanceV501(level,cfg,stars){
   level=Math.max(1,Math.min(50,Math.floor(Number(level)||1)));
   stars=Math.max(0,Math.floor(Number(stars)||0));
-  var out={COMMUN:0,RARE:0,EPIQUE:0,MYTHIQUE:0,ARTEFACT:0,LEGENDAIRE:0,INFERNAL:0,IMMORTEL:0,DIVIN:0};
-  var used=0;
-  FORGE_BASE_RARITIES_V323.forEach(function(cfg){
-    var chance=forgeBaseRarityChanceV323(level,cfg);
-    out[cfg.key]=chance;used+=chance;
-  });
-  var starChance=forgeStarRarityChanceV323(level);
-  FORGE_STAR_RARITIES_V323.forEach(function(cfg){
-    if(stars<cfg.stars)return;
-    out[cfg.key]=starChance;used+=starChance;
-  });
-  out.COMMUN=Math.max(0,100-used);
+  var unlock=cfg.unlock;
+  /* After an equipment Ascension the next surviving rarity becomes the floor
+     immediately, otherwise the Forge reset would have no valid drop at low level. */
+  if(stars>=1&&cfg.key==='PEU_COMMUN')unlock=1;
+  if(stars>=2&&cfg.key==='RARE')unlock=1;
+  if(level<unlock)return 0;
+  if(level>=50)return cfg.target;
+  var p=(level-unlock)/(50-unlock);
+  return .25+(cfg.target-.25)*Math.pow(Math.max(0,Math.min(1,p)),cfg.ease);
+}
+function forgeDivineChanceV501(level,ascension){
+  level=Math.max(1,Math.min(50,Math.floor(Number(level)||1)));
+  ascension=Math.max(0,Math.min(3,Math.floor(Number(ascension)||0)));
+  if(ascension<1||level<48)return 0;
+  return Math.min(6,ascension*2*(level/50));
+}
+function normalizeForgeRatesV501(out){
+  var keys=['COMMUN','PEU_COMMUN','RARE','EPIQUE','HEROIQUE','MYTHIQUE','ARTEFACT','LEGENDAIRE','IMMORTEL','DIVIN'];
+  var sum=keys.reduce(function(n,k){return n+(Number(out[k])||0);},0)||1;
+  keys.forEach(function(k){out[k]=(Number(out[k])||0)/sum*100;});
+  out.INFERNAL=0;
   return out;
 }
-function forgeRequiredStarsV323(rarity){
-  for(var i=0;i<FORGE_STAR_RARITIES_V323.length;i++)if(FORGE_STAR_RARITIES_V323[i].key===rarity)return FORGE_STAR_RARITIES_V323[i].stars;
-  return 0;
+function forgeRatesV501(level,ascension,stars){
+  level=Math.max(1,Math.min(50,Math.floor(Number(level)||1)));
+  stars=Math.max(0,Math.floor(Number(stars)||0));
+  var out={COMMUN:0,PEU_COMMUN:0,RARE:0,EPIQUE:0,HEROIQUE:0,MYTHIQUE:0,ARTEFACT:0,LEGENDAIRE:0,INFERNAL:0,IMMORTEL:0,DIVIN:0};
+  var used=0;
+  FORGE_BASE_RARITIES_V501.forEach(function(cfg){
+    var chance=forgeBaseRarityChanceV501(level,cfg,stars);
+    out[cfg.key]=chance;used+=chance;
+  });
+  out.DIVIN=forgeDivineChanceV501(level,ascension);used+=out.DIVIN;
+  out.COMMUN=Math.max(0,100-used);
+  if(stars>=1)out.COMMUN=0;
+  if(stars>=2)out.PEU_COMMUN=0;
+  return normalizeForgeRatesV501(out);
 }
-/* Keep the existing Forge floor gate aligned with the new star-tier entrance.
-   Base rarity floors remain unchanged; every Ascension-only tier enters at 45. */
 try{
   if(typeof RARITY_MIN_FORGE!=='undefined'&&RARITY_MIN_FORGE){
-    RARITY_MIN_FORGE.ARTEFACT=40;
-    RARITY_MIN_FORGE.LEGENDAIRE=45;
-    RARITY_MIN_FORGE.INFERNAL=45;
+    RARITY_MIN_FORGE.EPIQUE=15;
+    RARITY_MIN_FORGE.HEROIQUE=22;
+    RARITY_MIN_FORGE.MYTHIQUE=28;
+    RARITY_MIN_FORGE.ARTEFACT=35;
+    RARITY_MIN_FORGE.LEGENDAIRE=40;
+    RARITY_MIN_FORGE.INFERNAL=999;
     RARITY_MIN_FORGE.IMMORTEL=45;
-    RARITY_MIN_FORGE.DIVIN=45;
+    RARITY_MIN_FORGE.DIVIN=48;
   }
 }catch(_){ }
 
@@ -126,11 +133,11 @@ try{
   if(typeof getRates==='function'&&!getRates.__srV224){
     var oldGetRates=getRates;
     var wrappedGetRates=function(system,mastery,ascension,stars){
-      if(system==='forge')return forgeRatesV323(mastery,stars);
+      if(system==='forge')return forgeRatesV501(mastery,ascension,stars);
       return oldGetRates(system,mastery,ascension,stars);
     };
     wrappedGetRates.__srV224=true;
-    wrappedGetRates.__srV323=true;
+    wrappedGetRates.__srV501=true;
     wrappedGetRates.__srPrevious=oldGetRates;
     getRates=wrappedGetRates;
   }
@@ -222,12 +229,12 @@ function migrate(){
 migrate();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',migrate,{once:true});else setTimeout(migrate,0);
 
-/* V427 · Artefact is a Forge-40 rarity. A historical core migration renamed
+/* V501 · Artefact is now a Forge-35 rarity. A historical core migration renamed
    legacy Héroïque gear to Artefact before the current Forge gate existed, which
-   can leave a modern save visibly owning an impossible Artefact below Forge 40.
+   can leave a modern save visibly owning an impossible Artefact below Forge 35.
    Repair only the rarity/name after all equipment power migrations have run:
    every stat, affix, upgrade level and item id stays exactly as owned. */
-var ARTEFACT_UNLOCK_LEVEL_V427=40;
+var ARTEFACT_UNLOCK_LEVEL_V427=35;
 function repairPrematureArtefactsV427(){
   try{
     if(typeof S==='undefined'||!S||!S.forge)return 0;
@@ -259,7 +266,19 @@ else setTimeout(repairPrematureArtefactsV427,0);
 
 window.__srEquipmentBalanceV224={
   fixedBase:FIXED_BASE,targetMean:TARGET_MEAN,perfectChance:PERFECT,qualityRoll:qualityRoll,pruneRebirth:pruneRebirth,
-  forgeRarityV323:{base:FORGE_BASE_RARITIES_V323,stars:FORGE_STAR_RARITIES_V323,rates:forgeRatesV323,requiredStars:forgeRequiredStarsV323,artefactUnlockLevel:ARTEFACT_UNLOCK_LEVEL_V427,starUnlockLevel:45,starStartChance:.25,starMaxChance:1},
+  forgeRarityV501:{
+    base:FORGE_BASE_RARITIES_V501,
+    rates:forgeRatesV501,
+    divinChance:forgeDivineChanceV501,
+    removedByForgeAscension:{1:'Commun',2:'Peu commun'},
+    maxForgeAscensions:2,
+    artefactUnlockLevel:ARTEFACT_UNLOCK_LEVEL_V427,
+    legendaryUnlockLevel:40,
+    immortalUnlockLevel:45,
+    divineUnlockLevel:48,
+    divineCharacterAscension:1,
+    infernalRetired:true
+  },
   repairPrematureArtefactsV427:repairPrematureArtefactsV427
 };
 })();
