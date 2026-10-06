@@ -104,5 +104,5 @@
       }
     }catch(_){}
   }
-  setTimeout(runCompensationOnce,0);
+  if(typeof setTimeout==='function')setTimeout(runCompensationOnce,0);
 })();
