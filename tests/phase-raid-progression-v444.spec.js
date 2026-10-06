@@ -71,10 +71,10 @@ test('V486 Raid Evolution PE is 150, +10 through level 14, then +5 through level
   });
 });
 
-test('V496 Minerai Raid uses +50 to 1000, +25 to 1500, then +10; Autonomy starts at 10%', async ({ page }) => {
+test('V499 Minerai Raid starts at 1000, reaches 2000/2500/2800, then +5; Autonomy stays 10%', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
-    const levels=[1,5,10,11,20,50,51,70];
+    const levels=[1,5,10,20,21,40,41,60,61,62,70];
     const rewards=levels.map((lv) => raidReward('minerai',lv));
     const cfg=window.__srRaidRewardConfigV396.minerai;
     const st=JSON.parse(JSON.stringify(S));
@@ -83,9 +83,14 @@ test('V496 Minerai Raid uses +50 to 1000, +25 to 1500, then +10; Autonomy starts
     const baseAutonomy=harvestRates(st).minerai;
     return {rewards,cfg,baseAutonomy};
   });
-  expect(out.rewards).toEqual([500,700,950,1000,1225,1690,1700,1890]);
-  expect(out.cfg).toMatchObject({level1:500,perLevelTo1000:50,level11:1000,perLevelTo1500:25,level31:1500,perLevelAfter1500:10,level70:1890});
-  expect(out.baseAutonomy).toBeCloseTo(189,8);
+  expect(out.rewards).toEqual([1000,1200,1450,1950,2000,2475,2500,2785,2800,2805,2845]);
+  expect(out.cfg).toMatchObject({
+    level1:1000,perLevelTo2000:50,level21:2000,
+    perLevelTo2500:25,level41:2500,
+    perLevelTo2800:15,level61:2800,
+    perLevelAfter2800:5,level70:2845
+  });
+  expect(out.baseAutonomy).toBeCloseTo(284.5,8);
 });
 
 test('V444 Campaign gate follows the agreed 2x mapping', async ({ page }) => {
