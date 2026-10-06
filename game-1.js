@@ -1598,7 +1598,7 @@ window.__srRaidCampaignLinkedV444 = {
 
 /* Raid Minerai reward ownership is finalized later by V396. Raid Ascension is
    retired, so this compatibility base no longer reads a Raid star. */
-const RAID_MINERAI_BASE = 500;
+const RAID_MINERAI_BASE = 1000;
 const RAID_MINERAI_PER_LEVEL = 5;
 function raidMineraiBase() { return RAID_MINERAI_BASE; }
 function raidReward(raid, level) {
@@ -1619,9 +1619,10 @@ function raidReward(raid, level) {
   }
   if (raid === "minerai") {
     const capped = Math.min(RULES.RAID_MAX_LEVEL, lv);
-    if (capped <= 11) return 500 + 50 * (capped - 1);
-    if (capped <= 31) return 1000 + 25 * (capped - 11);
-    return 1500 + 10 * (capped - 31);
+    if (capped <= 21) return 1000 + 50 * (capped - 1);
+    if (capped <= 41) return 2000 + 25 * (capped - 21);
+    if (capped <= 61) return 2500 + 15 * (capped - 41);
+    return 2800 + 5 * (capped - 61);
   }
   const base = RAID_BASE[raid] || 8;
   return Math.floor(base * Math.pow(RAID_GROWTH, lv - 1));
