@@ -69,6 +69,8 @@ test('V501 Forge Ascension removes only Commun then Peu commun', async ({ page }
     zero: getRates('forge', 50, 0, 0),
     one: getRates('forge', 50, 0, 1),
     two: getRates('forge', 50, 0, 2),
+    oneReset: gateForgeRates(getRates('forge', 1, 0, 1), 1),
+    twoReset: gateForgeRates(getRates('forge', 1, 0, 2), 1),
     legacyExtra: getRates('forge', 50, 0, 4),
   }));
 
@@ -88,6 +90,12 @@ test('V501 Forge Ascension removes only Commun then Peu commun', async ({ page }
   expect(result.two.LEGENDAIRE).toBeGreaterThan(0);
   expect(result.two.IMMORTEL).toBeGreaterThan(0);
   closeTo(result.two.INFERNAL, 0);
+
+  closeTo(result.oneReset.COMMUN, 0);
+  closeTo(result.oneReset.PEU_COMMUN, 100);
+  closeTo(result.twoReset.COMMUN, 0);
+  closeTo(result.twoReset.PEU_COMMUN, 0);
+  closeTo(result.twoReset.RARE, 100);
 
   for (const key of Object.keys(result.two)) closeTo(result.legacyExtra[key], result.two[key]);
   closeTo(Object.values(result.two).reduce((sum, value) => sum + Number(value || 0), 0), 100);
