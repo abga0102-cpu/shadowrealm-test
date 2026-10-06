@@ -1005,7 +1005,12 @@ const ASCENSION = {
 };
 const STAR_HEADSTART_CAP = 0.66;
 
-function starsOf(s, sys) { return (s.stars && s.stars[sys]) || 0; }
+function starsOf(s, sys) {
+  const raw = (s.stars && s.stars[sys]) || 0;
+  /* V501 keeps old saves non-destructive while making the effective Forge
+     Ascension cap exactly 2★ everywhere, including UI and drop calculations. */
+  return sys === "forge" ? Math.min(2, Math.max(0, Number(raw) || 0)) : raw;
+}
 /* permanent multiplier on that system's base values */
 /* Forge and Skill retain their original defined first star. Familiars have a
    complete three-star ladder: 0★ x1, 1★ x2, 2★ x3, 3★ x4. */
