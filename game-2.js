@@ -1971,12 +1971,20 @@ const RARITY_MIN_FORGE = {
 function rarityAllowed(rarity, forgeLevel, state) {
   const st = state || S;
   if (rarity === "INFERNAL") return false;
-  if (forgeLevel < (RARITY_MIN_FORGE[rarity] || 1)) return false;
+  const stars = starsOf(st, "forge");
+  let min = RARITY_MIN_FORGE[rarity] || 1;
+  if (stars >= 1 && rarity === "PEU_COMMUN") min = 1;
+  if (stars >= 2 && rarity === "RARE") min = 1;
+  if (forgeLevel < min) return false;
   if (rarity === "DIVIN") return (st.ascension || 0) >= 1;
   return true;
 }
-function forgeRarityRequirement(rarity) {
+function forgeRarityRequirement(rarity, state) {
+  const st = state || S;
+  const stars = starsOf(st, "forge");
   if (rarity === "INFERNAL") return { text: "Rareté retirée", pill: "RETIRÉ" };
+  if (rarity === "PEU_COMMUN" && stars >= 1) return { text: "Plancher après Ascension équipement I", pill: "★" };
+  if (rarity === "RARE" && stars >= 2) return { text: "Plancher après Ascension équipement II", pill: "★★" };
   if (rarity === "DIVIN") return { text: "Ascension personnage · Forge 48", pill: "ASC." };
   const min = RARITY_MIN_FORGE[rarity] || 1;
   return { text: "Forge " + min, pill: String(min) };
