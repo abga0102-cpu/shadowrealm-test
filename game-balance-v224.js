@@ -75,11 +75,17 @@ var FORGE_BASE_RARITIES_V501=[
   {key:'LEGENDAIRE',unlock:40,target:1,ease:2.15},
   {key:'IMMORTEL',unlock:45,target:1,ease:2.75}
 ];
-function forgeBaseRarityChanceV501(level,cfg){
+function forgeBaseRarityChanceV501(level,cfg,stars){
   level=Math.max(1,Math.min(50,Math.floor(Number(level)||1)));
-  if(level<cfg.unlock)return 0;
+  stars=Math.max(0,Math.floor(Number(stars)||0));
+  var unlock=cfg.unlock;
+  /* After an equipment Ascension the next surviving rarity becomes the floor
+     immediately, otherwise the Forge reset would have no valid drop at low level. */
+  if(stars>=1&&cfg.key==='PEU_COMMUN')unlock=1;
+  if(stars>=2&&cfg.key==='RARE')unlock=1;
+  if(level<unlock)return 0;
   if(level>=50)return cfg.target;
-  var p=(level-cfg.unlock)/(50-cfg.unlock);
+  var p=(level-unlock)/(50-unlock);
   return .25+(cfg.target-.25)*Math.pow(Math.max(0,Math.min(1,p)),cfg.ease);
 }
 function forgeDivineChanceV501(level,ascension){
@@ -101,7 +107,7 @@ function forgeRatesV501(level,ascension,stars){
   var out={COMMUN:0,PEU_COMMUN:0,RARE:0,EPIQUE:0,HEROIQUE:0,MYTHIQUE:0,ARTEFACT:0,LEGENDAIRE:0,INFERNAL:0,IMMORTEL:0,DIVIN:0};
   var used=0;
   FORGE_BASE_RARITIES_V501.forEach(function(cfg){
-    var chance=forgeBaseRarityChanceV501(level,cfg);
+    var chance=forgeBaseRarityChanceV501(level,cfg,stars);
     out[cfg.key]=chance;used+=chance;
   });
   out.DIVIN=forgeDivineChanceV501(level,ascension);used+=out.DIVIN;
