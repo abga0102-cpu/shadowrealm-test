@@ -17,29 +17,33 @@ function runtime() {
   return ctx;
 }
 
-test('V496 compatibility owner mirrors the final Raid Minerai curve', async () => {
+test('V499 compatibility owner mirrors the final Raid Minerai curve', async () => {
   const ctx = runtime();
-  expect(ctx.raidReward('minerai', 1)).toBe(500);
-  expect(ctx.raidReward('minerai', 10)).toBe(950);
-  expect(ctx.raidReward('minerai', 11)).toBe(1000);
-  expect(ctx.raidReward('minerai', 25)).toBe(1350);
+  expect(ctx.raidReward('minerai', 1)).toBe(1000);
+  expect(ctx.raidReward('minerai', 10)).toBe(1450);
+  expect(ctx.raidReward('minerai', 21)).toBe(2000);
+  expect(ctx.raidReward('minerai', 41)).toBe(2500);
+  expect(ctx.raidReward('minerai', 61)).toBe(2800);
+  expect(ctx.raidReward('minerai', 70)).toBe(2845);
   expect(ctx.raidReward('eclat', 10)).toBe(210);
 });
 
-test('V496 compatibility autonomy uses 10% of its mirrored reward', async () => {
+test('V499 compatibility autonomy uses 10% of its mirrored reward', async () => {
   const ctx = runtime();
   const out = ctx.harvestPerHour({ raids: { minerai: { level: 10 } } });
-  expect(out.minerai).toBe(95);
+  expect(out.minerai).toBe(145);
   expect(out.eclat).toBe(7);
   expect(ctx.window.__shadowreachRaidMineraiBalance).toMatchObject({
-    version: 496,
-    level1: 500,
-    perLevelTo1000: 50,
-    level11: 1000,
-    perLevelTo1500: 25,
-    level31: 1500,
-    perLevelAfter1500: 10,
-    level70: 1890,
+    version: 499,
+    level1: 1000,
+    perLevelTo2000: 50,
+    level21: 2000,
+    perLevelTo2500: 25,
+    level41: 2500,
+    perLevelTo2800: 15,
+    level61: 2800,
+    perLevelAfter2800: 5,
+    level70: 2845,
     autonomySharePerHour: 0.10
   });
 });
