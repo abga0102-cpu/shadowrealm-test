@@ -138,8 +138,8 @@ test('V283 owns current fixed-base Forge equipment power independently of Forge 
 
   expect(result.authorityLoaded).toBe(true);
   expect(result.makeItemOwned).toBe(true);
-  expect(result.low.curve).toBe(283);
-  expect(result.high.curve).toBe(283);
+  expect(result.low.curve).toBe(501);
+  expect(result.high.curve).toBe(501);
   expect(result.high.damage).toBe(result.low.damage);
   expect(result.high.hp).toBe(result.low.hp);
   expect(result.high.baseDamage).toBe(result.low.baseDamage);
@@ -147,28 +147,34 @@ test('V283 owns current fixed-base Forge equipment power independently of Forge 
   expect(result.high.originalPower).toBe(result.low.originalPower);
 });
 
-test('V323 Forge-star ladder owns post-Artefact rarity access independently of global Ascension', async ({ page }) => {
+test('V501 equipment Ascension removes only low rarities while Divine stays character-gated', async ({ page }) => {
   await openCleanGame(page);
 
   const result = await page.evaluate(() => {
-    const zeroStars = getRates('forge', 50, 999, 0);
-    const fourStars = getRates('forge', 50, 0, 4);
+    const noCharacterAscension = getRates('forge', 50, 0, 2);
+    const characterAscension = getRates('forge', 50, 1, 0);
     return {
       authorityLoaded: !!window.__srGameBalanceV224,
-      rarityAuthorityLoaded: !!(window.__srEquipmentBalanceV224 && window.__srEquipmentBalanceV224.forgeRarityV323),
-      zeroStarsDivine: Number(zeroStars && zeroStars.DIVIN) || 0,
-      fourStarsDivine: Number(fourStars && fourStars.DIVIN) || 0,
-      zeroStarsTotal: Object.keys(zeroStars || {}).reduce((sum, key) => sum + (Number(zeroStars[key]) || 0), 0),
-      fourStarsTotal: Object.keys(fourStars || {}).reduce((sum, key) => sum + (Number(fourStars[key]) || 0), 0),
+      rarityAuthorityLoaded: !!(window.__srEquipmentBalanceV224 && window.__srEquipmentBalanceV224.forgeRarityV501),
+      noCharacterDivine: Number(noCharacterAscension && noCharacterAscension.DIVIN) || 0,
+      characterDivine: Number(characterAscension && characterAscension.DIVIN) || 0,
+      communAfterTwo: Number(noCharacterAscension && noCharacterAscension.COMMUN) || 0,
+      uncommonAfterTwo: Number(noCharacterAscension && noCharacterAscension.PEU_COMMUN) || 0,
+      infernalAfterTwo: Number(noCharacterAscension && noCharacterAscension.INFERNAL) || 0,
+      noCharacterTotal: Object.keys(noCharacterAscension || {}).reduce((sum, key) => sum + (Number(noCharacterAscension[key]) || 0), 0),
+      characterTotal: Object.keys(characterAscension || {}).reduce((sum, key) => sum + (Number(characterAscension[key]) || 0), 0),
     };
   });
 
   expect(result.authorityLoaded).toBe(true);
   expect(result.rarityAuthorityLoaded).toBe(true);
-  expect(result.zeroStarsDivine).toBe(0);
-  expect(result.fourStarsDivine).toBeCloseTo(1, 8);
-  expect(result.zeroStarsTotal).toBeCloseTo(100, 8);
-  expect(result.fourStarsTotal).toBeCloseTo(100, 8);
+  expect(result.noCharacterDivine).toBe(0);
+  expect(result.characterDivine).toBeCloseTo(2, 8);
+  expect(result.communAfterTwo).toBe(0);
+  expect(result.uncommonAfterTwo).toBe(0);
+  expect(result.infernalAfterTwo).toBe(0);
+  expect(result.noCharacterTotal).toBeCloseTo(100, 8);
+  expect(result.characterTotal).toBeCloseTo(100, 8);
 });
 
 test('Forge arena preview follows the current fixed-base model as real drops', async ({ page }) => {
