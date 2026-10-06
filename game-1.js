@@ -211,11 +211,13 @@ const MUTATION_LABEL = ["MUTATION · CÉLÉRITÉ", "MUTATION · CARAPACE", "MUTA
    so the two can never drift apart. */
 function forgeKeepAll() {
   const o = {};
-  EQUIP_RARITY_ORDER.forEach((r) => { o[r] = true; });
+  EQUIP_FORGE_RARITY_ORDER.forEach((r) => { o[r] = true; });
   return o;
 }
+/* Infernal stays readable for legacy saves, but is retired from the active Forge ladder in V501. */
 const EQUIP_RARITY_ORDER = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "HEROIQUE", "MYTHIQUE", "ARTEFACT", "LEGENDAIRE", "INFERNAL", "IMMORTEL", "DIVIN"];
-function orderFor(system) { return system === "forge" ? EQUIP_RARITY_ORDER : system === "pet" ? PET_RARITY_ORDER : RARITY_ORDER; }
+const EQUIP_FORGE_RARITY_ORDER = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "HEROIQUE", "MYTHIQUE", "ARTEFACT", "LEGENDAIRE", "IMMORTEL", "DIVIN"];
+function orderFor(system) { return system === "forge" ? EQUIP_FORGE_RARITY_ORDER : system === "pet" ? PET_RARITY_ORDER : RARITY_ORDER; }
 function equipRank(rarity) { return EQUIP_RARITY_ORDER.indexOf(rarity); }
 const C = {
   gold: "#E8B44A", purple: "#9B5CF6", red: "#E5484D", green: "#3FB950",
@@ -1008,8 +1010,8 @@ function starsOf(s, sys) { return (s.stars && s.stars[sys]) || 0; }
 /* Forge and Skill retain their original defined first star. Familiars have a
    complete three-star ladder: 0★ x1, 1★ x2, 2★ x3, 3★ x4. */
 const ASCEND_POWER_MUL = [1, 2];
-const FORGE_ASCEND_POWER_MUL = [1, 2, 3, 4];
-const FORGE_ASCEND_MAX_STARS = 3;
+const FORGE_ASCEND_POWER_MUL = [1, 2, 2];
+const FORGE_ASCEND_MAX_STARS = 2;
 const PET_ASCEND_POWER_MUL = [1, 2, 3, 4];
 const PET_ASCEND_MAX_STARS = 3;
 function ascendPowerMul(stars, sys) {
