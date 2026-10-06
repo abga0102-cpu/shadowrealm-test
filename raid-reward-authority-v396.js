@@ -1,4 +1,4 @@
-/* SHADOWREACH V396 · Final Raid reward authority / V496 Raid balance
+/* SHADOWREACH V396 · Final Raid reward authority / V499 Raid Minerai balance
    Owns final Raid rewards. Raid power staircase is owned canonically by game-1.js. */
 (function(){
   'use strict';
@@ -15,9 +15,10 @@
   }
   function mineraiReward(level){
     var lv=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
-    if(lv<=11)return 500+50*(lv-1);
-    if(lv<=31)return 1000+25*(lv-11);
-    return 1500+10*(lv-31);
+    if(lv<=21)return 1000+50*(lv-1);
+    if(lv<=41)return 2000+25*(lv-21);
+    if(lv<=61)return 2500+15*(lv-41);
+    return 2800+5*(lv-61);
   }
   function competenceReward(level){var lv=Math.max(1,Math.floor(Number(level)||1));return 300+10*(lv-1);}
   function familiarReward(level){
@@ -49,9 +50,9 @@
   window.__srRaidAccessV446={version:446,campaignGate:false,campaignReady:raidCampaignReady};
 
   window.__srRaidRewardConfigV396={
-    version:496,
+    version:499,
     or:{level1:5000,level10:10000,level15:20000,level20:30000,growthAfter20:GOLD_GROWTH},
-    minerai:{level1:500,perLevelTo1000:50,level11:1000,perLevelTo1500:25,level31:1500,perLevelAfter1500:10,level70:1890},
+    minerai:{level1:1000,perLevelTo2000:50,level21:2000,perLevelTo2500:25,level41:2500,perLevelTo2800:15,level61:2800,perLevelAfter2800:5,level70:2845},
     competence:{level1:300,perLevel:10},
     familier:{level1:225,perLevelTo11:5,level11:275,perLevelAfter11:2,level70:393},
     evolution:{curveVersion:486,level1:150,perLevelTo14:10,level14:280,perLevelFrom15:5,level15:285,level70:560},
