@@ -111,23 +111,31 @@ function scrAccueil() {
     "</div>" +
     ic("chevron", 11) + "</div>";
 
-  // forge upgrade block — Gold + upgrade time only
+  // V503 · Forge upgrade controls must stay readable and tappable on mobile.
   const goldOk = S.gold >= upgCost;
+  const forgeSpeedPct = Math.max(0, treeSum(S, "forgeTime"));
+  const forgeAccelPct = Math.max(0, treeSum(S, "accel"));
   const forgeAccels = ACCEL_DEFS.filter((a) => (S.accels[a.key] || 0) > 0).map((a) =>
-    '<span class="pill" data-act="accel" data-arg="' + a.key + '" data-arg2="forge"' +
-    ' style="cursor:pointer;color:#8FEFF4;border-color:var(--cyan)">' + ic("bolt", 10) + a.label + " ×" + S.accels[a.key] + "</span>").join("");
+    '<button type="button" class="pill forgeAccelTapV503" data-act="accel" data-arg="' + a.key + '" data-arg2="forge"' +
+    ' aria-label="Utiliser accélérateur ' + esc(a.label) + ' sur la Forge"' +
+    ' style="cursor:pointer;color:#8FEFF4;border-color:var(--cyan);min-height:40px;padding:7px 10px;flex:0 0 auto;touch-action:manipulation;pointer-events:auto;position:relative;z-index:4">' +
+    ic("bolt", 11) + '<span><b>' + esc(a.label) + '</b> ×' + S.accels[a.key] + "</span></button>").join("");
 
   let upg;
   if (atMax) {
     upg = '<div class="mute tiny center mt4"><b class="gt">Forge au niveau maximum</b></div>';
   } else if (upgrading) {
-    upg = '<div class="card lit mt4" style="padding:4px 7px">' +
+    upg = '<div class="card lit mt4" style="padding:7px 8px;position:relative;z-index:3;overflow:visible">' +
       '<div class="row gap8"><div class="flex1">' +
         '<div class="b" style="font-size:9px;color:var(--goldLit)">AMÉLIORATION → NIV.' + (S.forge.level + 1) + "</div>" +
         '<div class="mt4">' + bar(100 - (upgRemain / Math.max(1, upgTime)) * 100, C.gold, 5) + "</div></div>" +
-      '<b class="row gap3" style="color:var(--goldLit);font-size:11px">' + ic("clock", 11) + fmtTime(upgRemain) + "</b></div>" +
-      '<div class="row gap3 mt3" style="flex-wrap:nowrap;overflow-x:auto">' +
-        (forgeAccels || '<span class="mute tiny">Aucun accélérateur</span>') + "</div></div>";
+      '<b class="row gap3" style="color:var(--goldLit);font-size:11px;flex:0 0 auto">' + ic("clock", 11) + fmtTime(upgRemain) + "</b></div>" +
+      '<div class="between gap6 mt5" style="align-items:center;flex-wrap:wrap">' +
+        '<span class="pill" style="color:#F6CF68;border-color:#8A6522;min-height:26px">' + ic("haste", 10) + 'Vitesse Forge +' + fmt(forgeSpeedPct) + '%</span>' +
+        '<span class="mute tiny">Accélérateurs ' + (forgeAccelPct ? '+' + fmt(forgeAccelPct) + '% efficacité' : 'efficacité normale') + '</span></div>' +
+      '<div class="tiny b mt6" style="color:#8FEFF4;letter-spacing:.35px">ACCÉLÉRATEURS · TOUCHE POUR RÉDUIRE LE TIMER</div>' +
+      '<div class="row gap6 mt4 forgeAccelRowV503" style="display:flex;flex-wrap:wrap;overflow:visible;position:relative;z-index:4;pointer-events:auto">' +
+        (forgeAccels || '<span class="mute tiny">Aucun accélérateur disponible</span>') + "</div></div>";
   } else if (upgDone) {
     upg = '<div class="mt6">' + btn(ic("check", 13) + "Récupérer Niv." + (S.forge.level + 1), { cls: "green", small: true, act: "forgeCollect" }) + "</div>";
   } else {
