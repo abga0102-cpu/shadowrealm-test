@@ -2146,6 +2146,15 @@ const HERO_START = 34;
 const ENEMY_FIRE_RANGE = 110;
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
+/* V502 · Raid keys reset at 01:00 local time, independent of UTC/DST.
+   Keep todayStr() unchanged because event-day semantics are separate. */
+function raidKeyResetDayKey(now) {
+  const d = new Date(now == null ? Date.now() : now);
+  if (d.getHours() < 1) d.setDate(d.getDate() - 1);
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"),
+    day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
 function rid() { return Math.random().toString(36).slice(2, 9); }
 
 function defaultState(name) {
@@ -2178,7 +2187,7 @@ function defaultState(name) {
       evolution:  { level: 1, keys: 2, record: 0, stars: 0 },
     },
     pe: 0,
-    universalKeys: 3, adKeysToday: 0, lastKeyReset: todayStr(),
+    universalKeys: 3, adKeysToday: 0, lastKeyReset: raidKeyResetDayKey(),
     bossRewardsClaimed: {}, megaFloorRewardsClaimed: {},
     sanctuary: { slotA: null, slotB: null, discovered: {}, fusions: 0, stabilitySeals: 0 },
     tree: { levels: {}, active: null, activeLevel: 0, activeEnd: 0 },

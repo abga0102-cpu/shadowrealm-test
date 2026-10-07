@@ -155,18 +155,22 @@ function loadSave() {
 }
 
 /* -------- daily reset & offline -------- */
+function applyRaidKeyReset(s, now) {
+  const keyDay = raidKeyResetDayKey(now);
+  if (s.lastKeyReset === keyDay) return false;
+  RAID_IDS.forEach((r) => {
+    // tree-granted keys raise both the daily refill and the cap for that raid
+    const bonus = (s.raidKeyAlloc || {})[r] || 0;
+    s.raids[r].keys = Math.min(RULES.RAID_KEY_CAP + bonus,
+      s.raids[r].keys + RULES.RAID_FREE_KEYS + bonus);
+  });
+  s.adKeysToday = 0;
+  s.lastKeyReset = keyDay;
+  return true;
+}
 function applyDailyReset(s) {
+  applyRaidKeyReset(s);
   const t = todayStr();
-  if (s.lastKeyReset !== t) {
-    RAID_IDS.forEach((r) => {
-      // tree-granted keys raise both the daily refill and the cap for that raid
-      const bonus = (s.raidKeyAlloc || {})[r] || 0;
-      s.raids[r].keys = Math.min(RULES.RAID_KEY_CAP + bonus,
-        s.raids[r].keys + RULES.RAID_FREE_KEYS + bonus);
-    });
-    s.adKeysToday = 0;
-    s.lastKeyReset = t;
-  }
   if (s.eventDay !== t) { s.eventDay = t; s.eventClaims = {}; s.eventProgress = {}; }
   return s;
 }
@@ -2783,6 +2787,16 @@ function boot() {
   setInterval(tick, 33);
   setInterval(flushRewards, 500);
   setInterval(checkTimerNotifications, 500); // fins d’éclosion et de recherche
+
+  /* V502: a player can leave the app open across 01:00; keys must still refill
+     without requiring a reload. Check once a minute and persist immediately. */
+  setInterval(() => {
+    if (applyRaidKeyReset(S)) {
+      dirty = true;
+      saveNow();
+      scheduleRender();
+    }
+  }, 60000);
 
   setInterval(() => { if (dirty) saveNow(); }, 8000);
   // the Récolte automatique never stops just because the player is connected

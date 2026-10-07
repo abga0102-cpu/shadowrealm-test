@@ -32,7 +32,7 @@
 
   function weekEpoch(now){
     const d=new Date(now==null?Date.now():now),day=d.getDay(),back=(day+6)%7;
-    const m=new Date(d.getFullYear(),d.getMonth(),d.getDate()-back,2,0,0,0);
+    const m=new Date(d.getFullYear(),d.getMonth(),d.getDate()-back,1,0,0,0);
     if(d<m)m.setDate(m.getDate()-7);
     return m.getTime();
   }
@@ -143,7 +143,7 @@
     const previous=scrMegaRaid;
     scrMegaRaid=function(){
       let h=String(previous.apply(this,arguments)||'');
-      h=h.replace(/La première victoire donne(?: les Pommes et)? 2× les accélérateurs de ce Boss normal\./gi,'Boss vaincu : récompense directe encaissée immédiatement. Les paliers cochés servent uniquement à la récompense hebdomadaire du lundi à 02:00.');
+      h=h.replace(/La première victoire donne(?: les Pommes et)? 2× les accélérateurs de ce Boss normal\./gi,'Boss vaincu : récompense directe encaissée immédiatement. Les paliers cochés servent uniquement à la récompense hebdomadaire du lundi à 01:00.');
       return h;
     };
     scrMegaRaid.__srV329=true;scrMegaRaid.__srPrevious=previous;
@@ -158,7 +158,7 @@
     const lv=highest(),r=lv?reward(lv):null,reserve=reserveTotal(),next=nextMonday(),box=document.createElement('div');
     box.id='megaWeeklyV117';box.className='card frame mt8';box.style.borderLeftColor='#3FCFD6';
     const rows=LEVELS.map(row).join('');
-    box.innerHTML='<div class="between"><div><div class="bb small">Paliers hebdomadaires Méga Boss</div><div class="mute tiny b">Cases cochées : versement chaque lundi à 02:00 · indépendant des récompenses directes de victoire</div></div><span class="pill" style="color:#84E891;border-color:#3FB950">'+(lv?'Palier '+lv:'Niv. '+UNLOCK_LEVEL)+'</span></div>'+
+    box.innerHTML='<div class="between"><div><div class="bb small">Paliers hebdomadaires Méga Boss</div><div class="mute tiny b">Cases cochées : versement chaque lundi à 01:00 · indépendant des récompenses directes de victoire</div></div><span class="pill" style="color:#84E891;border-color:#3FB950">'+(lv?'Palier '+lv:'Niv. '+UNLOCK_LEVEL)+'</span></div>'+
       (r?'<div class="notice mt8 tiny"><b>Meilleur palier coché :</b> '+rewardText(r)+'<br><span class="mute">Prochain versement : '+next.toLocaleString('fr-FR',{weekday:'long',hour:'2-digit',minute:'2-digit'})+'</span></div>':'<div class="notice mt8 tiny">Débloqué au niveau personnage '+UNLOCK_LEVEL+'. Bats les Méga Boss pour cocher les paliers.</div>')+
       (reserve?'<button id="megaWeeklyPlaceV117" class="btn small mt8" style="width:100%">Placer '+reserve+' fragment'+(reserve>1?'s':'')+' en réserve</button>':'')+
       '<details class="mt8" open><summary class="b small" style="cursor:pointer">Paliers hebdomadaires</summary><div class="mt6">'+rows+'</div></details>';
