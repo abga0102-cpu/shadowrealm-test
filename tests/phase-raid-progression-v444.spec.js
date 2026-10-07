@@ -71,6 +71,32 @@ test('V486 Raid Evolution PE is 150, +10 through level 14, then +5 through level
   });
 });
 
+test('V502 Raid keys reset at 01:00 local time and not before', async ({ page }) => {
+  await openCleanGame(page);
+  const out = await page.evaluate(() => {
+    const before = new Date(2026, 9, 8, 0, 59, 59, 999);
+    const at = new Date(2026, 9, 8, 1, 0, 0, 0);
+    const s = JSON.parse(JSON.stringify(S));
+    s.lastKeyReset = raidKeyResetDayKey(before);
+    RAID_IDS.forEach((id) => { s.raids[id].keys = 0; });
+    const beforeApplied = applyRaidKeyReset(s, before.getTime());
+    const keysBefore = RAID_IDS.map((id) => s.raids[id].keys);
+    const atApplied = applyRaidKeyReset(s, at.getTime());
+    const keysAt = RAID_IDS.map((id) => s.raids[id].keys);
+    return {
+      beforeKey: raidKeyResetDayKey(before.getTime()),
+      atKey: raidKeyResetDayKey(at.getTime()),
+      beforeApplied, keysBefore, atApplied, keysAt
+    };
+  });
+  expect(out.beforeKey).toBe('2026-10-07');
+  expect(out.atKey).toBe('2026-10-08');
+  expect(out.beforeApplied).toBe(false);
+  expect(out.keysBefore).toEqual([0,0,0,0,0]);
+  expect(out.atApplied).toBe(true);
+  expect(out.keysAt).toEqual([2,2,2,2,2]);
+});
+
 test('V500 Minerai catch-up adds only the old-to-new difference and cannot be claimed twice', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
