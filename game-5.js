@@ -384,7 +384,8 @@ function scrParametres() {
           ["Puissance", fmt(S.power), "color:var(--goldLit)"],
           ["Ascension", "Palier " + S.ascension, ""],
           ["Environnement", ENV_NAMES[combat && combat.bg] || "—", ""],
-          ["Jour", String(Math.max(1, Math.floor((Date.now() - (S.firstSeen || Date.now())) / 86400000) + 1)), "color:var(--goldLit)"],
+          ["Jour", String(simulatedDayCount(S)), "color:var(--goldLit)"],
+          ["Temps simulé", fmtTime(Math.max(0, Number(S.simulatedMs) || 0) / 1000), ""],
         ].map((r) => '<div style="width:50%"><div class="kv" style="border:none;padding:2px 0">' +
           '<span class="dim">' + r[0] + '</span><b style="' + r[2] + '">' + r[1] + "</b></div></div>").join("") + "</div>" +
       "</div>" +
@@ -399,6 +400,13 @@ function scrParametres() {
         '</div><div class="divider"></div><div class="between"><span class="dim tiny">Version web · ' + APP_BUILD + '</span>' +
           btn("Forcer la mise à jour", { small: true, cls: "blue", act: "freshReload", style: "width:auto;padding:5px 10px" }) +
         "</div></div>") +
+      fold("testTime", "Outils de test", '<div class="card"><div class="dim small" style="line-height:1.5">' +
+        'Avance le temps de la partie sans attendre réellement. La Forge, les recherches, les œufs déjà en incubation, ' +
+        'l\'Autonomie, les resets quotidiens et le compteur <b>Jour</b> suivent tous le même temps simulé.</div>' +
+        '<div class="row gap6 mt10" style="flex-wrap:wrap">' +
+          btn(ic("forward", 14) + "Simuler 9 h", { cls: "blue", small: true, act: "simulateTime", arg: "9", style: "width:auto;min-width:130px" }) +
+          btn(ic("forward", 14) + "Simuler 1 jour", { cls: "blue", small: true, act: "simulateTime", arg: "24", style: "width:auto;min-width:130px" }) +
+        '</div><div class="mute tiny mt8">9 h s\'additionnent exactement au temps simulé. Le numéro de Jour ne change que lorsqu\'un vrai bloc de 24 h cumulé est franchi.</div></div>") +
       fold("account", "Compte", '<div class="card"><div class="dim small" style="line-height:1.5">L\'app d\'origine gère un mode invité et ' +
         "« Continuer avec Google » via le backend Emergent, avec migration de progression. " +
         "Cette version est locale et anonyme.</div>" +
@@ -2015,6 +2023,11 @@ const ACT = {
   recoverSave: () => { if (window.__srSaveRecoveryV341) window.__srSaveRecoveryV341.open(); },
   saveNow: () => { saveNow(); toast("Sauvegardé", true); },
   freshReload: () => forceFreshReload(),
+  simulateTime: (a) => {
+    const r = simulateTimeHours(Number(a));
+    toast(r.ok ? ("Simulation +" + (r.hours === 24 ? "1 jour" : r.hours + " h") + " · Jour " + r.day) : "Simulation impossible", r.ok);
+    render();
+  },
   rename: () => {
     const n = prompt("Nom du héros :", S.playerName);
     if (n && n.trim()) { update((s) => { s.playerName = n.trim().slice(0, 18); }); toast("Renommé", true); }
