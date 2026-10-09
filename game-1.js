@@ -2146,6 +2146,24 @@ const HERO_START = 34;
 const ENEMY_FIRE_RANGE = 110;
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
+/* V504 · Test-time offset is persisted separately from real timestamps.
+   It lets 9 h / 1 day simulations advance the displayed player day and
+   calendar-driven test systems without corrupting real timer timestamps. */
+const SIM_DAY_MS_V504 = 24 * 60 * 60 * 1000;
+function simulatedNow(s, realNow) {
+  const base = realNow == null ? Date.now() : Number(realNow);
+  const extra = Math.max(0, Number(s && s.simulatedMs) || 0);
+  return base + extra;
+}
+function simulatedDayCount(s, realNow) {
+  const now = realNow == null ? Date.now() : Number(realNow);
+  const born = Number(s && s.firstSeen) || now;
+  const age = Math.max(0, now - born) + Math.max(0, Number(s && s.simulatedMs) || 0);
+  return Math.max(1, Math.floor(age / SIM_DAY_MS_V504) + 1);
+}
+function simulatedDateStr(s, realNow) {
+  return new Date(simulatedNow(s, realNow)).toISOString().slice(0, 10);
+}
 /* V502 · Raid keys reset at 01:00 local time, independent of UTC/DST.
    Keep todayStr() unchanged because event-day semantics are separate. */
 function raidKeyResetDayKey(now) {
@@ -2205,7 +2223,7 @@ function defaultState(name) {
     economyRebaseV4: true,
     eventDay: todayStr(), eventClaims: {}, eventProgress: {},
     power: 0,
-    autoSkills: true, firstSeen: Date.now(), tutorial: { version: 3, seen: {} },
+    autoSkills: true, firstSeen: Date.now(), simulatedMs: 0, tutorial: { version: 3, seen: {} },
     recommendationDismissed: {},
     raidKeyLossCompensationV1: true,
   };
@@ -2350,6 +2368,12 @@ function migrate(s, name) {
   });
   merged.forge.filter = !!merged.forge.filter;
 
+  /* V504: restore the old test-time concept without reviving the obsolete
+     integer testDays field. Old saves that still carry testDays convert once
+     into exact milliseconds; current saves simply start at zero. */
+  const legacyTestDaysV504 = Math.max(0, Math.floor(Number(s.testDays) || 0));
+  if (!Number.isFinite(Number(s.simulatedMs))) merged.simulatedMs = legacyTestDaysV504 * SIM_DAY_MS_V504;
+  merged.simulatedMs = Math.max(0, Number(merged.simulatedMs) || 0);
   delete merged.testDays;
   delete merged._raidStars;
   /* V444: convert the old 1..50 + Raid Ascension ladder into one permanent
