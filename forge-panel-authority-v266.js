@@ -40,15 +40,17 @@ function replaceForge(html){try{var t=document.createElement('template');t.inner
    The panel is replaced on each render, otherwise a tap on accelerators
    can make its content jump back to the top. No gameplay/save changes. */
 var srForgeScroll531=0;
+var srForgeParentScroll532=0;
+function forgeParent532(){var el=document.getElementById('homeForge');return el&&el.closest('#screen.fixed>.pad.mt4');}
 function rememberForgeScroll531(){
- try{var el=document.getElementById('homeForge');if(el)srForgeScroll531=Math.max(0,el.scrollTop||0);}catch(_){}
+ try{var el=document.getElementById('homeForge');if(el)srForgeScroll531=Math.max(0,el.scrollTop||0);var parent=forgeParent532();if(parent)srForgeParentScroll532=Math.max(0,parent.scrollTop||0);}catch(_){}
 }
 SCREENS.accueil=function(){
  rememberForgeScroll531();
  return replaceForge(nativeAccueil.apply(this,arguments));
 };
 function restoreForgeScroll531(){
- try{var el=document.getElementById('homeForge');if(el&&Math.abs(el.scrollTop-srForgeScroll531)>1)el.scrollTop=srForgeScroll531;}catch(_){}
+ try{var el=document.getElementById('homeForge');if(el&&Math.abs(el.scrollTop-srForgeScroll531)>1)el.scrollTop=srForgeScroll531;var parent=forgeParent532();if(parent&&Math.abs(parent.scrollTop-srForgeParentScroll532)>1)parent.scrollTop=srForgeParentScroll532;}catch(_){}
 }
 if(typeof MutationObserver==='function'){
  var srScrollQueued531=false;
@@ -60,7 +62,7 @@ if(typeof MutationObserver==='function'){
 }
 document.addEventListener('scroll',function(e){
  var el=e.target;
- if(el&&el.id==='homeForge')srForgeScroll531=Math.max(0,el.scrollTop||0);
+ if(el&&el.id==='homeForge')srForgeScroll531=Math.max(0,el.scrollTop||0);if(el&&el.matches&&el.matches('#screen.fixed>.pad.mt4'))srForgeParentScroll532=Math.max(0,el.scrollTop||0);
 },true);
 document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('.srForgeSpeedBtn266,.srForgeSpeedClose266'):null;if(!b)return;e.preventDefault();e.stopPropagation();setSpeedOpen(b.classList.contains('srForgeSpeedBtn266')?!speedOpen():false);try{if(typeof scheduleRender==='function')scheduleRender();else if(typeof render==='function')render();}catch(_){}},true);
 
