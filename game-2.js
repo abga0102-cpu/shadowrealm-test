@@ -156,7 +156,7 @@ function loadSave() {
 
 /* -------- daily reset & offline -------- */
 function applyRaidKeyReset(s, now) {
-  const keyDay = raidKeyResetDayKey(now == null ? simulatedNow(s) : now);
+  const keyDay = raidKeyResetDayKey(now);
   if (s.lastKeyReset === keyDay) return false;
   RAID_IDS.forEach((r) => {
     // tree-granted keys raise both the daily refill and the cap for that raid
@@ -168,10 +168,9 @@ function applyRaidKeyReset(s, now) {
   s.lastKeyReset = keyDay;
   return true;
 }
-function applyDailyReset(s, now) {
-  const at = now == null ? simulatedNow(s) : Number(now);
-  applyRaidKeyReset(s, at);
-  const t = simulatedDateStr(s, (now == null ? Date.now() : Number(now) - Math.max(0, Number(s.simulatedMs) || 0)));
+function applyDailyReset(s) {
+  applyRaidKeyReset(s);
+  const t = todayStr();
   if (s.eventDay !== t) { s.eventDay = t; s.eventClaims = {}; s.eventProgress = {}; }
   return s;
 }
@@ -2772,50 +2771,6 @@ function resetGame() {
   saveNow();
   startCampaign();
   scheduleRender();
-}
-
-/* V504 · Exact test-time simulation. The 9 h button and the 1 day button use
-   the same path, so timers, Autonomy and the displayed "Jour" cannot drift. */
-function simulateTimeHours(hours) {
-  const h = Math.max(0, Math.min(24, Number(hours) || 0));
-  if (!(h > 0)) return { ok: false, hours: 0 };
-  const ms = h * 60 * 60 * 1000;
-  const now = Date.now();
-
-  S.simulatedMs = Math.max(0, Number(S.simulatedMs) || 0) + ms;
-
-  if (S.tree && S.tree.active && Number(S.tree.activeEnd) > now) {
-    S.tree.activeEnd = Math.max(now, Number(S.tree.activeEnd) - ms);
-  }
-  if (Array.isArray(S.eggs)) {
-    S.eggs.forEach((egg) => {
-      if (egg && eggIsHatching(egg) && Number(egg.hatchEnd) > now) {
-        egg.hatchEnd = Math.max(now, Number(egg.hatchEnd) - ms);
-      }
-    });
-  }
-  if (S.forge && Number(S.forge.upgradeEnd) > now) {
-    S.forge.upgradeEnd = Math.max(now, Number(S.forge.upgradeEnd) - ms);
-  }
-
-  harvestAdvance(S, h * 3600);
-  S.lastSeen = now;
-
-  const virtualNow = simulatedNow(S, now);
-  applyDailyReset(S, virtualNow);
-
-  try {
-    if (window.__srMegaRewardsV329 && typeof window.__srMegaRewardsV329.grantWeeklyAt === "function") {
-      window.__srMegaRewardsV329.grantWeeklyAt(virtualNow);
-    }
-  } catch (_) {}
-
-  S.power = computePower(S);
-  refreshDerived();
-  dirty = true;
-  saveNow();
-  scheduleRender();
-  return { ok: true, hours: h, day: simulatedDayCount(S, now), simulatedMs: S.simulatedMs };
 }
 
 /* -------- boot -------- */
