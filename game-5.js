@@ -397,7 +397,7 @@ function scrParametres() {
           btn(ic("upload", 14) + "Exporter", { small: true, cls: "ghost", act: "exportSave" }) +
           btn(ic("download", 14) + "Importer", { small: true, cls: "ghost", act: "importSave" }) +
         '</div><div class="mt10">' + btn("Récupérer une ancienne partie", { small: true, cls: "ghost", act: "recoverSave" }) +
-        '</div><div class="divider"></div><div class="between"><span class="dim tiny">Version web · ' + APP_BUILD + '</span>' +
+        '</div><div class="divider"></div><div class="between"><span class="dim tiny">Version web · ' + APP_BUILD + '<br>Récompenses : ' + (window.__srFusionRewardsBuild||'ancien affichage') + ' / ' + (window.__srFusionClaimBuild||'ancien paiement') + '</span>' +
           btn("Forcer la mise à jour", { small: true, cls: "blue", act: "freshReload", style: "width:auto;padding:5px 10px" }) +
         "</div></div>") +
       fold("testTime", "Outils de test", '<div class="card"><div class="dim small" style="line-height:1.5">' +
