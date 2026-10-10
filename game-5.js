@@ -1965,6 +1965,30 @@ const ACT = {
     st.mergeBoard[sel]=null; st.mergeBoard[i]=nx; st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
     sanctMergeDiscover(st,nx); dirty=true; toast(SANCT_MERGE_NAME[r]+" + "+SANCT_MERGE_NAME[r]+" → "+SANCT_MERGE_NAME[nx],true); render();
   },
+  // V539: merges only pairs already on the board; no purchases, sacrifices or recipe consumption.
+  sanctMergeAuto: () => {
+    const st=sanctMergeState();
+    let merged=0;
+    const limit=st.mergeBoard.length * Math.max(1,SANCT_MERGE_ORDER.length);
+    while(merged<limit){
+      const pair=sanctMergePair(st);
+      if(!pair)break;
+      const i=pair[0],j=pair[1],rarity=pair[2],next=sanctMergeNext(rarity);
+      if(!next)break;
+      st.mergeBoard[i]=null;
+      st.mergeBoard[j]=next;
+      st.mergeFusions=(st.mergeFusions||0)+1;
+      st.fusions=(st.fusions||0)+1;
+      sanctMergeDiscover(st,next);
+      merged++;
+    }
+    st.mergeSelected=-1;
+    if(!merged)return toast("Aucune paire à fusionner");
+    dirty=true;
+    if(typeof saveNow==='function')saveNow();
+    toast(merged+" fusion"+(merged>1?"s":"")+" automatique"+(merged>1?"s":"")+" réalisée"+(merged>1?"s":""),true);
+    render();
+  },
   sanctMergeCancel: () => { const st=sanctMergeState(); st.mergeSelected=-1; dirty=true; render(); },
   sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.filter(Boolean); st.mergeBoard=kept.concat(Array(SANCT_BOARD_SIZE-kept.length).fill(null)); st.mergeSelected=-1; dirty=true; render(); },
   sanctSelectPair: () => { const st=sanctMergeState(), p=sanctMergePair(st); if(!p)return; st.mergeSelected=p[0]; dirty=true; toast("Première "+SANCT_MERGE_NAME[p[2]]+" sélectionnée · touche la seconde"); render(); },
