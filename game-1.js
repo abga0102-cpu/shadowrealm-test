@@ -2277,6 +2277,21 @@ function migrate(s, name) {
     merged.raidMidnightMakeGoodV506 = true;
   }
 
+  /* V507: one-time restoration for pre-existing Difficile 3-5 free claims.
+     Earlier builds could mark the milestone claimed without a confirmed payout.
+     The historical save has no per-claim receipt ledger, so restore at most once
+     for affected legacy claims, and preserve the existing claim flag. */
+  if (!merged.floor75RewardRestoredV507 && s.accomplishments &&
+      s.accomplishments.claimed && s.accomplishments.claimed.floor75) {
+    merged.gold = (Number(merged.gold) || 0) + 50000;
+    merged.eclat = (Number(merged.eclat) || 0) + 500;
+    if (!merged.accomplishments || typeof merged.accomplishments !== "object") merged.accomplishments = {};
+    const pieces = Object.assign({}, merged.accomplishments.mergePieces || {});
+    pieces.COMMUN = (Number(pieces.COMMUN) || 0) + 30;
+    merged.accomplishments = Object.assign({}, merged.accomplishments, { mergePieces: pieces });
+    merged.floor75RewardRestoredV507 = true;
+  }
+
   /* V445: paid lifetime Forge count is permanent and never reset by Forge
      Ascension. Old saves did not journal completed historical cycles, so only
      the paid forge count still provable in the save is carried forward. */
