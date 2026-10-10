@@ -2833,7 +2833,7 @@ function boot() {
   setInterval(flushRewards, 500);
   setInterval(checkTimerNotifications, 500); // fins d’éclosion et de recherche
 
-  /* V502: a player can leave the app open across 01:00; keys must still refill
+  /* A player can leave the app open across midnight; keys must still refill
      without requiring a reload. Check once a minute and persist immediately. */
   setInterval(() => {
     if (applyRaidKeyReset(S)) {
