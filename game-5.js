@@ -1965,28 +1965,40 @@ const ACT = {
     st.mergeBoard[sel]=null; st.mergeBoard[i]=nx; st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
     sanctMergeDiscover(st,nx); dirty=true; toast(SANCT_MERGE_NAME[r]+" + "+SANCT_MERGE_NAME[r]+" → "+SANCT_MERGE_NAME[nx],true); render();
   },
-  // V539: merges only pairs already on the board; no purchases, sacrifices or recipe consumption.
+  // V540: transparent paid convenience, manual merging stays free.
+  // Charge for actual operations; +5% per source rarity, capped at +50%.
   sanctMergeAuto: () => {
     const st=sanctMergeState();
-    let merged=0;
-    const limit=st.mergeBoard.length * Math.max(1,SANCT_MERGE_ORDER.length);
-    while(merged<limit){
-      const pair=sanctMergePair(st);
+    const board=st.mergeBoard.slice();
+    const ops=[];
+    const limit=board.length*Math.max(1,SANCT_MERGE_ORDER.length);
+    for(let n=0;n<limit;n++){
+      let pair=null;
+      for(let i=0;i<board.length&&!pair;i++){
+        if(!board[i]||!sanctMergeNext(board[i]))continue;
+        for(let j=i+1;j<board.length;j++)if(board[j]===board[i]){pair=[i,j,board[i]];break;}
+      }
       if(!pair)break;
-      const i=pair[0],j=pair[1],rarity=pair[2],next=sanctMergeNext(rarity);
-      if(!next)break;
-      st.mergeBoard[i]=null;
-      st.mergeBoard[j]=next;
-      st.mergeFusions=(st.mergeFusions||0)+1;
-      st.fusions=(st.fusions||0)+1;
-      sanctMergeDiscover(st,next);
-      merged++;
+      const rank=Math.max(0,SANCT_MERGE_ORDER.indexOf(pair[2]));
+      const fee=Math.round(500*(1+Math.min(rank*0.05,0.5)));
+      ops.push({i:pair[0],j:pair[1],from:pair[2],to:sanctMergeNext(pair[2]),fee});
+      board[pair[0]]=null;board[pair[1]]=sanctMergeNext(pair[2]);
     }
+    if(!ops.length)return toast("Aucune paire à fusionner");
+    const total=ops.reduce((sum,op)=>sum+op.fee,0);
+    if((Number(S.gold)||0)<total)return toast("Or insuffisant · "+fmt(total)+" requis pour "+ops.length+" fusions");
+    if(!confirm("Fusionner "+ops.length+" paire"+(ops.length>1?"s":"")+" pour "+fmt(total)+" Or ?\\n\\nFusion manuelle gratuite. Prix automatique : 500 Or +5 % par rareté (max +50 %)."))return;
+    // Recheck the state after confirmation; no partial spending.
+    if((Number(S.gold)||0)<total||st.mergeBoard.length!==board.length)return toast("Fusion annulée : ressources ou plateau modifiés");
+    S.gold-=total;
+    st.mergeBoard=board;
     st.mergeSelected=-1;
-    if(!merged)return toast("Aucune paire à fusionner");
+    st.mergeFusions=(st.mergeFusions||0)+ops.length;
+    st.fusions=(st.fusions||0)+ops.length;
+    ops.forEach(op=>sanctMergeDiscover(st,op.to));
     dirty=true;
     if(typeof saveNow==='function')saveNow();
-    toast(merged+" fusion"+(merged>1?"s":"")+" automatique"+(merged>1?"s":"")+" réalisée"+(merged>1?"s":""),true);
+    toast(ops.length+" fusion"+(ops.length>1?"s":"")+" · -"+fmt(total)+" Or",true);
     render();
   },
   sanctMergeCancel: () => { const st=sanctMergeState(); st.mergeSelected=-1; dirty=true; render(); },
