@@ -1129,7 +1129,24 @@ function render() {
   const sc = document.getElementById("screen");
   const fn = SCREENS[route] || scrAccueil;
   sc.className = (route === "accueil" || (route === "arena" && combat && combat.ctx === "arenaLive")) ? "fixed" : "";
+  // V535: retain Home's actual scroll container across full DOM replacement.
+  // Restore synchronously before observers/animation frames can repaint a jump.
+  const srHomeScroll535 = route === "accueil" ? (function(){
+    const host = sc.querySelector(':scope > .pad.mt4');
+    if(!host) return null;
+    const forge = host.querySelector('#homeForge');
+    return {top:host.scrollTop, left:host.scrollLeft, forgeTop:forge?forge.scrollTop:0};
+  })() : null;
   sc.innerHTML = fn();
+  if(srHomeScroll535){
+    const host = sc.querySelector(':scope > .pad.mt4');
+    if(host){
+      host.scrollTop = srHomeScroll535.top;
+      host.scrollLeft = srHomeScroll535.left;
+      const forge = host.querySelector('#homeForge');
+      if(forge) forge.scrollTop = srHomeScroll535.forgeTop;
+    }
+  }
   attachArena();
   requestAnimationFrame(() => {
     syncEquipPreviewSpacer();
