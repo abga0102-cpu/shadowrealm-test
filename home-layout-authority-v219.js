@@ -227,6 +227,7 @@ function stableResizeSchedule(){
 }
 window.addEventListener('resize',stableResizeSchedule,{passive:true});window.addEventListener('orientationchange',function(){lastViewportWidth=Math.round(window.innerWidth||0);schedule();},{passive:true});
 try{var homeObserver=new MutationObserver(schedule);homeObserver.observe(screen,{childList:true,subtree:false});}catch(_){}
-var eggTicker=setInterval(function(){if(app&&app.classList.contains('srHomeFullArena'))schedule();},1000);
+/* V530: refresh the egg badge without re-positioning the entire Home layout every second. */
+var eggTicker=setInterval(function(){if(app&&app.classList.contains('srHomeFullArena')&&!document.hidden){try{decorateEggReady();}catch(_){}}},1000);
 window.addEventListener('pagehide',function(){try{clearInterval(eggTicker);}catch(_){}});sync();
 })();
