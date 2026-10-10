@@ -18,6 +18,7 @@ var entries=[
   ['10/10/2026','V522–524','Réorganisation visuelle de la forge et de son affichage.']
  ]},
  {cat:'Économie & récompenses',icon:'💎',items:[
+  ['10/10/2026','V540','Fusion instantanée payante : 500 Or par opération, +5 % par rareté (plafond +50 %). Fusion manuelle gratuite.'],
   ['10/10/2026','V539','Sanctuaire : bouton Fusionner tout pour fusionner les paires du plateau sans acheter ni sacrifier.'],
   ['10/10/2026','V538','Sanctuaire : bonus Abondance désormais appliqué aux minerais du sacrifice Divin.'],
   ['10/10/2026','V537','Sanctuaire : récompenses Rebirth obsolètes remplacées pour les prochains sacrifices ; anciens boosts PR utilisables en bonus Or.'],
