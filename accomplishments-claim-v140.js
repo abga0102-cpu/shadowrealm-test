@@ -85,6 +85,43 @@ function recoverFusion1500Minerals527(){
 }
 recoverFusion1500Minerals527();
 setTimeout(recoverFusion1500Minerals527,900);
+/* V528: voluntary correction of the legacy 1,500 fusion gold payout.
+   Never auto-debit: the 200,000 gold was the old PREMIUM lane, not proof
+   of a free-lane payment. Player must confirm exact amount explicitly. */
+function correctFusion1500Gold528(){
+ try{
+  if(typeof S==='undefined'||!S)return;
+  var a=ensure(S);
+  if(!a.claimed.fusion1500||a.fusion1500GoldCorrectionV528Done)return;
+  var raw=window.prompt('Combien d’or as-tu reçu par erreur pour les 1 500 fusions ? Saisis uniquement le montant exact (aucun retrait sans confirmation).','');
+  if(raw===null)return;
+  var amount=Number(String(raw).replace(/\\s/g,''));
+  if(!Number.isSafeInteger(amount)||amount<=0||amount>1000000){if(typeof toast==='function')toast('Montant invalide');return;}
+  if(Number(S.gold||0)<amount){if(typeof toast==='function')toast('Solde d’or insuffisant : aucun retrait effectué');return;}
+  if(!window.confirm('Confirmer le retrait de '+amount.toLocaleString('fr-FR')+' or ? Les 10 000 minéraux restent acquis.'))return;
+  var done=false;
+  function apply(st){var x=ensure(st);if(!x.claimed.fusion1500||x.fusion1500GoldCorrectionV528Done||Number(st.gold||0)<amount)return;st.gold=Number(st.gold||0)-amount;x.fusion1500GoldCorrectionV528Done=true;x.fusion1500GoldCorrectionV528Amount=amount;x.fusion1500GoldCorrectionV528At=Date.now();done=true;}
+  if(typeof update==='function')update(apply);else{apply(S);if(done){try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}}}
+  if(done){if(typeof toast==='function')toast('Correction : -'+amount.toLocaleString('fr-FR')+' or',true);if(typeof scheduleRender==='function')scheduleRender();}
+ }catch(e){console.warn('Fusion 1500 gold correction V528',e);}
+}
+function renderFusion1500Gold528(){
+ try{
+  var root=document.querySelector('.srAch139');if(!root||typeof S==='undefined'||!S)return;
+  var a=ensure(S),old=root.querySelector('#srFusionGoldCorrection528');
+  if(!a.claimed.fusion1500||a.fusion1500GoldCorrectionV528Done){if(old)old.remove();return;}
+  if(old)return;
+  var box=document.createElement('div');box.id='srFusionGoldCorrection528';
+  box.style.cssText='margin:12px 0;padding:12px;border:1px solid #b58d4c;border-radius:12px;background:#172638;color:#f7e2b2';
+  box.innerHTML='<b>Correction · 1 500 fusions</b><p style="font-size:12px;line-height:1.45">Les 10 000 minéraux sont conservés. Si tu as reçu de l’or à la place, indique le montant exact pour le retirer volontairement. Aucun or ne sera retiré automatiquement.</p><button type="button" class="btn sm" data-sr-fusion-gold-correct-528="1" style="width:100%;min-height:42px">Corriger l’or reçu par erreur</button>';
+  root.appendChild(box);
+ }catch(e){console.warn('Fusion 1500 correction UI V528',e);}
+}
+document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('[data-sr-fusion-gold-correct-528]'):null;if(!b)return;e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();correctFusion1500Gold528();},true);
+if(typeof MutationObserver==='function'&&document.body){
+ var queued528=false;new MutationObserver(function(){if(queued528)return;queued528=true;requestAnimationFrame(function(){queued528=false;renderFusion1500Gold528();});}).observe(document.body,{childList:true,subtree:true});
+}
+setTimeout(renderFusion1500Gold528,300);
 /* V516: voluntary, idempotent correction of the erroneous 600k gold.
    Never debit other players automatically. */
 function renderFusionGoldCorrection516(){
