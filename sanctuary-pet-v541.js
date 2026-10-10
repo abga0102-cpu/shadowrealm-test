@@ -24,8 +24,8 @@ function petTick(){
     if(merged&&typeof route!=='undefined'&&route==='sanctuaire'&&typeof render==='function')render();
   }
 }
-if(typeof actions!=='undefined'){
-  actions.sanctPetHire=function(key){
+if(typeof ACT!=='undefined'){
+  ACT.sanctPetHire=function(key){
     const offer=COSTS[key];if(!offer)return;
     const st=sanctMergeState();petTick();
     if(st.mergePetUntil>Date.now())return toast('Le petit fusionneur travaille déjà !');
