@@ -12,7 +12,7 @@ window.__srAccomplishmentsClaimV140=true;
 var LEVEL_STEPS=[[10,250],[15,350],[20,500],[25,700],[30,1000],[35,1200],[40,1500],[50,2000],[60,2500],[70,3000],[80,3500],[90,4000],[100,5000]];
 var REWARDS={
  forge10:{gold:7500},forge15:{gold:10000},forge20:{gold:20000},forge25:{gold:30000},forge30:{gold:75000},forge35:{gold:100000},forge40:{gold:200000},forge45:{gold:300000},forge50:{gold:500000},
- fusion50:{minerai:500},fusion150:{minerai:750},fusion250:{minerai:1000},fusion350:{minerai:1500},fusion500:{minerai:2000},fusion1000:{gold:600000},fusion1500:{gold:1000000},
+ fusion50:{minerai:500},fusion150:{minerai:750},fusion250:{minerai:1000},fusion350:{minerai:1500},fusion500:{minerai:2000},fusion1000:{minerai:5000},fusion1500:{minerai:10000},
  raid10:{gold:5000},raid20:{gold:15000},raid50:{gold:50000},raid100:{gold:250000,validatedRaid100:true},
  floor25:{essence:250},floor50:{minerai:2000,gold:5000},floor75:{gold:50000,eclat:500,merge:{COMMUN:30}},floor100:{gold:100000,eclat:500,essence:500,merge:{COMMUN:30}},floor150:{gold:150000,eclat:750,essence:750,merge:{RARE:15}},floor200:{eclat:1000,essence:1000,merge:{RARE:20}},floor250:{eclat:1250,essence:1250,merge:{EPIQUE:10}},floor300:{eclat:1500,essence:1500,merge:{EPIQUE:15}},floor350:{eclat:2000,essence:2000,merge:{MYTHIQUE:10}},floor400:{eclat:2500,essence:2500,merge:{MYTHIQUE:20},universal:1}
 };

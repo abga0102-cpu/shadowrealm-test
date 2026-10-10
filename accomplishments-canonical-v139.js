@@ -49,8 +49,8 @@ var ITEMS={
  Fusions:[
   ['fusion50',50,'50 Fusions','500 Minéraux'],['fusion150',150,'150 Fusions','750 Minéraux'],
   ['fusion250',250,'250 Fusions','1 000 Minéraux'],['fusion350',350,'350 Fusions','1 500 Minéraux'],
-  ['fusion500',500,'500 Fusions','2 000 Minéraux'],['fusion1000',1000,'1 000 Fusions','600 000 Or'],
-  ['fusion1500',1500,'1 500 Fusions','1 000 000 Or']
+  ['fusion500',500,'500 Fusions','2 000 Minéraux'],['fusion1000',1000,'1 000 Fusions','5 000 Minéraux'],
+  ['fusion1500',1500,'1 500 Fusions','10 000 Minéraux']
  ],
  Raids:[
   ['raid10',10,'10 Raids accomplis','5 000 Or'],['raid20',20,'20 Raids accomplis','30 Pièces de fusion Communes'],
