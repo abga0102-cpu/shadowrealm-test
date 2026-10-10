@@ -4,6 +4,7 @@
 if(document.getElementById('srUpdates533'))return;
 var entries=[
  {cat:'Corrections',icon:'🛠',items:[
+  ['10/10/2026','V535','Forge : restauration immédiate du défilement lors des reconstructions de l’accueil (test mobile requis).'],
   ['10/10/2026','V532','Conservation du défilement du conteneur de forge lors des actualisations.'],
   ['10/10/2026','V531','Premier correctif de position de la forge.'],
   ['10/10/2026','V530','Moins de recalculs de l’accueil et de la maîtrise de forge.']
