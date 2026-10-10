@@ -2002,7 +2002,7 @@ const ACT = {
     render();
   },
   sanctMergeCancel: () => { const st=sanctMergeState(); st.mergeSelected=-1; dirty=true; render(); },
-  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.filter(Boolean); st.mergeBoard=kept.concat(Array(SANCT_BOARD_SIZE-kept.length).fill(null)); st.mergeSelected=-1; dirty=true; render(); },
+  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.filter(Boolean); st.mergeBoard=kept.concat(Array(Math.max(0,st.mergeBoard.length-kept.length)).fill(null)); st.mergeSelected=-1; dirty=true; render(); },
   sanctSelectPair: () => { const st=sanctMergeState(), p=sanctMergePair(st); if(!p)return; st.mergeSelected=p[0]; dirty=true; toast("Première "+SANCT_MERGE_NAME[p[2]]+" sélectionnée · touche la seconde"); render(); },
   sanctRecipeCraft: (a) => {
     const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
