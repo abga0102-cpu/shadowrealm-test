@@ -61,6 +61,42 @@ function recoverFusion1000Minerals515(){
 }
 recoverFusion1000Minerals515();
 setTimeout(recoverFusion1000Minerals515,800);
+/* V516: voluntary, idempotent correction of the erroneous 600k gold.
+   Never debit other players automatically. */
+function renderFusionGoldCorrection516(){
+ try{
+  var root=document.querySelector('.srAch139');
+  if(!root||typeof S==='undefined'||!S)return;
+  var a=ensure(S),old=root.querySelector('#srFusionGoldCorrection516');
+  if(!a.claimed.fusion1000||a.fusion1000GoldCorrectionV516Done){if(old)old.remove();return;}
+  if(old)return;
+  var box=document.createElement('div');box.id='srFusionGoldCorrection516';
+  box.style.cssText='margin:12px 0;padding:12px;border:1px solid #b58d4c;border-radius:12px;background:#172638;color:#f7e2b2';
+  box.innerHTML='<b>Correction de récompense · 1 000 fusions</b><p style="font-size:12px;line-height:1.45">Si tu as reçu 600 000 or par erreur, tu peux les retirer volontairement. Les 5 000 minéraux sont gérés séparément par la V515. Cette action est définitive et ne peut être effectuée qu’une fois.</p><button type="button" class="btn sm" data-sr-fusion-gold-correct-516="1" style="width:100%;min-height:42px">Retirer les 600 000 or reçus par erreur</button>';
+  root.appendChild(box);
+ }catch(e){console.warn('Fusion gold correction UI V516',e);}
+}
+function correctFusionGold516(){
+ try{
+  if(typeof S==='undefined'||!S)return;
+  var a=ensure(S);
+  if(!a.claimed.fusion1000||a.fusion1000GoldCorrectionV516Done)return;
+  if(Number(S.gold||0)<600000){if(typeof toast==='function')toast('Il faut disposer de 600 000 or pour effectuer cette correction.');return;}
+  var accepted=typeof window.confirm==='function'&&window.confirm('Retirer définitivement 600 000 or de ta sauvegarde pour corriger la récompense des 1 000 fusions ?');
+  if(!accepted)return;
+  var success=false;
+  function apply(st){var x=ensure(st);if(!x.claimed.fusion1000||x.fusion1000GoldCorrectionV516Done||Number(st.gold||0)<600000)return;st.gold=Number(st.gold||0)-600000;x.fusion1000GoldCorrectionV516Done=true;x.fusion1000GoldCorrectionV516At=Date.now();success=true;}
+  if(typeof update==='function')update(apply);
+  else{apply(S);if(success){try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}}}
+  if(success){if(typeof toast==='function')toast('Correction effectuée : −600 000 or',true);renderFusionGoldCorrection516();if(typeof scheduleRender==='function')scheduleRender();}
+ }catch(e){console.warn('Fusion gold correction V516',e);}
+}
+document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('[data-sr-fusion-gold-correct-516]'):null;if(!b)return;e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();correctFusionGold516();},true);
+if(typeof MutationObserver==='function'&&document.body){
+ var pending516=false;var observer516=new MutationObserver(function(){if(pending516)return;pending516=true;requestAnimationFrame(function(){pending516=false;renderFusionGoldCorrection516();});});
+ observer516.observe(document.body,{childList:true,subtree:true});
+}
+setTimeout(renderFusionGoldCorrection516,100);
 retireLegacyForgeCompensation();setTimeout(retireLegacyForgeCompensation,300);setTimeout(retireLegacyForgeCompensation,1200);
 document.addEventListener('click',function(e){var p=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach-premium]'):null;if(p){e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();claimPremium(String(p.getAttribute('data-ach-premium')||''));return;}var b=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach]'):null;if(!b)return;e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();claim(String(b.getAttribute('data-ach')||''),String(b.getAttribute('data-ach-choice')||''));},true);
 var RAID_UI={'20 Raids accomplis':{free:'15 000 Or',premium:'5 000 Or',id:'raid20'},'50 Raids accomplis':{free:'50 000 Or',premium:'25 000 Or',id:'raid50'},'100 Raids accomplis':{free:'250 000 Or',premium:'75 000 Or',id:'raid100'}};
