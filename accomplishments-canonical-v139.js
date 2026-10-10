@@ -197,9 +197,42 @@ function installProgressEntry(){
   }catch(_){return h;}
  };
 }
+/* V512: the mobile presentation layer can rehydrate legacy reward labels after
+   canonical rendering. Reconcile only the free fusion reward text in the live
+   Pass; never touch premium lanes, claim state or payouts. */
+function reconcileFusionLabels512(){
+ try{
+  var root=document.querySelector('.srAch139');if(!root)return;
+  [['fusion1000','5 000 Minéraux'],['fusion1500','10 000 Minéraux']].forEach(function(pair){
+   var row=root.querySelector('[data-ach-id="'+pair[0]+'"]');
+   if(!row)return;
+   var free=row.querySelector('.achReward:not(.premium) .achRewardText');
+   if(free&&free.textContent.trim()!==pair[1])free.textContent=pair[1];
+  });
+ }catch(_){}
+}
+function installFusionLabels512(){
+ if(window.__srFusionLabels512)return;window.__srFusionLabels512=true;
+ var pending=false;
+ function schedule(){if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;reconcileFusionLabels512();});}
+ if(typeof MutationObserver==='function'&&document.body){
+  var ob=new MutationObserver(function(mutations){
+   for(var i=0;i<mutations.length;i++){
+    var m=mutations[i],node=m.target;
+    if(node&&node.nodeType===3)node=node.parentElement;
+    if(node&&node.closest&&node.closest('.srAch139')){schedule();break;}
+    if(m.addedNodes&&m.addedNodes.length){schedule();break;}
+   }
+  });
+  ob.observe(document.body,{childList:true,subtree:true,characterData:true});
+ }
+ document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('[data-ach-tab]'))setTimeout(schedule,0);},true);
+ schedule();
+}
 function install(){
  if(typeof S==='undefined'||typeof ACT==='undefined'||typeof openModal!=='function')return;
  installStyles();
+ installFusionLabels512();
  ACT.accomplishments=function(){openModal(html(),'Pass Progression');};
  installTitleInteraction();installInteractions();installProgressEntry();
  try{window.dispatchEvent(new CustomEvent('sr:accomplishments-ready'));}catch(_){}
