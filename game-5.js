@@ -406,7 +406,7 @@ function scrParametres() {
         '<div class="row gap6 mt10" style="flex-wrap:wrap">' +
           btn(ic("forward", 14) + "Simuler 9 h", { cls: "blue", small: true, act: "simulateTime", arg: "9", style: "width:auto;min-width:130px" }) +
           btn(ic("forward", 14) + "Simuler 1 jour", { cls: "blue", small: true, act: "simulateTime", arg: "24", style: "width:auto;min-width:130px" }) +
-        '</div><div class="mute tiny mt8">9 h s\'additionnent exactement au temps simulé. Le numéro de Jour ne change que lorsqu\'un vrai bloc de 24 h cumulé est franchi.</div></div>") +
+        '</div><div class="mute tiny mt8">9 h s\'additionnent exactement au temps simulé. Le numéro de Jour ne change que lorsqu\'un vrai bloc de 24 h cumulé est franchi.</div></div>') +
       fold("account", "Compte", '<div class="card"><div class="dim small" style="line-height:1.5">L\'app d\'origine gère un mode invité et ' +
         "« Continuer avec Google » via le backend Emergent, avec migration de progression. " +
         "Cette version est locale et anonyme.</div>" +
