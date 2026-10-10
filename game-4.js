@@ -1279,6 +1279,11 @@ function scrSanctuaire() {
     '<div class="sect">Plateau de Merge <span class="mute tiny">· '+st.mergeBoard.filter(Boolean).length+'/'+SANCT_BOARD_SIZE+'</span></div>'+
     '<div class="notice tiny"><b>Fusion par glisser-déposer :</b> fais glisser une pièce sur une pièce identique pour les fusionner. Glisse-la sur une case vide pour la déplacer. Une pièce différente refuse la fusion.</div>'+
     '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px">'+board+'</div>'+
+    '<div class="card mt8" style="padding:12px;background:linear-gradient(120deg,#171c39,#28204a);border:1px solid #9976ff66">'+
+      '<div class="row gap8" style="align-items:center"><span class="sr-merge-pet" aria-hidden="true" style="font-size:35px;display:inline-block;animation:srPetFloat 2.5s ease-in-out infinite">🐲</span><div style="flex:1"><b>Petit fusionneur</b><div class="tiny mute">Je fusionne tout seul, même quand tu explores !</div></div></div>'+
+      (st.mergePetUntil>Date.now()?'<div class="mt8 tiny">💜 Au travail · '+Math.ceil((st.mergePetUntil-Date.now())/60000)+' min restantes · 1 fusion / 2 s</div>':
+       '<div class="row gap6 mt8" style="flex-wrap:wrap">'+btn('10 min · 100k Or',{small:true,act:'sanctPetHire',arg:'10-gold'})+btn('💎 10',{small:true,act:'sanctPetHire',arg:'10-gems'})+'</div><div class="row gap6 mt6" style="flex-wrap:wrap">'+btn('20 min · 150k Or',{small:true,act:'sanctPetHire',arg:'20-gold'})+btn('💎 15',{small:true,act:'sanctPetHire',arg:'20-gems'})+'</div>')+
+      '</div>'+
     '<div class="row gap6 mt8">'+btn('Fusionner tout · Or',{small:true,cls:'purple',act:'sanctMergeAuto',dis:!pair})+btn('Ranger le plateau',{small:true,cls:'ghost',act:'sanctMergePack'})+(st.mergeSelected>=0?btn('Annuler sélection',{small:true,cls:'dark',act:'sanctMergeCancel'}):'')+'</div>'+
     (counts?'<div class="row gap4 mt8" style="flex-wrap:wrap">'+counts+'</div>':'')+
     '<div class="sect">Livre de Fusion <span class="mute tiny">· '+st.mergeCrafts+' fabrications</span></div>'+recipes+
@@ -1442,3 +1447,5 @@ function scrArbre() {
       "</div>" +
     '<div style="height:2px"></div></div>';
 }
+
+/* V541 · petit fusionneur, animation douce */
