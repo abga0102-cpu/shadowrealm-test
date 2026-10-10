@@ -36,7 +36,32 @@ function upgradeHTML(){var atMax=safe(function(){return S.forge.level>=RULES.FOR
 function actionsHTML(){var c=safe(function(){return forgeCost(S.forge.level);},0),batch=Math.max(1,safe(function(){return forgeBatch(S);},1)),can1=Number(S.minerai||0)>=c,canB=Number(S.minerai||0)>=c*batch,autoBatch=Math.max(1,Number(S.forge.autoBatch||1));var forge1=safe(function(){return btn('<span class="srForgeActionLabel266">'+ic('hammer',13)+'<b>Forger</b><small>'+ic('minerai',9)+safe(function(){return fmt(c);},c)+'</small></span>',{cls:'blue',small:true,act:'forge',arg:1,dis:!can1,style:'flex:1;min-width:0'});},'<button data-act="forge" data-arg="1" '+(!can1?'disabled':'')+'>Forger</button>');var forgeB=batch>1?safe(function(){return btn('<span class="srForgeBatchLabel266"><b>×'+batch+'</b><small>'+ic('minerai',9)+safe(function(){return fmt(c*batch);},c*batch)+'</small></span>',{cls:'blue',small:true,act:'forge',arg:batch,dis:!canB,style:'width:70px;flex:0 0 70px'});},'<button data-act="forge" data-arg="'+batch+'" '+(!canB?'disabled':'')+'>×'+batch+'</button>'):'';return '<div class="srForgeActions266">'+forge1+forgeB+'<div class="tgl '+(S.forge.autoForge?'on':'off')+' srForgeAuto266" data-act="autoForge"><span>'+(S.forge.autoForge?'● AUTO ×'+autoBatch:'AUTO')+'</span><i></i></div></div>';}
 function forgeHTML(){var lvl=Number(S.forge.level||1),min=safe(function(){return fmt(S.minerai);},Number(S.minerai||0));var header='<div class="srForgeHead266"><div class="srForgeHeadLeft266"><span class="srForgeHammer266">'+safe(function(){return ic('hammer',12);},'⚒')+'</span><b>FORGE NIV.'+lvl+'</b><button class="iBtn" data-act="rarityInfo" title="Raretés">i</button>'+safe(function(){return starRow('forge','var(--goldLit)');},'')+'</div><div class="srForgeMineral266">'+safe(function(){return ic('minerai',12);},'◈')+'<b>'+min+'</b></div></div>';var ascend=safe(function(){return ascendCta('forge');},'');var filter='<div class="fgFilter srForgeFilter266" data-act="forgeFilter">'+safe(function(){return ic('trash',12);},'♻')+'<span class="flex1 tiny b">'+esc2(filterLabel())+'</span><span class="pill" style="color:'+(S.forge.filter?'var(--purpleLit)':'var(--dim)')+';border-color:'+(S.forge.filter?'var(--purple)':'var(--line)')+'">'+(S.forge.filter?'ACTIF':'INACTIF')+'</span></div>';return '<div class="card frame homeForge srForgePanel266" id="homeForge">'+header+lifetimeMasteryHTML()+ascend+'<div class="srForgeLootReserve266" aria-live="polite"></div>'+actionsHTML()+filter+upgradeHTML()+(Number(S.forge.upgradeEnd||0)>Date.now()&&speedOpen()?'<div class="srForgeInlineAccels511" role="region" aria-label="Accélérateurs de forge"><b>ACCÉLÉRATEURS · TOUCHER POUR AVANCER</b><div class="srForgeSpeedList266">'+forgeAccelHTML()+'</div></div>':'')+'</div>';}
 function replaceForge(html){try{var t=document.createElement('template');t.innerHTML=String(html||'');var old=t.content.querySelector('#homeForge');if(!old)return html;var holder=document.createElement('template');holder.innerHTML=forgeHTML();var neu=holder.content.firstElementChild;if(!neu)return html;old.replaceWith(neu);return t.innerHTML;}catch(e){console.warn('Forge renderer V266 fallback',e);return html;}}
-SCREENS.accueil=function(){return replaceForge(nativeAccueil.apply(this,arguments));};
+/* V531: preserve the Forge's own scroll position across Home redraws.
+   The panel is replaced on each render, otherwise a tap on accelerators
+   can make its content jump back to the top. No gameplay/save changes. */
+var srForgeScroll531=0;
+function rememberForgeScroll531(){
+ try{var el=document.getElementById('homeForge');if(el)srForgeScroll531=Math.max(0,el.scrollTop||0);}catch(_){}
+}
+SCREENS.accueil=function(){
+ rememberForgeScroll531();
+ return replaceForge(nativeAccueil.apply(this,arguments));
+};
+function restoreForgeScroll531(){
+ try{var el=document.getElementById('homeForge');if(el&&Math.abs(el.scrollTop-srForgeScroll531)>1)el.scrollTop=srForgeScroll531;}catch(_){}
+}
+if(typeof MutationObserver==='function'){
+ var srScrollQueued531=false;
+ new MutationObserver(function(){
+  if(srScrollQueued531)return;
+  srScrollQueued531=true;
+  requestAnimationFrame(function(){srScrollQueued531=false;restoreForgeScroll531();});
+ }).observe(document.getElementById('screen')||document.body,{childList:true,subtree:false});
+}
+document.addEventListener('scroll',function(e){
+ var el=e.target;
+ if(el&&el.id==='homeForge')srForgeScroll531=Math.max(0,el.scrollTop||0);
+},true);
 document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('.srForgeSpeedBtn266,.srForgeSpeedClose266'):null;if(!b)return;e.preventDefault();e.stopPropagation();setSpeedOpen(b.classList.contains('srForgeSpeedBtn266')?!speedOpen():false);try{if(typeof scheduleRender==='function')scheduleRender();else if(typeof render==='function')render();}catch(_){}},true);
 
 /* V383 · Forge upgrade tap authority.
