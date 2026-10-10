@@ -2261,6 +2261,22 @@ function migrate(s, name) {
     recommendationDismissed: Object.assign({}, base.recommendationDismissed, s.recommendationDismissed || {}),
   });
 
+  /* One-time make-good for existing saves affected by the midnight Raid reset
+     transition. The old date marker cannot prove whether a refill was actually
+     delivered, so credit at most one missed daily refill per Raid. Keep each
+     cap and any tree-granted daily bonus; persist the marker with the save. */
+  if (!merged.raidMidnightMakeGoodV506 && s.raids && s.lastKeyReset) {
+    RAID_IDS.forEach((r) => {
+      const raid = merged.raids && merged.raids[r];
+      if (!raid) return;
+      const bonus = Math.max(0, Number((merged.raidKeyAlloc || {})[r]) || 0);
+      const cap = RULES.RAID_KEY_CAP + bonus;
+      const current = Math.max(0, Number(raid.keys) || 0);
+      raid.keys = Math.min(cap, current + RULES.RAID_FREE_KEYS + bonus);
+    });
+    merged.raidMidnightMakeGoodV506 = true;
+  }
+
   /* V445: paid lifetime Forge count is permanent and never reset by Forge
      Ascension. Old saves did not journal completed historical cycles, so only
      the paid forge count still provable in the save is carried forward. */
