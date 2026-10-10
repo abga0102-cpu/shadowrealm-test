@@ -8,7 +8,7 @@
 (function(){
 'use strict';
 if(window.__srAccomplishmentsClaimV140)return;
-window.__srAccomplishmentsClaimV140=true;
+window.__srAccomplishmentsClaimV140=true;window.__srFusionClaimBuild='511:5000/10000';
 var LEVEL_STEPS=[[10,250],[15,350],[20,500],[25,700],[30,1000],[35,1200],[40,1500],[50,2000],[60,2500],[70,3000],[80,3500],[90,4000],[100,5000]];
 var REWARDS={
  forge10:{gold:7500},forge15:{gold:10000},forge20:{gold:20000},forge25:{gold:30000},forge30:{gold:75000},forge35:{gold:100000},forge40:{gold:200000},forge45:{gold:300000},forge50:{gold:500000},
