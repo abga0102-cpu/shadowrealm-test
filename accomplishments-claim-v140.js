@@ -61,6 +61,30 @@ function recoverFusion1000Minerals515(){
 }
 recoverFusion1000Minerals515();
 setTimeout(recoverFusion1000Minerals515,800);
+/* V527: recover the 10,000 minerals promised for 1,500 fusions
+   in saves where the milestone was claimed before the payout fix.
+   One-time per save, never subtract gold or reset the claim. */
+function recoverFusion1500Minerals527(){
+ try{
+  if(typeof S==='undefined'||!S||!S.accomplishments)return;
+  var a=ensure(S);
+  if(!a.claimed.fusion1500||a.fusion1500MineralRecoveryV527Done)return;
+  var changed=false;
+  function apply(st){
+   var x=ensure(st);
+   if(!x.claimed.fusion1500||x.fusion1500MineralRecoveryV527Done)return;
+   st.minerai=Math.max(0,Number(st.minerai)||0)+10000;
+   x.fusion1500MineralRecoveryV527Done=true;
+   x.fusion1500MineralRecoveryV527At=Date.now();
+   changed=true;
+  }
+  if(typeof update==='function')update(apply);
+  else{apply(S);if(changed){try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}}}
+  if(changed&&typeof toast==='function')toast('Correction 1 500 fusions : +10 000 minéraux',true);
+ }catch(e){console.warn('Fusion 1500 recovery V527',e);}
+}
+recoverFusion1500Minerals527();
+setTimeout(recoverFusion1500Minerals527,900);
 /* V516: voluntary, idempotent correction of the erroneous 600k gold.
    Never debit other players automatically. */
 function renderFusionGoldCorrection516(){
