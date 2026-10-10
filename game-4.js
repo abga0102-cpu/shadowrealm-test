@@ -255,7 +255,6 @@ function scrAccueil() {
         '<div class="flex1"></div>' +
         '<div class="row gap3 b" style="color:var(--blueLit);font-size:11px;flex:0 0 auto">' + ic("minerai", 12) + fmt(S.minerai) + "</div>" +
       "</div>" +
-      upg +
       ascendCta("forge") +
       ((forgeAnimActive() || S.forge.autoForge)
         ? (S.forge.autoForge
@@ -293,6 +292,7 @@ function scrAccueil() {
           ";border-color:" + (S.forge.filter ? "var(--purple)" : "var(--line)") + '">' +
           (S.forge.filter ? "ACTIF" : "INACTIF") + "</span>" +
       "</div>" +
+      upg +
     "</div></div>" +
     '<div class="homeCompactEnd"></div>';
 }
