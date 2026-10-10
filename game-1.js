@@ -2164,11 +2164,10 @@ function simulatedDayCount(s, realNow) {
 function simulatedDateStr(s, realNow) {
   return new Date(simulatedNow(s, realNow)).toISOString().slice(0, 10);
 }
-/* V502 · Raid keys reset at 01:00 local time, independent of UTC/DST.
+/* Raid keys reset at 00:00 local time, independent of UTC/DST.
    Keep todayStr() unchanged because event-day semantics are separate. */
 function raidKeyResetDayKey(now) {
   const d = new Date(now == null ? Date.now() : now);
-  if (d.getHours() < 1) d.setDate(d.getDate() - 1);
   const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"),
     day = String(d.getDate()).padStart(2, "0");
   return y + "-" + m + "-" + day;
