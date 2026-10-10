@@ -1507,8 +1507,8 @@ const RAID_LEVELS_PER_CHAPTER = 10;
 const RAID_CAMPAIGN_STEP_MULT = 2;
 const RAID_REFERENCE_PRESSURE_MUL = 1.15;
 const RAID_POWER_STEP_LEVELS_V496 = 5;
-const RAID_POWER_PRE20_PCT_V496 = 0.50;
-const RAID_POWER_FROM20_PCT_V496 = 0.50;
+const RAID_POWER_PRE20_PCT_V496 = 1.50;
+const RAID_POWER_FROM20_PCT_V496 = 1.50;
 /* V521: additive +50% every five Raid levels, including level 20 onward.\n   1-4 x1.00, 5-9 x1.50, 10-14 x2.00, 15-19 x2.50,\n   20-24 x3.00, then +0.50 every five levels through level 70 x8.00.
    Global Raid modifiers in V289 and per-Raid identity tuning still apply. */
 const RAID_REFERENCE_TTK_UNITS = 6.5;
@@ -1563,7 +1563,7 @@ function raidPowerStepMultiplierV496(level) {
   const lv = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(level) || 1)));
   const pre20 = Math.min(3, Math.floor(lv / RAID_POWER_STEP_LEVELS_V496));
   const from20 = lv >= 20 ? Math.floor((lv - 20) / RAID_POWER_STEP_LEVELS_V496) + 1 : 0;
-  return 1 + pre20 * RAID_POWER_PRE20_PCT_V496 + from20 * RAID_POWER_FROM20_PCT_V496;
+  return 1.25 + pre20 * RAID_POWER_PRE20_PCT_V496 + from20 * RAID_POWER_FROM20_PCT_V496;
 }
 function raidPowerStepMultiplierV485(level) { return raidPowerStepMultiplierV496(level); }
 function raidExpectedPlayerDamage(level) {
