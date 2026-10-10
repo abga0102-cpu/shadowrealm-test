@@ -88,16 +88,17 @@ style.textContent=`
 @media(max-width:370px){#app.srHomeFullArena{--srHudH:104px;--srSkillH:58px;--srForgeH:180px}#app.srHomeFullArena .srStarterRoadmapV461{right:5px;width:min(132px,40vw);padding:4px 5px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
 @media(max-height:720px){#app.srHomeFullArena{--srHudH:100px;--srSkillH:56px;--srForgeH:174px}#app.srHomeFullArena .srStarterRoadmapV461{padding:4px 5px}#app.srHomeFullArena .srStarterRoadmapV461>small{font-size:6.4px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
 `;
-/* V524: Roman mastery must remain visible above forge actions.
-   The previous fixed 174-228px forge slot clipped the mastery and speed controls
-   on iPhone. Allow the slot to scroll without hiding the rank. */
+/* V526: restore the original combat arena height on iPhone.
+   Keep Roman mastery inside the existing scrollable forge slot rather than
+   enlarging the slot at the expense of the battle. */
 style.textContent += `
-#app.srHomeFullArena{--srForgeH:clamp(275px,40vh,355px)!important}
+#app.srHomeFullArena{--srForgeH:228px!important}
+@media(max-height:700px){#app.srHomeFullArena{--srForgeH:214px!important}}
+@media(max-width:370px){#app.srHomeFullArena{--srForgeH:180px!important}}
+@media(max-height:720px){#app.srHomeFullArena{--srForgeH:174px!important}}
 #app.srHomeFullArena #screen.fixed>.pad.mt4{overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;scrollbar-width:thin!important}
 #app.srHomeFullArena #screen.fixed>.pad.mt4>.homeForge{height:auto!important;max-height:none!important;min-height:100%!important;overflow:visible!important;flex-shrink:0!important}
-#app.srHomeFullArena #homeForge .srForgeLifetime445{display:block!important;visibility:visible!important;opacity:1!important;min-height:66px!important;flex:0 0 auto!important;overflow:visible!important;order:0!important}
-#app.srHomeFullArena #homeForge .srForgeLifetimeTop445,#app.srHomeFullArena #homeForge .srForgeLifetimeMeta445{display:flex!important;flex-wrap:wrap!important;gap:5px!important}
-@media(max-height:720px){#app.srHomeFullArena{--srForgeH:clamp(260px,43vh,310px)!important}}
+#app.srHomeFullArena #homeForge .srRomanMasteryV525{display:block!important;visibility:visible!important;flex:0 0 auto!important}
 `;
 document.head.appendChild(style);
 var app=document.getElementById('app'),screen=document.getElementById('screen');
