@@ -1493,11 +1493,9 @@ const RAID_LEVELS_PER_CHAPTER = 10;
 const RAID_CAMPAIGN_STEP_MULT = 2;
 const RAID_REFERENCE_PRESSURE_MUL = 1.15;
 const RAID_POWER_STEP_LEVELS_V496 = 5;
-const RAID_POWER_PRE20_PCT_V496 = 0.15;
-const RAID_POWER_FROM20_PCT_V496 = 0.10;
-/* V496:
-   1-4 x1.00, 5-9 x1.15, 10-14 x1.30, 15-19 x1.45,
-   20-24 x1.55, then +0.10 every five levels through level 70 x2.55.
+const RAID_POWER_PRE20_PCT_V496 = 0.50;
+const RAID_POWER_FROM20_PCT_V496 = 0.50;
+/* V521: additive +50% every five Raid levels, including level 20 onward.\n   1-4 x1.00, 5-9 x1.50, 10-14 x2.00, 15-19 x2.50,\n   20-24 x3.00, then +0.50 every five levels through level 70 x8.00.
    Global Raid modifiers in V289 and per-Raid identity tuning still apply. */
 const RAID_REFERENCE_TTK_UNITS = 6.5;
 const RAID_REFERENCE_TTD_DIV = 6;
