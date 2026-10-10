@@ -156,7 +156,8 @@ function loadSave() {
 
 /* -------- daily reset & offline -------- */
 function applyRaidKeyReset(s, now) {
-  const keyDay = raidKeyResetDayKey(now == null ? simulatedNow(s) : now);
+  // Raid refills follow the real local calendar, not the accelerated simulation clock.
+  const keyDay = raidKeyResetDayKey(now == null ? Date.now() : now);
   if (s.lastKeyReset === keyDay) return false;
   RAID_IDS.forEach((r) => {
     // tree-granted keys raise both the daily refill and the cap for that raid
@@ -170,7 +171,7 @@ function applyRaidKeyReset(s, now) {
 }
 function applyDailyReset(s, now) {
   const at = now == null ? simulatedNow(s) : Number(now);
-  applyRaidKeyReset(s, at);
+  applyRaidKeyReset(s, now == null ? Date.now() : Number(now));
   const t = simulatedDateStr(s, (now == null ? Date.now() : Number(now) - Math.max(0, Number(s.simulatedMs) || 0)));
   if (s.eventDay !== t) { s.eventDay = t; s.eventClaims = {}; s.eventProgress = {}; }
   return s;
