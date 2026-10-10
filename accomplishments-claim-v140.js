@@ -69,7 +69,7 @@ function renderFusionGoldCorrection516(){
   if(!root||typeof S==='undefined'||!S)return;
   var a=ensure(S),old=root.querySelector('#srFusionGoldCorrection516');
   if(!a.claimed.fusion1000||a.fusion1000GoldCorrectionV516Done){if(old)old.remove();return;}
-  if(old)return;
+  if(old||root.querySelector('[data-sr-fusion-gold-correct-516]'))return;
   var box=document.createElement('div');box.id='srFusionGoldCorrection516';
   box.style.cssText='margin:12px 0;padding:12px;border:1px solid #b58d4c;border-radius:12px;background:#172638;color:#f7e2b2';
   box.innerHTML='<b>Correction de récompense · 1 000 fusions</b><p style="font-size:12px;line-height:1.45">Si tu as reçu 600 000 or par erreur, tu peux les retirer volontairement. Les 5 000 minéraux sont gérés séparément par la V515. Cette action est définitive et ne peut être effectuée qu’une fois.</p><button type="button" class="btn sm" data-sr-fusion-gold-correct-516="1" style="width:100%;min-height:42px">Retirer les 600 000 or reçus par erreur</button>';
