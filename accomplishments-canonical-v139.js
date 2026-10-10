@@ -55,7 +55,7 @@ var ITEMS={
  Raids:[
   ['raid10',10,'10 Raids accomplis','5 000 Or'],['raid20',20,'20 Raids accomplis','30 Pièces de fusion Communes'],
   ['raid50',50,'50 Raids accomplis','20 Pièces de fusion Rares + choix : 500 Étincelles OU 500 Essences','choice'],
-  ['raid100',100,'100 Raids accomplis','1 500 000 Or + 1 000 Étincelles + 1 000 Essences + 50 Pièces de fusion Rares']
+  ['raid150',150,'150 Raids accomplis','1 500 000 Or + 1 000 Étincelles + 1 000 Essences + 50 Pièces de fusion Rares']
  ],
  Etages:[
   ['floor25',45,'Vaincre Facile · 3-5','250 Essences'],
@@ -72,7 +72,7 @@ var ITEMS={
 };
 var PREMIUM_TEXT={
  fusion50:'10 000 Or',fusion150:'20 000 Or',fusion250:'30 000 Or',fusion350:'40 000 Or',fusion500:'60 000 Or',fusion1000:'120 000 Or',fusion1500:'200 000 Or',
- raid10:'2 500 Or',raid20:'10 Pièces Communes',raid50:'5 Pièces Rares + 250 Essences',raid100:'250 000 Or + 250 Étincelles + 250 Essences + 10 Pièces Rares',
+ raid10:'2 500 Or',raid20:'10 Pièces Communes',raid50:'5 Pièces Rares + 250 Essences',raid150:'250 000 Or + 250 Étincelles + 250 Essences + 10 Pièces Rares',
  floor25:'100 Essences',floor50:'750 Minerais + 2 500 Or',floor75:'200 Étincelles + 10 Pièces Communes',floor100:'200 Étincelles + 200 Essences + 10 Pièces Communes',floor150:'250 Étincelles + 250 Essences + 5 Pièces Rares',floor200:'300 Étincelles + 300 Essences + 5 Pièces Rares',floor250:'350 Étincelles + 350 Essences + 3 Pièces Épiques',floor300:'400 Étincelles + 400 Essences + 4 Pièces Épiques',floor350:'500 Étincelles + 500 Essences + 3 Pièces Mythiques',floor400:'750 Étincelles + 750 Essences + 5 Pièces Mythiques'
 };
 function value(cat){return cat==='Forge'?forge():cat==='Fusions'?fusions():cat==='Raids'?raids():floor();}
