@@ -39,6 +39,28 @@ function claim(id,choice){if(typeof S==='undefined'||!S||!REWARDS[id]||!NEED[id]
 function claimPremium(id){if(typeof S==='undefined'||!S||!PREMIUM_REWARDS[id]||!NEED[id]||!NEED[id]())return false;var a=ensure(S),r=PREMIUM_REWARDS[id];if(!premiumOwned(a)||a.premiumClaimed[id])return false;if(typeof update==='function'){var granted=false;update(function(s){var x=ensure(s);if(!premiumOwned(x)||x.premiumClaimed[id])return;var st=s.sanctuary||{};x.fusionCount=Math.max(Number(x.fusionCount)||0,Number(st.mergeCrafts)||0,Number(st.fusions)||0);grant(s,r,'');x.premiumClaimed[id]=true;granted=true;});if(!granted)return false;}else{grant(S,r,'');a.premiumClaimed[id]=true;try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}}refresh(id,true,'');return true;}
 window.__srClaimPremiumAccomplishmentV140=claimPremium;
 function retireLegacyForgeCompensation(){try{if(typeof S==='undefined'||!S)return;var a=ensure(S);if(a.forgeRewardBalanceV200Processed)return;function migrate(s){var x=ensure(s);if(x.forgeRewardBalanceV200Processed)return;x.forgeRewardBalanceV200Processed=true;x.forgeRewardBalanceV200Paid=[];x.forgeRewardBalanceV200At=Date.now();}if(typeof update==='function')update(migrate);else{migrate(S);try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}}}catch(_){}}
+/* V515: one-time recovery for previously claimed 1000-fusion reward whose
+   legacy claim could have paid gold despite the mineral label.
+   This never reopens the claim and never changes its gold balance. */
+function recoverFusion1000Minerals515(){
+ try{
+  if(typeof S==='undefined'||!S)return;
+  function apply(st){
+   var a=ensure(st);
+   if(a.fusion1000MineralRecoveryV515Done)return;
+   if(!a.claimed.fusion1000)return;
+   st.minerai=(Number(st.minerai)||0)+5000;
+   a.fusion1000MineralRecoveryV515Done=true;
+   a.fusion1000MineralRecoveryV515At=Date.now();
+  }
+  if(typeof update==='function')update(apply);
+  else if(S.accomplishments&&S.accomplishments.claimed&&S.accomplishments.claimed.fusion1000&&!S.accomplishments.fusion1000MineralRecoveryV515Done){
+   apply(S);try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}
+  }
+ }catch(e){console.warn('Fusion 1000 recovery V515',e);}
+}
+recoverFusion1000Minerals515();
+setTimeout(recoverFusion1000Minerals515,800);
 retireLegacyForgeCompensation();setTimeout(retireLegacyForgeCompensation,300);setTimeout(retireLegacyForgeCompensation,1200);
 document.addEventListener('click',function(e){var p=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach-premium]'):null;if(p){e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();claimPremium(String(p.getAttribute('data-ach-premium')||''));return;}var b=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach]'):null;if(!b)return;e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();claim(String(b.getAttribute('data-ach')||''),String(b.getAttribute('data-ach-choice')||''));},true);
 var RAID_UI={'20 Raids accomplis':{free:'15 000 Or',premium:'5 000 Or',id:'raid20'},'50 Raids accomplis':{free:'50 000 Or',premium:'25 000 Or',id:'raid50'},'100 Raids accomplis':{free:'250 000 Or',premium:'75 000 Or',id:'raid100'}};
