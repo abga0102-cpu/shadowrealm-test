@@ -280,6 +280,20 @@ function equipmentMasteryInfoFromCount(count) {
     progressPct, maxed:!next
   };
 }
+/* V523: expose the canonical Roman Equipment Mastery to the forge UI and
+   paid-forge rank transition. Uses the existing lifetimeCount and tier table;
+   never resets or fabricates saved progression. */
+if (typeof window !== "undefined") {
+  window.__srForgeLifetimeMasteryV445 = {
+    info:function(state){
+      return equipmentMasteryInfoFromCount(state && state.forge && state.forge.lifetimeCount);
+    },
+    applyState:function(state){
+      if (!state || !state.forge) return false;
+      return syncEquipmentLevels(state);
+    }
+  };
+}
 function equipmentMasteryDustRewardForRank(rank) {
   const maxRank = EQUIPMENT_MASTERY_TIERS[EQUIPMENT_MASTERY_TIERS.length - 1].rank;
   const r = Math.max(0, Math.min(maxRank, Math.floor(Number(rank) || 0)));
