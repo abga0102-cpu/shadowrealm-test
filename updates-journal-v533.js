@@ -18,6 +18,7 @@ var entries=[
   ['10/10/2026','V522–524','Réorganisation visuelle de la forge et de son affichage.']
  ]},
  {cat:'Économie & récompenses',icon:'💎',items:[
+  ['10/10/2026','V537','Sanctuaire : récompenses Rebirth obsolètes remplacées pour les prochains sacrifices ; anciens boosts PR utilisables en bonus Or.'],
   ['10/10/2026','V536','Sanctuaire : prix Épique I ajusté pour respecter le coût de fusion de quatre Rare I.'],
   ['10/10/2026','V527–528','Accomplissement des 1 500 fusions : récupération des minéraux et option de correction volontaire de l’or.'],
   ['10/10/2026','V520','Objectif de victoires en raid révisé à 150.']
