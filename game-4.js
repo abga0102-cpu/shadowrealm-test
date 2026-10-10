@@ -1279,7 +1279,7 @@ function scrSanctuaire() {
     '<div class="sect">Plateau de Merge <span class="mute tiny">· '+st.mergeBoard.filter(Boolean).length+'/'+SANCT_BOARD_SIZE+'</span></div>'+
     '<div class="notice tiny"><b>Fusion par glisser-déposer :</b> fais glisser une pièce sur une pièce identique pour les fusionner. Glisse-la sur une case vide pour la déplacer. Une pièce différente refuse la fusion.</div>'+
     '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px">'+board+'</div>'+
-    '<div class="row gap6 mt8">'+btn('Fusionner tout',{small:true,cls:'purple',act:'sanctMergeAuto',dis:!pair})+btn('Ranger le plateau',{small:true,cls:'ghost',act:'sanctMergePack'})+(st.mergeSelected>=0?btn('Annuler sélection',{small:true,cls:'dark',act:'sanctMergeCancel'}):'')+'</div>'+
+    '<div class="row gap6 mt8">'+btn('Fusionner tout · Or',{small:true,cls:'purple',act:'sanctMergeAuto',dis:!pair})+btn('Ranger le plateau',{small:true,cls:'ghost',act:'sanctMergePack'})+(st.mergeSelected>=0?btn('Annuler sélection',{small:true,cls:'dark',act:'sanctMergeCancel'}):'')+'</div>'+
     (counts?'<div class="row gap4 mt8" style="flex-wrap:wrap">'+counts+'</div>':'')+
     '<div class="sect">Livre de Fusion <span class="mute tiny">· '+st.mergeCrafts+' fabrications</span></div>'+recipes+
     '<div class="notice mt8 tiny">Les anciennes ressources de Raid ne sont plus consommées par le Sanctuaire. L’Or achète uniquement la couleur affichée ; les raretés supérieures se construisent sur le plateau. Le niveau d’approvisionnement conserve un prix fixe pendant toute sa jauge.</div></div>';
