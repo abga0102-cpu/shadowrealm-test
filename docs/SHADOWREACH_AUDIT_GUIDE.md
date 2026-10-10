@@ -33,3 +33,12 @@ Fichiers : sanctuary-pricing-v125.js, sanctuary-endgame-v130.js.
 
 ## Processus de chaque audit
 Inventorier les fichiers → identifier les règles actives et leur ordre → tracer les dépendances → calculer les invariants → simuler les cas limites → distinguer bugs/choix → proposer priorités → corriger uniquement avec accord pour changements économiques importants → vérifier tests/déploiement → mettre à jour ce document et le journal.
+
+
+## Principe directeur permanent — Free-to-play compétitif (validé le 10/10/2026)
+- **Tout Shadowreach doit être conçu pour qu'un joueur free-to-play actif, habile et bien organisé reste utile et pertinent dans les guerres de clan.** Cela s'applique à toutes les mécaniques actuelles et futures : progression, équipement, Sanctuaire, forge, compétences, événements, combats et guerre de clan.
+- Les dépenses en or, en gemmes ou les fonctionnalités de confort peuvent accélérer ou simplifier le jeu, mais **ne doivent pas acheter l'exclusivité d'une contribution significative aux guerres de clan**. Éviter les écarts de puissance impossibles à combler, les mécaniques pay-to-win obligatoires et les verrouillages permanents.
+- Lors de chaque mise à jour importante, examiner explicitement les conséquences pour les joueurs gratuits : accès aux ressources, temps de progression, capacité de participer et d'apporter une contribution utile aux guerres de clan.
+- Pour la **fusion automatique instantanée du Sanctuaire**, conserver un tarif de base par opération, mais envisager **un supplément modéré et progressif pour les raretés supérieures** ; ne pas rendre les hautes raretés prohibitives. La fusion manuelle reste gratuite. Les contrats du monstre fusionneur restent une option de confort, non une obligation de progression.
+- **Les coefficients et prix finaux de cette majoration par rareté ne sont pas encore validés.** Les proposer et les tester en simulation avant implémentation ; ne pas inventer un barème présenté comme approuvé.
+- Objectif transversal : **équité compétitive, utilité sociale en clan et monétisation du confort plutôt que de la victoire**.
