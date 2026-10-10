@@ -10,7 +10,7 @@
 (function(){
 'use strict';
 if(window.__srAccomplishmentsCanonicalV139)return;
-window.__srAccomplishmentsCanonicalV139=true;
+window.__srAccomplishmentsCanonicalV139=true;window.__srFusionRewardsBuild='511:5000/10000';
 var activeTab='etages';
 var lastClaimFx=null;
 function n(v){return Math.max(0,Number(v)||0);}
