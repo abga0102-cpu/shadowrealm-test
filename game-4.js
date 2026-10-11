@@ -461,9 +461,10 @@ function recycleItemsByIds(ids) {
   const set = new Set(ids);
   const hit = S.inventory.filter((x) => set.has(x.id));
   const dust = hit.reduce((a,x)=>a+recycleValue(x),0);
-  if (!hit.length) return {n:0,dust:0};
-  update((st)=>{ st.inventory=st.inventory.filter((x)=>!set.has(x.id)); st.poussiere+=dust; });
-  return {n:hit.length,dust};
+  const gold = hit.reduce((a,x)=>a+Math.max(0,Number(x.srForgeRecycleGoldV547)||0),0);
+  if (!hit.length) return {n:0,dust:0,gold:0};
+  update((st)=>{ st.inventory=st.inventory.filter((x)=>!set.has(x.id)); st.poussiere+=dust; st.gold+=gold; });
+  return {n:hit.length,dust,gold};
 }
 function showRecycleSlotsPicker() {
   const rows=SLOTS.map((slot)=>{ const hit=S.inventory.filter(x=>x.slot===slot); const on=recycleSlots.has(slot); return '<div class="itemRow" data-act="toggleRecycleSlot" data-arg="'+slot+'" style="cursor:pointer;border-left-color:'+(on?'var(--purple)':'var(--line)')+'"><div class="flex1"><div class="b small">'+SLOT_LABEL[slot]+'</div><div class="mute tiny">'+hit.length+' objet'+(hit.length>1?'s':'')+'</div></div><span class="pill" style="color:'+(on?'var(--greenLit)':'var(--textMute)')+';border-color:'+(on?'#3FB950':'var(--line)')+'">'+(on?'Sélectionnée':'Choisir')+'</span></div>'; }).join('');
