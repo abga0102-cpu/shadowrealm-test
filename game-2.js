@@ -2173,16 +2173,17 @@ function forgeSummon(n) {
       for (let k = 0; k <= extra; k++) {
         const rar = capRarityForForge(rollRarity(rates, orderFor("forge")), st.forge.level);
         const item = makeItem(SLOTS[Math.floor(Math.random() * SLOTS.length)], rar, st.forge.level);
-        // V470: only the primary item of each paid Forge grants Gold. The Tree's
-        // bonus free item stays free of extra currency to protect the Gold economy.
+        // V547: Gold is awarded only when the item is recycled, never on creation.
+        // Bonus items from the Tree remain ineligible for forge Gold.
         const forgeGold = k === 0 ? forgeGoldRewardV470(st, rar) : 0;
-        if (forgeGold > 0) st.gold += forgeGold;
+        item.srForgeRecycleGoldV547 = forgeGold;
         if (forgeKeeps(st, rar)) {
           st.inventory.push(item);
           results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0, gold: forgeGold });
         } else {
           const dust = dustValue(st, item);
           st.poussiere += dust;
+          st.gold += forgeGold;
           results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0,
             recycled: true, dust: dust, gold: forgeGold });
         }
@@ -2351,6 +2352,8 @@ function recycleItem(id) {
   update((st) => {
     st.inventory = st.inventory.filter((x) => x.id !== id);
     st.poussiere += dust;
+    // Older items already received Gold when forged: never pay them twice.
+    st.gold += Math.max(0, Number(it.srForgeRecycleGoldV547) || 0);
   });
   return dust;
 }
