@@ -1114,7 +1114,21 @@ function syncEquipPreviewSpacer() {
   spacer.style.height=Math.max(90,h+72)+'px';
 }
 
+// V543: prevent passive redraws from destroying the forge under a finger.
+let srForgeTouchActive543=false;
+let srForgeTouchUntil543=0;
+(function(){
+  const screen=document.getElementById('screen');if(!screen)return;
+  screen.addEventListener('touchstart',function(e){if(e.target&&e.target.closest&&e.target.closest('#homeForge')){srForgeTouchActive543=true;srForgeTouchUntil543=Date.now()+900;}},{passive:true,capture:true});
+  ['touchend','touchcancel'].forEach(function(type){screen.addEventListener(type,function(e){if(srForgeTouchActive543){srForgeTouchActive543=false;srForgeTouchUntil543=Date.now()+900;}},{passive:true,capture:true});});
+  screen.addEventListener('scroll',function(e){if(e.target&&e.target.closest&&e.target.closest('#homeForge'))srForgeTouchUntil543=Date.now()+900;},{passive:true,capture:true});
+})();
 function render() {
+  // Only defer while interacting: the next gameplay/timer render refreshes UI.
+  if(typeof route!=='undefined'&&route==='accueil'&&(srForgeTouchActive543||Date.now()<srForgeTouchUntil543)){
+    if(!render.__srForgePending543){render.__srForgePending543=true;setTimeout(function(){render.__srForgePending543=false;render();},Math.max(120,srForgeTouchUntil543-Date.now()+60));}
+    return;
+  }
   // Objective tracking belongs to the global state/render layer, not to Home.
   // This keeps progress coherent when goals are completed from Skills, Pets,
   // Raids, the Tree, etc. and the player has not returned Home yet.
