@@ -1123,6 +1123,14 @@ let srForgeTouchUntil543=0;
   ['touchend','touchcancel'].forEach(function(type){screen.addEventListener(type,function(e){if(srForgeTouchActive543){srForgeTouchActive543=false;srForgeTouchUntil543=Date.now()+900;}},{passive:true,capture:true});});
   screen.addEventListener('scroll',function(e){if(e.target&&e.target.closest&&e.target.closest('#homeForge'))srForgeTouchUntil543=Date.now()+900;},{passive:true,capture:true});
 })();
+// Only a Forge action may replace its panel; ordinary timer ticks retain it.
+(function(){
+  const sc=document.getElementById('screen');if(!sc)return;
+  sc.addEventListener('click',function(e){
+    const target=e.target&&e.target.closest&&e.target.closest('#homeForge [data-act]');
+    if(target)render.__srForgeAction546=true;
+  },true);
+})();
 function render() {
   // Only defer while interacting: the next gameplay/timer render refreshes UI.
   if(typeof route!=='undefined'&&route==='accueil'&&(srForgeTouchActive543||Date.now()<srForgeTouchUntil543)){
@@ -1151,7 +1159,26 @@ function render() {
     const forge = host.querySelector('#homeForge');
     return {top:host.scrollTop, left:host.scrollLeft, forgeTop:forge?forge.scrollTop:0};
   })() : null;
+  // V546: preserve the *actual* Forge DOM across passive Home renders.
+  // Recreating the buttons breaks touch gestures even when scrollTop is restored.
+  const srForgeLive546 = route==='accueil' ? sc.querySelector('#homeForge') : null;
+  const srForgeRefresh546 = !!render.__srForgeAction546;
+  render.__srForgeAction546=false;
   sc.innerHTML = fn();
+  if(srForgeLive546 && !srForgeRefresh546){
+    const freshForge=sc.querySelector('#homeForge');
+    if(freshForge){
+      freshForge.replaceWith(srForgeLive546);
+      // Keep accelerator stock readable without replacing the tapped button.
+      srForgeLive546.querySelectorAll('.srForgeSpeedChip266[data-arg]').forEach(function(chip){
+        const key=chip.getAttribute('data-arg');
+        const stock=Number(S.accels&&S.accels[key]||0);
+        const count=chip.querySelector('b');
+        if(count)count.textContent='×'+stock;
+        chip.disabled=stock<=0;
+      });
+    }
+  }
   if(srHomeScroll535){
     const host = sc.querySelector(':scope > .pad.mt4');
     if(host){
