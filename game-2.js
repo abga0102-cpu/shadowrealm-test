@@ -2845,7 +2845,8 @@ function boot() {
     }
   }, 60000);
 
-  setInterval(() => { if (dirty) saveNow(); }, 8000);
+  // V545: autosave every 3 minutes when changes exist; critical actions and backgrounding still save immediately.
+  setInterval(() => { if (dirty) saveNow(); }, 180000);
   // the Récolte automatique never stops just because the player is connected
   let harvestClock = Date.now();
   setInterval(() => {
