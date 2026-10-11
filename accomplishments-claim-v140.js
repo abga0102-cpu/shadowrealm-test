@@ -47,7 +47,7 @@ function syncFusionHistoryV546(){
   var a=ensure(S),total=fusionHistoryTotal(S);
   if(a.fusionHistoryBackfillV546&&Number(a.fusionCount||0)>=total)return;
   var changed=false;
-  function apply(s){var x=ensure(s),t=fusionHistoryTotal(s),old=Math.max(0,Math.floor(Number(x.fusionCount)||0));x.fusionCount=Math.max(old,t);x.fusionHistoryBackfillV546=true;x.fusionHistoryBackfillV546At=Date.now();changed=x.fusionCount!==old||!a.fusionHistoryBackfillV546;}
+  function apply(s){var x=ensure(s),t=fusionHistoryTotal(s),old=Math.max(0,Math.floor(Number(x.fusionCount)||0)),had=!!x.fusionHistoryBackfillV546;x.fusionCount=Math.max(old,t);x.fusionHistoryBackfillV546=true;x.fusionHistoryBackfillV546At=Date.now();changed=x.fusionCount!==old||!had;}
   if(typeof update==='function')update(apply);else{apply(S);if(changed){try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){}}}
  }catch(_){}
 }
