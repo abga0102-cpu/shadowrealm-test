@@ -403,11 +403,13 @@ function recycleBatch(rarity) {
   const hit = S.inventory.filter((x) => x.rarity === rarity);
   if (!hit.length) return { n: 0, dust: 0 };
   const dust = hit.reduce((a, x) => a + recycleValue(x), 0);
+  const gold = hit.reduce((a,x)=>a+Math.max(0,Number(x.srForgeRecycleGoldV547)||0),0);
   update((st) => {
     st.inventory = st.inventory.filter((x) => x.rarity !== rarity);
     st.poussiere += dust;
+    st.gold += gold;
   });
-  return { n: hit.length, dust: dust };
+  return { n: hit.length, dust: dust, gold: gold };
 }
 function showRecyclePicker() {
   const rows = EQUIP_RARITY_ORDER.map((r) => {
