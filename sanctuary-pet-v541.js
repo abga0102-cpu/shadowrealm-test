@@ -5,6 +5,8 @@ const COSTS={'10-gold':{ms:600000,amount:100000,currency:'gold'},'10-gems':{ms:6
 function petTick(){
   if(typeof S==='undefined'||typeof sanctMergeState!=='function'||typeof sanctMergePair!=='function')return;
   const st=S.sanctuary;if(!st||!st.mergePetUntil)return;
+  // Never mutate a selected fragment while a manual merge is pending.
+  if(Number.isInteger(st.mergeSelected)&&st.mergeSelected>=0&&st.mergeBoard&&st.mergeBoard[st.mergeSelected])return;
   const now=Date.now(),until=Number(st.mergePetUntil)||0;
   const previous=Number(st.mergePetTick)||Math.min(now,until);
   const effective=Math.min(now,until);
