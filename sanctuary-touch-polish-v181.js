@@ -61,8 +61,8 @@ drag.renderX+=(tx-drag.renderX)*(reduced()?1:.38);drag.renderY+=(ty-drag.renderY
 function schedule(){if(!raf)raf=requestAnimationFrame(tick);}
 function localFx(cell,rar){if(reduced()||!cell)return;var r=cell.getBoundingClientRect(),b=document.createElement('div');b.className='srSanctLocalFx181';b.style.left=(r.left+r.width/2)+'px';b.style.top=(r.top+r.height/2)+'px';b.style.setProperty('--srC',colorFor(rar));document.body.appendChild(b);setTimeout(function(){b.remove();},560);}
 function animateBack(done){if(!drag||!drag.ghost||reduced()){done();return;}var r=drag.source.getBoundingClientRect(),gx=drag.renderX,gy=drag.renderY,tx=r.left+r.width/2,ty=r.top+r.height/2;drag.ghost.animate([{left:gx+'px',top:gy+'px',transform:'translate3d(0,0,0) scale(1.08)',opacity:.98},{left:tx+'px',top:ty+'px',transform:'translate3d(0,0,0) scale(.9)',opacity:.35}],{duration:180,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'}).onfinish=done;}
-function finishCleanup(){if(raf){cancelAnimationFrame(raf);raf=0;}document.documentElement.classList.remove('srSanctDragActive181');clearMarks();if(!drag){deferReadyPairs();return;}if(drag.source)drag.source.classList.remove('srSanctLift181');if(drag.ghost&&drag.ghost.parentNode)drag.ghost.remove();drag=null;deferReadyPairs();}
-function begin(e,piece){injectCss();drag={id:e.pointerId,from:Number(piece.dataset.sanctSlot),rarity:piece.dataset.sanctRarity,source:piece,startX:e.clientX,startY:e.clientY,pointerX:e.clientX,pointerY:e.clientY,renderX:e.clientX,renderY:e.clientY-32,dragging:false,target:null,ghost:null};}
+function finishCleanup(){window.__srSanctDragActive=false;if(raf){cancelAnimationFrame(raf);raf=0;}document.documentElement.classList.remove('srSanctDragActive181');clearMarks();if(!drag){deferReadyPairs();return;}if(drag.source)drag.source.classList.remove('srSanctLift181');if(drag.ghost&&drag.ghost.parentNode)drag.ghost.remove();drag=null;deferReadyPairs();}
+function begin(e,piece){if(drag)return;injectCss();window.__srSanctDragActive=true;drag={id:e.pointerId,from:Number(piece.dataset.sanctSlot),rarity:piece.dataset.sanctRarity,source:piece,startX:e.clientX,startY:e.clientY,pointerX:e.clientX,pointerY:e.clientY,renderX:e.clientX,renderY:e.clientY-32,dragging:false,target:null,ghost:null};}
 function promote(){if(!drag||drag.dragging)return;drag.dragging=true;document.documentElement.classList.add('srSanctDragActive181');drag.source.classList.add('srSanctLift181');drag.ghost=drag.source.cloneNode(true);drag.ghost.classList.remove('sanctDragging','srSanctLift181','srSanctReady181');drag.ghost.style.removeProperty('--srReady');drag.ghost.style.removeProperty('--srReadyDelay');drag.ghost.classList.add('srSanctGhost181');drag.ghost.removeAttribute('data-sanct-slot');document.body.appendChild(drag.ghost);markBoard(drag.rarity);updateTarget();schedule();}
 
 document.addEventListener('pointerdown',function(e){var p=e.target&&e.target.closest?e.target.closest('.sanctMergePiece[data-sanct-slot]'):null;if(!p)return;begin(e,p);e.stopImmediatePropagation();},true);
@@ -76,7 +76,7 @@ document.addEventListener('click',function(e){
  if(!cell)return;
  e.preventDefault();e.stopImmediatePropagation();
 },true);
-document.addEventListener('pointerup',function(e){if(!drag||e.pointerId!==drag.id)return;e.stopImmediatePropagation();if(!drag.dragging){finishCleanup();return;}e.preventDefault();suppressDragClickUntil=Date.now()+450;var target=drag.target,to=target?Number(target.dataset.sanctSlot):-1,st=sanctMergeState(),src=st.mergeBoard[drag.from],dst=to>=0?st.mergeBoard[to]:null,isMerge=!!(src&&dst===src),next=isMerge&&typeof sanctMergeNext==='function'?sanctMergeNext(src):null;if(to>=0){var ok=sanctMergeDrop(drag.from,to);if(ok){if(isMerge&&next)localFx(target,next);finishCleanup();return;}}animateBack(finishCleanup);}, {capture:true,passive:false});
+document.addEventListener('pointerup',function(e){if(!drag||e.pointerId!==drag.id)return;e.stopImmediatePropagation();if(!drag.dragging){finishCleanup();return;}e.preventDefault();suppressDragClickUntil=Date.now()+450;var target=drag.target,to=target?Number(target.dataset.sanctSlot):-1,st=sanctMergeState(),src=st.mergeBoard[drag.from],dst=to>=0?st.mergeBoard[to]:null,isMerge=!!(src&&dst===src),next=isMerge&&typeof sanctMergeNext==='function'?sanctMergeNext(src):null;if(to>=0&&src===drag.rarity){var ok=sanctMergeDrop(drag.from,to);if(ok){if(isMerge&&next)localFx(target,next);finishCleanup();return;}}animateBack(finishCleanup);}, {capture:true,passive:false});
 /* V569: explicit tap-to-move fallback for purchased slots on iOS. */
 document.addEventListener('click',function(e){
  var cell=e.target&&e.target.closest?e.target.closest('.sanctMergeCell[data-sanct-slot]'):null;
@@ -93,7 +93,8 @@ document.addEventListener('click',function(e){
  if(!Number.isInteger(i)||!st.mergeBoard[i])return;
  st.mergeSelected=i;dirty=true;
 },true);
-document.addEventListener('pointercancel',function(e){if(!drag||e.pointerId!==drag.id)return;e.stopImmediatePropagation();animateBack(finishCleanup);},true);
+document.addEventListener('pointercancel',function(e){if(!drag||e.pointerId!==drag.id)return;e.stopImmediatePropagation();finishCleanup();},true);
+window.addEventListener('blur',function(){if(drag)finishCleanup();});
 
 /* Restore the pre-drag fusion anticipation: whenever Sanctuary renders, mark every
    mergeable duplicate group. This is presentation-only and leaves sanctMergeDrop
