@@ -1709,11 +1709,11 @@ function sanctMergeDrop(from,to){
   if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=st.mergeBoard.length||to>=st.mergeBoard.length||from===to) return false;
   const src=st.mergeBoard[from], dst=st.mergeBoard[to];
   if(!src) return false;
-  if(!dst){ st.mergeBoard[to]=src; st.mergeBoard[from]=null; st.mergeSelected=-1; dirty=true; render(); return true; }
+  if(!dst){ st.mergeBoard[to]=src; st.mergeBoard[from]=null; if(st.mergeLockedSlots){st.mergeLockedSlots[to]=!!st.mergeLockedSlots[from];delete st.mergeLockedSlots[from];} st.mergeSelected=-1; dirty=true; render(); return true; }
   if(dst!==src){ toast("Deux couleurs identiques sont nécessaires"); return false; }
   const nx=sanctMergeNext(src);
   if(!nx){ toast("Divin est la rareté maximale"); return false; }
-  st.mergeBoard[from]=null; st.mergeBoard[to]=nx; st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
+  st.mergeBoard[from]=null; st.mergeBoard[to]=nx; if(st.mergeLockedSlots){delete st.mergeLockedSlots[from];delete st.mergeLockedSlots[to];} st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
   sanctMergeDiscover(st,nx); dirty=true;
   if(navigator.vibrate) try{navigator.vibrate(20);}catch(_e){}
   toast(SANCT_MERGE_NAME[src]+" + "+SANCT_MERGE_NAME[src]+" → "+SANCT_MERGE_NAME[nx],true); render(); return true;
@@ -2016,8 +2016,8 @@ const ACT = {
     for(let n=0;n<limit;n++){
       let pair=null;
       for(let i=0;i<board.length&&!pair;i++){
-        if(!board[i]||!sanctMergeNext(board[i]))continue;
-        for(let j=i+1;j<board.length;j++)if(board[j]===board[i]){pair=[i,j,board[i]];break;}
+        if(!board[i]||!sanctMergeNext(board[i])||(st.mergeLockedSlots&&st.mergeLockedSlots[i])||(st.mergeLockedRarities&&st.mergeLockedRarities[board[i]]))continue;
+        for(let j=i+1;j<board.length;j++)if(board[j]===board[i]&&!(st.mergeLockedSlots&&st.mergeLockedSlots[j])){pair=[i,j,board[i]];break;}
       }
       if(!pair)break;
       const rank=Math.max(0,SANCT_MERGE_ORDER.indexOf(pair[2]));
@@ -2033,6 +2033,7 @@ const ACT = {
     if((Number(S.gold)||0)<total||st.mergeBoard.length!==board.length)return toast("Fusion annulée : ressources ou plateau modifiés");
     S.gold-=total;
     st.mergeBoard=board;
+    if(st.mergeLockedSlots)ops.forEach(op=>{delete st.mergeLockedSlots[op.i];delete st.mergeLockedSlots[op.j];});
     st.mergeSelected=-1;
     st.mergeFusions=(st.mergeFusions||0)+ops.length;
     st.fusions=(st.fusions||0)+ops.length;
@@ -2043,7 +2044,7 @@ const ACT = {
     render();
   },
   sanctMergeCancel: () => { const st=sanctMergeState(); st.mergeSelected=-1; dirty=true; render(); },
-  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.filter(Boolean); st.mergeBoard=kept.concat(Array(Math.max(0,st.mergeBoard.length-kept.length)).fill(null)); st.mergeSelected=-1; dirty=true; render(); },
+  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.map((r,i)=>({r,locked:!!(st.mergeLockedSlots&&st.mergeLockedSlots[i])})).filter(x=>x.r); st.mergeBoard=kept.map(x=>x.r).concat(Array(Math.max(0,st.mergeBoard.length-kept.length)).fill(null)); st.mergeLockedSlots={};kept.forEach((x,i)=>{if(x.locked)st.mergeLockedSlots[i]=true;}); st.mergeSelected=-1; dirty=true; render(); },
   sanctSelectPair: () => { const st=sanctMergeState(), p=sanctMergePair(st); if(!p)return; st.mergeSelected=p[0]; dirty=true; toast("Première "+SANCT_MERGE_NAME[p[2]]+" sélectionnée · touche la seconde"); render(); },
   sanctRecipeCraft: (a) => {
     const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
