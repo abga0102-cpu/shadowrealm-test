@@ -208,6 +208,11 @@
           enemy.dmg=Math.max(1,Math.floor(enemy.dmg*STARTER_BOSS_DAMAGE_MUL_V462));
           enemy.__srStarterBossV462=true;
         }
+        /* V555: narrow campaign durability gap after stronger offensive skills. Boss and raid HP unchanged. */
+        if(mode==='campaign' && enemy && opts && !opts.boss && !opts.noFastback && Number(opts.floor)>2){
+          var normalHpMulV555=opts.elite?1.12:1.30;
+          enemy.hp=enemy.maxHP=Math.max(1,Math.round(enemy.maxHP*normalHpMulV555));
+        }
         if(mode==='raid' && enemy){
           enemy.hp=enemy.maxHP=Math.max(1,Math.floor(enemy.maxHP*RAID_HP_MUL));
           enemy.dmg=Math.max(1,Math.floor(enemy.dmg*RAID_DAMAGE_MUL));
