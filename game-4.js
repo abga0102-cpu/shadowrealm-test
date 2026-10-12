@@ -1164,7 +1164,7 @@ const SANCT_MERGE_NAME = {
 };
 const SANCT_SUPPLIER_MAX = 15;
 const SANCT_BOARD_SIZE = 16;
-function sanctBoardCapacity(st){return Math.max(16,Math.min(32,16+Math.max(0,Math.floor(Number(st&&st.boardExpansions)||0)),Array.isArray(st&&st.mergeBoard)?st.mergeBoard.length:0));}
+function sanctBoardCapacity(st){return Math.max(16,Math.min(32,Math.max(16+Math.max(0,Math.floor(Number(st&&st.boardExpansions)||0)),Array.isArray(st&&st.mergeBoard)?st.mergeBoard.length:0)));}
 const SANCT_MERGE_RECIPES = [
   {id:"impulsion",name:"Impulsion",req:{RARE:2},kind:"accel",mins:5,qty:1,secret:false},
   {id:"distorsion",name:"Distorsion",req:{RARE:1,EPIQUE:1},kind:"accel",mins:15,qty:1,secret:false},
