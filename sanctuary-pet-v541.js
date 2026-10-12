@@ -18,7 +18,7 @@ function petTick(){
     st.mergePetTick=(Number(st.mergePetTick)||now)+paused;
     st.mergePetPauseStarted=0;
   }
-  const previous=Number(st.mergePetTick)||Math.min(now,until);
+  const previous=Number(st.mergePetTick)||Math.min(now,Number(st.mergePetUntil)||0);
   const effective=Math.min(now,Number(st.mergePetUntil)||0);
   const cycles=Math.min(600,Math.floor(Math.max(0,effective-previous)/2000));
   let merged=0;
@@ -31,8 +31,9 @@ function petTick(){
     sanctMergeDiscover(st,next);merged++;
   }
   if(cycles)st.mergePetTick=previous+cycles*2000;
-  if(now>=st.mergePetUntil){st.mergePetUntil=0;st.mergePetTick=0;}
-  if(merged||now>=until&&until>0){
+  const expired=now>=st.mergePetUntil;
+  if(expired){st.mergePetUntil=0;st.mergePetTick=0;}
+  if(merged||expired){
     dirty=true;if(typeof saveNow==='function')saveNow();
     if(merged&&typeof route!=='undefined'&&route==='sanctuaire'&&typeof render==='function')render();
   }
@@ -46,7 +47,7 @@ if(typeof ACT!=='undefined'){
     if(!confirm('Engager le petit fusionneur pour '+offer.ms/60000+' minutes ?\\nCoût : '+offer.amount.toLocaleString('fr-FR')+' '+(offer.currency==='gold'?'Or':'gemmes')+'\\nIl fusionnera gratuitement les paires présentes, une toutes les 2 secondes.'))return;
     if((Number(S[offer.currency])||0)<offer.amount)return toast('Ressources insuffisantes');
     S[offer.currency]-=offer.amount;
-    st.mergePetUntil=Date.now()+offer.ms;st.mergePetTick=Date.now();
+    st.mergePetUntil=Date.now()+offer.ms;st.mergePetTick=Date.now();st.mergePetPauseStarted=0;
     dirty=true;if(typeof saveNow==='function')saveNow();
     toast('🐲 Ton petit fusionneur est au travail !',true);render();
   };
