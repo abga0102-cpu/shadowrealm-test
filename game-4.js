@@ -1225,8 +1225,8 @@ function sanctMergeRecipeOutput(r) {
 function sanctIsLocked(st,i){return !!((st.mergeLockedSlots&&st.mergeLockedSlots[i])||(st.mergeLockedRarities&&st.mergeLockedRarities[st.mergeBoard[i]]));}
 function sanctMergePair(st) {
   for(let i=0;i<st.mergeBoard.length;i++){
-    const r=st.mergeBoard[i]; if(!r||sanctIsLocked(st,i)||!sanctMergeNext(r)) continue;
-    for(let j=i+1;j<st.mergeBoard.length;j++) if(st.mergeBoard[j]===r&&!sanctIsLocked(st,j)) return [i,j,r];
+    const r=st.mergeBoard[i]; if(!r||sanctIsLocked(st,i)||!sanctMergeNext(r)||Number(st.mergePurchaseProtectionUntil)>Date.now()&&Number(st.mergePurchaseProtectionSlot)===i) continue;
+    for(let j=i+1;j<st.mergeBoard.length;j++) if(st.mergeBoard[j]===r&&!sanctIsLocked(st,j)&&!(Number(st.mergePurchaseProtectionUntil)>Date.now()&&Number(st.mergePurchaseProtectionSlot)===j)) return [i,j,r];
   }
   return null;
 }
