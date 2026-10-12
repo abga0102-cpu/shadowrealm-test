@@ -2197,10 +2197,12 @@ const ACT = {
 (function initSanctuaryDragV34(){
   const app=document.getElementById("app"); if(!app)return;
   let d=null;
+  window.__srSanctDragActive=false;
   const clearTarget=()=>{if(d&&d.target)d.target.classList.remove("sanctDropTarget","sanctMergeTarget","sanctRejectTarget");};
-  const cleanup=()=>{if(!d)return;clearTarget();if(d.source)d.source.classList.remove("sanctDragging");if(d.ghost&&d.ghost.parentNode)d.ghost.remove();d=null;};
+  const cleanup=()=>{if(!d)return;clearTarget();if(d.source)d.source.classList.remove("sanctDragging");if(d.ghost&&d.ghost.parentNode)d.ghost.remove();d=null;window.__srSanctDragActive=false;};
   app.addEventListener("pointerdown",(e)=>{
     const piece=e.target.closest&&e.target.closest(".sanctMergePiece[data-sanct-slot]"); if(!piece)return;
+    window.__srSanctDragActive=true;
     d={id:e.pointerId,from:Number(piece.dataset.sanctSlot),rarity:piece.dataset.sanctRarity,source:piece,startX:e.clientX,startY:e.clientY,dragging:false,ghost:null,target:null};
     try{piece.setPointerCapture(e.pointerId);}catch(_e){}
   },true);
@@ -2215,7 +2217,7 @@ const ACT = {
     const tr=target.dataset.sanctRarity||"";
     target.classList.add(!tr||tr===d.rarity?"sanctMergeTarget":"sanctRejectTarget");
   },{capture:true,passive:false});
-  const end=(e)=>{if(!d||e.pointerId!==d.id)return;if(d.dragging){e.preventDefault();const to=d.target?Number(d.target.dataset.sanctSlot):-1;if(to>=0)sanctMergeDrop(d.from,to);}cleanup();};
+  const end=(e)=>{if(!d||e.pointerId!==d.id)return;if(d.dragging){e.preventDefault();const to=d.target?Number(d.target.dataset.sanctSlot):-1;if(to>=0){const st=sanctMergeState();if(st.mergeBoard[d.from]===d.rarity)sanctMergeDrop(d.from,to);else toast("Déplacement annulé : fragment modifié");}}cleanup();};
   app.addEventListener("pointerup",end,{capture:true,passive:false});
   app.addEventListener("pointercancel",cleanup,true);
 })();
