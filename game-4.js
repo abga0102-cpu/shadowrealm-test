@@ -1164,6 +1164,7 @@ const SANCT_MERGE_NAME = {
 };
 const SANCT_SUPPLIER_MAX = 15;
 const SANCT_BOARD_SIZE = 16;
+function sanctBoardCapacity(st){return Math.max(16,Math.min(32,16+Math.max(0,Math.floor(Number(st&&st.boardExpansions)||0))));}
 const SANCT_MERGE_RECIPES = [
   {id:"impulsion",name:"Impulsion",req:{RARE:2},kind:"accel",mins:5,qty:1,secret:false},
   {id:"distorsion",name:"Distorsion",req:{RARE:1,EPIQUE:1},kind:"accel",mins:15,qty:1,secret:false},
@@ -1176,9 +1177,13 @@ const SANCT_MERGE_RECIPES = [
 function sanctMergeState() {
   if (!S.sanctuary) S.sanctuary={slotA:null,slotB:null,discovered:{},fusions:0,stabilitySeals:0};
   const st=S.sanctuary;
-  if (!Array.isArray(st.mergeBoard)) st.mergeBoard=Array(SANCT_BOARD_SIZE).fill(null);
-  if (st.mergeBoard.length<SANCT_BOARD_SIZE) while(st.mergeBoard.length<SANCT_BOARD_SIZE) st.mergeBoard.push(null);
-  if (st.mergeBoard.length>SANCT_BOARD_SIZE) st.mergeBoard=st.mergeBoard.slice(0,SANCT_BOARD_SIZE);
+  if (!Array.isArray(st.mergeBoard)) st.mergeBoard=[];
+  const capacity=sanctBoardCapacity(st);
+  while(st.mergeBoard.length<capacity) st.mergeBoard.push(null);
+  if(st.mergeBoard.length>capacity){
+    const overflow=st.mergeBoard.splice(capacity).filter(Boolean);
+    if(overflow.length) st.mergeReserve=(Array.isArray(st.mergeReserve)?st.mergeReserve:[]).concat(overflow);
+  }
   if (!Number.isFinite(st.supplierLevel)) st.supplierLevel=1;
   st.supplierLevel=Math.max(1,Math.min(SANCT_SUPPLIER_MAX,Math.floor(st.supplierLevel)));
   if (!Number.isFinite(st.supplierProgress)) st.supplierProgress=0;
@@ -1279,7 +1284,7 @@ function scrSanctuaire() {
     '<div class="sanctSupplierShop mt8">'+unlockedColors.map((r)=>{ const p=sanctSupplierPrice(lvl,r), best=r===tier; return '<div class="sanctSupplierItem" style="border-color:'+SANCT_MERGE_COLOR[r]+'66">'+sanctMergeOrb(r,'')+'<div class="flex1"><div class="b tiny" style="color:'+SANCT_MERGE_COLOR[r]+'">'+SANCT_MERGE_NAME[r]+'</div><div class="mute" style="font-size:8px">'+fmt(p)+' Or'+(best&&!maxed?' · jauge':'')+'</div></div>'+btn('Acheter',{small:true,cls:best?'blue':'ghost',act:'sanctMergeBuy',arg:r,dis:boardFull||S.gold<p,primary:best&&!pair&&!readyRecipes.length,style:'width:auto;padding:5px 8px;font-size:9.5px'})+'</div>'; }).join('')+'</div>'+
       (maxed?'<div class="mt8"><span class="pill" style="color:var(--goldLit);border-color:var(--goldDim)">NIVEAU MAX · Commun à Épique disponibles</span></div>':'<div class="between tiny b mt8"><span class="mute">JAUGE · '+st.supplierProgress+' / '+need+' · achats '+SANCT_MERGE_NAME[tier]+'</span><span style="color:var(--goldLit)">Niv.'+(lvl+1)+'</span></div>'+bar(st.supplierProgress/need*100,'#E8B44A',6))+
     '</div>'+
-    '<div class="sect">Plateau de Merge <span class="mute tiny">· '+st.mergeBoard.filter(Boolean).length+'/'+SANCT_BOARD_SIZE+'</span></div>'+
+    '<div class="sect">Plateau de Merge <span class="mute tiny">· '+st.mergeBoard.filter(Boolean).length+'/'+sanctBoardCapacity(st)+'</span></div>'+
     '<div class="notice tiny"><b>Fusion par glisser-déposer :</b> fais glisser une pièce sur une pièce identique pour les fusionner. Glisse-la sur une case vide pour la déplacer. Une pièce différente refuse la fusion.</div>'+
     '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px">'+board+'</div>'+
     '<div class="card mt8" style="padding:12px;background:linear-gradient(120deg,#171c39,#28204a);border:1px solid #9976ff66">'+
