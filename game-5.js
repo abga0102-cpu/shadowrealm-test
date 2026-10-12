@@ -1985,13 +1985,13 @@ const ACT = {
     const lv=st.supplierLevel, unlocked=sanctSupplierUnlocked(lv);
     const chosen=unlocked.includes(a)?a:sanctSupplierTier(lv), price=sanctSupplierPrice(lv,chosen);
     if(S.gold<price) return toast("Pas assez d’Or");
-    S.gold-=price; st.mergeBoard[empty]=chosen; st.mergePurchaseProtectionSlot=empty; st.mergePurchaseProtectionUntil=Date.now()+30000;
+    S.gold-=price; st.mergeBoard[empty]=chosen; st.mergePurchaseProtectionSlot=empty; st.mergePurchaseProtectionUntil=Date.now()+30000; st.mergeLastPurchaseAudit={slot:empty,rarity:chosen,count:st.mergeBoard.filter(Boolean).length,capacity:st.mergeBoard.length,at:Date.now(),save:'pending'};
     if(lv<SANCT_SUPPLIER_MAX && chosen===sanctSupplierTier(lv)){
       st.supplierProgress++;
       const need=sanctSupplierNeed(lv);
       if(st.supplierProgress>=need){ st.supplierLevel=lv+1; st.supplierProgress=0; toast("Approvisionnement niveau "+st.supplierLevel,true); }
     }
-    dirty=true; if(typeof saveNow==='function')saveNow(); render();
+    dirty=true; if(typeof saveNow==='function'){st.mergeLastPurchaseAudit.save=saveNow()?'ok':'failed';if(st.mergeLastPurchaseAudit.save==='ok')saveNow();} render();
   },
   sanctMergeTile: (a) => {
     const st=sanctMergeState(), i=Number(a), r=st.mergeBoard[i];
