@@ -44,7 +44,7 @@ var ITEMS={
  Forge:[
   ['forge10',10,'Forge niveau 10','7 500 Or'],['forge15',15,'Forge niveau 15','10 000 Or'],
   ['forge20',20,'Forge niveau 20','20 000 Or'],['forge25',25,'Forge niveau 25','30 000 Or'],
-  ['forge30',30,'Forge niveau 30','75 000 Or'],['forge35',35,'Forge niveau 35','100 000 Or'],
+  ['forge30',30,'Forge niveau 30','10 000 Minéraux'],['forge35',35,'Forge niveau 35','100 000 Or'],
   ['forge40',40,'Forge niveau 40','200 000 Or'],['forge45',45,'Forge niveau 45','300 000 Or'],
   ['forge50',50,'Forge niveau 50','500 000 Or']
  ],
