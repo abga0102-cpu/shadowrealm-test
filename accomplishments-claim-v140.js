@@ -13,7 +13,7 @@ if(window.__srAccomplishmentsClaimV140)return;
 window.__srAccomplishmentsClaimV140=true;window.__srFusionClaimBuild='511:5000/10000';
 var LEVEL_STEPS=[[10,250],[15,350],[20,500],[25,700],[30,1000],[35,1200],[40,1500],[50,2000],[60,2500],[70,3000],[80,3500],[90,4000],[100,5000]];
 var REWARDS={
- forge10:{gold:7500},forge15:{gold:10000},forge20:{gold:20000},forge25:{gold:30000},forge30:{gold:75000},forge35:{gold:100000},forge40:{gold:200000},forge45:{gold:300000},forge50:{gold:500000},
+ forge10:{gold:7500},forge15:{gold:10000},forge20:{gold:20000},forge25:{gold:30000},forge30:{minerai:10000},forge35:{gold:100000},forge40:{gold:200000},forge45:{gold:300000},forge50:{gold:500000},
  fusion50:{minerai:500},fusion150:{minerai:750},fusion250:{minerai:1000},fusion350:{minerai:1500},fusion500:{minerai:2000},fusion1000:{minerai:5000},fusion1500:{minerai:10000},
  fusion2500:{minerai:10000},fusion5000:{minerai:15000,stabilitySeals:5},fusion7500:{minerai:15000,stabilitySeals:10},
  fusion10000:{minerai:15000,infusionCatalysts:1},fusion12500:{minerai:15000,infusionCatalysts:1},
