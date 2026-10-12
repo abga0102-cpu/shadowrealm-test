@@ -5,13 +5,21 @@ const COSTS={'10-gold':{ms:600000,amount:100000,currency:'gold'},'10-gems':{ms:6
 function petTick(){
   if(typeof S==='undefined'||typeof sanctMergeState!=='function'||typeof sanctMergePair!=='function')return;
   const st=S.sanctuary;if(!st||!st.mergePetUntil)return;
-  // Preserve paid time while a pointer gesture or manual selection is active.
-  if(window.__srSanctDragActive)return;
-  // Never mutate a selected fragment while a manual merge is pending.
-  if(Number.isInteger(st.mergeSelected)&&st.mergeSelected>=0&&st.mergeBoard&&st.mergeBoard[st.mergeSelected])return;
   const now=Date.now(),until=Number(st.mergePetUntil)||0;
+  // Pause only the current gesture: preserve remaining paid work time.
+  const busy=!!window.__srSanctDragActive||(Number.isInteger(st.mergeSelected)&&st.mergeSelected>=0&&st.mergeBoard&&!!st.mergeBoard[st.mergeSelected]);
+  if(busy){
+    if(!st.mergePetPauseStarted)st.mergePetPauseStarted=now;
+    return;
+  }
+  if(st.mergePetPauseStarted){
+    const paused=Math.max(0,now-Number(st.mergePetPauseStarted));
+    st.mergePetUntil=until+paused;
+    st.mergePetTick=(Number(st.mergePetTick)||now)+paused;
+    st.mergePetPauseStarted=0;
+  }
   const previous=Number(st.mergePetTick)||Math.min(now,until);
-  const effective=Math.min(now,until);
+  const effective=Math.min(now,Number(st.mergePetUntil)||0);
   const cycles=Math.min(600,Math.floor(Math.max(0,effective-previous)/2000));
   let merged=0;
   for(let n=0;n<cycles;n++){
@@ -23,7 +31,7 @@ function petTick(){
     sanctMergeDiscover(st,next);merged++;
   }
   if(cycles)st.mergePetTick=previous+cycles*2000;
-  if(now>=until){st.mergePetUntil=0;st.mergePetTick=0;}
+  if(now>=st.mergePetUntil){st.mergePetUntil=0;st.mergePetTick=0;}
   if(merged||now>=until&&until>0){
     dirty=true;if(typeof saveNow==='function')saveNow();
     if(merged&&typeof route!=='undefined'&&route==='sanctuaire'&&typeof render==='function')render();
