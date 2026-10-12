@@ -3279,7 +3279,8 @@ function makeItem(slot, rarity, forgeLevel) {
   const wt = slot === "arme" ? WEAPON_LIST[Math.floor(Math.random() * WEAPON_LIST.length)] : undefined;
   // which stat a piece leads with comes from one table now, so a new slot
   // cannot be added without deciding what it is for
-  const roll = SINGLE_STAT_MUL * (0.9 + Math.random() * 0.4);
+  /* V558: tightly bounded stat rolls ensure higher rarity always wins at equal forge and mastery levels. */
+  const roll = SINGLE_STAT_MUL * (0.98 + Math.random() * 0.04);
   const dmg = MASTERY_STAT[slot] === "dmg" ? Math.floor(base * mul * roll) : 0;
   const hp = MASTERY_STAT[slot] === "hp" ? Math.floor(base * mul * 4 * roll) : 0;
   const name = SLOT_LABEL[slot] + " " + (RARITY_NAMES[equipRank(rarity)] || "");
