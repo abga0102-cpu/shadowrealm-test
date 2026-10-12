@@ -1705,18 +1705,46 @@ function askReset() {
 
 // SANCTUARY_DRAG_MERGE_V34
 function sanctMergeDrop(from,to){
-  const st=sanctMergeState(); from=Number(from); to=Number(to);
-  if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=st.mergeBoard.length||to>=st.mergeBoard.length||from===to) return false;
-  const src=st.mergeBoard[from], dst=st.mergeBoard[to];
-  if(!src) return false;
-  if(!dst){ const before=st.mergeBoard.filter(Boolean).length; st.mergeBoard[to]=src; st.mergeBoard[from]=null; if(st.mergeLockedSlots){st.mergeLockedSlots[to]=!!st.mergeLockedSlots[from];delete st.mergeLockedSlots[from];} st.mergeSelected=-1; dirty=true; if(st.mergeBoard.filter(Boolean).length!==before||st.mergeBoard[to]!==src){st.mergeBoard[from]=src;st.mergeBoard[to]=null;toast('Déplacement annulé : intégrité du fragment');return false;} if(st.mergeLastPurchaseAudit){st.mergeLastPurchaseAudit.lastMove='Case '+(from+1)+' vers '+(to+1)+' : '+src;st.mergeLastPurchaseAudit.lastMoveAt=Date.now();if(Number(st.mergeLastPurchaseAudit.slot)===from)st.mergeLastPurchaseAudit.slot=to;} if(typeof saveNow==='function')saveNow(); render(); return true; }
-  if(dst!==src){ toast("Deux couleurs identiques sont nécessaires"); return false; }
-  const nx=sanctMergeNext(src);
-  if(!nx){ toast("Divin est la rareté maximale"); return false; }
-  if(st.mergeLastPurchaseAudit&&[from,to].includes(Number(st.mergeLastPurchaseAudit.slot))){st.mergeLastPurchaseAudit.lastRemoval='Fusion manuelle par glisser-déposer';st.mergeLastPurchaseAudit.removedAt=Date.now();} st.mergeBoard[from]=null; st.mergeBoard[to]=nx; if(st.mergeLockedSlots){delete st.mergeLockedSlots[from];delete st.mergeLockedSlots[to];} st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
-  sanctMergeDiscover(st,nx); dirty=true;
-  if(navigator.vibrate) try{navigator.vibrate(20);}catch(_e){}
-  toast(SANCT_MERGE_NAME[src]+" + "+SANCT_MERGE_NAME[src]+" → "+SANCT_MERGE_NAME[nx],true); render(); return true;
+  const st=sanctMergeState();from=Number(from);to=Number(to);
+  if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=st.mergeBoard.length||to>=st.mergeBoard.length||from===to)return false;
+  const src=st.mergeBoard[from],dst=st.mergeBoard[to];if(!src)return false;
+  if(dst&&dst!==src){toast("Deux couleurs identiques sont nécessaires");return false;}
+  const next=dst?sanctMergeNext(src):null;
+  if(dst&&!next){toast("Divin est la rareté maximale");return false;}
+  const oldBoard=st.mergeBoard.slice(),oldLocks=Object.assign({},st.mergeLockedSlots||{});
+  const oldFusions=Number(st.mergeFusions)||0,oldTotal=Number(st.fusions)||0;
+  const oldAudit=st.mergeLastPurchaseAudit?Object.assign({},st.mergeLastPurchaseAudit):null;
+  const oldSelected=st.mergeSelected;
+  try{
+    if(!dst){
+      st.mergeBoard[to]=src;st.mergeBoard[from]=null;
+      if(st.mergeLockedSlots){st.mergeLockedSlots[to]=!!st.mergeLockedSlots[from];delete st.mergeLockedSlots[from];}
+      if(st.mergeLastPurchaseAudit){
+        st.mergeLastPurchaseAudit.lastMove='Case '+(from+1)+' vers '+(to+1)+' : '+src;
+        st.mergeLastPurchaseAudit.lastMoveAt=Date.now();
+        if(Number(st.mergeLastPurchaseAudit.slot)===from)st.mergeLastPurchaseAudit.slot=to;
+      }
+    }else{
+      st.mergeBoard[from]=null;st.mergeBoard[to]=next;
+      if(st.mergeLockedSlots){delete st.mergeLockedSlots[from];delete st.mergeLockedSlots[to];}
+      st.mergeFusions=oldFusions+1;st.fusions=oldTotal+1;
+      if(st.mergeLastPurchaseAudit&&[from,to].includes(Number(st.mergeLastPurchaseAudit.slot))){
+        st.mergeLastPurchaseAudit.lastRemoval='Fusion manuelle';st.mergeLastPurchaseAudit.removedAt=Date.now();
+      }
+    }
+    st.mergeSelected=-1;dirty=true;
+    if(st.mergeBoard.length!==oldBoard.length||st.mergeBoard[to]!== (dst?next:src)||
+      st.mergeBoard.filter(Boolean).length!==oldBoard.filter(Boolean).length-(dst?1:0))throw Error('Intégrité du plateau');
+    if(typeof saveNow==='function'&&saveNow()===false)throw Error('Sauvegarde refusée');
+  }catch(err){
+    st.mergeBoard=oldBoard;st.mergeLockedSlots=oldLocks;
+    st.mergeFusions=oldFusions;st.fusions=oldTotal;st.mergeSelected=oldSelected;
+    if(oldAudit)st.mergeLastPurchaseAudit=oldAudit;
+    dirty=true;toast('Action annulée : '+(err&&err.message||'erreur'));render();return false;
+  }
+  if(dst){sanctMergeDiscover(st,next);if(navigator.vibrate)try{navigator.vibrate(20);}catch(_){}
+    toast(SANCT_MERGE_NAME[src]+' + '+SANCT_MERGE_NAME[src]+' → '+SANCT_MERGE_NAME[next],true);}
+  render();return true;
 }
 
 const ACT = {
