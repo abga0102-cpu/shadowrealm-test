@@ -1713,7 +1713,7 @@ function sanctMergeDrop(from,to){
   if(dst!==src){ toast("Deux couleurs identiques sont nécessaires"); return false; }
   const nx=sanctMergeNext(src);
   if(!nx){ toast("Divin est la rareté maximale"); return false; }
-  st.mergeBoard[from]=null; st.mergeBoard[to]=nx; if(st.mergeLockedSlots){delete st.mergeLockedSlots[from];delete st.mergeLockedSlots[to];} st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
+  if(st.mergeLastPurchaseAudit&&[from,to].includes(Number(st.mergeLastPurchaseAudit.slot))){st.mergeLastPurchaseAudit.lastRemoval='Fusion manuelle par glisser-déposer';st.mergeLastPurchaseAudit.removedAt=Date.now();} st.mergeBoard[from]=null; st.mergeBoard[to]=nx; if(st.mergeLockedSlots){delete st.mergeLockedSlots[from];delete st.mergeLockedSlots[to];} st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
   sanctMergeDiscover(st,nx); dirty=true;
   if(navigator.vibrate) try{navigator.vibrate(20);}catch(_e){}
   toast(SANCT_MERGE_NAME[src]+" + "+SANCT_MERGE_NAME[src]+" → "+SANCT_MERGE_NAME[nx],true); render(); return true;
@@ -2032,7 +2032,7 @@ const ACT = {
     // Recheck the state after confirmation; no partial spending.
     if((Number(S.gold)||0)<total||st.mergeBoard.length!==board.length)return toast("Fusion annulée : ressources ou plateau modifiés");
     S.gold-=total;
-    st.mergeBoard=board;
+    if(st.mergeLastPurchaseAudit&&ops.some(op=>[op.i,op.j].includes(Number(st.mergeLastPurchaseAudit.slot)))){st.mergeLastPurchaseAudit.lastRemoval='Fusionner tout (automatique payant)';st.mergeLastPurchaseAudit.removedAt=Date.now();} st.mergeBoard=board;
     if(st.mergeLockedSlots)ops.forEach(op=>{delete st.mergeLockedSlots[op.i];delete st.mergeLockedSlots[op.j];});
     st.mergeSelected=-1;
     st.mergeFusions=(st.mergeFusions||0)+ops.length;
