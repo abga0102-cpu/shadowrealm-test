@@ -1164,7 +1164,7 @@ const SANCT_MERGE_NAME = {
 };
 const SANCT_SUPPLIER_MAX = 15;
 const SANCT_BOARD_SIZE = 16;
-function sanctBoardCapacity(st){return Math.max(16,Math.min(32,16+Math.max(0,Math.floor(Number(st&&st.boardExpansions)||0))));}
+function sanctBoardCapacity(st){return Math.max(16,Math.min(32,16+Math.max(0,Math.floor(Number(st&&st.boardExpansions)||0)),Array.isArray(st&&st.mergeBoard)?st.mergeBoard.length:0));}
 const SANCT_MERGE_RECIPES = [
   {id:"impulsion",name:"Impulsion",req:{RARE:2},kind:"accel",mins:5,qty:1,secret:false},
   {id:"distorsion",name:"Distorsion",req:{RARE:1,EPIQUE:1},kind:"accel",mins:15,qty:1,secret:false},
@@ -1180,10 +1180,8 @@ function sanctMergeState() {
   if (!Array.isArray(st.mergeBoard)) st.mergeBoard=[];
   const capacity=sanctBoardCapacity(st);
   while(st.mergeBoard.length<capacity) st.mergeBoard.push(null);
-  if(st.mergeBoard.length>capacity){
-    const overflow=st.mergeBoard.splice(capacity).filter(Boolean);
-    if(overflow.length) st.mergeReserve=(Array.isArray(st.mergeReserve)?st.mergeReserve:[]).concat(overflow);
-  }
+  /* V559: never truncate a paid board or silently destroy its contents. */
+  if(st.mergeBoard.length>capacity) st.boardExpansions=Math.max(Number(st.boardExpansions)||0,st.mergeBoard.length-16);
   if (!Number.isFinite(st.supplierLevel)) st.supplierLevel=1;
   st.supplierLevel=Math.max(1,Math.min(SANCT_SUPPLIER_MAX,Math.floor(st.supplierLevel)));
   if (!Number.isFinite(st.supplierProgress)) st.supplierProgress=0;
