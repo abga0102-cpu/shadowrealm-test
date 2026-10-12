@@ -333,7 +333,7 @@ function castSkill(sid) {
   c.skillFxs.push({ id: def.id, color: def.color, fx: fxKind, life: vfxDur(fxKind), max: vfxDur(fxKind) });
   if (c.skillFxs.length > 4) c.skillFxs.shift();
   if (def.mult > 0) {
-    const sdmg = Math.floor(skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level)
+    const sdmg = Math.floor((window.__srV284SkillDamage ? window.__srV284SkillDamage(def, S.skills[sid].level) : skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level))
       * (1 + (dv.skillDmgBonus || 0) / 100));
     const wide = def.type === "AOE" || def.type === "CHAINE" || def.type === "DEBUFF";
     const struck = wide ? c.enemies.filter((e) => e.alive) : [target];
@@ -669,7 +669,7 @@ function skillEffectLine(def, level) {
   const e = skillEff(def, level);
   if (def.mult > 0) {
     const d = computeDerived(S);
-    const raw = skillDamageMult(d.damage * skillMult(def), level) * (1 + (d.skillDmgBonus || 0) / 100);
+    const raw = (window.__srV284SkillDamage ? window.__srV284SkillDamage(def, level) : skillDamageMult(d.damage * skillMult(def), level)) * (1 + (d.skillDmgBonus || 0) / 100);
     return fmt(Math.floor(raw)) + " dégâts" + (def.type === "MONO" ? "" : " à chaque ennemi");
   }
   if (def.heal) return "+" + skillHeal(def, level).toFixed(1) + "% des PV max, immédiat";
