@@ -1224,10 +1224,11 @@ function sanctMergeRecipeOutput(r) {
   const a=ACCEL_DEFS.find((x)=>x.mins===r.mins) || ACCEL_DEFS.reduce((best,x)=>!best||Math.abs(x.mins-r.mins)<Math.abs(best.mins-r.mins)?x:best,null);
   return r.qty+"× Accél. "+(a?a.label:(r.mins+" min"));
 }
+function sanctIsLocked(st,i){return !!((st.mergeLockedSlots&&st.mergeLockedSlots[i])||(st.mergeLockedRarities&&st.mergeLockedRarities[st.mergeBoard[i]]));}
 function sanctMergePair(st) {
   for(let i=0;i<st.mergeBoard.length;i++){
-    const r=st.mergeBoard[i]; if(!r||!sanctMergeNext(r)) continue;
-    for(let j=i+1;j<st.mergeBoard.length;j++) if(st.mergeBoard[j]===r) return [i,j,r];
+    const r=st.mergeBoard[i]; if(!r||sanctIsLocked(st,i)||!sanctMergeNext(r)) continue;
+    for(let j=i+1;j<st.mergeBoard.length;j++) if(st.mergeBoard[j]===r&&!sanctIsLocked(st,j)) return [i,j,r];
   }
   return null;
 }
@@ -1264,6 +1265,7 @@ function scrSanctuaire() {
     return '<div class="card center sanctMergeCell sanctMergePiece" data-sanct-slot="'+i+'" data-sanct-rarity="'+r+'" style="height:72px;padding:7px;border-color:'+c+'">'+sanctMergeOrb(r,'')+'<div class="b" style="font-size:8.5px;color:'+c+';margin-top:4px">'+SANCT_MERGE_NAME[r].toUpperCase()+'</div></div>';
   }).join('');
 
+  const locks='<div class="card frame mt8"><div class="b small">🔒 Protection des fusions automatiques</div><div class="mute tiny mt4">Verrouille une pièce précise ou toutes les pièces d’une rareté. Les pièces protégées ne seront pas fusionnées par le bouton automatique ni par le petit fusionneur.</div><div class="row gap4 mt8" style="flex-wrap:wrap">'+st.mergeBoard.map((r,i)=>r?'<button class="btn sm '+(st.mergeLockedSlots&&st.mergeLockedSlots[i]?'gold':'dark')+'" data-merge-lock-slot="'+i+'">'+(st.mergeLockedSlots&&st.mergeLockedSlots[i]?'🔒':'🔓')+' Case '+(i+1)+' · '+SANCT_MERGE_NAME[r]+'</button>':'').join('')+'</div><div class="row gap4 mt8" style="flex-wrap:wrap">'+SANCT_MERGE_ORDER.map((r)=>'<button class="btn sm '+(st.mergeLockedRarities&&st.mergeLockedRarities[r]?'gold':'dark')+'" data-merge-lock-rarity="'+r+'">'+(st.mergeLockedRarities&&st.mergeLockedRarities[r]?'🔒':'🔓')+' '+SANCT_MERGE_NAME[r]+'</button>').join('')+'</div></div>';
   const recipes=SANCT_MERGE_RECIPES.map((r)=>{
     const known=sanctMergeRecipeKnown(st,r);
     if(!known) return '<div class="card mt6" style="padding:9px;opacity:.72"><div class="between"><div><div class="b small">❓ Recette secrète</div><div class="mute tiny">Crée une couleur supérieure pour révéler ce rituel.</div></div><span class="pill">???</span></div></div>';
