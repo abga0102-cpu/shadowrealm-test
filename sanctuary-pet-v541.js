@@ -12,6 +12,7 @@ function petTick(){
   let merged=0;
   for(let n=0;n<cycles;n++){
     const pair=sanctMergePair(st);if(!pair)break;
+    if(st.mergeLastPurchaseAudit&&pair.includes(Number(st.mergeLastPurchaseAudit.slot))){st.mergeLastPurchaseAudit.lastRemoval='Fusion automatique du familier (case '+(Number(st.mergeLastPurchaseAudit.slot)+1)+')';st.mergeLastPurchaseAudit.removedAt=Date.now();}
     const next=sanctMergeNext(pair[2]);if(!next)break;
     st.mergeBoard[pair[0]]=null;st.mergeBoard[pair[1]]=next;
     st.mergeFusions=(st.mergeFusions||0)+1;st.fusions=(st.fusions||0)+1;
