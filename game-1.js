@@ -387,6 +387,33 @@ function syncEquipmentLevels(s) {
   if (s.equipped) Object.keys(s.equipped).forEach((slot) => {
     if (syncEquipmentLevelItem(s.equipped[slot], info.rank)) changed = true;
   });
+  /* V558: reconcile legacy owned items at the same mastery rank and equipment slot.
+     Only raise superior rarity base stats; never nerf an owned item. */
+  const allGear=[...(s.inventory||[]),...Object.values(s.equipped||{})].filter(Boolean);
+  const groups={};
+  for(const it of allGear){
+    const rank=Object.keys(RARITY_MUL).indexOf(it.rarity);
+    if(rank<0)continue;
+    const key=it.slot+'|'+Number(it.level||0)+'|'+(Number(it.baseDamage||0)>0?'damage':'hp');
+    (groups[key]||(groups[key]=[])).push(it);
+  }
+  for(const items of Object.values(groups)){
+    items.sort((a,b)=>(RARITY_MUL[a.rarity]||0)-(RARITY_MUL[b.rarity]||0));
+    let previous=0,previousRarity='';
+    for(const it of items){
+      const attack=Number(it.baseDamage||0)>0,field=attack?'baseDamage':'baseHp',stat=attack?'damage':'hp';
+      const original=Number(it[field]||0);
+      const required=previousRarity!==it.rarity?Math.ceil(previous*1.01):0;
+      if(original>0&&required>original){
+        const delta=required-original;
+        it[field]=required;it[stat]=Math.max(0,Number(it[stat]||0)+delta);
+        it.originalPower=Math.max(0,Number(it.originalPower||0)+delta);
+        it.power=Math.max(0,Number(it.power||0)+delta);
+        changed=true;
+      }
+      previous=Math.max(previous,Number(it[field]||0));previousRarity=it.rarity;
+    }
+  }
   if (!s.forge) s.forge = {};
   s.forge.lifetimeMasteryRank = info.rank;
   s.equipmentMasterySyncVersion = 456;
