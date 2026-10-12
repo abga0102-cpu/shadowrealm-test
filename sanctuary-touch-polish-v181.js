@@ -67,7 +67,16 @@ function promote(){if(!drag||drag.dragging)return;drag.dragging=true;document.do
 
 document.addEventListener('pointerdown',function(e){var p=e.target&&e.target.closest?e.target.closest('.sanctMergePiece[data-sanct-slot]'):null;if(!p)return;begin(e,p);e.stopImmediatePropagation();},true);
 document.addEventListener('pointermove',function(e){if(!drag||e.pointerId!==drag.id)return;e.stopImmediatePropagation();drag.pointerX=e.clientX;drag.pointerY=e.clientY;if(!drag.dragging&&Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)>=5)promote();if(drag.dragging){e.preventDefault();updateTarget();schedule();}}, {capture:true,passive:false});
-document.addEventListener('pointerup',function(e){if(!drag||e.pointerId!==drag.id)return;e.stopImmediatePropagation();if(!drag.dragging){finishCleanup();return;}e.preventDefault();var target=drag.target,to=target?Number(target.dataset.sanctSlot):-1,st=sanctMergeState(),src=st.mergeBoard[drag.from],dst=to>=0?st.mergeBoard[to]:null,isMerge=!!(src&&dst===src),next=isMerge&&typeof sanctMergeNext==='function'?sanctMergeNext(src):null;if(to>=0){var ok=sanctMergeDrop(drag.from,to);if(ok){if(isMerge&&next)localFx(target,next);finishCleanup();return;}}animateBack(finishCleanup);}, {capture:true,passive:false});
+/* V571: iOS emits a synthetic click after pointerup. A completed drag must not
+   also trigger the board's delegated tap-to-merge handler on the landing tile. */
+var suppressDragClickUntil=0;
+document.addEventListener('click',function(e){
+ if(Date.now()>suppressDragClickUntil)return;
+ var cell=e.target&&e.target.closest?e.target.closest('.sanctMergeCell[data-sanct-slot]'):null;
+ if(!cell)return;
+ e.preventDefault();e.stopImmediatePropagation();
+},true);
+document.addEventListener('pointerup',function(e){if(!drag||e.pointerId!==drag.id)return;e.stopImmediatePropagation();if(!drag.dragging){finishCleanup();return;}e.preventDefault();suppressDragClickUntil=Date.now()+450;var target=drag.target,to=target?Number(target.dataset.sanctSlot):-1,st=sanctMergeState(),src=st.mergeBoard[drag.from],dst=to>=0?st.mergeBoard[to]:null,isMerge=!!(src&&dst===src),next=isMerge&&typeof sanctMergeNext==='function'?sanctMergeNext(src):null;if(to>=0){var ok=sanctMergeDrop(drag.from,to);if(ok){if(isMerge&&next)localFx(target,next);finishCleanup();return;}}animateBack(finishCleanup);}, {capture:true,passive:false});
 /* V569: explicit tap-to-move fallback for purchased slots on iOS. */
 document.addEventListener('click',function(e){
  var cell=e.target&&e.target.closest?e.target.closest('.sanctMergeCell[data-sanct-slot]'):null;
