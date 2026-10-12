@@ -1993,18 +1993,19 @@ const ACT = {
     }
     dirty=true; if(typeof saveNow==='function'){st.mergeLastPurchaseAudit.save=saveNow()?'ok':'failed';if(st.mergeLastPurchaseAudit.save==='ok')saveNow();} render();
   },
+  /* V572: both touch and drag use the same validated move/merge transaction. */
   sanctMergeTile: (a) => {
-    const st=sanctMergeState(), i=Number(a), r=st.mergeBoard[i];
-    if(!r) return;
+    const st=sanctMergeState(),i=Number(a);
+    if(!Number.isInteger(i)||i<0||i>=st.mergeBoard.length||!st.mergeBoard[i])return;
     const sel=Number(st.mergeSelected);
-    if(sel<0||!st.mergeBoard[sel]){ st.mergeSelected=i; dirty=true; return render(); }
-    if(sel===i){ st.mergeSelected=-1; dirty=true; return render(); }
-    const r0=st.mergeBoard[sel];
-    if(r0!==r){ st.mergeSelected=i; dirty=true; toast("Choisis une deuxième couleur identique"); return render(); }
-    const nx=sanctMergeNext(r);
-    if(!nx){ st.mergeSelected=-1; dirty=true; toast("Divin est la rareté maximale"); return render(); }
-    st.mergeBoard[sel]=null; st.mergeBoard[i]=nx; st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
-    sanctMergeDiscover(st,nx); dirty=true; toast(SANCT_MERGE_NAME[r]+" + "+SANCT_MERGE_NAME[r]+" → "+SANCT_MERGE_NAME[nx],true); render();
+    if(!Number.isInteger(sel)||sel<0||sel>=st.mergeBoard.length||!st.mergeBoard[sel]){
+      st.mergeSelected=i;dirty=true;return render();
+    }
+    if(sel===i){st.mergeSelected=-1;dirty=true;return render();}
+    if(st.mergeBoard[sel]!==st.mergeBoard[i]){
+      st.mergeSelected=i;dirty=true;toast("Choisis une deuxième couleur identique");return render();
+    }
+    return sanctMergeDrop(sel,i);
   },
   // V540: transparent paid convenience, manual merging stays free.
   // Charge for actual operations; +5% per source rarity, capped at +50%.
