@@ -2040,6 +2040,7 @@ const ACT = {
   sanctMergeAuto: () => {
     const st=sanctMergeState();
     const board=st.mergeBoard.slice();
+    const initialBoard=board.slice(),initialLocks=JSON.stringify(st.mergeLockedSlots||{}),initialRarities=JSON.stringify(st.mergeLockedRarities||{});
     const ops=[];
     const limit=board.length*Math.max(1,SANCT_MERGE_ORDER.length);
     for(let n=0;n<limit;n++){
@@ -2059,7 +2060,7 @@ const ACT = {
     if((Number(S.gold)||0)<total)return toast("Or insuffisant · "+fmt(total)+" requis pour "+ops.length+" fusions");
     if(!confirm("Fusionner "+ops.length+" paire"+(ops.length>1?"s":"")+" pour "+fmt(total)+" Or ?\\n\\nFusion manuelle gratuite. Prix automatique : 500 Or +5 % par rareté (max +50 %)."))return;
     // Recheck the state after confirmation; no partial spending.
-    if((Number(S.gold)||0)<total||st.mergeBoard.length!==board.length)return toast("Fusion annulée : ressources ou plateau modifiés");
+    if((Number(S.gold)||0)<total||st.mergeBoard.length!==board.length||st.mergeBoard.some((value,index)=>value!==initialBoard[index])||JSON.stringify(st.mergeLockedSlots||{})!==initialLocks||JSON.stringify(st.mergeLockedRarities||{})!==initialRarities)return toast("Fusion annulée : ressources ou plateau modifiés");
     S.gold-=total;
     if(st.mergeLastPurchaseAudit&&ops.some(op=>[op.i,op.j].includes(Number(st.mergeLastPurchaseAudit.slot)))){st.mergeLastPurchaseAudit.lastRemoval='Fusionner tout (automatique payant)';st.mergeLastPurchaseAudit.removedAt=Date.now();} st.mergeBoard=board;
     if(st.mergeLockedSlots)ops.forEach(op=>{delete st.mergeLockedSlots[op.i];delete st.mergeLockedSlots[op.j];});
