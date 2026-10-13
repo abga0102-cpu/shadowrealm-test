@@ -7,6 +7,7 @@ on:
       - 'game-5.js'
       - 'tests/sanctuary-v126-v130-integration.test.js'
       - '.github/workflows/sanctuary-regression.yml'
+      - '.github/workflows/sanctuary-mobile-preview.yml'
   workflow_dispatch:
 jobs:
   sanctuary-integrity:
@@ -21,3 +22,41 @@ jobs:
           node-version: '22'
       - name: Test actual game modules for slot integrity and reserve persistence
         run: node --test tests/sanctuary-v126-v130-integration.test.js
+
+  mobile-preview-package:
+    name: Mobile preview archive (not deployed)
+    needs: sanctuary-integrity
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Assemble standalone static game preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p preview-site
+          git ls-files -z | while IFS= read -r -d '' path; do
+            case "$path" in
+              .github/*|tests/*|node_modules/*|.vercel/*|.env*|*secret*|*credential*) continue ;;
+            esac
+            case "$path" in
+              *.html|*.js|*.css|*.json|*.png|*.jpg|*.jpeg|*.webp|*.gif|*.svg|*.ico|*.woff|*.woff2|*.ttf|*.mp3|*.ogg|*.wav|*.mp4)
+                mkdir -p "preview-site/$(dirname "$path")"
+                cp "$path" "preview-site/$path"
+                ;;
+            esac
+          done
+          test -s preview-site/index.html
+          test -s preview-site/accomplishments-merge-v126.js
+          test -s preview-site/sanctuary-endgame-v130.js
+          printf '%s\\n' "Shadowreach sanctuary test build" "Commit: $GITHUB_SHA" "Use a separate HTTPS origin; do not host on the live game's origin." > preview-site/PREVIEW-README.txt
+      - name: Upload standalone preview archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: shadowreach-sanctuary-mobile-preview
+          path: preview-site/
+          if-no-files-found: error
+          retention-days: 7
