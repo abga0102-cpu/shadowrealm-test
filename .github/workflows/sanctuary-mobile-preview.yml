@@ -1,0 +1,49 @@
+name: Sanctuary mobile preview package
+on:
+  push:
+    branches:
+      - fix/sanctuary-v126-no-truncation-20261013
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run sanctuary integrity regression
+        run: node --test tests/sanctuary-v126-v130-integration.test.js
+      - name: Assemble static preview without modifying Pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p preview-site
+          git ls-files -z | while IFS= read -r -d '' path; do
+            case "$path" in
+              .github/*|tests/*|node_modules/*|.vercel/*|.env*|*secret*|*credential*) continue ;;
+            esac
+            case "$path" in
+              *.html|*.js|*.css|*.json|*.png|*.jpg|*.jpeg|*.webp|*.gif|*.svg|*.ico|*.woff|*.woff2|*.ttf|*.mp3|*.ogg|*.wav|*.mp4|*.webm)
+                mkdir -p "preview-site/$(dirname "$path")"
+                cp "$path" "preview-site/$path"
+                ;;
+            esac
+          done
+          test -s preview-site/index.html
+          test -s preview-site/accomplishments-merge-v126.js
+          test -s preview-site/sanctuary-endgame-v130.js
+          printf '%s\n' "Commit: $GITHUB_SHA" "This package is NOT deployed and must be hosted on a separate origin before mobile testing." > preview-site/PREVIEW-README.txt
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shadowreach-sanctuary-preview
+          path: preview-site/
+          if-no-files-found: error
+          retention-days: 7
