@@ -18,7 +18,7 @@ function ensureSanct(s){
   var st=s.sanctuary;
   if(!Array.isArray(st.mergeBoard))st.mergeBoard=Array(BOARD_SIZE).fill(null);
   while(st.mergeBoard.length<BOARD_SIZE)st.mergeBoard.push(null);
-  if(st.mergeBoard.length>BOARD_SIZE)st.mergeBoard=st.mergeBoard.slice(0,BOARD_SIZE);
+  // Paid board expansions must never be truncated by accomplishment reward synchronization.
   if(!st.mergeReserve||typeof st.mergeReserve!=='object')st.mergeReserve={};
   ORDER.forEach(function(r){st.mergeReserve[r]=Math.max(0,Math.floor(Number(st.mergeReserve[r])||0));});
   return st;
