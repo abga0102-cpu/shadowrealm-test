@@ -1,0 +1,23 @@
+name: Sanctuary regression (P0)
+on:
+  pull_request:
+    paths:
+      - 'accomplishments-merge-v126.js'
+      - 'sanctuary-endgame-v130.js'
+      - 'game-5.js'
+      - 'tests/sanctuary-v126-v130-integration.test.js'
+      - '.github/workflows/sanctuary-regression.yml'
+  workflow_dispatch:
+jobs:
+  sanctuary-integrity:
+    name: Sanctuary integrity (Node)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test actual game modules for slot integrity and reserve persistence
+        run: node --test tests/sanctuary-v126-v130-integration.test.js
