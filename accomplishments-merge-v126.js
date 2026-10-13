@@ -43,7 +43,7 @@ function ensureAcc(s){
 }
 function putOne(st,r){
   var i=st.mergeBoard.findIndex(function(x){return !x;});
-  if(i>=0){st.mergeBoard[i]=r;return true;}
+  if(i>=0){st.mergeBoard[i]=canonicalRarity(r);return true;}
   st.mergeReserve.push(canonicalRarity(r));
   return false;
 }
