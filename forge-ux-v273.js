@@ -41,13 +41,48 @@ function buildRoot(){
  stackNode=rootNode.querySelector('.srForgeStack273');transientNode=rootNode.querySelector('.srForgeTransient273');overflowNode=rootNode.querySelector('.srForgeOverflow273');toolNode=rootNode.querySelector('.srForgeTool273');syncTool();return rootNode;
 }
 function syncTool(){if(!toolNode)return;var on=!!S.forge.autoForge,pause=on&&autoPaused();toolNode.classList.toggle('auto',on&&!reduced);toolNode.classList.toggle('paused',pause);toolNode.setAttribute('data-state',pause?'pause':on?'auto':'idle');}
-function mountRoot(){var h=reserve();if(!h)return null;var root=buildRoot();if(root.parentNode!==h)h.replaceChildren(root);syncTool();return root;}
-function scheduleRemount(){if(remountRAF||document.hidden)return;remountRAF=requestAnimationFrame(function(){remountRAF=0;var h=reserve();if(!h)return;if((kept.length||pendingResults.length||suspendedKept.length||S.forge.autoForge)&&(!rootNode||rootNode.parentNode!==h)){mountRoot();layoutStack(null);restoreSuspended();pumpQueue();}else syncTool();});}
+function mountRoot(){var h=reserve();if(!h)return null;mountRecentButton();var root=buildRoot();if(root.parentNode!==h)h.replaceChildren(root);syncTool();return root;}
+function scheduleRemount(){mountRecentButton();if(remountRAF||document.hidden)return;remountRAF=requestAnimationFrame(function(){remountRAF=0;var h=reserve();if(!h)return;if((kept.length||pendingResults.length||suspendedKept.length||S.forge.autoForge)&&(!rootNode||rootNode.parentNode!==h)){mountRoot();layoutStack(null);restoreSuspended();pumpQueue();}else syncTool();});}
 function startScreenObserver(){if(screenObserver||typeof MutationObserver!=='function')return;var sc=document.getElementById('screen');if(!sc)return;screenObserver=new MutationObserver(scheduleRemount);screenObserver.observe(sc,{childList:true,subtree:true});}
 function impactBatch(count){if(!mountRoot()||!toolNode||reduced)return;toolNode.classList.remove('impact','burst');void toolNode.offsetWidth;if(Number(count||0)>=5)toolNode.classList.add('burst');toolNode.classList.add('impact');if(impactTimer)clearTimeout(impactTimer);impactTimer=setTimeout(function(){impactTimer=0;if(toolNode){toolNode.classList.remove('impact','burst');syncTool();}},390);}
 function layoutStack(newNode){if(!stackNode)return;var total=kept.length,start=Math.max(0,total-MAX_VISIBLE),hidden=start;kept.forEach(function(entry,i){var show=i>=start;entry.node.hidden=!show;if(!show)return;var vi=i-start;entry.node.style.left=(STACK_START_X+vi*STACK_STEP_X)+'px';entry.node.style.top=(STACK_START_Y+vi*STACK_STEP_Y)+'px';entry.node.style.zIndex=String(vi+1);});if(overflowNode){overflowNode.hidden=hidden<=0;overflowNode.textContent=hidden>0?'+'+hidden:'';}if(newNode&&!reduced){newNode.classList.remove('join');void newNode.offsetWidth;newNode.classList.add('join');later(function(){if(newNode)newNode.classList.remove('join');},220);}}
 function stackCard(r){var d=document.createElement('div');d.className='srForgeStackCard273';d.style.setProperty('--r',col(r.rarity));d.title=label(r.slot)+' · '+String(r.rarity||'').replace(/_/g,' ');d.innerHTML='<img src="'+img(r.slot)+'" alt=""><span>'+String(r.rarity||'').replace(/_/g,' ').slice(0,3)+'</span>';return d;}
 function addKept(r,animate){if(!r||r.recycled||!mountRoot())return false;var node=stackCard(r);stackNode.appendChild(node);kept.push({data:r,node:node});if(kept.length>KEEP_LIMIT){var old=kept.shift();if(old&&old.node&&old.node.parentNode)old.node.remove();}layoutStack(animate===false?null:node);startWatch();return true;}
+/* Forge V2 preview: read-only consultation of the existing bounded visual loot stack.
+   Does not grant, store, recycle or modify real equipment. */
+function showRecentForgeLoot(){
+  var old=document.getElementById('srForgeRecentV2');if(old){old.remove();return;}
+  var overlay=document.createElement('div');overlay.id='srForgeRecentV2';
+  overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-label','Butin récent de forge');
+  overlay.style.cssText='position:fixed;inset:0;z-index:12000;background:#030916dc;display:flex;align-items:center;justify-content:center;padding:16px';
+  var panel=document.createElement('section');panel.style.cssText='width:min(440px,100%);max-height:82vh;overflow:auto;background:linear-gradient(150deg,#192d44,#0a1424);border:1px solid #d8a456;border-radius:16px;padding:15px;color:#f4e8d4;box-shadow:0 12px 50px #000b';
+  var header=document.createElement('div');header.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px';
+  var title=document.createElement('strong');title.textContent='⚒ BUTIN RÉCENT · '+kept.length+'/'+KEEP_LIMIT;
+  var close=document.createElement('button');close.type='button';close.textContent='Fermer';close.style.cssText='padding:9px 13px;border-radius:9px;border:1px solid #d8a456;background:#273c54;color:white';close.onclick=function(){overlay.remove();};
+  header.append(title,close);panel.appendChild(header);
+  var note=document.createElement('p');note.textContent='Aperçu des fabrications conservées dans la session (30 dernières maximum). Ce panneau ne remplace pas l’inventaire réel.';note.style.cssText='font-size:12px;opacity:.78;margin:0 0 12px';panel.appendChild(note);
+  var list=document.createElement('div');list.style.cssText='display:grid;gap:7px';
+  kept.slice().reverse().forEach(function(entry){
+    var r=entry.data,row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:12px;padding:9px;border:1px solid #38516b;border-radius:10px;background:#112338';
+    var icon=document.createElement('img');icon.src=img(r.slot);icon.alt='';icon.width=40;icon.height=40;
+    var desc=document.createElement('div'),name=document.createElement('strong'),detail=document.createElement('small');
+    name.textContent=label(r.slot);name.style.color=col(r.rarity);detail.textContent=String(r.rarity||'').replace(/_/g,' ')+(r.power!=null?' · Puissance '+fmt2(r.power):'');detail.style.cssText='display:block;opacity:.85';
+    desc.append(name,detail);row.append(icon,desc);list.appendChild(row);
+  });
+  if(!kept.length){var empty=document.createElement('p');empty.textContent='Aucun équipement récent à afficher.';list.appendChild(empty);}
+  panel.appendChild(list);overlay.appendChild(panel);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+}
+document.addEventListener('click',function(e){var button=e.target&&e.target.closest?e.target.closest('[data-sr-forge-recent-v2]'):null;if(button){e.preventDefault();showRecentForgeLoot();}});
+function mountRecentButton(){
+  var home=document.getElementById('homeForge');if(!home||home.querySelector('[data-sr-forge-recent-v2]'))return;
+  var btn=document.createElement('button');btn.type='button';btn.setAttribute('data-sr-forge-recent-v2','');
+  btn.textContent='⚒ Voir le butin récent';
+  btn.style.cssText='display:block;width:100%;margin:8px 0;padding:11px;border:1px solid #e5b45d;border-radius:11px;background:linear-gradient(100deg,#1d344e,#49301d);color:#ffe5b5;font-weight:700';
+  home.appendChild(btn);
+}
 function stashKept(r){if(!r||r.recycled)return;suspendedKept.push(r);if(suspendedKept.length>KEEP_LIMIT)suspendedKept.shift();}
 function restoreSuspended(){if(document.hidden||!reserve()||!suspendedKept.length)return;var arr=suspendedKept.splice(0);arr.forEach(function(r){addKept(r,false);});}
 function compactPending(){while(pendingResults.length>MAX_PENDING){var r=pendingResults.shift();if(r&&!r.recycled)addKept(r,false);}}
