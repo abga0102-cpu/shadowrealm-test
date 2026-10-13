@@ -6,6 +6,22 @@ var NAMES={COMMUN:'Commun',PEU_COMMUN:'Peu commun',RARE_I:'Rare I',RARE_II:'Rare
 var COLORS={COMMUN:'#9FB0C8',PEU_COMMUN:'#57C785',RARE_I:'#3FA7FF',RARE_II:'#65BAFF',EPIQUE_I:'#B15CF6',EPIQUE_II:'#C47BFA',MYTHIQUE_I:'#FF7A3D',MYTHIQUE_II:'#FF925C',MYTHIQUE_III:'#FFAA78',ARTEFACT_I:'#2FA47C',ARTEFACT_II:'#42B98E',ARTEFACT_III:'#61C99F',LEGENDAIRE_I:'#F5C542',LEGENDAIRE_II:'#F8D363',LEGENDAIRE_III:'#FFE08A',INFERNAL_I:'#D94A50',INFERNAL_II:'#E46064',INFERNAL_III:'#F0787B',IMMORTEL_I:'#C15CF6',IMMORTEL_II:'#D17BFA',IMMORTEL_III:'#E09BFF',DIVIN:'#FFB52E'};
 SANCT_MERGE_ORDER.splice(0,SANCT_MERGE_ORDER.length);ORDER.forEach(function(x){SANCT_MERGE_ORDER.push(x);});Object.assign(SANCT_MERGE_NAME,NAMES);Object.assign(SANCT_MERGE_COLOR,COLORS);
 sanctSupplierTier=function(level){level=Math.max(1,Math.min(15,Math.floor(Number(level)||1)));return level>=13?'EPIQUE_I':level>=9?'RARE_I':level>=5?'PEU_COMMUN':'COMMUN';};sanctSupplierUnlocked=function(level){var a=['COMMUN'];if(level>=5)a.push('PEU_COMMUN');if(level>=9)a.push('RARE_I');if(level>=13)a.push('EPIQUE_I');return a;};var oldPrice=sanctSupplierPrice;sanctSupplierPrice=function(level,r){return oldPrice(level,{RARE_I:'RARE',EPIQUE_I:'EPIQUE'}[r]||r);};
+/* Level 50 supplier: change only purchase availability and price, never existing fragments.
+   Preserve supplier progression; Rare I and Epic I remain purchasable.
+   Epic II and Mythic I are direct-purchase convenience tiers. */
+var srSupplierUnlockedBefore50=sanctSupplierUnlocked;
+var srSupplierPriceBefore50=sanctSupplierPrice;
+function srSupplierLevel50Active(){return typeof S!=='undefined'&&Number(S.level)>=50;}
+sanctSupplierUnlocked=function(level){
+ var current=srSupplierUnlockedBefore50(level);
+ if(!srSupplierLevel50Active())return current;
+ return current.filter(function(r){return r!=='COMMUN'&&r!=='PEU_COMMUN';}).concat(['EPIQUE_II','MYTHIQUE_I']);
+};
+sanctSupplierPrice=function(level,rarity){
+ if(srSupplierLevel50Active()&&rarity==='EPIQUE_II')return 10000;
+ if(srSupplierLevel50Active()&&rarity==='MYTHIQUE_I')return 20000;
+ return srSupplierPriceBefore50(level,rarity);
+};
 /* V561: independent durable ledger for paid Sanctuary expansions across save reloads. */
 var EXPANSION_KEY='shadowreach.sanctuary.expansions.v561';
 function expansionLedger(){try{return Math.max(0,Math.min(16,Math.floor(Number(localStorage.getItem(EXPANSION_KEY))||0)));}catch(_){return 0;}}
