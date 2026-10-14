@@ -27,3 +27,21 @@ test('ritual consumption marks purchased fragment as legitimately removed',()=>{
  assert.equal(st.mergeBoard[0],null);
  assert.ok(st.mergeLastPurchaseAudit.lastRemoval,'untracked ritual can trigger purchase auto-restoration');
 });
+
+test('21 slots: packing tracks the exact purchased fragment among identical rarities',()=>{
+ const board=Array(21).fill(null);board[3]='RARE_I';board[20]='RARE_I';
+ const {st,actions}=actionsFor(board,{slot:20,rarity:'RARE_I',count:2,at:Date.now(),save:'ok'});
+ actions.sanctMergePack();
+ assert.equal(st.mergeBoard[0],'RARE_I');
+ assert.equal(st.mergeBoard[1],'RARE_I');
+ assert.equal(st.mergeLastPurchaseAudit.slot,1,'must track the purchased piece, not first same-rarity piece');
+ assert.equal(st.mergeBoard.filter(Boolean).length,2);
+});
+test('21 slots: ritual consuming an untracked duplicate must not mark purchased fragment removed',()=>{
+ const board=Array(21).fill(null);board[0]='RARE_I';board[20]='RARE_I';
+ const {st,actions}=actionsFor(board,{slot:20,rarity:'RARE_I',count:2,at:Date.now(),save:'ok'});
+ actions.sanctRecipeCraft('test_seal');
+ assert.equal(st.mergeBoard[0],null);
+ assert.equal(st.mergeBoard[20],'RARE_I');
+ assert.equal(st.mergeLastPurchaseAudit.lastRemoval,undefined);
+});
