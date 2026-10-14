@@ -4,7 +4,7 @@
   "description": "Development-only regression tooling for the static Shadowreach HTML game.",
   "scripts": {
     "test:e2e": "npm run test:sanctuary && playwright test -c tests/playwright.config.js",
-    "test:sanctuary": "node --test tests/sanctuary-21-slots-integrity.spec.cjs"
+    "test:sanctuary": "node --test tests/sanctuary-21-slots-integrity.spec.cjs tests/sanctuary-purchase-audit-integrity.spec.cjs tests/sanctuary-transactions.test.cjs"
   },
   "devDependencies": {
     "@playwright/test": "1.55.0"
