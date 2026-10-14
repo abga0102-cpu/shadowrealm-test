@@ -55,7 +55,22 @@ function runSuite(rootArg, label) {
 
   const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
   try { fs.rmSync(reportPath, { force: true }); } catch (_) {}
+  if (run.error || run.signal) {
+    throw new Error(label + ' Playwright process failed: ' + String(run.error || run.signal));
+  }
+  const stats = report.stats || {};
+  const executed = (Number(stats.expected) || 0) + (Number(stats.unexpected) || 0) + (Number(stats.flaky) || 0);
+  if (!Array.isArray(report.suites) || report.suites.length === 0 || executed === 0) {
+    throw new Error(label + ' Playwright suite did not execute any tests (exit ' + run.status + ')');
+  }
+  if (Array.isArray(report.errors) && report.errors.length) {
+    throw new Error(label + ' Playwright runner errors: ' + JSON.stringify(report.errors).slice(0, 1200));
+  }
   const failures = collectFailures(report);
+  if (run.status !== 0 && !(run.status === 1 && failures.size > 0)) {
+    throw new Error(label + ' Playwright exited ' + run.status + ' without reported test failures');
+  }
+  console.log(label + ' Playwright executed tests: ' + executed + ', skipped: ' + (Number(stats.skipped) || 0));
   console.log(label + ' Playwright failures: ' + failures.size);
   return failures;
 }
