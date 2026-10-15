@@ -60,11 +60,15 @@ function runSuite(rootArg, label) {
   }
   const stats = report.stats || {};
   const executed = (Number(stats.expected) || 0) + (Number(stats.unexpected) || 0) + (Number(stats.flaky) || 0);
-  if (!Array.isArray(report.suites) || report.suites.length === 0 || executed === 0) {
-    throw new Error(label + ' Playwright suite did not execute any tests (exit ' + run.status + ')');
-  }
   if (Array.isArray(report.errors) && report.errors.length) {
-    throw new Error(label + ' Playwright runner errors: ' + JSON.stringify(report.errors).slice(0, 1200));
+    console.error(label + ' Playwright stdout:', (run.stdout || '').slice(-4000));
+    console.error(label + ' Playwright stderr:', (run.stderr || '').slice(-4000));
+    throw new Error(label + ' Playwright runner errors: ' + JSON.stringify(report.errors).slice(0, 4000));
+  }
+  if (!Array.isArray(report.suites) || report.suites.length === 0 || executed === 0) {
+    console.error(label + ' Playwright stdout:', (run.stdout || '').slice(-4000));
+    console.error(label + ' Playwright stderr:', (run.stderr || '').slice(-4000));
+    throw new Error(label + ' Playwright suite did not execute any tests (exit ' + run.status + ', suites ' + (report.suites || []).length + ', stats ' + JSON.stringify(stats) + ')');
   }
   const failures = collectFailures(report);
   if (run.status !== 0 && !(run.status === 1 && failures.size > 0)) {
