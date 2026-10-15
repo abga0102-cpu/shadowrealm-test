@@ -3,7 +3,7 @@ const { defineConfig, devices } = require('@playwright/test');
 // Independent Sanctuary browser suite: no legacy phase* test discovery.
 module.exports = defineConfig({
   testDir: __dirname,
-  testMatch: ['sanctuary-21-slots-browser.spec.js'],
+  testMatch: ['phase-sanctuary-21-slot-browser.spec.js'],
   fullyParallel: false,
   timeout: 45000,
   expect: { timeout: 7000 },
