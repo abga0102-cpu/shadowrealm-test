@@ -2073,12 +2073,12 @@ const ACT = {
     render();
   },
   sanctMergeCancel: () => { const st=sanctMergeState(); st.mergeSelected=-1; dirty=true; render(); },
-  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.map((r,i)=>({r,locked:!!(st.mergeLockedSlots&&st.mergeLockedSlots[i])})).filter(x=>x.r); st.mergeBoard=kept.map(x=>x.r).concat(Array(Math.max(0,st.mergeBoard.length-kept.length)).fill(null)); st.mergeLockedSlots={};kept.forEach((x,i)=>{if(x.locked)st.mergeLockedSlots[i]=true;}); st.mergeSelected=-1; dirty=true; render(); },
+  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.map((r,i)=>({r,oldIndex:i,locked:!!(st.mergeLockedSlots&&st.mergeLockedSlots[i])})).filter(x=>x.r); st.mergeBoard=kept.map(x=>x.r).concat(Array(Math.max(0,st.mergeBoard.length-kept.length)).fill(null)); st.mergeLockedSlots={};kept.forEach((x,i)=>{if(x.locked)st.mergeLockedSlots[i]=true;}); if(st.mergeLastPurchaseAudit&&!st.mergeLastPurchaseAudit.lastRemoval){ const au=st.mergeLastPurchaseAudit,oldSlot=Number(au.slot); if(Number.isInteger(oldSlot)&&oldSlot>=0){ const newSlot=kept.findIndex(x=>x.oldIndex===oldSlot); if(newSlot>=0){au.slot=newSlot;au.lastMove='Rangement du plateau';au.lastMoveAt=Date.now();} else {au.lastRemoval='Fragment absent après rangement';au.removedAt=Date.now();} } } st.mergeSelected=-1; dirty=true; render(); },
   sanctSelectPair: () => { const st=sanctMergeState(), p=sanctMergePair(st); if(!p)return; st.mergeSelected=p[0]; dirty=true; toast("Première "+SANCT_MERGE_NAME[p[2]]+" sélectionnée · touche la seconde"); render(); },
   sanctRecipeCraft: (a) => {
     const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
     if(!r||!sanctMergeRecipeKnown(st,r)||!sanctMergeRecipeReady(st,r)) return toast("Couleurs insuffisantes");
-    Object.keys(r.req).forEach((rar)=>{ let n=r.req[rar]; for(let i=0;i<st.mergeBoard.length&&n>0;i++) if(st.mergeBoard[i]===rar){ st.mergeBoard[i]=null; n--; } });
+    Object.keys(r.req).forEach((rar)=>{ let n=r.req[rar]; for(let i=0;i<st.mergeBoard.length&&n>0;i++) if(st.mergeBoard[i]===rar){ if(st.mergeLastPurchaseAudit&&Number(st.mergeLastPurchaseAudit.slot)===i){st.mergeLastPurchaseAudit.lastRemoval='Consommation par rituel';st.mergeLastPurchaseAudit.removedAt=Date.now();} st.mergeBoard[i]=null; n--; } });
     if(r.kind==="seal") st.stabilitySeals=(st.stabilitySeals||0)+r.qty;
     else {
       const ad=ACCEL_DEFS.find((x)=>x.mins===r.mins) || ACCEL_DEFS.reduce((best,x)=>!best||Math.abs(x.mins-r.mins)<Math.abs(best.mins-r.mins)?x:best,null);
