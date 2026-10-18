@@ -53,3 +53,31 @@ test('iPhone touch: select fragment then tap paid empty slot 21 without losing i
       source: board[0], destination: board[20] };
   })).toEqual({ capacity: 21, count: 1, source: null, destination: 'COMMUN' });
 });
+
+
+test('21-slot board preserves four rarities through chained moves and reload', async ({ page }) => {
+  await seedPaidBoard(page);
+  const before = await page.evaluate(() => {
+    const st = sanctMergeState();
+    st.mergeBoard = Array(21).fill(null);
+    st.mergeBoard[0] = 'COMMUN';
+    st.mergeBoard[1] = 'EPIQUE_I';
+    st.mergeBoard[2] = 'MYTHIQUE_I';
+    st.mergeBoard[3] = 'LEGENDAIRE_I';
+    st.mergeLastPurchaseAudit = null;
+    if (saveNow() === false) throw Error('Initial board save refused');
+    const moves = [[0,20],[1,16],[2,17],[3,19],[20,18]];
+    const outcomes = moves.map(([from,to]) => sanctMergeDrop(from,to));
+    return { outcomes, board: sanctMergeState().mergeBoard.slice() };
+  });
+  expect(before.outcomes).toEqual([true,true,true,true,true]);
+  expect(before.board.filter(Boolean)).toHaveLength(4);
+  expect(before.board[16]).toBe('EPIQUE_I');
+  expect(before.board[17]).toBe('MYTHIQUE_I');
+  expect(before.board[18]).toBe('COMMUN');
+  expect(before.board[19]).toBe('LEGENDAIRE_I');
+  await page.reload();
+  await page.waitForFunction(() => typeof sanctMergeState === 'function');
+  const after = await page.evaluate(() => sanctMergeState().mergeBoard.slice());
+  expect(after).toEqual(before.board);
+});
