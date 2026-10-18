@@ -5,21 +5,53 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 const src=fs.readFileSync(path.join(__dirname,'../sanctuary-endgame-v130.js'),'utf8');
-const begin=src.indexOf('function sacrifice(rarity){');
-const end=src.indexOf('\nfunction recoverFirstSlot()',begin);
-assert(begin>=0&&end>begin,'sacrifice function found');
-function run(){
- const st={mergeBoard:Array(21).fill(null),mergeLastPurchaseAudit:{slot:20,rarity:'EPIQUE_I',count:1,save:'ok',at:Date.now()},sacrifices:0};
- st.mergeBoard[20]='EPIQUE_I';
- let rewards=0,saves=0;
- const ctx={sanctMergeState:()=>st,REWARDS:{EPIQUE_I:{mineral:10}},NAMES:{EPIQUE_I:'Épique I'},confirm:()=>true,rewardText:()=>'',grant:()=>{rewards++;},saveNow:()=>{saves++;return true;},toast:()=>{},render:()=>{},dirty:false,Date};
- vm.createContext(ctx);vm.runInContext(src.slice(begin,end),ctx);
- ctx.sacrifice('EPIQUE_I');
- // Mirror the purchase-recovery predicate used by sanctMergeState.
- const au=st.mergeLastPurchaseAudit,idx=Number(au.slot);
- const shouldRecover=au.save==='ok'&&idx>=0&&idx<st.mergeBoard.length&&Date.now()-Number(au.at)<120000&&!st.mergeBoard[idx]&&!au.lastRemoval&&st.mergeBoard.filter(Boolean).length<Number(au.count);
- return {st,rewards,saves,shouldRecover};
+function extract(start,end){
+ const a=src.indexOf(start),b=src.indexOf(end,a);
+ assert(a>=0&&b>a,'Sanctuary runtime function must be present: '+start);
+ return src.slice(a,b);
 }
-test('sacrifice of recently purchased fragment does not trigger purchase recovery',()=>{
- const r=run();assert.equal(r.rewards,1);assert.equal(r.saves,1);assert.equal(r.st.mergeBoard[20],null);assert.equal(r.st.mergeLastPurchaseAudit.lastRemoval,'Sacrifice volontaire');assert.equal(r.shouldRecover,false);
+const stateCode=extract('sanctMergeState=function(){','\n(function migrate()');
+const sacrificeCode=extract('function sacrifice(rarity){','\nfunction recoverFirstSlot()');
+function setup(board,audit,accept=true){
+ const st={mergeBoard:board.slice(),boardExpansions:5,mergeLastPurchaseAudit:{...audit},sacrifices:0};
+ const S={sanctuary:st};
+ let rewards=0,saves=0;
+ const ctx={S,expansionLedger:()=>5,cap:()=>21,saveNow:()=>{saves++;return true;},
+  REWARDS:{EPIQUE_I:{mineral:10}},NAMES:{EPIQUE_I:'Épique I'},confirm:()=>accept,
+  rewardText:()=>'',grant:()=>{rewards++;},toast:()=>{},render:()=>{},dirty:false,Date};
+ vm.createContext(ctx);
+ vm.runInContext(stateCode+'\n'+sacrificeCode,ctx);
+ return {st,ctx,get rewards(){return rewards;},get saves(){return saves;}};
+}
+function audit(slot,count){
+ return {slot,rarity:'EPIQUE_I',count,save:'ok',at:Date.now()};
+}
+test('sacrificing the purchased piece never triggers the real purchase-recovery code',()=>{
+ const board=Array(21).fill(null);board[20]='EPIQUE_I';
+ const r=setup(board,audit(20,1));
+ r.ctx.sacrifice('EPIQUE_I');
+ r.ctx.sanctMergeState();
+ assert.equal(r.rewards,1);assert.equal(r.saves,1);
+ assert.equal(r.st.mergeBoard[20],null);
+ assert.equal(r.st.mergeBoard.filter(Boolean).length,0);
+ assert.equal(r.st.mergeLastPurchaseAudit.lastRemoval,'Sacrifice volontaire');
+});
+test('sacrificing an identical older piece leaves the purchased one intact',()=>{
+ const board=Array(21).fill(null);board[0]='EPIQUE_I';board[20]='EPIQUE_I';
+ const r=setup(board,audit(20,2));
+ r.ctx.sacrifice('EPIQUE_I');
+ r.ctx.sanctMergeState();
+ assert.equal(r.rewards,1);
+ assert.equal(r.st.mergeBoard[0],null);
+ assert.equal(r.st.mergeBoard[20],'EPIQUE_I');
+ assert.equal(r.st.mergeBoard.filter(Boolean).length,1);
+ assert.equal(r.st.mergeLastPurchaseAudit.lastRemoval,undefined);
+});
+test('cancelled sacrifice does not alter fragments or award rewards',()=>{
+ const board=Array(21).fill(null);board[20]='EPIQUE_I';
+ const r=setup(board,audit(20,1),false);
+ r.ctx.sacrifice('EPIQUE_I');
+ assert.equal(r.rewards,0);assert.equal(r.saves,0);
+ assert.equal(r.st.mergeBoard[20],'EPIQUE_I');
+ assert.equal(r.st.mergeLastPurchaseAudit.lastRemoval,undefined);
 });
