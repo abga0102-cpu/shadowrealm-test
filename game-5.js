@@ -1714,7 +1714,7 @@ function sanctMergeDrop(from,to){
   const oldBoard=st.mergeBoard.slice(),oldLocks=Object.assign({},st.mergeLockedSlots||{});
   const oldFusions=Number(st.mergeFusions)||0,oldTotal=Number(st.fusions)||0;
   const oldAudit=st.mergeLastPurchaseAudit?Object.assign({},st.mergeLastPurchaseAudit):null;
-  const oldSelected=st.mergeSelected;
+  const oldSelected=st.mergeSelected,oldDiscovered=Object.assign({},st.mergeDiscovered||{});
   try{
     if(!dst){
       st.mergeBoard[to]=src;st.mergeBoard[from]=null;
@@ -1735,14 +1735,16 @@ function sanctMergeDrop(from,to){
     st.mergeSelected=-1;dirty=true;
     if(st.mergeBoard.length!==oldBoard.length||st.mergeBoard[to]!== (dst?next:src)||
       st.mergeBoard.filter(Boolean).length!==oldBoard.filter(Boolean).length-(dst?1:0))throw Error('Intégrité du plateau');
+    if(dst)sanctMergeDiscover(st,next);
     if(typeof saveNow==='function'&&saveNow()===false)throw Error('Sauvegarde refusée');
   }catch(err){
     st.mergeBoard=oldBoard;st.mergeLockedSlots=oldLocks;
     st.mergeFusions=oldFusions;st.fusions=oldTotal;st.mergeSelected=oldSelected;
+    st.mergeDiscovered=oldDiscovered;
     if(oldAudit)st.mergeLastPurchaseAudit=oldAudit;
     dirty=true;toast('Action annulée : '+(err&&err.message||'erreur'));render();return false;
   }
-  if(dst){sanctMergeDiscover(st,next);if(navigator.vibrate)try{navigator.vibrate(20);}catch(_){}
+  if(dst){if(navigator.vibrate)try{navigator.vibrate(20);}catch(_){}
     toast(SANCT_MERGE_NAME[src]+' + '+SANCT_MERGE_NAME[src]+' → '+SANCT_MERGE_NAME[next],true);}
   render();return true;
 }
