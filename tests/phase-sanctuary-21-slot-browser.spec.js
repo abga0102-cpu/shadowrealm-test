@@ -81,3 +81,38 @@ test('21-slot board preserves four rarities through chained moves and reload', a
   const after = await page.evaluate(() => sanctMergeState().mergeBoard.slice());
   expect(after).toEqual(before.board);
 });
+
+
+test('iPhone pointer drag to paid slot 21 preserves fragment after reload', async ({page},testInfo) => {
+  test.skip(testInfo.project.name !== 'webkit-iphone','Mobile WebKit only');
+  await seedPaidBoard(page);
+  const piece=page.locator('.sanctMergePiece[data-sanct-slot="0"]');
+  const destination=page.locator('.sanctMergeCell[data-sanct-slot="20"]');
+  await expect(piece).toBeVisible();
+  await expect(destination).toBeVisible();
+  await destination.scrollIntoViewIfNeeded();
+  await piece.scrollIntoViewIfNeeded();
+  const points=await page.evaluate(() => {
+    const a=document.querySelector('.sanctMergePiece[data-sanct-slot="0"]').getBoundingClientRect();
+    const b=document.querySelector('.sanctMergeCell[data-sanct-slot="20"]').getBoundingClientRect();
+    return {a:{x:a.left+a.width/2,y:a.top+a.height/2},b:{x:b.left+b.width/2,y:b.top+b.height/2}};
+  });
+  await page.evaluate(({a,b}) => {
+    const dispatch=(kind,p) => {
+      const el=document.elementFromPoint(p.x,p.y);
+      if(!el)throw Error('Pointer position is outside viewport: '+kind);
+      el.dispatchEvent(new PointerEvent(kind,{bubbles:true,cancelable:true,
+        pointerId:71,pointerType:'touch',isPrimary:true,clientX:p.x,clientY:p.y}));
+    };
+    dispatch('pointerdown',a);
+    for(let i=1;i<=8;i++)dispatch('pointermove',{x:a.x+(b.x-a.x)*i/8,y:a.y+(b.y-a.y)*i/8});
+    dispatch('pointerup',b);
+  },points);
+  await expect.poll(()=>page.evaluate(()=>{
+    const b=sanctMergeState().mergeBoard;
+    return {count:b.filter(Boolean).length,from:b[0],to:b[20]};
+  })).toEqual({count:1,from:null,to:'COMMUN'});
+  await page.reload();
+  await page.waitForFunction(()=>typeof sanctMergeState==='function');
+  expect(await page.evaluate(()=>sanctMergeState().mergeBoard[20])).toBe('COMMUN');
+});
