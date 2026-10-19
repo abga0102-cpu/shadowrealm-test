@@ -123,3 +123,20 @@ if (added.length) {
 }
 
 console.log('Playwright ratchet passed: ' + baseline.size + ' -> ' + current.size + ' failures, no new regression.');
+
+
+// The independent Sanctuary suite must execute in CI even when the legacy
+// Playwright suite passes. A failing 21-slot move/reload blocks the PR.
+console.log('Running isolated Sanctuary 21-slot browser regression suite...');
+const sanctuary = spawnSync(cli, ['test', '-c', 'tests/playwright.sanctuary.config.js'], {
+  cwd: currentRoot,
+  env: { ...process.env, CI: '1' },
+  encoding: 'utf8',
+  maxBuffer: 100 * 1024 * 1024
+});
+process.stdout.write(sanctuary.stdout || '');
+process.stderr.write(sanctuary.stderr || '');
+if (sanctuary.error || sanctuary.signal || sanctuary.status !== 0) {
+  throw new Error('Sanctuary browser regression suite failed (exit ' + sanctuary.status + ')');
+}
+console.log('Sanctuary browser regression suite passed.');
