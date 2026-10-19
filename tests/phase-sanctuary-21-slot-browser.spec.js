@@ -25,12 +25,15 @@ async function seedPaidBoard(page) {
 test('21 purchased Sanctuary slots retain moved fragment after save and reload', async ({ page }) => {
   await seedPaidBoard(page);
   const before = await page.evaluate(() => {
+    const initialBoard = sanctMergeState().mergeBoard.slice();
     const moved = sanctMergeDrop(0, 20);
     const board = sanctMergeState().mergeBoard.slice();
     return { moved, capacity: board.length, count: board.filter(Boolean).length,
-      destination: board[20], source: board[0] };
+      destination: board[20], source: board[0], initialBoard,
+      savedBoard: JSON.parse(localStorage.getItem(SAVE_KEY)||'{}').sanctuary?.mergeBoard || [] };
   });
-  expect(before).toEqual({ moved: true, capacity: 21, count: 1,
+  console.log('SANCT_MOVE_STATE', JSON.stringify(before));
+  expect({moved:before.moved,capacity:before.capacity,count:before.count,destination:before.destination,source:before.source}).toEqual({ moved: true, capacity: 21, count: 1,
     destination: 'COMMUN', source: null });
   await page.reload();
   await page.waitForFunction(() => typeof sanctMergeState === 'function');
