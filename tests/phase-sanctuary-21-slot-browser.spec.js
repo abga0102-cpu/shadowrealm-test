@@ -35,6 +35,42 @@ test('21 purchased Sanctuary slots retain moved fragment after save and reload',
         persistedCount:persisted.filter(Boolean).length, persisted20:persisted[20]||null });
     };
     const oldSave = saveNow, oldRender = render;
+    // Diagnostic only: identify the exact synchronous render stage that
+    // changes the live board, without changing game logic or player saves.
+    const stageChanges = [];
+    const originalSanctuary = S.sanctuary;
+    const originalBoard = S.sanctuary.mergeBoard;
+    const wrapped = [];
+    function inspectStage(label, original, args, context) {
+      const before = JSON.stringify(S.sanctuary?.mergeBoard || []);
+      let value;
+      try { value = original.apply(context, args); }
+      finally {
+        const after = JSON.stringify(S.sanctuary?.mergeBoard || []);
+        if (before !== after) stageChanges.push({
+          stage: label, before: JSON.parse(before), after: JSON.parse(after),
+          sameSanctuary: S.sanctuary === originalSanctuary,
+          sameBoard: S.sanctuary?.mergeBoard === originalBoard
+        });
+      }
+      return value;
+    }
+    for (const name of [
+      'trackGoalProgress','renderHUD','renderTabs','checkRewardNotice',
+      'checkBossReward','checkNotable','checkSkipNotice','checkLevelUp',
+      'attachArena','sanctMergeState'
+    ]) {
+      const original = globalThis[name];
+      if (typeof original !== 'function') continue;
+      globalThis[name] = function(...args) {
+        return inspectStage(name, original, args, this);
+      };
+      wrapped.push([name, original]);
+    }
+    const originalScreen = SCREENS.sanctuaire;
+    SCREENS.sanctuaire = function(...args) {
+      return inspectStage('SCREENS.sanctuaire', originalScreen, args, this);
+    };
     saveNow = function(...args) {
       boardSnapshot('before saveNow');
       const result = oldSave.apply(this,args);
@@ -50,12 +86,14 @@ test('21 purchased Sanctuary slots retain moved fragment after save and reload',
     boardSnapshot('before move');
     let moved;
     try { moved = sanctMergeDrop(0, 20); }
-    finally { saveNow = oldSave; render = oldRender; }
+    finally { saveNow = oldSave; render = oldRender; SCREENS.sanctuaire = originalScreen; for (const [name, original] of wrapped) globalThis[name] = original; }
     boardSnapshot('after move');
     const board = sanctMergeState().mergeBoard.slice();
     return { moved, capacity: board.length, count: board.filter(Boolean).length,
       destination: board[20], source: board[0], initialBoard, events,
-      savedBoard: JSON.parse(localStorage.getItem(SAVE_KEY)||'{}').sanctuary?.mergeBoard || [] };
+      savedBoard: JSON.parse(localStorage.getItem(SAVE_KEY)||'{}').sanctuary?.mergeBoard || [], stageChanges,
+      sameSanctuary: S.sanctuary === originalSanctuary,
+      sameBoard: S.sanctuary?.mergeBoard === originalBoard };
   });
   console.log('SANCT_MOVE_STATE', JSON.stringify(before));
   expect({moved:before.moved,capacity:before.capacity,count:before.count,destination:before.destination,source:before.source}).toEqual({ moved: true, capacity: 21, count: 1,
