@@ -60,17 +60,25 @@ function runSuite(rootArg, label) {
   }
   const stats = report.stats || {};
   const executed = (Number(stats.expected) || 0) + (Number(stats.unexpected) || 0) + (Number(stats.flaky) || 0);
-  if (Array.isArray(report.errors) && report.errors.length) {
-    console.error(label + ' Playwright stdout:', (run.stdout || '').slice(-4000));
-    console.error(label + ' Playwright stderr:', (run.stderr || '').slice(-4000));
-    throw new Error(label + ' Playwright runner errors: ' + JSON.stringify(report.errors).slice(0, 4000));
-  }
+  // Collection-time assertions are reported in report.errors rather than specs.
+  // Compare them across baseline/current instead of aborting before the ratchet
+  // can distinguish pre-existing failures from newly introduced regressions.
+  const runnerErrors = (report.errors || []).map(error => {
+    const location = error.location && error.location.file
+      ? path.relative(root, path.resolve(error.location.file)).replace(/\\/g, '/')
+      : '<runner>';
+    const message = String(error.message || 'Unknown runner error')
+      .replace(/\\x1b\\[[0-9;]*m/g, '').split('\\n')[0].trim();
+    return 'runner :: ' + location + ' :: ' + message;
+  });
   if (!Array.isArray(report.suites) || report.suites.length === 0 || executed === 0) {
     console.error(label + ' Playwright stdout:', (run.stdout || '').slice(-4000));
     console.error(label + ' Playwright stderr:', (run.stderr || '').slice(-4000));
     throw new Error(label + ' Playwright suite did not execute any tests (exit ' + run.status + ', suites ' + (report.suites || []).length + ', stats ' + JSON.stringify(stats) + ')');
   }
   const failures = collectFailures(report);
+  runnerErrors.forEach(id => failures.add(id));
+  if (runnerErrors.length) console.log(label + ' Playwright collection errors: ' + runnerErrors.length);
   if (run.status !== 0 && !(run.status === 1 && failures.size > 0)) {
     throw new Error(label + ' Playwright exited ' + run.status + ' without reported test failures');
   }
