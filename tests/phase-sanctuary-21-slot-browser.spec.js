@@ -26,10 +26,35 @@ test('21 purchased Sanctuary slots retain moved fragment after save and reload',
   await seedPaidBoard(page);
   const before = await page.evaluate(() => {
     const initialBoard = sanctMergeState().mergeBoard.slice();
-    const moved = sanctMergeDrop(0, 20);
+    const events = [];
+    const boardSnapshot = label => {
+      const live = S.sanctuary?.mergeBoard?.slice() || [];
+      let persisted = [];
+      try { persisted = JSON.parse(localStorage.getItem(SAVE_KEY)||'{}').sanctuary?.mergeBoard || []; } catch (_) {}
+      events.push({ label, liveCount:live.filter(Boolean).length, live20:live[20]||null,
+        persistedCount:persisted.filter(Boolean).length, persisted20:persisted[20]||null });
+    };
+    const oldSave = saveNow, oldRender = render;
+    saveNow = function(...args) {
+      boardSnapshot('before saveNow');
+      const result = oldSave.apply(this,args);
+      boardSnapshot('after saveNow');
+      return result;
+    };
+    render = function(...args) {
+      boardSnapshot('before render');
+      const result = oldRender.apply(this,args);
+      boardSnapshot('after render');
+      return result;
+    };
+    boardSnapshot('before move');
+    let moved;
+    try { moved = sanctMergeDrop(0, 20); }
+    finally { saveNow = oldSave; render = oldRender; }
+    boardSnapshot('after move');
     const board = sanctMergeState().mergeBoard.slice();
     return { moved, capacity: board.length, count: board.filter(Boolean).length,
-      destination: board[20], source: board[0], initialBoard,
+      destination: board[20], source: board[0], initialBoard, events,
       savedBoard: JSON.parse(localStorage.getItem(SAVE_KEY)||'{}').sanctuary?.mergeBoard || [] };
   });
   console.log('SANCT_MOVE_STATE', JSON.stringify(before));
