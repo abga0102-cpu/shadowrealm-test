@@ -205,3 +205,33 @@ test('iPhone pointer drag between adjacent paid slots 20 and 21 preserves fragme
   });
   expect(persisted).toEqual({capacity:21,count:1,from:null,to:'COMMUN'});
 });
+
+
+test('idle watchdog and repeated renders never duplicate or remove paid-slot fragments', async ({ page }) => {
+  await seedPaidBoard(page);
+  const expected = await page.evaluate(() => {
+    const st = sanctMergeState();
+    st.mergeBoard = Array(21).fill(null);
+    st.mergeBoard[17] = 'MYTHIQUE_I';
+    st.mergeBoard[20] = 'COMMUN';
+    st.mergeLastPurchaseAudit = null;
+    if (saveNow() === false) throw Error('Initial board save refused');
+    render();
+    return st.mergeBoard.slice();
+  });
+  // The legacy loss watcher runs every 100 ms. Exercise multiple ticks and
+  // repeated renders, rather than only checking immediately after a move.
+  await page.waitForTimeout(800);
+  for (let i = 0; i < 4; i++) await page.evaluate(() => render());
+  const live = await page.evaluate(() => ({
+    board: sanctMergeState().mergeBoard.slice(),
+    recovered: S.sanctuary.mergeLossTrace?.recovered || 0
+  }));
+  expect(live.board).toEqual(expected);
+  expect(live.recovered).toBe(0);
+  await page.reload();
+  await page.waitForFunction(() => typeof sanctMergeState === 'function');
+  await page.waitForTimeout(300);
+  const reloaded = await page.evaluate(() => sanctMergeState().mergeBoard.slice());
+  expect(reloaded).toEqual(expected);
+});
