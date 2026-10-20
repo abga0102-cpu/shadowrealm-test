@@ -1689,7 +1689,7 @@ function showMegaResult(r) {
         ? 'Première victoire : <b style="color:#A9E06F">+' + fmt(r.apples) + " 🍎</b>" +
           (r.accel ? '<br><b style="color:var(--goldLit)">+' + fmt(r.accel.qty) + " Accélérateur " +
             esc((ACCEL_DEFS.find((a) => a.key === r.accel.key) || {}).label || r.accel.key) + "</b> (×2 Boss normal)" : "") +
-          "<br>Récompense enregistrée définitivement." + (Object.keys(S.megaBossClears || {}).length === 1 ? "<br><b style=\"color:var(--purpleLit)\">🏛️ Sanctuaire débloqué !</b>" : "")
+          "<br>Récompense enregistrée définitivement."
         : won ? "Méga-Boss déjà vaincu : <b>0 Pomme</b>."
         : "Aucune clé ni récompense perdue. Renforce-toi et réessaie.") + "</div>" +
     btn("Continuer", { cls: won ? "green" : "ghost", act: "closeMega" }),
@@ -2002,93 +2002,7 @@ const ACT = {
   abortMega: () => { combat = null; startCampaign(); nav("mega"); toast("Méga Boss abandonné"); },
   closeMega: () => { closeModal(); megaResult = null; startCampaign(); nav("mega"); },
 
-  // sanctuaire
-  sanctPrepare: (a) => {
-    const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
-    if(!r||!sanctMergeRecipeKnown(st,r)) return;
-    st.mergeFocusRecipe=a; dirty=true; render();
-  },
-  sanctMergeBuy: (a) => {
-    const st=sanctMergeState(), empty=st.mergeBoard.findIndex((x)=>!x);
-    if(empty<0) return toast("Plateau plein · fusionne ou fabrique d’abord");
-    const lv=st.supplierLevel, unlocked=sanctSupplierUnlocked(lv);
-    const chosen=unlocked.includes(a)?a:sanctSupplierTier(lv), price=sanctSupplierPrice(lv,chosen);
-    if(S.gold<price) return toast("Pas assez d’Or");
-    S.gold-=price; st.mergeBoard[empty]=chosen; st.mergePurchaseProtectionSlot=empty; st.mergePurchaseProtectionUntil=Date.now()+30000; st.mergeLastPurchaseAudit={slot:empty,rarity:chosen,count:st.mergeBoard.filter(Boolean).length,capacity:st.mergeBoard.length,at:Date.now(),save:'pending'};
-    if(lv<SANCT_SUPPLIER_MAX && chosen===sanctSupplierTier(lv)){
-      st.supplierProgress++;
-      const need=sanctSupplierNeed(lv);
-      if(st.supplierProgress>=need){ st.supplierLevel=lv+1; st.supplierProgress=0; toast("Approvisionnement niveau "+st.supplierLevel,true); }
-    }
-    dirty=true; if(typeof saveNow==='function'){st.mergeLastPurchaseAudit.save=saveNow()?'ok':'failed';if(st.mergeLastPurchaseAudit.save==='ok')saveNow();} render();
-  },
-  /* V572: both touch and drag use the same validated move/merge transaction. */
-  sanctMergeTile: (a) => {
-    const st=sanctMergeState(),i=Number(a);
-    if(!Number.isInteger(i)||i<0||i>=st.mergeBoard.length||!st.mergeBoard[i])return;
-    const sel=Number(st.mergeSelected);
-    if(!Number.isInteger(sel)||sel<0||sel>=st.mergeBoard.length||!st.mergeBoard[sel]){
-      st.mergeSelected=i;dirty=true;return render();
-    }
-    if(sel===i){st.mergeSelected=-1;dirty=true;return render();}
-    if(st.mergeBoard[sel]!==st.mergeBoard[i]){
-      st.mergeSelected=i;dirty=true;toast("Choisis une deuxième couleur identique");return render();
-    }
-    return sanctMergeDrop(sel,i);
-  },
-  // V540: transparent paid convenience, manual merging stays free.
-  // Charge for actual operations; +5% per source rarity, capped at +50%.
-  sanctMergeAuto: () => {
-    const st=sanctMergeState();
-    const board=st.mergeBoard.slice();
-    const ops=[];
-    const limit=board.length*Math.max(1,SANCT_MERGE_ORDER.length);
-    for(let n=0;n<limit;n++){
-      let pair=null;
-      for(let i=0;i<board.length&&!pair;i++){
-        if(!board[i]||!sanctMergeNext(board[i])||(st.mergeLockedSlots&&st.mergeLockedSlots[i])||(st.mergeLockedRarities&&st.mergeLockedRarities[board[i]]))continue;
-        for(let j=i+1;j<board.length;j++)if(board[j]===board[i]&&!(st.mergeLockedSlots&&st.mergeLockedSlots[j])){pair=[i,j,board[i]];break;}
-      }
-      if(!pair)break;
-      const rank=Math.max(0,SANCT_MERGE_ORDER.indexOf(pair[2]));
-      const fee=Math.round(500*(1+Math.min(rank*0.05,0.5)));
-      ops.push({i:pair[0],j:pair[1],from:pair[2],to:sanctMergeNext(pair[2]),fee});
-      board[pair[0]]=null;board[pair[1]]=sanctMergeNext(pair[2]);
-    }
-    if(!ops.length)return toast("Aucune paire à fusionner");
-    const total=ops.reduce((sum,op)=>sum+op.fee,0);
-    if((Number(S.gold)||0)<total)return toast("Or insuffisant · "+fmt(total)+" requis pour "+ops.length+" fusions");
-    if(!confirm("Fusionner "+ops.length+" paire"+(ops.length>1?"s":"")+" pour "+fmt(total)+" Or ?\\n\\nFusion manuelle gratuite. Prix automatique : 500 Or +5 % par rareté (max +50 %)."))return;
-    // Recheck the state after confirmation; no partial spending.
-    if((Number(S.gold)||0)<total||st.mergeBoard.length!==board.length)return toast("Fusion annulée : ressources ou plateau modifiés");
-    S.gold-=total;
-    if(st.mergeLastPurchaseAudit&&ops.some(op=>[op.i,op.j].includes(Number(st.mergeLastPurchaseAudit.slot)))){st.mergeLastPurchaseAudit.lastRemoval='Fusionner tout (automatique payant)';st.mergeLastPurchaseAudit.removedAt=Date.now();} st.mergeBoard=board;
-    if(st.mergeLockedSlots)ops.forEach(op=>{delete st.mergeLockedSlots[op.i];delete st.mergeLockedSlots[op.j];});
-    st.mergeSelected=-1;
-    st.mergeFusions=(st.mergeFusions||0)+ops.length;
-    st.fusions=(st.fusions||0)+ops.length;
-    ops.forEach(op=>sanctMergeDiscover(st,op.to));
-    dirty=true;
-    if(typeof saveNow==='function')saveNow();
-    toast(ops.length+" fusion"+(ops.length>1?"s":"")+" · -"+fmt(total)+" Or",true);
-    render();
-  },
-  sanctMergeCancel: () => { const st=sanctMergeState(); st.mergeSelected=-1; dirty=true; render(); },
-  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.map((r,i)=>({r,locked:!!(st.mergeLockedSlots&&st.mergeLockedSlots[i])})).filter(x=>x.r); st.mergeBoard=kept.map(x=>x.r).concat(Array(Math.max(0,st.mergeBoard.length-kept.length)).fill(null)); st.mergeLockedSlots={};kept.forEach((x,i)=>{if(x.locked)st.mergeLockedSlots[i]=true;}); st.mergeSelected=-1; dirty=true; render(); },
-  sanctSelectPair: () => { const st=sanctMergeState(), p=sanctMergePair(st); if(!p)return; st.mergeSelected=p[0]; dirty=true; toast("Première "+SANCT_MERGE_NAME[p[2]]+" sélectionnée · touche la seconde"); render(); },
-  sanctRecipeCraft: (a) => {
-    const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
-    if(!r||!sanctMergeRecipeKnown(st,r)||!sanctMergeRecipeReady(st,r)) return toast("Couleurs insuffisantes");
-    Object.keys(r.req).forEach((rar)=>{ let n=r.req[rar]; for(let i=0;i<st.mergeBoard.length&&n>0;i++) if(st.mergeBoard[i]===rar){ st.mergeBoard[i]=null; n--; } });
-    if(r.kind==="seal") st.stabilitySeals=(st.stabilitySeals||0)+r.qty;
-    else {
-      const ad=ACCEL_DEFS.find((x)=>x.mins===r.mins) || ACCEL_DEFS.reduce((best,x)=>!best||Math.abs(x.mins-r.mins)<Math.abs(best.mins-r.mins)?x:best,null);
-      if(ad) S.accels[ad.key]=(S.accels[ad.key]||0)+r.qty;
-    }
-    st.mergeDiscovered[r.id]=true; st.mergeCrafts++; st.mergeFocusRecipe=a; st.mergeSelected=-1; dirty=true;
-    toast("Rituel réussi · "+r.name+" · "+sanctMergeRecipeOutput(r),true); render();
-  },
-
+  // Sanctuary paused: all merge/crafting UI actions intentionally unavailable.
   // tree
   treeNode: (a) => showTreeNode(a),
   research: (a) => {
