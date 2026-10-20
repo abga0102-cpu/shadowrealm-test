@@ -752,7 +752,7 @@ function scrDefis(){ return scrHub("Défis", [
   {label:"Arène",icon:"swords",go:"arena",desc:"Affronte des bots en temps réel ou analyse des milliers de combats sans récompense."},
   {label:"Raids",icon:"flame",go:"raid",desc:"Raids spécialisés et ressources ciblées."},
   {label:"Méga-Boss",icon:"skull",go:"mega",desc:"Combats majeurs et récompenses de progression."},
-  {label:"Sanctuaire",icon:"flame",go:"sanctuaire",desc:"Fusion de ressources et recettes découvertes."}
+  // Sanctuaire temporarily paused; preserved in source and player saves.
 ]); }
 function scrProgression(){ return scrHub("Progression", [
   {label:"Ascension",icon:"star",go:"ascension",desc:"Progression de haut niveau et étoiles d'Ascension."}
@@ -765,7 +765,7 @@ const SCREENS = {
   heros: scrHerosStats,
   accueil: scrAccueil, personnage: scrEquipement, equipement: scrEquipement,
   inventaire: scrEquipement, competences: scrCompetences, familiers: scrFamiliers,
-  raid: scrRaid, mega: scrMegaRaid, sanctuaire: scrSanctuaire, arena: scrArenaSim, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
+  raid: scrRaid, mega: scrMegaRaid, arena: scrArenaSim, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
   boutique: scrBoutique, evenement: scrEvenement, classement: scrClassement,
   developpement: scrDeveloppement, defis: scrDefis, progression: scrProgression,
   parametres: scrParametres,
@@ -1132,6 +1132,7 @@ let srForgeTouchUntil543=0;
   },true);
 })();
 function render() {
+  if (typeof route !== "undefined" && route === "sanctuaire") route = "defis";
   // Only defer while interacting: the next gameplay/timer render refreshes UI.
   if(typeof route!=='undefined'&&route==='accueil'&&(srForgeTouchActive543||Date.now()<srForgeTouchUntil543)){
     if(!render.__srForgePending543){render.__srForgePending543=true;setTimeout(function(){render.__srForgePending543=false;render();},Math.max(120,srForgeTouchUntil543-Date.now()+60));}
