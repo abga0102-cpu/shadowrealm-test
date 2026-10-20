@@ -149,36 +149,59 @@ test('21-slot board preserves four rarities through chained moves and reload', a
 });
 
 
-test('iPhone pointer drag to paid slot 21 preserves fragment after reload', async ({page},testInfo) => {
+test('iPhone pointer drag between adjacent paid slots 20 and 21 preserves fragment after reload', async ({page},testInfo) => {
   test.skip(testInfo.project.name !== 'webkit-iphone','Mobile WebKit only');
   await seedPaidBoard(page);
-  const piece=page.locator('.sanctMergePiece[data-sanct-slot="0"]');
-  const destination=page.locator('.sanctMergeCell[data-sanct-slot="20"]');
-  await expect(piece).toBeVisible();
-  await expect(destination).toBeVisible();
-  await destination.scrollIntoViewIfNeeded();
-  await piece.scrollIntoViewIfNeeded();
-  const points=await page.evaluate(() => {
-    const a=document.querySelector('.sanctMergePiece[data-sanct-slot="0"]').getBoundingClientRect();
-    const b=document.querySelector('.sanctMergeCell[data-sanct-slot="20"]').getBoundingClientRect();
-    return {a:{x:a.left+a.width/2,y:a.top+a.height/2},b:{x:b.left+b.width/2,y:b.top+b.height/2}};
+  // Both endpoints must be simultaneously visible. Dragging from slot 1 to
+  // slot 21 on an iPhone cannot work without scrolling mid-gesture.
+  await page.evaluate(() => {
+    const st = sanctMergeState();
+    st.mergeBoard[0] = null;
+    st.mergeBoard[19] = 'COMMUN';
+    if (saveNow() === false) throw Error('Initial board save refused');
+    render();
   });
-  await page.evaluate(({a,b}) => {
-    const dispatch=(kind,p) => {
-      const el=document.elementFromPoint(p.x,p.y);
-      if(!el)throw Error('Pointer position is outside viewport: '+kind);
+  await expect(page.locator('.sanctMergePiece[data-sanct-slot="19"]')).toHaveCount(1);
+  await page.evaluate(() => {
+    const cell = document.querySelector('.sanctMergeCell[data-sanct-slot="20"]');
+    if (!cell) throw Error('Purchased slot 21 missing');
+    cell.scrollIntoView({block:'center',inline:'nearest'});
+  });
+  const points = await page.evaluate(() => {
+    const a = document.querySelector('.sanctMergePiece[data-sanct-slot="19"]')?.getBoundingClientRect();
+    const b = document.querySelector('.sanctMergeCell[data-sanct-slot="20"]')?.getBoundingClientRect();
+    if (!a || !b) throw Error('Adjacent paid slot endpoints missing');
+    const source = {x:a.left+a.width/2,y:a.top+a.height/2};
+    const target = {x:b.left+b.width/2,y:b.top+b.height/2};
+    const visible = p => p.x>=0 && p.y>=0 && p.x<innerWidth && p.y<innerHeight;
+    if (!visible(source) || !visible(target)) throw Error('Both drag endpoints must be visible together');
+    return {source,target};
+  });
+  await page.evaluate(({source,target}) => {
+    // Synthetic pointer events test the gesture-handler contract. A separate
+    // real touchscreen tap test covers device input end-to-end.
+    const dispatch = (kind,p) => {
+      const el = document.elementFromPoint(p.x,p.y);
+      if (!el) throw Error('Pointer outside viewport: '+kind);
       el.dispatchEvent(new PointerEvent(kind,{bubbles:true,cancelable:true,
         pointerId:71,pointerType:'touch',isPrimary:true,clientX:p.x,clientY:p.y}));
     };
-    dispatch('pointerdown',a);
-    for(let i=1;i<=8;i++)dispatch('pointermove',{x:a.x+(b.x-a.x)*i/8,y:a.y+(b.y-a.y)*i/8});
-    dispatch('pointerup',b);
+    dispatch('pointerdown',source);
+    for (let i=1;i<=8;i++) dispatch('pointermove',{
+      x:source.x+(target.x-source.x)*i/8,
+      y:source.y+(target.y-source.y)*i/8
+    });
+    dispatch('pointerup',target);
   },points);
   await expect.poll(()=>page.evaluate(()=>{
     const b=sanctMergeState().mergeBoard;
-    return {count:b.filter(Boolean).length,from:b[0],to:b[20]};
-  })).toEqual({count:1,from:null,to:'COMMUN'});
+    return {capacity:b.length,count:b.filter(Boolean).length,from:b[19],to:b[20]};
+  })).toEqual({capacity:21,count:1,from:null,to:'COMMUN'});
   await page.reload();
   await page.waitForFunction(()=>typeof sanctMergeState==='function');
-  expect(await page.evaluate(()=>sanctMergeState().mergeBoard[20])).toBe('COMMUN');
+  const persisted = await page.evaluate(()=>{
+    const b=sanctMergeState().mergeBoard;
+    return {capacity:b.length,count:b.filter(Boolean).length,from:b[19],to:b[20]};
+  });
+  expect(persisted).toEqual({capacity:21,count:1,from:null,to:'COMMUN'});
 });
