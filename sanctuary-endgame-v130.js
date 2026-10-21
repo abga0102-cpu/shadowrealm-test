@@ -23,8 +23,15 @@ function mergeTraceTick(){
   mergeTracePrev.board.forEach(function(x){if(x)before[x]=(before[x]||0)+1;});
   board.forEach(function(x){if(x)after[x]=(after[x]||0)+1;});
   Object.keys(before).forEach(function(x){if(before[x]>(after[x]||0))lost.push(x+' x'+(before[x]-(after[x]||0)));});
-  var legitimate=snap.fusions!==mergeTracePrev.fusions||snap.crafts!==mergeTracePrev.crafts||snap.sacrifices!==mergeTracePrev.sacrifices;
+  var fusionDelta=snap.fusions-mergeTracePrev.fusions,craftDelta=snap.crafts-mergeTracePrev.crafts,sacrificeDelta=snap.sacrifices-mergeTracePrev.sacrifices;
+  var legitimate=fusionDelta!==0||craftDelta!==0||sacrificeDelta!==0;
+  /* A merge normally consumes two pieces and creates one. A greater
+     decrease cannot be explained by fusion alone. Record it without
+     fabricating replacement fragments or altering player inventory. */
+  var expectedDecrease=Math.max(0,fusionDelta)+Math.max(0,sacrificeDelta);
+  var unexplainedDecrease=Math.max(0,mergeTracePrev.count-n-expectedDecrease);
   st.mergeLossTrace={from:mergeTracePrev.count,to:n,missing:lost.join(', '),fusionDelta:snap.fusions-mergeTracePrev.fusions,craftDelta:snap.crafts-mergeTracePrev.crafts,sacrificeDelta:snap.sacrifices-mergeTracePrev.sacrifices,at:Date.now(),recovered:0};
+  if(unexplainedDecrease>0){st.mergeLossTrace.suspectedExtraLoss=unexplainedDecrease;st.mergeLossTrace.reason='Diminution non expliquée par les fusions et sacrifices enregistrés (fabrications à vérifier)';}
   if(!legitimate){
    /* Restore only missing existing rarities into empty slots, never overwrite other fragments. */
    Object.keys(before).forEach(function(r){
