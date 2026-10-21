@@ -1714,7 +1714,7 @@ function sanctMergeDrop(from,to){
   const oldBoard=st.mergeBoard.slice(),oldLocks=Object.assign({},st.mergeLockedSlots||{});
   const oldFusions=Number(st.mergeFusions)||0,oldTotal=Number(st.fusions)||0;
   const oldAudit=st.mergeLastPurchaseAudit?Object.assign({},st.mergeLastPurchaseAudit):null;
-  const oldSelected=st.mergeSelected;
+  const oldSelected=st.mergeSelected,oldDiscovered=Object.assign({},st.mergeDiscovered||{});
   try{
     if(!dst){
       st.mergeBoard[to]=src;st.mergeBoard[from]=null;
@@ -1735,14 +1735,16 @@ function sanctMergeDrop(from,to){
     st.mergeSelected=-1;dirty=true;
     if(st.mergeBoard.length!==oldBoard.length||st.mergeBoard[to]!== (dst?next:src)||
       st.mergeBoard.filter(Boolean).length!==oldBoard.filter(Boolean).length-(dst?1:0))throw Error('Intégrité du plateau');
+    if(dst)sanctMergeDiscover(st,next);
     if(typeof saveNow==='function'&&saveNow()===false)throw Error('Sauvegarde refusée');
   }catch(err){
     st.mergeBoard=oldBoard;st.mergeLockedSlots=oldLocks;
     st.mergeFusions=oldFusions;st.fusions=oldTotal;st.mergeSelected=oldSelected;
+    st.mergeDiscovered=oldDiscovered;
     if(oldAudit)st.mergeLastPurchaseAudit=oldAudit;
     dirty=true;toast('Action annulée : '+(err&&err.message||'erreur'));render();return false;
   }
-  if(dst){sanctMergeDiscover(st,next);if(navigator.vibrate)try{navigator.vibrate(20);}catch(_){}
+  if(dst){if(navigator.vibrate)try{navigator.vibrate(20);}catch(_){}
     toast(SANCT_MERGE_NAME[src]+' + '+SANCT_MERGE_NAME[src]+' → '+SANCT_MERGE_NAME[next],true);}
   render();return true;
 }
@@ -2073,12 +2075,12 @@ const ACT = {
     render();
   },
   sanctMergeCancel: () => { const st=sanctMergeState(); st.mergeSelected=-1; dirty=true; render(); },
-  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.map((r,i)=>({r,locked:!!(st.mergeLockedSlots&&st.mergeLockedSlots[i])})).filter(x=>x.r); st.mergeBoard=kept.map(x=>x.r).concat(Array(Math.max(0,st.mergeBoard.length-kept.length)).fill(null)); st.mergeLockedSlots={};kept.forEach((x,i)=>{if(x.locked)st.mergeLockedSlots[i]=true;}); st.mergeSelected=-1; dirty=true; render(); },
+  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.map((r,i)=>({r,oldIndex:i,locked:!!(st.mergeLockedSlots&&st.mergeLockedSlots[i])})).filter(x=>x.r); st.mergeBoard=kept.map(x=>x.r).concat(Array(Math.max(0,st.mergeBoard.length-kept.length)).fill(null)); st.mergeLockedSlots={};kept.forEach((x,i)=>{if(x.locked)st.mergeLockedSlots[i]=true;}); if(st.mergeLastPurchaseAudit&&!st.mergeLastPurchaseAudit.lastRemoval){ const au=st.mergeLastPurchaseAudit,oldSlot=Number(au.slot); if(Number.isInteger(oldSlot)&&oldSlot>=0){ const newSlot=kept.findIndex(x=>x.oldIndex===oldSlot); if(newSlot>=0){au.slot=newSlot;au.lastMove='Rangement du plateau';au.lastMoveAt=Date.now();} else {au.lastRemoval='Fragment absent après rangement';au.removedAt=Date.now();} } } st.mergeSelected=-1; dirty=true; render(); },
   sanctSelectPair: () => { const st=sanctMergeState(), p=sanctMergePair(st); if(!p)return; st.mergeSelected=p[0]; dirty=true; toast("Première "+SANCT_MERGE_NAME[p[2]]+" sélectionnée · touche la seconde"); render(); },
   sanctRecipeCraft: (a) => {
     const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
     if(!r||!sanctMergeRecipeKnown(st,r)||!sanctMergeRecipeReady(st,r)) return toast("Couleurs insuffisantes");
-    Object.keys(r.req).forEach((rar)=>{ let n=r.req[rar]; for(let i=0;i<st.mergeBoard.length&&n>0;i++) if(st.mergeBoard[i]===rar){ st.mergeBoard[i]=null; n--; } });
+    Object.keys(r.req).forEach((rar)=>{ let n=r.req[rar]; for(let i=0;i<st.mergeBoard.length&&n>0;i++) if(st.mergeBoard[i]===rar){ if(st.mergeLastPurchaseAudit&&Number(st.mergeLastPurchaseAudit.slot)===i){st.mergeLastPurchaseAudit.lastRemoval='Consommation par rituel';st.mergeLastPurchaseAudit.removedAt=Date.now();} st.mergeBoard[i]=null; n--; } });
     if(r.kind==="seal") st.stabilitySeals=(st.stabilitySeals||0)+r.qty;
     else {
       const ad=ACCEL_DEFS.find((x)=>x.mins===r.mins) || ACCEL_DEFS.reduce((best,x)=>!best||Math.abs(x.mins-r.mins)<Math.abs(best.mins-r.mins)?x:best,null);

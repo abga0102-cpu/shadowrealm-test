@@ -3,7 +3,10 @@
   "private": true,
   "description": "Development-only regression tooling for the static Shadowreach HTML game.",
   "scripts": {
-    "test:e2e": "playwright test -c tests/playwright.config.js"
+    "test:e2e": "npm run test:sanctuary && playwright test -c tests/playwright.config.js",
+    "test:sanctuary": "node --test tests/sanctuary-21-slots-integrity.spec.cjs tests/sanctuary-purchase-audit-integrity.spec.cjs tests/sanctuary-touch-target.test.cjs tests/sanctuary-transactions.test.cjs tests/sanctuary-sacrifice-recovery.test.cjs",
+    "test:sanctuary:browser": "playwright test -c tests/playwright.sanctuary.config.js",
+    "test:sanctuary:all": "npm run test:sanctuary && npm run test:sanctuary:browser"
   },
   "devDependencies": {
     "@playwright/test": "1.55.0"

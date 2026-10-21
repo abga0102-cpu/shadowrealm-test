@@ -16,9 +16,15 @@ var syncing=false;
 function ensureSanct(s){
   if(!s.sanctuary||typeof s.sanctuary!=='object')s.sanctuary={};
   var st=s.sanctuary;
-  if(!Array.isArray(st.mergeBoard))st.mergeBoard=Array(BOARD_SIZE).fill(null);
-  while(st.mergeBoard.length<BOARD_SIZE)st.mergeBoard.push(null);
-  if(st.mergeBoard.length>BOARD_SIZE)st.mergeBoard=st.mergeBoard.slice(0,BOARD_SIZE);
+  /* V575: paid Sanctuary expansions are authoritative. This older accomplishments
+     adapter must NEVER shrink the live board to its legacy 16-slot constant:
+     doing so discarded fragments in purchased slots 17-32 during each render.
+     Preserve all existing entries (including legacy/imported saves) and only
+     extend the board when the recorded purchased capacity requires it. */
+  if(!Array.isArray(st.mergeBoard))st.mergeBoard=[];
+  var expansions=Math.max(0,Math.min(16,Math.floor(Number(st.boardExpansions)||0)));
+  var required=Math.max(BOARD_SIZE,BOARD_SIZE+expansions);
+  while(st.mergeBoard.length<required)st.mergeBoard.push(null);
   if(!st.mergeReserve||typeof st.mergeReserve!=='object')st.mergeReserve={};
   ORDER.forEach(function(r){st.mergeReserve[r]=Math.max(0,Math.floor(Number(st.mergeReserve[r])||0));});
   return st;
