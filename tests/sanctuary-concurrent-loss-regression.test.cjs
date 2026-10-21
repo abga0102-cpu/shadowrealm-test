@@ -17,6 +17,8 @@ test('a legitimate fusion must not hide simultaneous loss of Mythique I',()=>{
  vm.createContext(ctx);
  vm.runInContext(src.slice(start,end),ctx);
  ctx.mergeTraceTick();
- assert.equal(st.mergeBoard.filter(Boolean).includes('MYTHIQUE_I'),true,
-  'Mythique I lost during a fusion must be detected and preserved');
+ assert.equal(st.mergeLossTrace.suspectedExtraLoss,1,
+  'A concurrent unexplained loss must be flagged even during fusion');
+ assert.equal(st.mergeBoard.includes('MYTHIQUE_I'),false,
+  'Detection must not invent a replacement fragment without transaction proof');
 });
