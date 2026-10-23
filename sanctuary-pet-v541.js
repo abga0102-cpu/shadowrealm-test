@@ -3,7 +3,7 @@
 'use strict';
 // Temporary pause: do not move pending rewards, mutate Sanctuary board or run auto-fusions.
 // Keep all existing saved data untouched for future reactivation.
-return;
+if(window.__SHADOWREACH_SANCTUARY_PAUSED===true)return;
 const COSTS={'10-gold':{ms:600000,amount:100000,currency:'gold'},'10-gems':{ms:600000,amount:10,currency:'gems'},'20-gold':{ms:1200000,amount:150000,currency:'gold'},'20-gems':{ms:1200000,amount:15,currency:'gems'}};
 function petTick(){
   if(typeof S==='undefined'||typeof sanctMergeState!=='function'||typeof sanctMergePair!=='function')return;
