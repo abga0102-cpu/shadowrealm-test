@@ -18,7 +18,15 @@ var DEFS={
  gold50_300:{type:'gold',pct:50,mins:300,label:'Or',icon:'gold'},
  xp50_300:{type:'xp',pct:50,mins:300,label:'XP',icon:'chart'}
 };
-function st(){return sanctMergeState();}
+function st(){
+  var state=sanctMergeState();
+  // The Sanctuary endgame script is intentionally unloaded during the pause.
+  // Its old initializer supplied these boost maps; keep them available without
+  // resetting any existing boosts, board contents or player rewards.
+  if(!state.activeBoosts || typeof state.activeBoosts!=='object')state.activeBoosts={};
+  if(!state.boostItems || typeof state.boostItems!=='object')state.boostItems={};
+  return state;
+}
 function clean(type){
  var s=st(),a=s.activeBoosts[type],now=Date.now();if(!a)return null;
  a.queue=Array.isArray(a.queue)?a.queue:[];
