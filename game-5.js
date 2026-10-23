@@ -1706,6 +1706,7 @@ function askReset() {
 
 // SANCTUARY_DRAG_MERGE_V34
 function sanctMergeDrop(from,to){
+  if(window.__SHADOWREACH_SANCTUARY_PAUSED===true)return false;
   const st=sanctMergeState();from=Number(from);to=Number(to);
   if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=st.mergeBoard.length||to>=st.mergeBoard.length||from===to)return false;
   const src=st.mergeBoard[from],dst=st.mergeBoard[to];if(!src)return false;
@@ -2109,6 +2110,7 @@ const ACT = {
 
 // Drag tactile/souris du Sanctuaire.
 (function initSanctuaryDragV34(){
+  if(window.__SHADOWREACH_SANCTUARY_PAUSED===true)return;
   const app=document.getElementById("app"); if(!app)return;
   let d=null;
   const clearTarget=()=>{if(d&&d.target)d.target.classList.remove("sanctDropTarget","sanctMergeTarget","sanctRejectTarget");};
