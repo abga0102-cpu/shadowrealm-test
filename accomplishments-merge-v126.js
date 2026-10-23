@@ -6,7 +6,7 @@
 'use strict';
 // Temporary pause: do not move pending rewards, mutate Sanctuary board or run auto-fusions.
 // Keep all existing saved data untouched for future reactivation.
-return;
+if(window.__SHADOWREACH_SANCTUARY_PAUSED===true)return;
 if(window.__srAccomplishmentsMergeV126)return;
 window.__srAccomplishmentsMergeV126=true;
 
