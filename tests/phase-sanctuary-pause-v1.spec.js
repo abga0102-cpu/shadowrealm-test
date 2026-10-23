@@ -114,4 +114,37 @@ test.describe('Sanctuary pause: gameplay and save isolation', () => {
     expect(result).toMatchObject({ sameBoard: true, boardLength: 16, expansions: 5, lastPiece: 'MYTHIQUE_I' });
   });
 
+  test('weekly Mega rewards are reserved without touching paid slots while Sanctuary is paused', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'One deterministic engine test is sufficient.');
+    await page.goto('/?smoke=1');
+    await page.waitForFunction(() => !!window.__srMegaRewardsV329 && window.__SHADOWREACH_SANCTUARY_PAUSED === true);
+    const result = await page.evaluate(() => {
+      const board = Array(21).fill(null);
+      board[17] = 'MYTHIQUE_I';
+      board[20] = 'EPIQUE_I';
+      S.sanctuary = { mergeBoard: board, boardExpansions: 5, weeklyReserve: {} };
+      S.accels = {};
+      const before = JSON.stringify(board);
+      const reward = window.__srMegaRewardsV329.reward(30);
+      const paid = window.__srMegaRewardsV329.grantReward(reward, 'pause-test');
+      const attemptedPlacement = window.__srMegaRewardsV329.placeReserve();
+      return {
+        paid: !!paid,
+        placed: paid && paid.placed,
+        attemptedPlacement,
+        sameBoard: JSON.stringify(S.sanctuary.mergeBoard) === before,
+        length: S.sanctuary.mergeBoard.length,
+        mythic: S.sanctuary.mergeBoard[17],
+        epic: S.sanctuary.mergeBoard[20],
+        reserved: S.sanctuary.weeklyReserve[reward.rarity],
+        accelerators: S.accels.a10
+      };
+    });
+    expect(result).toMatchObject({
+      paid: true, placed: 0, attemptedPlacement: { placed: 0, left: 1 },
+      sameBoard: true, length: 21, mythic: 'MYTHIQUE_I', epic: 'EPIQUE_I',
+      reserved: 1, accelerators: 15
+    });
+  });
+
 });
