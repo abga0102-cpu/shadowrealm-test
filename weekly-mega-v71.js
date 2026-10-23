@@ -19,6 +19,7 @@
   const RESERVE_ORDER=['LEGENDAIRE','ARTEFACT','MYTHIQUE','EPIQUE','RARE','COMMUN'];
   const RARITY_NAMES={COMMUN:'Commun',RARE:'Rare',EPIQUE:'Épique',MYTHIQUE:'Mythique',ARTEFACT:'Artefact',LEGENDAIRE:'Légendaire'};
 
+  function sanctuaryPaused(){return window.__SHADOWREACH_SANCTUARY_PAUSED===true;}
   function stateReady(){return typeof S!=='undefined'&&S&&typeof S==='object';}
   function hasMegaHistory(s){return !!(s&&s.megaBossClears&&Object.keys(s.megaBossClears).some(function(k){return !!s.megaBossClears[k];}));}
   function levelForFloor(floor){return typeof megaLevelForFloor==='function'?megaLevelForFloor(Number(floor)):Math.max(1,Math.floor(Number(floor)/10));}
@@ -55,7 +56,7 @@
     LEVELS.forEach(function(level){if(isMilestoneClearedFor(S,level)&&w.unlockedAt[String(level)]==null)w.unlockedAt[String(level)]=0;});
     w.rewardStateVersion=STATE_VERSION;
     if(!S.sanctuary||typeof S.sanctuary!=='object')S.sanctuary={};
-    if(!Array.isArray(S.sanctuary.mergeBoard))S.sanctuary.mergeBoard=Array(typeof SANCT_BOARD_SIZE==='number'?SANCT_BOARD_SIZE:16).fill(null);
+    if(!sanctuaryPaused()&&!Array.isArray(S.sanctuary.mergeBoard))S.sanctuary.mergeBoard=Array(typeof SANCT_BOARD_SIZE==='number'?SANCT_BOARD_SIZE:16).fill(null);
     if(!S.sanctuary.weeklyReserve||typeof S.sanctuary.weeklyReserve!=='object')S.sanctuary.weeklyReserve={};
     RESERVE_ORDER.forEach(function(r){S.sanctuary.weeklyReserve[r]=Math.max(0,Number(S.sanctuary.weeklyReserve[r])||0);});
     if(!S.accels||typeof S.accels!=='object')S.accels={};
@@ -63,6 +64,7 @@
   }
 
   function placeReserve(){
+    if(sanctuaryPaused())return {placed:0,left:stateReady()&&S.sanctuary&&S.sanctuary.weeklyReserve?RESERVE_ORDER.reduce(function(n,r){return n+(Number(S.sanctuary.weeklyReserve[r])||0);},0):0};
     if(!ensure())return {placed:0,left:0};
     const st=S.sanctuary,b=st.mergeBoard;let placed=0,left=0;
     RESERVE_ORDER.forEach(function(rarity){
@@ -84,7 +86,7 @@
   function grantReward(r,source){
     if(!r||!ensure())return null;
     S.sanctuary.weeklyReserve[r.rarity]=(Number(S.sanctuary.weeklyReserve[r.rarity])||0)+r.pieces;
-    const placement=placeReserve(),def=accelDef(r.mins);
+    const placement=sanctuaryPaused()?{placed:0,left:reserveTotal()}:placeReserve(),def=accelDef(r.mins);
     if(def)S.accels[def.key]=(Number(S.accels[def.key])||0)+r.qty;
     const out={level:r.level,rarity:r.rarity,pieces:r.pieces,accelMins:r.mins,accelQty:r.qty,placed:placement.placed,reserve:placement.left,source:source||'weekly',at:Date.now()};
     if(typeof saveNow==='function')saveNow();
@@ -160,9 +162,9 @@
     const rows=LEVELS.map(row).join('');
     box.innerHTML='<div class="between"><div><div class="bb small">Paliers hebdomadaires Méga Boss</div><div class="mute tiny b">Cases cochées : versement chaque lundi à 00:00 · indépendant des récompenses directes de victoire</div></div><span class="pill" style="color:#84E891;border-color:#3FB950">'+(lv?'Palier '+lv:'Niv. '+UNLOCK_LEVEL)+'</span></div>'+
       (r?'<div class="notice mt8 tiny"><b>Meilleur palier coché :</b> '+rewardText(r)+'<br><span class="mute">Prochain versement : '+next.toLocaleString('fr-FR',{weekday:'long',hour:'2-digit',minute:'2-digit'})+'</span></div>':'<div class="notice mt8 tiny">Débloqué au niveau personnage '+UNLOCK_LEVEL+'. Bats les Méga Boss pour cocher les paliers.</div>')+
-      (reserve?'<button id="megaWeeklyPlaceV117" class="btn small mt8" style="width:100%">Placer '+reserve+' fragment'+(reserve>1?'s':'')+' en réserve</button>':'')+
+      (!sanctuaryPaused()&&reserve?'<button id="megaWeeklyPlaceV117" class="btn small mt8" style="width:100%">Placer '+reserve+' fragment'+(reserve>1?'s':'')+' en réserve</button>':'')+
       '<details class="mt8" open><summary class="b small" style="cursor:pointer">Paliers hebdomadaires</summary><div class="mt6">'+rows+'</div></details>';
-    const b=box.querySelector('#megaWeeklyPlaceV117');if(b)b.addEventListener('click',function(){const n=placeReserve();if(n.placed&&typeof saveNow==='function')saveNow();if(typeof render==='function')render();});
+    const b=box.querySelector('#megaWeeklyPlaceV117');if(b&&!sanctuaryPaused())b.addEventListener('click',function(){const n=placeReserve();if(n.placed&&typeof saveNow==='function')saveNow();if(typeof render==='function')render();});
     return box;
   }
   function inject(){const screen=document.getElementById('screen');if(!screen||!stateReady())return;const title=screen.textContent||'';if(!/méga[ -]?boss/i.test(title)&&title.indexOf('MÉGA')<0)return;if(screen.querySelector('#megaWeeklyV117'))return;const pad=screen.querySelector('.pad');if(!pad)return;const y=window.scrollY||document.documentElement.scrollTop||0;pad.appendChild(buildBox());if((window.scrollY||document.documentElement.scrollTop||0)!==y)window.scrollTo(0,y);}
