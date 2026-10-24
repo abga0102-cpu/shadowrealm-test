@@ -635,7 +635,7 @@ const RULES = {
   SKILL_SLOTS_BASE: 3, SKILL_SLOT_5_LEVEL: 100,
   RAID_UNLOCK_LEVEL: 5, CHAT_UNLOCK_LEVEL: 3, MAX_ENEMIES: 3,
   FORGE_MAX: 50, SKILL_MAX_LEVEL: 50, MASTERY_MAX: 50, EGG_SLOT_MAX: 5,
-  RAID_MAX_LEVEL: 70, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6, RAID_ASCEND_MAX_STARS: 0,
+  RAID_MAX_LEVEL: 500, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6, RAID_ASCEND_MAX_STARS: 0,
   UNIVERSAL_KEY_DAILY: 3, UNIVERSAL_KEY_CAP: 6, AFK_BASE_HOURS: 8,
   WAR_POINTS_PER_PR: 30, // legacy compatibility only
   FORGE_BATCH_BASE: 1, FORGE_BATCH_MAX: 10,
@@ -1700,10 +1700,10 @@ function raidConcurrentEnemyCount(raid, level) {
   return raid === "or" ? 1 : raidEnemyCount(raid, level);
 }
 function raidEnemyHP(raid, level) {
-  return Math.max(1, Math.floor(raidWaveHP(raid, level) / raidEnemyCount(raid, level)));
+  return Math.max(1, Math.floor(3 * raidWaveHP(raid, level) / raidEnemyCount(raid, level)));
 }
 function raidEnemyDamage(raid, level) {
-  return Math.max(1, Math.floor(raidWaveDamage(raid, level) / raidConcurrentEnemyCount(raid, level)));
+  return Math.max(1, Math.floor(3 * raidWaveDamage(raid, level) / raidConcurrentEnemyCount(raid, level)));
 }
 /* Rebirth and PR are retired from gameplay.
    These zero-value names stay only as compatibility shims for old saves and
