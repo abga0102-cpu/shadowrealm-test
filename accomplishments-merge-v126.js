@@ -16,14 +16,27 @@ var COLOR={COMMUN:'#9FB0C8',PEU_COMMUN:'#57C785',RARE:'#3FA7FF',EPIQUE:'#B15CF6'
 var BOARD_SIZE=(typeof SANCT_BOARD_SIZE==='number'&&SANCT_BOARD_SIZE>0)?SANCT_BOARD_SIZE:16;
 var syncing=false;
 
+/* Canonical reserve is an array: V130 consumes it with shift().
+   Convert legacy count dictionaries without dropping unknown rarities or array properties. */
+var RARITY_ALIAS={RARE:'RARE_I',EPIQUE:'EPIQUE_I',MYTHIQUE:'MYTHIQUE_I',LEGENDAIRE:'LEGENDAIRE_I',ARTEFACT:'ARTEFACT_I',INFERNAL:'INFERNAL_I',IMMORTEL:'IMMORTEL_I'};
+function canonicalRarity(r){return RARITY_ALIAS[r]||r;}
+function normalizeReserve(st){
+  var old=st.mergeReserve,arr=Array.isArray(old)?old.slice():[];
+  if(old&&typeof old==='object'){
+    Object.keys(old).forEach(function(r){
+      if(/^\\d+$/.test(r)||r==='length')return;
+      var qty=Math.max(0,Math.floor(Number(old[r])||0));
+      for(var i=0;i<qty;i++)arr.push(canonicalRarity(r));
+    });
+  }
+  st.mergeReserve=arr.map(canonicalRarity);
+}
 function ensureSanct(s){
   if(!s.sanctuary||typeof s.sanctuary!=='object')s.sanctuary={};
   var st=s.sanctuary;
   if(!Array.isArray(st.mergeBoard))st.mergeBoard=Array(BOARD_SIZE).fill(null);
   while(st.mergeBoard.length<BOARD_SIZE)st.mergeBoard.push(null);
-  if(st.mergeBoard.length>BOARD_SIZE)st.mergeBoard=st.mergeBoard.slice(0,BOARD_SIZE);
-  if(!st.mergeReserve||typeof st.mergeReserve!=='object')st.mergeReserve={};
-  ORDER.forEach(function(r){st.mergeReserve[r]=Math.max(0,Math.floor(Number(st.mergeReserve[r])||0));});
+  normalizeReserve(st);
   return st;
 }
 function ensureAcc(s){
@@ -33,21 +46,18 @@ function ensureAcc(s){
 }
 function putOne(st,r){
   var i=st.mergeBoard.findIndex(function(x){return !x;});
-  if(i>=0){st.mergeBoard[i]=r;return true;}
-  st.mergeReserve[r]=(st.mergeReserve[r]||0)+1;
+  if(i>=0){st.mergeBoard[i]=canonicalRarity(r);return true;}
+  st.mergeReserve.push(canonicalRarity(r));
   return false;
 }
 function refill(st){
   var changed=false;
-  ORDER.forEach(function(r){
-    while((st.mergeReserve[r]||0)>0){
-      var i=st.mergeBoard.findIndex(function(x){return !x;});
-      if(i<0)return;
-      st.mergeBoard[i]=r;
-      st.mergeReserve[r]--;
-      changed=true;
-    }
-  });
+  while(st.mergeReserve.length){
+    var i=st.mergeBoard.findIndex(function(x){return !x;});
+    if(i<0)break;
+    st.mergeBoard[i]=st.mergeReserve.shift();
+    changed=true;
+  }
   return changed;
 }
 function syncRewards(s){
@@ -70,12 +80,16 @@ function syncRewards(s){
     return {moved:moved,refilled:refilled};
   }finally{syncing=false;}
 }
-function reserveTotal(st){return ORDER.reduce(function(n,r){return n+(Number(st.mergeReserve[r])||0);},0);}
+function reserveTotal(st){return st.mergeReserve.length;}
 function reserveHTML(st){
   var total=reserveTotal(st);
   if(!total)return '';
-  var chips=ORDER.filter(function(r){return (st.mergeReserve[r]||0)>0;}).map(function(r){
-    return '<span class="pill" style="border-color:'+COLOR[r]+';color:'+COLOR[r]+'">'+NAME[r]+' ×'+st.mergeReserve[r]+'</span>';
+  var counts={};
+  st.mergeReserve.forEach(function(r){counts[r]=(counts[r]||0)+1;});
+  var chips=Object.keys(counts).map(function(r){
+    var name=(typeof SANCT_MERGE_NAME!=='undefined'&&SANCT_MERGE_NAME[r])||NAME[r]||r;
+    var color=(typeof SANCT_MERGE_COLOR!=='undefined'&&SANCT_MERGE_COLOR[r])||COLOR[r]||'#9FB0C8';
+    return '<span class="pill" style="border-color:'+color+';color:'+color+'">'+name+' ×'+counts[r]+'</span>';
   }).join('');
   return '<div id="srMergeReserveV126" class="card lit mt8" style="padding:10px"><div class="between"><div><div class="b small">RÉSERVE DE FUSION</div><div class="mute tiny mt3">Les pièces en trop remplissent automatiquement le plateau dès qu’une place se libère.</div></div><span class="pill">'+total+'</span></div><div class="row gap4 mt8" style="flex-wrap:wrap">'+chips+'</div></div>';
 }
