@@ -7,6 +7,24 @@
   window.__srImportSaveGuardV207=true;
   if(typeof ACT!=='object'||!ACT)return;
 
+  /* Reject non-save JSON before migrate() can silently create a fresh hero.
+     Keep legacy saves compatible: no version number is required. */
+  function isSaveObject(raw){
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))return false;
+    var objectFields=['stats','forge','raids','equipped','tree'];
+    var structured=objectFields.some(function(k){return raw[k]&&typeof raw[k]==='object'&&!Array.isArray(raw[k]);});
+    if(!structured)return false;
+    var markers=['version','playerName','level','floor','recordFloor','inventory','pets','stats','forge','raids','equipped','tree'];
+    var count=markers.filter(function(k){return Object.prototype.hasOwnProperty.call(raw,k);}).length;
+    if(count<3)return false;
+    if(raw.inventory!=null&&!Array.isArray(raw.inventory))return false;
+    if(raw.pets!=null&&!Array.isArray(raw.pets))return false;
+    if(raw.level!=null&&(!Number.isFinite(Number(raw.level))||Number(raw.level)<1))return false;
+    if(raw.floor!=null&&(!Number.isFinite(Number(raw.floor))||Number(raw.floor)<1))return false;
+    return true;
+  }
+  window.__srIsSaveObjectV508=isSaveObject;
+
   ACT.importSave=function(){
     var inp=document.createElement('input');
     inp.type='file';
@@ -18,7 +36,10 @@
       fr.onload=function(){
         try{
           var raw=JSON.parse(String(fr.result));
-          S=migrate(raw,'Héros');
+          if(!isSaveObject(raw))throw new Error('Not a Shadowreach save');
+          var imported=migrate(raw,'Héros');
+          if(!imported||typeof imported!=='object'||Array.isArray(imported)||!Array.isArray(imported.inventory)||!imported.raids||typeof imported.raids!=='object')throw new Error('Invalid migrated save');
+          S=imported;
 
           /* Migration may contain legacy compensation/default logic. Restore the
              imported key inventory afterwards so zero is preserved as zero. */
