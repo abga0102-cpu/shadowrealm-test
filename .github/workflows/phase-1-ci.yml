@@ -76,6 +76,9 @@ jobs:
       - name: Install browser engines
         run: npx playwright install --with-deps chromium webkit
 
+      - name: Verify restoration in Chromium and iPhone WebKit
+        run: npx playwright test -c tests/playwright.config.js tests/phase-restore-backup-v509.spec.js --reporter=list
+
       - name: Enforce moving legacy smoke ratchet
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
         run: node tests/smoke-ratchet.js .phase1-base .
