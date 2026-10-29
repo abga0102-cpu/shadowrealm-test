@@ -56,6 +56,21 @@ function runSuite(rootArg, label) {
   const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
   try { fs.rmSync(reportPath, { force: true }); } catch (_) {}
   const failures = collectFailures(report);
+  /* A JSON report can exist even when test discovery fails. Do not report
+     zero regressions if no browser tests actually ran. */
+  const stats = report.stats || {};
+  const executed = Number(stats.expected || 0) + Number(stats.unexpected || 0) +
+    Number(stats.flaky || 0);
+  if (!executed || (Array.isArray(report.errors) && report.errors.length)) {
+    const errors = (report.errors || []).map(e => String(e.message || e.value || e)).slice(0, 3);
+    throw new Error(label + ' Playwright suite did not execute cleanly (' +
+      executed + ' tests, exit ' + run.status + '): ' + errors.join(' | '));
+  }
+  if (run.status !== 0 && failures.size === 0) {
+    throw new Error(label + ' Playwright exited ' + run.status +
+      ' but no individual failures were captured');
+  }
+  console.log(label + ' Playwright tests executed: ' + executed);
   console.log(label + ' Playwright failures: ' + failures.size);
   return failures;
 }
