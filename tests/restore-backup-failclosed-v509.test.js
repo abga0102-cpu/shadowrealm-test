@@ -76,4 +76,13 @@ function setup(active=old, withSafety=true) {
   assert.equal(t.stats().reloads,0);
   assert.equal(t.alerts.length,1);
 }
-console.log('Restore safety: 7 backup failure, success, corrupt and missing-save scenarios passed.');
+{
+  // The published index must load the patched modules, not a previously cached URL.
+  const index = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const safetyUrl = 'save-safety-v340.js?v=2026.10.29.509';
+  const recoveryUrl = 'save-recovery-v341.js?v=2026.10.29.509';
+  assert.equal(index.split(safetyUrl).length - 1, 1);
+  assert.equal(index.split(recoveryUrl).length - 1, 1);
+  assert.ok(index.indexOf(safetyUrl) < index.indexOf(recoveryUrl), 'Safety module must load before recovery');
+}
+console.log('Restore safety: 7 restore scenarios and 1 production script-version check passed.');
