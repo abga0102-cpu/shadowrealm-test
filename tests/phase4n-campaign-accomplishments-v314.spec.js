@@ -43,7 +43,8 @@ test('V322 first boss accomplishment stays locked until the mapped Boss is actua
     ACT.accomplishments();
   });
   await expect(page.locator('.srAch139 [data-ach="floor25"]')).toHaveCount(0);
-  await page.locator('.srAch139 [data-act="closeModal"]').click();
+  // The modal can show both a header X and a footer Fermer; either closes it.
+  await page.locator('.srAch139 [data-act="closeModal"]').first().click();
   await page.evaluate(() => { S.bossClears['45'] = true; ACT.accomplishments(); });
   await expect(page.locator('.srAch139 [data-ach="floor25"]')).toBeVisible();
 });
@@ -61,7 +62,8 @@ test('V322 final difficulty reward stays locked until Divin Boss 5-20 is actuall
   });
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toHaveCount(0);
   await expect(page.locator('.srAch139')).toContainText('Terminer Divin · 5-20');
-  await page.locator('.srAch139 [data-act="closeModal"]').click();
+  // The modal can show both a header X and a footer Fermer; either closes it.
+  await page.locator('.srAch139 [data-act="closeModal"]').first().click();
   await page.evaluate(() => { S.bossClears['800'] = true; ACT.accomplishments(); });
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toBeVisible();
 });
