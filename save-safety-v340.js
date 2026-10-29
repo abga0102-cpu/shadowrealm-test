@@ -114,7 +114,10 @@
     try{
       var raw=localStorage.getItem(BACKUP_PREFIX+slot);
       if(!validRaw(raw))return false;
-      snapshot(localStorage.getItem(SAVE_KEY),true);
+      /* Never replace a valid active save unless a fresh backup is secured.
+         An invalid/missing active save must remain recoverable. */
+      var activeRaw=localStorage.getItem(SAVE_KEY);
+      if(validRaw(activeRaw)&&!snapshot(activeRaw,true))return false;
       localStorage.setItem(SAVE_KEY,raw);
       location.reload();
       return true;
