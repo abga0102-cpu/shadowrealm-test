@@ -23,9 +23,18 @@ async function importJson(page, json) {
 
 test('invalid JSON cannot replace the running hero', async ({ page }) => {
   await ready(page);
-  await page.evaluate(() => { window.__srImportPriorState = S; });
+  await page.evaluate(() => {
+    window.__srImportPriorState = S;
+    window.__srImportFileReadComplete = false;
+    const originalRead = FileReader.prototype.readAsText;
+    FileReader.prototype.readAsText = function(...args) {
+      this.addEventListener('loadend', () => { window.__srImportFileReadComplete = true; }, { once: true });
+      return originalRead.apply(this, args);
+    };
+  });
   await importJson(page, '{"stats":{},"level":2}');
-  await expect.poll(() => page.evaluate(() => S === window.__srImportPriorState)).toBe(true);
+  await page.waitForFunction(() => window.__srImportFileReadComplete === true);
+  expect(await page.evaluate(() => S === window.__srImportPriorState)).toBe(true);
 });
 
 test('legacy save imports in the real game, persists progress and uses raid-local day', async ({ page }) => {
