@@ -60,3 +60,35 @@ test('legacy save imports in the real game, persists progress and uses raid-loca
   expect(result.storedFloor).toBeGreaterThanOrEqual(4);
   expect(result.storedDay).toBe(await page.evaluate(() => raidKeyResetDayKey(Date.now())));
 });
+
+test('storage write failure rolls back the active hero without replacing its save', async ({ page }) => {
+  await ready(page);
+  const initial = await page.evaluate(() => {
+    window.__srImportPriorState = S;
+    window.__srImportFileReadComplete = false;
+    const oldRead = FileReader.prototype.readAsText;
+    FileReader.prototype.readAsText = function(...args) {
+      this.addEventListener('loadend', () => { window.__srImportFileReadComplete = true; }, { once: true });
+      return oldRead.apply(this, args);
+    };
+    const originalSetItem = Storage.prototype.setItem;
+    window.__srRestoreSetItem = () => { Storage.prototype.setItem = originalSetItem; };
+    Storage.prototype.setItem = function(key, value) {
+      if (key === 'shadowreach.save.local') throw new DOMException('Storage full', 'QuotaExceededError');
+      return originalSetItem.call(this, key, value);
+    };
+    return localStorage.getItem('shadowreach.save.local');
+  });
+  try {
+    await importJson(page, legacy);
+    await page.waitForFunction(() => window.__srImportFileReadComplete === true);
+    const result = await page.evaluate(() => ({
+      sameHero: S === window.__srImportPriorState,
+      persisted: localStorage.getItem('shadowreach.save.local')
+    }));
+    expect(result.sameHero).toBe(true);
+    expect(result.persisted).toBe(initial);
+  } finally {
+    await page.evaluate(() => window.__srRestoreSetItem && window.__srRestoreSetItem());
+  }
+});
