@@ -18,7 +18,9 @@ jobs:
   regression:
     name: Static game regression
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # Full baseline + current browser suites take ~46 minutes each on CI.
+    # Keep the complete regression comparison; allow both to finish.
+    timeout-minutes: 150
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,11 +72,21 @@ jobs:
       - name: Install development test tooling
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      - name: Validate save import payloads
+        run: node tests/import-save-validation-v508.test.js
+
+      - name: Compare historical Node source contracts
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        run: node tests/source-contract-ratchet.js .phase1-base .
+
       - name: Verify recovery preserves active saves before replacement
         run: node tests/restore-backup-failclosed-v509.test.js
 
       - name: Install browser engines
         run: npx playwright install --with-deps chromium webkit
+
+      - name: Verify save import in Chromium and iPhone WebKit
+        run: npx playwright test -c tests/playwright.config.js tests/phase-import-validation-v508.spec.js
 
       - name: Verify restoration in Chromium and iPhone WebKit
         run: npx playwright test -c tests/playwright.config.js tests/phase-restore-backup-v509.spec.js --reporter=list
