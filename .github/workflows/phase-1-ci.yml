@@ -73,6 +73,10 @@ jobs:
       - name: Validate save import payloads
         run: node tests/import-save-validation-v508.test.js
 
+      - name: Compare historical Node source contracts
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        run: node tests/source-contract-ratchet.js .phase1-base .
+
       - name: Install browser engines
         run: npx playwright install --with-deps chromium webkit
 
