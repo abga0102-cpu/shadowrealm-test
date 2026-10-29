@@ -18,7 +18,9 @@ jobs:
   regression:
     name: Static game regression
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    # Full baseline + current browser suites take ~46 minutes each on CI.
+    # Keep the complete regression comparison; allow both to finish.
+    timeout-minutes: 150
     steps:
       - name: Checkout
         uses: actions/checkout@v4
