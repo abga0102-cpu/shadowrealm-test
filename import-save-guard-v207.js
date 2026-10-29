@@ -60,7 +60,7 @@
 
           /* Import must not masquerade as a calendar change. The next real day
              will resume the normal daily reset automatically. */
-          imported.lastKeyReset=todayStr();
+          imported.lastKeyReset=raidKeyResetDayKey(Date.now());
           imported.eventDay=todayStr();
           delete imported.testDays;
           imported.power=computePower(imported);
