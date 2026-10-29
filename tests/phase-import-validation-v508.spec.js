@@ -47,13 +47,16 @@ test('legacy save imports in the real game, persists progress and uses raid-loca
       gold: S.gold, floor: S.floor,
       dayAligned: S.lastKeyReset === raidKeyResetDayKey(Date.now()),
       storedLevel: stored && stored.level, storedGold: stored && stored.gold,
+      storedFloor: stored && stored.floor,
       storedDay: stored && stored.lastKeyReset
     };
   });
   expect(result.gold).toBe(321);
-  expect(result.floor).toBe(4);
+  // Campaign combat keeps running after import, so floor may advance immediately.
+  expect(result.floor).toBeGreaterThanOrEqual(4);
   expect(result.dayAligned).toBe(true);
   expect(result.storedLevel).toBe(7);
   expect(result.storedGold).toBe(321);
+  expect(result.storedFloor).toBeGreaterThanOrEqual(4);
   expect(result.storedDay).toBe(await page.evaluate(() => raidKeyResetDayKey(Date.now())));
 });
