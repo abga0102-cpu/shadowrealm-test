@@ -70,6 +70,9 @@ jobs:
       - name: Install development test tooling
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      - name: Verify recovery preserves active saves before replacement
+        run: node tests/restore-backup-failclosed-v509.test.js
+
       - name: Install browser engines
         run: npx playwright install --with-deps chromium webkit
 
