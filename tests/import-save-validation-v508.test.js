@@ -10,7 +10,7 @@ function run(json,opts={}){
     document:{createElement(){return {files:[{name:'save.json'}],click(){this.onchange();}};}},
     FileReader:class{readAsText(){this.result=json;this.onload();}},
     migrate(raw){migrated++;if(opts.migrateThrows)throw Error('migration failed');return {...raw,inventory:raw.inventory||[],raids:raw.raids||{}};},
-    RAID_IDS:[],todayStr(){return '2026-10-28';},computePower(){if(opts.powerThrows)throw Error('bad power');return 1;},
+    RAID_IDS:[],todayStr(){return '2026-10-28';},raidKeyResetDayKey(){return '2026-10-29';},computePower(){if(opts.powerThrows)throw Error('bad power');return 1;},
     refreshDerived(){},saveNow(){saved++;return !opts.saveFails;},startCampaign(){started++;},nav(){},toast(msg){notices.push(msg);}};
   vm.createContext(ctx);vm.runInContext(source,ctx);ctx.ACT.importSave();
   return {saved,migrated,started,S:ctx.S,notices};
@@ -29,7 +29,7 @@ for(const fixture of ['minimal-old-save.json','legacy-accessory.json','malformed
   const r=run(json);assert.equal(r.saved,1,fixture);assert.equal(r.started,1,fixture);
 }
 const good=JSON.stringify({version:207,playerName:'Test',level:5,stats:{},forge:{},raids:{},inventory:[],equipped:{},pets:[]});
-const ok=run(good);assert.equal(ok.saved,1);assert.equal(ok.migrated,1);assert.equal(ok.started,1);assert.equal(ok.S.level,5);
+const ok=run(good);assert.equal(ok.S.lastKeyReset,'2026-10-29');assert.equal(ok.S.eventDay,'2026-10-28');assert.equal(ok.saved,1);assert.equal(ok.migrated,1);assert.equal(ok.started,1);assert.equal(ok.S.level,5);
 for(const opts of [{saveFails:true},{migrateThrows:true},{powerThrows:true}]){
   const r=run(good,opts);assert.equal(r.S.sentinel,true,JSON.stringify(opts));assert.equal(r.started,0,JSON.stringify(opts));
 }
