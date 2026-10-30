@@ -37,37 +37,37 @@ test('V444 links the 70 Raid levels to Campaign progression and retires Raid Asc
   expect(out.ascendDo).toMatchObject({ ok:false, retired:true });
 });
 
-test('V496 Familiar Raid Essence is 225, +5 to 275, then +2 through 393', async ({ page }) => {
+test('V511 Familiar Raid Essence preserves early levels and reaches 1253 at 500', async ({ page }) => {
   await openCleanGame(page);
-  const rewards = await page.evaluate(() => [1,10,11,12,20,50,70].map((lv) => raidReward('familier',lv)));
-  expect(rewards).toEqual([225,270,275,277,293,353,393]);
+  const rewards = await page.evaluate(() => [1,10,11,12,20,50,70,500].map((lv) => raidReward('familier',lv)));
+  expect(rewards).toEqual([225,270,275,277,293,353,393,1253]);
   const cfg = await page.evaluate(() => window.__srRaidRewardConfigV396.familier);
-  expect(cfg).toMatchObject({level1:225,level11:275,perLevelAfter11:2,level70:393});
+  expect(cfg).toMatchObject({level1:225,level11:275,perLevelAfter11:2,level70:393,level500:1253});
 });
 
-test('V496 Raid Or and Compétence rewards follow the new anchors', async ({ page }) => {
+test('V511 Raid Or and Compétence preserve early anchors and reach owner targets at 500', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => ({
-    gold:[1,10,15,20,21].map((lv)=>raidReward('or',lv)),
-    skill:[1,2,10].map((lv)=>raidReward('competence',lv)),
+    gold:[1,10,15,20,21,70,500].map((lv)=>raidReward('or',lv)),
+    skill:[1,2,10,70,500].map((lv)=>raidReward('competence',lv)),
     cfg:window.__srRaidRewardConfigV396
   }));
-  expect(out.gold).toEqual([5000,10000,20000,30000,31500]);
-  expect(out.skill).toEqual([300,310,390]);
-  expect(out.cfg.or).toMatchObject({level1:5000,level10:10000,level15:20000,level20:30000,growthAfter20:1.05});
-  expect(out.cfg.competence).toMatchObject({level1:300,perLevel:10});
+  expect(out.gold).toEqual([5000,10000,20000,30000,30042,32083,50000]);
+  expect(out.skill).toEqual([300,310,390,990,4500]);
+  expect(out.cfg.or).toMatchObject({level1:5000,level10:10000,level15:20000,level20:30000,level500:50000});
+  expect(out.cfg.competence).toMatchObject({level1:300,perLevelTo70:10,level70:990,level500:4500});
 });
 
-test('V511 Raid Evolution PE preserves levels 1-70 and continues +5 to level 500', async ({ page }) => {
+test('V511 Raid Evolution PE preserves levels 1-70 and reaches 1500 at 500', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => ({
     rewards:[1,2,10,14,15,20,50,70,71,500,501].map((lv)=>raidReward('evolution',lv)),
     cfg:window.__srRaidRewardConfigV396.evolution
   }));
-  expect(out.rewards).toEqual([150,160,240,280,285,310,460,560,565,2710,2710]);
+  expect(out.rewards).toEqual([150,160,240,280,285,310,460,560,562,1500,1500]);
   expect(out.cfg).toMatchObject({
     curveVersion:486,level1:150,perLevelTo14:10,level14:280,
-    perLevelFrom15:5,level15:285,level70:560,level500:2710
+    perLevelFrom15:5,level15:285,level70:560,level500:1500
   });
 });
 
@@ -116,10 +116,10 @@ test('V500 Minerai catch-up adds only the old-to-new difference and cannot be cl
   expect(out.marker).toMatchObject({done:true,throughLevel:21,amount:11875,curveFrom:496,curveTo:499});
 });
 
-test('V499 Minerai Raid starts at 1000, reaches 2000/2500/2800, then +5; Autonomy stays 10%', async ({ page }) => {
+test('V511 Minerai Raid preserves 1-70, reaches 10000 at 500; Autonomy 70 stays 10%', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => {
-    const levels=[1,5,10,20,21,40,41,60,61,62,70];
+    const levels=[1,5,10,20,21,40,41,60,61,62,70,500];
     const rewards=levels.map((lv) => raidReward('minerai',lv));
     const cfg=window.__srRaidRewardConfigV396.minerai;
     const st=JSON.parse(JSON.stringify(S));
@@ -128,12 +128,12 @@ test('V499 Minerai Raid starts at 1000, reaches 2000/2500/2800, then +5; Autonom
     const baseAutonomy=harvestRates(st).minerai;
     return {rewards,cfg,baseAutonomy};
   });
-  expect(out.rewards).toEqual([1000,1200,1450,1950,2000,2475,2500,2785,2800,2805,2845]);
+  expect(out.rewards).toEqual([1000,1200,1450,1950,2000,2475,2500,2785,2800,2805,2845,10000]);
   expect(out.cfg).toMatchObject({
     level1:1000,perLevelTo2000:50,level21:2000,
     perLevelTo2500:25,level41:2500,
     perLevelTo2800:15,level61:2800,
-    perLevelAfter2800:5,level70:2845
+    perLevelAfter2800:5,level70:2845,level500:10000
   });
   expect(out.baseAutonomy).toBeCloseTo(284.5,8);
 });
