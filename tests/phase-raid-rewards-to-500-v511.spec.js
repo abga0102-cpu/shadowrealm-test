@@ -15,11 +15,11 @@ assert.match(game, /RAID_MAX_LEVEL:\s*500/);
 assert.match(html, /raid-reward-authority-v396\.js\?v=2026\.10\.30\.511/);
 assert.equal((html.match(/<script[^>]+raid-reward-authority-v396\.js/g)||[]).length,1);
 const expected = {
-  minerai: [[1,1000],[70,2845],[71,2850],[500,4995],[501,4995]],
+  minerai: [[1,1000],[70,2845],[71,2862],[500,10000],[501,10000]],
   familier: [[1,225],[70,393],[71,395],[500,1253],[501,1253]],
-  evolution: [[1,150],[70,560],[71,565],[500,2710],[501,2710]],
-  competence: [[70,990],[71,1000],[500,5290]],
-  or: [[70,344021],[71,361223],[500,444615714448201]]
+  evolution: [[1,150],[70,560],[71,562],[500,1500],[501,1500]],
+  competence: [[70,990],[71,998],[500,4500]],
+  or: [[20,30000],[70,32083],[71,32125],[500,50000]]
 };
 for (const [type, entries] of Object.entries(expected)) {
   for (const [level, amount] of entries)
