@@ -15,4 +15,38 @@ assert.equal((html.match(/<script[^>]+forge-panel-authority-v266\.js/g)||[]).len
 assert.match(html, /forge-panel-authority-v266\.js\?v=2026\.10\.30\.512-forge-syntax/);
 assert.match(html, /window\.__SHADOWREACH_SANCTUARY_PAUSED=true/);
 assert.ok(html.includes('PAUSED_SANCTUARY'), 'Sanctuary pause must remain in place');
+
+// Exercise the actual Forge module with a synthetic UI, without touching player saves.
+const insertedStyles = [];
+let renderCalls = 0;
+const nativeAccueil = () => '<main id="homeForge">Forge</main>';
+const fakeScreen = {accueil:nativeAccueil};
+const fakeHead = {appendChild(node){node.parentNode=this;insertedStyles.push(node);return node;}};
+const fakeDocument = {
+  head:fakeHead,
+  body:{},
+  createElement(tag){return {tagName:tag, parentNode:null, textContent:'', id:''};},
+  getElementById(){return null;},
+  addEventListener(){},
+};
+const runtime = {
+  window:{},
+  S:{forge:{}},
+  SCREENS:fakeScreen,
+  document:fakeDocument,
+  sessionStorage:{getItem(){return null;},setItem(){}},
+  render(){renderCalls++;},
+};
+assert.doesNotThrow(() => vm.runInNewContext(source,runtime,{filename:'forge-panel-authority-v266.js',timeout:3000}),
+  'Forge module should initialize when S.forge and SCREENS.accueil are present');
+assert.equal(runtime.window.__srForgePanelAuthorityV266.version,266);
+assert.notEqual(fakeScreen.accueil,nativeAccueil,'Forge must wrap the home renderer');
+assert.ok(insertedStyles.length>0,'Forge styles must be installed');
+assert.equal(renderCalls,1,'Forge should request one initial render');
+const firstWrapper=fakeScreen.accueil;
+const firstStyles=insertedStyles.length;
+vm.runInNewContext(source,runtime,{filename:'forge-panel-authority-v266.js',timeout:3000});
+assert.equal(fakeScreen.accueil,firstWrapper,'reloading must not double-wrap the renderer');
+assert.equal(insertedStyles.length,firstStyles,'reloading must not duplicate styles');
+
 console.log('V512 Forge panel: JavaScript syntax, script version and Sanctuary pause verified.');
