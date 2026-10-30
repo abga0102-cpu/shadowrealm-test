@@ -58,16 +58,16 @@ test('V496 Raid Or and Compétence rewards follow the new anchors', async ({ pag
   expect(out.cfg.competence).toMatchObject({level1:300,perLevel:10});
 });
 
-test('V486 Raid Evolution PE is 150, +10 through level 14, then +5 through level 70', async ({ page }) => {
+test('V511 Raid Evolution PE preserves levels 1-70 and continues +5 to level 500', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => ({
-    rewards:[1,2,10,14,15,20,50,70,71].map((lv)=>raidReward('evolution',lv)),
+    rewards:[1,2,10,14,15,20,50,70,71,500,501].map((lv)=>raidReward('evolution',lv)),
     cfg:window.__srRaidRewardConfigV396.evolution
   }));
-  expect(out.rewards).toEqual([150,160,240,280,285,310,460,560,560]);
+  expect(out.rewards).toEqual([150,160,240,280,285,310,460,560,565,2710,2710]);
   expect(out.cfg).toMatchObject({
     curveVersion:486,level1:150,perLevelTo14:10,level14:280,
-    perLevelFrom15:5,level15:285,level70:560
+    perLevelFrom15:5,level15:285,level70:560,level500:2710
   });
 });
 
