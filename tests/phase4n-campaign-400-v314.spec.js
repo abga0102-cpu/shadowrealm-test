@@ -119,6 +119,10 @@ test('V322 final Boss completion stays on replayable Divin 5-20 without creating
     return { floor:S.floor, step:S.step, recordFloor:S.recordFloor, checkpoint:S.checkpoint, complete:S.campaignComplete800, boss800:!!S.bossClears['800'], label:__srCampaignLabel(S.floor), stage:__srCampaignStageLabel(S.floor) };
   });
   expect(result).toEqual({ floor:800, step:1, recordFloor:800, checkpoint:800, complete:true, boss800:true, label:'Divin · 5-20', stage:'5-20' });
+  // handleCombatEnd queues startCampaign after 40 ms. On busy WebKit CI,
+  // the callback can run later than a fixed 100 ms sleep. Still require the
+  // actual combat to reach 800, and verify it remains there after settling.
+  await page.waitForFunction(() => S.floor === 800 && combat && combat.floor === 800, null, { timeout: 5000 });
   await page.waitForTimeout(100);
   const stable=await page.evaluate(() => ({ floor:S.floor, combatFloor:combat&&combat.floor }));
   expect(stable.floor).toBe(800);
