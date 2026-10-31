@@ -14,6 +14,8 @@ assert.equal((html.match(/<script[^>]+forge-panel-authority-v266\.js/g)||[]).len
   'load Forge panel authority exactly once');
 assert.match(html, /forge-panel-authority-v266\.js\?v=2026\.10\.30\.512-forge-syntax/);
 assert.match(html, /window\.__SHADOWREACH_SANCTUARY_PAUSED=true/);
+assert.ok(source.includes('aria-label="Informations sur les raretés"'),
+  'Forge rarity info accessible label must survive Home rerenders');
 assert.ok(html.includes('PAUSED_SANCTUARY'), 'Sanctuary pause must remain in place');
 
 // Exercise the actual Forge module with a synthetic UI, without touching player saves.
