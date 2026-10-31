@@ -112,11 +112,11 @@ jobs:
             if [ "$revision" = baseline ]; then root=".phase1-base"; else root="."; fi
             echo "::group::WebKit isolated navigation: $revision (3 repetitions per test)"
             set +e
-            (cd "$root" && CI=1 "$GITHUB_WORKSPACE/node_modules/.bin/playwright" test -c tests/playwright.config.js "${specs[@]}" --project=webkit-iphone --repeat-each=3 --workers=1 --reporter=line) > ".phase1-diagnostic-${revision}.log" 2>&1
+            (cd "$root" && CI=1 "$GITHUB_WORKSPACE/node_modules/.bin/playwright" test -c tests/playwright.config.js "${specs[@]}" --project=webkit-iphone --repeat-each=3 --workers=1 --reporter=line) > "$GITHUB_WORKSPACE/.phase1-diagnostic-${revision}.log" 2>&1
             status=$?
             set -e
             echo "WebKit isolated $revision exit=$status (diagnostic; NOT a release gate)"
-            tail -n 100 ".phase1-diagnostic-${revision}.log"
+            tail -n 100 "$GITHUB_WORKSPACE/.phase1-diagnostic-${revision}.log"
             echo "::endgroup::"
           done
 
