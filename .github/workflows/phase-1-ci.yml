@@ -172,6 +172,32 @@ jobs:
           done
           cp "$backup" "$source_file"
 
+      # Diagnostic only: reproduce the exact V481 missing-status case with the
+      # same probe in both checkouts. Never relax the full regression gate.
+      - name: Diagnose WebKit Accomplishments modal reopening on baseline and Forge branch
+        if: github.event_name == 'pull_request' && github.head_ref == 'fix/forge-panel-literal-newline-syntax-v512'
+        shell: bash
+        run: |
+          set -euo pipefail
+          probe="tests/phase-achievements-webkit-probe-v514.spec.js"
+          cp tests/achievements-webkit-probe-v514.js "$probe"
+          cp tests/achievements-webkit-probe-v514.js ".phase1-base/$probe"
+          trap 'rm -f "$probe" ".phase1-base/$probe"' EXIT
+          for revision in baseline current; do
+            if [ "$revision" = baseline ]; then root=".phase1-base"; else root="."; fi
+            echo "::group::WebKit Accomplishments modal probe: $revision (3 repetitions)"
+            set +e
+            (cd "$root" && CI=1 "$GITHUB_WORKSPACE/node_modules/.bin/playwright" test -c tests/playwright.config.js "$probe" --project=webkit-iphone --repeat-each=3 --workers=1 --reporter=line) > "$GITHUB_WORKSPACE/.phase1-diagnostic-achievements-$revision.log" 2>&1
+            status=$?
+            set -e
+            echo "Accomplishments $revision exit=$status (diagnostic only, not a release gate)"
+            grep 'ACH_WEBKIT_V514_DIAGNOSTIC' "$GITHUB_WORKSPACE/.phase1-diagnostic-achievements-$revision.log" || true
+            tail -n 65 "$GITHUB_WORKSPACE/.phase1-diagnostic-achievements-$revision.log"
+            echo "::endgroup::"
+          done
+          rm -f "$probe" ".phase1-base/$probe"
+          trap - EXIT
+
       - name: Enforce moving Playwright regression ratchet
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
         env:
