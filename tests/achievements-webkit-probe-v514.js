@@ -88,7 +88,7 @@ test('V514 diagnose accomplishment status after reopening Defis tab', async ({ p
   await page.evaluate(() => window.__srAchDiagnosticV514.sample('after-click'));
   for (const delay of [150, 150, 450]) {
     await page.waitForTimeout(delay);
-    await page.evaluate(() => window.__srAchDiagnosticV514.sample('after-' + delay + 'ms'));
+    await page.evaluate(ms => window.__srAchDiagnosticV514.sample('after-' + ms + 'ms'), delay);
   }
 
   let failure = null;
