@@ -19,6 +19,9 @@ async function runOneAutoCycle(page, forgeImpl) {
     S.forge.autoForge = false;
     S.forge.autoBatch = 1;
     S.forge.level = Math.max(10, Number(S.forge.level) || 10);
+    // Auto-Forge V103 is unlocked by CHARACTER level, not Forge level.
+    // Keep the synthetic cycle eligible so this test checks Dust settlement.
+    S.level = Math.max(10, Number(S.level) || 1);
     S.minerai = 9999;
     S.poussiere = 0;
 
