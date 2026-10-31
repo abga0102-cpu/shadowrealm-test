@@ -120,6 +120,58 @@ jobs:
             echo "::endgroup::"
           done
 
+      # Diagnostic only: isolate the effect of the Forge module's initial
+      # render and scroll observer. Each variant is applied to a temporary CI
+      # checkout and restored before the mandatory full regression ratchet.
+      - name: Isolate Forge boot render versus scroll observer on WebKit
+        if: github.event_name == 'pull_request' && github.head_ref == 'fix/forge-panel-literal-newline-syntax-v512'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_file=forge-panel-authority-v266.js
+          backup="$(mktemp)"
+          cp "$source_file" "$backup"
+          trap 'cp "$backup" "$source_file"; rm -f "$backup"' EXIT
+          for variant in no-initial-render no-scroll-observer no-both; do
+            cp "$backup" "$source_file"
+            VARIANT="$variant" node <<'NODE'
+          const fs=require('node:fs');
+          const vm=require('node:vm');
+          const file='forge-panel-authority-v266.js';
+          let src=fs.readFileSync(file,'utf8');
+          const variant=process.env.VARIANT;
+          if(variant==='no-initial-render'||variant==='no-both'){
+            const needle="try{if(typeof render==='function')render();}catch(_){}";
+            if(src.split(needle).length!==2)throw Error('Expected exactly one Forge initial render');
+            src=src.replace(needle,'/* CI diagnostic: omit initial Forge render */');
+          }
+          if(variant==='no-scroll-observer'||variant==='no-both'){
+            const start="if(typeof MutationObserver==='function'){";
+            const end="document.addEventListener('scroll',";
+            const a=src.indexOf(start),b=src.indexOf(end,a);
+            if(a<0||b<=a||src.indexOf(start,a+1)>=0)throw Error('Forge observer block not unique');
+            src=src.slice(0,a)+'/* CI diagnostic: omit Forge scroll observer */\n'+src.slice(b);
+          }
+          new vm.Script(src,{filename:file});
+          fs.writeFileSync(file,src);
+          console.log('Prepared isolated Forge variant:',variant);
+          NODE
+            echo "::group::WebKit Forge variant: $variant"
+            set +e
+            CI=1 ./node_modules/.bin/playwright test -c tests/playwright.config.js \
+              tests/phase-ui-stability-observer-removal-proof.spec.js \
+              tests/phase4e-home-layout-ownership.spec.js \
+              --project=webkit-iphone --repeat-each=3 --workers=1 --reporter=line \
+              > ".phase1-diagnostic-${variant}.log" 2>&1
+            status=$?
+            set -e
+            echo "Forge variant $variant exit=$status (diagnostic; NOT a release gate)"
+            tail -n 65 ".phase1-diagnostic-${variant}.log"
+            echo "::endgroup::"
+          done
+          cp "$backup" "$source_file"
+
       - name: Enforce moving Playwright regression ratchet
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
         env:
