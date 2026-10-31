@@ -17,14 +17,30 @@ async function openCleanGame(page) {
   );
 }
 
+// V331's visual decorator replaces the original milestone heading with separate
+// stage/difficulty labels, retaining the exact canonical heading in title.
+// Check the canonical objective AND its visible parts, with or without decoration.
+async function expectStageObjective(page, id, fullTitle) {
+  const objective = page.locator('.srAch139 [data-ach-id="' + id + '"] .achObjective');
+  await expect(objective).toHaveCount(1);
+  await expect.poll(async () => {
+    const canonicalTitle = await objective.getAttribute('title');
+    return canonicalTitle || await objective.textContent();
+  }, { timeout: 7000 }).toContain(fullTitle);
+  const [actionAndDifficulty, stage] = fullTitle.split(' · ');
+  const difficulty = actionAndDifficulty.replace(/^(Terminer|Vaincre) /, '');
+  await expect(objective).toContainText(difficulty);
+  await expect(objective).toContainText(stage);
+}
+
 test('V322 Accomplishments uses 20-stage local notation and preserved milestone rewards', async ({ page }) => {
   await openCleanGame(page);
   await page.evaluate(() => ACT.accomplishments());
   const modal = page.locator('.srAch139');
   await expect(modal).toBeVisible();
-  await expect(modal).toContainText('Terminer Divin · 5-20');
-  await expect(modal).toContainText('Terminer Cauchemar · 5-20');
-  await expect(modal).toContainText('Vaincre Difficile · 3-5');
+  await expectStageObjective(page, 'floor400', 'Terminer Divin · 5-20');
+  await expectStageObjective(page, 'floor200', 'Terminer Cauchemar · 5-20');
+  await expectStageObjective(page, 'floor75', 'Vaincre Difficile · 3-5');
   await expect(modal).not.toContainText('40-10');
   await expect(modal).not.toContainText('Rebirth');
   await expect(modal).not.toContainText('1 000 PR');
@@ -61,7 +77,7 @@ test('V322 final difficulty reward stays locked until Divin Boss 5-20 is actuall
     ACT.accomplishments();
   });
   await expect(page.locator('.srAch139 [data-ach="floor400"]')).toHaveCount(0);
-  await expect(page.locator('.srAch139')).toContainText('Terminer Divin · 5-20');
+  await expectStageObjective(page, 'floor400', 'Terminer Divin · 5-20');
   // The modal can show both a header X and a footer Fermer; either closes it.
   await page.locator('.srAch139 [data-act="closeModal"]').first().click();
   await page.evaluate(() => { S.bossClears['800'] = true; ACT.accomplishments(); });
