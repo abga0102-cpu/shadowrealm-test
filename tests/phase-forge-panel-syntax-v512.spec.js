@@ -52,3 +52,61 @@ assert.equal(fakeScreen.accueil,firstWrapper,'reloading must not double-wrap the
 assert.equal(insertedStyles.length,firstStyles,'reloading must not duplicate styles');
 
 console.log('V512 Forge panel: JavaScript syntax, script version and Sanctuary pause verified.');
+
+
+// The scroll observer must only restore a newly inserted Home Forge panel.
+// This isolates DOM behavior with synthetic state, without writing a player save.
+let onMutation;
+let onScroll;
+const queuedFrames = [];
+const parentScroller = { scrollTop: 77 };
+let currentForge = { id: 'homeForge', scrollTop: 44, closest(){return parentScroller;} };
+const observerDocument = {
+  head: { appendChild(node){return node;} },
+  body: {},
+  createElement(tag){return {tagName:tag, textContent:'', id:''};},
+  getElementById(id){return id === 'screen' ? {} : id === 'homeForge' ? currentForge : null;},
+  addEventListener(type, listener){if(type === 'scroll')onScroll=listener;},
+};
+const observerRuntime = {
+  window: {},
+  S: {forge:{}},
+  SCREENS: {accueil:nativeAccueil},
+  document:observerDocument,
+  route:'accueil',
+  sessionStorage:{getItem(){return null;},setItem(){}},
+  MutationObserver: class {
+    constructor(callback){onMutation=callback;}
+    observe(){}
+  },
+  requestAnimationFrame(callback){queuedFrames.push(callback);},
+  render(){},
+};
+vm.runInNewContext(source,observerRuntime,{filename:'forge-panel-authority-v266.js',timeout:3000});
+assert.equal(typeof onMutation,'function');
+assert.equal(typeof onScroll,'function');
+onScroll({target:currentForge});
+onScroll({target:{scrollTop:77,matches(selector){return selector === '#screen.fixed>.pad.mt4';}}});
+observerRuntime.route='equipement';
+currentForge=null;
+onScroll({target:{scrollTop:999,matches(){return true;}}});
+onMutation([{addedNodes:[{querySelector(){return null;}}]}]);
+assert.equal(queuedFrames.length,0,'other routes must not schedule Forge restoration');
+observerRuntime.route='accueil';
+currentForge={id:'homeForge',scrollTop:0,closest(){return parentScroller;}};
+parentScroller.scrollTop=0;
+onMutation([{addedNodes:[{querySelector(){return null;}}]}]);
+assert.equal(queuedFrames.length,0,'unrelated Home mutations must not restore Forge scroll');
+onMutation([{addedNodes:[{querySelector(selector){return selector === '#homeForge' ? currentForge : null;}}]}]);
+assert.equal(queuedFrames.length,1,'new Home Forge insertion should schedule restoration once');
+onMutation([{addedNodes:[{id:'homeForge'}]}]);
+assert.equal(queuedFrames.length,1,'multiple insertions in one frame must be coalesced');
+queuedFrames.shift()();
+assert.equal(currentForge.scrollTop,44,'Forge panel should regain its previous scroll');
+assert.equal(parentScroller.scrollTop,77,'Home parent should regain its previous scroll');
+currentForge.scrollTop=0;
+onMutation([{addedNodes:[{id:'homeForge'}]}]);
+observerRuntime.route='parametres';
+queuedFrames.shift()();
+assert.equal(currentForge.scrollTop,0,'pending restoration must not run after navigation away');
+console.log('V512 Forge scroll observer: Home-only insertion and scroll preservation verified.');
