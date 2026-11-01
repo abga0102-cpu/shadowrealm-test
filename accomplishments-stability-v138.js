@@ -181,6 +181,12 @@ function schedulePlace(){
 window.addEventListener('sr:modal-state',schedulePlace);
 window.addEventListener('sr:accomplishments-ready',schedulePlace);
 window.addEventListener('sr:accomplishmentclaimed',schedulePlace);
+/* V515: switching Pass tabs rebuilds the modal without always emitting a new
+   sr:modal-state event. Reapply the visual layer to the replacement DOM. */
+document.addEventListener('click',function(e){
+ var tab=e.target&&e.target.closest?e.target.closest('#overlay .srAch139 [data-ach-tab]'):null;
+ if(tab)schedulePlace();
+},true);
 placeArenaLauncher();
 enhancePass();
 window.addEventListener('sr:bottomnavrendered',schedulePlace);
