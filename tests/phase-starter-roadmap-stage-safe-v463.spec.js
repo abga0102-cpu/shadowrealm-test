@@ -22,9 +22,14 @@ async function openStarterHome(page, viewport={width:390,height:844}) {
     nav('accueil');
     window.__srSyncHomeLayoutV219();
   });
-  await page.waitForFunction(() =>
-    document.querySelector('.srStarterRoadmapV461')?.getAttribute('data-stage-safe-v463') === '1'
-  );
+  // The marker may already be set while Home schedules a later layout frame.
+  // Wait for the real stage-clearance contract before reading geometry.
+  await expect.poll(async () => page.evaluate(() => {
+    const card = document.querySelector('.srStarterRoadmapV461');
+    const stage = document.querySelector('#arena .floorTag');
+    if (!card || !stage || card.getAttribute('data-stage-safe-v463') !== '1') return false;
+    return card.getBoundingClientRect().top >= stage.getBoundingClientRect().bottom + 5;
+  }), { timeout: 7000 }).toBe(true);
 }
 
 test('V463 compact starter roadmap stays below all stage information on iPhone-sized Home', async ({ page }) => {
