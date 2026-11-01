@@ -51,9 +51,14 @@ test('V463 keeps the stage-safe rule after a Home rerender', async ({ page }) =>
     S.gold += 1;
     render();
   });
-  await page.waitForFunction(() =>
-    document.querySelector('.srStarterRoadmapV461')?.getAttribute('data-stage-safe-v463') === '1'
-  );
+  // The marker may survive render() before the next layout frame completes.
+  // Wait for the actual stage-clearance contract, not a potentially stale flag.
+  await expect.poll(async () => page.evaluate(() => {
+    const card = document.querySelector('.srStarterRoadmapV461');
+    const stage = document.querySelector('#arena .floorTag');
+    if (!card || !stage || card.getAttribute('data-stage-safe-v463') !== '1') return false;
+    return card.getBoundingClientRect().top >= stage.getBoundingClientRect().bottom + 5;
+  }), { timeout: 7000 }).toBe(true);
   const safe = await page.evaluate(() => {
     const card = document.querySelector('.srStarterRoadmapV461').getBoundingClientRect();
     const stage = document.querySelector('#arena .floorTag').getBoundingClientRect();
