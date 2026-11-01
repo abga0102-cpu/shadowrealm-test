@@ -23,11 +23,25 @@ async function runOneAutoCycle(page, forgeImpl) {
     S.poussiere = 0;
 
     const previousForgeSummon = forgeSummon;
-    forgeSummon = (0, eval)('(' + forgeImplSource + ')');
+    const simulatedSummon = (0, eval)('(' + forgeImplSource + ')');
+    let summonCalls = 0;
+    forgeSummon = function (...args) {
+      summonCalls += 1;
+      return simulatedSummon.apply(this, args);
+    };
     try {
       S.forge.autoForge = true;
       scheduleAutoForge(0);
-      await new Promise((resolve) => setTimeout(resolve, 140));
+      // The scheduler uses setTimeout(0), but a busy CI browser can take
+      // longer than 140 ms to run it. Observe the real tick, not wall time.
+      const started = Date.now();
+      while (summonCalls === 0 && Date.now() - started < 3000) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      if (summonCalls === 0) {
+        throw new Error('Auto-Forge scheduler did not invoke forgeSummon within 3000 ms');
+      }
+      // The scheduler settles canonical Dust synchronously after summon returns.
       return {
         dust: Number(S.poussiere) || 0,
         authority350: !!window.__srAutoForgeDustV350,
