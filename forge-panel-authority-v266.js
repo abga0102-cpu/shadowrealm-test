@@ -56,13 +56,27 @@ function restoreForgeScroll531(){
 }
 if(typeof MutationObserver==='function'){
  var srScrollQueued531=false;
- new MutationObserver(function(){
-  if(srScrollQueued531)return;
+ new MutationObserver(function(records){
+  // Restore only after a new Home Forge node is inserted, not on every route.
+  if(typeof route!=='undefined'&&route!=='accueil')return;
+  var insertedForge=records.some(function(record){
+   return Array.prototype.some.call(record.addedNodes||[],function(node){
+    return node&&((node.id==='homeForge')||(node.querySelector&&node.querySelector('#homeForge')));
+   });
+  });
+  if(!insertedForge||srScrollQueued531)return;
   srScrollQueued531=true;
-  requestAnimationFrame(function(){srScrollQueued531=false;restoreForgeScroll531();});
+  requestAnimationFrame(function(){
+   srScrollQueued531=false;
+   if(typeof route!=='undefined'&&route!=='accueil')return;
+   restoreForgeScroll531();
+  });
  }).observe(document.getElementById('screen')||document.body,{childList:true,subtree:false});
 }
 document.addEventListener('scroll',function(e){
+ // The shared parent scroller also exists on other screens: do not memorize it.
+ if(typeof route!=='undefined'&&route!=='accueil')return;
+ if(!document.getElementById('homeForge'))return;
  var el=e.target;
  if(el&&el.id==='homeForge')srForgeScroll531=Math.max(0,el.scrollTop||0);if(el&&el.matches&&el.matches('#screen.fixed>.pad.mt4'))srForgeParentScroll532=Math.max(0,el.scrollTop||0);
 },true);
