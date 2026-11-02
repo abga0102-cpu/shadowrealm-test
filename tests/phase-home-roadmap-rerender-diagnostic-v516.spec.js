@@ -36,7 +36,6 @@ test('V516 diagnose Home roadmap position before/after rerender frames', async (
       homeTrace.push({
         kind, ms: Math.round(performance.now() * 10) / 10,
         cardId: card ? cardIds.get(card) : null,
-        top: card ? Math.round(card.getBoundingClientRect().top * 10) / 10 : null,
         inlineTop: card ? card.style.top : null,
         marker: card ? card.getAttribute('data-stage-safe-v463') : null,
         ...extra
