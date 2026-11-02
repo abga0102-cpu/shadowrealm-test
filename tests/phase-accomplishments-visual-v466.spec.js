@@ -82,6 +82,11 @@ test('V466 shows transient claim feedback while preserving the exact existing pa
     S.accomplishments = S.accomplishments || {};
     S.accomplishments.claimed = S.accomplishments.claimed || {};
     delete S.accomplishments.claimed.forge15;
+    // Isolate the claim payout from autonomous campaign gold rewards.
+    // Combat flushes can otherwise add gold during the UI assertions.
+    combat = null;
+    rewardAcc.gold = 0;
+    rewardAcc.exp = 0;
     S.gold = 123;
     ACT.accomplishments();
   });
