@@ -23,6 +23,44 @@ test('V516 diagnose Home roadmap position before/after rerender frames', async (
     S.floor = 1; S.recordFloor = 1; S.checkpoint = 1; S.level = 1;
     nav('accueil');
     window.__srSyncHomeLayoutV219();
+    // V517 diagnostic: trace Home's scheduled/fired rAF and direct #screen replacements.
+    // Only the test page is instrumented; production runtime is unchanged.
+    const homeTrace = [];
+    const cardIds = new WeakMap();
+    let nextCardId = 0;
+    let nextRafId = 0;
+    window.__srHomeSchedulerTraceV517 = homeTrace;
+    window.__srHomeTraceV517 = (kind, extra = {}) => {
+      const card = document.querySelector('.srStarterRoadmapV461');
+      if (card && !cardIds.has(card)) cardIds.set(card, ++nextCardId);
+      homeTrace.push({
+        kind, ms: Math.round(performance.now() * 10) / 10,
+        cardId: card ? cardIds.get(card) : null,
+        top: card ? Math.round(card.getBoundingClientRect().top * 10) / 10 : null,
+        inlineTop: card ? card.style.top : null,
+        marker: card ? card.getAttribute('data-stage-safe-v463') : null,
+        ...extra
+      });
+      if (homeTrace.length > 300) homeTrace.shift();
+    };
+    const nativeRaf = window.requestAnimationFrame;
+    window.requestAnimationFrame = function(callback) {
+      const stack = String(new Error().stack || '');
+      if (!stack.includes('home-layout-authority-v219.js')) {
+        return nativeRaf.call(window, callback);
+      }
+      const id = ++nextRafId;
+      window.__srHomeTraceV517('home-raf-queued', { id });
+      return nativeRaf.call(window, function(timestamp) {
+        window.__srHomeTraceV517('home-raf-enter', { id });
+        try { return callback(timestamp); }
+        finally { window.__srHomeTraceV517('home-raf-exit', { id }); }
+      });
+    };
+    const screenObserver = new MutationObserver(records => {
+      window.__srHomeTraceV517('screen-direct-mutation', { count: records.length });
+    });
+    screenObserver.observe(document.getElementById('screen'), { childList: true });
     window.__srHomeRoadmapSnapshotV516 = () => {
       const card = document.querySelector('.srStarterRoadmapV461');
       const floor = document.querySelector('#arena .floorTag');
@@ -52,14 +90,19 @@ test('V516 diagnose Home roadmap position before/after rerender frames', async (
   const results = [];
   for (let i = 0; i < 6; i++) {
     const immediate = await page.evaluate(() => {
+      window.__srHomeTraceV517('before-render');
       S.gold += 1;
       render();
+      window.__srHomeTraceV517('after-render');
       return window.__srHomeRoadmapSnapshotV516();
     });
     await page.evaluate(() => new Promise(resolve =>
       requestAnimationFrame(() => requestAnimationFrame(resolve))
     ));
-    const afterFrames = await page.evaluate(() => window.__srHomeRoadmapSnapshotV516());
+    const afterFrames = await page.evaluate(() => {
+      window.__srHomeTraceV517('after-two-raf');
+      return window.__srHomeRoadmapSnapshotV516();
+    });
     const afterManualSync = await page.evaluate(() => {
       window.__srSyncHomeLayoutV219();
       return window.__srHomeRoadmapSnapshotV516();
@@ -67,6 +110,9 @@ test('V516 diagnose Home roadmap position before/after rerender frames', async (
     results.push({ iteration: i + 1, immediate, afterFrames, afterManualSync });
   }
   console.log('HOME_ROADMAP_V516_DIAGNOSTIC ' + JSON.stringify(results));
+  console.log('HOME_ROADMAP_V517_SCHEDULER_TRACE ' + JSON.stringify(
+    await page.evaluate(() => window.__srHomeSchedulerTraceV517)
+  ));
 
   // A synchronous CSS fallback is logged, not treated as a proven runtime defect.
   // Persistent post-frame overlap is a real layout failure when room is available.
