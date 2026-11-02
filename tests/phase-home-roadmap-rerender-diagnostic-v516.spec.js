@@ -151,6 +151,15 @@ test('V519 diagnose arena/world height across Home navigation and rerenders', as
     S.onboardingV461.starterEggGranted = false;
     S.forge.summonCount = 0;
     S.floor = 1; S.recordFloor = 1; S.checkpoint = 1; S.level = 1;
+    // V520 diagnostic: stable identity distinguishes a late DOM replacement
+    // from an existing card losing its marker; no runtime or save writes.
+    const cardIds = new WeakMap();
+    let nextCardId = 0;
+    const cardId = card => {
+      if (!card) return null;
+      if (!cardIds.has(card)) cardIds.set(card, ++nextCardId);
+      return cardIds.get(card);
+    };
     const measure = () => {
       const app = document.getElementById('app');
       const screen = document.getElementById('screen');
@@ -170,6 +179,7 @@ test('V519 diagnose arena/world height across Home navigation and rerenders', as
       return {
         present: true,
         ms: Math.round(performance.now()),
+        cardId: cardId(card),
         appClass: app.className,
         screenClass: screen.className,
         worldHeight: Math.round(wr.height * 10) / 10,
@@ -200,6 +210,14 @@ test('V519 diagnose arena/world height across Home navigation and rerenders', as
     return observations;
   });
   console.log('HOME_V519_ARENA_GEOMETRY ' + JSON.stringify(samples));
+  console.log('HOME_V520_CARD_IDENTITIES ' + JSON.stringify(samples.map(s => ({
+    iteration: s.iteration,
+    immediate: s.immediate.cardId,
+    afterMutation: s.afterMutation.cardId,
+    afterFrames: s.afterFrames.cardId,
+    settled: s.settled.cardId,
+    lateReplacement: s.afterFrames.cardId !== s.settled.cardId
+  }))));
   for (const sample of samples) {
     expect(sample.settled.present).toBe(true);
   }
