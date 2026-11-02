@@ -127,3 +127,80 @@ test('V516 diagnose Home roadmap position before/after rerender frames', async (
     }
   }
 });
+
+
+/* V519: diagnostic only. Reproduce the V461 arena/world height mismatch on
+   WebKit without changing the layout, relaxing any existing assertion or
+   writing to a real player save. Logs are useful even when the run passes. */
+test('V519 diagnose arena/world height across Home navigation and rerenders', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    try { localStorage.removeItem('shadowreach.save.local'); } catch (_) {}
+  });
+  await page.goto('/index.html?smoke=1');
+  await page.waitForFunction(() =>
+    window.__srStarterPacingV462?.version === 462 &&
+    typeof window.__srSyncHomeLayoutV219 === 'function'
+  );
+  await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
+  const samples = await page.evaluate(async () => {
+    S.onboardingV461.active = true;
+    S.onboardingV461.completed = false;
+    S.onboardingV461.freeSkillSummons = 0;
+    S.onboardingV461.skillCreditGranted = false;
+    S.onboardingV461.starterEggGranted = false;
+    S.forge.summonCount = 0;
+    S.floor = 1; S.recordFloor = 1; S.checkpoint = 1; S.level = 1;
+    const measure = () => {
+      const app = document.getElementById('app');
+      const screen = document.getElementById('screen');
+      const world = screen?.querySelector('.campaignWorld');
+      const arena = screen?.querySelector('#arenaSlot');
+      const card = screen?.querySelector('.srStarterRoadmapV461');
+      const floor = screen?.querySelector('#arena .floorTag');
+      if (!app || !screen || !world || !arena || !card || !floor) {
+        return { present: false, appClass: app?.className, screenClass: screen?.className };
+      }
+      const wr = world.getBoundingClientRect();
+      const ar = arena.getBoundingClientRect();
+      const cr = card.getBoundingClientRect();
+      const fr = floor.getBoundingClientRect();
+      const ws = getComputedStyle(world);
+      const as = getComputedStyle(arena);
+      return {
+        present: true,
+        ms: Math.round(performance.now()),
+        appClass: app.className,
+        screenClass: screen.className,
+        worldHeight: Math.round(wr.height * 10) / 10,
+        arenaHeight: Math.round(ar.height * 10) / 10,
+        delta: Math.round((ar.height - wr.height) * 10) / 10,
+        worldCssHeight: ws.height,
+        worldFlex: ws.flex,
+        arenaCssHeight: as.height,
+        arenaPosition: as.position,
+        cardMarked: card.getAttribute('data-stage-safe-v463'),
+        cardTop: Math.round(cr.top),
+        floorBottom: Math.round(fr.bottom),
+        overlap: cr.top < fr.bottom
+      };
+    };
+    const observations = [];
+    for (let i = 0; i < 6; i++) {
+      if (i === 0) nav('accueil'); else render();
+      const immediate = measure();
+      await Promise.resolve();
+      const afterMutation = measure();
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const afterFrames = measure();
+      await new Promise(resolve => setTimeout(resolve, 180));
+      const settled = measure();
+      observations.push({ iteration: i + 1, immediate, afterMutation, afterFrames, settled });
+    }
+    return observations;
+  });
+  console.log('HOME_V519_ARENA_GEOMETRY ' + JSON.stringify(samples));
+  for (const sample of samples) {
+    expect(sample.settled.present).toBe(true);
+  }
+});
