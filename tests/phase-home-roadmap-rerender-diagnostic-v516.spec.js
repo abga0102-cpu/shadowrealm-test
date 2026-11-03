@@ -195,6 +195,39 @@ test('V519 diagnose arena/world height across Home navigation and rerenders', as
         overlap: cr.top < fr.bottom
       };
     };
+    // V521 diagnostic only: identify who triggers late rerenders and whether
+    // direct #screen mutations replace the card without calling window.render.
+    // Instrumentation lives only in this isolated Playwright page.
+    const renderEvents = [];
+    const trace = (kind, details = {}) => {
+      if (renderEvents.length >= 120) return;
+      const card = document.querySelector('.srStarterRoadmapV461');
+      renderEvents.push({
+        kind, ms: Math.round(performance.now()),
+        cardId: cardId(card),
+        marker: card?.getAttribute('data-stage-safe-v463') ?? null,
+        screenClass: document.getElementById('screen')?.className ?? null,
+        ...details
+      });
+    };
+    const originalRender = window.render;
+    if (typeof originalRender === 'function') {
+      window.render = function(...args) {
+        const beforeCardId = cardId(document.querySelector('.srStarterRoadmapV461'));
+        const stack = String(new Error().stack || '').split('\\n').slice(1, 6).join(' | ').slice(0, 700);
+        try { return originalRender.apply(this, args); }
+        finally { trace('render-return', { beforeCardId, stack }); }
+      };
+    }
+    const screen = document.getElementById('screen');
+    const screenObserver = new MutationObserver(records => {
+      trace('screen-direct-mutation', { records: records.length });
+    });
+    screenObserver.observe(screen, { childList: true, subtree: false });
+    window.__srHomeV521Trace = {
+      wrappedRender: typeof originalRender === 'function',
+      events: renderEvents
+    };
     const observations = [];
     for (let i = 0; i < 6; i++) {
       if (i === 0) nav('accueil'); else render();
@@ -218,6 +251,9 @@ test('V519 diagnose arena/world height across Home navigation and rerenders', as
     settled: s.settled.cardId,
     lateReplacement: s.afterFrames.cardId !== s.settled.cardId
   }))));
+  console.log('HOME_V521_RENDER_CALLS ' + JSON.stringify(
+    await page.evaluate(() => window.__srHomeV521Trace)
+  ));
   for (const sample of samples) {
     expect(sample.settled.present).toBe(true);
   }
