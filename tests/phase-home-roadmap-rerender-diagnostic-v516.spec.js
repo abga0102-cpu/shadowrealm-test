@@ -214,7 +214,7 @@ test('V519 diagnose arena/world height across Home navigation and rerenders', as
     if (typeof originalRender === 'function') {
       window.render = function(...args) {
         const beforeCardId = cardId(document.querySelector('.srStarterRoadmapV461'));
-        const stack = String(new Error().stack || '').split('\\n').slice(1, 6).join(' | ').slice(0, 700);
+        const stack = String(new Error().stack || '').split('\n').slice(1, 6).join(' | ').slice(0, 700);
         try { return originalRender.apply(this, args); }
         finally { trace('render-return', { beforeCardId, stack }); }
       };
