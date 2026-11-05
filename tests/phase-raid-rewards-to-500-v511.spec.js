@@ -1,29 +1,48 @@
-/* V511: final Raid reward authority must scale three approved resources to 500. */
+/* Frozen pre-extension values come from the recorded main commit, not this PR. */
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const legacy = require('./fixtures/raid-rewards-through-70.json');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'raid-reward-authority-v396.js'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const game = fs.readFileSync(path.join(root, 'game-1.js'), 'utf8');
-const context = {window:{}, raidReward:()=>0, raidCampaignReady:()=>false};
+const state = {gold:123456,essence:789,raids:{familier:{level:70,record:69}}};
+const before = JSON.stringify(state);
+const context = {window:{},S:state,raidReward:()=>0,raidCampaignReady:()=>false,
+  update:()=>assert.fail('Reward owner must not mutate saves'),
+  localStorage:{setItem:()=>assert.fail('Reward owner must not write storage')}};
 vm.runInNewContext(source, context, {filename:'raid-reward-authority-v396.js', timeout:3000});
-assert.equal(context.raidReward.__srFinalAuthorityV396, true);
-assert.match(game, /RAID_MAX_LEVEL:\s*500/);
-assert.match(html, /raid-reward-authority-v396\.js\?v=2026\.10\.30\.511/);
+assert.equal(JSON.stringify(state),before);
+assert.equal(context.raidReward.__srFinalAuthorityV396,true);
+assert.equal(context.window.__srRaidRewardConfigV396.reward,context.raidReward);
+assert.equal(context.window.__srRaidRewardConfigV396.maxLevel,500);
+assert.match(game,/RAID_MAX_LEVEL:\s*500/);
+assert.match(html,/raid-reward-authority-v396\.js\?v=2026\.11\.05\.511/);
 assert.equal((html.match(/<script[^>]+raid-reward-authority-v396\.js/g)||[]).length,1);
-const expected = {
-  minerai: [[1,1000],[70,2845],[71,2862],[500,10000],[501,10000]],
-  familier: [[1,225],[70,393],[71,395],[500,1253],[501,1253]],
-  evolution: [[1,150],[70,560],[71,562],[500,1500],[501,1500]],
-  competence: [[70,990],[71,998],[500,4500]],
-  or: [[20,30000],[70,32083],[71,32125],[500,50000]]
-};
-for (const [type, entries] of Object.entries(expected)) {
-  for (const [level, amount] of entries)
-    assert.equal(context.raidReward(type, level), amount, type+' at level '+level);
+for(const [type,values] of Object.entries(legacy.rewards)) {
+  values.forEach((amount,i)=>assert.equal(context.raidReward(type,i+1),amount,`${type}: legacy level ${i+1}`));
+  for(let level=2;level<=500;level++) {
+    const current=context.raidReward(type,level),previous=context.raidReward(type,level-1);
+    assert.ok(Number.isSafeInteger(current),`${type}: safe integer at ${level}`);
+    assert.ok(current>previous,`${type}: strictly increasing at ${level}`);
+    if(type==='familier'&&level>70)assert.equal(current-previous,2);
+    // Gold is deliberately unchanged until the conflicting target is resolved.
+    if(type==='or'&&level>20)assert.equal(current,Math.floor(30000*Math.pow(1.05,level-20)));
+  }
+  for(const level of [501,1000,Infinity])assert.equal(context.raidReward(type,level),context.raidReward(type,500));
+  for(const level of [0,-1,NaN,undefined])assert.equal(context.raidReward(type,level),values[0]);
 }
-assert.ok(html.includes('PAUSED_SANCTUARY'), 'Sanctuary pause must remain in place');
-console.log('V511 Raid rewards: legacy values preserved, approved 71-500 scaling verified.');
+const expected={
+  minerai:[[69,2840],[70,2845],[71,2862],[100,3344],[200,5008],[300,6672],[400,8336],[500,10000]],
+  evolution:[[69,555],[70,560],[71,562],[100,626],[200,844],[300,1063],[400,1281],[500,1500]],
+  competence:[[69,980],[70,990],[71,998],[100,1235],[200,2051],[300,2867],[400,3684],[500,4500]],
+  familier:[[69,391],[70,393],[71,395],[100,453],[200,653],[300,853],[400,1053],[500,1253]]
+};
+for(const [type,rows] of Object.entries(expected))for(const [level,amount] of rows)
+  assert.equal(context.raidReward(type,level),amount,`${type}: level ${level}`);
+assert.equal(context.raidReward('unknown',500),0);
+assert.ok(html.includes('PAUSED_SANCTUARY'));
+console.log('Raid rewards: all 350 legacy values preserved; levels 1–500 strictly increase; familiar +2, targets, caps and no save writes verified. Gold target remains blocked.');
