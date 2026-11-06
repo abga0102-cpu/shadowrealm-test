@@ -7,21 +7,17 @@
 
   var LEGACY_MAX_LEVEL=70;
   var MAX_LEVEL=500;
-  var GOLD_GROWTH=1.05;
   function rewardLevel(level){
     return Math.max(1,Math.min(MAX_LEVEL,Math.floor(Number(level)||1)));
   }
   function extendReward(level,legacyReward,target){
     return Math.round(legacyReward+(target-legacyReward)*(level-LEGACY_MAX_LEVEL)/(MAX_LEVEL-LEGACY_MAX_LEVEL));
   }
-  /* Preserve historical Gold pending the owner's decision: level 70 already
-     pays 344,021, so a rising curve cannot also end at 50,000 at level 500. */
+  /* Owner-approved linear base Gold: level 1 = 50, level 500 = 50,000.
+     Rounded to the nearest whole Gold. Historical credits and save data are untouched. */
   function goldReward(level){
     var lv=rewardLevel(level);
-    if(lv<=10)return Math.round(5000+5000*((lv-1)/9));
-    if(lv<=15)return Math.round(10000+10000*((lv-10)/5));
-    if(lv<=20)return Math.round(20000+10000*((lv-15)/5));
-    return Math.floor(30000*Math.pow(GOLD_GROWTH,lv-20));
+    return Math.round(50+49950*(lv-1)/(MAX_LEVEL-1));
   }
   function mineraiReward(level){
     var lv=rewardLevel(level);
@@ -67,7 +63,7 @@
 
   window.__srRaidRewardConfigV396={
     version:511,legacyMaxLevel:LEGACY_MAX_LEVEL,maxLevel:MAX_LEVEL,
-    or:{level1:5000,level10:10000,level15:20000,level20:30000,growthAfter20:GOLD_GROWTH},
+    or:{level1:50,level500:50000,curve:'linear',rounding:'nearest'},
     minerai:{level1:1000,perLevelTo2000:50,level21:2000,perLevelTo2500:25,level41:2500,perLevelTo2800:15,level61:2800,perLevelAfter2800:5,level70:2845,level500:10000},
     competence:{level1:300,perLevel:10,perLevelTo70:10,level70:990,level500:4500},
     familier:{level1:225,perLevelTo11:5,level11:275,perLevelAfter11:2,level70:393,level500:1253},
