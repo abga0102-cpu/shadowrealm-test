@@ -45,16 +45,16 @@ test('V511 Familiar Raid Essence preserves early levels and reaches 1253 at 500'
   expect(cfg).toMatchObject({level1:225,level11:275,perLevelAfter11:2,level70:393,level500:1253});
 });
 
-test('V511 preserves historical Gold and extends Competence to its approved level-500 target', async ({ page }) => {
+test('V511 applies approved linear Gold and extends Competence to its approved level-500 target', async ({ page }) => {
   await openCleanGame(page);
   const out = await page.evaluate(() => ({
-    gold:[1,10,15,20,21,70].map((lv)=>raidReward('or',lv)),
+    gold:[1,10,15,20,21,70,500].map((lv)=>raidReward('or',lv)),
     skill:[1,2,10,70,500].map((lv)=>raidReward('competence',lv)),
     cfg:window.__srRaidRewardConfigV396
   }));
-  expect(out.gold).toEqual([5000,10000,20000,30000,31500,344021]);
+  expect(out.gold).toEqual([1,10,15,20,21,70,500].map(lv=>Math.round(50+49950*(lv-1)/499)));
   expect(out.skill).toEqual([300,310,390,990,4500]);
-  expect(out.cfg.or).toMatchObject({level1:5000,level10:10000,level15:20000,level20:30000,growthAfter20:1.05});
+  expect(out.cfg.or).toMatchObject({level1:50,level500:50000,curve:'linear',rounding:'nearest'});
   expect(out.cfg.competence).toMatchObject({level1:300,perLevelTo70:10,level70:990,level500:4500});
 });
 
