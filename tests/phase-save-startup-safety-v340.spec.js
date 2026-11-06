@@ -77,3 +77,15 @@ test('V341 recovery must fail closed if pre-restore snapshot fails (read-only so
   expect(restoreCandidate).toMatch(/if\s*\([^)]*!snapshot\([^)]*\)\s*\)\s*return false/);
   // This test never touches real browser storage or player saves.
 });
+
+test('V433 direct backup restore refuses overwrite when active snapshot fails (read-only)', async () => {
+  const safety = fs.readFileSync(path.join(root, 'save-safety-v340.js'), 'utf8');
+  const begin = safety.indexOf('function restore(slot)');
+  const end = safety.indexOf('function ', begin + 1);
+  expect(begin).toBeGreaterThan(-1);
+  const body = safety.slice(begin, end > begin ? end : undefined);
+  // A direct slot restore must also fail closed, not just the recovery-center UI.
+  expect(body).toContain('snapshot(activeRaw,true)');
+  expect(body).toMatch(/if\s*\(validRaw\(activeRaw\)\s*&&\s*!snapshot\(activeRaw,true\)\)\s*return false;/);
+  // Source-only guard; no user save is opened or changed.
+});
