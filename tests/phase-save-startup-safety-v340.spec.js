@@ -63,3 +63,17 @@ test('V433 safety invariants required before recovery consolidation (read-only c
   expect(safety).toContain('smokeIsolated:true');
   expect(index).toContain('PAUSED_SANCTUARY');
 });
+
+
+test('V341 recovery must fail closed if pre-restore snapshot fails (read-only source guard)', async () => {
+  const safety = fs.readFileSync(path.join(root, 'save-safety-v340.js'), 'utf8');
+  // V433 restore() already refuses replacement when snapshot(activeRaw,true) fails.
+  // A consolidated V341 restoreCandidate() must provide the same guarantee.
+  const begin = safety.indexOf('function restoreCandidate(key)');
+  const end = safety.indexOf('function esc(', begin);
+  expect(begin).toBeGreaterThan(-1);
+  expect(end).toBeGreaterThan(begin);
+  const restoreCandidate = safety.slice(begin, end);
+  expect(restoreCandidate).toMatch(/if\s*\([^)]*!snapshot\([^)]*\)\s*\)\s*return false/);
+  // This test never touches real browser storage or player saves.
+});
