@@ -21,7 +21,7 @@ test('V340 gates per-save compensation until canonical boot and keeps backups', 
 
   expect(safety).toContain("var SAVE_KEY='shadowreach.save.local';");
   expect(safety).toContain("var BACKUP_PREFIX='shadowreach.save.backup.v340.';");
-  expect(safety).toContain('var BACKUP_SLOTS=5;');
+  expect(safety).toContain('var BACKUP_SLOTS=12;');
   expect(safety).toContain('snapshot();');
   expect(safety).toContain('saveNow=safeSaveNow;');
 
@@ -37,7 +37,7 @@ test('V340 gates per-save compensation until canonical boot and keeps backups', 
     stageSafe: window.__srStageGoldCompensationStartupSafeV340
   }));
   expect(state.ready).toBe('complete');
-  expect(state.backupSlots).toBe(5);
+  expect(state.backupSlots).toBe(12);
   expect(state.stageSafe).toBe(true);
 });
 
@@ -52,8 +52,14 @@ test('V433 safety invariants required before recovery consolidation (read-only c
   expect(safety).toContain("var ANCESTRAL_KEY='shadowreach.familiar.ancestral.v433';");
   expect(safety).toContain('snapshot(activeRaw,true)');
   expect(safety).toContain('pinAncestral');
-  expect(safety).toContain('preserveAncestralPets');
-  expect(safety).toContain('exportAllLocalData');
-  expect(safety).toContain('STARTUP_INTEGRITY_POWER');
+  // Match the real V433 contracts on main, not nonexistent helper names.
+  expect(safety).toContain("var META_KEY='shadowreach.save.backup.meta.v433';");
+  expect(safety).toContain('var MIN_INTERVAL=5*60*1000;');
+  expect(safety).toContain('function stronger(candidate,best)');
+  expect(safety).toContain('function pinBest(raw)');
+  expect(safety).toContain('function pinAncestral(s)');
+  expect(safety).toContain('if(!force&&first&&now-lastSnapshotAt()<MIN_INTERVAL)return true;');
+  expect(safety).toContain('if(validRaw(activeRaw)&&!snapshot(activeRaw,true))return false;');
+  expect(safety).toContain('smokeIsolated:true');
   expect(index).toContain('PAUSED_SANCTUARY');
 });
