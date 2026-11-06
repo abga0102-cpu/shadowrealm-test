@@ -18,7 +18,7 @@ test('V341 recovery is owned by save safety and never auto-restores', async ({ p
   expect(source).toContain('if(!window.confirm(msg))return false;');
   expect(source).not.toContain('restoreCandidate(BACKUP_PREFIX');
 
-  await page.goto('/index.html?smoke=1');
+  // Recovery is deliberately disabled in smoke mode; use an isolated normal browser context.\n  await page.goto('/index.html');
   await page.waitForFunction(() =>
     window.__srSaveSafetyV340 &&
     window.__srSaveRecoveryV341 &&
@@ -59,4 +59,15 @@ test('V341 recovery is owned by save safety and never auto-restores', async ({ p
   });
 
   expect(result).toEqual({ ahead: true, currentFloor: 3, backupFloor: 64, unchanged: true });
+});
+
+
+test('smoke mode must not expose save restoration APIs', async ({ page }) => {
+  await page.goto('/index.html?smoke=1');
+  await page.waitForLoadState('load');
+  const state = await page.evaluate(() => ({
+    safety: Boolean(window.__srSaveSafetyV340),
+    recovery: Boolean(window.__srSaveRecoveryV341)
+  }));
+  expect(state).toEqual({ safety: false, recovery: false });
 });
