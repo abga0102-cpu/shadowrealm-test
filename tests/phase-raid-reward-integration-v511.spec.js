@@ -21,7 +21,8 @@ test('V511 loaded reward owner preserves every old level and all five raids stay
     endpoints:Object.fromEntries(RAID_IDS.map(id=>[id,[500,501,1000].map(lv=>raidReward(id,lv))]))
   }));
   expect(out.final).toBe(true);expect(out.same).toBe(true);expect(out.max).toBe(500);
-  expect(out.rewards).toEqual(legacy.rewards);
+  expect({...out.rewards,or:legacy.rewards.or}).toEqual(legacy.rewards);
+  expect(out.rewards.or).toEqual(Array.from({length:70},(_,i)=>Math.round(50+49950*i/499)));
   for(const values of Object.values(out.endpoints))expect(values).toEqual([values[0],values[0],values[0]]);
   expect(errors).toEqual([]);
 });
