@@ -40,3 +40,20 @@ test('V340 gates per-save compensation until canonical boot and keeps backups', 
   expect(state.backupSlots).toBe(5);
   expect(state.stageSafe).toBe(true);
 });
+
+test('V433 safety invariants required before recovery consolidation (read-only contract)', async () => {
+  const safety = fs.readFileSync(path.join(root, 'save-safety-v340.js'), 'utf8');
+  const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+
+  // Fail closed: the old V341 implementation must not replace V433 protection.
+  // Source-only assertions; never read or modify a player's localStorage.
+  expect(safety).toMatch(/var BACKUP_SLOTS=12;/);
+  expect(safety).toContain("var BEST_KEY='shadowreach.save.best.v433';");
+  expect(safety).toContain("var ANCESTRAL_KEY='shadowreach.familiar.ancestral.v433';");
+  expect(safety).toContain('snapshot(activeRaw,true)');
+  expect(safety).toContain('pinAncestral');
+  expect(safety).toContain('preserveAncestralPets');
+  expect(safety).toContain('exportAllLocalData');
+  expect(safety).toContain('STARTUP_INTEGRITY_POWER');
+  expect(index).toContain('PAUSED_SANCTUARY');
+});
