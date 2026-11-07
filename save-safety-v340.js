@@ -240,6 +240,34 @@
     }catch(_){return false;}
   }
 
+  function isAncestralPet(p){
+    return !!(p&&typeof p==='object'&&String(p.rarity||p.grade||p.rank||'').toUpperCase()==='ANCESTRAL');
+  }
+
+  function preserveAncestralPets(nextState,currentState){
+    var next=parse(JSON.stringify(nextState))||nextState;
+    if(!next||typeof next!=='object')return nextState;
+    if(!Array.isArray(next.pets))next.pets=[];
+    var keep=[];
+    if(currentState&&Array.isArray(currentState.pets))keep=keep.concat(currentState.pets.filter(isAncestralPet));
+    try{
+      var pinned=parse(localStorage.getItem('shadowreach.familiar.ancestral.v433'));
+      if(pinned&&Array.isArray(pinned.pets))keep=keep.concat(pinned.pets.filter(isAncestralPet));
+    }catch(_){}
+    var ids={};
+    next.pets.forEach(function(p){if(p&&p.id!=null)ids[String(p.id)]=true;});
+    keep.forEach(function(p){
+      if(!p)return;
+      var id=p.id!=null?String(p.id):'ancestral-'+String(p.species||p.name||'pet');
+      if(ids[id])return;
+      try{next.pets.push(JSON.parse(JSON.stringify(p)));ids[id]=true;}catch(_){}
+    });
+    var currentActive=currentState&&currentState.activePetId;
+    if(currentActive&&next.pets.some(function(p){return p&&String(p.id)===String(currentActive)&&isAncestralPet(p);}))next.activePetId=currentActive;
+    return next;
+  }
+
+
   function restoreCandidate(key){
     var found=findCandidate(key),candidate=found.candidate;
     if(!candidate||candidate.key===SAVE_KEY)return false;
@@ -251,8 +279,12 @@
     if(!window.confirm(msg))return false;
     try{
       /* Never replace an active save when its safety snapshot failed. */
-      if(active&&active.raw&&!snapshot(active.raw,true))return false;
-      localStorage.setItem(SAVE_KEY,candidate.raw);
+      if(active&&active.raw&&!snapshot(active.raw,true)){
+        if(typeof window.alert==='function')window.alert('Restauration annulée : impossible de sauvegarder la partie actuelle. Libère de l’espace ou exporte ta sauvegarde avant de réessayer.');
+        return false;
+      }
+      var restoredState=preserveAncestralPets(candidate.state,active&&active.state);
+      localStorage.setItem(SAVE_KEY,JSON.stringify(restoredState));
       location.reload();
       return true;
     }catch(_){return false;}
