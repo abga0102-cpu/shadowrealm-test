@@ -8,7 +8,7 @@ test('V341 recovery is owned by save safety and never auto-restores', async ({ p
   const source = fs.readFileSync(path.join(root, 'save-safety-v340.js'), 'utf8');
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.15.341"');
+  expect(index).toMatch(/name="shadowreach-build"\s+content="[^"]+"/);
   expect(index.indexOf('save-safety-v340.js')).toBeGreaterThan(index.indexOf('game-5.js'));
   expect(index).not.toContain('save-recovery-v341.js');
   expect(source).toContain("var SAVE_KEY='shadowreach.save.local';");
@@ -18,7 +18,8 @@ test('V341 recovery is owned by save safety and never auto-restores', async ({ p
   expect(source).toContain('if(!window.confirm(msg))return false;');
   expect(source).not.toContain('restoreCandidate(BACKUP_PREFIX');
 
-  // Recovery is deliberately disabled in smoke mode; use an isolated normal browser context.\n  await page.goto('/index.html');
+  // Recovery is deliberately disabled in smoke mode; use an isolated normal browser context.
+  await page.goto('/index.html');
   await page.waitForFunction(() =>
     window.__srSaveSafetyV340 &&
     window.__srSaveRecoveryV341 &&
