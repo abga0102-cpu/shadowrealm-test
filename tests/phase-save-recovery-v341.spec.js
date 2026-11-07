@@ -72,3 +72,42 @@ test('smoke mode must not expose save restoration APIs', async ({ page }) => {
   }));
   expect(state).toEqual({ safety: false, recovery: false });
 });
+
+test('both restore paths preserve active save when backup storage fails', () => {
+  const vm = require('node:vm');
+  const source = fs.readFileSync(path.join(root, 'save-safety-v340.js'), 'utf8');
+  const key = 'shadowreach.save.local';
+  const backup = 'shadowreach.save.backup.v340.1';
+  const makeSave = (name, floor) => JSON.stringify({
+    playerName: name, level: floor, exp: 0, gold: 10, recordFloor: floor,
+    floor, power: floor * 10, stats: {}, inventory: [], equipped: {}, raids: {}
+  });
+  const original = makeSave('Actuel', 20);
+  const candidate = makeSave('Ancien', 10);
+  const entries = new Map();
+  let reloads = 0;
+  const localStorage = {
+    get length() { return entries.size; },
+    key(i) { return Array.from(entries.keys())[i] || null; },
+    getItem(k) { return entries.has(k) ? entries.get(k) : null; },
+    setItem(k, v) {
+      if (k.startsWith('shadowreach.save.backup.v340.')) throw Error('quota exceeded');
+      entries.set(k, String(v));
+    },
+    removeItem(k) { entries.delete(k); }
+  };
+  const window = { confirm: () => true, addEventListener: () => {} };
+  const context = {
+    window, localStorage, document: { readyState: 'loading', addEventListener: () => {} },
+    location: { reload: () => { reloads++; } }, console, setTimeout: () => {},
+    SMOKE: false
+  };
+  vm.runInNewContext(source, context);
+  entries.set(key, original);
+  entries.set(backup, candidate);
+  expect(window.__srSaveSafetyV340.restore(1)).toBe(false);
+  expect(entries.get(key)).toBe(original);
+  expect(window.__srSaveRecoveryV341.restoreCandidate(backup)).toBe(false);
+  expect(entries.get(key)).toBe(original);
+  expect(reloads).toBe(0);
+});
