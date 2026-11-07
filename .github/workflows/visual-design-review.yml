@@ -1,6 +1,13 @@
 name: Shadowreach - captures UI pour Figma
 
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/visual-design-review.yml'
+      - 'design/shadowreach-tokens.json'
+      - 'scripts/export-design-tokens.cjs'
+      - 'tests/playwright.visual.config.js'
+      - 'tests/visual-review.spec.js'
   workflow_dispatch:
 
 permissions:

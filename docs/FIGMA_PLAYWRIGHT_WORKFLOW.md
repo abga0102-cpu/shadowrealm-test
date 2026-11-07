@@ -1,6 +1,6 @@
 # Shadowreach : Figma + Playwright (outillage de développement)
 
-Ce dossier prépare la **revue graphique**, séparément du jeu en production et de la CI historique. Aucune mécanique, économie, sauvegarde ou route n'est changée par cette intégration.
+Ce dossier prépare la **revue graphique**, séparément du jeu en production et de la CI historique. La capture se lance manuellement ou automatiquement sur les PR qui changent cet outillage (pas sur toutes les PR du jeu). Aucune mécanique, économie, sauvegarde ou route n'est changée par cette intégration.
 
 ## État confirmé au moment de l'installation
 
