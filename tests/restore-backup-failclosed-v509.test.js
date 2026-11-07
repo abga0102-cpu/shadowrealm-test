@@ -68,7 +68,7 @@ function setup(active=old, withSafety=true) {
 }
 {
   const t=setup(old,false);
-  assert.equal(t.window.__srSaveRecoveryV341.restoreCandidate(BACKUP),false);
+  assert.equal(t.window.__srSaveRecoveryV341,undefined);
   assert.equal(t.data.get(MAIN),old);
   assert.equal(t.stats().reloads,0);
 }
