@@ -67,6 +67,16 @@ function setup(active=old, withSafety=true) {
   assert.equal(t.stats().reloads,1);
 }
 {
+  // Restoring an older hero must not silently delete an ancestral familiar.
+  const ancestral = {id:'ancestor-1',name:'Guardian',rarity:'ANCESTRAL'};
+  const currentWithPet = JSON.stringify({...JSON.parse(old),pets:[ancestral],activePetId:ancestral.id});
+  const t=setup(currentWithPet);
+  assert.equal(t.window.__srSaveRecoveryV341.restoreCandidate(BACKUP),true);
+  const restored=JSON.parse(t.data.get(MAIN));
+  assert.equal(restored.pets.some(p=>p.id===ancestral.id),true);
+  assert.equal(restored.activePetId,ancestral.id);
+}
+{
   const t=setup(old,false);
   assert.equal(t.window.__srSaveRecoveryV341,undefined);
   assert.equal(t.data.get(MAIN),old);
@@ -79,4 +89,4 @@ function setup(active=old, withSafety=true) {
   assert.equal(index.split(safetyUrl).length - 1, 1);
   assert.ok(!index.includes('<script src="save-recovery-v341.js'), 'Duplicate recovery module must not load');
 }
-console.log('Restore safety: 7 restore scenarios and 1 consolidated script-version check passed.');
+console.log('Restore safety: 8 restore scenarios and 1 consolidated script-version check passed.');
