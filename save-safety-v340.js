@@ -15,6 +15,10 @@
   var BACKUP_SLOTS=12;
   var MIN_INTERVAL=5*60*1000;
   var PREIMPORT_KEY='shadowreach.save.preimport.v207';
+  var RESCUE_KEY='shadowreach.save.rescue.v430';
+  var BUILD='V433';
+  var FORCE_RECOVERY=/(?:^|[?&])recovery=1(?:&|$)/.test(location.search);
+  var STARTUP_INTEGRITY_POWER=integrityPower();
   var BUTTON_ID='srSaveRecoveryButtonV341';
   var PANEL_ID='srSaveRecoveryPanelV341';
   var IS_SMOKE=typeof SMOKE!=='undefined'&&SMOKE;
@@ -167,6 +171,7 @@
   function sourceForKey(key){
     if(key===SAVE_KEY)return 'active';
     if(key===PREIMPORT_KEY)return 'pre-import';
+    if(key===RESCUE_KEY)return 'rescue-v430';
     if(key.indexOf(BACKUP_PREFIX)===0)return 'backup-v340';
     return 'legacy-local';
   }
@@ -208,6 +213,52 @@
     return false;
   }
 
+  function integrityPower(){
+    try{
+      var snapshot=parse(localStorage.getItem('shadowreach.power.sources.v256'));
+      return snapshot?Math.max(0,num(snapshot.power,0)):0;
+    }catch(_){return 0;}
+  }
+
+  function suspiciousReset(active){
+    if(!active)return false;
+    return active.level<=3&&active.recordFloor<=2&&Math.max(active.power,STARTUP_INTEGRITY_POWER,integrityPower())>=1000;
+  }
+
+  function bestAhead(list,active){
+    var best=null;
+    for(var i=0;i<list.length;i++){
+      var c=list[i];
+      if(!aheadOf(c,active))continue;
+      if(!best||c.recordFloor>best.recordFloor||
+        (c.recordFloor===best.recordFloor&&c.level>best.level)||
+        (c.recordFloor===best.recordFloor&&c.level===best.level&&c.power>best.power)||
+        (c.recordFloor===best.recordFloor&&c.level===best.level&&c.power===best.power&&c.lastSeen>best.lastSeen))best=c;
+    }
+    return best;
+  }
+
+  /* Keep V430's non-rotating rescue copy in addition to the V433 best pin.
+     Pin the strongest older state before the rotating slots can evict it.
+     The rescue key is never rotated and is replaced only by a stronger state. */
+
+  function pinRescue(){
+    try{
+      var list=scan(),active=activeOf(list),candidate=bestAhead(list,active);
+      if(!candidate)return null;
+      var pinned=null;
+      for(var i=0;i<list.length;i++)if(list[i].key===RESCUE_KEY){pinned=list[i];break;}
+      var replace=!pinned||candidate.recordFloor>pinned.recordFloor||
+        (candidate.recordFloor===pinned.recordFloor&&candidate.level>pinned.level)||
+        (candidate.recordFloor===pinned.recordFloor&&candidate.level===pinned.level&&candidate.power>pinned.power);
+      if(replace&&candidate.key!==RESCUE_KEY){
+        localStorage.setItem(RESCUE_KEY,candidate.raw);
+        return summarize(RESCUE_KEY,candidate.raw,candidate.state,'rescue-v430');
+      }
+      return pinned||candidate;
+    }catch(_){return null;}
+  }
+
   function findCandidate(key){
     var list=scan();
     for(var i=0;i<list.length;i++)if(list[i].key===key)return {candidate:list[i],list:list};
@@ -236,6 +287,29 @@
       a.click();
       a.remove();
       setTimeout(function(){try{URL.revokeObjectURL(href);}catch(_){}},1000);
+      return true;
+    }catch(_){return false;}
+  }
+
+  function exportAllLocalData(){
+    try{
+      var entries={};
+      for(var i=0;i<localStorage.length;i++){
+        var key=localStorage.key(i);
+        if(key&&key.indexOf('shadowreach.')===0)entries[key]=localStorage.getItem(key);
+      }
+      var payload={
+        format:'shadowreach-local-diagnostic-v433',
+        exportedAt:new Date().toISOString(),
+        build:BUILD,
+        entries:entries
+      };
+      var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='shadowreach-diagnostic-complet-'+Date.now()+'.json';
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){try{URL.revokeObjectURL(a.href);}catch(_){}},1000);
       return true;
     }catch(_){return false;}
   }
@@ -298,15 +372,12 @@
 
   function sourceLabel(c){
     if(c.source==='active')return 'Actuelle';
+    if(c.source==='rescue-v430')return 'Copie protégée V430';
     if(c.source==='backup-v340')return 'Secours V340';
-    if(c.source==='pre-import')return 'Avant import';
     return 'Ancienne copie locale';
   }
 
-  function closeRecovery(){
-    var panel=document.getElementById(PANEL_ID);
-    if(panel)panel.remove();
-  }
+  function closeRecovery(){var p=document.getElementById(PANEL_ID);if(p)p.remove();}
 
   function openRecovery(){
     closeRecovery();
@@ -316,7 +387,11 @@
     overlay.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(3,7,14,.88);display:flex;align-items:flex-end;justify-content:center;padding:12px;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#fff';
     var box=document.createElement('div');
     box.style.cssText='width:min(680px,100%);max-height:88vh;overflow:auto;background:#111827;border:1px solid #334155;border-radius:18px;padding:16px;box-sizing:border-box;box-shadow:0 20px 70px rgba(0,0,0,.5)';
-    var html='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:18px;font-weight:900">Récupération de sauvegarde</div><div style="font-size:12px;color:#94a3b8;margin-top:3px">V341 · aucune restauration automatique</div></div><button data-sr-close style="border:0;border-radius:10px;padding:8px 11px;background:#243044;color:#fff;font-weight:800">Fermer</button></div>';
+    var guard=window.__srSaveLoadGuardV430||{};
+    var html='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:18px;font-weight:900">Récupération de sauvegarde</div><div style="font-size:12px;color:#94a3b8;margin-top:3px">'+BUILD+' · restauration uniquement après confirmation</div></div><button data-sr-close style="border:0;border-radius:10px;padding:8px 11px;background:#243044;color:#fff;font-weight:800">Fermer</button></div>';
+    if(guard.blocked)html+='<div style="margin-top:12px;padding:11px;border-radius:11px;background:#3a1d22;border:1px solid #d45b68;color:#ffd7dc;font-size:12px;line-height:1.45"><b>Protection active :</b> le chargement principal a échoué. Les sauvegardes automatiques sont bloquées pour éviter d’écraser ton ancienne partie.</div>';
+    html+='<button data-sr-export-all style="width:100%;margin-top:12px;border:1px solid #60a5fa;border-radius:11px;padding:11px;background:#17365f;color:#fff;font-weight:900">Exporter toutes les données locales</button>'+
+      '<div style="margin-top:6px;font-size:11px;color:#94a3b8;line-height:1.4">Ce fichier permet de rechercher les fragments de progression, d’équipement et de familiers encore présents sur cet appareil.</div>';
     if(!list.length){
       html+='<div style="margin-top:14px;padding:14px;border-radius:12px;background:#182234;color:#cbd5e1">Aucune sauvegarde Shadow exploitable trouvée dans le stockage de ce navigateur.</div>';
     }else{
@@ -331,32 +406,16 @@
           (c.key===SAVE_KEY?'':'<button data-sr-restore="'+esc(c.key)+'" style="flex:1;border:0;border-radius:10px;padding:8px;background:'+(better?'#238636':'#334155')+';color:#fff;font-weight:900">Restaurer</button>')+'</div></div>';
       }
     }
-    box.innerHTML=html;
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
+    box.innerHTML=html;overlay.appendChild(box);document.body.appendChild(overlay);
     overlay.addEventListener('click',function(e){
       var t=e.target;
       if(t===overlay||t.hasAttribute('data-sr-close')){closeRecovery();return;}
-      var ex=t.getAttribute&&t.getAttribute('data-sr-export');
-      if(ex){exportCandidate(ex);return;}
-      var rs=t.getAttribute&&t.getAttribute('data-sr-restore');
-      if(rs)restoreCandidate(rs);
+      if(t.hasAttribute&&t.hasAttribute('data-sr-export-all')){exportAllLocalData();return;}
+      var ex=t.getAttribute&&t.getAttribute('data-sr-export');if(ex){exportCandidate(ex);return;}
+      var rs=t.getAttribute&&t.getAttribute('data-sr-restore');if(rs){restoreCandidate(rs);}
     });
   }
 
-  function mountRecoveryButton(){
-    if(document.getElementById(BUTTON_ID))return;
-    var list=scan(),active=activeOf(list),ahead=false;
-    for(var i=0;i<list.length;i++)if(aheadOf(list[i],active)){ahead=true;break;}
-    var button=document.createElement('button');
-    button.id=BUTTON_ID;
-    button.type='button';
-    button.textContent=ahead?'Sauvegarde récupérable':'Récupération';
-    button.setAttribute('aria-label','Ouvrir la récupération de sauvegarde');
-    button.style.cssText='position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom) + 82px);z-index:99990;border:'+(ahead?'1px solid #56d364':'1px solid #3b4d68')+';border-radius:12px;padding:8px 10px;background:'+(ahead?'#173d25':'#182234')+';color:#fff;font:800 12px/1 system-ui,-apple-system,Segoe UI,sans-serif;box-shadow:0 8px 26px rgba(0,0,0,.35)';
-    button.addEventListener('click',openRecovery);
-    document.body.appendChild(button);
-  }
 
 
   if(IS_SMOKE){
@@ -379,12 +438,16 @@
   window.__srSaveSafetyV340.exportCandidate=exportCandidate;
   window.__srSaveSafetyV340.restoreCandidate=restoreCandidate;
   window.__srSaveSafetyV340.aheadOf=aheadOf;
-  window.__srSaveRecoveryV341={scan:scan,open:openRecovery,exportCandidate:exportCandidate,restoreCandidate:restoreCandidate,aheadOf:aheadOf};
+  window.__srSaveRecoveryV341={scan:scan,open:openRecovery,exportCandidate:exportCandidate,exportAllLocalData:exportAllLocalData,restoreCandidate:restoreCandidate,aheadOf:aheadOf,pinBest:pinRescue,rescueKey:RESCUE_KEY};
 
   snapshot();
-
-  if(document.readyState==='complete')setTimeout(mountRecoveryButton,0);
-  else window.addEventListener('load',function(){setTimeout(mountRecoveryButton,0);},{once:true});
+  pinRescue();
+  function mountRecovery(){
+    var list=scan(),active=activeOf(list);
+    if(FORCE_RECOVERY||suspiciousReset(active))openRecovery();
+  }
+  if(document.readyState==='complete')setTimeout(mountRecovery,0);
+  else window.addEventListener('load',function(){setTimeout(mountRecovery,0);},{once:true});
 
   try{
     if(typeof saveNow==='function'&&!saveNow.__srSaveSafetyV340){
