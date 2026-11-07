@@ -1,42 +1,113 @@
-/* SHADOWREACH V340/V341 · Local save safety and recovery
-   Canonical owner for rotating local snapshots plus explicit, non-destructive
-   recovery. Loaded after game-5 so canonical boot has already restored S.
-   Recovery never replaces the active save automatically. */
+/* SHADOWREACH V340/V433 · Durable local save safety
+   - Keeps rate-limited rotating snapshots instead of consuming every slot on every autosave.
+   - Pins the strongest known progression in a non-rotating recovery key.
+   - Pins every ancestral familiar separately so a later restore cannot silently delete it.
+*/
 (function(){
   'use strict';
   if(window.__srSaveSafetyV340)return;
 
   var SAVE_KEY='shadowreach.save.local';
   var BACKUP_PREFIX='shadowreach.save.backup.v340.';
+  var BEST_KEY='shadowreach.save.best.v433';
+  var ANCESTRAL_KEY='shadowreach.familiar.ancestral.v433';
+  var META_KEY='shadowreach.save.backup.meta.v433';
+  var BACKUP_SLOTS=12;
+  var MIN_INTERVAL=5*60*1000;
   var PREIMPORT_KEY='shadowreach.save.preimport.v207';
-  var BACKUP_SLOTS=5;
   var BUTTON_ID='srSaveRecoveryButtonV341';
   var PANEL_ID='srSaveRecoveryPanelV341';
+  var IS_SMOKE=typeof SMOKE!=='undefined'&&SMOKE;
 
-  function validRaw(raw){
-    if(!raw||typeof raw!=='string')return false;
+  function parse(raw){
+    if(!raw||typeof raw!=='string')return null;
     try{
-      var parsed=JSON.parse(raw);
-      return !!(parsed&&typeof parsed==='object'&&!Array.isArray(parsed));
+      var value=JSON.parse(raw);
+      return value&&typeof value==='object'&&!Array.isArray(value)?value:null;
+    }catch(_){return null;}
+  }
+
+  function validRaw(raw){return !!parse(raw);}
+  function num(v,fallback){v=Number(v);return isFinite(v)?v:(fallback==null?0:fallback);}
+  function clone(v){try{return JSON.parse(JSON.stringify(v));}catch(_){return null;}}
+
+  function ancestralPets(s){
+    var pets=[];
+    [s&&s.pets,s&&s.familiars].forEach(function(list){
+      if(!Array.isArray(list))return;
+      list.forEach(function(p){
+        if(p&&String(p.rarity||p.grade||p.rank||'').toUpperCase()==='ANCESTRAL')pets.push(p);
+      });
+    });
+    return pets;
+  }
+
+  function pinAncestral(s){
+    var found=ancestralPets(s);
+    if(!found.length)return false;
+    try{
+      var prior=parse(localStorage.getItem(ANCESTRAL_KEY))||{};
+      var merged=Array.isArray(prior.pets)?prior.pets.slice():[];
+      var ids={};
+      merged.forEach(function(p){if(p&&p.id!=null)ids[String(p.id)]=true;});
+      found.forEach(function(p){
+        if(!p)return;
+        var id=p.id!=null?String(p.id):'ancestral-'+String(p.species||p.name||'pet');
+        if(ids[id])return;
+        var copy=clone(p);if(copy){merged.push(copy);ids[id]=true;}
+      });
+      localStorage.setItem(ANCESTRAL_KEY,JSON.stringify({at:Date.now(),pets:merged}));
+      return true;
     }catch(_){return false;}
   }
 
-  function parse(raw){
-    if(!validRaw(raw))return null;
-    try{return JSON.parse(raw);}catch(_){return null;}
+  function stronger(candidate,best){
+    if(!candidate)return false;
+    if(!best)return true;
+    var ca=ancestralPets(candidate).length,ba=ancestralPets(best).length;
+    if(ca!==ba)return ca>ba;
+    var cr=Math.max(num(candidate.recordFloor),num(candidate.floor));
+    var br=Math.max(num(best.recordFloor),num(best.floor));
+    if(cr!==br)return cr>br;
+    if(num(candidate.level)!==num(best.level))return num(candidate.level)>num(best.level);
+    if(num(candidate.power)!==num(best.power))return num(candidate.power)>num(best.power);
+    var ci=Array.isArray(candidate.inventory)?candidate.inventory.length:0;
+    var bi=Array.isArray(best.inventory)?best.inventory.length:0;
+    if(ci!==bi)return ci>bi;
+    return num(candidate.lastSeen)>num(best.lastSeen);
   }
 
-  function snapshot(raw){
+  function pinBest(raw){
+    var candidate=parse(raw);
+    if(!candidate)return false;
+    try{
+      var best=parse(localStorage.getItem(BEST_KEY));
+      if(stronger(candidate,best))localStorage.setItem(BEST_KEY,raw);
+      pinAncestral(candidate);
+      return true;
+    }catch(_){return false;}
+  }
+
+  function lastSnapshotAt(){
+    try{return num((parse(localStorage.getItem(META_KEY))||{}).at);}catch(_){return 0;}
+  }
+
+  function snapshot(raw,force){
     try{
       raw=typeof raw==='string'?raw:localStorage.getItem(SAVE_KEY);
       if(!validRaw(raw))return false;
-      if(localStorage.getItem(BACKUP_PREFIX+'1')===raw)return true;
+      pinBest(raw);
+      var first=localStorage.getItem(BACKUP_PREFIX+'1');
+      if(first===raw)return true;
+      var now=Date.now();
+      if(!force&&first&&now-lastSnapshotAt()<MIN_INTERVAL)return true;
       for(var i=BACKUP_SLOTS;i>=2;i--){
         var previous=localStorage.getItem(BACKUP_PREFIX+(i-1));
         if(previous)localStorage.setItem(BACKUP_PREFIX+i,previous);
         else localStorage.removeItem(BACKUP_PREFIX+i);
       }
       localStorage.setItem(BACKUP_PREFIX+'1',raw);
+      localStorage.setItem(META_KEY,JSON.stringify({at:now}));
       return true;
     }catch(_){return false;}
   }
@@ -46,17 +117,14 @@
     try{
       var raw=localStorage.getItem(BACKUP_PREFIX+slot);
       if(!validRaw(raw))return false;
+      /* Never replace a valid active save unless a fresh backup is secured.
+         An invalid/missing active save must remain recoverable. */
       var activeRaw=localStorage.getItem(SAVE_KEY);
-      if(validRaw(activeRaw)&&!snapshot(activeRaw))return false;
+      if(validRaw(activeRaw)&&!snapshot(activeRaw,true))return false;
       localStorage.setItem(SAVE_KEY,raw);
       location.reload();
       return true;
     }catch(_){return false;}
-  }
-
-  function num(v,fallback){
-    var n=Number(v);
-    return isFinite(n)?n:(fallback==null?0:fallback);
   }
 
   function looksLikeSave(s){
@@ -183,7 +251,7 @@
     if(!window.confirm(msg))return false;
     try{
       /* Never replace an active save when its safety snapshot failed. */
-      if(active&&active.raw&&!snapshot(active.raw))return false;
+      if(active&&active.raw&&!snapshot(active.raw,true))return false;
       localStorage.setItem(SAVE_KEY,candidate.raw);
       location.reload();
       return true;
@@ -258,8 +326,33 @@
     document.body.appendChild(button);
   }
 
-  /* Capture the save that boot() just loaded before later migration scripts run. */
+
+  if(IS_SMOKE){
+    window.__srSaveSafetyV340={
+      saveKey:SAVE_KEY,backupPrefix:BACKUP_PREFIX,backupSlots:BACKUP_SLOTS,
+      bestKey:BEST_KEY,ancestralKey:ANCESTRAL_KEY,minInterval:MIN_INTERVAL,
+      snapshot:function(){return false;},restore:function(){return false;},smokeIsolated:true
+    };
+    return;
+  }
+
+  window.__srSaveSafetyV340={
+    saveKey:SAVE_KEY,backupPrefix:BACKUP_PREFIX,backupSlots:BACKUP_SLOTS,
+    bestKey:BEST_KEY,ancestralKey:ANCESTRAL_KEY,minInterval:MIN_INTERVAL,
+    snapshot:snapshot,restore:restore,pinBest:pinBest,pinAncestral:pinAncestral,smokeIsolated:false
+  };
+
+  window.__srSaveSafetyV340.scan=scan;
+  window.__srSaveSafetyV340.openRecovery=openRecovery;
+  window.__srSaveSafetyV340.exportCandidate=exportCandidate;
+  window.__srSaveSafetyV340.restoreCandidate=restoreCandidate;
+  window.__srSaveSafetyV340.aheadOf=aheadOf;
+  window.__srSaveRecoveryV341={scan:scan,open:openRecovery,exportCandidate:exportCandidate,restoreCandidate:restoreCandidate,aheadOf:aheadOf};
+
   snapshot();
+
+  if(document.readyState==='complete')setTimeout(mountRecoveryButton,0);
+  else window.addEventListener('load',function(){setTimeout(mountRecoveryButton,0);},{once:true});
 
   try{
     if(typeof saveNow==='function'&&!saveNow.__srSaveSafetyV340){
@@ -272,34 +365,5 @@
       safeSaveNow.__srPreviousSaveNow=previousSaveNow;
       saveNow=safeSaveNow;
     }
-  }catch(_){ }
-
-  var recoveryApi={
-    scan:scan,
-    open:openRecovery,
-    exportCandidate:exportCandidate,
-    restoreCandidate:restoreCandidate,
-    aheadOf:aheadOf
-  };
-
-  window.__srSaveSafetyV340={
-    saveKey:SAVE_KEY,
-    backupPrefix:BACKUP_PREFIX,
-    backupSlots:BACKUP_SLOTS,
-    snapshot:snapshot,
-    restore:restore,
-    scan:scan,
-    openRecovery:openRecovery,
-    exportCandidate:exportCandidate,
-    restoreCandidate:restoreCandidate,
-    aheadOf:aheadOf
-  };
-
-  /* Compatibility alias for the short-lived V341 recovery API. The canonical
-     runtime owner is save-safety-v340.js; no sibling recovery module is needed. */
-  window.__srSaveRecoveryV341=recoveryApi;
-
-  if(typeof SMOKE!=='undefined'&&SMOKE)return;
-  if(document.readyState==='complete')setTimeout(mountRecoveryButton,0);
-  else window.addEventListener('load',function(){setTimeout(mountRecoveryButton,0);},{once:true});
+  }catch(_){}
 })();
