@@ -1,0 +1,292 @@
+{
+  "$description": "Shadowreach: couleurs de la première règle :root de style.css. Ne représente pas tous les overrides CSS/JS chargés en jeu.",
+  "colors": {
+    "bg0": {
+      "$type": "color",
+      "$value": "#080C16",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--bg0"
+      }
+    },
+    "bg1": {
+      "$type": "color",
+      "$value": "#0B111F",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--bg1"
+      }
+    },
+    "bg2": {
+      "$type": "color",
+      "$value": "#101A2C",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--bg2"
+      }
+    },
+    "panel": {
+      "$type": "color",
+      "$value": "#152037",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--panel"
+      }
+    },
+    "panel2": {
+      "$type": "color",
+      "$value": "#1C2A46",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--panel2"
+      }
+    },
+    "panel3": {
+      "$type": "color",
+      "$value": "#243553",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--panel3"
+      }
+    },
+    "border": {
+      "$type": "color",
+      "$value": "#2E4269",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--border"
+      }
+    },
+    "borderSoft": {
+      "$type": "color",
+      "$value": "#1E2C49",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--borderSoft"
+      }
+    },
+    "borderLit": {
+      "$type": "color",
+      "$value": "#4A6494",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--borderLit"
+      }
+    },
+    "gold": {
+      "$type": "color",
+      "$value": "#E8B44A",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--gold"
+      }
+    },
+    "goldLit": {
+      "$type": "color",
+      "$value": "#FBDD8C",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--goldLit"
+      }
+    },
+    "goldDim": {
+      "$type": "color",
+      "$value": "#8A6522",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--goldDim"
+      }
+    },
+    "goldDeep": {
+      "$type": "color",
+      "$value": "#42300D",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--goldDeep"
+      }
+    },
+    "purple": {
+      "$type": "color",
+      "$value": "#9B5CF6",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--purple"
+      }
+    },
+    "purpleLit": {
+      "$type": "color",
+      "$value": "#C79BFF",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--purpleLit"
+      }
+    },
+    "purpleDeep": {
+      "$type": "color",
+      "$value": "#41236F",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--purpleDeep"
+      }
+    },
+    "red": {
+      "$type": "color",
+      "$value": "#E5484D",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--red"
+      }
+    },
+    "redLit": {
+      "$type": "color",
+      "$value": "#FF868A",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--redLit"
+      }
+    },
+    "redDeep": {
+      "$type": "color",
+      "$value": "#5E171B",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--redDeep"
+      }
+    },
+    "green": {
+      "$type": "color",
+      "$value": "#3FB950",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--green"
+      }
+    },
+    "greenLit": {
+      "$type": "color",
+      "$value": "#84E891",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--greenLit"
+      }
+    },
+    "greenDeep": {
+      "$type": "color",
+      "$value": "#17411E",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--greenDeep"
+      }
+    },
+    "blue": {
+      "$type": "color",
+      "$value": "#4A90D9",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--blue"
+      }
+    },
+    "blueLit": {
+      "$type": "color",
+      "$value": "#93C6FF",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--blueLit"
+      }
+    },
+    "blueDeep": {
+      "$type": "color",
+      "$value": "#173A63",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--blueDeep"
+      }
+    },
+    "cyan": {
+      "$type": "color",
+      "$value": "#3FCFD6",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--cyan"
+      }
+    },
+    "cyanDeep": {
+      "$type": "color",
+      "$value": "#12484C",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--cyanDeep"
+      }
+    },
+    "steel": {
+      "$type": "color",
+      "$value": "#5A7099",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--steel"
+      }
+    },
+    "steelLit": {
+      "$type": "color",
+      "$value": "#8CA3C9",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--steelLit"
+      }
+    },
+    "steelDeep": {
+      "$type": "color",
+      "$value": "#26344F",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--steelDeep"
+      }
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#EDF1FA",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--text"
+      }
+    },
+    "textDim": {
+      "$type": "color",
+      "$value": "#A3B2CE",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--textDim"
+      }
+    },
+    "textMute": {
+      "$type": "color",
+      "$value": "#6A7B9C",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--textMute"
+      }
+    },
+    "hp": {
+      "$type": "color",
+      "$value": "#E5484D",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--hp"
+      }
+    },
+    "exp": {
+      "$type": "color",
+      "$value": "#4A90D9",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--exp"
+      }
+    },
+    "r-COMMUN": {
+      "$type": "color",
+      "$value": "#9FB0C8",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--r-COMMUN"
+      }
+    },
+    "r-RARE": {
+      "$type": "color",
+      "$value": "#3FA7FF",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--r-RARE"
+      }
+    },
+    "r-EPIQUE": {
+      "$type": "color",
+      "$value": "#B15CF6",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--r-EPIQUE"
+      }
+    },
+    "r-MYTHIQUE": {
+      "$type": "color",
+      "$value": "#FF7A3D",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--r-MYTHIQUE"
+      }
+    },
+    "r-LEGENDAIRE": {
+      "$type": "color",
+      "$value": "#F5C542",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--r-LEGENDAIRE"
+      }
+    },
+    "r-DIVIN": {
+      "$type": "color",
+      "$value": "#FF4D8D",
+      "$extensions": {
+        "com.shadowreach.cssVariable": "--r-DIVIN"
+      }
+    }
+  }
+}
