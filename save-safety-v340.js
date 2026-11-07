@@ -46,6 +46,8 @@
     try{
       var raw=localStorage.getItem(BACKUP_PREFIX+slot);
       if(!validRaw(raw))return false;
+      var activeRaw=localStorage.getItem(SAVE_KEY);
+      if(validRaw(activeRaw)&&!snapshot(activeRaw))return false;
       localStorage.setItem(SAVE_KEY,raw);
       location.reload();
       return true;
@@ -180,7 +182,8 @@
       'La sauvegarde actuelle sera conservée dans les sauvegardes de secours avant le remplacement.';
     if(!window.confirm(msg))return false;
     try{
-      if(active&&active.raw)snapshot(active.raw);
+      /* Never replace an active save when its safety snapshot failed. */
+      if(active&&active.raw&&!snapshot(active.raw))return false;
       localStorage.setItem(SAVE_KEY,candidate.raw);
       location.reload();
       return true;
