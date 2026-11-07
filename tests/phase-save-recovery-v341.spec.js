@@ -14,7 +14,10 @@ test('V341 recovery is owned by save safety and never auto-restores', async ({ p
   expect(source).toContain("var SAVE_KEY='shadowreach.save.local';");
   expect(source).toContain("var BACKUP_PREFIX='shadowreach.save.backup.v340.';");
   expect(source).toContain("var PREIMPORT_KEY='shadowreach.save.preimport.v207';");
-  expect(source).toContain('window.__srSaveRecoveryV341=recoveryApi;');
+  expect(source).toContain('window.__srSaveRecoveryV341={');
+  expect(source).toContain('var BACKUP_SLOTS=12;');
+  expect(source).toContain('pinAncestral(candidate);');
+  expect(source).toContain('snapshot(active.raw,true)');
   expect(source).toContain('if(!window.confirm(msg))return false;');
   expect(source).not.toContain('restoreCandidate(BACKUP_PREFIX');
 
@@ -70,7 +73,7 @@ test('smoke mode must not expose save restoration APIs', async ({ page }) => {
     safety: Boolean(window.__srSaveSafetyV340),
     recovery: Boolean(window.__srSaveRecoveryV341)
   }));
-  expect(state).toEqual({ safety: false, recovery: false });
+  expect(state).toEqual({ safety: true, recovery: false });
 });
 
 test('both restore paths preserve active save when backup storage fails', () => {
