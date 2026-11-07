@@ -31,8 +31,8 @@ La suite manuelle `tests/visual-review.spec.js` reste volontairement **hors** du
 
 - Source de vérité **du socle de couleurs** : `style.css`, première règle `:root`.
 - Export suivi dans Git : `design/shadowreach-tokens.json`.
-- Script sans dépendance : `node scripts/export-design-tokens.js`.
-- Vérification d'absence de dérive : `node scripts/export-design-tokens.js --check`.
+- Script sans dépendance : `node scripts/export-design-tokens.cjs`.
+- Vérification d'absence de dérive : `node scripts/export-design-tokens.cjs --check`.
 - Le fichier Figma ci-dessus dispose de la collection de variables **Shadowreach / CSS base palette**, avec les mêmes noms CSS et leur syntaxe Web `var(--...)`.
 - Après chaque modification volontaire de la palette CSS : relancer l'export, vérifier le diff et **mettre à jour les variables Figma**. Le lien est documenté, mais **la synchronisation GitHub ↔ Figma n'est pas automatique**.
 - Les 41 couleurs ne sont **pas** un design system complet : pas de typographie, de composants, d'animations ni d'overrides runtime capturés par ce seul export.

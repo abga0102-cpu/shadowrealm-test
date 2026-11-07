@@ -22,7 +22,7 @@ jobs:
           cache: npm
 
       - name: Verifier les couleurs exportees pour Figma
-        run: node scripts/export-design-tokens.js --check
+        run: node scripts/export-design-tokens.cjs --check
 
       - name: Installer les dependances de test
         run: npm ci --ignore-scripts --no-audit --no-fund
