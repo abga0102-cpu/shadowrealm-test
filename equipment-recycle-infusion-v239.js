@@ -1,9 +1,8 @@
-/* Shadowreach V239 — recyclage stratégique des équipements.
-   - Recyclage normal : valeur de base + 50% des Poussières investies dans les améliorations réussies.
-   - Catalyseur d'infusion : consommé sur un recyclage individuel pour récupérer 100% de l'investissement.
-   - Les tentatives ratées restent perdues.
+/* Shadowreach V239 / V429 — recyclage stratégique des équipements.
+   - V429: la valeur normale vient uniquement de la rareté + bonus Arbre Poussière.
+   - Le Catalyseur d'infusion double cette valeur fixe sans rembourser l'ancien investissement.
+   - La puissance de l'objet et ses niveaux d'amélioration ne peuvent plus créer de Poussière.
    - 1 Catalyseur tous les 5 premiers clears uniques de Méga-Boss : rare, prévisible et non farmable.
-   - Compensation migration : 1 Catalyseur aux sauvegardes existantes possédant déjà un équipement amélioré.
 */
 (function(){
   'use strict';
@@ -36,17 +35,20 @@
   }
   function baseRecycleValue(s,it){
     if(!it)return 0;
-    var original=Math.max(0,it.originalPower!=null?Number(it.originalPower)||0:
-      (((Number(it.baseDamage)||0)+(Number(it.baseHp)||0))||(Number(it.power)||0)));
-    var rank=(typeof equipRank==='function')?equipRank(it.rarity):0;
-    var bonus=(typeof treeSum==='function')?treeSum(s,'dust'):0;
-    return Math.floor(((rank+1)*5+original*0.2)*(1+bonus/100));
+    try{
+      var cfg=window.__srDustEconomyConfigV293;
+      if(cfg&&typeof cfg.valueForItem==='function'){
+        var exact=Number(cfg.valueForItem(s,it));
+        if(Number.isFinite(exact)&&exact>=0)return Math.floor(exact);
+      }
+    }catch(_){}
+    return 0;
   }
   function normalRecycleValue(s,it){
-    return baseRecycleValue(s,it)+Math.floor(investmentOf(it)*0.50);
+    return baseRecycleValue(s,it);
   }
   function infusedRecycleValue(s,it){
-    return baseRecycleValue(s,it)+Math.floor(investmentOf(it));
+    return baseRecycleValue(s,it)*2;
   }
 
   // Migration sûre : l'investissement remboursable se reconstruit à partir des niveaux réussis.
@@ -68,11 +70,12 @@
     }
   }catch(e){console.warn('equipment recycle migration V239',e);}
 
-  // Toutes les prévisualisations et tous les recyclages en lot passent automatiquement à 50%.
+  // V429: toutes les prévisualisations et tous les recyclages en lot utilisent la valeur rareté.
   dustValue=function(s,it){return normalRecycleValue(s,it);};
+  try{window.dustValue=dustValue;globalThis.dustValue=dustValue;}catch(_){}
 
-  // Après chaque amélioration réussie, on resynchronise l'investissement depuis le niveau atteint.
-  // Ainsi aucun ancien wrapper ne peut doubler le remboursement.
+  // Le suivi historique reste conservé pour compatibilité des sauvegardes, mais V429
+  // ne le rembourse plus : il ne peut donc pas recréer l'ancienne inflation de Poussière.
   upgradeItem=function(id){
     var it=null;
     try{
@@ -110,19 +113,17 @@
     var full=infusedRecycleValue(S,it);
     var catalysts=clampInt(S.infusionCatalysts);
     var color=(typeof RARITY!=='undefined'&&RARITY[it.rarity])?RARITY[it.rarity].c:'var(--purpleLit)';
-    var infusionButton=(invested>0&&catalysts>0)
-      ? btn('✦ Infuser · +'+fmt(full)+' poussière',{cls:'purple',small:true,act:'recycleInfused',arg:id})
+    var infusionButton=(catalysts>0&&base>0)
+      ? btn('✦ Infuser ×2 · +'+fmt(full)+' poussière',{cls:'purple',small:true,act:'recycleInfused',arg:id})
       : btn('✦ Infusion indisponible',{cls:'ghost',small:true,act:'noop',dis:true});
     openModal(
       '<div class="center">'+ic('cycle',30)+'</div>'+
       '<div class="modalT center mt6" style="color:'+color+'">RECYCLER '+esc(it.name||'Équipement')+'</div>'+
       '<div class="card mt8" style="padding:8px 10px">'+
-        '<div class="kv"><span class="dim">Valeur de base</span><b>+'+fmt(base)+'</b></div>'+
-        '<div class="kv"><span class="dim">Poussières investies</span><b>'+fmt(invested)+'</b></div>'+
-        '<div class="kv"><span class="dim">Recyclage normal</span><b style="color:var(--purpleLit)">50% · +'+fmt(normal)+'</b></div>'+
-        '<div class="kv"><span class="dim">Catalyseur d’infusion</span><b style="color:var(--goldLit)">×'+catalysts+' · remboursement 100%</b></div>'+
+        '<div class="kv"><span class="dim">Recyclage rareté</span><b>+'+fmt(base)+'</b></div>'+
+        '<div class="kv"><span class="dim">Catalyseur d’infusion</span><b style="color:var(--goldLit)">×'+catalysts+' · valeur ×2</b></div>'+
       '</div>'+
-      '<div class="mute tiny center mt6">Le Catalyseur n’est consommé que si tu choisis l’infusion. Les tentatives d’amélioration ratées ne sont jamais remboursées.</div>'+
+      '<div class="mute tiny center mt6">La puissance et les améliorations de l’objet n’augmentent plus la Poussière récupérée.</div>'+
       '<div class="row gap6 mt8">'+btn('Annuler',{cls:'ghost',small:true,act:'closeModal'})+
         btn(ic('trash',11)+' Recycler · +'+fmt(normal),{cls:'red',small:true,act:'recycleNormal',arg:id})+'</div>'+
       '<div class="mt6">'+infusionButton+'</div>',
@@ -130,7 +131,7 @@
     );
   }
 
-  // Le bouton de recyclage individuel ouvre désormais le choix 50% / infusion 100%.
+  // Le bouton de recyclage individuel ouvre le choix valeur normale / Catalyseur ×2.
   try{
     if(typeof ACT!=='undefined'&&ACT){
       ACT.recycle=function(a){askRecycleOne(a);};
@@ -177,4 +178,5 @@
     infusedValue:function(it){return infusedRecycleValue(S,it);},
     investment:function(it){return investmentOf(it);}
   };
+  window.__srEquipmentRecycleInfusionV429={version:429,rarityOnly:true,infusionMultiplier:2};
 })();

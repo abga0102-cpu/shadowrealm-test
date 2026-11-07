@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hooklyst — Des vidéos prêtes à tourner</title>
+<meta name="description" content="Hooklyst transforme ton activité en hooks, scripts, scènes, CTA et légendes pour TikTok, Reels et Shorts.">
+<style>
+:root{--bg:#090b0f;--panel:#11151b;--panel2:#161b23;--text:#f7f8fb;--muted:#9aa4b2;--line:#242b36;--accent:#7c5cff;--accent2:#a48fff;--max:1120px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+a{color:inherit;text-decoration:none}.nav{max-width:var(--max);margin:auto;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(9,11,15,.9);backdrop-filter:blur(14px);z-index:10;border-bottom:1px solid rgba(255,255,255,.04)}
+.brand{font-weight:950;letter-spacing:.08em}.brand i{font-style:normal;color:var(--accent)}nav{display:flex;align-items:center;gap:20px;color:var(--muted);font-size:14px}
+.btn{border:0;border-radius:12px;padding:13px 18px;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}.btn-primary{background:var(--accent);color:white}.btn-primary:hover{background:#6e4df4}.btn-secondary{background:var(--panel);border:1px solid var(--line)}
+.hero{max-width:940px;margin:auto;text-align:center;padding:108px 22px 72px}.badge,.pill{display:inline-flex;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:12px;font-weight:800;color:#cbd2dc}
+.hero h1{font-size:clamp(46px,8vw,88px);line-height:.96;letter-spacing:-.06em;margin:22px 0}.hero h1 span{color:var(--accent2)}.lead{max-width:760px;margin:auto;color:var(--muted);font-size:20px;line-height:1.55}
+.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:30px}.micro{font-size:12px;color:#707988;margin-top:14px}
+.stats{max-width:var(--max);margin:0 auto 60px;padding:0 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stats div{padding:24px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,var(--panel),#0e1116)}.stats strong{font-size:34px;display:block}.stats span{font-size:13px;color:var(--muted)}
+.section{max-width:var(--max);margin:auto;padding:76px 22px}.eyebrow{color:var(--accent2);font-weight:900;letter-spacing:.12em;font-size:12px}.section h2{font-size:clamp(32px,5vw,54px);line-height:1.04;letter-spacing:-.045em;margin:10px 0}.section-head{max-width:760px;margin-bottom:30px}.section-head p:last-child{color:var(--muted)}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card,.steps article{border:1px solid var(--line);background:var(--panel);border-radius:20px}.steps article{padding:22px}.steps b{color:var(--accent2)}.steps h3{margin:24px 0 8px}.steps p{color:var(--muted);font-size:14px;line-height:1.5}
+.demo{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.demo-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:16px}.form,.result{padding:24px;min-height:560px}
+label{display:block;font-size:13px;font-weight:800;margin-bottom:15px}input,select{width:100%;margin-top:7px;padding:13px;background:#0d1116;border:1px solid var(--line);border-radius:10px;color:white;outline:none}input:focus,select:focus{border-color:var(--accent)}
+.full{width:100%}.status{text-align:center;color:#788291;font-size:12px;margin:12px 0 0}.result{background:radial-gradient(circle at 100% 0,rgba(124,92,255,.15),transparent 34%),var(--panel)}
+.empty{min-height:510px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted)}.empty span{font-size:38px;color:var(--accent2)}.result h3{font-size:27px;margin:12px 0 22px}.block{padding:15px 0;border-top:1px solid var(--line)}.block small{color:var(--accent2);font-weight:900;letter-spacing:.09em}.block p{line-height:1.55;color:#dbe0e8;margin:7px 0 0}
+.pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.price{padding:24px;position:relative}.price h3{font-size:42px;margin:10px 0}.price small{font-size:14px;color:var(--muted)}.price>span{font-size:13px;color:var(--muted)}.price ul{padding-left:18px;line-height:2;color:#d8dde6}.featured{border-color:var(--accent)}
+.note{max-width:760px;margin:20px auto 0;color:#747e8c;font-size:12px;text-align:center}.cta{text-align:center;padding-bottom:100px}footer{max-width:var(--max);margin:auto;padding:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;color:#707987;font-size:12px}
+@media(max-width:850px){nav a:not(.btn){display:none}.stats,.steps,.pricing{grid-template-columns:1fr 1fr}.demo-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.hero{padding-top:75px}.hero h1{font-size:49px}.lead{font-size:17px}.stats,.steps,.pricing{grid-template-columns:1fr}footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<header class="nav"><a class="brand" href="#">HOOKLYST<i>.</i></a><nav><a href="#how">Comment ça marche</a><a href="#prices">Tarifs</a><a href="#demo" class="btn btn-secondary">Tester</a></nav></header>
+<main>
+<section class="hero">
+<div class="badge">TikTok • Reels • Shorts</div>
+<h1>Ton mois de contenu.<br><span>Prêt à tourner.</span></h1>
+<p class="lead">Hooklyst transforme ton activité en hooks, scripts, scènes, textes écran, CTA et légendes. Pas besoin d'apprendre à écrire des prompts.</p>
+<div class="actions"><a class="btn btn-primary" href="#demo">Créer une vidéo gratuitement</a><a class="btn btn-secondary" href="#how">Découvrir</a></div>
+<p class="micro">Prototype public • Aucun paiement demandé</p>
+</section>
+
+<section class="stats"><div><strong>30</strong><span>concepts par mois</span></div><div><strong>6</strong><span>formats de vidéos</span></div><div><strong>1</strong><span>brief à remplir</span></div><div><strong>0</strong><span>page blanche</span></div></section>
+
+<section id="how" class="section">
+<div class="section-head"><p class="eyebrow">COMMENT ÇA MARCHE</p><h2>De l'idée vague à une fiche réellement tournable.</h2></div>
+<div class="steps">
+<article><b>01</b><h3>Décris ton activité</h3><p>Niche, offre, audience et objectif.</p></article>
+<article><b>02</b><h3>Choisis le format</h3><p>POV, storytelling, face caméra, UGC, éducatif ou mini-scène.</p></article>
+<article><b>03</b><h3>Hooklyst structure</h3><p>Hook, scènes, texte écran, CTA et légende.</p></article>
+<article><b>04</b><h3>Tu tournes</h3><p>Une fiche simple, utilisable directement avec ton téléphone.</p></article>
+</div>
+</section>
+
+<section id="demo" class="section demo">
+<div class="section-head"><p class="eyebrow">DÉMO PUBLIQUE</p><h2>Teste le concept maintenant.</h2><p>Chaque clic génère maintenant une nouvelle fiche avec une vraie IA. Les dernières idées sont mémorisées sur cet appareil pour éviter de répéter le même angle.</p></div>
+<div class="demo-grid">
+<form class="card form" id="form">
+<label>Ton activité<input id="business" required placeholder="Ex : restaurant, coiffeur, coach..."></label>
+<label>Ce que tu veux mettre en avant<input id="offer" required placeholder="Ex : menu midi, prestation premium..."></label>
+<label>Ton audience<input id="audience" required placeholder="Ex : étudiants, femmes 18-35..."></label>
+<label>Format<select id="format"><option>POV</option><option>Storytelling</option><option>Face caméra</option><option>UGC</option><option>Éducatif</option><option>Mini-scène</option></select></label>
+<label>Ton<select id="tone"><option>Naturel</option><option>Drôle</option><option>Direct</option><option>Premium</option><option>Émotionnel</option></select></label>
+<button class="btn btn-primary full" type="submit">Générer ma fiche</button>
+<p class="status" id="status">Génération IA active • Une connexion Puter peut être demandée au premier essai.</p>
+</form>
+<article class="card result" id="result"><div class="empty"><span>↗</span><h3>Ta fiche apparaîtra ici</h3><p>Remplis le brief et clique sur générer.</p></div></article>
+</div>
+</section>
+
+<section id="prices" class="section">
+<div class="section-head"><p class="eyebrow">MODÈLE ENVISAGÉ</p><h2>Simple à tester, rentable si le produit convainc.</h2></div>
+<div class="pricing">
+<article class="card price"><p>Découverte</p><h3>0 €</h3><span>Pour tester le produit</span><ul><li>3 générations</li><li>Hooks + structure</li><li>1 niche</li></ul></article>
+<article class="card price featured"><p>Creator</p><h3>19,90 €<small>/mois</small></h3><span>Pour publier régulièrement</span><ul><li>30 fiches / mois</li><li>6 formats</li><li>Historique</li><li>Régénération ciblée</li></ul></article>
+<article class="card price"><p>Business</p><h3>49 €<small>/mois</small></h3><span>Pour commerces et indépendants</span><ul><li>90 fiches / mois</li><li>3 marques</li><li>Angles promotionnels</li><li>Calendrier éditorial</li></ul></article>
+</div>
+<p class="note">Les abonnements ne sont pas encore ouverts : cette page sert à valider le produit avant d'activer les paiements.</p>
+</section>
+
+<section class="section cta"><p class="eyebrow">HOOKLYST</p><h2>Supprimer la page blanche.<br>Pas remplacer le créateur.</h2><a href="#demo" class="btn btn-primary">Tester le prototype</a></section>
+</main>
+<footer><span>Hooklyst • MVP 2026</span><span>Nom de travail • disponibilité juridique à confirmer avant lancement commercial.</span></footer>
+
+<script>
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+document.getElementById("form").addEventListener("submit",e=>{
+e.preventDefault();
+const business=document.getElementById("business").value.trim();
+const offer=document.getElementById("offer").value.trim();
+const audience=document.getElementById("audience").value.trim();
+const format=document.getElementById("format").value;
+const tone=document.getElementById("tone").value;
+const slug=business.toLowerCase().replace(/[^a-z0-9à-ÿ]+/gi,"");
+const data={
+title:`${format} : le moment où ton audience comprend enfin la différence`,
+hook:`“Si tu fais partie de ${audience}, regarde ça avant de choisir ${offer}.”`,
+s1:`Montre une situation familière liée à ${business}. Ne parle pas encore du produit : fais comprendre le problème visuellement.`,
+s2:`Cut rapide. Montre ce qui change avec ${offer}, avec un détail concret plutôt qu'une longue explication.`,
+s3:`Termine sur le résultat ou une réaction. Ton choisi : ${tone.toLowerCase()}.`,
+screen:`Le détail qu'on ne te montre pas sur ${offer}`,
+cta:`“Tu veux voir la différence ? Écris INFO.”`,
+caption:`Le but n'est pas de vendre plus fort. C'est de rendre la différence évidente. #${slug}`
+};
+document.getElementById("result").innerHTML=`<div><span class="pill">18–24 s</span><span class="pill">Prêt à tourner</span><h3>${esc(data.title)}</h3><div class="block"><small>HOOK</small><p>${esc(data.hook)}</p></div><div class="block"><small>SCÈNE 1</small><p>${esc(data.s1)}</p></div><div class="block"><small>SCÈNE 2</small><p>${esc(data.s2)}</p></div><div class="block"><small>SCÈNE 3</small><p>${esc(data.s3)}</p></div><div class="block"><small>TEXTE ÉCRAN</small><p>${esc(data.screen)}</p></div><div class="block"><small>CTA</small><p>${esc(data.cta)}</p></div><div class="block"><small>LÉGENDE</small><p>${esc(data.caption)}</p></div></div>`;
+document.getElementById("status").textContent="Fiche générée en mode démo.";
+});
+</script>
+<script src="https://js.puter.com/v2/"></script><script src="ai.js?v=2"></script>\n</body>
+</html>

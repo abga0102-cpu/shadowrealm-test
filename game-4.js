@@ -76,7 +76,11 @@ function scrAccueil() {
 
   // Une recommandation n'existe que lorsqu'un événement utile le justifie.
   // Aucun objectif général n'est poussé en permanence.
-  const tutorialPending = typeof pendingTutorialStep === "function" && !!pendingTutorialStep();
+  /* V459: only a tutorial that actually belongs on Home suppresses Home recommendations.
+     Unseen Familiars/Skills/Raid/etc. wait for entry into their own system. */
+  const tutorialPending = typeof pendingTutorialStepForRoute === "function"
+    ? !!pendingTutorialStepForRoute("accueil")
+    : (typeof pendingTutorialStep === "function" && !!pendingTutorialStep());
   const recommended = tutorialPending ? null : contextualHomeRecommendation();
   const showRecommendation = recommended && !recommendationDismissed(recommended);
   const recommendedCard = showRecommendation ?
@@ -107,23 +111,31 @@ function scrAccueil() {
     "</div>" +
     ic("chevron", 11) + "</div>";
 
-  // forge upgrade block — Gold + upgrade time only
+  // V503 · Forge upgrade controls must stay readable and tappable on mobile.
   const goldOk = S.gold >= upgCost;
+  const forgeSpeedPct = Math.max(0, treeSum(S, "forgeTime"));
+  const forgeAccelPct = Math.max(0, treeSum(S, "accel"));
   const forgeAccels = ACCEL_DEFS.filter((a) => (S.accels[a.key] || 0) > 0).map((a) =>
-    '<span class="pill" data-act="accel" data-arg="' + a.key + '" data-arg2="forge"' +
-    ' style="cursor:pointer;color:#8FEFF4;border-color:var(--cyan)">' + ic("bolt", 10) + a.label + " ×" + S.accels[a.key] + "</span>").join("");
+    '<button type="button" class="pill forgeAccelTapV503" data-act="accel" data-arg="' + a.key + '" data-arg2="forge"' +
+    ' aria-label="Utiliser accélérateur ' + esc(a.label) + ' sur la Forge"' +
+    ' style="cursor:pointer;color:#8FEFF4;border-color:var(--cyan);min-height:40px;padding:7px 10px;flex:0 0 auto;touch-action:manipulation;pointer-events:auto;position:relative;z-index:4">' +
+    ic("bolt", 11) + '<span><b>' + esc(a.label) + '</b> ×' + S.accels[a.key] + "</span></button>").join("");
 
   let upg;
   if (atMax) {
     upg = '<div class="mute tiny center mt4"><b class="gt">Forge au niveau maximum</b></div>';
   } else if (upgrading) {
-    upg = '<div class="card lit mt4" style="padding:4px 7px">' +
+    upg = '<div class="card lit mt4" style="padding:7px 8px;position:relative;z-index:3;overflow:visible">' +
       '<div class="row gap8"><div class="flex1">' +
         '<div class="b" style="font-size:9px;color:var(--goldLit)">AMÉLIORATION → NIV.' + (S.forge.level + 1) + "</div>" +
         '<div class="mt4">' + bar(100 - (upgRemain / Math.max(1, upgTime)) * 100, C.gold, 5) + "</div></div>" +
-      '<b class="row gap3" style="color:var(--goldLit);font-size:11px">' + ic("clock", 11) + fmtTime(upgRemain) + "</b></div>" +
-      '<div class="row gap3 mt3" style="flex-wrap:nowrap;overflow-x:auto">' +
-        (forgeAccels || '<span class="mute tiny">Aucun accélérateur</span>') + "</div></div>";
+      '<b class="row gap3" style="color:var(--goldLit);font-size:11px;flex:0 0 auto">' + ic("clock", 11) + fmtTime(upgRemain) + "</b></div>" +
+      '<div class="between gap6 mt5" style="align-items:center;flex-wrap:wrap">' +
+        '<span class="pill" style="color:#F6CF68;border-color:#8A6522;min-height:26px">' + ic("haste", 10) + 'Vitesse Forge +' + fmt(forgeSpeedPct) + '%</span>' +
+        '<span class="mute tiny">Accélérateurs ' + (forgeAccelPct ? '+' + fmt(forgeAccelPct) + '% efficacité' : 'efficacité normale') + '</span></div>' +
+      '<div class="tiny b mt6" style="color:#8FEFF4;letter-spacing:.35px">ACCÉLÉRATEURS · TOUCHE POUR RÉDUIRE LE TIMER</div>' +
+      '<div class="row gap6 mt4 forgeAccelRowV503" style="display:flex;flex-wrap:wrap;overflow:visible;position:relative;z-index:4;pointer-events:auto">' +
+        (forgeAccels || '<span class="mute tiny">Aucun accélérateur disponible</span>') + "</div></div>";
   } else if (upgDone) {
     upg = '<div class="mt6">' + btn(ic("check", 13) + "Récupérer Niv." + (S.forge.level + 1), { cls: "green", small: true, act: "forgeCollect" }) + "</div>";
   } else {
@@ -153,9 +165,8 @@ function scrAccueil() {
   ];
   // CAMPAIGN_WORLD_NAV_V37
   // ARENA_EQUIPMENT_REMOVED_V45: l'accès Équipement reste disponible hors du décor de l'arène.
-  // Les systèmes secondaires restent accessibles, mais ils ne prennent plus de
-  // hauteur sous la campagne. Le Rebirth devient une action du monde, directement
-  // visible dans l'arène, et l'Ascension reste dans le menu compact.
+  // Les systèmes secondaires restent accessibles sans ajouter de système retiré
+  // dans la navigation principale de campagne.
   const sysBtns = [
     { label: "Clan", icon: "banner", color: "#B0862C", go: "clan", lock: S.level < 10 ? 10 : 0 },
     { label: "Boutique", icon: "shop", color: "#3B7FC4", go: "boutique" },
@@ -188,28 +199,47 @@ function scrAccueil() {
       '<span>' + (b.lock ? 'Niv.' + b.lock : esc(b.label)) + '</span>' +
       (b.badge && !b.lock ? '<i class="worldDot"></i>' : '') + '</button>';
   };
-  const worldPrimary = [
-    { label:"Rebirth", icon:"cycle", go:"rebirth", badge:canRebirth() },
-    navBtns[0], navBtns[1], navBtns[2]
-  ];
+  const worldPrimary = [navBtns[1], navBtns[2]];
 
   const wtHome = WEAPON_TYPES[D.weapon] || WEAPON_TYPES.epee;
   const wArt = ASSETS["weapon_" + D.weapon];
   const wRar = S.equipped.arme ? RARITY[S.equipped.arme.rarity] : null;
   const wCol = wRar ? wRar.c : "#d6dae4";
+
+  /* V461 · Dense starter pacing stays inside the arena layer, so it never
+     steals vertical space from combat/skills/Forge on short phones. */
+  const starterApi = window.__srStarterPacingV462 || window.__srStarterPacingV461;
+  const starterStep = starterApi && typeof starterApi.nextStep === "function" ? starterApi.nextStep(S) : null;
+  const starterPct = starterStep ? Math.max(0, Math.min(100,
+    Math.round((Number(starterStep.now) || 0) / Math.max(1, Number(starterStep.max) || 1) * 100))) : 0;
+  const starterAct = starterStep
+    ? (starterStep.go && starterStep.go !== "accueil" ? "go" : (starterStep.id === "forge" && starterStep.ready ? "focusForge" : ""))
+    : "";
+  const starterCard = starterStep
+    ? '<div class="srStarterRoadmapV461' + (starterStep.ready ? ' ready' : '') + '"' +
+        (starterAct ? ' data-act="' + starterAct + '"' : '') +
+        (starterAct === "go" ? ' data-arg="' + esc(starterStep.go) + '"' : '') + '>' +
+        '<div class="srStarterKickerV461">' + ic(starterStep.ready ? "sparkle" : "target", 10) +
+          ' DÉBUT RAPIDE <span>' + starterPct + '%</span></div>' +
+        '<b>' + esc(starterStep.title) + '</b>' +
+        '<small>' + esc(starterStep.note) + '</small>' +
+        '<div class="srStarterBarV461"><i style="width:' + starterPct + '%"></i></div>' +
+        (starterAct ? '<em>' + (starterStep.ready ? 'OUVRIR' : 'VOIR') + ' ›</em>' : '') +
+      '</div>'
+    : "";
   return recommendedCard + '<div class="campaignWorld">' +
       '<div id="arenaSlot"></div>' +
+      starterCard +
       '<div class="worldNavLayer">' +
-        worldAction(worldPrimary[0], "worldRebirth") +
-        worldAction(worldPrimary[2], "worldDev") +
-        worldAction(worldPrimary[3], "worldDefis") +
+        worldAction(worldPrimary[0], "worldDev") +
+        worldAction(worldPrimary[1], "worldDefis") +
         '<details class="worldMenu"><summary>' + ic("menu", 14) + '<span>Menu</span>' +
           (sysBtns.some((b)=>b.badge && !b.lock) ? '<i class="worldDot"></i>' : '') +
         '</summary><div class="worldMenuPanel">' + sysBtns.map(tile).join("") + '</div></details>' +
       '</div>' +
     '</div>' +
     '<div id="skillbar">' +
-      '<div class="slot" data-act="go" data-arg="equipement" title="' + esc(wtHome.name) +
+      '<div class="slot srWeaponSlotV392" data-act="go" data-arg="equipement" title="' + esc(wtHome.name) +
         '" style="border-color:' + wCol + '66">' +
         (wArt ? '<img src="' + wArt + '" style="width:26px;height:26px;object-fit:contain;' +
                 "filter:drop-shadow(0 0 5px " + wCol + '99)">' : ic("sword", 22)) +
@@ -225,7 +255,6 @@ function scrAccueil() {
         '<div class="flex1"></div>' +
         '<div class="row gap3 b" style="color:var(--blueLit);font-size:11px;flex:0 0 auto">' + ic("minerai", 12) + fmt(S.minerai) + "</div>" +
       "</div>" +
-      upg +
       ascendCta("forge") +
       ((forgeAnimActive() || S.forge.autoForge)
         ? (S.forge.autoForge
@@ -263,16 +292,16 @@ function scrAccueil() {
           ";border-color:" + (S.forge.filter ? "var(--purple)" : "var(--line)") + '">' +
           (S.forge.filter ? "ACTIF" : "INACTIF") + "</span>" +
       "</div>" +
+      upg +
     "</div></div>" +
     '<div class="homeCompactEnd"></div>';
 }
 
 /* ---------------- PERSONNAGE ---------------- */
 const STAT_META = [
-  { key: "sante",   label: "Santé",              icon: "heart",  color: "#E5484D", desc: "+20 PV max / point" },
-  { key: "degats",  label: "Dégâts",             icon: "flame",  color: "#FF7A3D", desc: "+2.2 dégâts / point (mêlée &amp; distance)" },
-  { key: "crit",    label: "Chance Critique",    icon: "bolt",   color: "#F5C542", desc: "+0.2% critique / point" },
-  { key: "critred", label: "Réduc. Dégâts Crit.",icon: "shield", color: "#4A90D9", desc: "-0.3% dégâts crit. reçus / point" },
+  { key: "sante",   label: "Santé",              icon: "heart",  color: "#E5484D", desc: "+1% PV + 2 PV / point" },
+  { key: "degats",  label: "Dégâts",             icon: "flame",  color: "#FF7A3D", desc: "+1% dégâts + 0,25 / point" },
+  { key: "critred", label: "Réduc. Dégâts Crit.",icon: "shield", color: "#4A90D9", desc: "-0,40% dégâts crit. reçus / point" },
 ];
 /* The four skill slots, shared by the home screen and by any screen that shows
    the arena. updateCombatHud() drives the cooldown rings off whatever
@@ -304,7 +333,7 @@ function castSkill(sid) {
   c.skillFxs.push({ id: def.id, color: def.color, fx: fxKind, life: vfxDur(fxKind), max: vfxDur(fxKind) });
   if (c.skillFxs.length > 4) c.skillFxs.shift();
   if (def.mult > 0) {
-    const sdmg = Math.floor(skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level)
+    const sdmg = Math.floor((window.__srV284SkillDamage ? window.__srV284SkillDamage(def, S.skills[sid].level) : skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level))
       * (1 + (dv.skillDmgBonus || 0) / 100));
     const wide = def.type === "AOE" || def.type === "CHAINE" || def.type === "DEBUFF";
     const struck = wide ? c.enemies.filter((e) => e.alive) : [target];
@@ -328,25 +357,22 @@ function skillSlotsHTML() {
     const sid = S.skillSlots[i];
     const def = sid ? SKILL_DEFS.find((x) => x.id === sid) : null;
     const cat = def ? SKILL_CATS[def.cat] : null;
-    // a filled slot casts; an empty one still takes you to the roster
     const sealed = def && skillSealed(combat, def.id);
-    sb += '<div class="slot' + (sealed ? " sealed" : "") + '" data-act="' + (def ? "castSkill" : "go") +
+    const skillColor = def ? (cat ? cat.c : def.color) : "#5E7895";
+    sb += '<div class="slot ' + (def ? "srSkillRefV392" : "srSkillEmptyV392") + (sealed ? " sealed" : "") + '" data-act="' + (def ? "castSkill" : "go") +
       '" data-arg="' + (def ? def.id : "competences") + '"' +
-      (def ? ' data-skill="' + def.id + '"' : "") + ">" + (def
-      ? '<div class="skfx" style="background:linear-gradient(' + shade(def.color, 26) + "," + shade(def.color, -34) + ')">' +
-        ic(def.icon, 24) + "</div>" +
-        '<svg class="cdRing" viewBox="0 0 46 46"><circle cx="23" cy="23" r="20" stroke="#050A12" stroke-width="3" opacity="0"/>' +
-        '<circle class="cdArc" cx="23" cy="23" r="20" stroke="' + (cat ? cat.c : def.color) +
-          '" stroke-width="3" stroke-dasharray="125.6" stroke-dashoffset="125.6"/></svg>' +
-        '<div class="cdTxt"></div>' +
-        '<div class="fxBub" style="display:none;color:' + (cat ? cat.c : def.color) + '"></div>' +
-        '<i class="catBar" style="background:' + (cat ? cat.c : def.color) + '"></i>' +
-        '<span class="lv">' + (S.skills[sid] ? S.skills[sid].level : 1) + "</span>"
-      : ic("plus", 18)) + "</div>";
+      (def ? ' data-skill="' + def.id + '" style="--srSkillColor:' + skillColor + ';--srSkillLight:' + shade(def.color, 36) + ';--srSkillDark:' + shade(def.color, -42) + '"' : "") + ">" + (def
+      ? '<div class="srSkillCardV392">' +
+          '<div class="skfx">' + ic(def.icon, 30) + "</div>" +
+          '<div class="cdTxt srSkillCooldownV392"></div>' +
+          '<div class="fxBub srSkillEffectV392" style="display:none;color:' + skillColor + '"></div>' +
+          '<span class="lv srSkillLevelV392">' + (S.skills[sid] ? S.skills[sid].level : 1) + "</span>" +
+        "</div>"
+      : '<div class="srSkillEmptyCardV392">' + ic("plus", 18) + "</div>") + "</div>";
   }
-  sb += '<div class="autoSk ' + (S.autoSkills ? "on" : "off") + '" data-act="autoSkills" ' +
+  sb += '<div class="autoSk srAutoRefV392 ' + (S.autoSkills ? "on" : "off") + '" data-act="autoSkills" ' +
     'title="' + (S.autoSkills ? "Compétences automatiques" : "Compétences manuelles") + '">' +
-    ic("bolt", 12) + "<span>AUTO</span><i></i></div>";
+    '<span class="srAutoBoltV392">' + ic("bolt", 14) + '</span><span>AUTO</span><i></i></div>';
   return sb;
 }
 /* compact combat strip: what you are fighting with, plus the skill cooldowns */
@@ -356,7 +382,7 @@ function combatBarHTML() {
   const rar = S.equipped.arme ? RARITY[S.equipped.arme.rarity] : null;
   const col = rar ? rar.c : "#d6dae4";
   return '<div id="skillbar">' +
-    '<div class="slot" data-act="go" data-arg="equipement" style="border-color:' + col + '66">' +
+    '<div class="slot srWeaponSlotV392" data-act="go" data-arg="equipement" style="border-color:' + col + '66">' +
       (art ? '<img src="' + art + '" style="width:26px;height:26px;object-fit:contain;' +
              "filter:drop-shadow(0 0 5px " + col + '99)">' : ic("sword", 22)) +
       '<i class="catBar" style="background:' + col + '"></i>' +
@@ -377,11 +403,13 @@ function recycleBatch(rarity) {
   const hit = S.inventory.filter((x) => x.rarity === rarity);
   if (!hit.length) return { n: 0, dust: 0 };
   const dust = hit.reduce((a, x) => a + recycleValue(x), 0);
+  const gold = hit.reduce((a,x)=>a+Math.max(0,Number(x.srForgeRecycleGoldV547)||0),0);
   update((st) => {
     st.inventory = st.inventory.filter((x) => x.rarity !== rarity);
     st.poussiere += dust;
+    st.gold += gold;
   });
-  return { n: hit.length, dust: dust };
+  return { n: hit.length, dust: dust, gold: gold };
 }
 function showRecyclePicker() {
   const rows = EQUIP_RARITY_ORDER.map((r) => {
@@ -433,9 +461,10 @@ function recycleItemsByIds(ids) {
   const set = new Set(ids);
   const hit = S.inventory.filter((x) => set.has(x.id));
   const dust = hit.reduce((a,x)=>a+recycleValue(x),0);
-  if (!hit.length) return {n:0,dust:0};
-  update((st)=>{ st.inventory=st.inventory.filter((x)=>!set.has(x.id)); st.poussiere+=dust; });
-  return {n:hit.length,dust};
+  const gold = hit.reduce((a,x)=>a+Math.max(0,Number(x.srForgeRecycleGoldV547)||0),0);
+  if (!hit.length) return {n:0,dust:0,gold:0};
+  update((st)=>{ st.inventory=st.inventory.filter((x)=>!set.has(x.id)); st.poussiere+=dust; st.gold+=gold; });
+  return {n:hit.length,dust,gold};
 }
 function showRecycleSlotsPicker() {
   const rows=SLOTS.map((slot)=>{ const hit=S.inventory.filter(x=>x.slot===slot); const on=recycleSlots.has(slot); return '<div class="itemRow" data-act="toggleRecycleSlot" data-arg="'+slot+'" style="cursor:pointer;border-left-color:'+(on?'var(--purple)':'var(--line)')+'"><div class="flex1"><div class="b small">'+SLOT_LABEL[slot]+'</div><div class="mute tiny">'+hit.length+' objet'+(hit.length>1?'s':'')+'</div></div><span class="pill" style="color:'+(on?'var(--greenLit)':'var(--textMute)')+';border-color:'+(on?'#3FB950':'var(--line)')+'">'+(on?'Sélectionnée':'Choisir')+'</span></div>'; }).join('');
@@ -493,7 +522,7 @@ function scrInventaire() {
         '<div class="itemRow" style="border-left-color:' + RARITY[it.rarity].c + '">' +
           '<div class="imini" style="width:32px;height:32px;border-color:' + RARITY[it.rarity].c +
           '80;box-shadow:0 0 10px ' + RARITY[it.rarity].c + '3d">' + slotIcon(it.slot, 20, it) + "</div>" +
-          '<div class="flex1"><div class="b small">' + esc(it.name) + (it.level ? ' <span style="color:var(--goldLit)">+' + it.level + "</span>" : "") + "</div>" +
+          '<div class="flex1"><div class="b small">' + esc(equipmentDisplayName(it)) + "</div>" +
           '<div class="mute tiny b row gap4">' +
           (MASTERY_STAT[it.slot] === "dmg" ? ic("sword", 9) + "+" + fmtEquipStat(it.damage)
             : ic("heart", 9) + "+" + fmtEquipStat(it.hp)) +
@@ -515,13 +544,21 @@ function scrInventaire() {
 
 /* ---------------- ÉQUIPEMENT UNIFIÉ ---------------- */
 function scrHerosStats() {
+  const allocatedStatPoints = heroAllocatedStatPoints(S);
+  const availableStatPoints = Math.max(0, Math.floor(Number(S.statPoints) || 0));
+  const totalLevelStatPoints = heroLevelStatPoints(S);
+  const statPowerBonusPct = heroStatPowerBonusPct(S);
   return topbar("Héros", '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">' +
       ic("chart", 11) + fmt(S.statPoints || 0) + " point" + ((S.statPoints || 0) > 1 ? "s" : "") + "</span>") +
     '<div class="pad mt8">' +
-      '<div class="sect" style="margin:4px 0 8px">Points de statistiques</div>' +
+      '<div class="notice" style="border-color:#3FB95066"><div class="between"><div><div class="b small" style="color:var(--greenLit)">Puissance des points de niveau</div>' +
+        '<div class="mute tiny mt2">Chaque point de niveau, <b>disponible ou dépensé</b>, donne <b style="color:var(--greenLit)">+5 % de Puissance globale</b>.</div></div>' +
+        '<div class="right"><div class="bb" style="color:var(--greenLit);font-size:18px">+' + fmt(statPowerBonusPct) + '%</div>' +
+        '<div class="mute tiny">' + fmt(totalLevelStatPoints) + ' points au total · ' + fmt(availableStatPoints) + ' dispo · ' + fmt(allocatedStatPoints) + ' investis</div></div></div></div>' +
+      '<div class="sect" style="margin:12px 0 8px">Points de statistiques</div>' +
       '<div class="duo">' + STAT_META.map((m) =>
         '<div class="card" style="padding:9px 9px"><div class="between"><div class="b small" style="color:' + m.color + '">' +
-          m.label + '</div><b>' + S.stats[m.key] + '</b></div><div class="row gap4 mt8">' +
+          m.label + '</div><b>' + S.stats[m.key] + '</b></div><div class="mute tiny mt3">' + m.desc + ' · +5% Puissance</div><div class="row gap4 mt8">' +
           btn("+1", { small:true, act:"alloc", arg:m.key, arg2:1, dis:S.statPoints<1 }) +
           btn("+5", { small:true, act:"alloc", arg:m.key, arg2:5, dis:S.statPoints<5 }) +
           btn("Max", { small:true, act:"alloc", arg:m.key, arg2:"max", dis:S.statPoints<1 }) +
@@ -548,13 +585,15 @@ function scrEquipement() {
     const col = shown ? RARITY[shown.rarity].c : "var(--border)";
     return '<div class="eqSlot' + (shown ? " rf" : "") + '" data-act="itemDetail" data-arg="' + (shown ? shown.id : "") + '" data-arg2="' + slot + '" style="border-color:' + col + (shown ? ';--rc:' + col : ';opacity:.7') + (prev ? ';box-shadow:0 0 0 2px #78B7FF,0 0 18px #78B7FF66' : '') + '">' +
       slotIcon(slot, 27, shown) + '<div class="nm" style="color:' + (shown ? RARITY[shown.rarity].c : 'var(--textMute)') + '">' + SLOT_LABEL[slot] + '</div>' +
-      (shown ? '<div class="st row gap4" style="justify-content:center">' + (MASTERY_STAT[slot] === "dmg" ? ic("sword",9)+fmtEquipStat(shown.damage) : ic("heart",9)+fmtEquipStat(shown.hp)) + '</div>' +
-       (prev ? '<div class="st bb" style="color:#78B7FF">TEST</div>' : (shown.level ? '<div class="st bb" style="color:var(--goldLit)">+'+shown.level+'</div>' : '')) : '<div class="st">vide</div>') + '</div>';
+      (shown ? '<div class="st row gap4" style="justify-content:center">' + (MASTERY_STAT[slot] === "dmg" ? ic("sword",9)+fmtEquipStat(shown.damage) : ic("heart",9)+fmtEquipStat(shown.hp)+' · '+ic("shield",9)+Math.round(equipmentDefenseRating(shown))) + '</div>' +
+       (prev ? '<div class="st bb" style="color:#78B7FF">TEST</div>' : (shown.level ? '<div class="st bb" style="color:var(--goldLit)">'+equipmentRomanLevel(shown.level)+'</div>' : '')) : '<div class="st">vide</div>') + '</div>';
   }).join('');
 
   const statCell = (label, cur, next, color, key) => {
     const changed = next != null && String(next) !== String(cur);
-    return '<div class="col" style="width:25%;padding:6px 2px;cursor:pointer" data-act="statInfo" data-arg="'+key+'">' +
+    const hasInfo = key && typeof STAT_INFO !== "undefined" && !!STAT_INFO[key];
+    return '<div class="col" style="width:25%;padding:6px 2px;'+(hasInfo?'cursor:pointer':'')+'"'+
+      (hasInfo?' data-act="statInfo" data-arg="'+key+'"':'')+'>' +
       '<div class="mute tiny b" style="letter-spacing:.3px;text-transform:uppercase">'+label+'</div>' +
       '<div class="bb" style="font-size:13.5px;color:'+color+'">'+cur+'</div>' +
       (changed ? '<div class="tiny bb" style="color:#78B7FF">→ '+next+'</div>' : '') + '</div>';
@@ -562,6 +601,7 @@ function scrEquipement() {
   const d2 = PD || D;
   const stats = [
     ["PV Max",fmt(D.maxHP),fmt(d2.maxHP),"#E5484D","maxhp"],["Dégâts",fmt(D.damage),fmt(d2.damage),"#F0883E","damage"],
+    ["Défense",fmt(D.defense),fmt(d2.defense),"#72A7E8","defense"],["Réduc. Défense",D.defenseReduction.toFixed(1)+"%",d2.defenseReduction.toFixed(1)+"%","#4A90D9","defensered"],
     ["Vit. Attaque",D.attackSpeed.toFixed(2),d2.attackSpeed.toFixed(2),"#F5C542","atkspeed"],["Crit.",D.critChance.toFixed(1)+"%",d2.critChance.toFixed(1)+"%","#F5C542","crit"],
     ["Dégâts Crit.","x"+D.critMult.toFixed(2),"x"+d2.critMult.toFixed(2),"#FF5AA0","critmult"],["Réduc. Dégâts",D.dmgRed.toFixed(1)+"%",d2.dmgRed.toFixed(1)+"%","#4A90D9","dmgred"],
     ["Vol de Vie",D.lifesteal.toFixed(2)+"%",d2.lifesteal.toFixed(2)+"%","#3FA7FF","lifesteal"],["Double attaque",D.doubleAtk.toFixed(1)+"%",d2.doubleAtk.toFixed(1)+"%","#F5C542","doubleatk"],
@@ -585,14 +625,14 @@ function scrEquipement() {
     const key=x[4];
     if(key==='weapon') return String(x[1])===String(x[2])?0:0.35;
     const raw={
-      maxhp:[D.maxHP,d2.maxHP],damage:[D.damage,d2.damage],atkspeed:[D.attackSpeed,d2.attackSpeed],crit:[D.critChance,d2.critChance],
+      maxhp:[D.maxHP,d2.maxHP],damage:[D.damage,d2.damage],defense:[D.defense,d2.defense],defensered:[D.defenseReduction,d2.defenseReduction],atkspeed:[D.attackSpeed,d2.attackSpeed],crit:[D.critChance,d2.critChance],
       critmult:[D.critMult,d2.critMult],dmgred:[D.dmgRed,d2.dmgRed],lifesteal:[D.lifesteal,d2.lifesteal],doubleatk:[D.doubleAtk,d2.doubleAtk],
       movespeed:[D.moveSpeed,d2.moveSpeed],critred:[D.critRed,d2.critRed],regen:[D.regen,d2.regen],bossdmg:[D.bossDmg,d2.bossDmg],
       block:[D.blockChance,d2.blockChance],melee:[D.meleeDmg,d2.meleeDmg],ranged:[D.rangedDmg,d2.rangedDmg],skilldmg:[D.skillDmgBonus,d2.skillDmgBonus],skillcd:[D.skillCdCut,d2.skillCdCut]
     }[key];
     if(!raw) return 0;
     const a=Number(raw[0])||0,b=Number(raw[1])||0,delta=Math.abs(b-a);
-    const pctKeys=['crit','dmgred','lifesteal','doubleatk','critred','regen','bossdmg','block','melee','ranged','skilldmg','skillcd'];
+    const pctKeys=['crit','defensered','dmgred','lifesteal','doubleatk','critred','regen','bossdmg','block','melee','ranged','skilldmg','skillcd'];
     const base=pctKeys.includes(key)?Math.max(10,Math.abs(a)):Math.max(1,Math.abs(a));
     return delta/base;
   };
@@ -605,17 +645,17 @@ function scrEquipement() {
     '</div>' : '';
 
   return topbar("Équipement", '<span class="pill">'+S.inventory.length+' objets</span>') + '<div class="pad mt6">' +
-    '<div class="sect" style="margin:4px 0 6px">Équipement porté</div><div class="slotGrid">'+cells+'</div>' +
+    '<div class="sect" style="margin:4px 0 6px">Équipement porté</div><div class="slotGrid" data-equip-slots-scroll="1">'+cells+'</div>' +
     (hasPreview ? '<div class="notice mt8"><div class="between"><span><b style="color:#78B7FF">Mode test :</b> '+previewItems.length+' pièce'+(previewItems.length>1?'s':'')+'</span><span class="row gap4">'+btn("Annuler",{small:true,cls:"ghost",act:"clearEquipPreview"})+btn("Équiper le set",{small:true,cls:"green",act:"equipPreviewSet"})+'</span></div><div class="mute tiny mt4">Tu peux tester une pièce par emplacement avant de valider tout le set.</div></div>' : '') +
     '<div class="equipCompareSticky">' +
     '<div class="card frame"><div class="between"><div><div class="mute tiny b">PUISSANCE TOTALE</div><div class="bb gt" style="font-size:22px">'+fmt(S.power)+'</div></div>' +
     (hasPreview ? '<div class="col" style="align-items:flex-end"><div class="mute tiny b">APRÈS TEST</div><div class="bb" style="font-size:20px;color:'+(previewDelta>=0?'#63E889':'#FF6B72')+'">'+fmt(previewPower)+' ('+(previewDelta>=0?'+':'')+fmt(previewDelta)+')</div></div>' : '') + '</div></div>' +
     '<div class="sect" style="margin:10px 0 6px">Statistiques de combat</div><div class="card frame" style="padding:6px 8px"><div class="row" style="flex-wrap:wrap">'+stats.slice(0,8).map(x=>statCell(...x)).join('')+'</div>' +
     '<details class="equipStatsMore"'+(hasPreview && stats.slice(8).some(x=>String(x[1])!==String(x[2]))?' open':'')+'><summary>Voir toutes les statistiques</summary><div class="row" style="flex-wrap:wrap">'+stats.slice(8).map(x=>statCell(...x)).join('')+'</div></details></div></div>' +
-    '<div class="sect" style="margin:14px 0 8px">Équipements stockés</div><div class="seg">'+filters.map((f)=>'<span class="'+(invFilter===f?'on':'')+'" data-act="invFilter" data-arg="'+f+'">'+(f==='ALL'?'Tout':SLOT_LABEL[f])+'</span>').join('')+'</div>' +
+    '<div class="sect" style="margin:14px 0 8px">Équipements stockés</div><div class="seg equipFilterScroll" data-equip-filter-scroll="1">'+filters.map((f)=>'<span class="'+(invFilter===f?'on':'')+'" data-act="invFilter" data-arg="'+f+'">'+(f==='ALL'?'Tout':SLOT_LABEL[f])+'</span>').join('')+'</div>' +
     '<div class="row gap6 mt6">'+btn(recycleSelectMode?'Annuler sélection':'Sélection manuelle',{small:true,cls:recycleSelectMode?'blue':'ghost',act:'toggleRecycleSelect'})+btn('Recycler catégories',{small:true,cls:'dark',act:'recycleSlotsPicker'})+'</div>' +
     (recycleSelectMode ? '<div class="row gap6 mt6">'+btn('Tout sélectionner'+(invFilter==='ALL'?'':' · '+SLOT_LABEL[invFilter]),{small:true,cls:'ghost',act:'selectVisibleRecycle',dis:!sorted.length})+btn(ic('trash',11)+' Recycler '+recycleSelectedIds.size+' · +'+fmt(selectedRecycleItems().reduce((a,x)=>a+recycleValue(x),0))+' Poussière',{small:true,cls:'red',act:'askRecycleSelected',dis:!recycleSelectedIds.size})+'</div>' : '') +
-    (sorted.length===0 ? '<div class="notice center mt8">Aucun objet disponible.</div>' : sorted.map((it)=>'<div class="itemRow" '+(recycleSelectMode?'data-act="toggleRecycleItem" data-arg="'+it.id+'" ':'')+'style="border-left-color:'+RARITY[it.rarity].c+(recycleSelectedIds.has(it.id)?';box-shadow:inset 0 0 0 2px #B15CF6':'')+'"><div class="imini" style="width:32px;height:32px;border-color:'+RARITY[it.rarity].c+'80">'+slotIcon(it.slot,20,it)+'</div><div class="flex1"><div class="b small">'+esc(it.name)+(it.level?' <span style="color:var(--goldLit)">+'+it.level+'</span>':'')+'</div><div class="mute tiny">'+(MASTERY_STAT[it.slot]==='dmg'?ic('sword',9)+'+'+fmtEquipStat(it.damage):ic('heart',9)+'+'+fmtEquipStat(it.hp))+(it.weaponType?' · '+esc(WEAPON_TYPES[it.weaponType]?.name||it.weaponType):'')+'</div>'+(it.affixes&&it.affixes.length?'<div class="equipAffixes">'+it.affixes.slice(0,3).map((a)=>'<span class="tag" style="color:'+affixColor(a)+';border-color:'+affixColor(a)+'66">'+affixText(a)+'</span>').join('')+'</div>':'')+'</div>'+rtag(it.rarity)+(recycleSelectMode?'<span class="pill" style="color:'+(recycleSelectedIds.has(it.id)?'var(--greenLit)':'var(--textMute)')+';border-color:'+(recycleSelectedIds.has(it.id)?'#3FB950':'var(--line)')+'">'+(recycleSelectedIds.has(it.id)?'Choisi':'Choisir')+'</span>':'<div class="col gap4">'+btn(previewBySlot[it.slot]&&previewBySlot[it.slot].id===it.id?"Testé":"Tester",{small:true,cls:"blue",act:"previewEquip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn("Équiper",{small:true,cls:"green",act:"equip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn(ic("cycle",10)+recycleValue(it),{small:true,cls:"dark",act:"recycle",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+'</div>')+'</div>').join('')) +
+    (sorted.length===0 ? '<div class="notice center mt8">Aucun objet disponible.</div>' : sorted.map((it)=>'<div class="itemRow" '+(recycleSelectMode?'data-act="toggleRecycleItem" data-arg="'+it.id+'" ':'')+'style="border-left-color:'+RARITY[it.rarity].c+(recycleSelectedIds.has(it.id)?';box-shadow:inset 0 0 0 2px #B15CF6':'')+'"><div class="imini" style="width:32px;height:32px;border-color:'+RARITY[it.rarity].c+'80">'+slotIcon(it.slot,20,it)+'</div><div class="flex1"><div class="b small">'+esc(equipmentDisplayName(it))+'</div><div class="mute tiny">'+(MASTERY_STAT[it.slot]==='dmg'?ic('sword',9)+'+'+fmtEquipStat(it.damage):ic('heart',9)+'+'+fmtEquipStat(it.hp))+(it.weaponType?' · '+esc(WEAPON_TYPES[it.weaponType]?.name||it.weaponType):'')+'</div>'+(it.affixes&&it.affixes.length?'<div class="equipAffixes">'+it.affixes.slice(0,3).map((a)=>'<span class="tag" style="color:'+affixColor(a)+';border-color:'+affixColor(a)+'66">'+affixText(a)+'</span>').join('')+'</div>':'')+'</div>'+rtag(it.rarity)+(recycleSelectMode?'<span class="pill" style="color:'+(recycleSelectedIds.has(it.id)?'var(--greenLit)':'var(--textMute)')+';border-color:'+(recycleSelectedIds.has(it.id)?'#3FB950':'var(--line)')+'">'+(recycleSelectedIds.has(it.id)?'Choisi':'Choisir')+'</span>':'<div class="col gap4">'+btn(previewBySlot[it.slot]&&previewBySlot[it.slot].id===it.id?"Testé":"Tester",{small:true,cls:"blue",act:"previewEquip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn("Équiper",{small:true,cls:"green",act:"equip",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+btn(ic("cycle",10)+recycleValue(it),{small:true,cls:"dark",act:"recycle",arg:it.id,style:"padding:5px 8px;font-size:10.5px"})+'</div>')+'</div>').join('')) +
     (hasPreview ? '<div class="equipPreviewSpacer"></div>' : '<div style="height:8px"></div>') + '</div>' + testDock;
 }
 
@@ -629,7 +669,7 @@ function skillEffectLine(def, level) {
   const e = skillEff(def, level);
   if (def.mult > 0) {
     const d = computeDerived(S);
-    const raw = skillDamageMult(d.damage * skillMult(def), level) * (1 + (d.skillDmgBonus || 0) / 100);
+    const raw = (window.__srV284SkillDamage ? window.__srV284SkillDamage(def, level) : skillDamageMult(d.damage * skillMult(def), level)) * (1 + (d.skillDmgBonus || 0) / 100);
     return fmt(Math.floor(raw)) + " dégâts" + (def.type === "MONO" ? "" : " à chaque ennemi");
   }
   if (def.heal) return "+" + skillHeal(def, level).toFixed(1) + "% des PV max, immédiat";
@@ -656,6 +696,10 @@ function showSkillCard(id) {
   const equipped = slotIdx >= 0;
   const openSlots = skillSlotCount(S);
   const freeSlot = S.skillSlots.slice(0, openSlots).indexOf(null);
+  const fmtSkillPowerChange = (pv) => pv
+    ? "Puissance " + fmt(pv.before) + " → " + fmt(pv.after) +
+      " (" + (pv.delta > 0 ? "+" : "") + fmt(pv.delta) + ")"
+    : "";
 
   let action, note = "";
   if (!sk) {
@@ -664,14 +708,18 @@ function showSkillCard(id) {
       " : " + (getRates("skill", S.skillMastery.level, S.ascension, starsOf(S, "skill"))[def.rarity] || 0).toFixed(1) +
       "% par invocation à ta Maîtrise actuelle.";
   } else if (equipped) {
+    const pv = typeof skillEquipPowerPreview === "function" ? skillEquipPowerPreview(slotIdx, null) : null;
     action = btn(ic("cross", 13) + "Retirer de l'emplacement " + (slotIdx + 1),
       { cls: "dark", small: true, act: "unequipSkill", arg: id });
+    note = pv ? "Retrait · " + fmtSkillPowerChange(pv) : "";
   } else if (freeSlot >= 0) {
+    const pv = typeof skillEquipPowerPreview === "function" ? skillEquipPowerPreview(freeSlot, id) : null;
     action = btn(ic("check", 13) + "Équiper · emplacement " + (freeSlot + 1),
       { cls: "green", small: true, act: "autoEquipSkill", arg: id });
+    note = pv ? "Équiper · " + fmtSkillPowerChange(pv) : "";
   } else {
     action = btn(ic("swords", 13) + "Remplacer une compétence", { cls: "blue", small: true, act: "skillSlot", arg: "0" });
-    note = "Tous les emplacements sont occupés — choisis lequel remplacer.";
+    note = "Tous les emplacements sont occupés. La puissance après remplacement est affichée pour chaque choix.";
   }
 
   openModal(
@@ -714,6 +762,11 @@ function scrCompetences() {
   const rates = getRates("skill", S.skillMastery.level, S.ascension, starsOf(S, "skill"));
   const mreq = masteryReq(S.skillMastery.level);
   const owned = SKILL_DEFS.filter((d) => S.skills[d.id]);
+  const summonCost = skillSummonCost(S);
+  const starterFree = !!(window.__srStarterPacingV461 &&
+    typeof window.__srStarterPacingV461.freeSkillAvailable === "function" &&
+    window.__srStarterPacingV461.freeSkillAvailable(S));
+  const tenCost = starterFree ? summonCost * 9 : summonCost * 10;
 
   let slots = "";
   const openSlots = skillSlotCount(S);
@@ -738,9 +791,13 @@ function scrCompetences() {
           ratesTable(rates, S.skillMastery.level < RULES.MASTERY_MAX ? getRates("skill", S.skillMastery.level + 1, S.ascension, starsOf(S, "skill")) : null,
             "Actuel", "Niv." + (S.skillMastery.level + 1)), "margin:2px 0 0") +
         '<div class="row gap6 mt6">' +
-          btn(ic("sparkle", 14) + "Invoquer · " + skillSummonCost(S), { cls: "purple", small: true, act: "summonSkill", arg: 1, dis: S.eclat < skillSummonCost(S) }) +
-          btn("x10 · " + skillSummonCost(S) * 10, { cls: "purple", small: true, act: "summonSkill", arg: 10, dis: S.eclat < skillSummonCost(S) * 10, style: "max-width:96px" }) +
-        "</div></div>" +
+          btn(ic("sparkle", 14) + "Invoquer · " + (starterFree ? "GRATUIT" : summonCost),
+            { cls: "purple", small: true, act: "summonSkill", arg: 1, dis: !starterFree && S.eclat < summonCost }) +
+          btn(starterFree ? "x10 · 1 offerte + " + tenCost : "x10 · " + tenCost,
+            { cls: "purple", small: true, act: "summonSkill", arg: 10, dis: S.eclat < tenCost, style: "max-width:116px" }) +
+        "</div>" +
+        (starterFree ? '<div class="notice tiny mt6"><b>Première invocation offerte</b> · aucun Éclat consommé.</div>' : '') +
+        "</div>" +
       '<div class="sect" style="margin:16px 0 9px">Emplacements actifs</div>' +
       '<div class="row gap6">' + slots + "</div>" +
       '<div class="mute tiny mt4">Les compétences équipées se déclenchent seules dès que leur recharge est finie.</div>' +
@@ -855,7 +912,7 @@ function scrFamiliers() {
       })() +
       '<div class="card mt6"><div class="between"><div style="min-width:0"><div class="row gap4"><div class="bb gt" style="font-size:13px;letter-spacing:1px">MAÎTRISE FAMILIER</div>' +
         starRow("pet", "#FFC29B") + "</div>" +
-        '<div class="mute tiny b">' + S.petMastery.progress + "/" + mreq + " invocations</div></div>" +
+        '<div class="mute tiny b">' + S.petMastery.progress + "/" + mreq + " œufs obtenus</div></div>" +
         '<b style="color:#FFC29B;font-size:18px;text-shadow:0 0 12px ' + ORANGE + '80">' + S.petMastery.level + "/" + RULES.MASTERY_MAX + "</b></div>" +
         '<div class="mt6">' + meter((S.petMastery.progress / mreq) * 100, ORANGE, S.petMastery.progress + " / " + mreq) + "</div>" +
         ascendCta("pet") +
@@ -883,8 +940,8 @@ function scrFamiliers() {
             (art ? '<img src="' + art + '" style="width:34px;height:34px;object-fit:contain;display:block;margin:0 auto;filter:drop-shadow(0 2px 5px #000a)">' : ic("egg", 28)) +
           '</div>' + rtag(r) +
           '<div class="tiny b mt4" style="color:' + petElement(e).c + '">' + ic(petElement(e).icon, 9) + petElement(e).label + '</div>' +
-          '<div class="mute tiny mt4">' + fmtTime(EGG_TIMERS[r] / hatchSpeedFor(S,r)) + '</div>' +
-          '<div class="mt6">' + btn("Éclore", { small:true, cls:"green", act:"startEgg", arg:e.id, dis:full, style:"padding:5px 9px;font-size:10.5px" }) + '</div>' +
+          '<div class="mute tiny mt4">' + fmtTime(Number(e.starterHatchSeconds)>0 ? Number(e.starterHatchSeconds) : EGG_TIMERS[r] / hatchSpeedFor(S,r)) + '</div>' +
+          '<div class="mt6">' + btn("Lancer l’éclosion", { small:true, cls:"green", act:"startEgg", arg:e.id, dis:full, style:"padding:5px 9px;font-size:10.5px" }) + '</div>' +
         '</div>';
       }).join("") + '</div>' : '<div class="mute tiny center">Aucun œuf en stock.</div>') +
       '<div class="sect" style="margin:16px 0 9px">Éclosion (' + hatching.length + "/" + S.eggSlots +
@@ -949,17 +1006,14 @@ function scrFamiliers() {
 /* ---------------- RAID ---------------- */
 function scrRaid() {
   const running = combat && combat.ctx === "raid" && !combat.trial;
-  if (S.level < RULES.RAID_UNLOCK_LEVEL) {
-    return topbar("Raids") + '<div class="pad mt6"><div class="notice center">Les Raids se débloquent au Niveau ' +
-      RULES.RAID_UNLOCK_LEVEL + ".</div></div>";
-  }
   if (running) {
     const rm = RAIDS[combat.raidId];
     return topbar(rm.name) + '<div id="arenaSlot"></div>' + combatBarHTML() +
       '<div class="pad mt6"><div class="card frame center">' +
       '<div class="row gap8" style="justify-content:center">' + ic(rm.icon, 22) +
       '<span class="bb gt" style="font-size:14px;letter-spacing:1.2px">RAID EN COURS</span></div>' +
-      '<div class="mute small mt6">Niveau ' + combat.raidLevel + " · récompense " +
+      '<div class="mute small mt6">Niveau ' + raidLevelLabel(combat.raidLevel) +
+      ' · réf. ' + esc(raidReferenceCampaignLabel(combat.raidLevel)) + " · récompense " +
       '<b style="color:' + rm.color + '">' + fmt(raidReward(combat.raidId, combat.raidLevel)) + " " + rm.reward + "</b></div>" +
       '<div class="mt10">' + btn("Abandonner", { cls: "dark", small: true, act: "abortRaid" }) + "</div></div></div>";
   }
@@ -967,10 +1021,13 @@ function scrRaid() {
     const r = S.raids[id], meta = RAIDS[id];
     const bonus = (S.raidKeyAlloc || {})[id] || 0;
     const cap = RULES.RAID_KEY_CAP + bonus;
-    const st = raidStars(S, id);
-    const detail = (st ? "★" + st + " · " : "") +
-      "Niv " + r.level + "/" + RULES.RAID_MAX_LEVEL + " · rec " + r.record +
-      " · " + raidEnemyCount(id, r.level) + " ennemis · " + fmt(raidEnemyHP(id, r.level)) + " PV";
+    const ready = raidCampaignReady(S, r.level);
+    const label = raidLevelLabel(r.level);
+    const recordLabel = r.record > 0 ? raidLevelLabel(r.record) : "—";
+    const refLabel = raidReferenceCampaignLabel(r.level);
+    const detail = "Niv " + label + "/7-10 · rec " + recordLabel +
+      " · réf. " + refLabel + " · " + raidEnemyCount(id, r.level) +
+      " ennemis · " + fmt(raidEnemyHP(id, r.level)) + " PV";
     return '<div class="raidCard" style="border-left-color:' + meta.color + '" title="' + esc(detail) +
       " · " + fmt(raidEnemyDamage(id, r.level)) + ' dégâts">' +
       '<div class="row gap8">' +
@@ -981,16 +1038,14 @@ function scrRaid() {
           '<span style="color:' + meta.color + ';flex:0 0 auto">+' + fmt(raidReward(id, r.level)) + " " + meta.reward + "</span></div>" +
         '<div class="mute tiny b row gap4">' + ic("key", 10) + r.keys + "/" + cap + " · " + detail + "</div></div>" +
         btn(ic("key", 12) + "Lancer", { small: true, cls: "green", act: "startRaid", arg: id, arg2: "0",
-          dis: r.keys <= 0, style: "width:auto;padding:5px 9px" }) +
+          dis: r.keys <= 0 || !ready, style: "width:auto;padding:5px 9px" }) +
         btn(ic("star", 12), { small: true, cls: "ghost", act: "startRaid", arg: id, arg2: "1",
-          dis: S.universalKeys <= 0, style: "width:auto;padding:5px 8px" }) +
+          dis: S.universalKeys <= 0 || !ready, style: "width:auto;padding:5px 8px" }) +
       "</div>" +
-      // a raid at its ceiling offers its own Ascension, and only that raid's
-      (canAscendRaid(S, id)
-        ? '<div class="mt6">' + btn(ic("star", 13) + "ASCENSION ★ — niveau maximum",
-            { cls: "purple", small: true, act: "ascendRaidAsk", arg: id }) + "</div>"
-        : (st >= RULES.RAID_ASCEND_MAX_STARS && r.level >= RULES.RAID_MAX_LEVEL
-          ? '<div class="mt6"><div class="notice center tiny b" style="padding:6px;color:var(--goldLit)">★ Ascension maximale atteinte</div></div>'
+      (!ready
+        ? '<div class="notice mt6 tiny b" style="padding:6px">🔒 Campagne requise : ' + esc(refLabel) + "</div>"
+        : (r.level >= RULES.RAID_MAX_LEVEL && r.record >= RULES.RAID_MAX_LEVEL
+          ? '<div class="notice mt6 tiny b center" style="padding:6px;color:var(--goldLit)">Palier maximum 7-10 atteint · rejouable pour les récompenses</div>'
           : "")) +
       "</div>";
   }).join("");
@@ -1006,9 +1061,9 @@ function scrRaid() {
         '<div class="mt8">' + meter((S.universalKeys / RULES.UNIVERSAL_KEY_CAP) * 100, C.gold,
           S.universalKeys + " / " + RULES.UNIVERSAL_KEY_CAP) + "</div>" +
         '<div class="mute tiny mt6">' + RULES.RAID_FREE_KEYS + " clés gratuites par raid chaque jour, plafond " +
-        RULES.RAID_KEY_CAP + ". L\'étoile lance avec une clé universelle.</div></div>" +
-      '<div class="sect">Raids disponibles</div>' + cards +
-      '<div class="mute tiny center mt6">Victoire : la clé est consommée, +1 niveau et la récompense. Défaite ou abandon : clé conservée, niveau inchangé.</div>' +
+        RULES.RAID_KEY_CAP + ". Le bouton ★ utilise une clé universelle.</div></div>" +
+      '<div class="sect">Raids disponibles · 1-1 → 7-10</div>' + cards +
+      '<div class="mute tiny center mt6">Chaque niveau Raid correspond à une progression Campagne environ 2× plus loin. Victoire : clé consommée, récompense et niveau suivant. Défaite/abandon : clé conservée.</div>' +
     '<div style="height:2px"></div></div>';
 }
 
@@ -1023,9 +1078,9 @@ function scrMegaRaid() {
       '<div class="pad mt6"><div class="card frame center" style="border-left-color:#E5484D">' +
         '<div class="row gap8" style="justify-content:center">' + ic("skull", 22) +
           '<span class="bb gt" style="font-size:14px;letter-spacing:1.2px">MÉGA-BOSS EN COURS</span></div>' +
-        '<div class="mute small mt6">Méga niveau ' + megaLevelForFloor(combat.floor) + " · Méga-" + esc(def.name) +
+        '<div class="mute small mt6">Étage Méga ' + megaLevelForFloor(combat.floor) + " · Méga-" + esc(def.name) +
           " · référence Boss normal étage " + fmtInt(combat.floor) +
-          ' · <b style="color:var(--redLit)">PV ×10 · dégâts ×10</b></div>' +
+          ' · <b style="color:var(--redLit)">Boss uniquement · PV ×10 · dégâts ×10</b></div>' +
         '<div class="tiny b mt6" style="color:#A9E06F">' +
           (already ? "Boss déjà vaincu · replay : 0 Pomme"
             : "Première victoire : +" + fmt(megaAppleFirstClearReward(combat.floor, S)) + " 🍎") + "</div>" +
@@ -1036,12 +1091,12 @@ function scrMegaRaid() {
   const floors = megaBossFloors(S);
   const cleared = floors.filter((f) => S.megaBossClears[String(f)]);
   const next = nextMegaBossFloor(S);
-  const appleBoost = rb(S, "apples");
+  const appleBoost = 0;
   let challenge;
   if (!floors.length) {
     challenge = '<div class="card frame center" style="border-left-color:#E5484D">' + ic("lock", 30) +
       '<div class="bb gt mt6" style="font-size:14px">MÉGA BOSS VERROUILLÉ</div>' +
-      '<div class="mute small mt6">Atteins l’étage normal 50 et vaincs son Boss pour déverrouiller le Méga Boss.</div></div>';
+      '<div class="mute small mt6">Atteins le niveau personnage requis pour déverrouiller le Méga Boss.</div></div>';
   } else if (next !== null) {
     const def = bossFor(next);
     const preview = makeMegaBossEnemy(next);
@@ -1049,29 +1104,30 @@ function scrMegaRaid() {
     challenge = '<div class="card frame" style="border-left-color:#E5484D">' +
       '<div class="between"><div class="row gap9">' +
         '<div class="imini" style="width:38px;height:38px;border-color:#E5484D;background:#E5484D1f">' + ic("skull", 22) + "</div>" +
-        '<div><div class="bb" style="color:var(--redLit);font-size:14px">Méga niveau ' + megaLevelForFloor(next) + " · Méga-" + esc(def.name) + "</div>" +
-        '<div class="mute tiny b">Référence : Boss normal étage ' + fmtInt(next) + " · prochain défi</div></div></div>" +
+        '<div><div class="bb" style="color:var(--redLit);font-size:14px">Étage Méga ' + megaLevelForFloor(next) + " · Méga-" + esc(def.name) + "</div>" +
+        '<div class="mute tiny b">100 % Boss · aucune Élite · référence Boss normal étage ' + fmtInt(next) + "</div></div></div>" +
         '<span class="pill" style="color:#A9E06F;border-color:#6FA83C">+' + fmt(reward) + " 🍎</span></div>" +
       '<div class="row gap6 mt8" style="flex-wrap:wrap">' +
         '<span class="pill">' + ic("heart", 10) + fmt(preview.maxHP) + " PV</span>" +
         '<span class="pill">' + ic("flame", 10) + fmt(preview.dmg) + " dégâts</span>" +
         '<span class="pill" style="color:var(--redLit);border-color:#E5484D">PV ×10 · dégâts ×10</span></div>' +
-      '<div class="notice mt8 tiny">Méga niveau ' + megaLevelForFloor(next) + " = 10× la puissance du Boss normal de l’étage " + fmtInt(next) + ". " +
-        "Aucune clé requise. La première victoire donne les Pommes et 2× les accélérateurs de ce Boss normal.</div>" +
+      '<div class="notice mt8 tiny">Chaque étage Méga est un Boss. Étage Méga ' + megaLevelForFloor(next) +
+        " = 10× la puissance du Boss normal de l’étage " + fmtInt(next) + ". " +
+        "Aucune Élite, aucune clé requise. La première victoire donne les Pommes et 2× les accélérateurs de ce Boss normal.</div>" +
       '<div class="mt8">' + btn(ic("skull", 14) + "Affronter", { cls: "red", act: "startMega", arg: next }) +
         "</div></div>";
   } else {
-    const nextNormal = (floors[floors.length - 1] || 0) + RULES.BOSS_EVERY;
+    const maxMega = floors.length ? megaLevelForFloor(floors[floors.length - 1]) : 0;
     challenge = '<div class="card frame center" style="border-left-color:#3FB950">' + ic("trophy", 30) +
-      '<div class="bb gt mt6" style="font-size:14px">TOUS LES MÉGA-BOSS DISPONIBLES SONT VAINCUS</div>' +
-      '<div class="mute small mt6">Vaincs le Boss normal de l’étage ' + fmtInt(nextNormal) +
-        " pour rendre disponible le Méga niveau " + megaLevelForFloor(nextNormal) + ".</div></div>";
+      '<div class="bb gt mt6" style="font-size:14px">PROGRESSION MÉGA-BOSS TERMINÉE</div>' +
+      '<div class="mute small mt6">Tous les niveaux Méga jusqu’au niveau ' + fmtInt(maxMega) +
+        " sont vaincus. Les Boss de Campagne ne bloquent plus la progression Méga.</div></div>";
   }
 
   const history = cleared.slice().reverse().slice(0, 5).map((floor) => {
     const def = bossFor(floor);
     return '<div class="card mt6" style="padding:6px 8px"><div class="between"><div>' +
-      '<div class="b small">Méga niveau ' + megaLevelForFloor(floor) + " · Méga-" + esc(def.name) +
+      '<div class="b small">Étage Méga ' + megaLevelForFloor(floor) + " · Méga-" + esc(def.name) +
       " · réf. étage " + fmtInt(floor) + "</div>" +
       '<div class="mute tiny">Première récompense récupérée · replay : 0 Pomme</div></div>' +
       btn("Rejouer", { small: true, cls: "ghost", act: "startMega", arg: floor,
@@ -1081,13 +1137,12 @@ function scrMegaRaid() {
   return topbar("Méga Boss", '<span class="pill" data-act="resInfo" data-arg="apples" ' +
     'style="cursor:pointer;color:#A9E06F;border-color:#6FA83C">🍎 ' + fmt(S.apples || 0) + "</span>") +
     '<div class="pad mt6">' +
-      '<div class="card"><div class="between"><div><div class="bb small">Progression Méga Boss</div>' +
-        '<div class="mute tiny b">' + cleared.length + "/" + floors.length + " premières victoires</div></div>" +
+      '<div class="card"><div class="between"><div><div class="bb small">Progression Méga Boss · Boss uniquement</div>' +
+        '<div class="mute tiny b">' + cleared.length + "/" + floors.length + " Boss Méga vaincus vers le prochain niveau · aucune Élite</div></div>" +
         '<span class="pill" style="color:#A9E06F;border-color:#6FA83C">Gain Pommes +' + appleBoost + "%</span></div>" +
         '<div class="mt8">' + meter(floors.length ? cleared.length / floors.length * 100 : 0, C.red,
           cleared.length + " / " + floors.length) + "</div>" +
-        '<div class="mute tiny mt6">Récompense par première victoire : 33 + 7 tous les 25 étages. ' +
-          "Le Rebirth peut la doubler à 20/20. Les replays ne donnent jamais de Pomme.</div></div>" +
+        '<div class="mute tiny mt6">Cette ancienne récompense est désactivée. Les replays ne donnent jamais de Pomme.</div></div>' +
       '<div class="sect">Prochain défi</div>' + challenge +
       (history ? '<div class="sect">Méga-Boss vaincus</div>' + history : "") +
     '<div style="height:2px"></div></div>';
@@ -1109,6 +1164,7 @@ const SANCT_MERGE_NAME = {
 };
 const SANCT_SUPPLIER_MAX = 15;
 const SANCT_BOARD_SIZE = 16;
+function sanctBoardCapacity(st){return Math.max(16,Math.min(32,Math.max(16+Math.max(0,Math.floor(Number(st&&st.boardExpansions)||0)),Array.isArray(st&&st.mergeBoard)?st.mergeBoard.length:0)));}
 const SANCT_MERGE_RECIPES = [
   {id:"impulsion",name:"Impulsion",req:{RARE:2},kind:"accel",mins:5,qty:1,secret:false},
   {id:"distorsion",name:"Distorsion",req:{RARE:1,EPIQUE:1},kind:"accel",mins:15,qty:1,secret:false},
@@ -1121,9 +1177,11 @@ const SANCT_MERGE_RECIPES = [
 function sanctMergeState() {
   if (!S.sanctuary) S.sanctuary={slotA:null,slotB:null,discovered:{},fusions:0,stabilitySeals:0};
   const st=S.sanctuary;
-  if (!Array.isArray(st.mergeBoard)) st.mergeBoard=Array(SANCT_BOARD_SIZE).fill(null);
-  if (st.mergeBoard.length<SANCT_BOARD_SIZE) while(st.mergeBoard.length<SANCT_BOARD_SIZE) st.mergeBoard.push(null);
-  if (st.mergeBoard.length>SANCT_BOARD_SIZE) st.mergeBoard=st.mergeBoard.slice(0,SANCT_BOARD_SIZE);
+  if (!Array.isArray(st.mergeBoard)) st.mergeBoard=[];
+  const capacity=sanctBoardCapacity(st);
+  while(st.mergeBoard.length<capacity) st.mergeBoard.push(null);
+  /* V559: never truncate a paid board or silently destroy its contents. */
+  if(st.mergeBoard.length>capacity) st.boardExpansions=Math.max(Number(st.boardExpansions)||0,st.mergeBoard.length-16);
   if (!Number.isFinite(st.supplierLevel)) st.supplierLevel=1;
   st.supplierLevel=Math.max(1,Math.min(SANCT_SUPPLIER_MAX,Math.floor(st.supplierLevel)));
   if (!Number.isFinite(st.supplierProgress)) st.supplierProgress=0;
@@ -1164,10 +1222,11 @@ function sanctMergeRecipeOutput(r) {
   const a=ACCEL_DEFS.find((x)=>x.mins===r.mins) || ACCEL_DEFS.reduce((best,x)=>!best||Math.abs(x.mins-r.mins)<Math.abs(best.mins-r.mins)?x:best,null);
   return r.qty+"× Accél. "+(a?a.label:(r.mins+" min"));
 }
+function sanctIsLocked(st,i){return !!((st.mergeLockedSlots&&st.mergeLockedSlots[i])||(st.mergeLockedRarities&&st.mergeLockedRarities[st.mergeBoard[i]]));}
 function sanctMergePair(st) {
   for(let i=0;i<st.mergeBoard.length;i++){
-    const r=st.mergeBoard[i]; if(!r||!sanctMergeNext(r)) continue;
-    for(let j=i+1;j<st.mergeBoard.length;j++) if(st.mergeBoard[j]===r) return [i,j,r];
+    const r=st.mergeBoard[i]; if(!r||sanctIsLocked(st,i)||!sanctMergeNext(r)||Number(st.mergePurchaseProtectionUntil)>Date.now()&&Number(st.mergePurchaseProtectionSlot)===i) continue;
+    for(let j=i+1;j<st.mergeBoard.length;j++) if(st.mergeBoard[j]===r&&!sanctIsLocked(st,j)&&!(Number(st.mergePurchaseProtectionUntil)>Date.now()&&Number(st.mergePurchaseProtectionSlot)===j)) return [i,j,r];
   }
   return null;
 }
@@ -1204,6 +1263,7 @@ function scrSanctuaire() {
     return '<div class="card center sanctMergeCell sanctMergePiece" data-sanct-slot="'+i+'" data-sanct-rarity="'+r+'" style="height:72px;padding:7px;border-color:'+c+'">'+sanctMergeOrb(r,'')+'<div class="b" style="font-size:8.5px;color:'+c+';margin-top:4px">'+SANCT_MERGE_NAME[r].toUpperCase()+'</div></div>';
   }).join('');
 
+  const locks='<div class="card frame mt8"><div class="b small">🔒 Protection des fusions automatiques</div><div class="mute tiny mt4">Verrouille une pièce précise ou toutes les pièces d’une rareté. Les pièces protégées ne seront pas fusionnées par le bouton automatique ni par le petit fusionneur.</div><div class="row gap4 mt8" style="flex-wrap:wrap">'+st.mergeBoard.map((r,i)=>r?'<button class="btn sm '+(st.mergeLockedSlots&&st.mergeLockedSlots[i]?'gold':'dark')+'" data-merge-lock-slot="'+i+'">'+(st.mergeLockedSlots&&st.mergeLockedSlots[i]?'🔒':'🔓')+' Case '+(i+1)+' · '+SANCT_MERGE_NAME[r]+'</button>':'').join('')+'</div><div class="row gap4 mt8" style="flex-wrap:wrap">'+SANCT_MERGE_ORDER.map((r)=>'<button class="btn sm '+(st.mergeLockedRarities&&st.mergeLockedRarities[r]?'gold':'dark')+'" data-merge-lock-rarity="'+r+'">'+(st.mergeLockedRarities&&st.mergeLockedRarities[r]?'🔒':'🔓')+' '+SANCT_MERGE_NAME[r]+'</button>').join('')+'</div></div>';
   const recipes=SANCT_MERGE_RECIPES.map((r)=>{
     const known=sanctMergeRecipeKnown(st,r);
     if(!known) return '<div class="card mt6" style="padding:9px;opacity:.72"><div class="between"><div><div class="b small">❓ Recette secrète</div><div class="mute tiny">Crée une couleur supérieure pour révéler ce rituel.</div></div><span class="pill">???</span></div></div>';
@@ -1224,10 +1284,15 @@ function scrSanctuaire() {
     '<div class="sanctSupplierShop mt8">'+unlockedColors.map((r)=>{ const p=sanctSupplierPrice(lvl,r), best=r===tier; return '<div class="sanctSupplierItem" style="border-color:'+SANCT_MERGE_COLOR[r]+'66">'+sanctMergeOrb(r,'')+'<div class="flex1"><div class="b tiny" style="color:'+SANCT_MERGE_COLOR[r]+'">'+SANCT_MERGE_NAME[r]+'</div><div class="mute" style="font-size:8px">'+fmt(p)+' Or'+(best&&!maxed?' · jauge':'')+'</div></div>'+btn('Acheter',{small:true,cls:best?'blue':'ghost',act:'sanctMergeBuy',arg:r,dis:boardFull||S.gold<p,primary:best&&!pair&&!readyRecipes.length,style:'width:auto;padding:5px 8px;font-size:9.5px'})+'</div>'; }).join('')+'</div>'+
       (maxed?'<div class="mt8"><span class="pill" style="color:var(--goldLit);border-color:var(--goldDim)">NIVEAU MAX · Commun à Épique disponibles</span></div>':'<div class="between tiny b mt8"><span class="mute">JAUGE · '+st.supplierProgress+' / '+need+' · achats '+SANCT_MERGE_NAME[tier]+'</span><span style="color:var(--goldLit)">Niv.'+(lvl+1)+'</span></div>'+bar(st.supplierProgress/need*100,'#E8B44A',6))+
     '</div>'+
-    '<div class="sect">Plateau de Merge <span class="mute tiny">· '+st.mergeBoard.filter(Boolean).length+'/'+SANCT_BOARD_SIZE+'</span></div>'+
+    '<div class="sect">Plateau de Merge <span class="mute tiny">· '+st.mergeBoard.filter(Boolean).length+'/'+sanctBoardCapacity(st)+'</span></div>'+
     '<div class="notice tiny"><b>Fusion par glisser-déposer :</b> fais glisser une pièce sur une pièce identique pour les fusionner. Glisse-la sur une case vide pour la déplacer. Une pièce différente refuse la fusion.</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px">'+board+'</div>'+
-    '<div class="row gap6 mt8">'+btn('Ranger le plateau',{small:true,cls:'ghost',act:'sanctMergePack'})+(st.mergeSelected>=0?btn('Annuler sélection',{small:true,cls:'dark',act:'sanctMergeCancel'}):'')+'</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px">'+board+'</div>'+locks+
+    '<div class="card mt8" style="padding:12px;background:linear-gradient(120deg,#171c39,#28204a);border:1px solid #9976ff66">'+
+      '<div class="row gap8" style="align-items:center"><span class="sr-merge-pet" aria-hidden="true" style="font-size:35px;display:inline-block;animation:srPetFloat 2.5s ease-in-out infinite">🐲</span><div style="flex:1"><b>Petit fusionneur</b><div class="tiny mute">Je fusionne tout seul, même quand tu explores !</div></div></div>'+
+      (st.mergePetUntil>Date.now()?'<div class="mt8 tiny">💜 Au travail · '+Math.ceil((st.mergePetUntil-Date.now())/60000)+' min restantes · 1 fusion / 2 s</div>':
+       '<div class="row gap6 mt8" style="flex-wrap:wrap">'+btn('10 min · 100k Or',{small:true,act:'sanctPetHire',arg:'10-gold'})+btn('💎 10',{small:true,act:'sanctPetHire',arg:'10-gems'})+'</div><div class="row gap6 mt6" style="flex-wrap:wrap">'+btn('20 min · 150k Or',{small:true,act:'sanctPetHire',arg:'20-gold'})+btn('💎 15',{small:true,act:'sanctPetHire',arg:'20-gems'})+'</div>')+
+      '</div>'+
+    '<div class="row gap6 mt8">'+btn('Fusionner tout · Or',{small:true,cls:'purple',act:'sanctMergeAuto',dis:!pair})+btn('Ranger le plateau',{small:true,cls:'ghost',act:'sanctMergePack'})+(st.mergeSelected>=0?btn('Annuler sélection',{small:true,cls:'dark',act:'sanctMergeCancel'}):'')+'</div>'+
     (counts?'<div class="row gap4 mt8" style="flex-wrap:wrap">'+counts+'</div>':'')+
     '<div class="sect">Livre de Fusion <span class="mute tiny">· '+st.mergeCrafts+' fabrications</span></div>'+recipes+
     '<div class="notice mt8 tiny">Les anciennes ressources de Raid ne sont plus consommées par le Sanctuaire. L’Or achète uniquement la couleur affichée ; les raretés supérieures se construisent sur le plateau. Le niveau d’approvisionnement conserve un prix fixe pendant toute sa jauge.</div></div>';
@@ -1260,7 +1325,10 @@ function scrArbre() {
     ["research", "Recherche technologique · vitesse", "+"],
     ["techCost", "Nœud technologique · coût", ""],
     ["goldAll", "Or global", "+"],
-    ["afkGain", "Récompense Autonomie", "+"],
+    ["afkGold", "Autonomie · Or", "+"],
+    ["afkMinerai", "Autonomie · Minéraux", "+"],
+    ["afkEssence", "Autonomie · Essence", "+"],
+    ["afkEclat", "Autonomie · Étincelles", "+"],
     ["afkTime", "Temps Récompense Autonomie", "+"],
     ["skillDmg", "Compétence · dégâts", "+"],
     ["passDmg", "Compétence passive · base dégâts", "+"],
@@ -1346,7 +1414,7 @@ function scrArbre() {
       /* the sheet's bottom bar: what the tree is made of, and where you are */
       '<div class="card mt8" style="padding:9px 11px">' +
         '<div class="mute tiny b" style="letter-spacing:.6px;margin-bottom:6px">RÉCAPITULATIF</div>' +
-        [["31 familles × 4 profondeurs", TREE_NODES.filter((n) => !n.special).length + " / 124 nœuds"],
+        [["36 familles × 4 profondeurs", TREE_NODES.filter((n) => !n.special).length + " / 144 nœuds"],
          ["Clés Raid", TREE_NODES.filter((n) => n.effect === "raidKey").length + " × +1"],
          ["Slots d'Éclosion", TREE_NODES.filter((n) => n.effect === "eggSlot").length + " × +1"],
          ["Multiplicateurs Forge", "+1 → +3 → +5 → +10"],
@@ -1364,7 +1432,7 @@ function scrArbre() {
       '<div class="sect" style="margin:16px 0 9px">Bonus actifs</div>' +
       '<div class="card">' + bonusRows +
         '<div class="kv"><span class="dim">Multiplicateur de Forge</span><b style="color:var(--goldLit)">×' + forgeBatch(S) + "</b></div>" +
-        '<div class="kv"><span class="dim">Plafond AFK</span><b style="color:var(--goldLit)">' + afkCapHours(S) + " h</b></div>" +
+        '<div class="kv"><span class="dim">Plafond Autonomie</span><b style="color:var(--goldLit)">' + afkCapHours(S) + " h actuelles · 16 h max</b></div>" +
         '<div class="kv"><span class="dim">Slots éclosion</span><b style="color:var(--goldLit)">' + S.eggSlots + "/" + RULES.EGG_SLOT_MAX + "</b></div>" +
         (raidKeyGrants(S) > 0
           ? '<div class="kv"><span class="dim">Clés quotidiennes</span><b style="color:var(--goldLit)">' +
@@ -1387,3 +1455,14 @@ function scrArbre() {
       "</div>" +
     '<div style="height:2px"></div></div>';
 }
+
+/* V541 · petit fusionneur, animation douce */
+
+/* V557: sanctuary protection controls. */
+document.getElementById('app').addEventListener('click',function(e){
+ const b=e.target.closest('[data-merge-lock-slot],[data-merge-lock-rarity]');if(!b)return;
+ e.preventDefault();e.stopPropagation();const st=sanctMergeState();
+ if(b.hasAttribute('data-merge-lock-slot')){const i=Number(b.dataset.mergeLockSlot);if(!st.mergeBoard[i])return;st.mergeLockedSlots=st.mergeLockedSlots||{};st.mergeLockedSlots[i]=!st.mergeLockedSlots[i];}
+ else {const r=b.dataset.mergeLockRarity;st.mergeLockedRarities=st.mergeLockedRarities||{};st.mergeLockedRarities[r]=!st.mergeLockedRarities[r];}
+ dirty=true;if(typeof saveNow==='function')saveNow();render();
+},true);

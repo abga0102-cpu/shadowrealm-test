@@ -2,8 +2,8 @@
    No synthetic power compensation. Power always comes from canonical game systems.
    - Removes V255 artificial compensation fields.
    - Stores a compact snapshot of real power-bearing progression.
-   - On a later boot, only restores monotonic source regressions (same item/pet id, lower level/stat;
-     lower tree/rebirth/player stats) that occurred without a matching saved source snapshot.
+   - On a later boot, only restores monotonic power-source regressions (same item/pet id,
+     lower Dust-upgrade/stat; lower tree/rebirth/player stats) without restoring display-only equipment level.
    - Never restores a different equipped item, never invents a stat, and never adds a flat power bonus.
 */
 (function(){
@@ -17,7 +17,7 @@ var repaired=[];
 function clone(v){try{return JSON.parse(JSON.stringify(v));}catch(_){return null;}}
 function num(v){v=Number(v);return Number.isFinite(v)?v:0;}
 function snapItem(it){if(!it)return null;return {
- id:it.id,slot:it.slot,level:num(it.level),baseDamage:num(it.baseDamage),baseHp:num(it.baseHp),
+ id:it.id,slot:it.slot,level:num(it.level),upgradeLevel:num(it.upgradeLevel),baseDamage:num(it.baseDamage),baseHp:num(it.baseHp),
  damage:num(it.damage),hp:num(it.hp),power:num(it.power),upgradeBaseLevel:num(it.upgradeBaseLevel),
  originalPower:num(it.originalPower),rarity:it.rarity,weaponType:it.weaponType,
  affixes:clone(it.affixes||[])
@@ -45,7 +45,7 @@ function restoreNumericMap(cur,prev,label){
 }
 function restoreItem(cur,prev,slot){
  if(!cur||!prev||!cur.id||cur.id!==prev.id)return false;var changed=false;
- ['level','baseDamage','baseHp','damage','hp','power','upgradeBaseLevel','originalPower'].forEach(function(k){
+ ['upgradeLevel','baseDamage','baseHp','damage','hp','power','upgradeBaseLevel','originalPower'].forEach(function(k){
    var pv=num(prev[k]),cv=num(cur[k]);if(pv>cv){cur[k]=prev[k];repaired.push('Équipement '+slot+' · '+k+' '+cv+'→'+pv);changed=true;}
  });
  /* Affixes are restored only if the same item id lost entries; values are not boosted blindly. */

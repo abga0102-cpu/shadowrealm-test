@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
+const { touchCurrentLocator } = require('./helpers/render-stable-touch');
 
 const root = path.join(__dirname, '..');
 const source = (name) => fs.readFileSync(path.join(root, name), 'utf8');
@@ -63,7 +64,7 @@ test('Phase 4E leaves V219 as the sole Home frame lifecycle owner and V209 as Bo
   expect(navAuthority).toContain("new Event('sr:bottomnavrendered')");
 });
 
-test('Phase 4E preserves Home header alignment and unique V119 compatibility after repeated routes', async ({ page }) => {
+test('Phase 4E preserves Home header alignment and unique V119 compatibility after repeated routes', async ({ page }, testInfo) => {
   await openCleanGame(page);
 
   await expect.poll(() => page.evaluate(() => ({
@@ -74,12 +75,25 @@ test('Phase 4E preserves Home header alignment and unique V119 compatibility aft
 
   const homeTab = page.locator('#tabs .tab[data-arg="accueil"]');
   const equipmentTab = page.locator('#tabs .tab[data-arg="equipement"]');
-  const settingsTab = page.locator('#tabs .tab[data-arg="reglages"]');
+  const settingsTab = page.locator('#tabs .tab[data-arg="parametres"]');
+
+  // A timer render can replace #tabs between locating and interacting. On
+  // iPhone use the existing verified touchscreen helper: it confirms that a
+  // real click reached the current logical control, not a detached node.
+  // Verify the route after every action so navigation failures cannot be hidden.
+  async function visit(tab, destination) {
+    if (testInfo.project.name === 'webkit-iphone') {
+      await touchCurrentLocator(page, tab, { label: 'Phase 4E ' + destination });
+    } else {
+      await tab.click();
+    }
+    await expect.poll(() => page.evaluate(() => route), { timeout: 7000 }).toBe(destination);
+  }
 
   for (let round = 0; round < 2; round++) {
-    if (await equipmentTab.count()) await equipmentTab.click();
-    if (await settingsTab.count()) await settingsTab.click();
-    await homeTab.click();
+    await visit(equipmentTab, 'equipement');
+    await visit(settingsTab, 'parametres');
+    await visit(homeTab, 'accueil');
     await expect(page.locator('#app')).toHaveClass(/srHomeFullArena/);
   }
 

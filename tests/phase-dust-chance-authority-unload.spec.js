@@ -17,7 +17,7 @@ test('V301 is the sole Dust chance authority and superseded V292/V300 sources ar
   expect(exists('dust-chance-floor-v292.js')).toBe(false);
   expect(exists('dust-chance-authority-v300.js')).toBe(false);
   expect(v301).toContain('window.__srV301UpgradeChance=chance');
-  expect(v301).toMatch(/return Math\.max\(5,95-5\*Math\.floor\(\(level-70\)\/2\)\)/);
+  expect(v301).toMatch(/return Math\.max\(5,95-5\*Math\.floor\(\(level-25\)\/2\)\)/);
 
   await page.goto('/index.html?smoke=1');
   await page.waitForFunction(() => typeof itemUpgradeChance === 'function' && window.__srDustChanceFloorV301 === true);
@@ -27,9 +27,9 @@ test('V301 is the sole Dust chance authority and superseded V292/V300 sources ar
     v300: !!window.__srDustChanceAuthorityV300,
     v301: !!window.__srDustChanceFloorV301,
     l0: itemUpgradeChance({ level: 0 }),
-    l69: itemUpgradeChance({ level: 69 }),
-    l70: itemUpgradeChance({ level: 70 }),
-    l72: itemUpgradeChance({ level: 72 }),
+    l24: itemUpgradeChance({ level: 24 }),
+    l25: itemUpgradeChance({ level: 25 }),
+    l27: itemUpgradeChance({ level: 27 }),
     l200: itemUpgradeChance({ level: 200 })
   }));
 
@@ -38,9 +38,9 @@ test('V301 is the sole Dust chance authority and superseded V292/V300 sources ar
     v300: false,
     v301: true,
     l0: 100,
-    l69: 100,
-    l70: 95,
-    l72: 90,
+    l24: 100,
+    l25: 95,
+    l27: 90,
     l200: 5
   });
 });

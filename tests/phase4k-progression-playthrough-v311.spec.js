@@ -249,9 +249,11 @@ test('V311 Forge long-run economy preserves the approved 1→50 gold ladder and 
     totalGold: FORGE_UPGRADE_GOLD_COSTS.reduce((sum, cost) => sum + cost, 0),
     firstGold: FORGE_UPGRADE_GOLD_COSTS[0],
     lastGold: FORGE_UPGRADE_GOLD_COSTS[FORGE_UPGRADE_GOLD_COSTS.length - 1],
-    dustCost0: itemUpgradeCost({ level: 0 }),
-    dustChance70: itemUpgradeChance({ level: 70 }),
-    dustChance999: itemUpgradeChance({ level: 999 }),
+    dustCost0: itemUpgradeCost({ level: 24, upgradeLevel: 0 }),
+    dustCost10: itemUpgradeCost({ level: 24, upgradeLevel: 10 }),
+    dustChance24: itemUpgradeChance({ level: 24, upgradeLevel: 24 }),
+    dustChance25: itemUpgradeChance({ level: 24, upgradeLevel: 25 }),
+    dustChance999: itemUpgradeChance({ level: 24, upgradeLevel: 999 }),
     forgeStar1: ascendPowerMul(1, 'forge'),
   }));
 
@@ -259,8 +261,10 @@ test('V311 Forge long-run economy preserves the approved 1→50 gold ladder and 
   expect(result.totalGold).toBe(15000000);
   expect(result.firstGold).toBe(3350);
   expect(result.lastGold).toBe(1852100);
-  expect(result.dustCost0).toBe(60);
-  expect(result.dustChance70).toBe(95);
+  expect(result.dustCost0).toBe(30);
+  expect(result.dustCost10).toBe(210);
+  expect(result.dustChance24).toBe(100);
+  expect(result.dustChance25).toBe(95);
   expect(result.dustChance999).toBe(5);
   expect(result.forgeStar1).toBe(2);
 });

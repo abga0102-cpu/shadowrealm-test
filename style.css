@@ -36,6 +36,8 @@
 @media(max-height:620px){:root{--s:.88}}
 @media(max-width:340px){:root{--s:.9}}
 html,body{margin:0;padding:0;height:100%;background:#04070d;overflow:hidden}
+html{height:100%;height:100svh}
+body{height:100%;height:100svh}
 body{
   font-size:calc(16px * var(--s));
   font-family:var(--fu);
@@ -43,7 +45,7 @@ body{
   background:radial-gradient(120% 90% at 50% 0%,#0D1524 0%,#070B13 60%,#04070d 100%);
 }
 #app{
-  width:100%; max-width:calc(440px * var(--s)); height:100%; max-height:1100px; position:relative;
+  width:100%; max-width:calc(440px * var(--s)); height:100%; height:100svh; max-height:1100px; position:relative;
   display:flex; flex-direction:column; overflow:hidden;
   background:
     radial-gradient(140% 60% at 50% 0%,#1A2942 0%,transparent 62%),
@@ -947,3 +949,8 @@ button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; fil
   .worldMenu{bottom:4px}
   .homeForge{padding-top:6px!important;padding-bottom:6px!important}
 }
+
+/* V440 · Equipment category strip owns its horizontal gesture/position. */
+.equipFilterScroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;justify-content:flex-start}
+.equipFilterScroll::-webkit-scrollbar{display:none}
+.equipFilterScroll>span{flex:0 0 auto;min-width:78px;overflow:visible;text-overflow:clip}

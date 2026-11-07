@@ -1,9 +1,10 @@
-/* SHADOWREACH V305 · Progression integration pack
+/* SHADOWREACH V305 / V462 · Progression integration pack
    Consolidated QA corrections that are all consequences of already-approved design:
    - retired Familiar Apple progression must not create Apple refunds through fusion/Ascension;
    - retired Rebirth must never appear as a tutorial step;
    - exported Familiar stat previews/tests must read the state being evaluated, not live S;
-   - V321 progression gates: Forge unlocks at campaign stage 1-2, Skills at hero level 4;
+   - V321 progression gates: Forge unlocks at campaign stage 1-2;
+   - V462 starter pacing: Skills at hero level 2, Build preparation at 1-5, then a manually-started starter Egg at 1-8;
    - V317 Forge -> Raid onboarding keeps its original hero-level-3 depletion guard.
    No rarity curve, owned equipment stat or later progression balance is changed. */
 (function(){'use strict';
@@ -106,7 +107,7 @@ try{
 }catch(_){ }
 
 /* ---------- V321 early-system unlock gates ---------- */
-var FORGE_UNLOCK_FLOOR=2,V317_RAID_FORGE_LEVEL=3,SKILL_UNLOCK_LEVEL=4;
+var FORGE_UNLOCK_FLOOR=2,V317_RAID_FORGE_LEVEL=3,SKILL_UNLOCK_LEVEL=2;
 function heroLevel(){try{return Math.max(1,Math.floor(Number(S&&S.level)||1));}catch(_){return 1;}}
 function campaignProgress(){try{return Math.max(1,Math.floor(Number(S&&S.floor)||1),Math.floor(Number(S&&S.recordFloor)||1),Math.floor(Number(S&&S.checkpoint)||1));}catch(_){return 1;}}
 function forgeUnlocked(){return campaignProgress()>=FORGE_UNLOCK_FLOOR;}
@@ -231,7 +232,7 @@ window.__srProgressionUnlocksV321=window.__srProgressionUnlocksV316;
 window.__srForgeIntroTutorialV321=forgeIntroTutorialV321;
 
 /* ---------- V317 Forge -> Raid onboarding ---------- */
-var V317_START_MINERAI=250,V317_LEGACY_START=400,V317_FRESH_MS=5*60*1000;
+var V317_START_MINERAI=0,V317_LEGACY_START=400,V317_FRESH_MS=5*60*1000;
 var V317_LEGACY_RAID_LEVEL=(typeof RULES!=='undefined'&&Number(RULES.RAID_UNLOCK_LEVEL))||5;
 function v317HeroLevel(s){return Math.max(1,Math.floor(Number(s&&s.level)||1));}
 function v317CraftCost(s){try{return Math.max(1,Number(forgeCost(s&&s.forge?s.forge.level:1))||10);}catch(_){return 10;}}
@@ -349,7 +350,255 @@ try{
 }catch(_){ }
 window.__srV317EnsureOnboarding=function(s){v317Apply(s);return s;};
 window.__srV317RaidUnlocked=v317RaidUnlocked;
-window.__srForgeRaidOnboardingConfigV317={startMinerai:V317_START_MINERAI,craftCost:10,paidCraftsBeforeRaid:25,forgeUnlockLevel:V317_RAID_FORGE_LEVEL,raidDepletionMinHeroLevel:V317_RAID_FORGE_LEVEL,actualForgeUnlockFloor:FORGE_UNLOCK_FLOOR,actualForgeUnlockStage:'1-2',legacyRaidLevel:V317_LEGACY_RAID_LEVEL};
+window.__srForgeRaidOnboardingConfigV317={startMinerai:V317_START_MINERAI,craftCost:10,paidCraftsBeforeRaid:10,forgeUnlockLevel:V317_RAID_FORGE_LEVEL,raidDepletionMinHeroLevel:V317_RAID_FORGE_LEVEL,actualForgeUnlockFloor:FORGE_UNLOCK_FLOOR,actualForgeUnlockStage:'1-2',legacyRaidLevel:V317_LEGACY_RAID_LEVEL};
+
+/* ---------- V462 · Dense first minutes / Build -> Familiar handoff ---------- */
+var V461_FRESH_MS=30*60*1000,V462_BUILD_INTRO_FLOOR=5,V462_FAMILIAR_INTRO_FLOOR=8,
+    V462_STARTER_EGG_FLOOR=V462_FAMILIAR_INTRO_FLOOR,V462_STARTER_HATCH_SECS=30,
+    V461_FIRST_BOSS_FLOOR=V462_BUILD_INTRO_FLOOR;
+function v461Highest(s){return Math.max(1,Math.floor(Number(s&&s.floor)||1),Math.floor(Number(s&&s.recordFloor)||1),Math.floor(Number(s&&s.checkpoint)||1));}
+function v461FreshCandidate(s){
+  if(!s)return false;
+  var age=Date.now()-Math.max(0,Number(s.firstSeen)||0);
+  var boss5=!!(s.bossClears&&s.bossClears[String(V461_FIRST_BOSS_FLOOR)]);
+  var advanced=v461Highest(s)>V461_FIRST_BOSS_FLOOR||boss5||Number(s.ascension||0)>0;
+  return !advanced&&age>=0&&age<=V461_FRESH_MS;
+}
+function v461StarterState(active){
+  return {version:462,active:!!active,completed:false,skillCreditGranted:false,freeSkillSummons:0,
+    buildIntroAnnounced:false,starterEggGranted:false,starterEggId:null,starterEggStarted:false,
+    startedAt:Date.now(),completedAt:0};
+}
+function v461Ensure(s,forceFresh){
+  if(!s)return false;
+  if(!s.onboardingV461||typeof s.onboardingV461!=='object'){
+    s.onboardingV461=v461StarterState(!!forceFresh||v461FreshCandidate(s));
+    return true;
+  }
+  var o=s.onboardingV461,changed=false;
+  if(Number(o.version)!==462){o.version=462;changed=true;}
+  if(!Number.isFinite(Number(o.freeSkillSummons))){o.freeSkillSummons=0;changed=true;}
+  o.freeSkillSummons=Math.max(0,Math.floor(Number(o.freeSkillSummons)||0));
+  if(typeof o.buildIntroAnnounced!=='boolean'){o.buildIntroAnnounced=false;changed=true;}
+  if(typeof o.starterEggStarted!=='boolean'){
+    var legacyEgg=(s.eggs||[]).find(function(e){return e&&o.starterEggId&&e.id===o.starterEggId;});
+    o.starterEggStarted=!!(legacyEgg&&Number(legacyEgg.hatchEnd)>0);changed=true;
+  }
+  if(o.starterEggStarted&&!o.completed){o.completed=true;o.completedAt=o.completedAt||Date.now();changed=true;}
+  if(o.completed&&o.active){o.active=false;changed=true;}
+  return changed;
+}
+function v461Active(s){return !!(s&&s.onboardingV461&&s.onboardingV461.active&&!s.onboardingV461.completed);}
+function v461FreeSkillAvailable(s){return !!(v461Active(s)&&Number(s.onboardingV461.freeSkillSummons)>0);}
+function v461Announce(events){
+  if(!events||!events.length)return;
+  events.forEach(function(ev){
+    setTimeout(function(){
+      try{
+        if(typeof rewardPop==='function')rewardPop(ev.title,ev.sub,false,ev.action||null,ev.arg||null,4600,ev.kind||null);
+        else if(typeof toast==='function')toast(ev.title+(ev.sub?' · '+ev.sub:''),true);
+      }catch(_){}
+    },0);
+  });
+}
+function v461ApplyMilestones(s,announce){
+  if(!s)return {changed:false,events:[]};
+  var changed=v461Ensure(s,false),events=[],o=s.onboardingV461;
+  if(!v461Active(s))return {changed:changed,events:events};
+
+  if(!o.skillCreditGranted&&Math.max(1,Math.floor(Number(s.level)||1))>=SKILL_UNLOCK_LEVEL){
+    o.skillCreditGranted=true;o.freeSkillSummons=Math.max(1,Number(o.freeSkillSummons)||0);changed=true;
+    events.push({title:'Compétences débloquées',sub:'Ta première invocation est offerte.',action:'go',arg:'competences',kind:'skill'});
+  }
+
+  var highest=v461Highest(s),boss5=!!(s.bossClears&&s.bossClears[String(V462_BUILD_INTRO_FLOOR)]);
+  if(!o.buildIntroAnnounced&&highest>=V462_BUILD_INTRO_FLOOR&&!boss5){
+    o.buildIntroAnnounced=true;changed=true;
+    events.push({title:'Prépare ton build',sub:'Le Boss de Facile 1-5 est plus coriace. Équipe tes meilleures pièces.',action:'go',arg:'equipement',kind:'equipment'});
+  }
+
+  if(!o.starterEggGranted&&highest>=V462_STARTER_EGG_FLOOR){
+    var egg={id:typeof rid==='function'?rid():('starter-'+Date.now()),rarity:'COMMUN',
+      species:typeof randSpecies==='function'?randSpecies():'dragonnet',
+      element:typeof randElement==='function'?randElement():'normal',
+      hatchEnd:0,starterV461:true,starterV462:true,starterHatchSeconds:V462_STARTER_HATCH_SECS};
+    s.eggs=Array.isArray(s.eggs)?s.eggs:[];
+    s.eggs.push(egg);o.starterEggGranted=true;o.starterEggId=egg.id;changed=true;
+    events.push({title:'Premier œuf obtenu',sub:'Ouvre Familiers et lance toi-même l’éclosion.',action:'go',arg:'familiers',kind:'egg'});
+  }
+
+  if(announce)v461Announce(events);
+  return {changed:changed,events:events};
+}
+
+/* A fresh hero reaches level 2 during the first normal stage instead of
+   watching several stages before the first new system appears. This multiplier
+   exists only while the starter flow is active and the hero is still level 1. */
+try{
+  if(typeof expReward==='function'&&!expReward.__srV461){
+    var oldExpRewardV461=expReward;
+    expReward=function(floor){
+      var base=oldExpRewardV461.apply(this,arguments);
+      try{
+        if(v461Active(S)&&Math.max(1,Math.floor(Number(S.level)||1))<2&&Number(floor)<=2)
+          return Math.max(base,Math.ceil(expToNext(1)/3));
+      }catch(_){}
+      return base;
+    };
+    expReward.__srV461=true;expReward.__srPrevious=oldExpRewardV461;
+  }
+}catch(_){}
+
+/* Persist starter state on every genuinely new game, while old/advanced saves
+   are never enrolled retroactively. */
+try{
+  if(typeof defaultState==='function'&&!defaultState.__srV461){
+    var oldDefaultStateV461=defaultState;
+    defaultState=function(){var s=oldDefaultStateV461.apply(this,arguments);s.onboardingV461=v461StarterState(true);return s;};
+    defaultState.__srV461=true;defaultState.__srPrevious=oldDefaultStateV461;
+  }
+}catch(_){}
+try{
+  if(typeof migrate==='function'&&!migrate.__srV461){
+    var oldMigrateV461=migrate;
+    migrate=function(){
+      var raw=arguments[0],had=!!(raw&&raw.onboardingV461&&typeof raw.onboardingV461==='object');
+      var s=oldMigrateV461.apply(this,arguments);
+      if(!had)try{delete s.onboardingV461;}catch(_){}
+      v461Ensure(s,false);return s;
+    };
+    if(oldMigrateV461.__srV299)migrate.__srV299=oldMigrateV461.__srV299;
+    migrate.__srV461=true;migrate.__srPrevious=oldMigrateV461;
+  }
+}catch(_){}
+try{
+  if(typeof loadSave==='function'&&!loadSave.__srV461){
+    var oldLoadSaveV461=loadSave;
+    loadSave=function(){var s=oldLoadSaveV461.apply(this,arguments);if(s)v461Ensure(s,false);return s;};
+    loadSave.__srV461=true;loadSave.__srPrevious=oldLoadSaveV461;
+  }
+}catch(_){}
+
+/* First Skill invocation is free without inflating the shard economy. The
+   normal cost function remains authoritative for every later invocation. */
+try{
+  if(typeof summonSkill==='function'&&!summonSkill.__srV461){
+    var oldSummonSkillV461=summonSkill;
+    summonSkill=function(n){
+      var count=Math.max(1,Math.floor(Number(n)||1));
+      if(!v461FreeSkillAvailable(S))return oldSummonSkillV461.apply(this,arguments);
+      var first=[],normalCost=skillSummonCost;
+      try{
+        skillSummonCost=function(){return 0;};
+        first=oldSummonSkillV461.call(this,1)||[];
+      }finally{skillSummonCost=normalCost;}
+      if(Array.isArray(first)&&first.length){
+        S.onboardingV461.freeSkillSummons=Math.max(0,Number(S.onboardingV461.freeSkillSummons)||0)-1;
+        try{if(typeof saveNow==='function')saveNow();}catch(_){}
+      }
+      if(count<=1)return first;
+      var rest=oldSummonSkillV461.call(this,count-1)||[];
+      return (Array.isArray(first)?first:[]).concat(Array.isArray(rest)?rest:[]);
+    };
+    summonSkill.__srV461=true;summonSkill.__srPrevious=oldSummonSkillV461;
+  }
+}catch(_){}
+
+/* V462 keeps the starter egg manual: the normal stored-egg button must be used.
+   Only after that real player action do we apply the short 30 s onboarding timer
+   and close the starter flow. */
+try{
+  if(typeof startEgg==='function'&&!startEgg.__srV462){
+    var oldStartEggV462=startEgg;
+    startEgg=function(id){
+      var starter=false,o=null;
+      try{
+        o=S&&S.onboardingV461;
+        starter=!!(v461Active(S)&&o&&o.starterEggGranted&&id===o.starterEggId);
+      }catch(_){}
+      var ok=oldStartEggV462.apply(this,arguments);
+      if(ok&&starter){
+        try{
+          var egg=(S.eggs||[]).find(function(e){return e&&e.id===id;});
+          if(egg){
+            egg.hatchEnd=Date.now()+V462_STARTER_HATCH_SECS*1000;
+            egg.starterHatchSeconds=V462_STARTER_HATCH_SECS;
+          }
+          o.starterEggStarted=true;o.completed=true;o.active=false;o.completedAt=Date.now();
+          if(typeof saveNow==='function')saveNow();
+          if(typeof scheduleRender==='function')scheduleRender();
+        }catch(_){}
+      }
+      return ok;
+    };
+    startEgg.__srV462=true;startEgg.__srPrevious=oldStartEggV462;
+  }
+}catch(_){}
+
+/* Milestones are applied at the two progression boundaries that can unlock
+   them: level grants and campaign completion. */
+try{
+  if(typeof grantLevels==='function'&&!grantLevels.__srV461){
+    var oldGrantLevelsV461=grantLevels;
+    grantLevels=function(s){var out=oldGrantLevelsV461.apply(this,arguments),m=v461ApplyMilestones(s,true);if(m.changed)try{if(typeof saveNow==='function'&&s===S)saveNow();}catch(_){}return out;};
+    grantLevels.__srV461=true;grantLevels.__srPrevious=oldGrantLevelsV461;
+  }
+}catch(_){}
+try{
+  if(typeof handleCombatEnd==='function'&&!handleCombatEnd.__srV461){
+    var oldHandleCombatEndV461=handleCombatEnd;
+    handleCombatEnd=function(){
+      var out=oldHandleCombatEndV461.apply(this,arguments),m=v461ApplyMilestones(S,true);
+      if(m.changed){try{if(typeof computePower==='function')S.power=computePower(S);if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}catch(_){}}
+      return out;
+    };
+    handleCombatEnd.__srV461=true;handleCombatEnd.__srPrevious=oldHandleCombatEndV461;
+  }
+}catch(_){}
+
+function v461NextStep(s){
+  if(!v461Active(s))return null;
+  var o=s.onboardingV461||{},highest=v461Highest(s),lvl=Math.max(1,Math.floor(Number(s.level)||1));
+  if(Math.max(0,Number(s.forge&&s.forge.summonCount)||0)<1)
+    return {id:'forge',title:'Forge',note:'Atteins Facile 1-2 puis forge ta première pièce.',now:Math.min(highest,2),max:2,go:'accueil',ready:highest>=2};
+  if(lvl<SKILL_UNLOCK_LEVEL)
+    return {id:'skillsUnlock',title:'Compétences',note:'Atteins le niveau '+SKILL_UNLOCK_LEVEL+'.',now:lvl,max:SKILL_UNLOCK_LEVEL,go:'accueil',ready:false};
+  if(Number(o.freeSkillSummons)>0)
+    return {id:'freeSkill',title:'Première compétence',note:'1 invocation offerte t’attend.',now:1,max:1,go:'competences',ready:true};
+  if(!Object.keys(s.skills||{}).length)
+    return {id:'firstSkill',title:'Première compétence',note:'Invoque puis équipe ta première compétence.',now:0,max:1,go:'competences',ready:true};
+
+  var boss5=!!(s.bossClears&&s.bossClears[String(V462_BUILD_INTRO_FLOOR)]);
+  if(!boss5){
+    var buildReady=highest>=V462_BUILD_INTRO_FLOOR;
+    return {id:'build',title:'Prépare ton build',
+      note:buildReady?'Équipe tes meilleures pièces avant le Boss de Facile 1-5.':'Atteins Facile 1-5.',
+      now:Math.min(highest,V462_BUILD_INTRO_FLOOR),max:V462_BUILD_INTRO_FLOOR,
+      go:buildReady?'equipement':'accueil',ready:buildReady};
+  }
+
+  if(!o.starterEggGranted)
+    return {id:'familiarIntro',title:'Familiers',note:'Atteins Facile 1-8 pour recevoir ton premier œuf.',
+      now:Math.min(highest,V462_FAMILIAR_INTRO_FLOOR),max:V462_FAMILIAR_INTRO_FLOOR,go:'accueil',ready:false};
+
+  var starter=(s.eggs||[]).find(function(e){return e&&e.id===o.starterEggId;});
+  if(starter&&!eggIsHatching(starter))
+    return {id:'startHatch',title:'Lance l’éclosion',note:'Ouvre Familiers et place ton œuf en éclosion.',
+      now:0,max:1,go:'familiers',ready:true};
+  return null;
+}
+function v462BuildIntroReady(s){return !v461Active(s)||v461Highest(s)>=V462_BUILD_INTRO_FLOOR;}
+function v462FamiliarIntroReady(s){return !v461Active(s)||v461Highest(s)>=V462_FAMILIAR_INTRO_FLOOR;}
+
+window.__srStarterPacingV462={
+  version:462,skillUnlockLevel:SKILL_UNLOCK_LEVEL,starterEggFloor:V462_STARTER_EGG_FLOOR,
+  starterHatchSeconds:V462_STARTER_HATCH_SECS,firstBossFloor:V461_FIRST_BOSS_FLOOR,
+  buildIntroFloor:V462_BUILD_INTRO_FLOOR,familiarIntroFloor:V462_FAMILIAR_INTRO_FLOOR,
+  ensure:v461Ensure,applyMilestones:v461ApplyMilestones,active:v461Active,
+  freeSkillAvailable:v461FreeSkillAvailable,nextStep:v461NextStep,
+  buildIntroReady:v462BuildIntroReady,familiarIntroReady:v462FamiliarIntroReady
+};
+window.__srStarterPacingV461=window.__srStarterPacingV462;
 
 /* ---------- State-aware Familiar stat helper ---------- */
 var PET_BASE={COMMUN:[1500,12000],PEU_COMMUN:[5000,40000],RARE:[20000,160000],EPIQUE:[120000,960000],MYTHIQUE:[900000,7200000],ANCESTRAL:[7000000,56000000],LEGENDAIRE:[70000000,560000000],DIVIN:[544000000,4350000000]};
@@ -371,7 +620,10 @@ window.__srV286PetStats=petStats;
 try{
   if(typeof S!=='undefined'&&S){
     var onboardingChanged=v317Apply(S);
-    S.progressionIntegrationVersion=305;
+    var starterResult=v461ApplyMilestones(S,false);
+    onboardingChanged=onboardingChanged||starterResult.changed;
+    S.progressionIntegrationVersion=Math.max(305,Number(S.progressionIntegrationVersion)||0);
+    S.starterPacingVersion=462;
     if(typeof computePower==='function')S.power=computePower(S);
     if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);
     if(typeof saveNow==='function'&&onboardingChanged)saveNow();
@@ -380,6 +632,7 @@ try{
 }catch(_){ }
 
 window.__srProgressionIntegrationConfigV305={
+  revision:462,
   familiarAppleRefunds:false,
   rebirthTutorial:false,
   stateAwareFamiliarPreview:true,
@@ -387,6 +640,7 @@ window.__srProgressionIntegrationConfigV305={
   forgeIntroV321:true,
   forgeRaidOnboardingV317:true,
   startMinerai:V317_START_MINERAI,
+  starterPacing:{skillLevel:SKILL_UNLOCK_LEVEL,firstSkillFree:true,buildIntroFloor:V462_BUILD_INTRO_FLOOR,familiarIntroFloor:V462_FAMILIAR_INTRO_FLOOR,starterEggFloor:V462_STARTER_EGG_FLOOR,starterHatchSeconds:V462_STARTER_HATCH_SECS,firstBossFloor:V461_FIRST_BOSS_FLOOR,manualStarterHatch:true,level1ExpBoost:true},
   destructiveMigration:false,
   saveSchemaChanged:true
 };

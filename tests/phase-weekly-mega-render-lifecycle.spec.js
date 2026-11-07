@@ -45,3 +45,17 @@ test('Weekly Mega panel follows canonical render lifecycle without a UI poller',
   await page.evaluate(() => nav('mega'));
   await expect(page.locator('#megaWeeklyV117')).toHaveCount(1);
 });
+
+
+test('V487 unlocks Mega Boss at hero level 15 while preserving history unlock', async ({ page }) => {
+  expect(source).toContain('const UNLOCK_LEVEL=15');
+  await page.goto('/index.html?smoke=1');
+  await page.waitForFunction(() => typeof megaRaidUnlocked === 'function' && window.__srMegaRewardsV329);
+  const out = await page.evaluate(() => ({
+    level14: megaRaidUnlocked({level:14,megaBossClears:{}}),
+    level15: megaRaidUnlocked({level:15,megaBossClears:{}}),
+    history: megaRaidUnlocked({level:1,megaBossClears:{'10':true}}),
+    advertised: window.__srMegaRewardsV329.unlockLevel
+  }));
+  expect(out).toEqual({level14:false,level15:true,history:true,advertised:15});
+});

@@ -1,7 +1,7 @@
 /* SHADOWREACH · forge comparison v95
    Résultats de Forge : compare immédiatement la pièce obtenue avec celle portée,
    affiche d'abord la stat de base et permet d'équiper sans passer par l'Inventaire.
-   Aucun objet existant, multiplicateur de rareté, coût ou sauvegarde n'est modifié.
+   V490: l'Or de Forge est versé uniquement lors d'un recyclage, avec +50%.
 */
 (function(){
   'use strict';
@@ -13,6 +13,9 @@
 
   var lastForgeResults = null;
   var nativeForgeSummon = forgeSummon;
+  var nativeRecycleItem = typeof recycleItem === 'function' ? recycleItem : null;
+  var nativeRecycleBatch = typeof recycleBatch === 'function' ? recycleBatch : null;
+  var nativeRecycleItemsByIds = typeof recycleItemsByIds === 'function' ? recycleItemsByIds : null;
 
   function itemById(id){
     if (!id) return null;
@@ -36,11 +39,44 @@
     return Math.round(computePower(trial) - before);
   }
 
+  function recycleGoldV490(rarity){
+    if(typeof forgeGoldRewardV470!=='function') return 0;
+    return Math.max(0,Math.floor(forgeGoldRewardV470(S,rarity)*1.5));
+  }
+  function payRecycleGoldV490(items){
+    var gold=(items||[]).reduce(function(sum,it){
+      if(!it || it.freeForgeBonus) return sum;
+      return sum+recycleGoldV490(it.rarity);
+    },0);
+    if(gold>0) update(function(st){st.gold=(Number(st.gold)||0)+gold;});
+    return gold;
+  }
+
   // Le moteur historique ne renvoyait que rareté/slot/puissance. On rattache ici
   // chaque ligne au véritable objet ajouté au sac, sans toucher au tirage lui-même.
   forgeSummon = function(n){
+    /* V490: snapshot de l'Or AVANT d'appeler le moteur historique.
+       On ne dépend plus de r.gold pour annuler le paiement du drop : quelle que
+       soit la façon dont le moteur crédite l'Or, le solde revient exactement au
+       niveau d'avant Forge, puis seul un recyclage reçoit son +50%.
+       Un résultat bonus gratuit ne crée jamais d'Or, même recyclé plus tard. */
+    var goldBefore=Math.max(0,Number(S.gold)||0);
     var before = new Set((S.inventory || []).map(function(x){ return x.id; }));
     var res = nativeForgeSummon.apply(this, arguments) || [];
+    var recycleGold=0;
+    res.forEach(function(r){
+      if(!r)return;
+      r.gold=0;
+      if(r.recycled&&!r.free){
+        var g=recycleGoldV490(r.rarity);
+        recycleGold+=g;
+        r.gold=g;
+      }
+    });
+    if((Number(S.gold)||0)!==goldBefore||recycleGold){
+      update(function(st){st.gold=goldBefore+recycleGold;});
+    }
+
     var fresh = (S.inventory || []).filter(function(x){ return !before.has(x.id); });
     var used = new Set();
     res.forEach(function(r){
@@ -49,10 +85,43 @@
         return !used.has(it.id) && it.slot === r.slot && it.rarity === r.rarity &&
           Math.abs(Number(it.power||0)-Number(r.power||0)) < 0.01;
       }) || fresh.find(function(it){ return !used.has(it.id) && it.slot === r.slot && it.rarity === r.rarity; });
-      if (hit) { used.add(hit.id); r.id = hit.id; }
+      if (hit) {
+        used.add(hit.id); r.id = hit.id;
+        if(r.free) hit.freeForgeBonus=true;
+      }
     });
     return res;
   };
+
+  /* V490: un équipement conservé ne paie rien au drop. S'il est recyclé plus
+     tard depuis l'Inventaire, l'Or est versé à ce moment précis. Les trois
+     chemins de recyclage manuel utilisent la même formule que le filtre Forge.
+     L'origine gratuite est persistée sur l'objet pour rester à 0 Or plus tard. */
+  if(nativeRecycleItem){
+    recycleItem=function(id){
+      var it=(S.inventory||[]).find(function(x){return x&&x.id===id;});
+      var dust=nativeRecycleItem.apply(this,arguments);
+      if(it&&dust>0) payRecycleGoldV490([it]);
+      return dust;
+    };
+  }
+  if(nativeRecycleBatch){
+    recycleBatch=function(rarity){
+      var items=(S.inventory||[]).filter(function(x){return x&&x.rarity===rarity;});
+      var out=nativeRecycleBatch.apply(this,arguments);
+      if(out&&out.n>0) out.gold=payRecycleGoldV490(items);
+      return out;
+    };
+  }
+  if(nativeRecycleItemsByIds){
+    recycleItemsByIds=function(ids){
+      var set=new Set(ids||[]);
+      var items=(S.inventory||[]).filter(function(x){return x&&set.has(x.id);});
+      var out=nativeRecycleItemsByIds.apply(this,arguments);
+      if(out&&out.n>0) out.gold=payRecycleGoldV490(items);
+      return out;
+    };
+  }
 
   function resultCard(r){
     var it=itemById(r.id);
@@ -88,8 +157,9 @@
     var kept=res.filter(function(r){return r&&!r.recycled;});
     var melted=res.filter(function(r){return r&&r.recycled;});
     var dust=melted.reduce(function(a,r){return a+(r.dust||0);},0);
+    var gold=melted.reduce(function(a,r){return a+(r.gold||0);},0);
     if(!kept.length){
-      toast(melted.length+' pièce'+(melted.length>1?'s':'')+' recyclée'+(melted.length>1?'s':'')+' · +'+fmt(dust)+' poussière',true);
+      toast(melted.length+' pièce'+(melted.length>1?'s':'')+' recyclée'+(melted.length>1?'s':'')+' · +'+fmt(dust)+' poussière · +'+fmt(gold)+' or',true);
       return;
     }
     kept=kept.slice().sort(function(a,b){
@@ -97,10 +167,10 @@
       return primaryBase(itemById(b.id))-primaryBase(itemById(a.id));
     });
     var best=kept[0], bestItem=itemById(best.id), bc=RARITY[best.rarity].c;
-    var intro='<div class="center">'+ic('hammer',32)+'</div><div class="modalT mt6" style="color:'+bc+'">FORGE RÉUSSIE</div>'+
+    var intro='<div class="center" style="margin-bottom:2px">'+ic('hammer',32)+'</div><div class="modalT mt6" style="color:'+bc+'">FORGE RÉUSSIE</div>'+
       '<div class="mute tiny center" style="line-height:1.45;margin:4px 0 9px">Comparaison directe avec l’équipement porté. Les pièces sont classées par <b>rareté</b>, puis par <b>stat de base</b>.</div>';
     var summary=bestItem?'<div class="notice" style="border-left-color:'+bc+'"><b style="color:'+bc+'">Meilleure sortie : '+esc(RARITY[bestItem.rarity].label)+' '+esc(SLOT_LABEL[bestItem.slot]||bestItem.slot)+'</b> · '+primaryLabel(bestItem)+' '+fmt(primaryBase(bestItem))+'</div>':'';
-    var meltedHtml=melted.length?'<div class="tiny b center mt8" style="color:var(--purpleLit)">'+ic('trash',11)+' '+melted.length+' recyclée'+(melted.length>1?'s':'')+' par le filtre · +'+fmt(dust)+' poussière</div>':'';
+    var meltedHtml=melted.length?'<div class="tiny b center mt8" style="color:var(--purpleLit)">'+ic('trash',11)+' '+melted.length+' recyclée'+(melted.length>1?'s':'')+' par le filtre · +'+fmt(dust)+' poussière · +'+fmt(gold)+' or</div>':'';
     openModal(intro+summary+'<div class="col gap7 mt8">'+kept.map(resultCard).join('')+'</div>'+meltedHtml+
       '<div class="mt10">'+btn('Continuer',{cls:'blue',act:'closeModal',style:'min-height:44px'})+'</div>','Comparer la Forge');
   };
@@ -113,4 +183,6 @@
   ACT.forgeDetailNow=function(id){
     if(itemById(id)) showItemDetail(id);
   };
+
+  window.__srForgeRecycleGoldV490={version:490,multiplier:1.5,dropGold:false,recycleOnly:true,freeBonusGold:false,absoluteGoldSnapshot:true,manualRecycleGold:true,freeOriginPersistent:true};
 })();

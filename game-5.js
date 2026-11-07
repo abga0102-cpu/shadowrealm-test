@@ -24,10 +24,11 @@ const EFFECT_TYPE = {
   skillCost: "COMPETENCES", passHp: "SURVIE",
   petDmg: "FAMILIERS", petHp: "FAMILIERS", eggFree: "FAMILIERS", eggSlot: "FAMILIERS",
   hatch_COMMUN: "FAMILIERS", hatch_PEU_COMMUN: "FAMILIERS", hatch_RARE: "FAMILIERS", hatch_EPIQUE: "FAMILIERS",
-  hatch_MYTHIQUE: "FAMILIERS", hatch_LEGENDAIRE: "FAMILIERS",
+  hatch_MYTHIQUE: "FAMILIERS", hatch_ANCESTRAL: "FAMILIERS", hatch_LEGENDAIRE: "FAMILIERS", hatch_DIVIN: "FAMILIERS",
   forgeTime: "VITESSE", research: "VITESSE", afkTime: "VITESSE",
   forgeCost: "RESSOURCES", forgeFree: "RESSOURCES", techCost: "RESSOURCES",
-  goldAll: "RESSOURCES", afkGain: "RESSOURCES", peRaid: "RESSOURCES",
+  goldAll: "RESSOURCES", afkGold: "RESSOURCES", afkMinerai: "RESSOURCES",
+  afkEssence: "RESSOURCES", afkEclat: "RESSOURCES", afkGain: "RESSOURCES", peRaid: "RESSOURCES",
   forgeMult: "SPECIAL", raidKey: "SPECIAL",
 };
 function nodeType(node) { return TREE_TYPES[EFFECT_TYPE[node.effect] || "RESSOURCES"]; }
@@ -208,58 +209,9 @@ function treeGraph(active, remain) {
     "<defs>" + defs + Object.keys(filters).map((k) => filters[k]).join("") + "</defs>" +
     caps + links + beads + nodes + "</svg>";
 }
-/* ---------------- REBIRTH ---------------- */
-function scrRebirth() {
-  const ok = canRebirth();
-  const prGainBonus = rb(S, "prgain");
-  const pr = Math.floor(prFromFloor(S.floor) * (1 + prGainBonus / 100));
-  const keepPct = rebirthKeepPct(S.rebirth.upgrades.keep || 0);
-  const after = floorAfterRebirth(S);
-  // only one reason to be blocked now: you are below the floor it needs
-
-  let body;
-  if (ok) {
-    body = '<div class="dim tiny mt4" style="line-height:1.4">Renais pour gagner <b style="color:var(--purpleLit)">' +
-        pr + " PR</b> · tu conserves " + keepPct + "% de ton étage (" + S.floor + " → " + after + ").</div>" +
-      '<div class="mt6">' + btn(ic("cycle", 14) + "Renaître · +" + pr + " PR", { cls: "purple", small: true, act: "doRebirth" }) + "</div>";
-  } else {
-    body = '<div class="dim small mt6" style="line-height:1.55">Atteins l' + "’" + "étage " + RULES.REBIRTH_UNLOCK_FLOOR +
-        " pour pouvoir renaître.<br>Étage actuel : " + S.floor + ".</div>" +
-      '<div class="mt8">' + meter((S.floor / RULES.REBIRTH_UNLOCK_FLOOR) * 100, C.purple,
-        S.floor + " / " + RULES.REBIRTH_UNLOCK_FLOOR) + "</div>" +
-      '<div class="mt8">' + btn(ic("cycle", 15) + "Renaître", { cls: "purple", act: "doRebirth", dis: true }) + "</div>";
-  }
-
-  return topbar("Rebirth", '<span class="pill" style="color:var(--purpleLit);border-color:var(--purple)">' + ic("cycle", 11) + fmt(S.rebirth.pr) + " PR</span>") +
-    '<div class="pad mt6">' +
-      '<div class="card frame center">' + ic("cycle", 26) +
-        '<div class="bb gt mt4" style="font-size:15px;letter-spacing:1.2px">REBIRTH ' + S.rebirth.count + "</div>" +
-        body +
-        '<div class="mute tiny mt10 row gap4" style="justify-content:center">' + ic("banner", 11) +
-        "Points de Guerre : " + fmt(S.warScore) + " (" + RULES.WAR_POINTS_PER_PR + "/PR)</div>" +
-      "</div>" +
-      '<div class="sect" style="margin:16px 0 9px">Améliorations permanentes</div>' +
-      '<div class="duo">' +
-      REBIRTH_UPGRADES.map((u) => {
-        const lvl = S.rebirth.upgrades[u.key] || 0;
-        const maxed = lvl >= u.max;
-        const cost = maxed ? 0 : rebirthUpgCost(u, lvl);
-        const uc = maxed ? C.green : C.purple;
-        // the level pill already says X / Y, so the duplicate progress bar goes
-        return '<div class="itemRow" style="border-left-color:' + uc + ';gap:5px;padding:3px 6px">' +
-          '<div class="imini" style="width:22px;height:22px;border-color:' + uc + '80;box-shadow:0 0 9px ' + uc + '33">' +
-          ic(u.icon, 13) + "</div>" +
-          '<div class="flex1" style="min-width:0"><div class="b" style="font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + u.label +
-            ' <span class="mute">' + lvl + "/" + u.max + "</span></div>" +
-          '<div class="mute b" style="font-size:9px">+' + (lvl * u.perLvl).toFixed(u.perLvl < 1 ? 2 : 0) + u.unit +
-          (maxed ? "" : " → +" + ((lvl + 1) * u.perLvl).toFixed(u.perLvl < 1 ? 2 : 0) + u.unit) + "</div></div>" +
-          (maxed ? '<span class="pill" style="padding:1px 6px;font-size:9px;color:' + C.green + ';border-color:' + C.green + '">MAX</span>'
-            : btn(cost, { small: true, cls: "purple", act: "buyRebirth", arg: u.key,
-                dis: S.rebirth.pr < cost, style: "padding:4px 7px;font-size:10px;width:auto" })) +
-          "</div>";
-      }).join("") + "</div>" +
-    '<div style="height:2px"></div></div>';
-}
+/* ---------------- RETIRED REBIRTH COMPAT ----------------
+   Old routes resolve to Ascension; no Rebirth UI/economy is kept in core. */
+function scrRebirth() { return scrAscension(); }
 
 /* ---------------- ASCENSION ---------------- */
 function scrAscension() {
@@ -387,7 +339,7 @@ function scrClassement() {
         '<div class="between"><b style="font-size:15px">' + esc(S.playerName) + "</b>" +
         '<b class="gt row gap4" style="font-size:15px">' + ic("castle", 14) + "Étage " + S.recordFloor + "</b></div>" +
         '<div class="between mt6"><span class="mute small">Niveau ' + S.level + " · Puissance " + fmt(S.power) + "</span>" +
-        '<span class="mute small">' + S.rebirth.count + " rebirth · Asc. " + S.ascension + "</span></div></div></div></div>" +
+        '<span class="mute small">Ascension · Palier ' + S.ascension + "</span></div></div></div></div>" +
       '<div class="sect" style="margin:16px 0 9px">Meilleurs joueurs</div>' +
       '<div class="notice">Le classement mondial vient du serveur FastAPI (<b>GET /api/leaderboard</b>), ' +
       "qui n'est pas disponible dans cette version fichier-unique. Tes records restent suivis localement.</div>" +
@@ -397,8 +349,7 @@ function scrClassement() {
         '<div class="kv"><span class="dim row gap6">' + ic("target", 13) + "Dernier checkpoint</span><b>" + S.checkpoint + "</b></div>" +
         '<div class="kv"><span class="dim row gap6">' + ic("skull", 13) + "Boss vaincus</span><b>" + Object.keys(S.bossClears).length + "</b></div>" +
         RAID_IDS.map((id) => '<div class="kv"><span class="dim row gap6">' + ic(RAIDS[id].icon, 13) + RAIDS[id].name +
-          '</span><b>niv. ' + S.raids[id].record + "</b></div>").join("") +
-        '<div class="kv"><span class="dim row gap6">' + ic("banner", 13) + 'Points de Guerre</span><b style="color:var(--purpleLit)">' + fmt(S.warScore) + "</b></div>" +
+          '</span><b>niv. ' + (S.raids[id].record > 0 ? raidLevelLabel(S.raids[id].record) : "—") + "</b></div>").join("") +
       "</div></div>" +
     '<div style="height:2px"></div></div>';
 }
@@ -431,10 +382,10 @@ function scrParametres() {
           ["Niveau", S.level + " / " + RULES.MAX_LEVEL, ""],
           ["Étage · record", S.floor + " · " + S.recordFloor, ""],
           ["Puissance", fmt(S.power), "color:var(--goldLit)"],
-          ["Rebirth · Asc.", S.rebirth.count + " · " + S.ascension, ""],
+          ["Ascension", "Palier " + S.ascension, ""],
           ["Environnement", ENV_NAMES[combat && combat.bg] || "—", ""],
-          ["Jour", String(daysElapsed(S)), "color:var(--goldLit)"],
-          ["Jours simulés", String(S.testDays || 0), ""],
+          ["Jour", String(simulatedDayCount(S)), "color:var(--goldLit)"],
+          ["Temps simulé", fmtTime(Math.max(0, Number(S.simulatedMs) || 0) / 1000), ""],
         ].map((r) => '<div style="width:50%"><div class="kv" style="border:none;padding:2px 0">' +
           '<span class="dim">' + r[0] + '</span><b style="' + r[2] + '">' + r[1] + "</b></div></div>").join("") + "</div>" +
       "</div>" +
@@ -445,19 +396,24 @@ function scrParametres() {
           btn(ic("save", 14) + "Sauver", { small: true, cls: "green", act: "saveNow" }) +
           btn(ic("upload", 14) + "Exporter", { small: true, cls: "ghost", act: "exportSave" }) +
           btn(ic("download", 14) + "Importer", { small: true, cls: "ghost", act: "importSave" }) +
-        '</div><div class="divider"></div><div class="between"><span class="dim tiny">Version web · ' + APP_BUILD + '</span>' +
+        '</div><div class="mt10">' + btn("Récupérer une ancienne partie", { small: true, cls: "ghost", act: "recoverSave" }) +
+        '</div><div class="divider"></div><div class="between"><span class="dim tiny">Version web · ' + APP_BUILD + '<br>Récompenses : ' + (window.__srFusionRewardsBuild||'ancien affichage') + ' / ' + (window.__srFusionClaimBuild||'ancien paiement') + '</span>' +
           btn("Forcer la mise à jour", { small: true, cls: "blue", act: "freshReload", style: "width:auto;padding:5px 10px" }) +
         "</div></div>") +
-      fold("tools", "Outils de test", '<div class="card"><div class="dim small">Comme dans l\'app d\'origine : avance d\'une journée complète ' +
-        "(recharge les clés, termine les recherches et les œufs, applique les gains AFK plafonnés).</div>" +
-        '<div class="mt10">' + btn(ic("forward", 14) + "Simuler 1 jour", { cls: "blue", small: true, act: "warpDay" }) + "</div></div>") +
+      fold("testTime", "Outils de test", '<div class="card"><div class="dim small" style="line-height:1.5">' +
+        'Avance le temps de la partie sans attendre réellement. La Forge, les recherches, les œufs déjà en incubation, ' +
+        'l\'Autonomie, les resets quotidiens et le compteur <b>Jour</b> suivent tous le même temps simulé.</div>' +
+        '<div class="row gap6 mt10" style="flex-wrap:wrap">' +
+          btn(ic("forward", 14) + "Simuler 9 h", { cls: "blue", small: true, act: "simulateTime", arg: "9", style: "width:auto;min-width:130px" }) +
+          btn(ic("forward", 14) + "Simuler 1 jour", { cls: "blue", small: true, act: "simulateTime", arg: "24", style: "width:auto;min-width:130px" }) +
+        '</div><div class="mute tiny mt8">9 h s\'additionnent exactement au temps simulé. Le numéro de Jour ne change que lorsqu\'un vrai bloc de 24 h cumulé est franchi.</div></div>') +
       fold("account", "Compte", '<div class="card"><div class="dim small" style="line-height:1.5">L\'app d\'origine gère un mode invité et ' +
         "« Continuer avec Google » via le backend Emergent, avec migration de progression. " +
         "Cette version est locale et anonyme.</div>" +
         '<div class="mt10">' + btn(ic("trash", 14) + "Réinitialiser la progression", { cls: "red", small: true, act: "askReset" }) + "</div></div>") +
       fold("about", "À propos", '<div class="card"><div class="dim small" style="line-height:1.6">' +
         "<b>Shadowreach</b> — portage fichier-unique du projet Expo/React&nbsp;Native + FastAPI. " +
-        "Moteur de combat, forge, compétences, familiers, raids, arbre, rebirth et ascension repris " +
+        "Moteur de combat, forge, compétences, familiers, raids, arbre et ascension repris " +
         "des mêmes formules (<code>src/game/config.ts</code>).<br><br>" +
         "Non inclus, car nécessitant le serveur : chat monde/clan, clans, classement mondial, " +
         "connexion Google, sauvegarde cloud, achats intégrés." +
@@ -468,37 +424,31 @@ function scrParametres() {
 
 const ARENA_PROGRESSION = {
   /* Ces profils restent des hypothèses de rythme tant qu'aucune télémétrie réelle
-     n'existe. La V3 leur donne cependant une progression interne cohérente avec
-     les systèmes du jeu : Forge, Rebirth, Arbre, Familiers et niveaux de Compétences. */
+     n'existe. Ils suivent uniquement les systèmes actuellement actifs. */
   j1:  { label:"J1",  forge:6,  crafts:5,  petRarity:"COMMUN",   petLevel:4,  petStars:0,
          skillRarity:0, skillLevel:2, skillStars:0, statPts:12, spread:.14,
-         rebirth:{}, tree:{passDmg:0,passHp:0,skillDmg:0,petDmg:0,petHp:0}, globalAscension:0, forgeStars:0 },
+tree:{passDmg:0,passHp:0,skillDmg:0,petDmg:0,petHp:0}, globalAscension:0, forgeStars:0 },
   j7:  { label:"J7",  forge:18, crafts:12, petRarity:"RARE",     petLevel:7,  petStars:0,
          skillRarity:1, skillLevel:6, skillStars:0, statPts:35, spread:.11,
-         rebirth:{damage:2,life:2,atkspeed:1,critdmg:1,dmgred:1},
-         tree:{passDmg:4,passHp:4,skillDmg:4,petDmg:4,petHp:4}, globalAscension:0, forgeStars:0 },
+tree:{passDmg:4,passHp:4,skillDmg:4,petDmg:4,petHp:4}, globalAscension:0, forgeStars:0 },
   j30: { label:"J30", forge:35, crafts:28, petRarity:"EPIQUE",   petLevel:10, petStars:0,
          skillRarity:2, skillLevel:16, skillStars:0, statPts:85, spread:.09,
-         rebirth:{damage:7,life:7,atkspeed:3,critdmg:3,dmgred:5,regen:2,lifesteal:2},
-         tree:{passDmg:12,passHp:12,skillDmg:12,petDmg:10,petHp:10}, globalAscension:0, forgeStars:0 },
+tree:{passDmg:12,passHp:12,skillDmg:12,petDmg:10,petHp:10}, globalAscension:0, forgeStars:0 },
   j90: { label:"J90", forge:50, crafts:60, petRarity:"MYTHIQUE", petLevel:14, petStars:1,
          skillRarity:3, skillLevel:30, skillStars:0, statPts:170,spread:.07,
-         rebirth:{damage:15,life:15,atkspeed:5,critdmg:5,dmgred:10,regen:4,lifesteal:4},
-         tree:{passDmg:24,passHp:24,skillDmg:24,petDmg:20,petHp:20}, globalAscension:1, forgeStars:0 },
+tree:{passDmg:24,passHp:24,skillDmg:24,petDmg:20,petHp:20}, globalAscension:1, forgeStars:0 },
 };
 const ARENA_BUILDS = {
   random:{label:"Aléatoire"}, equilibre:{label:"Équilibré"}, dps:{label:"DPS"},
   tank:{label:"Tank"}, crit:{label:"Critique"}, sustain:{label:"Vol de vie"}, skills:{label:"Compétences"}
 };
 const ARENA_SKILL_RANK={COMMUN:0,RARE:1,EPIQUE:2,MYTHIQUE:3,LEGENDAIRE:4,DIVIN:5};
-function arenaRbValue(prog,key){
-  const def=REBIRTH_UPGRADES.find(u=>u.key===key);return def?((prog.rebirth&&prog.rebirth[key])||0)*def.perLvl:0;
-}
 function arenaPlayerProfile() {
   const wt=WEAPON_TYPES[D.weapon]||WEAPON_TYPES.epee;
   const active=S.skillSlots.slice(0,skillSlotCount(S)).map(id=>SKILL_BY_ID[id]&&S.skills[id]?{def:SKILL_BY_ID[id],level:S.skills[id].level||1,stars:starsOf(S,"skill")}:null)
     .filter(Boolean);
   return {name:S.playerName||"Héros",maxHP:Math.max(1,D.maxHP),damage:Math.max(1,D.damage),
+    defense:Math.max(0,D.defense||0),defenseReduction:Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,D.defenseReduction||0)),
     attackSpeed:Math.max(.1,D.attackSpeed*(wt.speed||1)),hit:wt.hit||1,critChance:Math.max(0,D.critChance||0),
     critMult:Math.max(1,D.critMult||1.5),critRed:Math.max(0,D.critRed||0),dmgRed:Math.min(85,Math.max(0,D.dmgRed||0)),
     blockChance:Math.min(75,Math.max(0,D.blockChance||0)),doubleAtk:Math.min(100,Math.max(0,D.doubleAtk||0)),
@@ -510,7 +460,8 @@ function arenaProfilePower(p) {
   const crit=1+(p.critChance/100)*Math.max(0,p.critMult-1), dbl=1+Math.min(100,p.doubleAtk)/100;
   const style=1+Math.max(0,p.styleBonus)/100, skill=1+(Math.max(0,p.skillDmg)/100)*.25+(Math.max(0,p.skillCd)/100)*.25;
   const offense=p.damage*p.attackSpeed*(p.hit||1)*crit*dbl*style*skill;
-  const mitigation=1/Math.max(.15,1-Math.min(85,p.dmgRed)/100), block=1+Math.min(75,p.blockChance)/200;
+  const defenseMitigation=1/Math.max(.30,1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,p.defenseReduction||0))/100);
+  const mitigation=defenseMitigation/Math.max(.15,1-Math.min(85,p.dmgRed)/100), block=1+Math.min(75,p.blockChance)/200;
   const sustain=1+Math.min(50,p.lifesteal)/200+Math.min(50,p.regen)/250;
   return Math.max(1,Math.floor(Math.sqrt(Math.max(1,offense)*Math.max(1,p.maxHP*mitigation*block*sustain))*1.5));
 }
@@ -531,6 +482,7 @@ function arenaItemScore(it){
   const p={maxHP:Math.max(1,BASE.hp+it.hp),damage:Math.max(1,BASE.damage+it.damage),
     attackSpeed:BASE.attackSpeed*(1+Math.min(20,A("atkspeed"))/100)*(wt.speed||1),hit:wt.hit||1,
     critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+A("crit")),critMult:BASE.critMult+A("critdmg")/100,critRed:0,
+    defense:equipmentDefenseRating(it),defenseReduction:defenseReductionPct(equipmentDefenseRating(it)),
     dmgRed:0,blockChance:Math.min(75,A("block")),doubleAtk:Math.min(100,A("double")),lifesteal:Math.max(0,A("lifesteal")),regen:0,
     styleBonus:wt.attackType==="MELEE"?A("melee"):A("ranged"),skillDmg:A("skilldmg"),skillCd:Math.min(80,A("skillcd"))};
   p.maxHP=Math.floor(p.maxHP*(1+A("hp")/100));p.damage=Math.floor(p.damage*(1+A("dmg")/100));return arenaProfilePower(p);
@@ -551,24 +503,30 @@ function arenaSyntheticSkills(prog,kind){
     .map(def=>({def,level:Math.max(1,Math.round(prog.skillLevel*(.85+Math.random()*.3))),stars:prog.skillStars||0}));
 }
 function arenaSyntheticBase(prog,kind){
-  const gear=arenaSyntheticGear(prog);let hp=BASE.hp,dmg=BASE.damage,af={};let weapon="epee";
-  Object.values(gear).forEach(it=>{hp+=it.hp;dmg+=it.damage;if(it.slot==="arme")weapon=it.weaponType||weapon;(it.affixes||[]).forEach(a=>af[a.key]=(af[a.key]||0)+a.value);});
+  const gear=arenaSyntheticGear(prog);let hp=BASE.hp,dmg=BASE.damage,defense=0,af={};let weapon="epee";
+  Object.values(gear).forEach(it=>{hp+=it.hp;dmg+=it.damage;defense+=equipmentDefenseRating(it);if(it.slot==="arme")weapon=it.weaponType||weapon;(it.affixes||[]).forEach(a=>af[a.key]=(af[a.key]||0)+a.value);});
   const A=k=>af[k]||0, pts=prog.statPts;
-  let hpPts=.42,dmgPts=.42,critPts=.16;if(kind==="tank"){hpPts=.68;dmgPts=.25;critPts=.07}else if(kind==="dps"||kind==="crit"||kind==="skills"){hpPts=.27;dmgPts=.55;critPts=.18}
-  hp+=pts*hpPts*STATS.SANTE.perPoint;dmg+=pts*dmgPts*STATS.DEGATS.perPoint;
+  let hpPts=.50,dmgPts=.40,critRedPts=.10;
+  if(kind==="tank"){hpPts=.70;dmgPts=.20;critRedPts=.10}
+  else if(kind==="dps"||kind==="crit"||kind==="skills"){hpPts=.30;dmgPts=.60;critRedPts=.10}
+  const hpStatPoints=pts*hpPts,dmgStatPoints=pts*dmgPts;
+  hp=hp*(1+hpStatPoints*STATS.SANTE.perPointPct/100)+hpStatPoints*STATS.SANTE.perPointFlat;
+  dmg=dmg*(1+dmgStatPoints*STATS.DEGATS.perPointPct/100)+dmgStatPoints*STATS.DEGATS.perPointFlat;
   const tree=prog.tree||{};
   const petBase=petBonusAt(prog.petRarity,Math.min(prog.petLevel,petMaxLevel(prog.petRarity)),prog.petStars||0);
   const petHpPct=petBase*(1+(tree.petHp||0)/100), elem=PET_ELEMENTS[Math.floor(Math.random()*PET_ELEMENTS.length)].id;
   const petDmgPct=petHpPct*(1+(tree.petDmg||0)/100)*(elem==="normal"?1.10:1);
   const forgePct=prog.forge*2;
-  hp*=(1+arenaRbValue(prog,"life")/100+petHpPct/100+forgePct/200+(tree.passHp||0)/100);
-  dmg*=(1+arenaRbValue(prog,"damage")/100+petDmgPct/100+forgePct/100+(tree.passDmg||0)/100);
+  hp*=(1+petHpPct/100+forgePct/200+(tree.passHp||0)/100);
+  dmg*=(1+petDmgPct/100+forgePct/100+(tree.passDmg||0)/100);
   const wt=WEAPON_TYPES[weapon]||WEAPON_TYPES.epee;
   let p={name:"Bot",maxHP:Math.max(1,Math.floor(hp*(1+A("hp")/100))),damage:Math.max(1,Math.floor(dmg*(1+A("dmg")/100))),
-    attackSpeed:BASE.attackSpeed*(1+arenaRbValue(prog,"atkspeed")/100)*(1+Math.min(20,A("atkspeed"))/100)*(elem==="electrique"?1.08:1)*(wt.speed||1),hit:wt.hit||1,
-    critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+pts*critPts*STATS.CRIT.perPoint+A("crit")),critMult:BASE.critMult+arenaRbValue(prog,"critdmg")/100+A("critdmg")/100,critRed:0,
-    dmgRed:Math.min(85,arenaRbValue(prog,"dmgred")),blockChance:Math.min(75,A("block")),doubleAtk:Math.min(100,A("double")),
-    lifesteal:Math.max(0,arenaRbValue(prog,"lifesteal")+A("lifesteal")),regen:Math.max(0,arenaRbValue(prog,"regen")),
+    defense:Math.max(0,Math.round(defense)),defenseReduction:defenseReductionPct(Math.max(0,Math.round(defense))),
+    attackSpeed:BASE.attackSpeed*(1+Math.min(20,A("atkspeed"))/100)*(elem==="electrique"?1.08:1)*(wt.speed||1),hit:wt.hit||1,
+    critChance:Math.min(CRIT_CHANCE_CAP,BASE.critChance+A("crit")),critMult:BASE.critMult+A("critdmg")/100,
+    critRed:Math.min(CRIT_RED_CAP,pts*critRedPts*STATS.CRITRED.perPoint),
+    dmgRed:0,blockChance:Math.min(75,A("block")),doubleAtk:Math.min(100,A("double")),
+    lifesteal:Math.max(0,A("lifesteal")),regen:0,
     styleBonus:wt.attackType==="MELEE"?A("melee"):A("ranged"),skillDmg:(tree.skillDmg||0)+A("skilldmg"),skillCd:Math.min(80,A("skillcd")),
     skills:arenaSyntheticSkills(prog,kind),petElem:elem,gear,source:prog.label};
   if(kind==="dps"){p.damage*=1.12;p.maxHP*=.92} if(kind==="tank"){p.maxHP*=1.18;p.damage*=.92;p.dmgRed=Math.min(85,p.dmgRed+8);p.blockChance=Math.min(75,p.blockChance+6)}
@@ -592,9 +550,10 @@ function arenaExpectedBasicDps(att, def){
   const doubleMul=1+Math.min(100,Math.max(0,att.doubleAtk||0))/100;
   const blockMul=1-Math.min(75,Math.max(0,def.blockChance||0))/100;
   const mitigation=1-Math.min(85,Math.max(0,def.dmgRed||0))/100;
+  const defenseMul=1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,def.defenseReduction||0))/100;
   const tox=att.petElem==="toxique"?1.10:1;
   return Math.max(0,(att.damage||1)*(att.hit||1)*Math.max(.1,att.attackSpeed||1)*
-    (1+Math.max(0,att.styleBonus||0)/100)*critMul*doubleMul*blockMul*mitigation*tox);
+    (1+Math.max(0,att.styleBonus||0)/100)*critMul*doubleMul*blockMul*mitigation*defenseMul*tox);
 }
 function arenaSkillPressure(p){
   /* V3.2: les effets continus restent moyennés pour garder 1 000 simulations
@@ -624,7 +583,7 @@ function arenaStrike(att,def){
   if(Math.random()*100<def.blockChance)return{dmg:0,heal:0};
   let dmg=att.damage*(att.hit||1)*(1+Math.max(0,att.styleBonus)/100);
   if(Math.random()*100<att.critChance)dmg*=1+Math.max(0,att.critMult-1)*(1-Math.min(80,def.critRed)/100);
-  dmg*=1-Math.min(85,def.dmgRed)/100;dmg*=.90+Math.random()*.20;if(Math.random()*100<att.doubleAtk)dmg*=2;dmg=Math.max(1,dmg);
+  dmg*=1-Math.min(85,def.dmgRed)/100;dmg*=1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,def.defenseReduction||0))/100;dmg*=.90+Math.random()*.20;if(Math.random()*100<att.doubleAtk)dmg*=2;dmg=Math.max(1,dmg);
   return{dmg,heal:dmg*Math.max(0,att.lifesteal)/100};
 }
 function arenaDuel(player,bot){
@@ -643,7 +602,7 @@ function arenaDuel(player,bot){
     ah=Math.min(player.maxHP,ah+player.maxHP*(Math.max(0,player.regen)/100)*dt+aps.heal*dt);
     bh=Math.min(bot.maxHP,bh+bot.maxHP*(Math.max(0,bot.regen)/100)*dt+bps.heal*dt);
 
-    const aMit=1-Math.min(85,aDef.dmgRed)/100,bMit=1-Math.min(85,bDef.dmgRed)/100;
+    const aMit=(1-Math.min(85,aDef.dmgRed)/100)*(1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,aDef.defenseReduction||0))/100),bMit=(1-Math.min(85,bDef.dmgRed)/100)*(1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,bDef.defenseReduction||0))/100);
     const aVuln=1+aps.vuln/100,bVuln=1+bps.vuln/100;
     const aTox=player.petElem==="toxique"?1.10:1,bTox=bot.petElem==="toxique"?1.10:1;
     /* V3.3 : Malédiction et Toxique amplifient toutes les sources offensives,
@@ -775,7 +734,7 @@ function scrArenaSim(){
     const versusRows=builds.map(a=>'<tr><td style="padding:6px;white-space:nowrap"><b>'+ARENA_BUILDS[a].label+'</b></td>'+builds.map(d=>cell(m.versus[a][d])).join('')+'</tr>').join('');
     matrix='<div class="card mt8"><div class="b">Analyse complète · '+fmt(m.total)+' combats</div><div class="dim tiny mt4">Calcul asynchrone par lots · aucun impact sur ta sauvegarde.</div><div class="sect mt12">Ton héros · 100 % Puissance</div><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Build bot</th><th style="padding:6px">Tes victoires</th></tr>'+equalRows+'</table></div><div class="sect mt12">Progression naturelle détaillée</div><div style="overflow:auto"><table style="min-width:650px;width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Profil</th>'+builds.map(k=>'<th style="padding:6px">'+ARENA_BUILDS[k].label+'</th>').join('')+'</tr>'+naturalRows+'</table></div><div class="sect mt12">Matrice 6×6 · archétypes</div><div class="dim tiny mt2">Ligne = attaquant · colonne = défenseur · tous normalisés au même benchmark de Puissance ('+fmt(m.playerPower)+').</div><div style="overflow:auto" class="mt6"><table style="min-width:650px;width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px">Att. ↓ / Déf. →</th>'+builds.map(k=>'<th style="padding:6px">'+ARENA_BUILDS[k].label+'</th>').join('')+'</tr>'+versusRows+'</table></div><div class="dim tiny mt8">Lecture : ~50 % indique un matchup proche. Une ligne très souvent au-dessus de 55 % signale un archétype potentiellement dominant ; une colonne très souvent sous 45 % signale un défenseur particulièrement difficile à battre.</div></div>';}
   const natural=arenaSimCfg.ratio==="natural",busy=!!arenaMatrixRun;
-  return topbar("Arène",'<span class="pill" style="color:#8FEFF4;border-color:#3F8FA0">ARÈNE V4</span>')+'<div class="pad"><div class="card" style="border-color:#3F8FA055"><div class="b">Laboratoire PvP</div><div class="dim small mt4" style="line-height:1.45">Les bots utilisent une progression synthétique indépendante : Forge, raretés, affixes, Rebirth, Arbre, familiers et niveaux de Compétences. J1/J7/J30/J90 restent des hypothèses tant que nous n’avons pas de télémétrie réelle.</div></div><div class="sect mt12">Progression simulée</div>'+seg(Object.entries(ARENA_PROGRESSION).map(([k,v])=>[k,v.label]),'arenaProg',arenaSimCfg.progression)+'<div class="dim tiny mt4">'+prog.label+' · Forge '+prog.forge+' · familier '+RARITY[prog.petRarity].label+' niv.'+prog.petLevel+' · compétences niv.~'+prog.skillLevel+' · '+prog.crafts+' tirages/slot.</div><div class="sect mt12">Matchmaking de test</div>'+seg([['natural','Naturel'],[50,'50%'],[75,'75%'],[100,'100%'],[125,'125%'],[150,'150%'],[200,'200%']],'arenaRatio',arenaSimCfg.ratio)+'<div class="dim tiny mt4">'+(natural?'Naturel : aucune normalisation sur ta Puissance. Le bot conserve la puissance produite par sa progression J1/J7/J30/J90.':'Pourcentage : la population est normalisée vers ta Puissance afin d’isoler l’efficacité des builds à puissance comparable.')+'</div><div class="sect mt12">Type de build</div>'+seg(Object.entries(ARENA_BUILDS).map(([k,v])=>[k,v.label]),'arenaBuild',arenaSimCfg.build)+'<div class="sect mt12">Nombre de combats</div>'+seg([[1,'1'],[100,'100'],[1000,'1 000']],'arenaCount',arenaSimCfg.count)+(arenaLiveResult?'<div class="card mt8" style="border-color:'+(arenaLiveResult.won?'#3FB950':'#E5484D')+'66"><div class="b" style="color:'+(arenaLiveResult.won?'#57E07A':'#FF6B72')+'">'+(arenaLiveResult.won?'Victoire en duel':'Défaite en duel')+'</div><div class="dim tiny mt2">Dernier combat réel contre '+esc(arenaLiveResult.bot?.name||'un bot')+'. Aucun gain ni perte.</div></div>':'')+'<button class="btn green mt12" style="width:100%" data-act="arenaLiveStart" '+(busy?'disabled':'')+'>'+ic('swords',14)+' Lancer un combat réel</button><button class="btn blue mt8" style="width:100%" data-act="arenaRun" '+(busy?'disabled':'')+'>Simuler '+fmt(arenaSimCfg.count)+' combat'+(arenaSimCfg.count>1?'s':'')+'</button><button class="btn mt8" style="width:100%" data-act="arenaMatrix" '+(busy?'disabled':'')+'>Analyser le méta · 30 000 combats</button>'+progress+result+matrix+'<div class="card mt8"><div class="dim tiny" style="line-height:1.5"><b style="color:var(--text)">V4 :</b> le duel temps réel utilise le moteur de combat visible ; la grande analyse s’exécute désormais par petits lots pour préserver la fluidité mobile. Elle inclut une vraie matrice 6×6 entre archétypes, plus le détail J1/J7/J30/J90.</div></div></div>';
+  return topbar("Arène",'<span class="pill" style="color:#8FEFF4;border-color:#3F8FA0">ARÈNE V4</span>')+'<div class="pad"><div class="card" style="border-color:#3F8FA055"><div class="b">Laboratoire PvP</div><div class="dim small mt4" style="line-height:1.45">Les bots utilisent une progression synthétique indépendante : Forge, raretés, affixes, Arbre, familiers et niveaux de Compétences. J1/J7/J30/J90 restent des hypothèses tant que nous n’avons pas de télémétrie réelle.</div></div><div class="sect mt12">Progression simulée</div>'+seg(Object.entries(ARENA_PROGRESSION).map(([k,v])=>[k,v.label]),'arenaProg',arenaSimCfg.progression)+'<div class="dim tiny mt4">'+prog.label+' · Forge '+prog.forge+' · familier '+RARITY[prog.petRarity].label+' niv.'+prog.petLevel+' · compétences niv.~'+prog.skillLevel+' · '+prog.crafts+' tirages/slot.</div><div class="sect mt12">Matchmaking de test</div>'+seg([['natural','Naturel'],[50,'50%'],[75,'75%'],[100,'100%'],[125,'125%'],[150,'150%'],[200,'200%']],'arenaRatio',arenaSimCfg.ratio)+'<div class="dim tiny mt4">'+(natural?'Naturel : aucune normalisation sur ta Puissance. Le bot conserve la puissance produite par sa progression J1/J7/J30/J90.':'Pourcentage : la population est normalisée vers ta Puissance afin d’isoler l’efficacité des builds à puissance comparable.')+'</div><div class="sect mt12">Type de build</div>'+seg(Object.entries(ARENA_BUILDS).map(([k,v])=>[k,v.label]),'arenaBuild',arenaSimCfg.build)+'<div class="sect mt12">Nombre de combats</div>'+seg([[1,'1'],[100,'100'],[1000,'1 000']],'arenaCount',arenaSimCfg.count)+(arenaLiveResult?'<div class="card mt8" style="border-color:'+(arenaLiveResult.won?'#3FB950':'#E5484D')+'66"><div class="b" style="color:'+(arenaLiveResult.won?'#57E07A':'#FF6B72')+'">'+(arenaLiveResult.won?'Victoire en duel':'Défaite en duel')+'</div><div class="dim tiny mt2">Dernier combat réel contre '+esc(arenaLiveResult.bot?.name||'un bot')+'. Aucun gain ni perte.</div></div>':'')+'<button class="btn green mt12" style="width:100%" data-act="arenaLiveStart" '+(busy?'disabled':'')+'>'+ic('swords',14)+' Lancer un combat réel</button><button class="btn blue mt8" style="width:100%" data-act="arenaRun" '+(busy?'disabled':'')+'>Simuler '+fmt(arenaSimCfg.count)+' combat'+(arenaSimCfg.count>1?'s':'')+'</button><button class="btn mt8" style="width:100%" data-act="arenaMatrix" '+(busy?'disabled':'')+'>Analyser le méta · 30 000 combats</button>'+progress+result+matrix+'<div class="card mt8"><div class="dim tiny" style="line-height:1.5"><b style="color:var(--text)">V4 :</b> le duel temps réel utilise le moteur de combat visible ; la grande analyse s’exécute désormais par petits lots pour préserver la fluidité mobile. Elle inclut une vraie matrice 6×6 entre archétypes, plus le détail J1/J7/J30/J90.</div></div></div>';
 }
 
 function scrHub(title, entries) {
@@ -793,10 +752,9 @@ function scrDefis(){ return scrHub("Défis", [
   {label:"Arène",icon:"swords",go:"arena",desc:"Affronte des bots en temps réel ou analyse des milliers de combats sans récompense."},
   {label:"Raids",icon:"flame",go:"raid",desc:"Raids spécialisés et ressources ciblées."},
   {label:"Méga-Boss",icon:"skull",go:"mega",desc:"Combats majeurs et récompenses de progression."},
-  {label:"Sanctuaire",icon:"flame",go:"sanctuaire",desc:"Fusion de ressources et recettes découvertes."}
+  // Sanctuaire temporarily paused; preserved in source and player saves.
 ]); }
 function scrProgression(){ return scrHub("Progression", [
-  {label:"Rebirth",icon:"cycle",go:"rebirth",desc:"Réinitialisation stratégique contre des PR permanents."},
   {label:"Ascension",icon:"star",go:"ascension",desc:"Progression de haut niveau et étoiles d'Ascension."}
 ]); }
 
@@ -807,7 +765,7 @@ const SCREENS = {
   heros: scrHerosStats,
   accueil: scrAccueil, personnage: scrEquipement, equipement: scrEquipement,
   inventaire: scrEquipement, competences: scrCompetences, familiers: scrFamiliers,
-  raid: scrRaid, mega: scrMegaRaid, sanctuaire: scrSanctuaire, arena: scrArenaSim, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
+  raid: scrRaid, mega: scrMegaRaid, arena: scrArenaSim, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
   boutique: scrBoutique, evenement: scrEvenement, classement: scrClassement,
   developpement: scrDeveloppement, defis: scrDefis, progression: scrProgression,
   parametres: scrParametres,
@@ -818,7 +776,7 @@ const SCREENS = {
   clan: () => scrServerOnly("Clan", [["GET /api/clans", "liste des clans"], ["POST /api/clans", "créer"],
     ["POST /api/clans/join", "rejoindre"], ["POST /api/clans/leave", "quitter"],
     ["POST /api/clans/war", "points de guerre"]],
-    "Les clans (création, adhésion, points de guerre issus du Rebirth) sont stockés côté serveur dans MongoDB."),
+    "Les clans (création, adhésion et guerre de clans) sont stockés côté serveur dans MongoDB."),
 };
 
 /* ---- level-up celebration (sheet §14) ---- */
@@ -865,7 +823,8 @@ function rewardPop(title, sub, boss, action, arg, ttl, kind) {
     document.getElementById("app").appendChild(feed);
   }
   const el = document.createElement("div");
-  el.className = "rewardPop" + (boss ? " boss" : "") + (kind ? " " + kind : "") + (action ? " clickable" : "");
+  el.className = "rewardPop" + (boss ? " boss" : "") + (kind ? " " + kind : "") + (action ? " clickable" : "") +
+    (title === "Œuf prêt à éclore" ? " eggReady" : "");
   el.innerHTML = '<div class="rpT">' + esc(title) + '</div>' + (sub ? '<div class="rpS">' + esc(sub) + '</div>' : "");
   if (action) {
     el.addEventListener("click", () => {
@@ -955,15 +914,19 @@ function checkTimerNotifications() {
     timerNoticeSeen.tree = null;
   }
 
-  // Chaque œuf terminé reçoit sa propre notification.
+  // V379: Home owns one consolidated ready-egg capsule.
+  // Do not duplicate it with stacked reward cards over the stage.
   const alive = {};
+  const homeEggCapsule = route === "accueil" || !!document.querySelector(".srEggReadyV377");
   S.eggs.forEach((e) => {
     if (!eggIsHatching(e)) return;
     alive[e.id] = true;
     if (e.hatchEnd <= now && !timerNoticeSeen.eggs[e.id]) {
       timerNoticeSeen.eggs[e.id] = true;
-      rewardPop("Œuf prêt à éclore", e.rarity + " · " + (e.species || "Familier"),
-        false, "eggFinished", e.id, 9000);
+      if (!homeEggCapsule) {
+        rewardPop("Œuf prêt à éclore", e.rarity + " · " + (e.species || "Familier"),
+          false, "eggFinished", e.id, 9000);
+      }
     }
   });
   Object.keys(timerNoticeSeen.eggs).forEach((id) => {
@@ -974,34 +937,32 @@ function checkTimerNotifications() {
 let tutorialCurrentKey = null;
 let tutorialGuideTarget = null;
 
-/* Guided tutorial flows. Grouped systems deliberately use two visual steps:
-   first the parent hub on Combat, then the exact sub-feature inside that hub. */
+/* V459 · System introductions are contextual.
+   They no longer begin on Home and then ask the player to navigate through a
+   hub. A one-time intro is shown when the player actually enters that system. */
 const TUTORIAL_FLOWS = {
   competence: { parent: "developpement", parentLabel: "Développement", child: "competences", childLabel: "Compétences" },
   familier:   { parent: "developpement", parentLabel: "Développement", child: "familiers", childLabel: "Familiers" },
   tree:       { parent: "developpement", parentLabel: "Développement", child: "arbre", childLabel: "Arbre personnel" },
   raid:       { parent: "defis", parentLabel: "Défis", child: "raid", childLabel: "Raids" },
   megaBoss:   { parent: "defis", parentLabel: "Défis", child: "mega", childLabel: "Méga-Boss" },
-  rebirth:    { parent: "progression", parentLabel: "Progression", child: "rebirth", childLabel: "Rebirth" }
+};
+const TUTORIAL_ROUTE_KEYS = {
+  accueil: ["combat", "forge"],
+  equipement: ["equipement"],
+  competences: ["competence"],
+  familiers: ["familier"],
+  raid: ["raid"],
+  mega: ["megaBoss"],
+  arbre: ["tree"],
 };
 
 function tutorialGuideInfo(key) {
-  const flow = TUTORIAL_FLOWS[key];
-  if (flow) {
-    if (route === flow.parent) {
-      return { selector: '[data-act="go"][data-arg="' + flow.child + '"]', next: flow.child, label: "Ouvrir " + flow.childLabel };
-    }
-    if (route === flow.child) return { selector: null, next: null, label: "Compris" };
-    return { selector: '[data-act="go"][data-arg="' + flow.parent + '"]', next: flow.parent, label: "Ouvrir " + flow.parentLabel };
-  }
-  const direct = {
-    combat: { selector: '#arenaSlot', next: null, label: "Compris" },
-    equipement: route === "equipement"
-      ? { selector: null, next: null, label: "Compris" }
-      : { selector: '[data-act="go"][data-arg="equipement"]', next: "equipement", label: "Ouvrir Équipement" },
-    forge: { selector: '[data-act="forge"][data-arg="1"]', next: null, label: "Compris" }
-  };
-  return direct[key] || { selector: null, next: null, label: "Compris" };
+  /* Only Home systems still need a target arrow. Every full-screen system
+     already opened before its intro appears, so its CTA is simply Compris. */
+  if (key === "combat" && route === "accueil") return { selector: "#arenaSlot", next: null, label: "Compris" };
+  if (key === "forge" && route === "accueil") return { selector: '[data-act="forge"][data-arg="1"]', next: null, label: "Compris" };
+  return { selector: null, next: null, label: "Compris" };
 }
 function clearTutorialGuide() {
   if (tutorialGuideTarget) tutorialGuideTarget.classList.remove('tutorialTarget');
@@ -1029,40 +990,98 @@ function updateTutorialGuide() {
   g.innerHTML = '<div class="arrow' + (above ? '' : ' down') + '"></div>';
   document.body.appendChild(g);
 }
-function pendingTutorialStep() {
+function tutorialStepForKey(key) {
   if (!S.tutorial) return null;
   const seen = S.tutorial.seen || (S.tutorial.seen = {});
-  if (!seen.combat) return {key:"combat",title:"Combat automatique",sub:"Bats les ennemis pour monter les étages et gagner Or + EXP."};
-  if (!seen.equipement && (S.inventory.length || SLOTS.some((k)=>S.equipped[k]))) return {key:"equipement",title:"Équipement",sub:"Ouvre Équipement : inventaire, pièces portées et statistiques sont réunis au même endroit. Utilise Tester pour comparer avant d’équiper."};
-  if (!seen.competence && Object.keys(S.skills || {}).length) return {key:"competence",title:"Compétences",sub:"Suis les flèches : ouvre Développement, puis Compétences. Tu disposes de 3 emplacements actifs."};
-  if (!seen.familier && ((S.pets||[]).length || (S.eggs||[]).length)) return {key:"familier",title:"Familiers",sub:"Suis les flèches : ouvre Développement, puis Familiers. Tes œufs sont stockés individuellement avec leur vraie rareté."};
-  if (!seen.forge && S.minerai >= FORGE_CRAFT_COST) return {key:"forge",title:"Forge",sub:"Le Minerai fabrique l'équipement. L'Or améliore le niveau de Forge."};
-  if (!seen.raid && S.level >= RULES.RAID_UNLOCK_LEVEL) return {key:"raid",title:"Raids",sub:"Suis les flèches : ouvre Défis, puis Raids pour utiliser tes clés et obtenir des ressources spécialisées."};
-  if (!seen.rebirth && S.floor >= RULES.REBIRTH_UNLOCK_FLOOR) return {key:"rebirth",title:"Rebirth",sub:"Suis les flèches : ouvre Progression, puis Rebirth pour voir tes PR permanents et les conséquences de la renaissance."};
-  if (!seen.megaBoss && megaRaidUnlocked(S)) return {key:"megaBoss",title:"Méga Boss",sub:"Suis les flèches : ouvre Défis, puis Méga-Boss. Chaque Méga reprend un ancien Boss avec une puissance fortement augmentée."};
-  if (!seen.tree && (S.pe||0) > 0) return {key:"tree",title:"Arbre personnel",sub:"Suis les flèches : ouvre Développement, puis Arbre personnel. Les PE du Raid Évolution servent à améliorer ses nœuds."};
+  if (seen[key]) return null;
+  if (key === "combat") return {key:"combat",title:"Combat automatique",sub:"Bats les ennemis pour monter les étages et gagner Or + EXP."};
+  /* V460 · Full-screen system introductions explain the system before the
+     player interacts with it. Entry itself is the trigger, not owned content. */
+  if (key === "equipement") {
+    const starter = window.__srStarterPacingV462 || window.__srStarterPacingV461;
+    if (starter && typeof starter.buildIntroReady === "function" && !starter.buildIntroReady(S)) return null;
+    if (starter && typeof starter.active === "function" && starter.active(S))
+      return {key:"equipement",title:"Prépare ton build",sub:"Le Boss de Facile 1-5 est plus exigeant. Compare tes pièces et équipe les meilleures avant de l’affronter."};
+    return {key:"equipement",title:"Équipement",sub:"Ici, l’inventaire, les pièces portées et les statistiques sont réunis. Utilise Tester pour comparer avant d’équiper."};
+  }
+  if (key === "competence")
+    return {key:"competence",title:"Compétences",sub:"Équipe tes compétences actives, améliore-les avec les doublons et compare leur impact sur ta Puissance."};
+  if (key === "familier") {
+    const starter = window.__srStarterPacingV462 || window.__srStarterPacingV461;
+    if (starter && typeof starter.familiarIntroReady === "function" && !starter.familiarIntroReady(S)) return null;
+    if (starter && typeof starter.active === "function" && starter.active(S))
+      return {key:"familier",title:"Familiers",sub:"Tu viens de recevoir ton premier œuf. Choisis-le dans Œufs en stock puis appuie sur Lancer l’éclosion : c’est toi qui démarres le minuteur."};
+    return {key:"familier",title:"Familiers",sub:"Gère ici tes œufs, tes éclosions et tes familiers. Chaque œuf conserve sa vraie rareté jusqu’à l’éclosion."};
+  }
+  if (key === "forge" && S.minerai >= FORGE_CRAFT_COST)
+    return {key:"forge",title:"Forge",sub:"Le Minerai fabrique l’équipement. L’Or améliore le niveau de Forge."};
+  if (key === "raid") {
+    let unlocked = S.level >= RULES.RAID_UNLOCK_LEVEL;
+    try { if (typeof window.__srV317RaidUnlocked === "function") unlocked = !!window.__srV317RaidUnlocked(S); } catch (_) {}
+    if (unlocked) return {key:"raid",title:"Raids",sub:"Utilise tes clés pour lancer des Raids spécialisés et obtenir les ressources propres à chaque type de Raid."};
+  }
+  if (key === "megaBoss" && megaRaidUnlocked(S))
+    return {key:"megaBoss",title:"Méga Boss",sub:"Les Méga-Boss reprennent d’anciens Boss avec une puissance fortement augmentée et leurs propres récompenses."};
+  if (key === "tree")
+    return {key:"tree",title:"Arbre personnel",sub:"Les PE gagnés en Raid Évolution servent ici à débloquer et améliorer des bonus permanents."};
   return null;
 }
-function checkTutorial() {
-  if (!S.tutorial || document.getElementById("tutorialCard") || route !== "accueil") return;
-  const step = pendingTutorialStep();
+function pendingTutorialStep() {
+  const order = ["combat","equipement","competence","familier","forge","raid","megaBoss","tree"];
+  for (const key of order) {
+    const step = tutorialStepForKey(key);
+    if (step) return step;
+  }
+  return null;
+}
+function tutorialKeysForRoute(currentRoute) {
+  return TUTORIAL_ROUTE_KEYS[currentRoute] || [];
+}
+function pendingTutorialStepForRoute(currentRoute) {
+  if (!S.tutorial) return null;
+  const allowed = tutorialKeysForRoute(currentRoute);
+  if (!allowed.length) return null;
+
+  /* Preserve late onboarding authorities (notably the special Forge lesson and
+     Raid unlock wording) whenever the globally patched step belongs here. */
+  let patched = null;
+  try { patched = pendingTutorialStep(); } catch (_) {}
+  if (patched && allowed.includes(patched.key)) return patched;
+
+  for (const key of allowed) {
+    /* V321 owns when the Forge lesson is allowed to exist. Never revive the
+       generic Forge intro while that onboarding authority intentionally hides it. */
+    if (key === "forge" && window.__srProgressionIntegrationV305) continue;
+    const step = tutorialStepForKey(key);
+    if (step) return step;
+  }
+  return null;
+}
+function checkTutorial(expectedRoute) {
+  if (!S.tutorial) return;
+  if (expectedRoute && expectedRoute !== route) return;
+  const existing = document.getElementById("tutorialCard");
+  const allowed = tutorialKeysForRoute(route);
+  if (existing) {
+    if (tutorialCurrentKey && allowed.includes(tutorialCurrentKey)) return;
+    clearTutorialGuide();
+    existing.remove();
+    tutorialCurrentKey = null;
+  }
+  const step = pendingTutorialStepForRoute(route);
   if (!step) return;
   tutorialCurrentKey = step.key;
   const el = document.createElement("div");
   el.id = "tutorialCard";
+  el.setAttribute("data-tutorial-key", step.key);
+  el.setAttribute("data-tutorial-route", route);
   el.innerHTML = '<div class="tt">TUTORIEL · ' + esc(step.title) + '</div><div class="ts">' + esc(step.sub) +
-    '</div><div class="td"><button class="btn sm green" data-act="tutorialNext">Continuer</button></div>';
+    '</div><div class="td"><button class="btn sm green" data-act="tutorialNext">Compris</button></div>';
   document.getElementById("app").appendChild(el);
   requestAnimationFrame(updateTutorialGuide);
 }
 function tutorialNext() {
   if (!tutorialCurrentKey) return;
-  const info = tutorialGuideInfo(tutorialCurrentKey);
-  if (info.next) {
-    nav(info.next);
-    requestAnimationFrame(updateTutorialGuide);
-    return;
-  }
   dismissTutorial();
 }
 function dismissTutorial() {
@@ -1074,7 +1093,7 @@ function dismissTutorial() {
   }
   const el = document.getElementById("tutorialCard");
   if (el) el.remove();
-  setTimeout(checkTutorial, 120);
+  requestAnimationFrame(checkTutorial);
 }
 
 function checkLevelUp() {
@@ -1084,7 +1103,7 @@ function checkLevelUp() {
     seenLevel = S.level;
     if (!document.getElementById("overlay")) showLevelUp(from, S.level);
   } else if (S.level < seenLevel) {
-    seenLevel = S.level;   // rebirth / ascension reset the level
+    seenLevel = S.level;   // Ascension can reset the level
   }
 }
 
@@ -1095,7 +1114,30 @@ function syncEquipPreviewSpacer() {
   spacer.style.height=Math.max(90,h+72)+'px';
 }
 
+// V543: prevent passive redraws from destroying the forge under a finger.
+let srForgeTouchActive543=false;
+let srForgeTouchUntil543=0;
+(function(){
+  const screen=document.getElementById('screen');if(!screen)return;
+  screen.addEventListener('touchstart',function(e){if(e.target&&e.target.closest&&e.target.closest('#homeForge')){srForgeTouchActive543=true;srForgeTouchUntil543=Date.now()+900;}},{passive:true,capture:true});
+  ['touchend','touchcancel'].forEach(function(type){screen.addEventListener(type,function(e){if(srForgeTouchActive543){srForgeTouchActive543=false;srForgeTouchUntil543=Date.now()+900;}},{passive:true,capture:true});});
+  screen.addEventListener('scroll',function(e){if(e.target&&e.target.closest&&e.target.closest('#homeForge'))srForgeTouchUntil543=Date.now()+900;},{passive:true,capture:true});
+})();
+// Only a Forge action may replace its panel; ordinary timer ticks retain it.
+(function(){
+  const sc=document.getElementById('screen');if(!sc)return;
+  sc.addEventListener('click',function(e){
+    const target=e.target&&e.target.closest&&e.target.closest('#homeForge [data-act]');
+    if(target)render.__srForgeAction546=true;
+  },true);
+})();
 function render() {
+  if (typeof route !== "undefined" && route === "sanctuaire") route = "defis";
+  // Only defer while interacting: the next gameplay/timer render refreshes UI.
+  if(typeof route!=='undefined'&&route==='accueil'&&(srForgeTouchActive543||Date.now()<srForgeTouchUntil543)){
+    if(!render.__srForgePending543){render.__srForgePending543=true;setTimeout(function(){render.__srForgePending543=false;render();},Math.max(120,srForgeTouchUntil543-Date.now()+60));}
+    return;
+  }
   // Objective tracking belongs to the global state/render layer, not to Home.
   // This keeps progress coherent when goals are completed from Skills, Pets,
   // Raids, the Tree, etc. and the player has not returned Home yet.
@@ -1106,17 +1148,55 @@ function render() {
   checkBossReward();
   checkNotable();
   checkSkipNotice();
-  checkTutorial();
   checkLevelUp();
   const sc = document.getElementById("screen");
-  const keep = sc.scrollTop;
   const fn = SCREENS[route] || scrAccueil;
   sc.className = (route === "accueil" || (route === "arena" && combat && combat.ctx === "arenaLive")) ? "fixed" : "";
+  // V535: retain Home's actual scroll container across full DOM replacement.
+  // Restore synchronously before observers/animation frames can repaint a jump.
+  const srHomeScroll535 = route === "accueil" ? (function(){
+    const host = sc.querySelector(':scope > .pad.mt4');
+    if(!host) return null;
+    const forge = host.querySelector('#homeForge');
+    return {top:host.scrollTop, left:host.scrollLeft, forgeTop:forge?forge.scrollTop:0};
+  })() : null;
+  // V546: preserve the *actual* Forge DOM across passive Home renders.
+  // Recreating the buttons breaks touch gestures even when scrollTop is restored.
+  const srForgeLive546 = route==='accueil' ? sc.querySelector('#homeForge') : null;
+  const srForgeRefresh546 = !!render.__srForgeAction546;
+  render.__srForgeAction546=false;
   sc.innerHTML = fn();
+  if(srForgeLive546 && !srForgeRefresh546){
+    const freshForge=sc.querySelector('#homeForge');
+    if(freshForge){
+      freshForge.replaceWith(srForgeLive546);
+      // Keep accelerator stock readable without replacing the tapped button.
+      srForgeLive546.querySelectorAll('.srForgeSpeedChip266[data-arg]').forEach(function(chip){
+        const key=chip.getAttribute('data-arg');
+        const stock=Number(S.accels&&S.accels[key]||0);
+        const count=chip.querySelector('b');
+        if(count)count.textContent='×'+stock;
+        chip.disabled=stock<=0;
+      });
+    }
+  }
+  if(srHomeScroll535){
+    const host = sc.querySelector(':scope > .pad.mt4');
+    if(host){
+      host.scrollTop = srHomeScroll535.top;
+      host.scrollLeft = srHomeScroll535.left;
+      const forge = host.querySelector('#homeForge');
+      if(forge) forge.scrollTop = srHomeScroll535.forgeTop;
+    }
+  }
   attachArena();
-  sc.scrollTop = keep;
-  requestAnimationFrame(syncEquipPreviewSpacer);
-  if (tutorialCurrentKey) requestAnimationFrame(updateTutorialGuide);
+  requestAnimationFrame(() => {
+    syncEquipPreviewSpacer();
+    /* V460 · The destination owns its intro on the first frame after mount.
+       This happens before any tap inside that system can occur. */
+    checkTutorial(route);
+    if (tutorialCurrentKey) updateTutorialGuide();
+  });
 }
 
 function attachArena() {
@@ -1207,17 +1287,22 @@ function showItemDetail(id, slot) {
   const basePrimary = Number(isWeaponStat ? (it.baseDamage || it.damage || 0) : (it.baseHp || it.hp || 0));
   const currentPrimary = Number(isWeaponStat ? (it.damage || 0) : (it.hp || 0));
   const addedPrimary = Math.max(0, currentPrimary - basePrimary);
+  const itemDefense = equipmentDefenseRating(it);
+  const masteryInfo = equipmentMasteryInfo(S);
+  const masteryRoman = masteryInfo.rank ? masteryInfo.roman : "—";
   openModal('<div class="row gap10" style="margin-bottom:10px">' +
       '<div class="imini rf" style="width:46px;height:46px;border-color:' + rc + ";--rc:" + rc + '">' +
       '<span style="position:relative;z-index:1">' + slotIcon(it.slot, 27, it) + "</span></div>" +
       '<div class="flex1"><div class="bb" style="font-size:14px;color:' + rc + ';text-shadow:0 0 12px ' + rc + '66">' +
-      esc(it.name) + (it.level ? ' <span style="color:var(--goldLit)">+' + it.level + "</span>" : "") + "</div>" +
-      '<div class="mt6">' + rtag(it.rarity) + '<span class="pill" style="margin-left:5px">' + SLOT_LABEL[it.slot] + "</span></div></div></div>" +
+      esc(equipmentDisplayName(it)) + "</div>" +
+      '<div class="mt6">' + rtag(it.rarity) + '<span class="pill" style="margin-left:5px">' + SLOT_LABEL[it.slot] + '</span><span class="pill" style="margin-left:5px;color:var(--goldLit);border-color:var(--goldDim)">' + esc(equipmentUpgradeText(it)) + "</span></div></div></div>" +
+    '<div class="notice tiny" style="border-color:#E8B44A66;margin-bottom:8px"><b style="color:var(--goldLit)">MAÎTRISE ÉQUIPEMENT ' + masteryRoman + ' · +' + masteryInfo.bonusPct + '% base</b><div class="mt3">Ce rang définit le niveau romain de tous les équipements et son bonus de base.</div></div>' +
     '<div class="card" style="padding:9px 11px">' +
       (MASTERY_STAT[it.slot] === "dmg"
         ? st("ATTAQUE DE BASE", "+" + equipStat(basePrimary), "#FF9C6B")
         : st("SANTÉ DE BASE", "+" + equipStat(basePrimary), "var(--redLit)")) +
       st(it.baseDamage ? "BONUS D'ATTAQUE" : "BONUS DE SANTÉ", "+" + equipStat(addedPrimary), "var(--greenLit)") +
+      (itemDefense > 0 ? st("DÉFENSE", "+" + Math.round(itemDefense), "#72A7E8") : "") +
       st("PUISSANCE TOTALE", equipStat(it.power), "var(--goldLit)") +
       (wt ? st("TYPE D'ARME", wt.name + " · " + (wt.attackType === "MELEE" ? "mêlée" : "distance"), "var(--blueLit)") +
         st("PORTÉE · VITESSE", wt.range + " · ×" + wt.speed, "var(--blueLit)") : "") +
@@ -1240,12 +1325,12 @@ function showItemDetail(id, slot) {
     (itemUpgradeChance(it)<100 ? (function(){
       const base=itemUpgradeChance(it), planned=itemSealCount(it.id), owned=(S.sanctuary&&S.sanctuary.stabilitySeals)||0;
       const used=Math.min(planned,owned,Math.ceil((100-base)/5)), chance=Math.min(100,base+used*5);
-      return '<div class="card" style="padding:8px 9px;border-color:#9B5CF666"><div class="between"><div><div class="b small">CHANCE DE RÉUSSITE</div><div class="mute tiny">À partir de +100 · échec = niveau conservé</div></div><b style="color:'+(chance>=90?'#57C785':chance>=70?'#F5C542':'#FF7A3D')+'">'+chance+'%</b></div>'+meter(chance,'#9B5CF6')+
+      return '<div class="card" style="padding:8px 9px;border-color:#9B5CF666"><div class="between"><div><div class="b small">CHANCE DE RÉUSSITE</div><div class="mute tiny">À partir de l’amélioration +25 · échec = équipement conservé</div></div><b style="color:'+(chance>=90?'#57C785':chance>=70?'#F5C542':'#FF7A3D')+'">'+chance+'%</b></div>'+meter(chance,'#9B5CF6')+
         '<div class="between mt6"><span class="tiny b">🛡️ Sceaux de stabilité · '+owned+'</span><div class="row gap4">'+
         btn('−',{cls:'dark',small:true,act:'itemSealMinus',arg:it.id,dis:used<=0,style:'width:34px'})+
         '<span class="pill">'+used+' utilisé'+(used>1?'s':'')+' · +'+(used*5)+'%</span>'+ 
         btn('+',{cls:'purple',small:true,act:'itemSealPlus',arg:it.id,dis:used>=owned||chance>=100,style:'width:34px'})+'</div></div></div>';
-    })() : '<div class="notice tiny"><b>Réussite garantie à 100 %</b> jusqu’au niveau +100.</div>') +
+    })() : '<div class="notice tiny"><b>Réussite garantie à 100 %</b> jusqu’à l’amélioration +24.</div>') +
     '<div class="orn"><i></i><b></b><i></i></div>' +
     '<div class="card" style="padding:8px 9px;border-color:#3FA7FF66">' +
       '<div class="between"><div><div class="mute tiny b">PROCHAINE AMÉLIORATION</div><div class="b small mt4">' + upgradePreview.label + ' · ' + equipStat(upgradePreview.current) + ' → <span style="color:#78B7FF">' + equipStat(upgradePreview.next) + '</span></div></div>' +
@@ -1278,13 +1363,15 @@ const TREE_EFFECT_INFO = {
   forgeCost:   "Réduit le coût en Or des améliorations de Forge",
   forgeFree:   "Chance de forger un équipement supplémentaire gratuitement",
   forgeMulti:  "Augmente le nombre de forges lancées en une fois",
-  forgeMult:   "Pousse le multiplicateur de Forge au-delà de ×5, jusqu’à ×10",
+  forgeMult:   "Ajoute directement des forges au lot actuel. La Forge part de ×1, donc +2 fait passer ×1 à ×3.",
   hatch_COMMUN: "Réduit le temps d'éclosion des Œufs Communs uniquement",
   hatch_PEU_COMMUN: "Réduit le temps d'éclosion des Œufs Peu communs uniquement",
   hatch_RARE: "Réduit le temps d'éclosion des Œufs Rares uniquement",
   hatch_EPIQUE: "Réduit le temps d'éclosion des Œufs Épiques uniquement",
   hatch_MYTHIQUE: "Réduit le temps d'éclosion des Œufs Mythiques uniquement",
+  hatch_ANCESTRAL: "Réduit le temps d'éclosion des Œufs Ancestraux uniquement",
   hatch_LEGENDAIRE: "Réduit le temps d'éclosion des Œufs Légendaires uniquement",
+  hatch_DIVIN: "Réduit le temps d'éclosion des Œufs Divins uniquement",
   petDmg:      "Dégâts apportés par le Familier actif",
   eggFree:     "Chance d’obtenir un Œuf supplémentaire gratuitement",
   eggSlot:     "Ajoute un emplacement d’éclosion permanent",
@@ -1293,6 +1380,10 @@ const TREE_EFFECT_INFO = {
   skillFree:   "Chance de double invocation de Compétence",
   accel:       "Efficacité des Accélérateurs sur tous les minuteurs",
   afk:         "Durée maximale d'accumulation de la Récolte automatique",
+  afkGold:      "Augmente uniquement le rendement horaire d’Autonomie en Or, jusqu’à 20 %/h",
+  afkMinerai:   "Augmente uniquement le rendement horaire d’Autonomie en Minéraux, jusqu’à 20 %/h",
+  afkEssence:   "Augmente uniquement le rendement horaire d’Autonomie en Essence, jusqu’à 20 %/h",
+  afkEclat:     "Augmente uniquement le rendement horaire d’Autonomie en Étincelles, jusqu’à 20 %/h",
   harvestEff:  "Quantité de ressources produites par la Récolte automatique",
   mast_arme:       "Dégâts apportés par ton Arme",
   mast_gants:      "Dégâts apportés par tes Gants",
@@ -1310,10 +1401,11 @@ const TREE_EFFECT_INFO = {
    prints itself; only the families whose number is positive but means a
    reduction still need the minus put in front. */
 function treeEffectValue(node, level) {
-  const v = node.per * level;
+  const v = treeEffectivePer(node) * level;
+  if (node.effect === "forgeMult") return level > 0 ? "+" + v + (v > 1 ? " forges" : " forge") : "—";
   if (node.unit === "×") return "×" + (RULES.FORGE_BATCH_BASE + v);
   if (node.unit === "") return level > 0 ? "Actif" : "—";
-  const r = Math.round(v * 10) / 10;
+  const r = Math.round(v * 100) / 100;
   /* The sign comes from the number itself and nothing else. The three cost
      families carry a negative `per` and read as -5%; everything else is a gain
      and reads as +. Speed families are written +20% and +50% in the list, so
@@ -1400,7 +1492,10 @@ function showTreeNode(id) {
         treeEffectValue(node, node.max) + "</b></div>" +
       (node.effect !== "raidKey" && node.effect !== "eggSlot"
         ? '<div class="kv"><span class="dim">Total de la branche</span><b style="color:var(--goldLit)">' +
-          (Math.round(branchTotal * 10) / 10) + (node.unit === "h" ? " h" : node.unit === "×" ? "" : "%") + "</b></div>"
+          (node.effect === "forgeMult"
+            ? "+" + (Math.round(branchTotal * 10) / 10) + " · Forge ×" + forgeBatch(S)
+            : (Math.round(branchTotal * 10) / 10) + (node.unit === "h" ? " h" : node.unit === "×" ? "" : "%")) +
+          "</b></div>"
         : "") +
       (maxed ? ""
         : busy
@@ -1428,6 +1523,59 @@ function showTreeNode(id) {
 }
 
 /* Summon results as framed cards, mirroring the sheet RESULTAT D INVOCATION */
+function ensureEggRevealStyleV397() {
+  if (document.getElementById("srEggRevealV397Style")) return;
+  const st = document.createElement("style");
+  st.id = "srEggRevealV397Style";
+  st.textContent = [
+    ".srEggRevealV397{text-align:center;padding:8px 2px 2px}",
+    ".srEggRevealHeroV397{position:relative;height:178px;display:grid;place-items:center;overflow:hidden;border-radius:18px;background:radial-gradient(circle at 50% 48%,var(--eggGlow) 0%,#101a2c 42%,#08111f 76%);border:1px solid var(--eggLine)}",
+    ".srEggRevealHaloV397{position:absolute;width:138px;height:138px;border-radius:50%;background:var(--eggGlow);filter:blur(18px);opacity:.72;animation:srEggPulseV397 1.4s ease-in-out infinite alternate}",
+    ".srEggRevealImgV397{position:relative;width:108px;height:108px;object-fit:contain;filter:drop-shadow(0 12px 10px #0009);animation:srEggFloatV397 1.8s ease-in-out infinite}",
+    ".srEggRevealFallbackV397{position:relative;font-size:74px;filter:drop-shadow(0 10px 10px #0009);animation:srEggFloatV397 1.8s ease-in-out infinite}",
+    ".srEggRevealRareV397{margin-top:10px;font:900 16px Georgia,serif;letter-spacing:1px}",
+    ".srEggRevealMasteryV397{margin:8px auto 0;display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;border:1px solid #ffc29b66;background:#ffc29b14;color:#ffd3b7;font-weight:900;font-size:11px}",
+    ".srEggRevealGridV397{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:10px}",
+    ".srEggRevealMiniV397{position:relative;width:42px;height:48px;border-radius:10px;border:1px solid var(--miniC);background:#091323;padding:4px;box-sizing:border-box}",
+    ".srEggRevealMiniV397 img{width:100%;height:100%;object-fit:contain}",
+    ".srEggRevealFreeV397{position:absolute;right:-4px;top:-5px;border-radius:999px;background:#57e07a;color:#07140b;font:900 7px system-ui;padding:2px 4px;border:1px solid #a2ffb6}",
+    "@keyframes srEggFloatV397{0%,100%{transform:translateY(4px) scale(.97)}50%{transform:translateY(-5px) scale(1.04)}}",
+    "@keyframes srEggPulseV397{from{transform:scale(.85);opacity:.45}to{transform:scale(1.1);opacity:.8}}",
+    "@media(prefers-reduced-motion:reduce){.srEggRevealImgV397,.srEggRevealFallbackV397,.srEggRevealHaloV397{animation:none}}"
+  ].join("");
+  document.head.appendChild(st);
+}
+function showEggSummonResult(results) {
+  if (!results || !results.length) return;
+  ensureEggRevealStyleV397();
+  const rank = (r) => Math.max(0, PET_RARITY_ORDER.indexOf(r.rarity));
+  const hero = results.slice().sort((a,b) => rank(b) - rank(a))[0];
+  const rc = (RARITY[hero.rarity] && RARITY[hero.rarity].c) || "#FFC29B";
+  const art = ASSETS["egg_" + String(hero.rarity).toLowerCase()];
+  const freeCount = results.filter((r) => r.free).length;
+  const minis = results.length > 1 ? '<div class="srEggRevealGridV397">' + results.map((r) => {
+    const c = (RARITY[r.rarity] && RARITY[r.rarity].c) || "#FFC29B";
+    const a = ASSETS["egg_" + String(r.rarity).toLowerCase()];
+    return '<div class="srEggRevealMiniV397" style="--miniC:' + c + '">' +
+      (a ? '<img src="' + a + '">' : '<div style="font-size:25px;line-height:38px">🥚</div>') +
+      (r.free ? '<span class="srEggRevealFreeV397">DOUBLE</span>' : '') + '</div>';
+  }).join("") + '</div>' : '';
+  openModal(
+    '<div class="srEggRevealV397">' +
+      '<div class="srEggRevealHeroV397" style="--eggGlow:' + rc + '55;--eggLine:' + rc + '99">' +
+        '<div class="srEggRevealHaloV397"></div>' +
+        (art ? '<img class="srEggRevealImgV397" src="' + art + '">' : '<div class="srEggRevealFallbackV397">🥚</div>') +
+      '</div>' +
+      '<div class="srEggRevealRareV397" style="color:' + rc + '">' + esc(RARITY[hero.rarity].label) + '</div>' +
+      '<div class="mute small mt4">' + results.length + ' œuf' + (results.length>1?'s':'') + ' obtenu' + (results.length>1?'s':'') +
+        (freeCount ? ' · <b style="color:#57E07A">+' + freeCount + ' double' + (freeCount>1?'s':'') + '</b>' : '') + '</div>' +
+      '<div class="srEggRevealMasteryV397">★ +' + results.length + ' Maîtrise Familier</div>' +
+      minis +
+      '<div class="mt12">' + btn("Continuer", { cls:"green", act:"closeModal" }) + '</div>' +
+    '</div>',
+    results.length > 1 ? "Invocation d’Œufs" : "Œuf obtenu");
+}
+
 function showSkillResult(res) {
   const best = res.reduce((a, b) =>
     RARITY_ORDER.indexOf(b.rarity) > RARITY_ORDER.indexOf(a.rarity) ? b : a, res[0]);
@@ -1436,37 +1584,76 @@ function showSkillResult(res) {
     const def = SKILL_BY_ID[r.id];
     const col = RARITY[r.rarity].c;
     const cat = def ? SKILL_CATS[def.cat] : null;
-    return '<div class="resItem rf" style="width:58px;border-color:' + col + ";--rc:" + col + '">' +
+    const levelInfo = r.dup
+      ? (r.leveled
+          ? '<div class="tiny bb" style="color:var(--greenLit)">Niv. ' + r.beforeLevel + ' → ' + r.afterLevel + '</div>' +
+            '<div class="tiny b" style="color:var(--goldLit)">+20 % puissance</div>' +
+            (r.globalPowerGain > 0 ? '<div class="tiny b" style="color:#8FEFF4">+' + fmt(r.globalPowerGain) + ' puissance globale</div>' : '')
+          : '<div class="tiny b" style="color:var(--textMute)">' +
+            (r.need ? r.count + ' / ' + r.need + ' vers Niv. ' + (r.afterLevel + 1) : 'Niveau maximum') + '</div>')
+      : '<div class="tiny b" style="color:var(--greenLit)">Niv. 1</div>';
+    return '<div class="resItem rf" style="width:76px;border-color:' + col + ";--rc:" + col + '">' +
       '<span style="position:relative;z-index:1">' + ic(def ? def.icon : "sparkle", 18) + "</span>" +
       '<div class="tiny bb" style="color:' + col + ';line-height:1.1">' + esc(def ? def.name : r.id) + "</div>" +
       (cat ? '<span class="tag" style="color:' + cat.c + ";border-color:" + cat.c + '66">' + cat.label + "</span>" : "") +
       '<div class="tiny b" style="color:' + (r.dup ? "var(--textMute)" : "var(--greenLit)") + '">' +
-        (r.dup ? "Doublon" : "Nouveau") + "</div></div>";
+        (r.dup ? "Doublon" : "Nouveau") + "</div>" + levelInfo + "</div>";
   };
   const news = res.filter((r) => !r.dup).length;
+  const levelUps = res.filter((r) => r.leveled);
+  const totalPowerGain = levelUps.reduce((sum, r) => sum + Math.max(0, Number(r.globalPowerGain) || 0), 0);
+  let summary;
+  if (levelUps.length) {
+    summary = levelUps.length + " montée" + (levelUps.length > 1 ? "s" : "") + " de niveau · +20 % puissance par niveau" +
+      (totalPowerGain > 0 ? " · +" + fmt(totalPowerGain) + " puissance globale" : "");
+    if (news) summary = news + " nouvelle" + (news > 1 ? "s" : "") + " · " + summary;
+  } else if (news) {
+    summary = news + " nouvelle" + (news > 1 ? "s" : "") + " compétence" + (news > 1 ? "s" : "");
+  } else {
+    summary = "Doublons — progression vers le prochain niveau";
+  }
   openModal('<div class="center" style="margin-bottom:6px">' + ic("sparkle", 32) + "</div>" +
     '<div class="modalT" style="color:' + bc + ';text-shadow:0 2px 0 #000,0 0 18px ' + bc + '80">' +
       res.length + " INVOCATION" + (res.length > 1 ? "S" : "") + "</div>" +
     '<div class="resGrid">' + res.slice(0, 12).map(card).join("") + "</div>" +
-    '<div class="dim small center" style="margin-bottom:10px">' +
-      (news ? news + " nouvelle" + (news > 1 ? "s" : "") + " compétence" + (news > 1 ? "s" : "")
-            : "Doublons — ils font monter le niveau des compétences possédées") + "</div>" +
+    '<div class="dim small center" style="margin-bottom:10px">' + summary + "</div>" +
     btn("Continuer", { cls: "purple", act: "closeModal" }), "Résultat d’invocation");
+}
+function skillPowerTransitionText(pv) {
+  if (!pv) return "";
+  return "Puissance " + fmt(pv.before) + " → " + fmt(pv.after) +
+    " (" + (pv.delta > 0 ? "+" : "") + fmt(pv.delta) + ")";
+}
+function announceSkillPowerChange(r, label) {
+  if (!r) return;
+  toast(label || "Compétence modifiée", r.delta >= 0, skillPowerTransitionText(r));
 }
 function showSkillSlotPicker(idx) {
   const owned = SKILL_DEFS.filter((d) => S.skills[d.id]);
+  const powerLine = (pv) => {
+    if (!pv) return "";
+    const col = pv.delta > 0 ? "var(--greenLit)" : pv.delta < 0 ? "var(--redLit)" : "var(--textMute)";
+    return '<div class="tiny b mt2" style="color:' + col + '">' + skillPowerTransitionText(pv) + "</div>";
+  };
+  const rows = owned.map((d) => {
+    const pv = typeof skillEquipPowerPreview === "function" ? skillEquipPowerPreview(idx, d.id) : null;
+    return '<div class="itemRow" style="border-left-color:' + d.color + ';cursor:pointer" data-act="setSkill" data-arg="' + idx +
+      '" data-arg2="' + d.id + '">' +
+      '<div class="imini" style="width:32px;height:32px;background:linear-gradient(180deg,' + shade(d.color, 18) + "," +
+      shade(d.color, -38) + ');border-color:' + d.color + '">' + ic(d.icon, 20) + "</div>" +
+      '<div class="flex1">' +
+      '<div class="b small">' + d.name + '</div><div class="mute tiny b">Niv.' + S.skills[d.id].level + " · CD " + d.cd + "s</div>" +
+      powerLine(pv) + "</div>" +
+      (S.skillSlots[idx] === d.id ? '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">Actuelle</span>'
+        : ic("chevron", 11)) + "</div>";
+  }).join("");
+  const removePreview = S.skillSlots[idx] && typeof skillEquipPowerPreview === "function"
+    ? skillEquipPowerPreview(idx, null) : null;
   openModal((owned.length === 0 ? '<div class="dim small center" style="margin-bottom:12px">Aucune compétence possédée.</div>'
-      : '<div class="scroller">' + owned.map((d) =>
-        '<div class="itemRow" style="border-left-color:' + d.color + ';cursor:pointer" data-act="setSkill" data-arg="' + idx +
-        '" data-arg2="' + d.id + '">' +
-        '<div class="imini" style="width:32px;height:32px;background:linear-gradient(180deg,' + shade(d.color, 18) + "," +
-        shade(d.color, -38) + ');border-color:' + d.color + '">' + ic(d.icon, 20) + "</div>" +
-        '<div class="flex1">' +
-        '<div class="b small">' + d.name + '</div><div class="mute tiny b">Niv.' + S.skills[d.id].level + " · CD " + d.cd + "s</div></div>" +
-        (S.skillSlots[idx] === d.id ? '<span class="pill" style="color:var(--greenLit);border-color:#3FB950">Actuelle</span>'
-          : ic("chevron", 11)) + "</div>").join("") + "</div>") +
+      : '<div class="scroller">' + rows + "</div>") +
     '<div class="col gap6 mt10">' +
-      (S.skillSlots[idx] ? btn("Vider l'emplacement", { cls: "dark", small: true, act: "setSkill", arg: idx, arg2: "" }) : "") +
+      (S.skillSlots[idx] ? btn("Vider l'emplacement" + (removePreview ? " · " + skillPowerTransitionText(removePreview) : ""),
+        { cls: "dark", small: true, act: "setSkill", arg: idx, arg2: "" }) : "") +
       btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
     "Emplacement " + (idx + 1));
 }
@@ -1483,8 +1670,8 @@ function showRaidResult(r) {
   openModal('<div class="center">' + ic(r.won ? "trophy" : "skull", 40) + "</div>" +
     '<div class="modalT mt6" style="color:' + (r.won ? "var(--goldLit)" : "var(--redLit)") +
       ';text-shadow:0 2px 0 #000,0 0 18px ' + col + '80">' + (r.won ? "VICTOIRE" : "DÉFAITE") + "</div>" +
-    '<div class="dim small center" style="margin-bottom:12px;line-height:1.55">' + meta.name + " · niveau " + r.level + "<br>" +
-    (r.won ? rewardLine + "Niveau de raid suivant débloqué."
+    '<div class="dim small center" style="margin-bottom:12px;line-height:1.55">' + meta.name + " · niveau " + raidLevelLabel(r.level) + "<br>" +
+    (r.won ? rewardLine + (r.level >= RULES.RAID_MAX_LEVEL ? "Palier maximum 7-10 atteint." : "Niveau de raid suivant débloqué.")
       : "Aucune clé consommée. Renforce ton personnage et réessaie.") + "</div>" +
     btn("Continuer", { cls: r.won ? "green" : "ghost", act: "closeRaid" }),
     r.won ? "Raid terminé" : "Raid échoué");
@@ -1502,7 +1689,7 @@ function showMegaResult(r) {
         ? 'Première victoire : <b style="color:#A9E06F">+' + fmt(r.apples) + " 🍎</b>" +
           (r.accel ? '<br><b style="color:var(--goldLit)">+' + fmt(r.accel.qty) + " Accélérateur " +
             esc((ACCEL_DEFS.find((a) => a.key === r.accel.key) || {}).label || r.accel.key) + "</b> (×2 Boss normal)" : "") +
-          "<br>Récompense enregistrée définitivement." + (Object.keys(S.megaBossClears || {}).length === 1 ? "<br><b style=\"color:var(--purpleLit)\">🏛️ Sanctuaire débloqué !</b>" : "")
+          "<br>Récompense enregistrée définitivement."
         : won ? "Méga-Boss déjà vaincu : <b>0 Pomme</b>."
         : "Aucune clé ni récompense perdue. Renforce-toi et réessaie.") + "</div>" +
     btn("Continuer", { cls: won ? "green" : "ghost", act: "closeMega" }),
@@ -1512,25 +1699,54 @@ function showMegaResult(r) {
 function askReset() {
   openModal('<div class="center">' + ic("trash", 34) + "</div>" +
     '<div class="dim small center mt6" style="margin-bottom:14px;line-height:1.55">Toute la progression locale sera effacée : ' +
-    "niveau, étage, équipement, compétences, familiers, rebirth et ascension. <b>Action irréversible.</b></div>" +
+    "niveau, étage, équipement, compétences, familiers et ascension. <b>Action irréversible.</b></div>" +
     '<div class="row gap6">' + btn("Annuler", { cls: "ghost", act: "closeModal" }) +
     btn("Tout effacer", { cls: "red", act: "doReset" }) + "</div>", "Réinitialiser ?");
 }
 
 // SANCTUARY_DRAG_MERGE_V34
 function sanctMergeDrop(from,to){
-  const st=sanctMergeState(); from=Number(from); to=Number(to);
-  if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=st.mergeBoard.length||to>=st.mergeBoard.length||from===to) return false;
-  const src=st.mergeBoard[from], dst=st.mergeBoard[to];
-  if(!src) return false;
-  if(!dst){ st.mergeBoard[to]=src; st.mergeBoard[from]=null; st.mergeSelected=-1; dirty=true; render(); return true; }
-  if(dst!==src){ toast("Deux couleurs identiques sont nécessaires"); return false; }
-  const nx=sanctMergeNext(src);
-  if(!nx){ toast("Divin est la rareté maximale"); return false; }
-  st.mergeBoard[from]=null; st.mergeBoard[to]=nx; st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
-  sanctMergeDiscover(st,nx); dirty=true;
-  if(navigator.vibrate) try{navigator.vibrate(20);}catch(_e){}
-  toast(SANCT_MERGE_NAME[src]+" + "+SANCT_MERGE_NAME[src]+" → "+SANCT_MERGE_NAME[nx],true); render(); return true;
+  if(window.__SHADOWREACH_SANCTUARY_PAUSED===true)return false;
+  const st=sanctMergeState();from=Number(from);to=Number(to);
+  if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=st.mergeBoard.length||to>=st.mergeBoard.length||from===to)return false;
+  const src=st.mergeBoard[from],dst=st.mergeBoard[to];if(!src)return false;
+  if(dst&&dst!==src){toast("Deux couleurs identiques sont nécessaires");return false;}
+  const next=dst?sanctMergeNext(src):null;
+  if(dst&&!next){toast("Divin est la rareté maximale");return false;}
+  const oldBoard=st.mergeBoard.slice(),oldLocks=Object.assign({},st.mergeLockedSlots||{});
+  const oldFusions=Number(st.mergeFusions)||0,oldTotal=Number(st.fusions)||0;
+  const oldAudit=st.mergeLastPurchaseAudit?Object.assign({},st.mergeLastPurchaseAudit):null;
+  const oldSelected=st.mergeSelected;
+  try{
+    if(!dst){
+      st.mergeBoard[to]=src;st.mergeBoard[from]=null;
+      if(st.mergeLockedSlots){st.mergeLockedSlots[to]=!!st.mergeLockedSlots[from];delete st.mergeLockedSlots[from];}
+      if(st.mergeLastPurchaseAudit){
+        st.mergeLastPurchaseAudit.lastMove='Case '+(from+1)+' vers '+(to+1)+' : '+src;
+        st.mergeLastPurchaseAudit.lastMoveAt=Date.now();
+        if(Number(st.mergeLastPurchaseAudit.slot)===from)st.mergeLastPurchaseAudit.slot=to;
+      }
+    }else{
+      st.mergeBoard[from]=null;st.mergeBoard[to]=next;
+      if(st.mergeLockedSlots){delete st.mergeLockedSlots[from];delete st.mergeLockedSlots[to];}
+      st.mergeFusions=oldFusions+1;st.fusions=oldTotal+1;
+      if(st.mergeLastPurchaseAudit&&[from,to].includes(Number(st.mergeLastPurchaseAudit.slot))){
+        st.mergeLastPurchaseAudit.lastRemoval='Fusion manuelle';st.mergeLastPurchaseAudit.removedAt=Date.now();
+      }
+    }
+    st.mergeSelected=-1;dirty=true;
+    if(st.mergeBoard.length!==oldBoard.length||st.mergeBoard[to]!== (dst?next:src)||
+      st.mergeBoard.filter(Boolean).length!==oldBoard.filter(Boolean).length-(dst?1:0))throw Error('Intégrité du plateau');
+    if(typeof saveNow==='function'&&saveNow()===false)throw Error('Sauvegarde refusée');
+  }catch(err){
+    st.mergeBoard=oldBoard;st.mergeLockedSlots=oldLocks;
+    st.mergeFusions=oldFusions;st.fusions=oldTotal;st.mergeSelected=oldSelected;
+    if(oldAudit)st.mergeLastPurchaseAudit=oldAudit;
+    dirty=true;toast('Action annulée : '+(err&&err.message||'erreur'));render();return false;
+  }
+  if(dst){sanctMergeDiscover(st,next);if(navigator.vibrate)try{navigator.vibrate(20);}catch(_){}
+    toast(SANCT_MERGE_NAME[src]+' + '+SANCT_MERGE_NAME[src]+' → '+SANCT_MERGE_NAME[next],true);}
+  render();return true;
 }
 
 const ACT = {
@@ -1555,17 +1771,6 @@ const ACT = {
   goModal: (a) => { closeModal(); nav(a); },
   harvest: () => showHarvestModal(),
   ascendAsk: (a) => showAscendModal(a),
-  ascendRaidAsk: (a) => showRaidAscendModal(a),
-  ascendRaidDo: (a) => {
-    const r = doAscendRaid(a);
-    closeModal();
-    if (!r.ok) {
-      toast(r.maxed ? "Ascension Raid déjà au maximum (★" + RULES.RAID_ASCEND_MAX_STARS + ")"
-        : "Ce raid n'est pas encore au niveau " + RULES.RAID_MAX_LEVEL);
-      return;
-    }
-    toast("Ascension " + RAIDS[a].reward + " ★ " + r.stars, true);
-  },
   ascendDo: (a) => {
     const r = doAscendMastery(a);
     closeModal();
@@ -1661,7 +1866,7 @@ const ACT = {
     const r=upgradeItem(a);
     if (!r.ok) { toast(r.reason==="dust" ? "Poussière insuffisante" : "Objet introuvable"); return; }
     showItemDetail(a, null);
-    toast(r.success ? "Amélioration réussie · " + (r.statLabel || "Stat") + " +" + (r.statGain || 0).toLocaleString("fr-FR", {minimumFractionDigits:2, maximumFractionDigits:2}) : "Échec · objet conservé", r.success);
+    toast(r.success ? "Amélioration réussie · " + (r.statLabel || "Stat") + " +" + (r.statGain || 0).toLocaleString("fr-FR", {minimumFractionDigits:2, maximumFractionDigits:2}) + (Number(r.globalPowerGain)>0 ? " · Puissance +" + fmt(r.globalPowerGain) : "") : "Échec · objet conservé", r.success);
   },
   itemSealMinus: (a) => { itemSealPlan[a]=Math.max(0,itemSealCount(a)-1); showItemDetail(a,null); },
   itemSealPlus: (a) => {
@@ -1702,8 +1907,11 @@ const ACT = {
   skillFilter: (a) => { skillFilter = a; render(); },
   skillCard: (a) => showSkillCard(a),
   unequipSkill: (a) => {
-    update((s) => { const i = s.skillSlots.indexOf(a); if (i >= 0) s.skillSlots[i] = null; });
-    closeModal(); toast("Déséquipé"); render();
+    const i = S.skillSlots.indexOf(a);
+    const r = i >= 0 ? equipSkill(i, null) : null;
+    closeModal();
+    if (r) announceSkillPowerChange(r, "Compétence retirée");
+    render();
   },
 
   // skills
@@ -1711,21 +1919,28 @@ const ACT = {
     const r = summonSkill(parseInt(a, 10));
     if (!r.length) { toast("Éclats insuffisants"); return; }
     showSkillResult(r);
+    if (Number(r.levelUpPowerDelta) > 0) {
+      queuePowerDelta(Number(r.levelUpPowerDelta));
+    }
   },
   skillSlot: (a) => showSkillSlotPicker(parseInt(a, 10)),
-  setSkill: (a, b) => { equipSkill(parseInt(a, 10), b || null); closeModal(); },
+  setSkill: (a, b) => {
+    const r = equipSkill(parseInt(a, 10), b || null);
+    closeModal();
+    announceSkillPowerChange(r, r && !r.skillId ? "Emplacement vidé" : r && r.replaced ? "Compétence remplacée" : "Compétence équipée");
+  },
   autoEquipSkill: (a) => {
     const empty = S.skillSlots.slice(0, skillSlotCount(S)).indexOf(null);
-    equipSkill(empty >= 0 ? empty : 0, a);
+    const r = equipSkill(empty >= 0 ? empty : 0, a);
     closeModal();
-    toast("Compétence équipée", true);
+    announceSkillPowerChange(r, r && r.replaced ? "Compétence remplacée" : "Compétence équipée");
   },
 
   // pets
   summonEgg: (a) => {
     const r = summonEgg(parseInt(a, 10));
-    if (!r.length) toast("Essence insuffisante");
-    else toast(r.length + " œuf" + (r.length > 1 ? "s" : "") + " ajouté" + (r.length > 1 ? "s" : "") + " au stock", true);
+    if (!r.length) { toast("Essence insuffisante"); return; }
+    showEggSummonResult(r);
   },
   startEgg: (a) => { if (startEgg(a)) toast("Œuf placé en éclosion", true); else toast("Aucun emplacement libre"); },
   collectEgg: (a) => { collectEgg(a); toast("Familier obtenu !", true); },
@@ -1757,6 +1972,11 @@ const ACT = {
 
   // raids
   startRaid: (a, b) => {
+    const level = S.raids[a] ? S.raids[a].level : 1;
+    if (!raidCampaignReady(S, level)) {
+      toast("Campagne " + raidReferenceCampaignLabel(level) + " requise");
+      return;
+    }
     const ok = startRaid(a, b === "1", (won, reward) => {
       raidResult = { raidId: a, won, reward, level: S.raids[a].record || S.raids[a].level };
       showRaidResult(raidResult);
@@ -1783,55 +2003,7 @@ const ACT = {
   abortMega: () => { combat = null; startCampaign(); nav("mega"); toast("Méga Boss abandonné"); },
   closeMega: () => { closeModal(); megaResult = null; startCampaign(); nav("mega"); },
 
-  // sanctuaire
-  sanctPrepare: (a) => {
-    const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
-    if(!r||!sanctMergeRecipeKnown(st,r)) return;
-    st.mergeFocusRecipe=a; dirty=true; render();
-  },
-  sanctMergeBuy: (a) => {
-    const st=sanctMergeState(), empty=st.mergeBoard.findIndex((x)=>!x);
-    if(empty<0) return toast("Plateau plein · fusionne ou fabrique d’abord");
-    const lv=st.supplierLevel, unlocked=sanctSupplierUnlocked(lv);
-    const chosen=unlocked.includes(a)?a:sanctSupplierTier(lv), price=sanctSupplierPrice(lv,chosen);
-    if(S.gold<price) return toast("Pas assez d’Or");
-    S.gold-=price; st.mergeBoard[empty]=chosen;
-    if(lv<SANCT_SUPPLIER_MAX && chosen===sanctSupplierTier(lv)){
-      st.supplierProgress++;
-      const need=sanctSupplierNeed(lv);
-      if(st.supplierProgress>=need){ st.supplierLevel=lv+1; st.supplierProgress=0; toast("Approvisionnement niveau "+st.supplierLevel,true); }
-    }
-    dirty=true; render();
-  },
-  sanctMergeTile: (a) => {
-    const st=sanctMergeState(), i=Number(a), r=st.mergeBoard[i];
-    if(!r) return;
-    const sel=Number(st.mergeSelected);
-    if(sel<0||!st.mergeBoard[sel]){ st.mergeSelected=i; dirty=true; return render(); }
-    if(sel===i){ st.mergeSelected=-1; dirty=true; return render(); }
-    const r0=st.mergeBoard[sel];
-    if(r0!==r){ st.mergeSelected=i; dirty=true; toast("Choisis une deuxième couleur identique"); return render(); }
-    const nx=sanctMergeNext(r);
-    if(!nx){ st.mergeSelected=-1; dirty=true; toast("Divin est la rareté maximale"); return render(); }
-    st.mergeBoard[sel]=null; st.mergeBoard[i]=nx; st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
-    sanctMergeDiscover(st,nx); dirty=true; toast(SANCT_MERGE_NAME[r]+" + "+SANCT_MERGE_NAME[r]+" → "+SANCT_MERGE_NAME[nx],true); render();
-  },
-  sanctMergeCancel: () => { const st=sanctMergeState(); st.mergeSelected=-1; dirty=true; render(); },
-  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.filter(Boolean); st.mergeBoard=kept.concat(Array(SANCT_BOARD_SIZE-kept.length).fill(null)); st.mergeSelected=-1; dirty=true; render(); },
-  sanctSelectPair: () => { const st=sanctMergeState(), p=sanctMergePair(st); if(!p)return; st.mergeSelected=p[0]; dirty=true; toast("Première "+SANCT_MERGE_NAME[p[2]]+" sélectionnée · touche la seconde"); render(); },
-  sanctRecipeCraft: (a) => {
-    const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
-    if(!r||!sanctMergeRecipeKnown(st,r)||!sanctMergeRecipeReady(st,r)) return toast("Couleurs insuffisantes");
-    Object.keys(r.req).forEach((rar)=>{ let n=r.req[rar]; for(let i=0;i<st.mergeBoard.length&&n>0;i++) if(st.mergeBoard[i]===rar){ st.mergeBoard[i]=null; n--; } });
-    if(r.kind==="seal") st.stabilitySeals=(st.stabilitySeals||0)+r.qty;
-    else {
-      const ad=ACCEL_DEFS.find((x)=>x.mins===r.mins) || ACCEL_DEFS.reduce((best,x)=>!best||Math.abs(x.mins-r.mins)<Math.abs(best.mins-r.mins)?x:best,null);
-      if(ad) S.accels[ad.key]=(S.accels[ad.key]||0)+r.qty;
-    }
-    st.mergeDiscovered[r.id]=true; st.mergeCrafts++; st.mergeFocusRecipe=a; st.mergeSelected=-1; dirty=true;
-    toast("Rituel réussi · "+r.name+" · "+sanctMergeRecipeOutput(r),true); render();
-  },
-
+  // Sanctuary paused: all merge/crafting UI actions intentionally unavailable.
   // tree
   treeNode: (a) => showTreeNode(a),
   research: (a) => {
@@ -1846,13 +2018,9 @@ const ACT = {
     if (useAccelerator(target, a)) toast("Accélérateur utilisé", true); else toast("Impossible ici");
   },
 
-  // rebirth / ascension
-  doRebirth: () => {
-    const pr = doRebirth();
-    if (pr) { toast("+" + pr + " PR", true); nav("rebirth"); }
-    else toast("Rebirth impossible : étage " + RULES.REBIRTH_UNLOCK_FLOOR + " requis");
-  },
-  buyRebirth: (a) => { if (buyRebirth(a)) toast("Amélioration achetée", true); else toast("PR insuffisants"); },
+  // retired Rebirth compatibility / active Ascension
+  doRebirth: () => false,
+  buyRebirth: () => false,
   startTrial: () => {
     startAscensionTrial((won) => {
       if (won) {
@@ -1892,9 +2060,14 @@ const ACT = {
   claimEvent: (a) => { claimEvent(a); toast(S.eventClaims[a] ? "Récompense réclamée" : "Objectif non atteint", S.eventClaims[a]); },
 
   // settings
+  recoverSave: () => { if (window.__srSaveRecoveryV341) window.__srSaveRecoveryV341.open(); },
   saveNow: () => { saveNow(); toast("Sauvegardé", true); },
   freshReload: () => forceFreshReload(),
-  warpDay: () => { warpDay(); toast("+1 jour simulé", true); },
+  simulateTime: (a) => {
+    const r = simulateTimeHours(Number(a));
+    toast(r.ok ? ("Simulation +" + (r.hours === 24 ? "1 jour" : r.hours + " h") + " · Jour " + r.day) : "Simulation impossible", r.ok);
+    render();
+  },
   rename: () => {
     const n = prompt("Nom du héros :", S.playerName);
     if (n && n.trim()) { update((s) => { s.playerName = n.trim().slice(0, 18); }); toast("Renommé", true); }
@@ -1937,6 +2110,7 @@ const ACT = {
 
 // Drag tactile/souris du Sanctuaire.
 (function initSanctuaryDragV34(){
+  if(window.__SHADOWREACH_SANCTUARY_PAUSED===true)return;
   const app=document.getElementById("app"); if(!app)return;
   let d=null;
   const clearTarget=()=>{if(d&&d.target)d.target.classList.remove("sanctDropTarget","sanctMergeTarget","sanctRejectTarget");};
@@ -2012,11 +2186,32 @@ if (SMOKE) {
 // rejoué juste après la fin du scroll. Quand un rendu a lieu, une seule restauration
 // synchrone de scrollTop est faite : plus de second restore en requestAnimationFrame
 // et plus de "collage" automatique au bas de page qui entraient en conflit avec le doigt.
+// V439 · Equipment interaction state survives any unavoidable screen rebuild.
+let equipmentUiStateV439 = { slotsLeft: 0, filterLeft: 0, statsMoreOpen: false };
+function captureEquipmentUiV439(){
+  if (typeof route === "undefined" || route !== "equipement") return;
+  const scroller=document.querySelector('[data-equip-slots-scroll="1"]');
+  const filter=document.querySelector('[data-equip-filter-scroll="1"]');
+  const more=document.querySelector('.equipStatsMore');
+  if(scroller) equipmentUiStateV439.slotsLeft=scroller.scrollLeft;
+  if(filter) equipmentUiStateV439.filterLeft=filter.scrollLeft;
+  if(more) equipmentUiStateV439.statsMoreOpen=!!more.open;
+}
+function restoreEquipmentUiV439(){
+  if (typeof route === "undefined" || route !== "equipement") return;
+  const scroller=document.querySelector('[data-equip-slots-scroll="1"]');
+  const filter=document.querySelector('[data-equip-filter-scroll="1"]');
+  const more=document.querySelector('.equipStatsMore');
+  if(scroller) scroller.scrollLeft=equipmentUiStateV439.slotsLeft;
+  if(filter) filter.scrollLeft=equipmentUiStateV439.filterLeft;
+  if(more) more.open=equipmentUiStateV439.statsMoreOpen;
+}
 const renderBaseV47 = render;
 let scrollRenderTimerV47 = 0;
 let scrollLastMoveV47 = -1e9;
 let scrollDeferredV47 = false;
 let scrollBypassV47 = false;
+let scrollPointerActiveV435 = false;
 
 (function initScrollStabilityV47(){
   const sc = document.getElementById("screen");
@@ -2037,13 +2232,34 @@ let scrollBypassV47 = false;
   sc.addEventListener("scroll", mark, {passive:true});
   sc.addEventListener("touchmove", mark, {passive:true});
   sc.addEventListener("wheel", mark, {passive:true});
+  // V435: do not replace the complete screen while a finger/pointer is still
+  // interacting with it. On iOS/WebKit, replacing #screen children between
+  // pointerdown and click can move the viewport even when scrollTop is restored.
+  sc.addEventListener("pointerdown", function(e){
+    if (e.pointerType === "touch" || e.pointerType === "pen") scrollPointerActiveV435 = true;
+  }, {passive:true});
+  const releasePointer = function(){
+    if (!scrollPointerActiveV435) return;
+    scrollPointerActiveV435 = false;
+    if (!scrollDeferredV47) return;
+    clearTimeout(scrollRenderTimerV47);
+    scrollRenderTimerV47 = setTimeout(function(){
+      scrollRenderTimerV47 = 0;
+      if (!scrollDeferredV47) return;
+      scrollDeferredV47 = false;
+      scrollBypassV47 = true;
+      try { render(); } finally { scrollBypassV47 = false; }
+    }, 0);
+  };
+  sc.addEventListener("pointerup", releasePointer, {passive:true});
+  sc.addEventListener("pointercancel", releasePointer, {passive:true});
 })();
 
 render = function(){
   const screen = document.getElementById("screen");
   const beforeRoute = typeof route !== "undefined" ? route : null;
   const now = (typeof performance !== "undefined" ? performance.now() : Date.now());
-  const activelyScrolling = !scrollBypassV47 && screen && (now - scrollLastMoveV47 < 150);
+  const activelyScrolling = !scrollBypassV47 && screen && (scrollPointerActiveV435 || (now - scrollLastMoveV47 < 150));
 
   // Important: ne jamais remplacer les enfants du conteneur pendant l'inertie.
   if (activelyScrolling) {
@@ -2060,12 +2276,27 @@ render = function(){
   }
 
   const beforeTop = screen ? screen.scrollTop : 0;
+  captureEquipmentUiV439();
   const out = renderBaseV47.apply(this, arguments);
   const sc = document.getElementById("screen");
-  if (sc && beforeRoute === (typeof route !== "undefined" ? route : null)) {
-    const max = Math.max(0, sc.scrollHeight - sc.clientHeight);
-    sc.scrollTop = Math.min(beforeTop, max);
+  const sameRoute = beforeRoute === (typeof route !== "undefined" ? route : null);
+  if (sc && sameRoute) {
+    // V441: the rebuilt screen can have a transiently smaller scrollHeight until
+    // layout-dependent content settles. Never permanently clamp the user's old
+    // position against that intermediate height.
+    sc.scrollTop = beforeTop;
+    requestAnimationFrame(function(){
+      const live=document.getElementById("screen");
+      if(!live || beforeRoute !== (typeof route !== "undefined" ? route : null)) return;
+      live.scrollTop = beforeTop;
+      requestAnimationFrame(function(){
+        const settled=document.getElementById("screen");
+        if(!settled || beforeRoute !== (typeof route !== "undefined" ? route : null)) return;
+        settled.scrollTop = Math.min(beforeTop, Math.max(0, settled.scrollHeight-settled.clientHeight));
+      });
+    });
   }
+  restoreEquipmentUiV439();
   return out;
 };
 

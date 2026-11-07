@@ -1,0 +1,162 @@
+{
+  "version": 2,
+  "source": "User-supplied equipment atlas",
+  "source_column_order": [
+    "commun",
+    "peu_commun",
+    "rare",
+    "epique",
+    "mythique",
+    "heroique",
+    "artefact",
+    "legendaire",
+    "infernal",
+    "immortel",
+    "divin"
+  ],
+  "runtime_rarity_order": [
+    "commun",
+    "peu_commun",
+    "rare",
+    "epique",
+    "heroique",
+    "mythique",
+    "artefact",
+    "legendaire",
+    "infernal",
+    "immortel",
+    "divin"
+  ],
+  "selection_rule": "Select assets by rarity NAME, never by atlas column index.",
+  "hero_base": {
+    "without_equipment": "bare torso/body + white shorts"
+  },
+  "gameplay_slots": [
+    "arme",
+    "casque",
+    "armure",
+    "gants",
+    "bottes",
+    "ceinture",
+    "collier",
+    "anneau"
+  ],
+  "visual_mapping": {
+    "casque": [
+      "casque"
+    ],
+    "armure": [
+      "armure_torse_arriere",
+      "armure_epaules",
+      "armure_torse_avant"
+    ],
+    "gants": [
+      "gants"
+    ],
+    "bottes": [
+      "bottes_jambieres",
+      "bottes"
+    ],
+    "ceinture": [
+      "ceinture_arriere",
+      "ceinture_avant"
+    ],
+    "collier": [
+      "collier"
+    ],
+    "anneau": [
+      "anneau"
+    ],
+    "arme": [
+      "USE_EXISTING_ART_WEAPONS_RENDERER"
+    ]
+  },
+  "rules": [
+    "No new gameplay slots.",
+    "Do not restore retired hero-equipment-v1.js as-is.",
+    "Use current canonical hero/combat renderer.",
+    "Preload/cache only the required current equipment layers; do not recreate 121 Image objects every frame.",
+    "Unequipping must remove the visual immediately.",
+    "Changing rarity or item must update the visual immediately.",
+    "Keep the existing weapon renderer authoritative."
+  ],
+  "parts": {
+    "casque": {
+      "slot": "casque",
+      "canvas": [
+        192,
+        64
+      ]
+    },
+    "armure_epaules": {
+      "slot": "armure",
+      "canvas": [
+        192,
+        64
+      ]
+    },
+    "armure_torse_avant": {
+      "slot": "armure",
+      "canvas": [
+        192,
+        80
+      ]
+    },
+    "armure_torse_arriere": {
+      "slot": "armure",
+      "canvas": [
+        192,
+        64
+      ]
+    },
+    "gants": {
+      "slot": "gants",
+      "canvas": [
+        192,
+        64
+      ]
+    },
+    "ceinture_avant": {
+      "slot": "ceinture",
+      "canvas": [
+        192,
+        56
+      ]
+    },
+    "ceinture_arriere": {
+      "slot": "ceinture",
+      "canvas": [
+        192,
+        64
+      ]
+    },
+    "bottes_jambieres": {
+      "slot": "bottes",
+      "canvas": [
+        192,
+        72
+      ]
+    },
+    "bottes": {
+      "slot": "bottes",
+      "canvas": [
+        192,
+        64
+      ]
+    },
+    "collier": {
+      "slot": "collier",
+      "canvas": [
+        192,
+        56
+      ]
+    },
+    "anneau": {
+      "slot": "anneau",
+      "canvas": [
+        192,
+        48
+      ]
+    }
+  }
+}

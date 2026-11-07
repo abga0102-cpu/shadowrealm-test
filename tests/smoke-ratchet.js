@@ -80,6 +80,8 @@ async function readSmokeFailures(browser, rootDir, label) {
       };
     });
 
+    page.on('pageerror', error => console.log(label + ' PAGEERROR: ' + (error.stack || error.message)));
+    page.on('console', msg => { if (msg.type() === 'error') console.log(label + ' CONSOLE ERROR: ' + msg.text()); });
     await page.route('**/npm/**', (route) => route.abort());
     await page.goto(`${url}/smoke-test.html`, { waitUntil: 'domcontentloaded' });
 
