@@ -74,7 +74,7 @@ test('V341 recovery must fail closed if pre-restore snapshot fails (read-only so
   expect(begin).toBeGreaterThan(-1);
   expect(end).toBeGreaterThan(begin);
   const restoreCandidate = safety.slice(begin, end);
-  expect(restoreCandidate).toMatch(/if\s*\([^)]*!snapshot\([^)]*\)\s*\)\s*return false/);
+  expect(restoreCandidate).toMatch(/if\s*\(active&&active\.raw&&!snapshot\(active\.raw,true\)\)\s*\{[\s\S]*?return false;\s*\}/);
   // This test never touches real browser storage or player saves.
 });
 
