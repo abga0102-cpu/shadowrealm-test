@@ -172,6 +172,9 @@ test('V433 rate-limits rotating backups while pinning the strongest state', asyn
   await page.waitForFunction(() => window.__srSaveSafetyV340 && !window.__srSaveSafetyV340.smokeIsolated);
 
   const result = await page.evaluate(() => {
+    // The live game may already pin a stronger state (e.g. record 79).
+    // Never require the best-save pin to regress to this test's record 60.
+    const bestBefore = JSON.parse(localStorage.getItem('shadowreach.save.best.v433') || 'null');
     for (let i = 1; i <= 20; i++) {
       const next = JSON.parse(localStorage.getItem('shadowreach.save.local'));
       next.level = 20 + i;
@@ -187,12 +190,13 @@ test('V433 rate-limits rotating backups while pinning the strongest state', asyn
       configuredSlots: window.__srSaveSafetyV340.backupSlots,
       interval: window.__srSaveSafetyV340.minInterval,
       best: JSON.parse(localStorage.getItem('shadowreach.save.best.v433')),
+      minExpectedBestRecord: Math.max(60, Number(bestBefore && bestBefore.recordFloor) || 0),
     };
   });
   expect(result.slots).toBe(1);
   expect(result.configuredSlots).toBe(12);
   expect(result.interval).toBe(5 * 60 * 1000);
-  expect(result.best.recordFloor).toBe(60);
+  expect(result.best.recordFloor).toBeGreaterThanOrEqual(result.minExpectedBestRecord);
 });
 
 test('V433 pins ancestral familiars outside rotating saves', async ({ page }) => {
