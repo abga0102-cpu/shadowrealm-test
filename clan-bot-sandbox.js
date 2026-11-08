@@ -196,5 +196,129 @@ function resetRounds(raw,clanId){
  return {ok:true,state};
 }
 
-return Object.freeze({KEY,VERSION,CRESTS,CLANS,MAX_MEMBERS,fresh,clean,validName,allClans,myClan,join,create,leave,read,write,clear,ORDERS_KEY,ORDERS,ACTIVITY_LABEL,readOrders,writeOrders,clearOrders,sanitizeOrders,setOrder,chooseDay,runRound,commandStats,resetRounds});
+
+/* Exhibition war: independent, bounded, local-only; never grants in-game rewards.
+ * Reuses the orders engine to avoid duplicating tactical activity rules.
+ */
+const WAR_KEY='shadowreach.clan.bot-exhibition.v1',WAR_VERSION=1;
+const WAR_HOUR_MS=3600000,MAX_OFFLINE_ROUNDS=8;
+function rivalCandidates(clanId){return CLANS.filter(c=>c.id!==clanId);}
+function pickRival(clanId){
+ const all=rivalCandidates(clanId);
+ return all.length?all[clanId==='custom'?0:(CLANS.findIndex(c=>c.id===clanId)+2)%all.length].id:null;
+}
+function newExhibition(clanId,rivalId){
+ const selected=rivalCandidates(clanId).some(c=>c.id===rivalId)?rivalId:pickRival(clanId);
+ return {version:WAR_VERSION,clanId:clanId||null,rivalId:selected,day:1,
+  scores:[0,0,0,0,0,0],counts:{},journal:[],auto:false,lastAt:null};
+}
+function cleanExhibition(raw,clanId){
+ const fresh=newExhibition(clanId);
+ if(!clanId||!commandRoster(clanId).length||!raw||typeof raw!=='object'||Array.isArray(raw)||
+   raw.version!==WAR_VERSION||raw.clanId!==clanId)return fresh;
+ const safe=newExhibition(clanId,raw.rivalId);
+ safe.day=Number.isInteger(raw.day)&&raw.day>=1&&raw.day<=7?raw.day:1;
+ const valid=new Set(commandRoster(clanId).map(x=>x.id));
+ const rawCounts=raw.counts&&typeof raw.counts==='object'&&!Array.isArray(raw.counts)?raw.counts:{};
+ for(const id of valid)if(Array.isArray(rawCounts[id]))
+   safe.counts[id]=Array.from({length:6},(_,i)=>{
+    const n=rawCounts[id][i];
+    return Number.isSafeInteger(n)&&n>=0?Math.min(n,i===5?ATTACK_LIMIT:DAY_LIMIT):0;
+   });
+ if(Array.isArray(raw.scores))safe.scores=Array.from({length:6},(_,i)=>{
+  const n=raw.scores[i],bound=valid.size*(i===5?ATTACK_LIMIT:DAY_LIMIT)*4;
+  return Number.isSafeInteger(n)&&n>=0?Math.min(n,bound):0;
+ });
+ if(Array.isArray(raw.journal))safe.journal=raw.journal.slice(-MAX_JOURNAL).filter(e=>
+   e&&valid.has(e.id)&&Number.isInteger(e.day)&&e.day>=1&&e.day<=6&&
+   typeof e.action==='string'&&Object.prototype.hasOwnProperty.call(ACTIVITY_LABEL,e.action)&&
+   Number.isSafeInteger(e.points)&&e.points>=0&&e.points<=4)
+   .map(e=>({id:e.id,day:e.day,action:e.action,points:e.points}));
+ safe.auto=raw.auto===true;
+ safe.lastAt=Number.isSafeInteger(raw.lastAt)&&raw.lastAt>=0?raw.lastAt:null;
+ return safe;
+}
+function readExhibition(storage,clanId){
+ try{return cleanExhibition(JSON.parse(storage.getItem(WAR_KEY)||'null'),clanId);}
+ catch(_){return newExhibition(clanId);}
+}
+function writeExhibition(storage,clanId,war){
+ try{storage.setItem(WAR_KEY,JSON.stringify(cleanExhibition(war,clanId)));return true;}
+ catch(_){return false;}
+}
+function clearExhibition(storage){try{storage.removeItem(WAR_KEY);return true;}catch(_){return false;}}
+function setRival(clanId,id){
+ const state=newExhibition(clanId,id);
+ if(!commandRoster(clanId).length)return {ok:false,error:'Rejoins un clan.',state};
+ if(!rivalCandidates(clanId).some(c=>c.id===id))return {ok:false,error:'Adversaire inconnu.',state};
+ return {ok:true,state};
+}
+function rivalTarget(clanId,rivalId,day){
+ if(!Number.isInteger(day)||day<1||day>6||!rivalCandidates(clanId).some(c=>c.id===rivalId))return null;
+ const count=commandRoster(clanId).length,enemyIndex=CLANS.findIndex(c=>c.id===rivalId);
+ const bonus=((day*7+enemyIndex*3)%7-3)*0.035;
+ const difficulty=(enemyIndex%2===0?0.68:0.72)+bonus;
+ return Math.max(1,Math.round(count*(day===6?ATTACK_LIMIT:DAY_LIMIT)*(day===6?3:2)*difficulty));
+}
+function exhibitionSummary(raw,clanId,rules){
+ const state=cleanExhibition(raw,clanId),closed=[];
+ for(let i=1;i<state.day;i++){
+  const rival=rivalTarget(clanId,state.rivalId,i);
+  if(rival===null)break;
+  closed.push({day:i,closed:true,homePoints:state.scores[i-1],awayPoints:rival});
+ }
+ const verdict=rules&&typeof rules.summarizeDays==='function'?rules.summarizeDays(closed):null;
+ const rival=CLANS.find(c=>c.id===state.rivalId);
+ return {day:state.day,rivalId:state.rivalId,rivalName:rival?rival.name:'Rival',
+  scores:state.scores.slice(),rivalScore:state.day===7?null:rivalTarget(clanId,state.rivalId,state.day),
+  settled:closed,verdict,auto:state.auto,botCount:commandRoster(clanId).length};
+}
+function exhibitionRound(raw,orders,clanId,rules){
+ const state=cleanExhibition(raw,clanId);
+ if(!commandRoster(clanId).length)return {ok:false,error:'Aucun clan.',state};
+ if(state.day===7)return {ok:false,error:'Match terminé.',state};
+ const plan=sanitizeOrders(orders,clanId);
+ const temporary={...plan,day:state.day,counts:state.counts,journal:state.journal};
+ const attempt=runRound(temporary,clanId,rules);
+ if(!attempt.ok)return {ok:false,error:attempt.error,state};
+ state.counts=attempt.state.counts;state.journal=attempt.state.journal;
+ state.scores[state.day-1]=Math.min(commandRoster(clanId).length*(state.day===6?ATTACK_LIMIT:DAY_LIMIT)*4,
+  state.scores[state.day-1]+attempt.points);
+ return {ok:true,state,acted:attempt.acted,points:attempt.points,reports:attempt.reports};
+}
+function exhibitionNextDay(raw,clanId,rules){
+ const state=cleanExhibition(raw,clanId);
+ if(state.day===7||!commandRoster(clanId).length)return {ok:false,error:'Journée impossible à clôturer.',state};
+ const day=state.day;state.day++;state.lastAt=null;
+ return {ok:true,state,closedDay:day,summary:exhibitionSummary(state,clanId,rules)};
+}
+function setExhibitionAuto(raw,clanId,enable,now){
+ const state=cleanExhibition(raw,clanId);
+ if(!commandRoster(clanId).length||state.day===7)return {ok:false,error:'Aucune guerre active.',state};
+ if(!Number.isSafeInteger(now)||now<0)return {ok:false,error:'Horloge invalide.',state};
+ state.auto=enable===true;state.lastAt=state.auto?now:null;
+ return {ok:true,state};
+}
+function exhibitionCatchUp(raw,orders,clanId,rules,now){
+ const state=cleanExhibition(raw,clanId);
+ if(!state.auto||state.day===7||!Number.isSafeInteger(now)||now<0)
+  return {ok:true,state,ticks:0,acted:0,points:0};
+ if(state.lastAt===null||now<state.lastAt){
+  state.lastAt=now;return {ok:true,state,ticks:0,acted:0,points:0};
+ }
+ const elapsed=Math.floor((now-state.lastAt)/WAR_HOUR_MS);
+ const ticks=Math.max(0,Math.min(MAX_OFFLINE_ROUNDS,elapsed));
+ if(!ticks)return {ok:true,state,ticks:0,acted:0,points:0};
+ let acted=0,points=0;
+ for(let i=0;i<ticks;i++){
+  const step=exhibitionRound(state,orders,clanId,rules);
+  if(!step.ok)return {ok:false,error:step.error,state,ticks:i,acted,points};
+  acted+=step.acted;points+=step.points;
+  state.counts=step.state.counts;state.journal=step.state.journal;state.scores=step.state.scores;
+ }
+ state.lastAt=elapsed>MAX_OFFLINE_ROUNDS?now:state.lastAt+ticks*WAR_HOUR_MS;
+ return {ok:true,state,ticks,acted,points};
+}
+
+return Object.freeze({KEY,VERSION,CRESTS,CLANS,MAX_MEMBERS,fresh,clean,validName,allClans,myClan,join,create,leave,read,write,clear,ORDERS_KEY,ORDERS,ACTIVITY_LABEL,readOrders,writeOrders,clearOrders,sanitizeOrders,setOrder,chooseDay,runRound,commandStats,resetRounds,WAR_KEY,WAR_HOUR_MS,MAX_OFFLINE_ROUNDS,newExhibition,cleanExhibition,readExhibition,writeExhibition,clearExhibition,rivalCandidates,setRival,rivalTarget,exhibitionSummary,exhibitionRound,exhibitionNextDay,setExhibitionAuto,exhibitionCatchUp});
 });
