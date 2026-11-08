@@ -60,3 +60,11 @@ Après validation du modèle économique et la mise à disposition d'un backend 
 - `game-5.js` et `index.html` restent inchangés pour éviter de chevaucher la PR #479. L'intégration dans le véritable écran Clan doit attendre la coordination et une passe QA complète.
 - Tests Node (`tests/phase-clan-bot-rosters.spec.js`) et Chromium/iPhone (`tests/phase-clan-bot-preview.spec.js`). Le statut des CI doit être vérifié avant toute proposition de fusion.
 - Pas encore de multijoueur réel, de guerres résolues, de scores serveur, de récompenses, d'adhésion persistante entre appareils ou de création de comptes.
+
+## Ordres du chef de simulation aux bots (prototype isolé)
+
+L'onglet `Mes ordres` permet de choisir un ordre collectif ou un ordre individuel parmi : objectif du jour, Forge, Raids, Compétences, Familiers, économie de ressources, attaque, défense et repos. Dans le bac à sable, tout joueur ayant rejoint un clan fictif peut tester les directives : **cela n'accorde aucun droit de chef dans un clan réel**.
+
+Une ronde manuelle exécute une action par bot uniquement si l'action correspond au jour défini par `clan-war-rules.js`. Lorsqu'un ordre n'est pas compatible, le bot reste en attente, il ne change pas silencieusement de tâche. Les jours 1–5 limitent les contributions à 8 par bot/jour ; le J6 limite les assauts à 5 tickets par bot ; le J7 est en lecture seule.
+
+La clé indépendante `shadowreach.clan.bot-orders.v1` sauvegarde les ordres, compteurs plafonnés et un journal limité à 36 événements fictifs. Ces données sont validées au chargement, liées à l'ID du clan, et effacées lors d'un changement/abandon de clan. Aucune interaction avec `shadowreach.save.local`, ni monnaie, ni récompense, ni PvP réel, ni processus de fond lorsque la page est fermée. Les points des rapports sont explicitement **fictifs** et n'interviennent pas dans la victoire de guerre.

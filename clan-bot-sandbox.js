@@ -67,5 +67,134 @@ function write(storage,data){
   try{storage.setItem(KEY,JSON.stringify(clean(data)));return true;}catch(_){return false;}
 }
 function clear(storage){try{storage.removeItem(KEY);return true;}catch(_){return false;}}
-return Object.freeze({KEY,VERSION,CRESTS,CLANS,MAX_MEMBERS,fresh,clean,validName,allClans,myClan,join,create,leave,read,write,clear});
+
+/* Bot command authority, isolated to the clan sandbox and never the game save.
+ * Manual rounds make orders observable, never award actual resources or war wins.
+ */
+const ORDERS_KEY='shadowreach.clan.bot-orders.v1';
+const ORDERS=Object.freeze({
+ auto:'Objectif du jour',forge:'Forge',raid:'Raids',skills:'Compétences',
+ familiar:'Familiers',save:'Économiser',attack:'Attaquer',defend:'Défendre',rest:'Repos'
+});
+const ACTIVITY_LABEL=Object.freeze({
+ forge_item:'Forge',forge_gold:'Amélioration Forge',raid_key:'Raid',
+ skill_summon:'Invocation',skill_upgrade:'Compétences',familiar_hatch:'Éclosion',
+ familiar_merge:'Fusion familiers',tree_research:'Recherche',
+ clan_attack:'Assaut',clan_brawl:'Combat collectif'
+});
+const MAX_JOURNAL=36,DAY_LIMIT=8,ATTACK_LIMIT=5;
+function commandRoster(clanId){
+ const index=CLANS.findIndex(c=>c.id===clanId);
+ return index>=0?bots(clanId,index,12):clanId==='custom'?bots('custom',CLANS.length,8):[];
+}
+function freshOrders(clanId){return {version:1,clanId:clanId||null,day:1,global:'auto',perBot:{},counts:{},journal:[]};}
+function sanitizeOrders(raw,clanId){
+ const safe=freshOrders(clanId);
+ if(!clanId||!commandRoster(clanId).length||!raw||typeof raw!=='object'||Array.isArray(raw)||raw.version!==1||raw.clanId!==clanId)return safe;
+ const valid=new Set(commandRoster(clanId).map(b=>b.id));
+ const known=mode=>Object.prototype.hasOwnProperty.call(ORDERS,mode);
+ safe.day=Number.isInteger(raw.day)&&raw.day>=1&&raw.day<=7?raw.day:1;
+ if(known(raw.global))safe.global=raw.global;
+ const overrides=raw.perBot&&typeof raw.perBot==='object'&&!Array.isArray(raw.perBot)?raw.perBot:{};
+ const counts=raw.counts&&typeof raw.counts==='object'&&!Array.isArray(raw.counts)?raw.counts:{};
+ for(const id of valid){
+  if(known(overrides[id]))safe.perBot[id]=overrides[id];
+  if(Array.isArray(counts[id]))safe.counts[id]=Array.from({length:6},(_,i)=>{
+   const n=counts[id][i];return Number.isSafeInteger(n)&&n>=0?Math.min(n,i===5?ATTACK_LIMIT:DAY_LIMIT):0;
+  });
+ }
+ if(Array.isArray(raw.journal))safe.journal=raw.journal.slice(-MAX_JOURNAL).filter(e=>
+   e&&valid.has(e.id)&&Number.isInteger(e.day)&&e.day>=1&&e.day<=6&&
+   typeof e.action==='string'&&Object.prototype.hasOwnProperty.call(ACTIVITY_LABEL,e.action)&&
+   Number.isSafeInteger(e.points)&&e.points>=0&&e.points<=10
+ ).map(e=>({id:e.id,day:e.day,action:e.action,points:e.points}));
+ return safe;
+}
+function readOrders(storage,clanId){
+ try{return sanitizeOrders(JSON.parse(storage.getItem(ORDERS_KEY)||'null'),clanId);}
+ catch(_){return freshOrders(clanId);}
+}
+function writeOrders(storage,clanId,orders){
+ try{storage.setItem(ORDERS_KEY,JSON.stringify(sanitizeOrders(orders,clanId)));return true;}
+ catch(_){return false;}
+}
+function clearOrders(storage){try{storage.removeItem(ORDERS_KEY);return true;}catch(_){return false;}}
+function setOrder(raw,clanId,mode,botId){
+ const state=sanitizeOrders(raw,clanId),roster=commandRoster(clanId);
+ if(!roster.length)return {ok:false,error:'Rejoins un clan pour diriger des bots.',state};
+ if(botId!==undefined&&botId!==null){
+  if(!roster.some(b=>b.id===botId))return {ok:false,error:'Ce bot n’appartient pas à ton clan.',state};
+  if(mode==='inherit'){delete state.perBot[botId];return {ok:true,state};}
+  if(!Object.prototype.hasOwnProperty.call(ORDERS,mode))return {ok:false,error:'Ordre inconnu.',state};
+  state.perBot[botId]=mode;
+ }else{
+  if(!Object.prototype.hasOwnProperty.call(ORDERS,mode))return {ok:false,error:'Ordre inconnu.',state};
+  state.global=mode;
+ }
+ return {ok:true,state};
+}
+function chooseDay(raw,clanId,day){
+ const state=sanitizeOrders(raw,clanId);
+ if(!commandRoster(clanId).length)return {ok:false,error:'Aucun clan rejoint.',state};
+ if(!Number.isInteger(day)||day<1||day>7)return {ok:false,error:'Jour invalide.',state};
+ state.day=day;return {ok:true,state};
+}
+function taskFor(order,allowed,index,used){
+ if(order==='save'||order==='rest'||order==='defend')return null;
+ if(order==='auto')return allowed.length?allowed[(index+used)%allowed.length]:null;
+ const matches={
+  forge:['forge_item','forge_gold'],raid:['raid_key'],
+  skills:['skill_upgrade','skill_summon'],familiar:['familiar_hatch','familiar_merge'],
+  attack:['clan_attack']
+ }[order]||[];
+ return matches.find(a=>allowed.includes(a))||null;
+}
+function runRound(raw,clanId,rules){
+ const state=sanitizeOrders(raw,clanId),roster=commandRoster(clanId);
+ if(!roster.length)return {ok:false,error:'Aucun clan à commander.',state};
+ const day=state.day,config=rules&&typeof rules.dayConfig==='function'?rules.dayConfig(day):null;
+ if(!config||day===7)return {ok:false,error:'Jour 7 : bilan, aucune action.',state};
+ const allowed=Array.isArray(config.actions)?config.actions:[];
+ const reports=[];let acted=0,points=0;
+ roster.forEach((bot,index)=>{
+  const order=state.perBot[bot.id]||state.global;
+  const counts=(state.counts[bot.id]||[0,0,0,0,0,0]).slice();
+  const used=counts[day-1],task=taskFor(order,allowed,index,used);
+  const capacity=day===6?ATTACK_LIMIT:DAY_LIMIT;
+  let message;
+  if(order==='save')message='Réserves préservées';
+  else if(order==='rest')message='Repos';
+  else if(order==='defend')message=day===6?'Position défensive tenue':'Attente de J6';
+  else if(!task)message='Ordre en attente pour un autre jour';
+  else if(used>=capacity)message=day===6?'5 tickets utilisés':'Quota d’entraînement atteint';
+  else{
+   const gain=day===6?2+(index+used)%3:1+(index+used+day)%3;
+   counts[day-1]++;state.counts[bot.id]=counts;
+   state.journal.push({id:bot.id,day,action:task,points:gain});
+   acted++;points+=gain;
+   message=ACTIVITY_LABEL[task]+' effectué · +'+gain+' points fictifs';
+  }
+  reports.push({id:bot.id,name:bot.name,order,message,acted:!!task&&used<capacity});
+ });
+ state.journal=state.journal.slice(-MAX_JOURNAL);
+ return {ok:true,state,reports,acted,points};
+}
+function commandStats(raw,clanId){
+ const s=sanitizeOrders(raw,clanId);
+ const roster=commandRoster(clanId);
+ const botsInfo=roster.map(bot=>{
+  const counts=s.counts[bot.id]||[0,0,0,0,0,0];
+  return {id:bot.id,name:bot.name,order:s.perBot[bot.id]||s.global,
+   override:s.perBot[bot.id]||null,dayCount:s.day===7?0:counts[s.day-1],
+   attacks:counts[5],total:counts.reduce((n,c)=>n+c,0)};
+ });
+ return {day:s.day,global:s.global,bots:botsInfo,
+  total:botsInfo.reduce((n,b)=>n+b.total,0),recent:s.journal.slice(-12).reverse()};
+}
+function resetRounds(raw,clanId){
+ const state=sanitizeOrders(raw,clanId);state.counts={};state.journal=[];
+ return {ok:true,state};
+}
+
+return Object.freeze({KEY,VERSION,CRESTS,CLANS,MAX_MEMBERS,fresh,clean,validName,allClans,myClan,join,create,leave,read,write,clear,ORDERS_KEY,ORDERS,ACTIVITY_LABEL,readOrders,writeOrders,clearOrders,sanitizeOrders,setOrder,chooseDay,runRound,commandStats,resetRounds});
 });

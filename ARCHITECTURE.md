@@ -52,7 +52,7 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Floating Social launcher policy | `social-v1.js` | Owns launcher creation/remount and suppression policy when Social is enabled. |
 | Social message-store policy | `social-v1.js` | Canonical owner of the `shadowreach.social.v1.messages` key, 160-message retention, malformed/non-array read fallback, and capped serialization. `social-p2p-v1.js`, `social-bot-testers-v5.js`, and `social-bot-ui-v1.js` consume this contract while retaining their own write-error and same-tab notification behavior where applicable. |
 
-| Bot clan sandbox, isolated from game runtime | `clan-bot-sandbox.js` | Durable simulated roster/membership API used only by `clan-bots-preview.html`. Fictitious bots, separate local key `shadowreach.clan.bot-preview.v1`, no real accounts, combat, live saves, resources or payouts. |
+| Bot clan sandbox, isolated from game runtime | `clan-bot-sandbox.js` | Durable simulated roster/membership and deterministic order-training API used only by `clan-bots-preview.html`. Fictitious bots, distinct keys `shadowreach.clan.bot-preview.v1` and `shadowreach.clan.bot-orders.v1`, manual bounded action rounds; no accounts, real combat, game saves, resources or payouts. |
 | Clan War rules foundation (not runtime-loaded; no server or payouts) | `clan-war-rules.js` | Isolated deterministic day schedule, provisional action eligibility, pre-war join check, ticket arithmetic and settled-day victory tally. Never owns real player scores, combat validation, clan rosters, rewards, saved data or live matchmaking. See `docs/CLAN_WAR_ARCHITECTURE.md`. |
 
 ## Architecture-first file placement
