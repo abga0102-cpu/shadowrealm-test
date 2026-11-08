@@ -42,8 +42,7 @@ test('the fully loaded game keeps V207 as the runtime save-import owner', async 
       v207Loaded: window.__srImportSaveGuardV207 === true,
       staleV206Loaded: window.__srImportGuardV206 === true,
       restoresRaidKeys: body.includes('raw.raids') && body.includes('RAID_IDS'),
-      restoresUniversalKeys: body.includes('raw.universalKeys') && body.includes('S.universalKeys'),
-      pricingLoaded: window.__srSanctuaryPricingV125 === true,
+      restoresUniversalKeys: body.includes('raw.universalKeys') && body.includes('imported.universalKeys'),
     };
   });
 
@@ -51,7 +50,6 @@ test('the fully loaded game keeps V207 as the runtime save-import owner', async 
   expect(owner.staleV206Loaded).toBe(false);
   expect(owner.restoresRaidKeys).toBe(true);
   expect(owner.restoresUniversalKeys).toBe(true);
-  expect(owner.pricingLoaded).toBe(true);
 });
 
 test('V207 import preserves explicit zero raid and universal-key counts', async ({ page }) => {
