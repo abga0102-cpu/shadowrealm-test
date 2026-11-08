@@ -83,7 +83,7 @@ footer{margin-top:25px;text-align:center;color:#8997ae;font-size:11px}footer but
         '<div class="metrics"><span><b>'+stats.total+'</b>Actions fictives cumulées</span><span><b>'+stats.bots.length+'</b>Bots sous tes ordres</span></div>'+
         '<button id="runOrders" class="action full" type="button" '+(stats.day===7?'disabled':'')+'>▶ Faire agir les bots · 1 ronde</button>'+
         '<p class="muted" style="margin:9px 0 20px">Une action maximum par bot et par ronde. J1–J5 : 8 actions max par bot et par jour ; J6 : 5 tickets. J7 : aucun combat.</p>'+
-        '<h3>Ordres individuels</h3><div class="orderRoster">'+roster.join('')+'</div>'+
+        '<h3>Ordres individuels</h3><div class="orderRoster">'+roster+'</div>'+
         '<h3>Rapport de simulation</h3><div class="logs">'+journal+'</div>'+
         '<button type="button" class="resetActivity" id="resetOrders">Réinitialiser les rondes</button>'+
         '<p class="notice">Prototype local. Ni or, ni minerais, ni scores de guerre réels ne sont modifiés. Les bots ne travaillent pas lorsque la page est fermée.</p></section>';
