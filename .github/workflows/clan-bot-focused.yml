@@ -6,6 +6,9 @@ on:
       - 'clan-bot-sandbox.js'
       - 'clan-war-rules.js'
       - 'clan-bots-preview.html'
+      - 'game-5.js'
+      - 'style.css'
+      - 'tests/phase-clan-native-*.spec.js'
       - 'tests/phase-clan-bot-*.spec.js'
       - 'tests/phase-clan-war-*.spec.js'
       - '.github/workflows/clan-bot-focused.yml'
@@ -35,10 +38,11 @@ jobs:
           node tests/phase-clan-bot-rosters.spec.js
           node tests/phase-clan-bot-orders.spec.js
           node tests/phase-clan-war-exhibition.spec.js
+          node tests/phase-clan-native-route.spec.js
       - name: Install browser engines
         run: npx playwright install --with-deps chromium webkit
       - name: Test isolated clan UI in desktop and iPhone
-        run: npx playwright test -c tests/playwright.config.js tests/phase-clan-bot-preview.spec.js tests/phase-clan-bot-orders-ui.spec.js tests/phase-clan-war-exhibition-ui.spec.js --reporter=list
+        run: npx playwright test -c tests/playwright.config.js tests/phase-clan-bot-preview.spec.js tests/phase-clan-bot-orders-ui.spec.js tests/phase-clan-war-exhibition-ui.spec.js tests/phase-clan-native-route-ui.spec.js --reporter=list
       - name: Upload browser diagnostics if needed
         if: failure()
         uses: actions/upload-artifact@v4

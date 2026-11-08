@@ -82,3 +82,9 @@ La clé indépendante `shadowreach.clan.bot-orders.v1` sauvegarde les ordres, co
 ### Ordre Défendre : effet tangible
 
 Sur le J6, l'ordre Défendre exécute une participation de type combat collectif, consomme un des cinq emplacements d'action fictifs et génère 1 à 2 points de contribution. Chaque défense active ajoute également **un point de bouclier**, déduit du score simulé du clan rival (plafond de cinq défenses par bot). Avant le J6, un bot en défense attend. Cet effet ne modifie aucune guerre réelle ni l'économie.
+
+## Intégration native dans le jeu (branche expérimentale)
+
+La route Clan existante de Shadowreach, accessible via l'interface au niveau 10, appelle désormais `clanDemoScreen` dans le propriétaire d'écran canonique `game-5.js`, à la place du placeholder serveur. Le joueur peut créer ou rejoindre un clan, consulter les bots, donner des ordres collectifs/individuels et terminer une guerre fictive sans quitter le jeu. Les modules sont chargés à la demande, une seule fois, avec reprise manuelle en cas d'erreur réseau. Les classes CSS sont limitées à `.srClanNative` et la sauvegarde du héros n'est jamais lue ou modifiée par ces opérations. Le format des trois clés locales du prototype demeure identique pour les joueurs qui ont utilisé la preview.
+
+Le vrai backend de clans, les combats contre joueurs humains, les récompenses et les points officiels ne sont pas activés. La branche reste non fusionnée tant que le contrôle complet n'est pas validé. **Attention :** la PR #479 modifie aussi `game-5.js` (résultat des Raids dans une autre fonction) et `index.html` (non modifié ici), donc une réconciliation devra préserver ses changements avant fusion. Ne pas interrompre l'automate de corrections.
