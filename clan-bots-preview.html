@@ -59,7 +59,7 @@ footer{margin-top:25px;text-align:center;color:#8997ae;font-size:11px}footer but
     const t=e.target.closest('[data-tab]'),c=e.target.closest('[data-clan]'),s=e.target.closest('[data-crest]');
     if(t){tab=t.dataset.tab;render();}
     else if(c){selected=c.dataset.clan;tab='explore';render();}
-    else if(s){crest=s.dataset.crest;render();}
+    else if(s){crest=s.dataset.crest;document.querySelectorAll('#crests [data-crest]').forEach(btn=>btn.classList.toggle('on',btn===s));}
     else if(e.target.closest('#joinClan'))apply(C.join(state,selected),'Clan rejoint.');
     else if(e.target.closest('#leaveClan')){if(confirm('Quitter ce clan ? Ton clan personnel sera supprimé.'))apply(C.leave(state),'Clan quitté.');}
     else if(e.target.closest('#reset')){if(confirm('Effacer uniquement les clans de démonstration ?')&&C.clear(localStorage)){state=C.read(localStorage);selected='aube';tab='explore';render();say('Démonstration réinitialisée.');}}
