@@ -51,3 +51,12 @@ Ces activités sont un brouillon de conception, pas une règle active. Les valeu
 clan-war-rules.js expose uniquement des règles déterministes pures : calendrier UTC d'aperçu, activités proposées par jour, éligibilité temporelle d'un membre, cinq tickets et résultat des journées clôturées. Ce module ne déclenche aucun combat, ne crée aucun clan, ne persiste aucune donnée et ne donne aucune récompense. Il n'est pas encore chargé dans index.html : le joueur ne voit donc aucune nouvelle fonctionnalité pour l'instant.
 
 Après validation du modèle économique et la mise à disposition d'un backend sécurisé, procéder par PR séparées pour serveur, interface de Clan et événements métier, sans fusionner cette branche expérimentalement avec les PR automatiques.
+
+## Clans de bots : première interface testable
+
+- Prototype indépendant accessible par `clan-bots-preview.html` sur la branche expérimentale.
+- Six clans prédéfinis, douze bots fictifs déterministes chacun; possibilité de rejoindre, quitter ou créer son propre clan avec huit bots. Rôles, effectifs et puissance sont présentés sans tromper sur leur caractère simulé.
+- Seule la clé locale `shadowreach.clan.bot-preview.v1` est modifiée. La clé `shadowreach.save.local` et les ressources du jeu ne sont jamais touchées.
+- `game-5.js` et `index.html` restent inchangés pour éviter de chevaucher la PR #479. L'intégration dans le véritable écran Clan doit attendre la coordination et une passe QA complète.
+- Tests Node (`tests/phase-clan-bot-rosters.spec.js`) et Chromium/iPhone (`tests/phase-clan-bot-preview.spec.js`). Le statut des CI doit être vérifié avant toute proposition de fusion.
+- Pas encore de multijoueur réel, de guerres résolues, de scores serveur, de récompenses, d'adhésion persistante entre appareils ou de création de comptes.
