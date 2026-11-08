@@ -41,13 +41,13 @@ test('opt-in offline catch-up is capped and never changes the actual game save',
 test('commands are honored by exhibition and locked when day has ended',async({page})=>{
  await page.goto('/clan-bots-preview.html');
  await page.locator('#joinClan').click();
- await page.locator('[data-tab="orders"]').click();
+ await page.locator('nav.tabs [data-tab="orders"]').click();
  await page.locator('[data-command="rest"]').click();
  await page.locator('[data-tab="war"]').click();
  await page.locator('#warRun').click();
  await expect(page.locator('#status')).toContainText('0 bots');
  await page.locator('#warRival').selectOption('nord');
- await page.locator('[data-tab="orders"]').click();
+ await page.locator('nav.tabs [data-tab="orders"]').click();
  await page.locator('[data-command="auto"]').click();
  await page.locator('[data-tab="war"]').click();
  await page.locator('#warRun').click();
