@@ -18,4 +18,10 @@ const calls=[],db={'shadowreach.save.local':'PROTECTED'};const storage={getItem:
 assert.equal(C.write(storage,c.state),true);assert.equal(C.read(storage).memberOf,'custom');
 assert.equal(C.clear(storage),true);assert.equal(db['shadowreach.save.local'],'PROTECTED');
 assert.ok(calls.every(k=>k===C.KEY));assert.equal(C.write({setItem(){throw Error('quota')}},c.state),false);
+assert.equal(C.read({getItem(){throw Error('storage-blocked')}}).memberOf,null);
+assert.equal(C.clear({removeItem(){throw Error('storage-blocked')}}),false);
+assert.equal(C.join(C.leave(j.state).state,'nord').state.memberOf,'nord');
+const inspected=C.allClans(j.state);assert.equal(inspected.find(x=>x.id==='aube').members.filter(x=>x.kind==='demo').length,1);
+assert.equal(inspected.filter(x=>x.joined).length,1);
+assert.equal(C.clean({version:1,memberOf:'custom',created:{id:'custom',name:'</script>',crest:'🐉'}}).created,null);
 console.log('Bot clan domain PASS');
