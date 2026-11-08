@@ -31,6 +31,27 @@ footer{margin-top:25px;text-align:center;color:#8997ae;font-size:11px}footer but
 .logRow{padding:7px 3px;color:#b8cde5;font-size:12px;border-bottom:1px solid #ffffff12}
 .resetActivity{background:#253651;color:#e4ebf8;border:1px solid #4b6687;border-radius:9px;padding:9px;margin:16px 0 12px}
 @media(max-width:720px){.orderGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.dayPicks{grid-template-columns:repeat(4,minmax(0,1fr))}.orderRow select{width:45%;min-width:140px}}
+
+.warPanel h3{margin-top:20px}
+.warHeading{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.versus{display:grid;grid-template-columns:minmax(0,1fr) 35px minmax(0,1fr);gap:8px;align-items:center;margin:18px 0}
+.versus>div{text-align:center;background:#12233b;border:1px solid #3c5171;padding:15px 8px;border-radius:12px;min-width:0}
+.versus strong{display:block;color:#e4d8b9;font:750 16px Georgia,serif;overflow-wrap:anywhere}
+.versus b{display:block;color:#f6ce80;font-size:25px;margin-top:6px}.versus>span{font-weight:900;color:#c7ac79;text-align:center}
+.warBanner{background:#44321f;border:1px solid #ae8652;border-radius:11px;padding:13px;text-align:center;font-weight:850;color:#ffe0a7}
+.dayGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:17px 0}
+.dayGrid .day{display:flex;flex-direction:column;gap:6px;min-height:98px}.dayGrid .day.activeDay{border-color:#f1ca87;background:#273b51}
+.dayGrid .day strong{color:#e1e8fa;font-size:13px}.dayGrid .day b{font-size:15px}
+.dayGrid .day small{font-size:10px;color:#b9c9e1;overflow-wrap:anywhere}
+.scoreGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.scoreGrid>div{background:#101e32;border:1px solid #3a4f71;padding:13px;border-radius:10px}
+.scoreGrid span{display:block;color:#a8bdd6;font-size:11px}.scoreGrid b{color:#edc47e;display:block;font-size:25px;margin-top:3px}
+.warControl,.warAuto{background:#112038;border:1px solid #344c68;padding:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-radius:12px;margin:12px 0}
+.warControl select{min-width:0;max-width:69%;color:#eff5ff;background:#182d47;border:1px solid #536e8e;border-radius:9px;padding:10px}
+.warAuto strong{font-size:13px;display:block;margin-bottom:4px}.warAuto button{flex:none;min-width:105px}
+.warActions{display:grid;grid-template-columns:1.2fr .8fr;gap:8px;margin-top:16px}.warActions button{min-height:49px}
+.action.full{width:100%}.action.subtle{background:#183451;border:1px solid #426e9f}
+@media(max-width:720px){.dayGrid{grid-template-columns:repeat(4,minmax(0,1fr))}.warActions{grid-template-columns:1fr}.versus strong{font-size:14px}}
 </style></head><body><main>
 <header><div class="left"><div class="mark">⚔️</div><div><h1>SHADOWREACH</h1><p class="muted">Création de clans · prototype isolé</p></div></div><span class="badge">BOTS FICTIFS · DÉMO LOCALE</span></header>
 <section class="panel intro"><strong>Les clans arrivent dans Shadowreach</strong><p class="muted">Rejoins une guilde de personnages simulés ou crée la tienne. Aucun compte, combat, gain ou dépense de ressources réelles.</p><p class="muted" id="myLabel">Aucun clan</p></section>
@@ -47,11 +68,12 @@ footer{margin-top:25px;text-align:center;color:#8997ae;font-size:11px}footer but
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num=n=>n.toLocaleString('fr-FR'), clans=()=>C.allClans(state),my=()=>C.myClan(state);
   const commands=()=>C.readOrders(localStorage,state.memberOf);
+  const exhibition=()=>C.readExhibition(localStorage,state.memberOf);
   const say=msg=>{status.textContent=msg;};
   function apply(result,message){
     if(!result.ok){say(result.error);return;}
     if(!C.write(localStorage,result.state)){say('Stockage indisponible, action annulée.');return;}
-    const previous=state.memberOf;state=C.read(localStorage);if(previous!==state.memberOf)C.clearOrders(localStorage);selected=state.memberOf||'aube';say(message);render();
+    const previous=state.memberOf;state=C.read(localStorage);if(previous!==state.memberOf){C.clearOrders(localStorage);C.clearExhibition(localStorage);}selected=state.memberOf||'aube';say(message);render();
   }
   function render(){
     const list=clans(),mine=my();
@@ -90,7 +112,47 @@ footer{margin-top:25px;text-align:center;color:#8997ae;font-size:11px}footer but
       return;
     }
     if(tab==='war'){
-      app.innerHTML='<section class="panel detail"><h2>⚔️ Guerres (aperçu)</h2><p class="muted">Aucun combat ni point réel n’est actuellement activé.</p><div class="days">'+W.WAR_DAYS.map(d=>'<div class="day">J'+d.day+'<b>'+d.victoryPoints+'</b>'+esc(d.phase)+'</div>').join('')+'</div><p class="notice">Le mode multijoueur et les récompenses nécessitent un serveur sécurisé. Les bots sont fictifs.</p></section>';return;
+      if(!mine){
+        app.innerHTML='<section class="panel detail"><h2>⚔️ Guerre d’entraînement</h2><p class="muted">Rejoins ou crée un clan pour affronter des bots.</p></section>';return;
+      }
+      const war=exhibition(),s=C.exhibitionSummary(war,state.memberOf,W);
+      const day=s.day,done=day===7,ally=s.scores[day-1]||0,enemy=s.rivalScore||0;
+      const changeable=day===1&&ally===0;
+      const options=C.rivalCandidates(state.memberOf).map(c=>'<option value="'+esc(c.id)+'" '+(c.id===s.rivalId?'selected':'')+'>'+esc(c.name)+'</option>').join('');
+      const cells=W.WAR_DAYS.map(c=>{
+        const closed=s.settled.find(row=>row.day===c.day),active=day===c.day;
+        const own=closed?closed.homePoints:active&&!done?ally:null;
+        const foe=closed?closed.awayPoints:active&&!done?enemy:null;
+        const outcome=closed?(closed.homePoints>closed.awayPoints?'🟢 Victoire':closed.homePoints<closed.awayPoints?'🔴 Défaite':'⚪ Égalité'):active?'EN COURS':'À VENIR';
+        return '<div class="day '+(active?'activeDay':'')+'"><strong>J'+c.day+'</strong><b>'+c.victoryPoints+' PV</b><small>'+outcome+'</small>'+
+          (own!==null?'<small>'+num(own)+' : '+num(foe)+'</small>':'')+'</div>';
+      }).join('');
+      const verdict=s.verdict||{homeVictoryPoints:0,awayVictoryPoints:0,status:'pending'};
+      const banner=done?verdict.status==='home'?'🏆 Victoire ! Ton clan remporte cette guerre.':
+        verdict.status==='away'?'💀 Défaite. Prépare la revanche.':'⚖️ Match nul, prépare la revanche.':
+        'JOUR '+day+' · '+(day===6?'ASSAUTS':'MISSIONS');
+      const journal=war.journal.slice(-8).reverse().map(e=>{
+        const member=mine.members.find(m=>m.id===e.id);
+        return '<div class="logRow">J'+e.day+' · '+esc(member?member.name:'Bot')+' · '+esc(C.ACTIVITY_LABEL[e.action])+' · +'+e.points+' pts fictifs</div>';
+      }).join('');
+      app.innerHTML='<section class="panel detail warPanel">'+
+        '<div class="warHeading"><div><h2>⚔️ Guerre d’entraînement</h2><p class="muted">Une compétition complète contre un clan fictif.</p></div><span class="badge">SIMULATION</span></div>'+
+        '<div class="versus"><div><strong>'+esc(mine.name)+'</strong><b>'+verdict.homeVictoryPoints+' PV</b></div><span>VS</span>'+
+        '<div><strong>'+esc(s.rivalName)+'</strong><b>'+verdict.awayVictoryPoints+' PV</b></div></div>'+
+        '<div class="warBanner">'+banner+'</div><div class="dayGrid">'+cells+'</div>'+
+        '<div class="scoreGrid"><div><span>Score de tes bots · J'+(done?6:day)+'</span><b>'+num(done?s.scores[5]:ally)+'</b></div>'+
+        '<div><span>Objectif du clan rival</span><b>'+(done?'Terminé':num(enemy))+'</b></div></div>'+
+        '<div class="warControl"><label class="muted" for="warRival">Clan adversaire</label><select id="warRival" '+(!changeable?'disabled':'')+'>'+options+'</select></div>'+
+        '<div class="warAuto"><div><strong>Ordres automatiques en ton absence</strong><p class="muted">1 ronde par heure écoulée, 8 maximum au retour. Aucun changement de journée sans ton accord.</p></div>'+
+        '<button id="autoWar" type="button" class="orderBtn '+(war.auto?'on':'')+'" '+(done?'disabled':'')+'>'+(war.auto?'Auto ON':'Auto OFF')+'</button></div>'+
+        (done?'<button type="button" class="action full" id="warRestart">Nouvelle guerre</button>':
+          '<div class="warActions"><button id="warRun" class="action" type="button">▶ Exécuter les ordres (1 ronde)</button>'+
+          '<button id="warClose" class="action danger" type="button">Clôturer J'+day+'</button></div>')+
+        '<p class="muted" style="margin:12px 0">Les bots respectent tes ordres. Attaque uniquement J6, 5 tickets/bot. Une journée clôturée ne peut pas être rejouée.</p>'+
+        '<button type="button" class="action subtle" data-tab="orders">🎖️ Modifier mes ordres</button>'+
+        '<h3>Rapport des dernières missions</h3>'+(journal||'<p class="muted">Les bots attendent tes instructions.</p>')+
+        '<p class="notice">Aucun combat multijoueur réel ni récompense n’est activé. Cette simulation ne modifie jamais la progression de Shadowreach.</p></section>';
+      return;
     }
     const current=(tab==='mine'?mine:list.find(c=>c.id===selected))||list[0];selected=current.id;
     const tiles=list.map(c=>'<button type="button" class="tile '+(c.id===selected?'selected':'')+'" data-clan="'+esc(c.id)+'"><span class="crest" style="--accent:'+c.color+'">'+esc(c.crest)+'</span><span><strong>'+esc(c.name)+'</strong><small>['+esc(c.tag)+'] · '+c.count+'/'+c.capacity+' membres bots'+(c.joined?' · MON CLAN':'')+'</small></span></button>').join('');
@@ -101,7 +163,7 @@ footer{margin-top:25px;text-align:center;color:#8997ae;font-size:11px}footer but
   }
   document.addEventListener('click',e=>{
     const t=e.target.closest('[data-tab]'),c=e.target.closest('[data-clan]'),s=e.target.closest('[data-crest]');
-    if(t){tab=t.dataset.tab;render();}
+    if(t){tab=t.dataset.tab;if(tab==='war')catchUpExhibition();render();}
     else if(c){selected=c.dataset.clan;tab='explore';render();}
     else if(s){crest=s.dataset.crest;document.querySelectorAll('#crests [data-crest]').forEach(btn=>btn.classList.toggle('on',btn===s));}
     else if(e.target.closest('[data-command]'))commitCommand(C.setOrder(commands(),state.memberOf,e.target.closest('[data-command]').dataset.command),'Ordre collectif enregistré.');
@@ -113,22 +175,62 @@ footer{margin-top:25px;text-align:center;color:#8997ae;font-size:11px}footer but
     else if(e.target.closest('#resetOrders')){
       if(confirm('Effacer les rondes fictives sans supprimer les ordres ?'))commitCommand(C.resetRounds(commands(),state.memberOf),'Rondes fictives effacées.');
     }
+    else if(e.target.closest('#warRun')){
+      const result=C.exhibitionRound(exhibition(),commands(),state.memberOf,W);
+      commitExhibition(result,result.ok?result.acted+' bots en mission · +'+result.points+' points fictifs.':'Action impossible.');
+    }
+    else if(e.target.closest('#warClose')){
+      if(confirm('Clôturer définitivement J'+exhibition().day+' pour cette guerre fictive ?'))
+        commitExhibition(C.exhibitionNextDay(exhibition(),state.memberOf,W),'Journée clôturée, score sauvegardé.');
+    }
+    else if(e.target.closest('#warRestart')){
+      if(confirm('Nouvelle guerre fictive ? Les anciens résultats seront effacés.'))
+        commitExhibition({ok:true,state:C.newExhibition(state.memberOf,exhibition().rivalId)},'Nouvelle saison fictive commencée.');
+    }
+    else if(e.target.closest('#autoWar')){
+      const war=exhibition();
+      commitExhibition(C.setExhibitionAuto(war,state.memberOf,!war.auto,Date.now()),'Auto '+(!war.auto?'activé':'désactivé')+'.');
+    }
     else if(e.target.closest('#joinClan'))apply(C.join(state,selected),'Clan rejoint.');
     else if(e.target.closest('#leaveClan')){if(confirm('Quitter ce clan ? Ton clan personnel sera supprimé.'))apply(C.leave(state),'Clan quitté.');}
-    else if(e.target.closest('#reset')){if(confirm('Effacer uniquement les clans de démonstration ?')&&C.clear(localStorage)){C.clearOrders(localStorage);state=C.read(localStorage);selected='aube';tab='explore';render();say('Démonstration réinitialisée.');}}
+    else if(e.target.closest('#reset')){if(confirm('Effacer uniquement les clans de démonstration ?')&&C.clear(localStorage)){C.clearOrders(localStorage);C.clearExhibition(localStorage);state=C.read(localStorage);selected='aube';tab='explore';render();say('Démonstration réinitialisée.');}}
   });
   function commitCommand(result,message){
     if(!result.ok){say(result.error);return;}
     if(!C.writeOrders(localStorage,state.memberOf,result.state)){say('Stockage indisponible : ordre non enregistré.');return;}
     say(message);render();
   }
+  function commitExhibition(result,message){
+    if(!result.ok){say(result.error);return;}
+    if(!C.writeExhibition(localStorage,state.memberOf,result.state)){say('Stockage indisponible : aucun changement enregistré.');return;}
+    say(message);render();
+  }
+  function catchUpExhibition(){
+    if(!state.memberOf)return;
+    const previous=exhibition(),result=C.exhibitionCatchUp(previous,commands(),state.memberOf,W,Date.now());
+    if(!result.ok){say(result.error);return;}
+    if(result.ticks>0){
+      if(C.writeExhibition(localStorage,state.memberOf,result.state))
+        say(result.acted+' actions récupérées sur '+result.ticks+' rondes fictives.');
+      else say('Stockage bloqué, progression non conservée.');
+    }else if(previous.auto&&previous.lastAt!==result.state.lastAt){
+      C.writeExhibition(localStorage,state.memberOf,result.state);
+    }
+  }
   document.addEventListener('change',e=>{
+    const rival=e.target.closest('#warRival');
+    if(rival){
+      const old=exhibition();
+      if(old.day!==1||old.scores[0]!==0){say('Adversaire verrouillé après la première action.');return;}
+      commitExhibition(C.setRival(state.memberOf,rival.value),'Adversaire sélectionné.');return;
+    }
     const select=e.target.closest('[data-bot-command]');if(!select)return;
     commitCommand(C.setOrder(commands(),state.memberOf,select.value,select.dataset.botCommand),'Ordre individuel enregistré.');
   });
   document.addEventListener('submit',e=>{
     if(e.target.id==='createForm'){e.preventDefault();apply(C.create(state,document.getElementById('clanName').value,crest),'Clan fondé avec 8 bots.');}
   });
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&tab==='war'){catchUpExhibition();render();}});
   render();
 })();
 
