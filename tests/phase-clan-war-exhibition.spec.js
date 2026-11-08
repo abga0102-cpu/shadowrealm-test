@@ -55,4 +55,19 @@ assert.equal(memory['shadowreach.save.local'],'UNTOUCHED');
 assert.ok(calls.every(k=>k===C.WAR_KEY));
 assert.equal(C.readExhibition({getItem(){throw Error('blocked')}},'custom').day,1);
 assert.equal(C.writeExhibition({setItem(){throw Error('blocked')}},'custom',war),false);
+// Defense is meaningful: five guarded rounds use the existing combat ticket cap
+// and reduce the adversary's effective J6 score instead of merely displaying a status.
+let defensive=C.newExhibition('custom','nord');
+for(let i=0;i<5;i++)defensive=C.exhibitionNextDay(defensive,'custom',W).state;
+const defendOrder=C.setOrder(C.sanitizeOrders(null,'custom'),'custom','defend').state;
+const beforeRival=C.exhibitionSummary(defensive,'custom',W).rivalScore;
+let defended=C.exhibitionRound(defensive,defendOrder,'custom',W);
+assert.equal(defended.acted,8);
+assert.equal(defended.state.shield,8);
+assert.equal(C.exhibitionSummary(defended.state,'custom',W).rivalScore,beforeRival-8);
+for(let i=1;i<5;i++)defended=C.exhibitionRound(defended.state,defendOrder,'custom',W);
+assert.equal(defended.state.shield,40);
+assert.equal(C.exhibitionRound(defended.state,defendOrder,'custom',W).acted,0);
+assert.equal(C.exhibitionSummary(C.exhibitionNextDay(defended.state,'custom',W).state,'custom',W).settled[5].awayPoints,Math.max(0,beforeRival-40));
+assert.equal(C.exhibitionRound(C.newExhibition('custom','nord'),defendOrder,'custom',W).acted,0,'defense waits before J6');
 console.log('Clan exhibition war domain: PASS');

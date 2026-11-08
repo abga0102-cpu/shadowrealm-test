@@ -142,6 +142,7 @@ footer{margin-top:25px;text-align:center;color:#8997ae;font-size:11px}footer but
         '<div class="warBanner">'+banner+'</div><div class="dayGrid">'+cells+'</div>'+
         '<div class="scoreGrid"><div><span>Score de tes bots · J'+(done?6:day)+'</span><b>'+num(done?s.scores[5]:ally)+'</b></div>'+
         '<div><span>Objectif du clan rival</span><b>'+(done?'Terminé':num(enemy))+'</b></div></div>'+
+        (day===6||done?'<p class="muted" style="margin:4px 0 12px">🛡️ Bouclier des défenseurs : -'+s.shield+' points sur le score rival.</p>':'')+
         '<div class="warControl"><label class="muted" for="warRival">Clan adversaire</label><select id="warRival" '+(!changeable?'disabled':'')+'>'+options+'</select></div>'+
         '<div class="warAuto"><div><strong>Ordres automatiques en ton absence</strong><p class="muted">1 ronde par heure écoulée, 8 maximum au retour. Aucun changement de journée sans ton accord.</p></div>'+
         '<button id="autoWar" type="button" class="orderBtn '+(war.auto?'on':'')+'" '+(done?'disabled':'')+'>'+(war.auto?'Auto ON':'Auto OFF')+'</button></div>'+

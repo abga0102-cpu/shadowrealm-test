@@ -54,3 +54,26 @@ test('commands are honored by exhibition and locked when day has ended',async({p
  await expect(page.locator('#status')).toContainText('12 bots');
  await expect(page.locator('#warRival')).toBeDisabled();
 });
+
+test('defense obeys J6 only, protects the rival score and is capped at five orders',async({page})=>{
+ await page.goto('/clan-bots-preview.html');
+ await page.locator('#joinClan').click();
+ await page.locator('[data-tab="orders"]').click();
+ await page.locator('[data-command="defend"]').click();
+ await page.locator('[data-tab="war"]').click();
+ await page.locator('#warRun').click();
+ await expect(page.locator('#status')).toContainText('0 bots');
+ for(let day=1;day<=5;day++){
+  page.once('dialog',d=>d.accept());
+  await page.locator('#warClose').click();
+ }
+ await expect(page.locator('.warBanner')).toContainText('JOUR 6');
+ await expect(page.locator('.warPanel')).toContainText('Bouclier des défenseurs : -0');
+ await page.locator('#warRun').click();
+ await expect(page.locator('#status')).toContainText('12 bots');
+ await expect(page.locator('.warPanel')).toContainText('Bouclier des défenseurs : -12');
+ for(let round=1;round<5;round++)await page.locator('#warRun').click();
+ await expect(page.locator('.warPanel')).toContainText('Bouclier des défenseurs : -60');
+ await page.locator('#warRun').click();
+ await expect(page.locator('#status')).toContainText('0 bots');
+});

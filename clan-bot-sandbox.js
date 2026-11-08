@@ -140,7 +140,8 @@ function chooseDay(raw,clanId,day){
  state.day=day;return {ok:true,state};
 }
 function taskFor(order,allowed,index,used){
- if(order==='save'||order==='rest'||order==='defend')return null;
+ if(order==='save'||order==='rest')return null;
+ if(order==='defend')return allowed.includes('clan_brawl')?'clan_brawl':null;
  if(order==='auto')return allowed.length?allowed[(index+used)%allowed.length]:null;
  const matches={
   forge:['forge_item','forge_gold'],raid:['raid_key'],
@@ -164,15 +165,15 @@ function runRound(raw,clanId,rules){
   let message;
   if(order==='save')message='Réserves préservées';
   else if(order==='rest')message='Repos';
-  else if(order==='defend')message=day===6?'Position défensive tenue':'Attente de J6';
+  else if(order==='defend'&&day!==6)message='Attente de J6 pour défendre';
   else if(!task)message='Ordre en attente pour un autre jour';
   else if(used>=capacity)message=day===6?'5 tickets utilisés':'Quota d’entraînement atteint';
   else{
-   const gain=day===6?2+(index+used)%3:1+(index+used+day)%3;
+   const gain=day===6?(order==='defend'?1+(index+used)%2:2+(index+used)%3):1+(index+used+day)%3;
    counts[day-1]++;state.counts[bot.id]=counts;
    state.journal.push({id:bot.id,day,action:task,points:gain});
    acted++;points+=gain;
-   message=ACTIVITY_LABEL[task]+' effectué · +'+gain+' points fictifs';
+   message=(order==='defend'?'Défense du clan':ACTIVITY_LABEL[task]+' effectué')+' · +'+gain+' points fictifs';
   }
   reports.push({id:bot.id,name:bot.name,order,message,acted:!!task&&used<capacity});
  });
@@ -210,7 +211,7 @@ function pickRival(clanId){
 function newExhibition(clanId,rivalId){
  const selected=rivalCandidates(clanId).some(c=>c.id===rivalId)?rivalId:pickRival(clanId);
  return {version:WAR_VERSION,clanId:clanId||null,rivalId:selected,day:1,
-  scores:[0,0,0,0,0,0],counts:{},journal:[],auto:false,lastAt:null};
+  scores:[0,0,0,0,0,0],counts:{},journal:[],shield:0,auto:false,lastAt:null};
 }
 function cleanExhibition(raw,clanId){
  const fresh=newExhibition(clanId);
@@ -234,6 +235,7 @@ function cleanExhibition(raw,clanId){
    typeof e.action==='string'&&Object.prototype.hasOwnProperty.call(ACTIVITY_LABEL,e.action)&&
    Number.isSafeInteger(e.points)&&e.points>=0&&e.points<=4)
    .map(e=>({id:e.id,day:e.day,action:e.action,points:e.points}));
+ safe.shield=Number.isSafeInteger(raw.shield)&&raw.shield>=0?Math.min(raw.shield,valid.size*ATTACK_LIMIT):0;
  safe.auto=raw.auto===true;
  safe.lastAt=Number.isSafeInteger(raw.lastAt)&&raw.lastAt>=0?raw.lastAt:null;
  return safe;
@@ -260,17 +262,21 @@ function rivalTarget(clanId,rivalId,day){
  const difficulty=(enemyIndex%2===0?0.68:0.72)+bonus;
  return Math.max(1,Math.round(count*(day===6?ATTACK_LIMIT:DAY_LIMIT)*(day===6?3:2)*difficulty));
 }
+function effectiveRivalScore(war,clanId,day){
+ const base=rivalTarget(clanId,war.rivalId,day);
+ return base===null?null:day===6?Math.max(0,base-war.shield):base;
+}
 function exhibitionSummary(raw,clanId,rules){
  const state=cleanExhibition(raw,clanId),closed=[];
  for(let i=1;i<state.day;i++){
-  const rival=rivalTarget(clanId,state.rivalId,i);
+  const rival=effectiveRivalScore(state,clanId,i);
   if(rival===null)break;
   closed.push({day:i,closed:true,homePoints:state.scores[i-1],awayPoints:rival});
  }
  const verdict=rules&&typeof rules.summarizeDays==='function'?rules.summarizeDays(closed):null;
  const rival=CLANS.find(c=>c.id===state.rivalId);
  return {day:state.day,rivalId:state.rivalId,rivalName:rival?rival.name:'Rival',
-  scores:state.scores.slice(),rivalScore:state.day===7?null:rivalTarget(clanId,state.rivalId,state.day),
+  scores:state.scores.slice(),rivalScore:state.day===7?null:effectiveRivalScore(state,clanId,state.day),shield:state.shield,
   settled:closed,verdict,auto:state.auto,botCount:commandRoster(clanId).length};
 }
 function exhibitionRound(raw,orders,clanId,rules){
@@ -282,6 +288,8 @@ function exhibitionRound(raw,orders,clanId,rules){
  const attempt=runRound(temporary,clanId,rules);
  if(!attempt.ok)return {ok:false,error:attempt.error,state};
  state.counts=attempt.state.counts;state.journal=attempt.state.journal;
+ if(state.day===6)state.shield=Math.min(commandRoster(clanId).length*ATTACK_LIMIT,
+   state.shield+attempt.reports.filter(r=>r.order==='defend'&&r.acted).length);
  state.scores[state.day-1]=Math.min(commandRoster(clanId).length*(state.day===6?ATTACK_LIMIT:DAY_LIMIT)*4,
   state.scores[state.day-1]+attempt.points);
  return {ok:true,state,acted:attempt.acted,points:attempt.points,reports:attempt.reports};
