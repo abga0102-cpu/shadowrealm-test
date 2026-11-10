@@ -2,141 +2,171 @@ const { test, expect } = require('@playwright/test');
 
 async function openCleanGame(page) {
   await page.route('**/npm/**', (route) => route.abort());
-  await page.addInitScript(() => {
-    try {
-      localStorage.removeItem('shadowreach.save.local');
-      localStorage.removeItem('shadowreach.social.v1.messages');
-    } catch (_) {}
-  });
   await page.goto('/index.html?smoke=1');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
   await expect(page.locator('#tabs .tab')).toHaveCount(4, { timeout: 15000 });
-  await page.waitForFunction(() =>
-    window.__srDustEconomyConfigV293 &&
-    window.__srForgeDustIntegrityV364 &&
-    window.__srAutoForgeDustV370
-  );
 }
 
-test('V364 Dust uses rarity rank plus original equipment power, not rarity-only values', async ({ page }) => {
+async function runOneAutoCycle(page, forgeImpl) {
+  return page.evaluate(async ({ forgeImplSource }) => {
+    try {
+      if (typeof autoForgeTimer !== 'undefined' && autoForgeTimer !== null) {
+        clearTimeout(autoForgeTimer);
+        autoForgeTimer = null;
+      }
+    } catch (_) {}
+
+    S.forge.autoForge = false;
+    S.forge.autoBatch = 1;
+    S.forge.level = Math.max(10, Number(S.forge.level) || 10);
+    // Auto-Forge V103 is unlocked by CHARACTER level, not Forge level.
+    // Keep the synthetic cycle eligible so this test checks Dust settlement.
+    S.level = Math.max(10, Number(S.level) || 1);
+    S.minerai = 9999;
+    S.poussiere = 0;
+
+    const previousForgeSummon = forgeSummon;
+    const simulatedSummon = (0, eval)('(' + forgeImplSource + ')');
+    let summonCalls = 0;
+    forgeSummon = function (...args) {
+      summonCalls += 1;
+      return simulatedSummon.apply(this, args);
+    };
+    try {
+      S.forge.autoForge = true;
+      scheduleAutoForge(0);
+      // The scheduler uses setTimeout(0), but a busy CI browser can take
+      // longer than 140 ms to run it. Observe the real tick, not wall time.
+      const started = Date.now();
+      while (summonCalls === 0 && Date.now() - started < 3000) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      if (summonCalls === 0) {
+        throw new Error('Auto-Forge scheduler did not invoke forgeSummon within 3000 ms');
+      }
+      // The scheduler settles canonical Dust synchronously after summon returns.
+      return {
+        dust: Number(S.poussiere) || 0,
+        authority350: !!window.__srAutoForgeDustV350,
+      };
+    } finally {
+      S.forge.autoForge = false;
+      try {
+        if (typeof autoForgeTimer !== 'undefined' && autoForgeTimer !== null) {
+          clearTimeout(autoForgeTimer);
+          autoForgeTimer = null;
+        }
+      } catch (_) {}
+      forgeSummon = previousForgeSummon;
+    }
+  }, { forgeImplSource: forgeImpl.toString() });
+}
+
+test('V467 Dust rarity table returns doubled canonical values', async ({ page }) => {
   await openCleanGame(page);
   const values = await page.evaluate(() => {
     const cfg = window.__srDustEconomyConfigV293;
-    const previousTreeSum = typeof treeSum === 'function' ? treeSum : null;
-    try {
-      treeSum = () => 0;
-      return {
-        rarityOnly: cfg.valueForRarity('RARE'),
-        rare100: cfg.valueForItem(S, { rarity: 'RARE', originalPower: 100, power: 100 }),
-        rareUpgraded: cfg.valueForItem(S, { rarity: 'RARE', originalPower: 100, power: 9999, dustInvested: 9000 }),
-        mythique100: cfg.valueForItem(S, { rarity: 'MYTHIQUE', originalPower: 100, power: 100 }),
-        unknown: cfg.valueForItem(S, { rarity: '???', originalPower: 0, power: 0 }),
-      };
-    } finally {
-      if (previousTreeSum) treeSum = previousTreeSum;
-    }
+    const rarities = ['COMMUN','RARE','EPIQUE','MYTHIQUE','ARTEFACT','LEGENDAIRE','INFERNAL','IMMORTEL','DIVIN'];
+    return Object.fromEntries(rarities.map((r) => [r, cfg.valueForRarity(r)]));
   });
 
-  expect(values.rarityOnly).toBe(0);
-  expect(values.rare100).toBe(30);
-  expect(values.rareUpgraded).toBe(30);
-  expect(values.mythique100).toBe(40);
-  expect(values.unknown).toBe(5);
-});
-
-test('V364 manual Dust authority ignores upgraded power and preserves original-value economics', async ({ page }) => {
-  await openCleanGame(page);
-  const values = await page.evaluate(() => {
-    const previousTreeSum = typeof treeSum === 'function' ? treeSum : null;
-    try {
-      treeSum = () => 0;
-      const base = { rarity: 'EPIQUE', originalPower: 250, power: 250 };
-      const upgraded = { rarity: 'EPIQUE', originalPower: 250, power: 250000, dustInvested: 99999 };
-      const cfg = window.__srDustEconomyConfigV293;
-      return {
-        base: cfg.valueForItem(S, base),
-        upgraded: cfg.valueForItem(S, upgraded),
-        integrityBase: window.__srForgeDustIntegrityV364.itemValue(base),
-        integrityUpgraded: window.__srForgeDustIntegrityV364.itemValue(upgraded),
-        expected: Math.floor((3 * 5) + (250 * 0.2)),
-      };
-    } finally {
-      if (previousTreeSum) treeSum = previousTreeSum;
-    }
+  expect(values).toEqual({
+    COMMUN: 2,
+    RARE: 8,
+    EPIQUE: 16,
+    MYTHIQUE: 40,
+    ARTEFACT: 70,
+    LEGENDAIRE: 120,
+    INFERNAL: 200,
+    IMMORTEL: 320,
+    DIVIN: 500,
   });
-
-  expect(values.base).toBe(values.expected);
-  expect(values.upgraded).toBe(values.expected);
-  expect(values.integrityBase).toBe(values.expected);
-  expect(values.integrityUpgraded).toBe(values.expected);
 });
 
-test('V370 Auto-Forge restores the item-based Dust delta from a stale result payload', async ({ page }) => {
+test('V350 Auto-Forge overrides stale +1 payload with canonical rarity value', async ({ page }) => {
   await openCleanGame(page);
   const result = await page.evaluate(() => {
-    const previousTreeSum = typeof treeSum === 'function' ? treeSum : null;
-    try {
-      treeSum = () => 0;
-      S.poussiere = 6000;
-      const before = Number(S.poussiere) || 0;
-      const payload = [{ rarity: 'MYTHIQUE', power: 100, slot: 'gants', recycled: true, dust: 1 }];
-      const missing = window.__srAutoForgeDustV370.settle(payload, before, false);
-      return {
-        dust: Number(S.poussiere) || 0,
-        missing,
-        payloadDust: payload[0].dust,
-        currentAuthority: window.__srAutoForgeDustV370.canonical === true,
-      };
-    } finally {
-      if (previousTreeSum) treeSum = previousTreeSum;
-    }
+    S.poussiere = 6000;
+    const before = Number(S.poussiere) || 0;
+    const missing = window.__srAutoForgeDustV350.settle(
+      [{ rarity: 'RARE', slot: 'gants', recycled: true, dust: 1 }],
+      before,
+      false
+    );
+    return {
+      dust: Number(S.poussiere) || 0,
+      missing,
+      canonical: window.__srAutoForgeDustV350.canonical === true,
+    };
   });
 
-  expect(result.currentAuthority).toBe(true);
-  expect(result.payloadDust).toBe(40);
-  expect(result.missing).toBe(40);
-  expect(result.dust).toBe(6040);
+  expect(result.canonical).toBe(true);
+  expect(result.missing).toBe(8);
+  expect(result.dust).toBe(6008);
 });
 
-test('V370 Auto-Forge never double-credits Dust already paid by Forge', async ({ page }) => {
+test('V350 Auto-Forge scheduler restores canonical Dust when result was not credited', async ({ page }) => {
   await openCleanGame(page);
-  const result = await page.evaluate(() => {
-    const previousTreeSum = typeof treeSum === 'function' ? treeSum : null;
-    try {
-      treeSum = () => 0;
-      const payload = [{ rarity: 'RARE', power: 100, slot: 'gants', recycled: true, dust: 1 }];
-      S.poussiere = 30;
-      const missing = window.__srAutoForgeDustV370.settle(payload, 0, false);
-      return { dust: Number(S.poussiere) || 0, missing, payloadDust: payload[0].dust };
-    } finally {
-      if (previousTreeSum) treeSum = previousTreeSum;
-    }
+  const result = await runOneAutoCycle(page, function () {
+    return [{ rarity: 'MYTHIQUE', slot: 'gants', recycled: true, dust: 1 }];
   });
 
-  expect(result.payloadDust).toBe(30);
-  expect(result.missing).toBe(0);
-  expect(result.dust).toBe(30);
+  expect(result.authority350).toBe(true);
+  expect(result.dust).toBe(40);
 });
 
-test('V364 final Forge integrity uses the same item-based Dust value as the global authority', async ({ page }) => {
+test('V350 Auto-Forge never double-credits canonical Dust already paid by forgeSummon', async ({ page }) => {
+  await openCleanGame(page);
+  const result = await runOneAutoCycle(page, function () {
+    S.poussiere += 16;
+    return [{ rarity: 'EPIQUE', slot: 'gants', recycled: true, dust: 1 }];
+  });
+
+  expect(result.authority350).toBe(true);
+  expect(result.dust).toBe(16);
+});
+
+test('V351 global Dust authority normalizes rarity names and never falls back unknown rarity to +1', async ({ page }) => {
+  await openCleanGame(page);
+  const values = await page.evaluate(() => ({
+    commun: dustValue(S, { rarity: 'COMMUN' }),
+    rare: dustValue(S, { rarity: 'Rare' }),
+    epiqueAccent: dustValue(S, { rarity: 'ÉPIQUE' }),
+    mythique: dustValue(S, { rarity: 'MYTHIQUE' }),
+    artefact: dustValue(S, { rarity: 'Artefact' }),
+    legendaireAccent: dustValue(S, { rarity: 'LÉGENDAIRE' }),
+    infernal: dustValue(S, { rarity: 'INFERNAL' }),
+    immortel: dustValue(S, { rarity: 'IMMORTEL' }),
+    divin: dustValue(S, { rarity: 'DIVIN' }),
+    unknown: dustValue(S, { rarity: '???' }),
+  }));
+
+  expect(values).toEqual({
+    commun: 2,
+    rare: 8,
+    epiqueAccent: 16,
+    mythique: 40,
+    artefact: 70,
+    legendaireAccent: 120,
+    infernal: 200,
+    immortel: 320,
+    divin: 500,
+    unknown: 0,
+  });
+});
+
+test('V351 final integrity layer overrides stale +1 result payload by rarity', async ({ page }) => {
   await openCleanGame(page);
   const values = await page.evaluate(() => {
-    const previousTreeSum = typeof treeSum === 'function' ? treeSum : null;
-    try {
-      treeSum = () => 0;
-      const result = { rarity: 'INFERNAL', power: 500, recycled: true, dust: 1 };
-      return {
-        integrity: window.__srForgeDustIntegrityV364.value(result),
-        itemAuthority: window.__srDustEconomyConfigV293.valueForItem(
-          S,
-          { rarity: 'INFERNAL', originalPower: 500, power: 500 }
-        ),
-      };
-    } finally {
-      if (previousTreeSum) treeSum = previousTreeSum;
-    }
+    const api = window.__srForgeDustIntegrityV351;
+    return {
+      loaded: !!api,
+      rare: api.value({ rarity: 'RARE', recycled: true, dust: 1 }),
+      epique: api.value({ rarity: 'ÉPIQUE', recycled: true, dust: 1 }),
+      mythique: api.value({ rarity: 'MYTHIQUE', recycled: true, dust: 1 }),
+      divin: api.value({ rarity: 'DIVIN', recycled: true, dust: 1 }),
+    };
   });
 
-  expect(values.integrity).toBe(values.itemAuthority);
-  expect(values.integrity).toBe(135);
+  expect(values).toEqual({ loaded: true, rare: 8, epique: 16, mythique: 40, divin: 500 });
 });
