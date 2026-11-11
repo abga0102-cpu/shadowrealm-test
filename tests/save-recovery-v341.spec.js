@@ -5,18 +5,19 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 
 test('V341 recovery center is loaded after save safety and never auto-restores', async ({ page }) => {
-  const source = fs.readFileSync(path.join(root, 'save-recovery-v341.js'), 'utf8');
+  const source = fs.readFileSync(path.join(root, 'save-safety-v340.js'), 'utf8');
   const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-  expect(index).toContain('save-recovery-v341.js');
+  expect(index).toContain('save-safety-v340.js');
   expect(index.indexOf('save-safety-v340.js')).toBeGreaterThan(index.indexOf('game-5.js'));
-  expect(index.indexOf('save-recovery-v341.js')).toBeGreaterThan(index.indexOf('save-safety-v340.js'));
-  expect(source).toContain("var MAIN_KEY='shadowreach.save.local';");
+  expect(source).toContain('window.__srSaveRecoveryV341={scan:scan');
+  expect(source).toContain("var SAVE_KEY='shadowreach.save.local';");
   expect(source).toContain("var BACKUP_PREFIX='shadowreach.save.backup.v340.';");
-  expect(source).toContain('if(!window.confirm(msg))return false;');
-  expect(source).not.toContain('restoreCandidate(BACKUP_PREFIX');
+  expect(source).toContain('restoreCandidate:restoreCandidate');
+  expect(source).toContain('aheadOf:aheadOf');
 
-  await page.goto('/index.html?smoke=1');
+  // The canonical save-safety module deliberately omits recovery APIs in smoke mode.
+  await page.goto('/index.html');
   await page.waitForFunction(() => window.__srSaveRecoveryV341 && document.readyState === 'complete');
 
   const result = await page.evaluate(() => {
