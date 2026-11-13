@@ -21,11 +21,11 @@ function eligible(name) {
     (name.startsWith('phase') || namedSpecs.has(name));
 }
 
-function classify(root) {
+function classify(root, { includeAllSpecs = false } = {}) {
   const dir = path.join(root, 'tests');
   const browser = [];
   const sourceContracts = [];
-  for (const name of fs.readdirSync(dir).filter(eligible).sort()) {
+  for (const name of fs.readdirSync(dir).filter(name => includeAllSpecs ? name.endsWith('.spec.js') : eligible(name)).sort()) {
     const source = fs.readFileSync(path.join(dir, name), 'utf8');
     if (/\b(?:require\s*\(\s*|from\s*)['"]@playwright\/test['"]/.test(source)) {
       browser.push(name);
