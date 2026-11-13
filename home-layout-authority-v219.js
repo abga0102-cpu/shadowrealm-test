@@ -226,7 +226,15 @@ function stableResizeSchedule(){
   schedule();
 }
 window.addEventListener('resize',stableResizeSchedule,{passive:true});window.addEventListener('orientationchange',function(){lastViewportWidth=Math.round(window.innerWidth||0);schedule();},{passive:true});
-try{var homeObserver=new MutationObserver(schedule);homeObserver.observe(screen,{childList:true,subtree:false});}catch(_){}
+/* V518: a Home rerender replaces the roadmap before its queued animation frame.
+   Reconcile only fresh, unpositioned roadmap nodes during the existing direct
+   #screen child mutation. Keep the scheduled frame for the remaining layout. */
+try{var homeObserver=new MutationObserver(function(){
+  if(app&&app.classList.contains('srHomeFullArena')&&screen.querySelector('.srStarterRoadmapV461:not([data-stage-safe-v463])')){
+    positionStarterRoadmapV463();
+  }
+  schedule();
+});homeObserver.observe(screen,{childList:true,subtree:false});}catch(_){}
 /* V530: refresh the egg badge without re-positioning the entire Home layout every second. */
 var eggTicker=setInterval(function(){if(app&&app.classList.contains('srHomeFullArena')&&!document.hidden){try{decorateEggReady();}catch(_){}}},1000);
 window.addEventListener('pagehide',function(){try{clearInterval(eggTicker);}catch(_){}});sync();
