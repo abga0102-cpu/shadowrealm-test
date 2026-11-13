@@ -88,10 +88,17 @@ test('V463 keeps the stage-safe rule after a Home rerender', async ({ page }) =>
     });
     throw new Error(error.message + '\\nWebKit V463 rerender geometry: ' + JSON.stringify(geometry));
   }
-  const safe = await page.evaluate(() => {
-    const card = document.querySelector('.srStarterRoadmapV461').getBoundingClientRect();
-    const stage = document.querySelector('#arena .floorTag').getBoundingClientRect();
-    return card.top >= stage.bottom + 5;
-  });
-  expect(safe).toBe(true);
+  // The earlier poll can succeed between two asynchronous Home layout passes.
+  // Require clearance across consecutive animation frames, not a single snapshot.
+  await expect.poll(async () => page.evaluate(async () => {
+    const safe = () => {
+      const card = document.querySelector('.srStarterRoadmapV461');
+      const stage = document.querySelector('#arena .floorTag');
+      return !!(card && stage && card.getAttribute('data-stage-safe-v463') === '1' &&
+        card.getBoundingClientRect().top >= stage.getBoundingClientRect().bottom + 5);
+    };
+    if (!safe()) return false;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return safe();
+  }), { timeout: 7000 }).toBe(true);
 });
