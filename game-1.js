@@ -3,6 +3,7 @@
    Any key missing from disk simply renders nothing, so partial sets are safe. */
 const ASSETS = {
   hero:            "art/hero.png",
+  hero_bare_v412:  "art/hero-bare-v412.png",
   enemy_goblin_attack1:      "art/frames/enemy_goblin_attack1.png",
   enemy_goblin_attack2:      "art/frames/enemy_goblin_attack2.png",
   enemy_orc_attack1:         "art/frames/enemy_orc_attack1.png",
@@ -185,7 +186,8 @@ const RARITY = {
   RARE:       { c: "#3FA7FF", label: "Rare" },
   EPIQUE:     { c: "#B15CF6", label: "Épique" },
   MYTHIQUE:   { c: "#FF7A3D", label: "Mythique" },
-  /* HEROIQUE / ANCESTRAL restent lisibles uniquement pour migrer les anciennes sauvegardes. */
+  /* HÉROÏQUE reste lisible pour les anciennes sauvegardes d'équipement.
+     ANCESTRAL est aussi un palier actif de fusion des Familiers. */
   HEROIQUE:   { c: "#FF4D6A", label: "Héroïque" },
   ANCESTRAL:  { c: "#3FE0C0", label: "Ancestral" },
   ARTEFACT:   { c: "#43C98B", label: "Artefact" },
@@ -196,7 +198,11 @@ const RARITY = {
 };
 /* Core ladder — used by Skills. Familiars use their own ladder below. */
 const RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "LEGENDAIRE", "DIVIN"];
-const PET_RARITY_ORDER = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "LEGENDAIRE", "DIVIN"];
+/* Ancestral must exist in the boot-time core ladder, not only in the later
+   Familiar authority. loadSave() migrates pets before that authority loads;
+   omitting the tier here made every save containing an Ancestral pet fail
+   migration and fall back to a fresh level-1 state. */
+const PET_RARITY_ORDER = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "ANCESTRAL", "LEGENDAIRE", "DIVIN"];
 /* EQUIPMENT has its own, longer ladder with Héroïque and Ancestral inserted
    between Mythique and Légendaire. Only gear ever rolls these two. */
 /* what each quarter of its health buys it */
@@ -205,11 +211,13 @@ const MUTATION_LABEL = ["MUTATION · CÉLÉRITÉ", "MUTATION · CARAPACE", "MUTA
    so the two can never drift apart. */
 function forgeKeepAll() {
   const o = {};
-  EQUIP_RARITY_ORDER.forEach((r) => { o[r] = true; });
+  EQUIP_FORGE_RARITY_ORDER.forEach((r) => { o[r] = true; });
   return o;
 }
-const EQUIP_RARITY_ORDER = ["COMMUN", "RARE", "EPIQUE", "MYTHIQUE", "ARTEFACT", "LEGENDAIRE", "INFERNAL", "IMMORTEL", "DIVIN"];
-function orderFor(system) { return system === "forge" ? EQUIP_RARITY_ORDER : system === "pet" ? PET_RARITY_ORDER : RARITY_ORDER; }
+/* Infernal stays readable for legacy saves, but is retired from the active Forge ladder in V501. */
+const EQUIP_RARITY_ORDER = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "HEROIQUE", "MYTHIQUE", "ARTEFACT", "LEGENDAIRE", "INFERNAL", "IMMORTEL", "DIVIN"];
+const EQUIP_FORGE_RARITY_ORDER = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "HEROIQUE", "MYTHIQUE", "ARTEFACT", "LEGENDAIRE", "IMMORTEL", "DIVIN"];
+function orderFor(system) { return system === "forge" ? EQUIP_FORGE_RARITY_ORDER : system === "pet" ? PET_RARITY_ORDER : RARITY_ORDER; }
 function equipRank(rarity) { return EQUIP_RARITY_ORDER.indexOf(rarity); }
 const C = {
   gold: "#E8B44A", purple: "#9B5CF6", red: "#E5484D", green: "#3FB950",
@@ -234,6 +242,193 @@ function fmtEquipStat(v) {
   const n = Number(v) || 0;
   if (Number.isInteger(n)) return fmt(n);
   return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+/* V474 · Equipment Mastery X.
+   Paid lifetime Forge thresholds now run I→X with the validated 30% early /
+   20% late progression. Each rank reward also gains +50 Dust versus the V467
+   reward ladder. Dust upgrades remain independent from the Roman rank. */
+const EQUIPMENT_MASTERY_REWARD_VERSION = 474;
+const EQUIPMENT_MASTERY_TIERS = [
+  { need:0, rank:0, roman:"—", bonusPct:0, rewardDust:0 },
+  { need:200, rank:1, roman:"I", bonusPct:30, rewardDust:150 },
+  { need:600, rank:2, roman:"II", bonusPct:60, rewardDust:250 },
+  { need:1200, rank:3, roman:"III", bonusPct:90, rewardDust:350 },
+  { need:2500, rank:4, roman:"IV", bonusPct:120, rewardDust:450 },
+  { need:5000, rank:5, roman:"V", bonusPct:140, rewardDust:550 },
+  { need:10000, rank:6, roman:"VI", bonusPct:160, rewardDust:650 },
+  { need:20000, rank:7, roman:"VII", bonusPct:180, rewardDust:750 },
+  { need:30000, rank:8, roman:"VIII", bonusPct:200, rewardDust:850 },
+  { need:40000, rank:9, roman:"IX", bonusPct:220, rewardDust:950 },
+  { need:50000, rank:10, roman:"X", bonusPct:240, rewardDust:1050 }
+];
+function equipmentMasteryInfoFromCount(count) {
+  const n = Math.max(0, Math.floor(Number(count) || 0));
+  let current = EQUIPMENT_MASTERY_TIERS[0], next = null;
+  for (let i=1; i<EQUIPMENT_MASTERY_TIERS.length; i++) {
+    if (n >= EQUIPMENT_MASTERY_TIERS[i].need) current = EQUIPMENT_MASTERY_TIERS[i];
+    else { next = EQUIPMENT_MASTERY_TIERS[i]; break; }
+  }
+  const progressPct = next
+    ? Math.max(0, Math.min(100, (n-current.need) / Math.max(1, next.need-current.need) * 100))
+    : 100;
+  return {
+    count:n, rank:current.rank, roman:current.roman, bonusPct:current.bonusPct,
+    rewardDust:current.rewardDust || 0,
+    currentNeed:current.need, nextNeed:next ? next.need : null,
+    nextRoman:next ? next.roman : null,
+    nextRewardDust:next ? (next.rewardDust || 0) : 0,
+    progressPct, maxed:!next
+  };
+}
+/* V523: expose the canonical Roman Equipment Mastery to the forge UI and
+   paid-forge rank transition. Uses the existing lifetimeCount and tier table;
+   never resets or fabricates saved progression. */
+if (typeof window !== "undefined") {
+  window.__srForgeLifetimeMasteryV445 = {
+    info:function(state){
+      return equipmentMasteryInfoFromCount(state && state.forge && state.forge.lifetimeCount);
+    },
+    applyState:function(state){
+      if (!state || !state.forge) return false;
+      return syncEquipmentLevels(state);
+    }
+  };
+}
+function equipmentMasteryDustRewardForRank(rank) {
+  const maxRank = EQUIPMENT_MASTERY_TIERS[EQUIPMENT_MASTERY_TIERS.length - 1].rank;
+  const r = Math.max(0, Math.min(maxRank, Math.floor(Number(rank) || 0)));
+  const tier = EQUIPMENT_MASTERY_TIERS.find((t) => t.rank === r);
+  return tier ? Math.max(0, Number(tier.rewardDust) || 0) : 0;
+}
+function equipmentMasteryDustEntitlement(rank) {
+  const maxRank = EQUIPMENT_MASTERY_TIERS[EQUIPMENT_MASTERY_TIERS.length - 1].rank;
+  const r = Math.max(0, Math.min(maxRank, Math.floor(Number(rank) || 0)));
+  let total = 0;
+  for (let i=1; i<=r; i++) total += equipmentMasteryDustRewardForRank(i);
+  return total;
+}
+function legacyEquipmentMasteryDustPaid(forge) {
+  forge = forge || {};
+  const claimed = Math.max(0, Math.min(9, Math.floor(Number(forge.masteryDustClaimedRank) || 0)));
+  const version = Math.max(0, Math.floor(Number(forge.masteryDustRewardVersion) || 0));
+  /* V467 paid 100/200/.../900. Pre-V467 Roman rewards used the original
+     50/100/.../450 ladder. This inference lets V474 migrate without replaying
+     historical rewards even though the new Forge thresholds are much later. */
+  const unit = version >= 467 ? 100 : 50;
+  return unit * claimed * (claimed + 1) / 2;
+}
+function claimEquipmentMasteryDustRewards(s) {
+  if (!s || !s.forge) return { dust:0, fromRank:0, toRank:0, claimedRank:0 };
+  const current = equipmentMasteryInfoFromCount(s.forge.lifetimeCount).rank;
+  let paid = Number(s.forge.masteryDustPaidTotal);
+  if (!Number.isFinite(paid)) paid = legacyEquipmentMasteryDustPaid(s.forge);
+  paid = Math.max(0, Math.floor(paid));
+  const entitlement = equipmentMasteryDustEntitlement(current);
+  const dust = Math.max(0, entitlement - paid);
+  if (dust > 0) s.poussiere = Math.max(0, Number(s.poussiere) || 0) + dust;
+  s.forge.masteryDustPaidTotal = Math.max(paid, entitlement);
+  s.forge.masteryDustClaimedRank = current;
+  s.forge.masteryDustRewardVersion = EQUIPMENT_MASTERY_REWARD_VERSION;
+  return {
+    dust,
+    fromRank:Math.max(1, current),
+    toRank:current,
+    claimedRank:current,
+    paidTotal:s.forge.masteryDustPaidTotal,
+    entitlement
+  };
+}
+function equipmentMasteryInfo(s) {
+  try {
+    const api = window.__srForgeLifetimeMasteryV445;
+    if (api && typeof api.info === "function") return api.info(s);
+  } catch (_) {}
+  return equipmentMasteryInfoFromCount(s && s.forge && s.forge.lifetimeCount);
+}
+function equipmentRomanLevel(level) {
+  let n = Math.max(0, Math.floor(Number(level) || 0));
+  if (!n) return "";
+  const map = [[1000,"M"],[900,"CM"],[500,"D"],[400,"CD"],[100,"C"],[90,"XC"],[50,"L"],[40,"XL"],[10,"X"],[9,"IX"],[5,"V"],[4,"IV"],[1,"I"]];
+  let out = "";
+  map.forEach(([value, glyph]) => { while (n >= value) { out += glyph; n -= value; } });
+  return out;
+}
+function equipmentUpgradeLevel(it) {
+  if (!it) return 0;
+  const explicit = Number(it.upgradeLevel);
+  if (Number.isFinite(explicit)) return Math.max(0, Math.floor(explicit));
+  /* Pre-V455 saves stored Dust upgrades in item.level. V455+ item.level is only presentation. */
+  return Number(it.equipmentLevelModelVersion) >= 455 ? 0 : Math.max(0, Math.floor(Number(it.level) || 0));
+}
+function syncEquipmentLevelItem(it, masteryRank) {
+  if (!it) return false;
+  const maxRank = EQUIPMENT_MASTERY_TIERS[EQUIPMENT_MASTERY_TIERS.length - 1].rank;
+  const target = Math.max(0, Math.min(maxRank, Math.floor(Number(masteryRank) || 0)));
+  let changed = false;
+  if (!Number.isFinite(Number(it.upgradeLevel))) {
+    it.upgradeLevel = Number(it.equipmentLevelModelVersion) >= 455
+      ? 0
+      : Math.max(0, Math.floor(Number(it.level) || 0));
+    changed = true;
+  } else {
+    const cleanUpgrade = Math.max(0, Math.floor(Number(it.upgradeLevel) || 0));
+    if (it.upgradeLevel !== cleanUpgrade) { it.upgradeLevel = cleanUpgrade; changed = true; }
+  }
+  if (!Number.isFinite(Number(it.upgradeBaseLevel))) { it.upgradeBaseLevel = 0; changed = true; }
+  if (Number(it.level) !== target) { it.level = target; changed = true; }
+  if (it.equipmentLevelModelVersion !== 456) { it.equipmentLevelModelVersion = 456; changed = true; }
+  return changed;
+}
+function syncEquipmentLevels(s) {
+  if (!s) return false;
+  const info = equipmentMasteryInfo(s);
+  let changed = false;
+  (s.inventory || []).forEach((it) => { if (syncEquipmentLevelItem(it, info.rank)) changed = true; });
+  if (s.equipped) Object.keys(s.equipped).forEach((slot) => {
+    if (syncEquipmentLevelItem(s.equipped[slot], info.rank)) changed = true;
+  });
+  /* V558: reconcile legacy owned items at the same mastery rank and equipment slot.
+     Only raise superior rarity base stats; never nerf an owned item. */
+  const allGear=[...(s.inventory||[]),...Object.values(s.equipped||{})].filter(Boolean);
+  const groups={};
+  for(const it of allGear){
+    const rank=Object.keys(RARITY_MUL).indexOf(it.rarity);
+    if(rank<0)continue;
+    const key=it.slot+'|'+Number(it.level||0)+'|'+(Number(it.baseDamage||0)>0?'damage':'hp');
+    (groups[key]||(groups[key]=[])).push(it);
+  }
+  for(const items of Object.values(groups)){
+    items.sort((a,b)=>(RARITY_MUL[a.rarity]||0)-(RARITY_MUL[b.rarity]||0));
+    let previous=0,previousRarity='';
+    for(const it of items){
+      const attack=Number(it.baseDamage||0)>0,field=attack?'baseDamage':'baseHp',stat=attack?'damage':'hp';
+      const original=Number(it[field]||0);
+      const required=previousRarity!==it.rarity?Math.ceil(previous*1.01):0;
+      if(original>0&&required>original){
+        const delta=required-original;
+        it[field]=required;it[stat]=Math.max(0,Number(it[stat]||0)+delta);
+        it.originalPower=Math.max(0,Number(it.originalPower||0)+delta);
+        it.power=Math.max(0,Number(it.power||0)+delta);
+        changed=true;
+      }
+      previous=Math.max(previous,Number(it[field]||0));previousRarity=it.rarity;
+    }
+  }
+  if (!s.forge) s.forge = {};
+  s.forge.lifetimeMasteryRank = info.rank;
+  s.equipmentMasterySyncVersion = 456;
+  s.equipmentLevelSyncVersion = 456; // compatibility marker for older saves/tools
+  return changed;
+}
+function equipmentDisplayName(it) {
+  if (!it) return "";
+  const name = String(it.name || "Équipement");
+  const roman = equipmentRomanLevel(it.level);
+  return roman ? name + " | " + roman : name;
+}
+function equipmentUpgradeText(it) {
+  const lv = equipmentUpgradeLevel(it);
+  return lv > 0 ? "+" + lv + " amélioration" + (lv > 1 ? "s" : "") : "Non amélioré";
 }
 function fmtTime(secs) {
   secs = Math.max(0, Math.floor(secs));
@@ -436,31 +631,46 @@ const SAVE_VERSION = 4;
 
 const RULES = {
   STEPS_PER_FLOOR: 3, CHECKPOINT_EVERY: 5, ELITE_EVERY: 5, BOSS_EVERY: 10,
-  MAX_LEVEL: 100, STAT_POINTS_PER_LEVEL: 5, REBIRTH_UNLOCK_FLOOR: 25,
+  MAX_LEVEL: 100, STAT_POINTS_PER_LEVEL: 5, REBIRTH_UNLOCK_FLOOR: 25, // legacy compatibility only
   SKILL_SLOTS_BASE: 3, SKILL_SLOT_5_LEVEL: 100,
   RAID_UNLOCK_LEVEL: 5, CHAT_UNLOCK_LEVEL: 3, MAX_ENEMIES: 3,
   FORGE_MAX: 50, SKILL_MAX_LEVEL: 50, MASTERY_MAX: 50, EGG_SLOT_MAX: 5,
-  RAID_MAX_LEVEL: 50, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6, RAID_ASCEND_MAX_STARS: 1,
+  RAID_MAX_LEVEL: 500, RAID_FREE_KEYS: 2, RAID_KEY_CAP: 6, RAID_ASCEND_MAX_STARS: 0,
   UNIVERSAL_KEY_DAILY: 3, UNIVERSAL_KEY_CAP: 6, AFK_BASE_HOURS: 8,
-  WAR_POINTS_PER_PR: 30,
+  WAR_POINTS_PER_PR: 30, // legacy compatibility only
   FORGE_BATCH_BASE: 1, FORGE_BATCH_MAX: 10,
   // a fight is never resolved instantly, however overpowered the player is:
   // ENTRY = enemy walks in before anyone swings, HOLD = victory/defeat beat.
   FIGHT_ENTRY_MS: 420, FIGHT_HOLD_MS: 820,
   // clearing the last step of a floor gets a longer beat plus an on-screen
-  // floor banner, so a post-Rebirth sprint stays readable instead of a blur
+  // floor banner, so a fast campaign sprint stays readable instead of a blur
   FLOOR_CLEAR_MS: 700, FLOOR_FLASH_MS: 900,
-  // Kept for the screen, which still tells you where a Rebirth would land you.
-  // It is no longer a condition: section 4A gates on the current floor alone.
+  // Retained only so old imported code can read the historical field safely.
   REBIRTH_MIN_FLOOR_AFTER: 25,
 };
 
 const STATS = {
-  SANTE:   { key: "sante",   label: "Santé",           perPoint: 20,  icon: "heart" },
-  DEGATS:  { key: "degats",  label: "Dégâts",          perPoint: 2.2, icon: "flame" },
-  CRIT:    { key: "crit",    label: "Chance Critique", perPoint: 0.2, icon: "bolt" },
-  CRITRED: { key: "critred", label: "Réduc. Crit",     perPoint: 0.3, icon: "shield" },
+  /* Hero level points scale the current build instead of adding tiny flat values
+     that disappear once real equipment enters the progression. */
+  SANTE:   { key: "sante",   label: "Santé",       perPointPct: 1.00, perPointFlat: 2, icon: "heart" },
+  DEGATS:  { key: "degats",  label: "Dégâts",      perPointPct: 1.00, perPointFlat: 0.25, icon: "flame" },
+  /* Kept as a zero-value legacy key so old saves can be refunded safely. Crit
+     chance now comes from the hero base, gear and other dedicated systems. */
+  CRIT:    { key: "crit",    label: "Chance Critique", perPoint: 0, icon: "bolt" },
+  CRITRED: { key: "critred", label: "Réduc. Crit", perPoint: 0.40, icon: "shield" },
 };
+const HERO_STAT_POWER_PER_POINT_PCT = 5;
+function heroAllocatedStatPoints(s) {
+  const st = (s && s.stats) || {};
+  return ["sante", "degats", "critred"].reduce((sum, key) =>
+    sum + Math.max(0, Math.floor(Number(st[key]) || 0)), 0);
+}
+function heroLevelStatPoints(s) {
+  return heroAllocatedStatPoints(s) + Math.max(0, Math.floor(Number(s && s.statPoints) || 0));
+}
+function heroStatPowerBonusPct(s) {
+  return heroLevelStatPoints(s) * HERO_STAT_POWER_PER_POINT_PCT;
+}
 const CRIT_CHANCE_CAP = 60, CRIT_RED_CAP = 80;
 const SKILL_SUMMON_COST = 25;  // base cost per Compétence invocation; Tree reductions apply afterwards
 const PET_SUMMON_COST = 50;    // fixed cost per Familier egg invocation
@@ -519,8 +729,7 @@ function enemyDamage(floor) {
 }
 /* Campaign Gold economy. Floors 1-25 keep the original early curve.
    After floor 25, growth slows progressively at floors 300, 500 and 750.
-   Elite floors pay +20%; Boss floors +40%. The Rebirth Gold bonus applies
-   only when campaign Gold is awarded, not inside this base reward function. */
+   Elite floors pay +20%; Boss floors +40%. */
 const GOLD_KNEE = 25;
 /* Gold progression is intentionally tiered at deep floors so the economy keeps
    growing without an endless exponential explosion. The value is continuous
@@ -716,12 +925,41 @@ const MASTERY_STAT = { arme: "dmg", gants: "dmg", collier: "dmg", anneau: "dmg",
   casque: "hp", armure: "hp", bottes: "hp", ceinture: "hp" };
 const SLOT_ICON  = { arme: "sword", casque: "helm", armure: "armor", gants: "glove",
   bottes: "boot", collier: "gem", anneau: "ring", ceinture: "chain" };
+
+/* V435 · Permanent Defense is derived from the HP actually carried by defensive
+   equipment. It is intentionally not persisted: old saves gain the exact same
+   rule immediately, Forge stars and Dust upgrades keep their value, and there
+   is no schema migration that can damage owned gear. The logarithmic rating
+   keeps early gear light while preventing late-game HP values from turning into
+   near-invulnerability. */
+const DEFENSE_RATING_K = 100;
+const DEFENSE_REDUCTION_CAP = 70;
+const DEFENSE_HP_SCALE = 10000;
+const DEFENSE_LOG_FACTOR = 5;
+function equipmentDefenseRating(it) {
+  if (!it || MASTERY_STAT[it.slot] !== "hp") return 0;
+  const hp = Math.max(0, Number(it.hp) || 0);
+  return hp > 0 ? DEFENSE_LOG_FACTOR * Math.log1p(hp / DEFENSE_HP_SCALE) : 0;
+}
+function defenseReductionPct(rating) {
+  const r = Math.max(0, Number(rating) || 0);
+  return r > 0 ? Math.min(DEFENSE_REDUCTION_CAP, (r / (r + DEFENSE_RATING_K)) * 100) : 0;
+}
+window.__srDefenseSystemV435 = {
+  version: 435,
+  ratingK: DEFENSE_RATING_K,
+  capPct: DEFENSE_REDUCTION_CAP,
+  hpScale: DEFENSE_HP_SCALE,
+  logFactor: DEFENSE_LOG_FACTOR,
+  equipmentDefenseRating,
+  defenseReductionPct,
+};
 /* La rareté porte surtout la STAT DE BASE. Les bonus secondaires restent fortement
    chevauchants afin qu'un excellent Mythique puisse battre les bonus d'un Infernal
    médiocre, tout en laissant l'Infernal très tentant grâce à sa base. */
-const RARITY_MUL = { COMMUN: 1, RARE: 1.45, EPIQUE: 1.95, MYTHIQUE: 2.60,
-  ARTEFACT: 3.45, LEGENDAIRE: 4.55, INFERNAL: 6.00, IMMORTEL: 7.90, DIVIN: 10.40,
-  /* legacy */ HEROIQUE: 3.45, ANCESTRAL: 6.00 };
+const RARITY_MUL = { COMMUN: 1, PEU_COMMUN: 1.35, RARE: 1.80, EPIQUE: 3.30, HEROIQUE: 4.50, MYTHIQUE: 6.00,
+  ARTEFACT: 10.50, LEGENDAIRE: 18.00, INFERNAL: 30.00, IMMORTEL: 50.00, DIVIN: 80.00,
+  /* legacy */ ANCESTRAL: 30.00 };
 
 /* Section 18 brings the high rarities down. The ladder above Épique used to
    halve at each step, which at full Maîtrise handed out a Mythique every 8
@@ -740,8 +978,8 @@ const RARITY_MUL = { COMMUN: 1, RARE: 1.45, EPIQUE: 1.95, MYTHIQUE: 2.60,
    compresses what is next to it. */
 const RATE_ANCHORS = {
   forge: {
-    m0:  { COMMUN: 100, RARE: 0, EPIQUE: 0, MYTHIQUE: 0, ARTEFACT: 0, LEGENDAIRE: 0, INFERNAL: 0, IMMORTEL: 0, DIVIN: 0 },
-    m50: { COMMUN: 35.0, RARE: 28, EPIQUE: 21, MYTHIQUE: 8, ARTEFACT: 4, LEGENDAIRE: 2.2, INFERNAL: 1.1, IMMORTEL: 0.7, DIVIN: 0 },
+    m0:  { COMMUN: 100, PEU_COMMUN: 0, RARE: 0, EPIQUE: 0, HEROIQUE: 0, MYTHIQUE: 0, ARTEFACT: 0, LEGENDAIRE: 0, INFERNAL: 0, IMMORTEL: 0, DIVIN: 0 },
+    m50: { COMMUN: 25.0, PEU_COMMUN: 24, RARE: 22, EPIQUE: 16, HEROIQUE: 7, MYTHIQUE: 4, ARTEFACT: 2, LEGENDAIRE: 0, INFERNAL: 0, IMMORTEL: 0, DIVIN: 0 },
   },
   skill: {
     m0:  { COMMUN: 100,  RARE: 0,  EPIQUE: 0,  MYTHIQUE: 0,   LEGENDAIRE: 0, DIVIN: 0 },
@@ -753,6 +991,26 @@ const RATE_ANCHORS = {
   },
 };
 function masteryReq(level) { return Math.round(5 + level * 1.6); }
+/* Credit real Familiar/Skill mastery progress by produced result count.
+   Unlike the paid-summon counter, this may advance by more than 1 when a
+   bonus result is generated. */
+function addMasteryCredits(track, amount) {
+  let left = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!track || !left) return 0;
+  let credited = 0;
+  while (left > 0 && track.level < RULES.MASTERY_MAX) {
+    const need = masteryReq(track.level);
+    const room = Math.max(1, need - Math.max(0, Number(track.progress) || 0));
+    const take = Math.min(left, room);
+    track.progress = Math.max(0, Number(track.progress) || 0) + take;
+    credited += take; left -= take;
+    if (track.progress >= need) {
+      track.progress -= need;
+      track.level += 1;
+    }
+  }
+  return credited;
+}
 /* Total paid summons needed to climb a fresh mastery ladder from 0 to max.
    `skillMastery.count` / `petMastery.count` reset on Ascension, so lifetime
    summon reconstruction must include completed ladders represented by stars. */
@@ -788,15 +1046,22 @@ const ASCENSION = {
 };
 const STAR_HEADSTART_CAP = 0.66;
 
-function starsOf(s, sys) { return (s.stars && s.stars[sys]) || 0; }
+function starsOf(s, sys) {
+  const raw = (s.stars && s.stars[sys]) || 0;
+  /* V501 keeps old saves non-destructive while making the effective Forge
+     Ascension cap exactly 2★ everywhere, including UI and drop calculations. */
+  return sys === "forge" ? Math.min(2, Math.max(0, Number(raw) || 0)) : raw;
+}
 /* permanent multiplier on that system's base values */
 /* Forge and Skill retain their original defined first star. Familiars have a
    complete three-star ladder: 0★ x1, 1★ x2, 2★ x3, 3★ x4. */
 const ASCEND_POWER_MUL = [1, 2];
+const FORGE_ASCEND_POWER_MUL = [1, 2, 2];
+const FORGE_ASCEND_MAX_STARS = 2;
 const PET_ASCEND_POWER_MUL = [1, 2, 3, 4];
 const PET_ASCEND_MAX_STARS = 3;
 function ascendPowerMul(stars, sys) {
-  const table = sys === "pet" ? PET_ASCEND_POWER_MUL : ASCEND_POWER_MUL;
+  const table = sys === "pet" ? PET_ASCEND_POWER_MUL : sys === "forge" ? FORGE_ASCEND_POWER_MUL : ASCEND_POWER_MUL;
   return table[Math.min(Math.max(0, stars || 0), table.length - 1)];
 }
 function starMul(s, sys) { return ascendPowerMul(starsOf(s, sys), sys); }
@@ -807,35 +1072,16 @@ function masteryLevel(s, sys) {
 }
 function canAscend(s, sys) {
   const stars = starsOf(s, sys);
-  const belowStarCap = sys === "pet" ? stars < PET_ASCEND_MAX_STARS : stars < (ASCEND_POWER_MUL.length - 1);
+  const belowStarCap = sys === "pet" ? stars < PET_ASCEND_MAX_STARS : sys === "forge" ? stars < FORGE_ASCEND_MAX_STARS : stars < (ASCEND_POWER_MUL.length - 1);
   return masteryLevel(s, sys) >= masteryMax(sys) && belowStarCap;
 }
 
-/* ---------------------------- Ascension de Raid ----------------------------
-   The fourth track. Each raid keeps its own level from 1 to 50, and section 5
-   measures the new difficulty against "le niveau 1 du meme Raid", so each raid
-   carries its own star and ascends on its own. Ascending one leaves the other
-   four exactly where they were.
-
-   What it takes: the level, and only the level. Keys are what you spend to
-   enter a raid, so they survive for the same reason Essence and Minerai do --
-   a player who ascends should be able to start climbing again immediately. The
-   record stands as well; it is history, not progress. */
-function raidStars(s, rid) { return (s.raids[rid] && s.raids[rid].stars) || 0; }
-function canAscendRaid(s, rid) {
-  const r = s.raids[rid];
-  return !!r && r.level >= RULES.RAID_MAX_LEVEL && raidStars(s, rid) < RULES.RAID_ASCEND_MAX_STARS;
-}
-function doAscendRaid(rid) {
-  if (!canAscendRaid(S, rid)) return { ok: false, maxed: raidStars(S, rid) >= RULES.RAID_ASCEND_MAX_STARS };
-  update((st) => {
-    const r = st.raids[rid];
-    r.stars = (r.stars || 0) + 1;
-    r.level = 1;
-    // r.keys and r.record are deliberately untouched
-  });
-  return { ok: true, stars: raidStars(S, rid) };
-}
+/* ---------------------------- Raid Ascension retired V444 -----------------
+   Raids now have one permanent 70-level ladder (1-1 -> 7-10). Historical
+   stars are migrated into linear progress and kept only as legacy evidence. */
+function raidStars() { return 0; }
+function canAscendRaid() { return false; }
+function doAscendRaid() { return { ok: false, retired: true, maxed: true }; }
 
 /* What each Ascension costs and what it spares. The rule from the brief: every
    resource and every piece of progress the system produced is wiped, EXCEPT the
@@ -901,7 +1147,7 @@ function doAscendMastery(sys) {
       appleRefund = petAppleInvestmentTotal(st);
       st.apples = (st.apples || 0) + appleRefund;
       // section 1: the ladder comes back at 0/50, which is where a new save starts
-      st.petMastery = { level: 0, count: 0, progress: 0 };
+      st.petMastery = { level: 0, count: 0, progress: 0, bonusCount: 0 };
       st.pets = []; st.eggs = []; st.activePetId = null;
       // Essence, every slot source and every Apple ever invested all survive.
     } else if (sys === "forge") {
@@ -951,8 +1197,7 @@ function getRates(system, mastery, ascension, stars) {
   order.forEach((r) => { out[r] = a.m0[r] + (a.m50[r] - a.m0[r]) * Math.pow(t, EASE[r]); });
   // Familiar Ascension unlocks Legendary, never Divine. Divine Familiars only
   // enter the table after the character completes its own global Ascension.
-  const divinPush = (ascension || 0) * 2 +
-    (system === "pet" ? 0 : st * ((ASCENSION[system] || {}).divin || 0));
+  const divinPush = (ascension || 0) * 2;
   if (divinPush > 0) {
     const divin = Math.min(9, divinPush * t);
     out.DIVIN = divin;
@@ -994,13 +1239,23 @@ function rollRarity(rates, order) {
    gold price of an upgrade and is untouched. */
 function forgeCost(forgeLevel) { return FORGE_CRAFT_COST; }
 const FORGE_CRAFT_COST = 10;
-/* Exact Forge Gold ladder. Levels 1 -> 50 cost 15,000,000 Gold in total.
-   The early levels stay cheap, then the curve rises smoothly so long upgrade
-   timers double as time to farm the next payment. */
+/* Forge Gold base ladder. V395 keeps the opening unchanged, then applies a
+   moderate pacing multiplier against the stronger Raid Or economy:
+   x1.00 through level 5, x1.10 at 10, x1.20 at 15, x1.25 at 20+.
+   The Raid Or buff remains meaningful; this only prevents late Forge upgrades
+   from becoming disproportionately cheap. */
 const FORGE_UPGRADE_GOLD_COSTS = [3350,3800,4350,4950,5650,6450,7400,8400,9600,10950,12500,14250,16250,18550,21150,24100,27500,31350,35750,40800,46550,53100,60550,69050,78750,89850,102500,116900,133300,152050,173450,197850,225650,257400,293600,334850,381950,435650,496900,566800,646500,737400,841100,959350,1094250,1248100,1423600,1623800,1852100];
+function forgeGoldEconomyMul(level) {
+  const lv = Math.max(1, Number(level) || 1);
+  if (lv <= 5) return 1;
+  if (lv <= 10) return 1 + (lv - 5) * 0.02;
+  if (lv <= 15) return 1.10 + (lv - 10) * 0.02;
+  if (lv <= 20) return 1.20 + (lv - 15) * 0.01;
+  return 1.25;
+}
 function forgeUpgradeCost(level) {
   const i = Math.max(0, Math.min(FORGE_UPGRADE_GOLD_COSTS.length - 1, level - 1));
-  return FORGE_UPGRADE_GOLD_COSTS[i];
+  return Math.round(FORGE_UPGRADE_GOLD_COSTS[i] * forgeGoldEconomyMul(level));
 }
 const FORGE_UPGRADE_TIMES = { 1: 0, 2: 0, 3: 0, 4: 300, 5: 600, 6: 900, 7: 1200, 8: 1800, 9: 3000, 10: 3600 };
 function forgeUpgradeTime(level) {
@@ -1009,18 +1264,24 @@ function forgeUpgradeTime(level) {
   return 3600 + (level - 10) * 900;
 }
 
-/* Per-rarity hatch reduction. Three tiers stack (3 + 4 + 5 % a level over
-   5 levels each = 60% at most), so a fully researched rarity hatches in 40% of
-   its base time -- a real gain that still leaves a wait. */
-/* Speed, not a cut. Four nodes at +50% make hatching three times as fast, so
-   the timer is divided rather than shaved -- no ceiling, and the fourth node is
-   worth as much as the first. hatchCutFor still answers in "percent removed"
-   because that is what its callers want. */
-function hatchSpeedFor(s, rarity) { return 1 + treeSum(s, "hatch_" + rarity) / 100; }
+/* V476 · Per-rarity hatch speed. Each rarity owns four 5-level Tree nodes
+   at +6% per level: +30% per Palier, +120% total. Speed divides the timer, so
+   +120% means x2.2 hatch speed (base time / 2.2), never a negative timer.
+   hatchCutFor still answers in "percent removed" for older UI callers. */
+function hatchSpeedFor(s, rarity) { return 1 + Math.min(120, Math.max(0, treeSum(s, "hatch_" + rarity))) / 100; }
 function hatchCutFor(s, rarity) {
   return Math.round((1 - 1 / hatchSpeedFor(s, rarity)) * 1000) / 10;
 }
-const EGG_TIMERS = { COMMUN: 10 * 60, PEU_COMMUN: 30 * 60, RARE: 90 * 60, EPIQUE: 4 * 3600, MYTHIQUE: 10 * 3600, LEGENDAIRE: 24 * 3600, DIVIN: 72 * 3600 };
+const EGG_TIMERS = {
+  COMMUN: 10 * 60,
+  PEU_COMMUN: 30 * 60,
+  RARE: 2 * 3600,
+  EPIQUE: 8 * 3600,
+  MYTHIQUE: 24 * 3600,
+  ANCESTRAL: 2 * 24 * 3600,
+  LEGENDAIRE: 6 * 24 * 3600,
+  DIVIN: 21 * 24 * 3600
+};
 
 /* ---------------------------- familiars -----------------------------------
    Every balance number for pets lives here so the curve can be retuned in one
@@ -1062,7 +1323,7 @@ function petArt(p) {
       || ASSETS.pet_dragonnet_normal;
 }
 
-const PET_BASE = { COMMUN: 3, PEU_COMMUN: 9, RARE: 18, EPIQUE: 108, MYTHIQUE: 648, LEGENDAIRE: 2200, DIVIN: 6408 };
+const PET_BASE = { COMMUN: 3, PEU_COMMUN: 9, RARE: 18, EPIQUE: 108, MYTHIQUE: 648, ANCESTRAL: 0, LEGENDAIRE: 2200, DIVIN: 6408 };
 /* Existing caps and per-level power gains are preserved. Peu commun is simply
    inserted between Commun and Rare and follows the same 10-level track as
    Commun. Upgrade PRICES are deliberately absent here: at an equal level every
@@ -1073,6 +1334,10 @@ const PET_UP = {
   RARE:       { max: 12, per: 3.0 },
   EPIQUE:     { max: 15, per: 14.4 },
   MYTHIQUE:   { max: 18, per: 34.5 },
+  /* Apple levels are retired by V286. This boot-safe entry exists so legacy
+     and current Ancestral saves can migrate before V286 installs its flat-stat
+     authority. The historical level remains available as legacyLevel. */
+  ANCESTRAL:  { max: 0, per: 0 },
   LEGENDAIRE: { max: 20, per: 84 },
   DIVIN:      { max: 25, per: 150 },
 };
@@ -1082,7 +1347,7 @@ const PET_UP = {
 const PET_UPGRADE_BASE = 2;
 const PET_UPGRADE_GROWTH = 1.29;
 /* How many identical familiars fuse into the next rarity. */
-const PET_FUSE_NEED = { COMMUN: 6, PEU_COMMUN: 6, RARE: 7, EPIQUE: 8, MYTHIQUE: 9, LEGENDAIRE: 10 };
+const PET_FUSE_NEED = { COMMUN: 4, PEU_COMMUN: 4, RARE: 5, EPIQUE: 5, MYTHIQUE: 5, ANCESTRAL: 6 };
 
 function petMaxLevel(rarity) { return PET_UP[rarity].max; }
 function petBonusAt(rarity, level, stars) {
@@ -1233,20 +1498,16 @@ SKILL_DEFS.forEach((d) => { (SKILLS_BY_RARITY[d.rarity] = SKILLS_BY_RARITY[d.rar
 const SKILL_BY_ID = {};
 SKILL_DEFS.forEach((d) => { SKILL_BY_ID[d.id] = d; });
 
-function skillDupesNeeded(level) { return Math.min(12, 1 + Math.floor(level / 5)); }
-/* Section 17. Measured at character 100 with a full Épique set, comparing a
-   cast against what auto-attacks deal during that skill's own cooldown:
-
-     level 1     Taillade 0.83   Percée 1.02   Exécution 1.30   Cataclysme 1.16
-     level 50    Taillade 3.3    Percée 4.1    Exécution 5.1    Cataclysme 4.6
-
-   At level 1 the numbers are right -- a cast is worth roughly its downtime. The
-   base multipliers are therefore not the problem; the per-level growth is, and
-   it alone multiplied every skill by 3.94 while nothing else about the hero
-   moved. Halving it to 3 % puts a maxed skill at 2.47x its level-1 value, so a
-   cast lands at 2 to 3 times its cooldown in auto-attacks: a burst worth
-   pressing, not a replacement for the fight. */
-const SKILL_LEVEL_GROWTH = 0.03;
+/* V457 · Duplicate ladder: 1 / 2 / 3 / 4 / 5 / 6, then capped at 6.
+   The current skill level determines how many duplicates are required for the
+   next level: level 1 needs 1, level 2 needs 2, ... level 6+ needs 6. */
+function skillDupesNeeded(level) {
+  return Math.min(6, Math.max(1, Math.floor(Number(level) || 1)));
+}
+/* V457 · Every skill level adds +20% of its level-1 power. The late V284 owner
+   uses the same value, so combat, previews, global Power and summon feedback
+   stay aligned. */
+const SKILL_LEVEL_GROWTH = 0.20;
 function skillDamageMult(base, level) {
   return base * (1 + (level - 1) * SKILL_LEVEL_GROWTH) * starMul(S, "skill");
 }
@@ -1259,98 +1520,172 @@ const RAIDS = {
   evolution:  { name: "Raid Évolution",  icon: "chart",   color: "#3FCFD6", reward: "PE" },
 };
 const RAID_IDS = ["or", "minerai", "competence", "familier", "evolution"];
-/* ---------------------------- raid difficulty -----------------------------
-   Calibrated so raid level L is roughly the ceiling for a character at level
-   2L — i.e. raid 25 around character 50, raid 50 (the cap) around character
-   100. Measured against a reference build (40/40/10/10 stat split, forge at
-   level/2, a full set of level-appropriate gear and one un-upgraded pet):
+/* ---------------------------- raid difficulty V444 / V496 -----------------
+   Raid progression remains a 70-level ladder displayed 1-1 -> 7-10.
+   Campaign references remain labels/context only and never scale Raid power.
 
-     player DPS  grows ~1.079 per character level
-     player HP   grows ~1.074 per character level
-
-   so at char 2L that is 1.079^2L = RAID_HP_GROWTH^L. The wave is then sized
-   to take TTK_TARGET seconds of that DPS while leaving the player about
-   TTD_TARGET seconds of life — a ~20% margin at the intended level.
-
-   Everything below is a knob; nothing else in the file hardcodes raid scaling.
+   V496 replaces V485's +7.5-point staircase. Every fifth level adds +15
+   percentage points through level 15, then +10 points from level 20 onward.
+   The increase is measured against Raid level 1, matching the existing
+   staircase semantics and avoiding a second stacked/compounded multiplier.
+   Existing per-Raid identities remain unchanged.
    -------------------------------------------------------------------------- */
-/* Recalibrated against the REAL combat engine (headless tick loop), not a
-   closed-form model. Measured ceilings for a DEVELOPED character-100 build
-   (4 skills, pet maxed inside its rarity, tree partly grown):
-       damage 620k   HP 1.30M
-   versus a BARE character-100 build (stats + gear only):
-       damage 113k   HP 467k
-   The wave budget is sized so raid 50 is the ceiling for the developed build,
-   which puts a bare build around raid 33 — raids are now a real check on how
-   built your character is, not just on level. Growth is steep rather than the
-   base being large, so raid 1 stays approachable for a new character. */
+const RAID_LEVELS_PER_CHAPTER = 10;
+const RAID_CAMPAIGN_STEP_MULT = 2;
+const RAID_REFERENCE_PRESSURE_MUL = 1.15;
+const RAID_POWER_STEP_LEVELS_V496 = 5;
+const RAID_POWER_PRE20_PCT_V496 = 1.50;
+const RAID_POWER_FROM20_PCT_V496 = 1.50;
+/* V521: additive +50% every five Raid levels, including level 20 onward.\n   1-4 x1.00, 5-9 x1.50, 10-14 x2.00, 15-19 x2.50,\n   20-24 x3.00, then +0.50 every five levels through level 70 x8.00.
+   Global Raid modifiers in V289 and per-Raid identity tuning still apply. */
+const RAID_REFERENCE_TTK_UNITS = 6.5;
+const RAID_REFERENCE_TTD_DIV = 6;
+
+function raidLevelLabel(level) {
+  const lv = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(level) || 1)));
+  return (Math.floor((lv - 1) / RAID_LEVELS_PER_CHAPTER) + 1) + "-" +
+    (((lv - 1) % RAID_LEVELS_PER_CHAPTER) + 1);
+}
+function raidReferenceCampaignFloor(level) {
+  const lv = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(level) || 1)));
+  const chapter = Math.floor((lv - 1) / RAID_LEVELS_PER_CHAPTER) + 1;
+  const step = ((lv - 1) % RAID_LEVELS_PER_CHAPTER) + 1;
+  const campaignGlobalChapter = chapter * RAID_CAMPAIGN_STEP_MULT;
+  const campaignStage = step * RAID_CAMPAIGN_STEP_MULT;
+  return Math.min(800, (campaignGlobalChapter - 1) * 20 + campaignStage);
+}
+function raidReferenceCampaignLabel(level) {
+  const f = raidReferenceCampaignFloor(level);
+  try {
+    if (typeof window.__srCampaignLabel === "function") return window.__srCampaignLabel(f).replace(" · ", " ");
+  } catch (_) {}
+  return "Étage " + f;
+}
+function raidCampaignReady(s, level) {
+  return Math.max(1, Number(s && s.recordFloor) || 1) >= raidReferenceCampaignFloor(level);
+}
+function raidRawExpectedPlayerDamage(level) {
+  const f = raidReferenceCampaignFloor(level);
+  try {
+    const cfg = window.__srEnemyDamageConfigV289;
+    if (cfg && typeof cfg.expectedPlayerDamage === "function")
+      return Math.max(1, Number(cfg.expectedPlayerDamage(f)) || 1);
+    if (typeof window.__srV323ExpectedPlayerDamage === "function")
+      return Math.max(1, Number(window.__srV323ExpectedPlayerDamage(f)) || 1);
+  } catch (_) {}
+  return Math.max(1, RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, Math.max(1, Number(level) || 1)) / RAID_REFERENCE_TTK_UNITS);
+}
+function raidRawExpectedPlayerHP(level) {
+  const f = raidReferenceCampaignFloor(level);
+  try {
+    const cfg = window.__srEnemyDamageConfigV289;
+    if (cfg && typeof cfg.expectedPlayerHP === "function")
+      return Math.max(1, Number(cfg.expectedPlayerHP(f)) || 1);
+    if (typeof window.__srV323ExpectedPlayerHP === "function")
+      return Math.max(1, Number(window.__srV323ExpectedPlayerHP(f)) || 1);
+  } catch (_) {}
+  return Math.max(1, RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, Math.max(1, Number(level) || 1)) * RAID_REFERENCE_TTD_DIV);
+}
+function raidPowerStepMultiplierV496(level) {
+  const lv = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(level) || 1)));
+  const pre20 = Math.min(3, Math.floor(lv / RAID_POWER_STEP_LEVELS_V496));
+  const from20 = lv >= 20 ? Math.floor((lv - 20) / RAID_POWER_STEP_LEVELS_V496) + 1 : 0;
+  return 1.25 + pre20 * RAID_POWER_PRE20_PCT_V496 + from20 * RAID_POWER_FROM20_PCT_V496;
+}
+function raidPowerStepMultiplierV485(level) { return raidPowerStepMultiplierV496(level); }
+function raidExpectedPlayerDamage(level) {
+  return Math.max(1, raidRawExpectedPlayerDamage(1) * raidPowerStepMultiplierV496(level));
+}
+function raidExpectedPlayerHP(level) {
+  return Math.max(1, raidRawExpectedPlayerHP(1) * raidPowerStepMultiplierV496(level));
+}
+/* Legacy constants remain only as safe pre-authority fallbacks during boot. */
 const RAID_HP_BASE = 464, RAID_HP_GROWTH = 1.2723;
 const RAID_DMG_BASE = 38.1, RAID_DMG_GROWTH = 1.1806;
 const RAID_TUNE = {
-  // "or" runs five SEQUENTIAL single-enemy waves, so the player only ever
-  // faces one at a time — it needs a bigger HP budget to gate at the same level
   or:         { hp: 2.00, dmg: 0.70 },
-  // Évolution is the gate on the personal tree, so it is the stiffest raid
   evolution:  { hp: 1.45, dmg: 1.20 },
-  minerai:    { hp: 1.25, dmg: 1.15 },   // one tanky golem
+  minerai:    { hp: 1.25, dmg: 1.15 },
   competence: { hp: 1.00, dmg: 1.00 },
   familier:   { hp: 1.00, dmg: 1.00 },
 };
-/* Section 6 makes Raid Minerai linear: a flat base, then ten more a level. The
-   base is the only thing an Ascension changes -- 750 unstarred, 1275 after the
-   first -- so level 15 with a star lands on 990, which was the unstarred
-   ceiling, and level 16 is the first to beat it. The second star is left
-   undefined and the base holds, as everywhere else in this update. */
-const RAID_MINERAI_BASE = [750, 1275];
-const RAID_MINERAI_PER_LEVEL = 15;
-function raidMineraiBase(s) {
-  const st = (s && s.raids && s.raids.minerai && s.raids.minerai.stars) || 0;
-  return RAID_MINERAI_BASE[Math.min(Math.max(0, st), RAID_MINERAI_BASE.length - 1)];
-}
-function raidReward(raid, level) {
-  // Mise à jour 10 : progression lisible et linéaire pour les trois ressources demandées.
-  // Évolution : 10 au niveau 1, puis +3 par niveau.
-  if (raid === "evolution") return 10 + 3 * Math.max(0, level - 1);
-  // Raids Compétence et Familier : 125 au niveau 1, puis +5 par niveau.
-  // Une victoire de niveau 1 finance 5 invocations de base à 25.
-  if (raid === "competence") return 125 + 5 * Math.max(0, level - 1);
-  if (raid === "familier") return 125 + 5 * Math.max(0, level - 1);
-  // Raid Or conserve sa courbe dédiée.
-  if (raid === "or") return Math.floor(RAID_OR_BASE * Math.pow(RAID_OR_GROWTH, level - 1));
-  if (raid === "minerai") return raidMineraiBase(S) + RAID_MINERAI_PER_LEVEL * (level - 1);
-  const base = RAID_BASE[raid] || 8;
-  return Math.floor(base * Math.pow(RAID_GROWTH, level - 1));
-}
-/* Section 5: a raid's first Ascension makes its level 1 exactly five times the
-   difficulty of the same raid's un-starred level 1. It applies here, on the
-   wave budget, because that is where this system already expresses "how hard is
-   this wave" -- raidEnemyHP and raidEnemyDamage then split the budget across
-   however many enemies are present, exactly as before. No individual statistic
-   is multiplied, and the per-level growth curve is untouched, so the existing
-   progression carries on from the new base.
+window.__srRaidCampaignLinkedV444 = {
+  maxLevel: 70, displayMax: "7-10", pressureMul: RAID_REFERENCE_PRESSURE_MUL,
+  growthCap: null,
+  referenceFloor: raidReferenceCampaignFloor, levelLabel: raidLevelLabel,
+  campaignReady: raidCampaignReady,
+  powerStepV496:{
+    everyLevels:RAID_POWER_STEP_LEVELS_V496,
+    addPctBefore20:RAID_POWER_PRE20_PCT_V496*100,
+    addPctFrom20:RAID_POWER_FROM20_PCT_V496*100,
+    multiplier:raidPowerStepMultiplierV496,
+    level70Multiplier:raidPowerStepMultiplierV496(70),
+    campaignReferenceAffectsPower:false
+  },
+  powerStepV485:{
+    everyLevels:RAID_POWER_STEP_LEVELS_V496,
+    addPctBefore20:RAID_POWER_PRE20_PCT_V496*100,
+    addPctFrom20:RAID_POWER_FROM20_PCT_V496*100,
+    multiplier:raidPowerStepMultiplierV496,
+    level70Multiplier:raidPowerStepMultiplierV496(70),
+    campaignReferenceAffectsPower:false,
+    supersededBy:496
+  },
+  powerStepV484:{
+    everyLevels:RAID_POWER_STEP_LEVELS_V496,
+    addPctBefore20:RAID_POWER_PRE20_PCT_V496*100,
+    addPctFrom20:RAID_POWER_FROM20_PCT_V496*100,
+    multiplier:raidPowerStepMultiplierV496,
+    level70Multiplier:raidPowerStepMultiplierV496(70),
+    campaignReferenceAffectsPower:false,
+    supersededBy:496
+  }
+};
 
-   Like the power multiplier, the second star is deliberately left undefined and
-   the value holds rather than compounding into a number nobody chose. */
-const RAID_ASCEND_DIFF_MUL = [1, 5];
-function raidDiffMul(s, raid) {
-  const st = (s && s.raids && s.raids[raid] && s.raids[raid].stars) || 0;
-  return RAID_ASCEND_DIFF_MUL[Math.min(Math.max(0, st), RAID_ASCEND_DIFF_MUL.length - 1)];
+/* Raid Minerai reward ownership is finalized later by V396. Raid Ascension is
+   retired, so this compatibility base no longer reads a Raid star. */
+const RAID_MINERAI_BASE = 1000;
+const RAID_MINERAI_PER_LEVEL = 5;
+function raidMineraiBase() { return RAID_MINERAI_BASE; }
+function raidReward(raid, level) {
+  const lv = Math.max(1, Math.floor(Number(level) || 1));
+  // V396 canonical Raid reward curves. A final authority loaded at the end of
+  // index.html mirrors these values so legacy wrappers cannot restore old ones.
+  if (raid === "evolution") {
+    const capped = Math.min(RULES.RAID_MAX_LEVEL, lv);
+    return capped <= 14 ? 150 + 10 * (capped - 1) : 280 + 5 * (capped - 14);
+  }
+  if (raid === "competence") return 300 + 10 * (lv - 1);
+  if (raid === "familier") return lv <= 11 ? 225 + 5 * (lv - 1) : 275 + 2 * (lv - 11);
+  if (raid === "or") {
+    if (lv <= 10) return Math.round(5000 + 5000 * ((lv - 1) / 9));
+    if (lv <= 15) return Math.round(10000 + 10000 * ((lv - 10) / 5));
+    if (lv <= 20) return Math.round(20000 + 10000 * ((lv - 15) / 5));
+    return Math.floor(30000 * Math.pow(1.05, lv - 20));
+  }
+  if (raid === "minerai") {
+    const capped = Math.min(RULES.RAID_MAX_LEVEL, lv);
+    if (capped <= 21) return 1000 + 50 * (capped - 1);
+    if (capped <= 41) return 2000 + 25 * (capped - 21);
+    if (capped <= 61) return 2500 + 15 * (capped - 41);
+    return 2800 + 5 * (capped - 61);
+  }
+  const base = RAID_BASE[raid] || 8;
+  return Math.floor(base * Math.pow(RAID_GROWTH, lv - 1));
 }
-/* total HP / damage-per-second budget for the whole wave at this raid level */
-function raidIntroDifficultyMul(raid, level) {
-  // Les deux premiers niveaux servent d’introduction. Dès le niveau 3, la
-  // courbe historique reprend exactement à 100 %, donc le développement futur
-  // et la difficulté des niveaux avancés restent inchangés.
-  if (raid !== "evolution" && raid !== "competence" && raid !== "familier") return 1;
-  if (level <= 1) return 0.65;
-  if (level === 2) return 0.80;
-  return 1;
-}
+/* V444: Raid Ascension is retired. Difficulty now comes exclusively from the
+   Campaign-linked 1-1 -> 7-10 ladder. */
+function raidDiffMul() { return 1; }
+function raidIntroDifficultyMul() { return 1; }
 function raidWaveHP(raid, level) {
-  return RAID_HP_BASE * Math.pow(RAID_HP_GROWTH, level) * RAID_TUNE[raid].hp * raidDiffMul(S, raid) * raidIntroDifficultyMul(raid, level);
+  const tune = RAID_TUNE[raid] || RAID_TUNE.familier;
+  return raidExpectedPlayerDamage(level) * RAID_REFERENCE_TTK_UNITS *
+    RAID_REFERENCE_PRESSURE_MUL * tune.hp;
 }
 function raidWaveDamage(raid, level) {
-  return RAID_DMG_BASE * Math.pow(RAID_DMG_GROWTH, level) * RAID_TUNE[raid].dmg * raidDiffMul(S, raid) * raidIntroDifficultyMul(raid, level);
+  const tune = RAID_TUNE[raid] || RAID_TUNE.familier;
+  return raidExpectedPlayerHP(level) / RAID_REFERENCE_TTD_DIV *
+    RAID_REFERENCE_PRESSURE_MUL * tune.dmg;
 }
 function raidEnemyCount(raid, level) {
   if (raid === "or") return 5;
@@ -1360,48 +1695,25 @@ function raidEnemyCount(raid, level) {
   if (level < 20) return 2;
   return 3;
 }
-/* the budget split across the enemies actually present */
+/* Or has five sequential waves, not five simultaneous attackers. */
+function raidConcurrentEnemyCount(raid, level) {
+  return raid === "or" ? 1 : raidEnemyCount(raid, level);
+}
 function raidEnemyHP(raid, level) {
-  return Math.max(1, Math.floor(raidWaveHP(raid, level) / raidEnemyCount(raid, level)));
+  return Math.max(1, Math.floor(3 * raidWaveHP(raid, level) / raidEnemyCount(raid, level)));
 }
 function raidEnemyDamage(raid, level) {
-  return Math.max(1, Math.floor(raidWaveDamage(raid, level) / raidEnemyCount(raid, level)));
+  return Math.max(1, Math.floor(3 * raidWaveDamage(raid, level) / raidConcurrentEnemyCount(raid, level)));
 }
-/* PR per rebirth. Same shape as before, scaled up so the Rebirth upgrades
-   (whose costs are unchanged) buy at a satisfying pace. */
-/* Section 4B: more PR per Rebirth, same formula and same factors. The formula
-   is floor x rate x (1 + Gain PR), so the rate is the only thing that moves --
-   nothing about how a Rebirth is calculated changes.
-
-   Sized against the actual economy rather than picked: the whole Rebirth tree
-   costs 12993 PR, and a Rebirth paid floor x 3. That is 174 loops from the new
-   floor-25 minimum, or 29 from floor 150. Doubling the rate halves both, and
-   makes the first Rebirth a player can now take at floor 25 worth 150 PR
-   instead of 75 -- enough to buy something the same evening. */
-const PR_PER_FLOOR = 6;
-function prFromFloor(floor) { return Math.floor(floor * PR_PER_FLOOR); }
-const REBIRTH_UPGRADES = [
-  { key: "damage", label: "Dégâts", icon: "flame", max: 100, perLvl: 8, unit: "%", costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266,1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,12524,13498,14520,15590,16710,17880,19102,20376,21704,23086,24524,26018,27570,29180,30850,32580,34372,36226,38144,40126,42174,44288,46470,48720,51040,53430,55892,58426,61034,63716,66474,69308,72220,75210,78280,81430,84662,87976,91374,94856,98424,102078,105820,109650,113570,117580,121682,125876,130164,134546,139024,143598,148270,153040,157910,162880,167952,173126,178404,183786] },
-  { key: "life", label: "Vie", icon: "heart", max: 100, perLvl: 8, unit: "%", costs: [10,20,32,46,64,86,112,142,178,220,270,328,396,474,564,668,788,926,1084,1266,1474,1708,1970,2260,2580,2930,3312,3726,4174,4656,5174,5728,6320,6950,7620,8330,9082,9876,10714,11596,12524,13498,14520,15590,16710,17880,19102,20376,21704,23086,24524,26018,27570,29180,30850,32580,34372,36226,38144,40126,42174,44288,46470,48720,51040,53430,55892,58426,61034,63716,66474,69308,72220,75210,78280,81430,84662,87976,91374,94856,98424,102078,105820,109650,113570,117580,121682,125876,130164,134546,139024,143598,148270,153040,157910,162880,167952,173126,178404,183786] },
-  { key: "atkspeed", label: "Vit. Attaque", icon: "bolt", max: 5, perLvl: 3, unit: "%", costs: [10,20,30,50,75] },
-  { key: "critdmg", label: "Dégâts Crit.", icon: "sparkle", max: 5, perLvl: 8, unit: "%", costs: [10,20,30,50,75] },
-  { key: "dmgred", label: "Réduc. Dégâts", icon: "shield", max: 20, perLvl: 2, unit: "%", costDiv: 1, costs: [20,39,63,90,125,168,219,278,348,430,528,641,774,927,1102,1306,1540,1810,2119,2473] },
-  { key: "regen", label: "Régénération", icon: "potion", max: 5, perLvl: 0.6, unit: "%/s", costs: [10,20,30,50,75] },
-  { key: "lifesteal", label: "Vol de Vie", icon: "droplet", max: 5, perLvl: 1, unit: "%", costs: [10,20,32,46,64] },
-  { key: "bossdmg", label: "Dégâts Boss", icon: "skull", max: 20, perLvl: 8, unit: "%", costDiv: 1, costs: [100,300,500,700,900,1100,1300,1500,1700,1900,2100,2300,2500,2700,2900,3100,3300,3500,3700,3900] },
-  { key: "exp", label: "EXP", icon: "cap", max: 100, perLvl: 2, unit: "%", costs: [10,20,30,50,75,110,160,230,320,450,610,800,1020,1270,1550,1860,2200,2570,2970,3400,3860,4350,4870,5420,6000,6610,7250,7920,8620,9350,10110,10900,11720,12570,13450,14360,15300,16270,17270,18300,19360,20450,21570,22720,23900,25110,26350,27620,28920,30250,31610,33000,34420,35870,37350,38860,40400,41970,43570,45200,46860,48550,50270,52020,53800,55610,57450,59320,61220,63150,65110,67100,69120,71170,73250,75360,77500,79670,81870,84100,86360,88650,90970,93320,95700,98110,100550,103020,105520,108050,110610,113200,115820,118470,121150,123860,126600,129370,132170,135000] },
-  { key: "gold", label: "Or", icon: "gold", max: 100, perLvl: 6, unit: "%", costDiv: 1, costs: [25,40,50,65,80,90,105,130,145,155,180,205,220,245,270,300,325,350,375,415,440,465,505,545,570,610,650,685,725,765,805,845,895,935,970,1025,1075,1115,1165,1220,1270,1320,1375,1425,1490,1545,1595,1660,1725,1815,1875,1935,1995,2055,2115,2180,2245,2310,2375,2440,2510,2580,2650,2720,2790,2865,2940,3015,3090,3165,3245,3325,3405,3485,3565,3650,3735,3820,3905,3990,4080,4170,4260,4350,4440,4535,4630,4725,4820,4915,5015,5115,5215,5315,5415,5520,5625,5730,5835,5940] },
-  { key: "apples", label: "Gain Pommes", icon: "paw", max: 20, perLvl: 5, unit: "%", costDiv: 1, costs: [200,300,400,500,650,800,950,1100,1300,1500,1700,1900,2100,2300,2500,2800,3100,3400,3700,3800] },
-  { key: "prgain", label: "Gain PR", icon: "chart", max: 25, perLvl: 8, unit: "%", costDiv: 1, costs: [50,129,208,288,367,446,525,604,683,762,842,921,1000,1079,1158,1238,1317,1396,1475,1554,1633,1712,1792,1871,1950] },
-  { key: "keep", label: "Conservation", icon: "cycle", max: 5, perLvl: 2, unit: "%", costs: [100,200,350,550,800] },
-  { key: "floorSkip", label: "Saut d'étage", icon: "forward", max: 50, perLvl: 0.8, unit: "%", costDiv: 1, costs: [100,258,417,575,733,892,1050,1208,1367,1525,1683,1842,2000,2158,2317,2475,2633,2792,2950,3108,3267,3425,3583,3742,3900,4058,4217,4375,4533,4692,4850,5008,5167,5325,5483,5642,5800,5958,6117,6275,6433,6592,6750,6908,7067,7225,7383,7542,7700,7858] },
-];
-function rebirthKeepPct(keepLevel) { return 50 + keepLevel; }
-const REBIRTH_COST_DIV = 3;
-function rebirthUpgCost(def, lvl) {
-  const div = def.costDiv || REBIRTH_COST_DIV;
-  return Math.max(1, Math.round(def.costs[lvl] / div));
-}
+/* Rebirth and PR are retired from gameplay.
+   These zero-value names stay only as compatibility shims for old saves and
+   late-loaded legacy layers. They must never grant stats, rewards or currency. */
+const PR_PER_FLOOR = 0;
+function prFromFloor() { return 0; }
+const REBIRTH_UPGRADES = [];
+function rebirthKeepPct() { return 0; }
+const REBIRTH_COST_DIV = 1;
+function rebirthUpgCost() { return Infinity; }
 
 /* ---------------------------- personal tree -------------------------------
    One continuous DAG of MULTI-LEVEL nodes. A node counts as "activated" for
@@ -1417,7 +1729,7 @@ function rebirthUpgCost(def, lvl) {
    Opening is deliberately cheaper than levelling, so breadth stays affordable
    and depth is what the Raid has to fund.
    ------------------------------------------------------------------------ */
-const PE_TIER_COST  = [8, 14, 26, 45];      // base PE cost of a node's levels, by tier
+const PE_TIER_COST  = [9, 16, 30, 52];      // V395: ~15% rebalance for the stronger Raid Évolution economy
 const PE_FIRST_MUL  = 0.6;                  // opening a node costs less than levelling it
 const PA_TO_PE = 8;                         // legacy: 105 PA of unlocks buys 780 PE of unlocks
 const PE_LEVEL_GROWTH = 1.22;               // each further level costs more
@@ -1425,7 +1737,7 @@ const PE_REWARD_BASE = 20, PE_REWARD_PER_LEVEL = 6;
 /* First-clear reward for a major Boss (floor 10, 20, 30, ...). Deeper bosses
    hand out better accelerators, and more of them, but the ladder is capped so
    it cannot flood the economy. Claimed once per boss, FOREVER — the record
-   survives Rebirth, so re-killing a boss pays the normal rewards only. */
+   persists permanently, so re-killing a boss pays the normal rewards only. */
 function bossFirstClearReward(floor) {
   const tier = Math.floor(floor / RULES.BOSS_EVERY);        // 1 at floor 10, 5 at 50...
   if (tier <= 0) return null;
@@ -1446,16 +1758,12 @@ function megaAccelReward(floor) {
 function megaRaidUnlocked(s) {
   return !!(s && s.bossClears && s.bossClears["50"]);
 }
-/* Apples have one source: the first clear of each Mega-Boss. One reward every
-   ten floors replaces the old Elite + Boss pair without turning Rebirth or a
-   replay into a farming loop. Rebirth's Gain Pommes only scales that first
-   clear; at 20/20 it doubles the amount. */
+/* Legacy Mega Apple helpers are retained for compatibility only. The active
+   reward authority retired this payout, so the helper must stay inert too. */
 function megaAppleBaseReward(floor) {
   return 33 + 7 * Math.floor(Math.max(0, floor) / 25);
 }
-function megaAppleFirstClearReward(floor, s) {
-  return Math.floor(megaAppleBaseReward(floor) * (1 + rb(s, "apples") / 100));
-}
+function megaAppleFirstClearReward() { return 0; }
 /* The primary gold faucet: one Raid Or run should be worth a solid stretch of
    floors. 1.17 over 50 levels was 2566x, which outran every cost curve the
    Forge could carry and pushed the Raid to 100% of late income. 1.14 is 758x --
@@ -1491,8 +1799,36 @@ const T5_H2   = mn([90, 105, 120, 135, 150]);                             // was
 const TREE_LANE_X = [44, 122, 200, 278, 356];
 const TREE_ROW_Y = (row) => 44 + row * 84;
 /* How long a level of a node takes to research, by palier. */
-const PAL_T = [mn([4, 8, 14, 22, 32]), mn([10, 18, 30, 46, 66]),
-               mn([24, 42, 68, 100, 145]), mn([50, 88, 140, 210, 300])];
+const PAL_T = [
+  mn([4, 8, 14, 22, 32]),
+  mn([180, 185, 190, 195, 200]),
+  mn([600, 605, 610, 615, 620]),
+  hr([72, 77, 82, 87, 92])
+];
+const PAL_SPECIAL_T = PAL_T.map((times) => times.reduce((sum, seconds) => sum + seconds, 0));
+
+/* V398: later Tree depths are intentionally stronger. Percentage nodes keep
+   their original listed base value, then gain this depth multiplier. Special
+   nodes (+keys, slots, Forge batch, etc.) are never scaled. */
+const TREE_TIER_PERCENT_MUL = [1.00, 1.15, 1.30, 1.50];
+function treeEffectivePer(node) {
+  if (!node) return 0;
+  if (node.unit !== "%" || node.special || node.tierScale === false) return node.per;
+  const mul = TREE_TIER_PERCENT_MUL[Math.max(0, Math.min(TREE_TIER_PERCENT_MUL.length - 1, (node.tier || 1) - 1))] || 1;
+  return node.per * mul;
+}
+
+/* V476 · Global Gold is restored to +50% total:
+   I +5%, II +10%, III +15%, IV +20% when each 5-level node is maxed.
+   These nodes opt out of the generic tier multiplier. */
+const TREE_GOLD_TIER_CAPS = [5, 10, 15, 20];
+/* Autonomy target caps by Tree tier: I +10%, II +20%, III +30%, IV +40%.
+   These four nodes opt out of generic tier scaling so the combined boost is exactly +100%: 8h -> 16h. */
+const TREE_AUTONOMY_TIER_CAPS = [10, 20, 30, 40];
+/* V476 · Each Autonomy resource owns its own branch. Every branch starts at
+   5%/h and can add +15 percentage points through the four tiers, for 20%/h max. */
+const TREE_AUTONOMY_YIELD_TIER_CAPS = [1.5, 3, 4.5, 6];
+const TREE_HATCH_SPEED_MAX_PCT = 120;
 
 const TREE_NODES = [
 
@@ -1509,62 +1845,62 @@ const TREE_NODES = [
   { id: "n1_29", sect: "Palier I", label: "Chance d'obtenir 1 Compétence supplémentaire gratuitement I", short: "Comp. Suppl. I", icon: "sparkle", color: "#8FEFF4", tier: 1, effect: "skillFree", per: 1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_22", "n1_16"], lane: 4, row: 1 },
   { id: "n1_13", sect: "Palier I", label: "Animal Bonus Dégâts I", short: "Animal Dég. I", icon: "paw", color: "#FF7A3D", tier: 1, effect: "petDmg", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_01", "n1_28"], lane: 0, row: 2 },
   { id: "n1_10", sect: "Palier I", label: "Compétence Passive Base Dégâts I", short: "Pass. Dég. I", icon: "swords", color: "#9B5CF6", tier: 1, effect: "passDmg", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_09", "n1_16"], lane: 1, row: 2 },
-  { id: "n1_23", sect: "Palier I", label: "Œuf Commun Vitesse d'éclosion I", short: "Œuf Commun I", icon: "egg", color: "#9FB0C8", tier: 1, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_28", "n1_19"], lane: 2, row: 2 },
+  { id: "n1_23", sect: "Palier I", label: "Œuf Commun Vitesse d'éclosion I", short: "Œuf Commun I", icon: "egg", color: "#9FB0C8", tier: 1, effect: "hatch_COMMUN", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_28", "n1_19"], lane: 2, row: 2 },
   { id: "n1_15", sect: "Palier I", label: "Arme Bonus Dégâts I", short: "Arme I", icon: "swords", color: "#FF5A5A", tier: 1, effect: "eq_arme", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_29"], lane: 3, row: 2 },
   { id: "n1_17", sect: "Palier I", label: "Gants Bonus Dégâts I", short: "Gants I", icon: "glove", color: "#FF5A5A", tier: 1, effect: "eq_gants", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_29"], lane: 4, row: 2 },
-  { id: "n1_24", sect: "Palier I", label: "Œuf Rare Vitesse d'éclosion I", short: "Œuf Rare I", icon: "egg", color: "#3FA7FF", tier: 1, effect: "hatch_RARE", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_23", "n1_10"], lane: 0, row: 3 },
+  { id: "n1_24", sect: "Palier I", label: "Œuf Rare Vitesse d'éclosion I", short: "Œuf Rare I", icon: "egg", color: "#3FA7FF", tier: 1, effect: "hatch_RARE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_23", "n1_10"], lane: 0, row: 3 },
   { id: "n1_18", sect: "Palier I", label: "Collier Bonus Dégâts I", short: "Collier I", icon: "gem", color: "#FF5A5A", tier: 1, effect: "eq_collier", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_13"], lane: 1, row: 3 },
   { id: "n1_12", sect: "Palier I", label: "Compétence Invoquer Coût I", short: "Invoq. Coût I", icon: "sparkle", color: "#B15CF6", tier: 1, effect: "skillCost", per: -1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_30"], lane: 2, row: 3 },
   { id: "n1_11", sect: "Palier I", label: "Compétence Passive Base Santé I", short: "Pass. Santé I", icon: "heart", color: "#57E07A", tier: 1, effect: "passHp", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_23"], lane: 3, row: 3 },
-  { id: "n1_06", sect: "Palier I", label: "Bonus Or global I", short: "Or Global I", icon: "gold", color: "#F5C542", tier: 1, effect: "goldAll", per: 1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_04"], lane: 4, row: 3 },
-  { id: "n1_08", sect: "Palier I", label: "Temps Récompense Autonomie I", short: "Tps Auton. I", icon: "cycle", color: "#8FC4FF", tier: 1, effect: "afkTime", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_18", "n1_10"], lane: 0, row: 4 },
+  { id: "n1_06", sect: "Palier I", label: "Or obtenu I", short: "Or obtenu I", icon: "gold", color: "#F5C542", tier: 1, effect: "goldAll", per: 1, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_04"], lane: 4, row: 3 },
+  { id: "n1_08", sect: "Palier I", label: "Temps Récompense Autonomie I", short: "Tps Auton. I", icon: "cycle", color: "#8FC4FF", tier: 1, effect: "afkTime", per: 2, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_18", "n1_10"], lane: 0, row: 4 },
   { id: "n1_14", sect: "Palier I", label: "Animal Bonus Santé I", short: "Animal Santé I", icon: "paw", color: "#57E07A", tier: 1, effect: "petHp", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_12"], lane: 1, row: 4 },
-  { id: "n1_26", sect: "Palier I", label: "Œuf Mythique Vitesse d'éclosion I", short: "Œuf Mythique I", icon: "egg", color: "#FF4D6A", tier: 1, effect: "hatch_MYTHIQUE", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_24"], lane: 2, row: 4 },
+  { id: "n1_26", sect: "Palier I", label: "Œuf Mythique Vitesse d'éclosion I", short: "Œuf Mythique I", icon: "egg", color: "#FF4D6A", tier: 1, effect: "hatch_MYTHIQUE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_24"], lane: 2, row: 4 },
   { id: "n1_02", sect: "Palier I", label: "Forge Amélioration Coût I", short: "Forge Coût I", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_12", "n1_06", "n1_18"], lane: 3, row: 4 },
-  { id: "n1_25", sect: "Palier I", label: "Œuf Épique Vitesse d'éclosion I", short: "Œuf Épique I", icon: "egg", color: "#B15CF6", tier: 1, effect: "hatch_EPIQUE", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_11", "n1_15", "n1_17"], lane: 4, row: 4 },
+  { id: "n1_25", sect: "Palier I", label: "Œuf Épique Vitesse d'éclosion I", short: "Œuf Épique I", icon: "egg", color: "#B15CF6", tier: 1, effect: "hatch_EPIQUE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_11", "n1_15", "n1_17"], lane: 4, row: 4 },
   { id: "n1_21", sect: "Palier I", label: "Chaussures Bonus Santé I", short: "Chaussures I", icon: "boot", color: "#57E07A", tier: 1, effect: "eq_bottes", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_26"], lane: 0, row: 5 },
-  { id: "n1_07", sect: "Palier I", label: "Prospection d’Or I", short: "Or Auton. I", icon: "gold", color: "#F5C542", tier: 1, effect: "afkGain", per: 1.25, unit: "%", max: 5, times: PAL_T[0], req: ["n1_08", "n1_26"], lane: 1, row: 5 },
+  { id: "n1_07", sect: "Palier I", label: "Autonomie Or I", short: "Auton. Or I", icon: "gold", color: "#F5C542", tier: 1, effect: "afkGold", per: 0.3, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_08", "n1_26"], lane: 1, row: 5, note: "+0,3 point de %/h par niveau · Max 25 %/h avec la base" },
   { id: "n1_20", sect: "Palier I", label: "Anneau Bonus Dégâts I", short: "Anneau I", icon: "ring", color: "#FF5A5A", tier: 1, effect: "eq_anneau", per: 2, unit: "%", max: 5, times: PAL_T[0], req: ["n1_25"], lane: 2, row: 5 },
-  { id: "n1_27", sect: "Palier I", label: "Œuf Légendaire Vitesse d'éclosion I", short: "Œuf Légend. I", icon: "egg", color: "#F5C542", tier: 1, effect: "hatch_LEGENDAIRE", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_11", "n1_25", "n1_26", "n1_14"], lane: 3, row: 5 },
+  { id: "n1_27", sect: "Palier I", label: "Œuf Légendaire Vitesse d'éclosion I", short: "Œuf Légend. I", icon: "egg", color: "#F5C542", tier: 1, effect: "hatch_LEGENDAIRE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_11", "n1_25", "n1_26", "n1_14"], lane: 3, row: 5 },
   { id: "n1_03", sect: "Palier I", label: "Chance de forger gratuitement I", short: "Forge Grat. I", icon: "hammer", color: "#F5C542", tier: 1, effect: "forgeFree", per: 1, unit: "%", max: 5, times: PAL_T[0], req: ["n1_02"], lane: 4, row: 5 },
   { id: "sp_slot1", sect: "Palier I", label: "+1 Slot d'Éclosion", short: "+1 Slot Éclosion", icon: "egg", color: "#57E07A", tier: 1, effect: "eggSlot", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_21"], lane: 0, row: 6, special: true },
-  { id: "sp_forge1", sect: "Palier I", label: "Forge multiple ×2", short: "Forge ×2", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_14"], lane: 1, row: 6, special: true },
-  { id: "n1_pc", sect: "Palier I", label: "Œuf Peu commun Vitesse d'éclosion I", short: "Œuf Peu com. I", icon: "egg", color: "#57E07A", tier: 1, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[0], req: ["n1_23"], lane: 2, row: 6 },
+  { id: "sp_forge1", sect: "Palier I", label: "Forge multiple +2", short: "Forge +2", icon: "hammer", color: "#E8B44A", tier: 1, effect: "forgeMult", per: 2, unit: "", max: 1, times: PAL_T[0], req: ["n1_14"], lane: 1, row: 6, special: true },
+  { id: "n1_pc", sect: "Palier I", label: "Œuf Peu commun Vitesse d'éclosion I", short: "Œuf Peu com. I", icon: "egg", color: "#57E07A", tier: 1, effect: "hatch_PEU_COMMUN", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[0], req: ["n1_23"], lane: 2, row: 6 },
   { id: "sp_key1", sect: "Palier I", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 1, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[0], req: ["n1_27"], lane: 3, row: 6, special: true, note: "Choix du Raid" },
 
   /* ---------------- PALIER II ---------------- */
-  { id: "n2_06", sect: "Palier II", label: "Bonus Or global II", short: "Or Global II", icon: "gold", color: "#F5C542", tier: 2, effect: "goldAll", per: 1, unit: "%", max: 5, times: PAL_T[1], req: ["n1_14", "n1_03"], lane: 0, row: 7 },
+  { id: "n2_06", sect: "Palier II", label: "Or obtenu II", short: "Or obtenu II", icon: "gold", color: "#F5C542", tier: 2, effect: "goldAll", per: 2, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n1_14", "n1_03"], lane: 0, row: 7 },
   { id: "n2_16", sect: "Palier II", label: "Casque Bonus Santé II", short: "Casque II", icon: "helm", color: "#57E07A", tier: 2, effect: "eq_casque", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n1_21"], lane: 1, row: 7 },
   { id: "n2_05", sect: "Palier II", label: "Amélioration de Nœud Technologique Coût II", short: "Tech Coût II", icon: "gear", color: "#3FCFD6", tier: 2, effect: "techCost", per: -2, unit: "%", max: 5, times: PAL_T[1], req: ["n1_14", "n1_02", "n1_20"], lane: 2, row: 7 },
   { id: "n2_03", sect: "Palier II", label: "Chance de forger gratuitement II", short: "Forge Grat. II", icon: "hammer", color: "#F5C542", tier: 2, effect: "forgeFree", per: 1, unit: "%", max: 5, times: PAL_T[1], req: ["n1_02"], lane: 3, row: 7 },
-  { id: "n2_26", sect: "Palier II", label: "Œuf Mythique Vitesse d'éclosion II", short: "Œuf Mythique II", icon: "egg", color: "#FF4D6A", tier: 2, effect: "hatch_MYTHIQUE", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n1_02"], lane: 4, row: 7 },
+  { id: "n2_26", sect: "Palier II", label: "Œuf Mythique Vitesse d'éclosion II", short: "Œuf Mythique II", icon: "egg", color: "#FF4D6A", tier: 2, effect: "hatch_MYTHIQUE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n1_02"], lane: 4, row: 7 },
   { id: "n2_21", sect: "Palier II", label: "Chaussures Bonus Santé II", short: "Chaussures II", icon: "boot", color: "#57E07A", tier: 2, effect: "eq_bottes", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_05", "n2_16"], lane: 0, row: 8 },
   { id: "n2_10", sect: "Palier II", label: "Compétence Passive Base Dégâts II", short: "Pass. Dég. II", icon: "swords", color: "#9B5CF6", tier: 2, effect: "passDmg", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_06", "n2_16", "n2_05"], lane: 1, row: 8 },
   { id: "n2_28", sect: "Palier II", label: "Chance d'obtenir 1 Œuf supplémentaire gratuitement II", short: "Œuf Suppl. II", icon: "egg", color: "#8FEFF4", tier: 2, effect: "eggFree", per: 1, unit: "%", max: 5, times: PAL_T[1], req: ["n2_16", "n2_06"], lane: 2, row: 8 },
-  { id: "n2_08", sect: "Palier II", label: "Temps Récompense Autonomie II", short: "Tps Auton. II", icon: "cycle", color: "#8FC4FF", tier: 2, effect: "afkTime", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_26"], lane: 3, row: 8 },
+  { id: "n2_08", sect: "Palier II", label: "Temps Récompense Autonomie II", short: "Tps Auton. II", icon: "cycle", color: "#8FC4FF", tier: 2, effect: "afkTime", per: 4, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n2_26"], lane: 3, row: 8 },
   { id: "n2_15", sect: "Palier II", label: "Arme Bonus Dégâts II", short: "Arme II", icon: "swords", color: "#FF5A5A", tier: 2, effect: "eq_arme", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_05", "n2_03", "n2_26"], lane: 4, row: 8 },
   { id: "n2_02", sect: "Palier II", label: "Forge Amélioration Coût II", short: "Forge Coût II", icon: "hammer", color: "#E8B44A", tier: 2, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[1], req: ["n2_28", "n2_10", "n2_06"], lane: 0, row: 9 },
   { id: "n2_19", sect: "Palier II", label: "Armure Bonus Santé II", short: "Armure II", icon: "armor", color: "#57E07A", tier: 2, effect: "eq_armure", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_21"], lane: 1, row: 9 },
   { id: "n2_13", sect: "Palier II", label: "Animal Bonus Dégâts II", short: "Animal Dég. II", icon: "paw", color: "#FF7A3D", tier: 2, effect: "petDmg", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_08", "n2_15"], lane: 2, row: 9 },
   { id: "n2_04", sect: "Palier II", label: "Recherche Technologique Vitesse du minuteur II", short: "Rech. Vit. II", icon: "clock", color: "#3FCFD6", tier: 2, effect: "research", per: 4, unit: "%", max: 5, times: PAL_T[1], req: ["n2_08"], lane: 3, row: 9 },
-  { id: "n2_07", sect: "Palier II", label: "Prospection d’Or II", short: "Or Auton. II", icon: "gold", color: "#F5C542", tier: 2, effect: "afkGain", per: 1.25, unit: "%", max: 5, times: PAL_T[1], req: ["n2_08"], lane: 4, row: 9 },
-  { id: "n2_25", sect: "Palier II", label: "Œuf Épique Vitesse d'éclosion II", short: "Œuf Épique II", icon: "egg", color: "#B15CF6", tier: 2, effect: "hatch_EPIQUE", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_21", "n2_13", "n2_19"], lane: 0, row: 10 },
+  { id: "n2_07", sect: "Palier II", label: "Autonomie Or II", short: "Auton. Or II", icon: "gold", color: "#F5C542", tier: 2, effect: "afkGold", per: 0.6, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n2_08"], lane: 4, row: 9, note: "+0,6 point de %/h par niveau · Max 25 %/h avec la base" },
+  { id: "n2_25", sect: "Palier II", label: "Œuf Épique Vitesse d'éclosion II", short: "Œuf Épique II", icon: "egg", color: "#B15CF6", tier: 2, effect: "hatch_EPIQUE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n2_21", "n2_13", "n2_19"], lane: 0, row: 10 },
   { id: "n2_12", sect: "Palier II", label: "Compétence Invoquer Coût II", short: "Invoq. Coût II", icon: "sparkle", color: "#B15CF6", tier: 2, effect: "skillCost", per: -1, unit: "%", max: 5, times: PAL_T[1], req: ["n2_28", "n2_02"], lane: 1, row: 10 },
   { id: "n2_22", sect: "Palier II", label: "Ceinture Bonus Santé II", short: "Ceinture II", icon: "chain", color: "#57E07A", tier: 2, effect: "eq_ceinture", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_28", "n2_10"], lane: 2, row: 10 },
   { id: "n2_29", sect: "Palier II", label: "Chance d'obtenir 1 Compétence supplémentaire gratuitement II", short: "Comp. Suppl. II", icon: "sparkle", color: "#8FEFF4", tier: 2, effect: "skillFree", per: 1, unit: "%", max: 5, times: PAL_T[1], req: ["n2_08"], lane: 3, row: 10 },
   { id: "n2_09", sect: "Palier II", label: "Compétence Dégâts II", short: "Comp. Dég. II", icon: "sparkle", color: "#9B5CF6", tier: 2, effect: "skillDmg", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_04", "n2_13"], lane: 4, row: 10 },
-  { id: "n2_24", sect: "Palier II", label: "Œuf Rare Vitesse d'éclosion II", short: "Œuf Rare II", icon: "egg", color: "#3FA7FF", tier: 2, effect: "hatch_RARE", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_12", "n2_22"], lane: 0, row: 11 },
+  { id: "n2_24", sect: "Palier II", label: "Œuf Rare Vitesse d'éclosion II", short: "Œuf Rare II", icon: "egg", color: "#3FA7FF", tier: 2, effect: "hatch_RARE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n2_12", "n2_22"], lane: 0, row: 11 },
   { id: "n2_30", sect: "Palier II", label: "PE obtenus dans le Raid Évolution II", short: "PE Raid II", icon: "gem", color: "#3FB950", tier: 2, effect: "peRaid", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_29"], lane: 1, row: 11 },
   { id: "n2_01", sect: "Palier II", label: "Forge Amélioration Vitesse du minuteur II", short: "Forge Vit. II", icon: "hammer", color: "#E8B44A", tier: 2, effect: "forgeTime", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_25", "n2_12"], lane: 2, row: 11 },
   { id: "n2_20", sect: "Palier II", label: "Anneau Bonus Dégâts II", short: "Anneau II", icon: "ring", color: "#FF5A5A", tier: 2, effect: "eq_anneau", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_12", "n2_09"], lane: 3, row: 11 },
   { id: "n2_14", sect: "Palier II", label: "Animal Bonus Santé II", short: "Animal Santé II", icon: "paw", color: "#57E07A", tier: 2, effect: "petHp", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_22", "n2_07"], lane: 4, row: 11 },
   { id: "n2_11", sect: "Palier II", label: "Compétence Passive Base Santé II", short: "Pass. Santé II", icon: "heart", color: "#57E07A", tier: 2, effect: "passHp", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_01", "n2_30"], lane: 0, row: 12 },
-  { id: "n2_27", sect: "Palier II", label: "Œuf Légendaire Vitesse d'éclosion II", short: "Œuf Légend. II", icon: "egg", color: "#F5C542", tier: 2, effect: "hatch_LEGENDAIRE", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_20"], lane: 1, row: 12 },
+  { id: "n2_27", sect: "Palier II", label: "Œuf Légendaire Vitesse d'éclosion II", short: "Œuf Légend. II", icon: "egg", color: "#F5C542", tier: 2, effect: "hatch_LEGENDAIRE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n2_20"], lane: 1, row: 12 },
   { id: "n2_18", sect: "Palier II", label: "Collier Bonus Dégâts II", short: "Collier II", icon: "gem", color: "#FF5A5A", tier: 2, effect: "eq_collier", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_24"], lane: 2, row: 12 },
-  { id: "n2_23", sect: "Palier II", label: "Œuf Commun Vitesse d'éclosion II", short: "Œuf Commun II", icon: "egg", color: "#9FB0C8", tier: 2, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n2_30"], lane: 3, row: 12 },
+  { id: "n2_23", sect: "Palier II", label: "Œuf Commun Vitesse d'éclosion II", short: "Œuf Commun II", icon: "egg", color: "#9FB0C8", tier: 2, effect: "hatch_COMMUN", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n2_30"], lane: 3, row: 12 },
   { id: "n2_17", sect: "Palier II", label: "Gants Bonus Dégâts II", short: "Gants II", icon: "glove", color: "#FF5A5A", tier: 2, effect: "eq_gants", per: 2, unit: "%", max: 5, times: PAL_T[1], req: ["n2_20", "n2_14"], lane: 4, row: 12 },
-  { id: "sp_forge3", sect: "Palier II", label: "Forge multiple ×4", short: "Forge ×4", icon: "hammer", color: "#E8B44A", tier: 2, effect: "forgeMult", per: 2, unit: "", max: 1, times: PAL_T[1], req: ["sp_forge1", "n2_18"], lane: 2, row: 13, special: true },
-  { id: "n2_pc", sect: "Palier II", label: "Œuf Peu commun Vitesse d'éclosion II", short: "Œuf Peu com. II", icon: "egg", color: "#57E07A", tier: 2, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[1], req: ["n1_pc", "n2_23"], lane: 3, row: 13 },
+  { id: "sp_forge3", sect: "Palier II", label: "Forge multiple ×4", short: "Forge ×4", icon: "hammer", color: "#E8B44A", tier: 2, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["sp_forge1", "n2_18"], lane: 2, row: 13, special: true },
+  { id: "n2_pc", sect: "Palier II", label: "Œuf Peu commun Vitesse d'éclosion II", short: "Œuf Peu com. II", icon: "egg", color: "#57E07A", tier: 2, effect: "hatch_PEU_COMMUN", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[1], req: ["n1_pc", "n2_23"], lane: 3, row: 13 },
   { id: "sp_key2", sect: "Palier II", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 2, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[1], req: ["n2_17"], lane: 4, row: 13, special: true, note: "Choix du Raid" },
 
   /* ---------------- PALIER III ---------------- */
@@ -1574,72 +1910,104 @@ const TREE_NODES = [
   { id: "n3_21", sect: "Palier III", label: "Chaussures Bonus Santé III", short: "Chaussures III", icon: "boot", color: "#57E07A", tier: 3, effect: "eq_bottes", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n2_17", "n2_30"], lane: 3, row: 14 },
   { id: "n3_12", sect: "Palier III", label: "Compétence Invoquer Coût III", short: "Invoq. Coût III", icon: "sparkle", color: "#B15CF6", tier: 3, effect: "skillCost", per: -1, unit: "%", max: 5, times: PAL_T[2], req: ["n2_20"], lane: 4, row: 14 },
   { id: "n3_14", sect: "Palier III", label: "Animal Bonus Santé III", short: "Animal Santé III", icon: "paw", color: "#57E07A", tier: 3, effect: "petHp", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_03", "n3_04"], lane: 0, row: 15 },
-  { id: "n3_06", sect: "Palier III", label: "Bonus Or global III", short: "Or Global III", icon: "gold", color: "#F5C542", tier: 3, effect: "goldAll", per: 1, unit: "%", max: 5, times: PAL_T[2], req: ["n3_21", "n3_04", "n3_28"], lane: 1, row: 15 },
+  { id: "n3_06", sect: "Palier III", label: "Or obtenu III", short: "Or obtenu III", icon: "gold", color: "#F5C542", tier: 3, effect: "goldAll", per: 3, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_21", "n3_04", "n3_28"], lane: 1, row: 15 },
   { id: "n3_19", sect: "Palier III", label: "Armure Bonus Santé III", short: "Armure III", icon: "armor", color: "#57E07A", tier: 3, effect: "eq_armure", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_21"], lane: 2, row: 15 },
-  { id: "n3_24", sect: "Palier III", label: "Œuf Rare Vitesse d'éclosion III", short: "Œuf Rare III", icon: "egg", color: "#3FA7FF", tier: 3, effect: "hatch_RARE", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_12"], lane: 3, row: 15 },
+  { id: "n3_24", sect: "Palier III", label: "Œuf Rare Vitesse d'éclosion III", short: "Œuf Rare III", icon: "egg", color: "#3FA7FF", tier: 3, effect: "hatch_RARE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_12"], lane: 3, row: 15 },
   { id: "n3_01", sect: "Palier III", label: "Forge Amélioration Vitesse du minuteur III", short: "Forge Vit. III", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeTime", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_21"], lane: 4, row: 15 },
   { id: "n3_22", sect: "Palier III", label: "Ceinture Bonus Santé III", short: "Ceinture III", icon: "chain", color: "#57E07A", tier: 3, effect: "eq_ceinture", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_06", "n3_14"], lane: 0, row: 16 },
-  { id: "n3_23", sect: "Palier III", label: "Œuf Commun Vitesse d'éclosion III", short: "Œuf Commun III", icon: "egg", color: "#9FB0C8", tier: 3, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_24"], lane: 1, row: 16 },
-  { id: "n3_07", sect: "Palier III", label: "Prospection d’Or III", short: "Or Auton. III", icon: "gold", color: "#F5C542", tier: 3, effect: "afkGain", per: 1.25, unit: "%", max: 5, times: PAL_T[2], req: ["n3_21", "n3_24"], lane: 2, row: 16 },
+  { id: "n3_23", sect: "Palier III", label: "Œuf Commun Vitesse d'éclosion III", short: "Œuf Commun III", icon: "egg", color: "#9FB0C8", tier: 3, effect: "hatch_COMMUN", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_24"], lane: 1, row: 16 },
+  { id: "n3_07", sect: "Palier III", label: "Autonomie Or III", short: "Auton. Or III", icon: "gold", color: "#F5C542", tier: 3, effect: "afkGold", per: 0.9, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_21", "n3_24"], lane: 2, row: 16, note: "+0,9 point de %/h par niveau · Max 25 %/h avec la base" },
   { id: "n3_02", sect: "Palier III", label: "Forge Amélioration Coût III", short: "Forge Coût III", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[2], req: ["n3_19", "n3_12", "n3_01"], lane: 3, row: 16 },
   { id: "n3_20", sect: "Palier III", label: "Anneau Bonus Dégâts III", short: "Anneau III", icon: "ring", color: "#FF5A5A", tier: 3, effect: "eq_anneau", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_24"], lane: 4, row: 16 },
   { id: "n3_17", sect: "Palier III", label: "Gants Bonus Dégâts III", short: "Gants III", icon: "glove", color: "#FF5A5A", tier: 3, effect: "eq_gants", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_23"], lane: 0, row: 17 },
   { id: "n3_09", sect: "Palier III", label: "Compétence Dégâts III", short: "Comp. Dég. III", icon: "sparkle", color: "#9B5CF6", tier: 3, effect: "skillDmg", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_07"], lane: 1, row: 17 },
-  { id: "n3_25", sect: "Palier III", label: "Œuf Épique Vitesse d'éclosion III", short: "Œuf Épique III", icon: "egg", color: "#B15CF6", tier: 3, effect: "hatch_EPIQUE", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_02", "n3_22"], lane: 2, row: 17 },
+  { id: "n3_25", sect: "Palier III", label: "Œuf Épique Vitesse d'éclosion III", short: "Œuf Épique III", icon: "egg", color: "#B15CF6", tier: 3, effect: "hatch_EPIQUE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_02", "n3_22"], lane: 2, row: 17 },
   { id: "n3_05", sect: "Palier III", label: "Amélioration de Nœud Technologique Coût III", short: "Tech Coût III", icon: "gear", color: "#3FCFD6", tier: 3, effect: "techCost", per: -2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_07"], lane: 3, row: 17 },
   { id: "n3_16", sect: "Palier III", label: "Casque Bonus Santé III", short: "Casque III", icon: "helm", color: "#57E07A", tier: 3, effect: "eq_casque", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_02", "n3_20"], lane: 4, row: 17 },
   { id: "n3_30", sect: "Palier III", label: "PE obtenus dans le Raid Évolution III", short: "PE Raid III", icon: "gem", color: "#3FB950", tier: 3, effect: "peRaid", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_25", "n3_23"], lane: 0, row: 18 },
   { id: "n3_18", sect: "Palier III", label: "Collier Bonus Dégâts III", short: "Collier III", icon: "gem", color: "#FF5A5A", tier: 3, effect: "eq_collier", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_25", "n3_23", "n3_17"], lane: 1, row: 18 },
   { id: "n3_29", sect: "Palier III", label: "Chance d'obtenir 1 Compétence supplémentaire gratuitement III", short: "Comp. Suppl. III", icon: "sparkle", color: "#8FEFF4", tier: 3, effect: "skillFree", per: 1, unit: "%", max: 5, times: PAL_T[2], req: ["n3_05"], lane: 2, row: 18 },
   { id: "n3_11", sect: "Palier III", label: "Compétence Passive Base Santé III", short: "Pass. Santé III", icon: "heart", color: "#57E07A", tier: 3, effect: "passHp", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_07", "n3_16"], lane: 3, row: 18 },
-  { id: "n3_26", sect: "Palier III", label: "Œuf Mythique Vitesse d'éclosion III", short: "Œuf Mythique III", icon: "egg", color: "#FF4D6A", tier: 3, effect: "hatch_MYTHIQUE", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_20"], lane: 4, row: 18 },
-  { id: "n3_27", sect: "Palier III", label: "Œuf Légendaire Vitesse d'éclosion III", short: "Œuf Légend. III", icon: "egg", color: "#F5C542", tier: 3, effect: "hatch_LEGENDAIRE", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_09"], lane: 0, row: 19 },
+  { id: "n3_26", sect: "Palier III", label: "Œuf Mythique Vitesse d'éclosion III", short: "Œuf Mythique III", icon: "egg", color: "#FF4D6A", tier: 3, effect: "hatch_MYTHIQUE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_20"], lane: 4, row: 18 },
+  { id: "n3_27", sect: "Palier III", label: "Œuf Légendaire Vitesse d'éclosion III", short: "Œuf Légend. III", icon: "egg", color: "#F5C542", tier: 3, effect: "hatch_LEGENDAIRE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_09"], lane: 0, row: 19 },
   { id: "n3_15", sect: "Palier III", label: "Arme Bonus Dégâts III", short: "Arme III", icon: "swords", color: "#FF5A5A", tier: 3, effect: "eq_arme", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_30"], lane: 1, row: 19 },
   { id: "n3_10", sect: "Palier III", label: "Compétence Passive Base Dégâts III", short: "Pass. Dég. III", icon: "swords", color: "#9B5CF6", tier: 3, effect: "passDmg", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_18"], lane: 2, row: 19 },
   { id: "n3_13", sect: "Palier III", label: "Animal Bonus Dégâts III", short: "Animal Dég. III", icon: "paw", color: "#FF7A3D", tier: 3, effect: "petDmg", per: 2, unit: "%", max: 5, times: PAL_T[2], req: ["n3_18", "n3_26"], lane: 3, row: 19 },
-  { id: "n3_08", sect: "Palier III", label: "Temps Récompense Autonomie III", short: "Tps Auton. III", icon: "cycle", color: "#8FC4FF", tier: 3, effect: "afkTime", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n3_11", "n3_29"], lane: 4, row: 19 },
+  { id: "n3_08", sect: "Palier III", label: "Temps Récompense Autonomie III", short: "Tps Auton. III", icon: "cycle", color: "#8FC4FF", tier: 3, effect: "afkTime", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n3_11", "n3_29"], lane: 4, row: 19 },
   { id: "sp_forge5", sect: "Palier III", label: "Forge multiple ×5", short: "Forge ×5", icon: "hammer", color: "#E8B44A", tier: 3, effect: "forgeMult", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge3", "n3_15"], lane: 1, row: 20, special: true },
   { id: "sp_forge10", sect: "Palier III", label: "Forge multiple ×10", short: "Forge ×10", icon: "hammer", color: "#F5C542", tier: 3, effect: "forgeMult", per: 5, unit: "", max: 1, times: PAL_T[2], req: ["sp_forge5", "n3_10"], lane: 2, row: 20, special: true },
-  { id: "n3_pc", sect: "Palier III", label: "Œuf Peu commun Vitesse d'éclosion III", short: "Œuf Peu com. III", icon: "egg", color: "#57E07A", tier: 3, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[2], req: ["n2_pc", "n3_23"], lane: 3, row: 20 },
+  { id: "n3_pc", sect: "Palier III", label: "Œuf Peu commun Vitesse d'éclosion III", short: "Œuf Peu com. III", icon: "egg", color: "#57E07A", tier: 3, effect: "hatch_PEU_COMMUN", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[2], req: ["n2_pc", "n3_23"], lane: 3, row: 20 },
   { id: "sp_key3", sect: "Palier III", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 3, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[2], req: ["n3_08"], lane: 4, row: 20, special: true, note: "Choix du Raid" },
 
   /* ---------------- PALIER IV ---------------- */
-  { id: "n4_26", sect: "Palier IV", label: "Œuf Mythique Vitesse d'éclosion IV", short: "Œuf Mythique IV", icon: "egg", color: "#FF4D6A", tier: 4, effect: "hatch_MYTHIQUE", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n3_27"], lane: 0, row: 21 },
-  { id: "n4_06", sect: "Palier IV", label: "Bonus Or global IV", short: "Or Global IV", icon: "gold", color: "#F5C542", tier: 4, effect: "goldAll", per: 1, unit: "%", max: 5, times: PAL_T[3], req: ["n3_27"], lane: 1, row: 21 },
+  { id: "n4_26", sect: "Palier IV", label: "Œuf Mythique Vitesse d'éclosion IV", short: "Œuf Mythique IV", icon: "egg", color: "#FF4D6A", tier: 4, effect: "hatch_MYTHIQUE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n3_27"], lane: 0, row: 21 },
+  { id: "n4_06", sect: "Palier IV", label: "Or obtenu IV", short: "Or obtenu IV", icon: "gold", color: "#F5C542", tier: 4, effect: "goldAll", per: 4, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n3_27"], lane: 1, row: 21 },
   { id: "n4_15", sect: "Palier IV", label: "Arme Bonus Dégâts IV", short: "Arme IV", icon: "swords", color: "#FF5A5A", tier: 4, effect: "eq_arme", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n3_10"], lane: 2, row: 21 },
   { id: "n4_16", sect: "Palier IV", label: "Casque Bonus Santé IV", short: "Casque IV", icon: "helm", color: "#57E07A", tier: 4, effect: "eq_casque", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n3_08", "n3_11"], lane: 3, row: 21 },
   { id: "n4_01", sect: "Palier IV", label: "Forge Amélioration Vitesse du minuteur IV", short: "Forge Vit. IV", icon: "hammer", color: "#E8B44A", tier: 4, effect: "forgeTime", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n3_08", "n3_18"], lane: 4, row: 21 },
   { id: "n4_02", sect: "Palier IV", label: "Forge Amélioration Coût IV", short: "Forge Coût IV", icon: "hammer", color: "#E8B44A", tier: 4, effect: "forgeCost", per: -1, unit: "%", max: 5, times: PAL_T[3], req: ["n4_06", "n4_15", "n4_26"], lane: 0, row: 22 },
   { id: "n4_17", sect: "Palier IV", label: "Gants Bonus Dégâts IV", short: "Gants IV", icon: "glove", color: "#FF5A5A", tier: 4, effect: "eq_gants", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_15", "n4_16"], lane: 1, row: 22 },
   { id: "n4_12", sect: "Palier IV", label: "Compétence Invoquer Coût IV", short: "Invoq. Coût IV", icon: "sparkle", color: "#B15CF6", tier: 4, effect: "skillCost", per: -1, unit: "%", max: 5, times: PAL_T[3], req: ["n4_06", "n4_26"], lane: 2, row: 22 },
-  { id: "n4_25", sect: "Palier IV", label: "Œuf Épique Vitesse d'éclosion IV", short: "Œuf Épique IV", icon: "egg", color: "#B15CF6", tier: 4, effect: "hatch_EPIQUE", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n4_15", "n4_01"], lane: 3, row: 22 },
+  { id: "n4_25", sect: "Palier IV", label: "Œuf Épique Vitesse d'éclosion IV", short: "Œuf Épique IV", icon: "egg", color: "#B15CF6", tier: 4, effect: "hatch_EPIQUE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_15", "n4_01"], lane: 3, row: 22 },
   { id: "n4_14", sect: "Palier IV", label: "Animal Bonus Santé IV", short: "Animal Santé IV", icon: "paw", color: "#57E07A", tier: 4, effect: "petHp", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_15"], lane: 4, row: 22 },
   { id: "n4_19", sect: "Palier IV", label: "Armure Bonus Santé IV", short: "Armure IV", icon: "armor", color: "#57E07A", tier: 4, effect: "eq_armure", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_17", "n4_06", "n4_02"], lane: 0, row: 23 },
   { id: "n4_04", sect: "Palier IV", label: "Recherche Technologique Vitesse du minuteur IV", short: "Rech. Vit. IV", icon: "clock", color: "#3FCFD6", tier: 4, effect: "research", per: 4, unit: "%", max: 5, times: PAL_T[3], req: ["n4_12"], lane: 1, row: 23 },
   { id: "n4_30", sect: "Palier IV", label: "PE obtenus dans le Raid Évolution IV", short: "PE Raid IV", icon: "gem", color: "#3FB950", tier: 4, effect: "peRaid", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_25"], lane: 2, row: 23 },
   { id: "n4_09", sect: "Palier IV", label: "Compétence Dégâts IV", short: "Comp. Dég. IV", icon: "sparkle", color: "#9B5CF6", tier: 4, effect: "skillDmg", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_14"], lane: 3, row: 23 },
   { id: "n4_22", sect: "Palier IV", label: "Ceinture Bonus Santé IV", short: "Ceinture IV", icon: "chain", color: "#57E07A", tier: 4, effect: "eq_ceinture", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_25", "n4_12", "n4_14"], lane: 4, row: 23 },
-  { id: "n4_07", sect: "Palier IV", label: "Prospection d’Or IV", short: "Or Auton. IV", icon: "gold", color: "#F5C542", tier: 4, effect: "afkGain", per: 1.25, unit: "%", max: 5, times: PAL_T[3], req: ["n4_04"], lane: 0, row: 24 },
-  { id: "n4_23", sect: "Palier IV", label: "Œuf Commun Vitesse d'éclosion IV", short: "Œuf Commun IV", icon: "egg", color: "#9FB0C8", tier: 4, effect: "hatch_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n4_12", "n4_19"], lane: 1, row: 24 },
-  { id: "n4_27", sect: "Palier IV", label: "Œuf Légendaire Vitesse d'éclosion IV", short: "Œuf Légend. IV", icon: "egg", color: "#F5C542", tier: 4, effect: "hatch_LEGENDAIRE", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n4_25", "n4_22"], lane: 2, row: 24 },
+  { id: "n4_07", sect: "Palier IV", label: "Autonomie Or IV", short: "Auton. Or IV", icon: "gold", color: "#F5C542", tier: 4, effect: "afkGold", per: 1.2, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_04"], lane: 0, row: 24, note: "+1,2 point de %/h par niveau · Max 25 %/h avec la base" },
+  { id: "n4_23", sect: "Palier IV", label: "Œuf Commun Vitesse d'éclosion IV", short: "Œuf Commun IV", icon: "egg", color: "#9FB0C8", tier: 4, effect: "hatch_COMMUN", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_12", "n4_19"], lane: 1, row: 24 },
+  { id: "n4_27", sect: "Palier IV", label: "Œuf Légendaire Vitesse d'éclosion IV", short: "Œuf Légend. IV", icon: "egg", color: "#F5C542", tier: 4, effect: "hatch_LEGENDAIRE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_25", "n4_22"], lane: 2, row: 24 },
   { id: "n4_03", sect: "Palier IV", label: "Chance de forger gratuitement IV", short: "Forge Grat. IV", icon: "hammer", color: "#F5C542", tier: 4, effect: "forgeFree", per: 1, unit: "%", max: 5, times: PAL_T[3], req: ["n4_04"], lane: 3, row: 24 },
   { id: "n4_29", sect: "Palier IV", label: "Chance d'obtenir 1 Compétence supplémentaire gratuitement IV", short: "Comp. Suppl. IV", icon: "sparkle", color: "#8FEFF4", tier: 4, effect: "skillFree", per: 1, unit: "%", max: 5, times: PAL_T[3], req: ["n4_09", "n4_25", "n4_30"], lane: 4, row: 24 },
   { id: "n4_05", sect: "Palier IV", label: "Amélioration de Nœud Technologique Coût IV", short: "Tech Coût IV", icon: "gear", color: "#3FCFD6", tier: 4, effect: "techCost", per: -2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_19", "n4_23"], lane: 0, row: 25 },
   { id: "n4_10", sect: "Palier IV", label: "Compétence Passive Base Dégâts IV", short: "Pass. Dég. IV", icon: "swords", color: "#9B5CF6", tier: 4, effect: "passDmg", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_07", "n4_23"], lane: 1, row: 25 },
   { id: "n4_18", sect: "Palier IV", label: "Collier Bonus Dégâts IV", short: "Collier IV", icon: "gem", color: "#FF5A5A", tier: 4, effect: "eq_collier", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_29", "n4_07"], lane: 2, row: 25 },
-  { id: "n4_08", sect: "Palier IV", label: "Temps Récompense Autonomie IV", short: "Tps Auton. IV", icon: "cycle", color: "#8FC4FF", tier: 4, effect: "afkTime", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n4_27", "n4_03"], lane: 3, row: 25 },
+  { id: "n4_08", sect: "Palier IV", label: "Temps Récompense Autonomie IV", short: "Tps Auton. IV", icon: "cycle", color: "#8FC4FF", tier: 4, effect: "afkTime", per: 8, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_27", "n4_03"], lane: 3, row: 25 },
   { id: "n4_21", sect: "Palier IV", label: "Chaussures Bonus Santé IV", short: "Chaussures IV", icon: "boot", color: "#57E07A", tier: 4, effect: "eq_bottes", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_09", "n4_03"], lane: 4, row: 25 },
   { id: "n4_20", sect: "Palier IV", label: "Anneau Bonus Dégâts IV", short: "Anneau IV", icon: "ring", color: "#FF5A5A", tier: 4, effect: "eq_anneau", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_18"], lane: 0, row: 26 },
   { id: "n4_13", sect: "Palier IV", label: "Animal Bonus Dégâts IV", short: "Animal Dég. IV", icon: "paw", color: "#FF7A3D", tier: 4, effect: "petDmg", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_18", "n4_05"], lane: 1, row: 26 },
   { id: "n4_11", sect: "Palier IV", label: "Compétence Passive Base Santé IV", short: "Pass. Santé IV", icon: "heart", color: "#57E07A", tier: 4, effect: "passHp", per: 2, unit: "%", max: 5, times: PAL_T[3], req: ["n4_18", "n4_10", "n4_21"], lane: 2, row: 26 },
-  { id: "n4_24", sect: "Palier IV", label: "Œuf Rare Vitesse d'éclosion IV", short: "Œuf Rare IV", icon: "egg", color: "#3FA7FF", tier: 4, effect: "hatch_RARE", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n4_10"], lane: 3, row: 26 },
+  { id: "n4_24", sect: "Palier IV", label: "Œuf Rare Vitesse d'éclosion IV", short: "Œuf Rare IV", icon: "egg", color: "#3FA7FF", tier: 4, effect: "hatch_RARE", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n4_10"], lane: 3, row: 26 },
   { id: "n4_28", sect: "Palier IV", label: "Chance d'obtenir 1 Œuf supplémentaire gratuitement IV", short: "Œuf Suppl. IV", icon: "egg", color: "#8FEFF4", tier: 4, effect: "eggFree", per: 1, unit: "%", max: 5, times: PAL_T[3], req: ["n4_29", "n4_08"], lane: 4, row: 26 },
-  { id: "n4_pc", sect: "Palier IV", label: "Œuf Peu commun Vitesse d'éclosion IV", short: "Œuf Peu com. IV", icon: "egg", color: "#57E07A", tier: 4, effect: "hatch_PEU_COMMUN", per: 10, unit: "%", max: 5, times: PAL_T[3], req: ["n3_pc", "n4_23"], lane: 1, row: 27 },
+  { id: "n4_pc", sect: "Palier IV", label: "Œuf Peu commun Vitesse d'éclosion IV", short: "Œuf Peu com. IV", icon: "egg", color: "#57E07A", tier: 4, effect: "hatch_PEU_COMMUN", per: 6, unit: "%", max: 5, tierScale: false, times: PAL_T[3], req: ["n3_pc", "n4_23"], lane: 1, row: 27 },
   { id: "sp_key4", sect: "Palier IV", label: "+1 Clé Raid", short: "+1 Clé Raid", icon: "key", color: "#3FA7FF", tier: 4, effect: "raidKey", per: 1, unit: "", max: 1, times: PAL_T[3], req: ["n4_11"], lane: 2, row: 27, special: true, note: "Choix du Raid" },
   { id: "sp_slot2", sect: "Palier IV", label: "+1 Slot d'Éclosion", short: "+1 Slot Éclosion", icon: "egg", color: "#57E07A", tier: 4, effect: "eggSlot", per: 1, unit: "", max: 1, times: PAL_T[3], req: ["n4_28"], lane: 4, row: 27, special: true },
 ];
 
+/* V476 · Expand each depth by one visual row so five new families can be added
+   without overlapping the existing graph. Existing ids and prerequisites stay
+   unchanged; only presentation rows move for tiers II-IV. */
+TREE_NODES.forEach((n) => {
+  if (n.tier >= 2 && n.tier <= 4) n.row += (n.tier - 1);
+});
 
+const TREE_V476_EXTRA_NODES = [
+  { id:"n1_anc", sect:"Palier I", label:"Œuf Ancestral Vitesse d'éclosion I", short:"Œuf Ancestral I", icon:"egg", color:"#3FE0C0", tier:1, effect:"hatch_ANCESTRAL", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_27"], lane:0, row:7 },
+  { id:"n1_div", sect:"Palier I", label:"Œuf Divin Vitesse d'éclosion I", short:"Œuf Divin I", icon:"egg", color:"#FFB52E", tier:1, effect:"hatch_DIVIN", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_anc"], lane:1, row:7 },
+  { id:"n1_afkmin", sect:"Palier I", label:"Autonomie Minéraux I", short:"Auton. Min. I", icon:"minerai", color:"#3FA7FF", tier:1, effect:"afkMinerai", per:0.3, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_08"], lane:2, row:7, note:"+0,3 point de %/h par niveau · Max 25 %/h avec la base" },
+  { id:"n1_afkess", sect:"Palier I", label:"Autonomie Essence I", short:"Auton. Ess. I", icon:"essence", color:"#FF7A3D", tier:1, effect:"afkEssence", per:0.3, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_08"], lane:3, row:7, note:"+0,3 point de %/h par niveau · Max 25 %/h avec la base" },
+  { id:"n1_afkecl", sect:"Palier I", label:"Autonomie Étincelles I", short:"Auton. Étinc. I", icon:"eclat", color:"#9B5CF6", tier:1, effect:"afkEclat", per:0.3, unit:"%", max:5, tierScale:false, times:PAL_T[0], req:["n1_08"], lane:4, row:7, note:"+0,3 point de %/h par niveau · Max 25 %/h avec la base" },
+
+  { id:"n2_anc", sect:"Palier II", label:"Œuf Ancestral Vitesse d'éclosion II", short:"Œuf Ancestral II", icon:"egg", color:"#3FE0C0", tier:2, effect:"hatch_ANCESTRAL", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_anc","n2_27"], lane:0, row:15 },
+  { id:"n2_div", sect:"Palier II", label:"Œuf Divin Vitesse d'éclosion II", short:"Œuf Divin II", icon:"egg", color:"#FFB52E", tier:2, effect:"hatch_DIVIN", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_div","n2_anc"], lane:1, row:15 },
+  { id:"n2_afkmin", sect:"Palier II", label:"Autonomie Minéraux II", short:"Auton. Min. II", icon:"minerai", color:"#3FA7FF", tier:2, effect:"afkMinerai", per:0.6, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_afkmin","n2_08"], lane:2, row:15, note:"+0,6 point de %/h par niveau · Max 25 %/h avec la base" },
+  { id:"n2_afkess", sect:"Palier II", label:"Autonomie Essence II", short:"Auton. Ess. II", icon:"essence", color:"#FF7A3D", tier:2, effect:"afkEssence", per:0.6, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_afkess","n2_08"], lane:3, row:15, note:"+0,6 point de %/h par niveau · Max 25 %/h avec la base" },
+  { id:"n2_afkecl", sect:"Palier II", label:"Autonomie Étincelles II", short:"Auton. Étinc. II", icon:"eclat", color:"#9B5CF6", tier:2, effect:"afkEclat", per:0.6, unit:"%", max:5, tierScale:false, times:PAL_T[1], req:["n1_afkecl","n2_08"], lane:4, row:15, note:"+0,6 point de %/h par niveau · Max 25 %/h avec la base" },
+
+  { id:"n3_anc", sect:"Palier III", label:"Œuf Ancestral Vitesse d'éclosion III", short:"Œuf Ancestral III", icon:"egg", color:"#3FE0C0", tier:3, effect:"hatch_ANCESTRAL", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_anc","n3_27"], lane:0, row:23 },
+  { id:"n3_div", sect:"Palier III", label:"Œuf Divin Vitesse d'éclosion III", short:"Œuf Divin III", icon:"egg", color:"#FFB52E", tier:3, effect:"hatch_DIVIN", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_div","n3_anc"], lane:1, row:23 },
+  { id:"n3_afkmin", sect:"Palier III", label:"Autonomie Minéraux III", short:"Auton. Min. III", icon:"minerai", color:"#3FA7FF", tier:3, effect:"afkMinerai", per:0.9, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_afkmin","n3_08"], lane:2, row:23, note:"+0,9 point de %/h par niveau · Max 25 %/h avec la base" },
+  { id:"n3_afkess", sect:"Palier III", label:"Autonomie Essence III", short:"Auton. Ess. III", icon:"essence", color:"#FF7A3D", tier:3, effect:"afkEssence", per:0.9, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_afkess","n3_08"], lane:3, row:23, note:"+0,9 point de %/h par niveau · Max 25 %/h avec la base" },
+  { id:"n3_afkecl", sect:"Palier III", label:"Autonomie Étincelles III", short:"Auton. Étinc. III", icon:"eclat", color:"#9B5CF6", tier:3, effect:"afkEclat", per:0.9, unit:"%", max:5, tierScale:false, times:PAL_T[2], req:["n2_afkecl","n3_08"], lane:4, row:23, note:"+0,9 point de %/h par niveau · Max 25 %/h avec la base" },
+
+  { id:"n4_anc", sect:"Palier IV", label:"Œuf Ancestral Vitesse d'éclosion IV", short:"Œuf Ancestral IV", icon:"egg", color:"#3FE0C0", tier:4, effect:"hatch_ANCESTRAL", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_anc","n4_27"], lane:0, row:31 },
+  { id:"n4_div", sect:"Palier IV", label:"Œuf Divin Vitesse d'éclosion IV", short:"Œuf Divin IV", icon:"egg", color:"#FFB52E", tier:4, effect:"hatch_DIVIN", per:6, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_div","n4_anc"], lane:1, row:31 },
+  { id:"n4_afkmin", sect:"Palier IV", label:"Autonomie Minéraux IV", short:"Auton. Min. IV", icon:"minerai", color:"#3FA7FF", tier:4, effect:"afkMinerai", per:1.2, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_afkmin","n4_08"], lane:2, row:31, note:"+1,2 point de %/h par niveau · Max 25 %/h avec la base" },
+  { id:"n4_afkess", sect:"Palier IV", label:"Autonomie Essence IV", short:"Auton. Ess. IV", icon:"essence", color:"#FF7A3D", tier:4, effect:"afkEssence", per:1.2, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_afkess","n4_08"], lane:3, row:31, note:"+1,2 point de %/h par niveau · Max 25 %/h avec la base" },
+  { id:"n4_afkecl", sect:"Palier IV", label:"Autonomie Étincelles IV", short:"Auton. Étinc. IV", icon:"eclat", color:"#9B5CF6", tier:4, effect:"afkEclat", per:1.2, unit:"%", max:5, tierScale:false, times:PAL_T[3], req:["n3_afkecl","n4_08"], lane:4, row:31, note:"+1,2 point de %/h par niveau · Max 25 %/h avec la base" }
+];
+TREE_NODES.push(...TREE_V476_EXTRA_NODES);
 
 
 
@@ -1703,7 +2071,6 @@ function progressionGoals(st) {
   const skillMax = Object.values(st.skills || {}).reduce((m, x) => Math.max(m, Number(x && x.level) || 0), 0);
   const treeNodes = Object.values((st.tree && st.tree.levels) || {}).filter((lv) => Number(lv) > 0).length;
   const floor = st.recordFloor || 1, forge = (st.forge && st.forge.level) || 1;
-  const rebirths = (st.rebirth && st.rebirth.count) || 0;
   const goal = (id,title,why,now,max,category,go,priority,prereq=true) => ({
     id,title,why,now:Math.min(Number(now)||0,max),max,done:(Number(now)||0)>=max,category,go,priority,prereq
   });
@@ -1713,8 +2080,7 @@ function progressionGoals(st) {
     goal("floor10","Vaincre le Boss de l’étage 10","Premier grand jalon de la campagne.",floor,10,"campagne","accueil",94),
     goal("skills3","Équiper 3 compétences","Construis une vraie rotation de combat.",skillEquipped,3,"developpement","competences",88,floor>=5),
     goal("rareGear","Obtenir un équipement Rare","Commence à construire un build avec des affixes.",hasEquipAtLeast(st,"RARE")?1:0,1,"developpement","equipement",86,forge>=2),
-    goal("floor25","Atteindre l’étage 25","Débloque le Rebirth et la progression permanente.",floor,25,"campagne","accueil",92,floor>=10),
-    goal("rebirth1","Effectuer ton premier Rebirth","Transforme la campagne en progression permanente.",rebirths,1,"progression","rebirth",91,floor>=25),
+    goal("floor25","Atteindre l’étage 25","Franchis un premier cap majeur de campagne.",floor,25,"campagne","accueil",92,floor>=10),
     goal("raidEvo3","Raid Évolution niveau 3","Obtiens des PE pour développer ton Arbre personnel.",raidEvo,3,"defi","raid",82,floor>=10),
     goal("tree3","Activer 3 nœuds de l’Arbre","Commence à spécialiser durablement ta progression.",treeNodes,3,"developpement","arbre",80,raidEvo>=1 || treeNodes>0),
     goal("skill5","Améliorer une compétence niveau 5","Fais progresser une compétence clé de ton build.",skillMax,5,"developpement","competences",74,skillEquipped>=3),
@@ -1725,7 +2091,6 @@ function progressionGoals(st) {
     goal("mega1","Vaincre ton premier Méga-Boss","Débloque le Sanctuaire et ses fusions.",mega,1,"defi","mega",89,megaRaidUnlocked(st)),
     goal("fusion1","Réussir une fusion au Sanctuaire","Transforme les ressources accumulées en nouvelles récompenses.",fusions,1,"developpement","sanctuaire",89,mega>=1),
     goal("floor100","Atteindre l’étage 100","Entre dans la progression avancée de Shadowreach.",floor,100,"campagne","accueil",88,floor>=50),
-    goal("rebirth5","Effectuer 5 Rebirth","Consolide tes bonus permanents avant l’endgame.",rebirths,5,"progression","rebirth",73,rebirths>=1),
     goal("forge25","Forge niveau 25","Atteins le cœur de la progression d’équipement.",forge,25,"developpement","accueil",68,forge>=10),
   ];
 }
@@ -1756,7 +2121,6 @@ function nextUnlockGoal(st) {
   const mega = st.megaBossClears ? Object.keys(st.megaBossClears).some((k) => st.megaBossClears[k]) : false;
   const megaUnlocked = megaRaidUnlocked(st);
   const candidates = [
-    {title:"Rebirth", note:"Étage 25", detail:"Convertis une partie de ta progression en PR permanents.", now:Math.min(st.recordFloor||1,25), max:25, done:(st.recordFloor||1)>=25, go:"rebirth"},
     {title:"Méga-Boss", note:"Vaincre le Boss 50", detail:"Affronte des versions extrêmes des Boss et ouvre la voie au Sanctuaire.", now:megaUnlocked?1:0, max:1, done:megaUnlocked, go:"mega"},
     {title:"Sanctuaire", note:"Vaincre un Méga-Boss", detail:"Fusionne tes ressources pour découvrir des recettes spéciales.", now:mega?1:0, max:1, done:mega, go:"sanctuaire"},
   ];
@@ -1821,6 +2185,32 @@ const HERO_START = 34;
 const ENEMY_FIRE_RANGE = 110;
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
+/* V504 · Test-time offset is persisted separately from real timestamps.
+   It lets 9 h / 1 day simulations advance the displayed player day and
+   calendar-driven test systems without corrupting real timer timestamps. */
+const SIM_DAY_MS_V504 = 24 * 60 * 60 * 1000;
+function simulatedNow(s, realNow) {
+  const base = realNow == null ? Date.now() : Number(realNow);
+  const extra = Math.max(0, Number(s && s.simulatedMs) || 0);
+  return base + extra;
+}
+function simulatedDayCount(s, realNow) {
+  const now = realNow == null ? Date.now() : Number(realNow);
+  const born = Number(s && s.firstSeen) || now;
+  const age = Math.max(0, now - born) + Math.max(0, Number(s && s.simulatedMs) || 0);
+  return Math.max(1, Math.floor(age / SIM_DAY_MS_V504) + 1);
+}
+function simulatedDateStr(s, realNow) {
+  return new Date(simulatedNow(s, realNow)).toISOString().slice(0, 10);
+}
+/* Raid keys reset at 00:00 local time, independent of UTC/DST.
+   Keep todayStr() unchanged because event-day semantics are separate. */
+function raidKeyResetDayKey(now) {
+  const d = new Date(now == null ? Date.now() : now);
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"),
+    day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
 function rid() { return Math.random().toString(36).slice(2, 9); }
 
 function defaultState(name) {
@@ -1828,12 +2218,15 @@ function defaultState(name) {
     version: SAVE_VERSION, playerName: name,
     level: 1, exp: 0, statPoints: 0,
     stats: { sante: 0, degats: 0, crit: 0, critred: 0 },
-    gold: 100, gems: 0, minerai: 400, poussiere: 0, eclat: 0, essence: 0, apples: 0,
+    gold: 100, gems: 0, minerai: 0, poussiere: 0, eclat: 0, essence: 0, apples: 0,
     floor: 1, step: 1, recordFloor: 1, checkpoint: 1, bossClears: {}, megaBossClears: {},
     equipped: { arme: null, casque: null, armure: null, gants: null, bottes: null,
       collier: null, anneau: null, ceinture: null },
     inventory: [],
-    forge: { level: 1, summonCount: 0, masteryLevel: 0, masteryProgress: 0, autoForge: false, upgradeEnd: 0,
+    forge: { level: 1, summonCount: 0, lifetimeCount: 0, lifetimeMasteryVersion: 0,
+      masteryDustClaimedRank: 0, masteryDustRewardVersion: EQUIPMENT_MASTERY_REWARD_VERSION,
+      masteryDustPaidTotal: 0,
+      masteryLevel: 0, masteryProgress: 0, autoForge: false, upgradeEnd: 0,
       // section 14: nothing is filtered out until the player says so
       filter: false, keep: forgeKeepAll() },
     skills: {}, skillSlots: [null, null, null, null, null],
@@ -1850,7 +2243,7 @@ function defaultState(name) {
       evolution:  { level: 1, keys: 2, record: 0, stars: 0 },
     },
     pe: 0,
-    universalKeys: 3, adKeysToday: 0, lastKeyReset: todayStr(),
+    universalKeys: 3, adKeysToday: 0, lastKeyReset: raidKeyResetDayKey(),
     bossRewardsClaimed: {}, megaFloorRewardsClaimed: {},
     sanctuary: { slotA: null, slotB: null, discovered: {}, fusions: 0, stabilitySeals: 0 },
     tree: { levels: {}, active: null, activeLevel: 0, activeEnd: 0 },
@@ -1868,7 +2261,7 @@ function defaultState(name) {
     economyRebaseV4: true,
     eventDay: todayStr(), eventClaims: {}, eventProgress: {},
     power: 0,
-    autoSkills: true, firstSeen: Date.now(), tutorial: { version: 3, seen: {} },
+    autoSkills: true, firstSeen: Date.now(), simulatedMs: 0, tutorial: { version: 3, seen: {} },
     recommendationDismissed: {},
     raidKeyLossCompensationV1: true,
   };
@@ -1906,6 +2299,81 @@ function migrate(s, name) {
     stars: Object.assign({}, base.stars, s.stars || {}),
     recommendationDismissed: Object.assign({}, base.recommendationDismissed, s.recommendationDismissed || {}),
   });
+
+  /* One-time make-good for existing saves affected by the midnight Raid reset
+     transition. The old date marker cannot prove whether a refill was actually
+     delivered, so credit at most one missed daily refill per Raid. Keep each
+     cap and any tree-granted daily bonus; persist the marker with the save. */
+  if (!merged.raidMidnightMakeGoodV506 && s.raids && s.lastKeyReset) {
+    RAID_IDS.forEach((r) => {
+      const raid = merged.raids && merged.raids[r];
+      if (!raid) return;
+      const bonus = Math.max(0, Number((merged.raidKeyAlloc || {})[r]) || 0);
+      const cap = RULES.RAID_KEY_CAP + bonus;
+      const current = Math.max(0, Number(raid.keys) || 0);
+      raid.keys = Math.min(cap, current + RULES.RAID_FREE_KEYS + bonus);
+    });
+    merged.raidMidnightMakeGoodV506 = true;
+  }
+
+  /* V507: one-time restoration for pre-existing Difficile 3-5 free claims.
+     Earlier builds could mark the milestone claimed without a confirmed payout.
+     The historical save has no per-claim receipt ledger, so restore at most once
+     for affected legacy claims, and preserve the existing claim flag. */
+  if (!merged.floor75RewardRestoredV507 && s.accomplishments &&
+      s.accomplishments.claimed && s.accomplishments.claimed.floor75) {
+    merged.gold = (Number(merged.gold) || 0) + 50000;
+    merged.eclat = (Number(merged.eclat) || 0) + 500;
+    if (!merged.accomplishments || typeof merged.accomplishments !== "object") merged.accomplishments = {};
+    const pieces = Object.assign({}, merged.accomplishments.mergePieces || {});
+    pieces.COMMUN = (Number(pieces.COMMUN) || 0) + 30;
+    merged.accomplishments = Object.assign({}, merged.accomplishments, { mergePieces: pieces });
+    merged.floor75RewardRestoredV507 = true;
+  }
+
+  /* V445: paid lifetime Forge count is permanent and never reset by Forge
+     Ascension. Old saves did not journal completed historical cycles, so only
+     the paid forge count still provable in the save is carried forward. */
+  const savedLifetimeForge = s.forge && s.forge.lifetimeCount != null
+    ? Math.max(0, Math.floor(Number(s.forge.lifetimeCount) || 0)) : null;
+  const currentCycleForges = Math.max(0, Math.floor(Number(merged.forge.summonCount) || 0));
+  merged.forge.lifetimeCount = savedLifetimeForge == null
+    ? currentCycleForges : Math.max(savedLifetimeForge, currentCycleForges);
+  merged.forge.lifetimeMasteryVersion = Math.max(0, Math.floor(Number(merged.forge.lifetimeMasteryVersion) || 0));
+
+  /* V464: Main never paid the Roman-rank Dust rewards before this migration.
+     Missing claim state therefore means "nothing was paid yet": credit all
+     reached ranks once (I=50, II=100 => a rank-II save receives 150 total).
+     Saves coming from an experimental build that already persisted a claimed
+     rank keep that marker and receive only genuinely missing later ranks. */
+  claimEquipmentMasteryDustRewards(merged);
+
+  /* V397: old saves counted only PAID Familiar summons toward Mastery even
+     when Double Œuf produced a second egg. The old save did not journal each
+     historical double, so exact reconstruction is impossible. Compensate the
+     current Familiar ladder once from the paid summons recorded on that ladder
+     and the save's current Double Œuf rate; completed pre-Ascension ladders do
+     not need compensation because their progress was already consumed by the
+     Ascension. Future doubles are tracked exactly in summonEgg(). */
+  if (!merged.petDoubleMasteryCompV397) {
+    const paidCurrent = Math.max(0, Number(merged.petMastery && merged.petMastery.count) || 0);
+    const dblRate = Math.max(0, Math.min(100, Number(treeSum(merged, "eggFree")) || 0));
+    const estimatedMissing = Math.max(0, Math.round(paidCurrent * dblRate / 100));
+    const credited = addMasteryCredits(merged.petMastery, estimatedMissing);
+    merged.petMastery.bonusCount = Math.max(0, Number(merged.petMastery.bonusCount) || 0) + credited;
+    merged.petDoubleMasteryCompV397 = true;
+    merged.petDoubleMasteryCompNoticeV397 = credited;
+  }
+
+  /* V390: Chance Critique is no longer a level-point destination. Refund every
+     point previously invested there exactly once, then keep the legacy field at
+     zero for save compatibility. */
+  if (!merged.heroStatRebalanceV390) {
+    const oldCritPoints = Math.max(0, Math.floor(Number(merged.stats.crit) || 0));
+    merged.statPoints = Math.max(0, Number(merged.statPoints) || 0) + oldCritPoints;
+    merged.stats.crit = 0;
+    merged.heroStatRebalanceV390 = true;
+  }
 
   // ---- tree: the old save held a flat `unlocked` id list of single-level nodes.
   // Those ids no longer exist, so refund their points rather than dropping them.
@@ -1969,11 +2437,40 @@ function migrate(s, name) {
   });
   merged.forge.filter = !!merged.forge.filter;
 
+  /* V504: restore the old test-time concept without reviving the obsolete
+     integer testDays field. Old saves that still carry testDays convert once
+     into exact milliseconds; current saves simply start at zero. */
+  const legacyTestDaysV504 = Math.max(0, Math.floor(Number(s.testDays) || 0));
+  if (!Number.isFinite(Number(s.simulatedMs))) merged.simulatedMs = legacyTestDaysV504 * SIM_DAY_MS_V504;
+  merged.simulatedMs = Math.max(0, Number(merged.simulatedMs) || 0);
   delete merged.testDays;
   delete merged._raidStars;
-  Object.keys(merged.raids).forEach((rid) => {
-    if (typeof merged.raids[rid].stars !== "number") merged.raids[rid].stars = 0;
-  });
+  /* V444: convert the old 1..50 + Raid Ascension ladder into one permanent
+     1..70 ladder without discarding proven progress. A star proves one full
+     historical 50-level ladder; the current level proves wins after it.
+     Historical values are retained for diagnostics/migration evidence only. */
+  if (!merged.raidAscensionRetiredV444) {
+    Object.keys(merged.raids).forEach((rid) => {
+      const r = merged.raids[rid] || (merged.raids[rid] = {});
+      const oldStars = Math.max(0, Math.floor(Number(r.stars) || 0));
+      const oldLevel = Math.max(1, Math.min(50, Math.floor(Number(r.level) || 1)));
+      const oldRecord = Math.max(0, Math.min(50, Math.floor(Number(r.record) || 0)));
+      r.legacyRaidProgressV444 = { level: oldLevel, record: oldRecord, stars: oldStars };
+      const currentWins = oldStars > 0 ? Math.max(0, oldLevel - 1) : Math.max(oldRecord, oldLevel - 1);
+      const completed = Math.max(0, oldStars * 50 + currentWins);
+      r.level = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, completed + 1));
+      r.record = Math.max(0, Math.min(RULES.RAID_MAX_LEVEL, completed));
+      r.stars = 0;
+    });
+    merged.raidAscensionRetiredV444 = true;
+  } else {
+    Object.keys(merged.raids).forEach((rid) => {
+      const r = merged.raids[rid] || (merged.raids[rid] = {});
+      r.level = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(r.level) || 1)));
+      r.record = Math.max(0, Math.min(RULES.RAID_MAX_LEVEL, Math.floor(Number(r.record) || 0)));
+      r.stars = 0;
+    });
+  }
 
   if (!merged.tree.levels || typeof merged.tree.levels !== "object") merged.tree.levels = {};
   merged.stars.pet = Math.min(PET_ASCEND_MAX_STARS, Math.max(0, merged.stars.pet || 0));
@@ -2112,10 +2609,15 @@ function migrate(s, name) {
     if (!merged.economyDebt || typeof merged.economyDebt !== "object") merged.economyDebt = { eclat: 0, essence: 0 };
     const provenRaidWins = (rid) => {
       const r = (merged.raids && merged.raids[rid]) || {};
-      const stars = Math.max(0, Number(r.stars) || 0);
-      const level = Math.max(1, Math.min(RULES.RAID_MAX_LEVEL, Number(r.level) || 1));
+      const legacy = r.legacyRaidProgressV444 || null;
+      const stars = Math.max(0, Number(legacy ? legacy.stars : r.stars) || 0);
+      const level = Math.max(1, Math.min(legacy ? 50 : RULES.RAID_MAX_LEVEL,
+        Number(legacy ? legacy.level : r.level) || 1));
+      const record = Math.max(0, Math.min(legacy ? 50 : RULES.RAID_MAX_LEVEL,
+        Number(legacy ? legacy.record : r.record) || 0));
+      if (legacy && stars > 0) return stars * 50 + Math.max(0, level - 1);
       if (stars > 0) return stars * RULES.RAID_MAX_LEVEL + Math.max(0, level - 1);
-      return Math.max(Math.max(0, level - 1), Math.max(0, Math.min(RULES.RAID_MAX_LEVEL, Number(r.record) || 0)));
+      return Math.max(Math.max(0, level - 1), record);
     };
     const skillWins = provenRaidWins("competence");
     const petWins = provenRaidWins("familier");
@@ -2156,6 +2658,8 @@ function migrate(s, name) {
     }
     merged.raidKeyLossCompensationV1 = true;
   }
+  /* V400: Rebirth and PR are retired. Legacy save fields stay inert for
+     compatibility only: no conversion, no compensation and no PR refund. */
   // L'ancien Retour Rapide est retiré du jeu. On conserve les PR déjà dépensés
   // sans tenter de les recalculer automatiquement, pour ne pas inventer un remboursement.
   if (merged.rebirth && merged.rebirth.upgrades) delete merged.rebirth.upgrades.fastback;
@@ -2212,6 +2716,9 @@ function migrate(s, name) {
   // Pets from before investment tracking reconstruct the exact cost of their levels.
   merged.pets = (merged.pets || []).map((p) => {
     const q = Object.assign({ level: 0, species: randSpecies(), element: randElement() }, p);
+    if (q.rarity === "ANCESTRAL" && q.legacyLevel == null) {
+      q.legacyLevel = Math.max(0, Number(q.level) || 0);
+    }
     q.level = Math.min(Math.max(0, q.level || 0), petMaxLevel(q.rarity));
     q.applesInvested = Number.isFinite(p.applesInvested)
       ? Math.max(0, Math.floor(p.applesInvested))
@@ -2258,32 +2765,11 @@ function migrate(s, name) {
     }
     merged.autonomyGoldRebaseV31 = true;
   }
-  // REBIRTH_CAPS_V171
-  if (!Object.prototype.hasOwnProperty.call(s, "rebirthCapsV171")) {
-    const oldCosts=[50,77,103,130,156,183,209,236,262,289,315,342,368,395,421,448,474,501,528,554,581,607,634,660,687,713,740,766,793,819,846,872,899,926,952,979,1005,1032,1058,1085,1111,1138,1164,1191,1217,1244,1270,1297,1323,1350];
-    const ups=merged.rebirth.upgrades || (merged.rebirth.upgrades={});
-    const oldLv=Math.max(0,Math.min(50,Math.floor(Number(ups.prgain)||0)));
-    let refundPR=0;
-    if(oldLv>25){ refundPR=oldCosts.slice(25,oldLv).reduce((a,b)=>a+b,0); merged.rebirth.pr=Math.max(0,Number(merged.rebirth.pr)||0)+refundPR; ups.prgain=25; }
-    merged.rebirthCapsV171=true;
-    if(refundPR>0) merged.rebirthCapsV171Notice={oldLevel:oldLv,newLevel:25,refundPR};
-  }
+  // Rebirth/PR retired: keep old compatibility markers without mutating PR.
+  if (!Object.prototype.hasOwnProperty.call(s, "rebirthCapsV171")) merged.rebirthCapsV171 = true;
 
-  // GOLD_ECONOMY_REBASE_V32
-  // Le coût Rebirth Or passe de 135 000 à 35 000 PR au total. Un joueur qui a
-  // déjà acheté des niveaux récupère exactement la différence entre l'ancienne
-  // et la nouvelle courbe, sans modifier son niveau d'amélioration.
-  if (!Object.prototype.hasOwnProperty.call(s, "rebirthGoldCostRebaseV32")) {
-    const oldGoldCostsV32 = [100,150,200,250,300,350,400,500,550,600,700,800,850,950,1050,1150,1250,1350,1450,1600,1700,1800,1950,2100,2200,2350,2500,2650,2800,2950,3100,3250,3450,3600,3750,3950,4150,4300,4500,4700,4900,5100,5300,5500,5750,5950,6150,6400,6650,7000];
-    const newGoldCostsV32 = [25,40,50,65,80,90,105,130,145,155,180,205,220,245,270,300,325,350,375,415,440,465,505,545,570,610,650,685,725,765,805,845,895,935,970,1025,1075,1115,1165,1220,1270,1320,1375,1425,1490,1545,1595,1660,1725,1815];
-    const lv = Math.max(0, Math.min(50, Number((merged.rebirth.upgrades || {}).gold) || 0));
-    const oldSpent = oldGoldCostsV32.slice(0, lv).reduce((a,b)=>a+b, 0);
-    const newSpent = newGoldCostsV32.slice(0, lv).reduce((a,b)=>a+b, 0);
-    const refundPR = Math.max(0, oldSpent - newSpent);
-    merged.rebirth.pr = Math.max(0, Number(merged.rebirth.pr) || 0) + refundPR;
-    merged.rebirthGoldCostRebaseV32 = true;
-    merged.rebirthGoldCostRebaseNoticeV32 = { level: lv, oldSpent, newSpent, refundPR };
-  }
+  // Rebirth/PR retired: do not create or refund legacy PR on old saves.
+  if (!Object.prototype.hasOwnProperty.call(s, "rebirthGoldCostRebaseV32")) merged.rebirthGoldCostRebaseV32 = true;
 
   // La Prospection d'Or autonome vaut maintenant jusqu'à +25 % au total.
   // On revalorise uniquement la réserve encore présente : les gains déjà encaissés
@@ -2339,15 +2825,18 @@ function migrate(s, name) {
     merged.sanctuaryGoldRebaseNoticeV35 = { level:lvl, progress, purchases, oldSpent, fairSpent, refundGold };
   }
 
+  /* V445/V456 import-live migration hook. Equipment Mastery owns both
+     the Roman equipment rank and its base-stat boost; Hero level is unrelated. */
+  try {
+    const masteryApi = window.__srForgeLifetimeMasteryV445;
+    if (masteryApi && typeof masteryApi.applyState === "function") masteryApi.applyState(merged);
+    else syncEquipmentLevels(merged);
+  } catch (_) {}
+
   return merged;
 }
 
-function rb(s, key) {
-  const def = REBIRTH_UPGRADES.find((u) => u.key === key);
-  if (!def) return 0;
-  const lvl = Math.max(0, Math.min(def.max, Number((s.rebirth.upgrades || {})[key]) || 0));
-  return lvl * def.perLvl;
-}
+function rb() { return 0; }
 /* ---- tree accessors: level 1 == activated, so children open immediately ---- */
 function treeLv(s, id) { return (s.tree.levels && s.tree.levels[id]) || 0; }
 function hasTree(s, id) { return treeLv(s, id) >= 1; }
@@ -2357,7 +2846,7 @@ function treeSum(s, effect) {
   let t = 0;
   for (let i = 0; i < TREE_NODES.length; i++) {
     const n = TREE_NODES[i];
-    if (n.effect === effect) t += treeLv(s, n.id) * n.per;
+    if (n.effect === effect) t += treeLv(s, n.id) * treeEffectivePer(n);
   }
   return t;
 }
@@ -2390,9 +2879,13 @@ function treeTotalPE() {
 }
 /* duration of the level being researched, cut by the Recherche branch */
 function treeTime(s, node, level) {
-  const raw = node.times[Math.min(level - 1, node.times.length - 1)] || 0;
-  // same rule as the eggs: research speed divides the timer, so all four nodes
-  // keep paying and no ceiling discards the last of them
+  const isPalierSpecial = !!node && node.max === 1 && node.special && !node.masteryKey &&
+    node.tier >= 1 && node.tier <= 4;
+  const raw = isPalierSpecial
+    ? PAL_SPECIAL_T[node.tier - 1]
+    : (node.times[Math.min(level - 1, node.times.length - 1)] || 0);
+  // V476: a 0/1 Palier bonus takes the full 0->5 duration of that Palier.
+  // Mastery keys keep their dedicated seven-day timer.
   return Math.max(0, Math.round(raw / (1 + treeSum(s, "research") / 100)));
 }
 /* total daily raid keys granted by the tree, and how many are still unassigned */
@@ -2405,7 +2898,9 @@ function raidKeyFree(s) { return Math.max(0, raidKeyGrants(s) - raidKeyAssigned(
 function raidKeyCapFor(s, raid) {
   return RULES.RAID_KEY_CAP + ((s.raidKeyAlloc || {})[raid] || 0);
 }
-/* forge batch size: the game reaches x5 on its own, the tree finishes x10 */
+/* Forge batch progression.
+   Base is ×1. The first special node is an additive +2, so it moves ×1 → ×3.
+   The following special nodes then land cleanly on ×4, ×5 and finally ×10. */
 function forgeBatch(s) {
   return Math.min(RULES.FORGE_BATCH_MAX,
     RULES.FORGE_BATCH_BASE + treeSum(s, "forgeMulti") + treeSum(s, "forgeMult"));
@@ -2420,29 +2915,34 @@ function forgeBatch(s) {
    -------------------------------------------------------------------------- */
 /* Two different families: one lengthens the window, the other fattens what it
    pays. They used to be the same flat "afk" number. */
-function afkCapHours(s) { return RULES.AFK_BASE_HOURS * (1 + treeSum(s, "afkTime") / 100); }
-function afkGainMul(s) { return 1 + treeSum(s, "afkGain") / 100; }
+function afkCapHours(s) { return Math.min(16, RULES.AFK_BASE_HOURS * (1 + treeSum(s, "afkTime") / 100)); }
+const AUTONOMY_BASE_YIELD_PCT_PER_HOUR = 10;
+const AUTONOMY_MAX_YIELD_PCT_PER_HOUR = 25;
+const AUTONOMY_RESOURCE_EFFECT = {
+  minerai: "afkMinerai",
+  essence: "afkEssence",
+  eclat: "afkEclat",
+  gold: "afkGold"
+};
+function autonomyYieldPct(s, resource) {
+  const effect = AUTONOMY_RESOURCE_EFFECT[resource] || AUTONOMY_RESOURCE_EFFECT.gold;
+  return Math.min(AUTONOMY_MAX_YIELD_PCT_PER_HOUR,
+    AUTONOMY_BASE_YIELD_PCT_PER_HOUR + Math.max(0, treeSum(s, effect)));
+}
+/* Compatibility helper retained for older UI/diagnostics; resource defaults to Or. */
+function afkGainMul(s, resource) { return autonomyYieldPct(s, resource || "gold") / AUTONOMY_BASE_YIELD_PCT_PER_HOUR; }
 function harvestCapSeconds(s) { return afkCapHours(s) * 3600; }
 function harvestEfficiency(s) { return Math.min(100, treeSum(s, "harvestEff")); }
 
-/* Per hour, efficiency already applied. The three raid-referenced resources use
-   the level the player has actually reached -- no key is spent, no raid is won
-   and no level is ever unlocked by this. PE is deliberately absent: it stays
-   exclusive to the Raid Évolution. */
+/* V496: each Autonomy reserve starts at 10%/h and reaches 25%/h only with its Tree branch maxed. */
 function harvestRates(s) {
-  const eff = 1 + harvestEfficiency(s) / 100;
   return {
-    // Section 7: half of what the Raid Minerai currently pays, per hour. It
-    // already read the real reward at the level the player has reached, so an
-    // Ascension is picked up on its own -- only the share changed, 1.00 -> 0.50.
-    minerai: raidReward("minerai", s.raids.minerai.level) * 0.50 * eff,
-    essence: raidReward("familier", s.raids.familier.level) * 0.25 * eff,
-    eclat: raidReward("competence", s.raids.competence.level) * 0.25 * eff,
-    gold: raidReward("or", s.raids.or.level) * 0.25 * eff * afkGainMul(s),
+    minerai: raidReward("minerai", s.raids.minerai.level) * autonomyYieldPct(s, "minerai") / 100,
+    essence: raidReward("familier", s.raids.familier.level) * autonomyYieldPct(s, "essence") / 100,
+    eclat: raidReward("competence", s.raids.competence.level) * autonomyYieldPct(s, "eclat") / 100,
+    gold: raidReward("or", s.raids.or.level) * autonomyYieldPct(s, "gold") / 100,
   };
 }
-/* Gold Autonomy pays 25% of the player's current Raid Or reward per hour.
-   It spends no key and never receives the Rebirth Gold bonus. */
 
 function harvestAdvance(s, seconds) {
   const h = s.harvest;
@@ -2505,8 +3005,7 @@ function harvestIsEmpty(s) {
 /* Section 16: everything worn together may add at most 20 % to either speed.
    The one exception is the exceptional roll -- a bonus that came out above its
    cap raises the ceiling to its own value, which is what makes such a piece
-   worth wearing at all. Rebirth's attack speed is not equipment and is not
-   capped here. */
+   worth wearing at all. */
 const SPEED_AFFIX_CAP = 20;
 function speedCapFor(s, key) {
   let cap = SPEED_AFFIX_CAP;
@@ -2518,11 +3017,48 @@ function speedCapFor(s, key) {
   });
   return cap;
 }
+/* V385 · Global Power now acknowledges the skills actually equipped.
+   Slots add a small baseline contribution. Level/Ascension progression is
+   weighted at 20% of offense so the score rises with useful skill progression
+   without multiplying the entire character sheet one-for-one. */
+function activeSkillPowerFactor(s) {
+  const ids = [];
+  const seen = {};
+  (s.skillSlots || []).forEach((id) => {
+    if (!id || seen[id] || !s.skills || !s.skills[id] || !SKILL_BY_ID[id]) return;
+    seen[id] = true;
+    ids.push(id);
+  });
+  if (!ids.length) return 1;
+  const avgGrowth = ids.reduce((sum, id) => {
+    const lv = Math.max(1, Number(s.skills[id].level) || 1);
+    return sum + (1 + (lv - 1) * SKILL_LEVEL_GROWTH);
+  }, 0) / ids.length;
+  const asc = starMul(s, "skill");
+  const slotBaseline = Math.min(5, ids.length) * 0.04;
+  const progression = Math.max(0, avgGrowth * asc - 1) * 0.20;
+  return Math.min(3, 1 + slotBaseline + progression);
+}
+
+/* V457 · An equipped skill level-up must always remain visible in the integer
+   Puissance HUD. Combat scaling is +20% per skill level; this tiny additive
+   score only prevents a real equipped-skill gain disappearing to integer
+   rounding. */
+function activeSkillLevelScore(s) {
+  const seen = {};
+  return (s.skillSlots || []).reduce((sum, id) => {
+    if (!id || seen[id] || !s.skills || !s.skills[id] || !SKILL_BY_ID[id]) return sum;
+    seen[id] = true;
+    return sum + Math.max(0, (Number(s.skills[id].level) || 1) - 1);
+  }, 0);
+}
+
 function computeDerived(s) {
-  let equipHP = 0, equipDmg = 0;
+  let equipHP = 0, equipDmg = 0, equipDefense = 0;
   Object.keys(s.equipped).forEach((slot) => {
     const it = s.equipped[slot];
     if (!it) return;
+    equipDefense += equipmentDefenseRating(it);
     /* "Arme Bonus Degats" scales your weapon, not your total damage. It read as
        a flat percentage while there were no slots to attach it to; now that all
        eight exist it belongs on the piece it names. Both branches scale the one
@@ -2544,23 +3080,31 @@ function computeDerived(s) {
 
   // the eight equipment families now live on their own slots, above; what stays
   // global here is the passive base, which is not equipment
-  const lifeMul = 1 + rb(s, "life") / 100 + petPct / 100 + forgePct / 200
+  const lifeMul = 1 + petPct / 100 + forgePct / 200
     + treeSum(s, "passHp") / 100;
-  const dmgMul  = 1 + rb(s, "damage") / 100 + petDmgPct / 100 + forgePct / 100
+  const dmgMul  = 1 + petDmgPct / 100 + forgePct / 100
     + treeSum(s, "passDmg") / 100;
 
   // random bonuses carried by equipped gear
   const af = equippedAffixes(s);
   const A = (k) => af[k] || 0;
 
-  const maxHP = Math.floor((BASE.hp + s.stats.sante * STATS.SANTE.perPoint + equipHP) * lifeMul * (1 + A("hp") / 100));
-  const damage = Math.floor((BASE.damage + s.stats.degats * STATS.DEGATS.perPoint + equipDmg) * dmgMul * (1 + A("dmg") / 100));
-  const critChance = Math.min(CRIT_CHANCE_CAP, BASE.critChance + s.stats.crit * STATS.CRIT.perPoint + A("crit"));
-  const critMult = BASE.critMult + rb(s, "critdmg") / 100 + A("critdmg") / 100;
-  const critRed = Math.min(CRIT_RED_CAP, s.stats.critred * STATS.CRITRED.perPoint);
+  const heroHpStatPoints = Math.max(0, Number(s.stats.sante) || 0);
+  const heroDmgStatPoints = Math.max(0, Number(s.stats.degats) || 0);
+  const heroHpStatMul = 1 + heroHpStatPoints * STATS.SANTE.perPointPct / 100;
+  const heroDmgStatMul = 1 + heroDmgStatPoints * STATS.DEGATS.perPointPct / 100;
+  const heroHpStatFlat = heroHpStatPoints * STATS.SANTE.perPointFlat;
+  const heroDmgStatFlat = heroDmgStatPoints * STATS.DEGATS.perPointFlat;
+  const maxHP = Math.floor(((BASE.hp + equipHP) * heroHpStatMul + heroHpStatFlat) * lifeMul * (1 + A("hp") / 100));
+  const damage = Math.floor(((BASE.damage + equipDmg) * heroDmgStatMul + heroDmgStatFlat) * dmgMul * (1 + A("dmg") / 100));
+  const defense = Math.max(0, Math.round(equipDefense));
+  const defenseReduction = defenseReductionPct(defense);
+  const critChance = Math.min(CRIT_CHANCE_CAP, BASE.critChance + A("crit"));
+  const critMult = BASE.critMult + A("critdmg") / 100;
+  const critRed = Math.min(CRIT_RED_CAP, Math.max(0, Number(s.stats.critred) || 0) * STATS.CRITRED.perPoint);
   const atkSpeedAffix = Math.min(speedCapFor(s, "atkspeed"), A("atkspeed"));
   const moveSpeedAffix = Math.min(speedCapFor(s, "movespeed"), A("movespeed"));
-  const attackSpeed = BASE.attackSpeed * (1 + rb(s, "atkspeed") / 100) * (1 + atkSpeedAffix / 100)
+  const attackSpeed = BASE.attackSpeed * (1 + atkSpeedAffix / 100)
     * (el === "electrique" ? 1.08 : 1);
   const moveSpeed = BASE.moveSpeed * (1 + moveSpeedAffix / 100);
   const weapon = (s.equipped.arme && s.equipped.arme.weaponType) || "epee";
@@ -2573,33 +3117,48 @@ function computeDerived(s) {
   const doubleFactor = 1 + Math.min(100, A("double")) / 100;
   const skillFactor = 1 + ((treeSum(s, "skillDmg") + A("skilldmg")) / 100) * 0.25;
   const cooldownFactor = 1 + (Math.min(80, A("skillcd")) / 100) * 0.25;
+  const skillPowerFactor = activeSkillPowerFactor(s);
   const offense = damage * attackSpeed * weaponDef.speed * weaponDef.hit *
-    critFactor * doubleFactor * (1 + weaponBonus / 100) * skillFactor * cooldownFactor;
-  const dmgRedNow = Math.min(85, rb(s, "dmgred"));
+    critFactor * doubleFactor * (1 + weaponBonus / 100) * skillFactor * cooldownFactor * skillPowerFactor;
+  const dmgRedNow = 0;
   const blockNow = Math.min(75, A("block"));
-  const lifeStealNow = Math.max(0, rb(s, "lifesteal") + A("lifesteal"));
-  const regenNow = Math.max(0, rb(s, "regen"));
-  const mitigation = 1 / Math.max(0.15, 1 - dmgRedNow / 100);
+  const lifeStealNow = Math.max(0, A("lifesteal"));
+  const regenNow = 0;
+  const defenseMitigation = 1 / Math.max(0.30, 1 - defenseReduction / 100);
+  const mitigation = defenseMitigation / Math.max(0.15, 1 - dmgRedNow / 100);
   const blockFactor = 1 + blockNow / 200;
   const sustainFactor = 1 + Math.min(50, lifeStealNow) / 200 + Math.min(50, regenNow) / 250;
-  const effectiveHP = maxHP * mitigation * blockFactor * sustainFactor;
-  const power = Math.floor(Math.sqrt(Math.max(1, offense) * Math.max(1, effectiveHP)) * 1.5);
+  /* Normal enemies crit about 8% of the time for roughly +60% damage. Reflect
+     Crit Reduction in displayed Power using that real expected-damage effect,
+     rather than granting an arbitrary flat Power bonus. */
+  const critPressure = 0.08 * 0.60;
+  const critDefenseFactor = (1 + critPressure) /
+    (1 + critPressure * (1 - Math.min(CRIT_RED_CAP, critRed) / 100));
+  const effectiveHP = maxHP * mitigation * blockFactor * sustainFactor * critDefenseFactor;
+  const skillLevelScore = activeSkillLevelScore(s);
+  const rawPower = Math.floor(Math.sqrt(Math.max(1, offense) * Math.max(1, effectiveHP)) * 1.5) + skillLevelScore;
+  const heroStatPoints = heroLevelStatPoints(s);
+  const heroAllocatedPoints = heroAllocatedStatPoints(s);
+  const heroAvailablePoints = Math.max(0, Math.floor(Number(s.statPoints) || 0));
+  const heroStatPowerBonusPct = heroStatPoints * HERO_STAT_POWER_PER_POINT_PCT;
+  const heroStatPowerMul = 1 + heroStatPowerBonusPct / 100;
+  const power = Math.floor(rawPower * heroStatPowerMul);
 
   return {
-    maxHP, damage, attackSpeed, moveSpeed, critChance, critMult, critRed,
-    dmgRed: rb(s, "dmgred"), regen: rb(s, "regen"),
-    lifesteal: rb(s, "lifesteal") + A("lifesteal"),
-    bossDmg: rb(s, "bossdmg"),
+    maxHP, damage, defense, defenseReduction, attackSpeed, moveSpeed, critChance, critMult, critRed,
+    dmgRed: 0, regen: 0,
+    lifesteal: A("lifesteal"),
+    bossDmg: 0,
     // affix-only combat stats
     blockChance: blockNow,
     doubleAtk: Math.min(100, A("double")),
     meleeDmg: A("melee"), rangedDmg: A("ranged"),
     skillCdCut: Math.min(80, A("skillcd")),
+    skillPowerFactor, skillLevelScore,
+    heroStatPoints, heroAllocatedPoints, heroAvailablePoints, heroStatPowerBonusPct, heroStatPowerMul,
     affixes: af,
-    // gold / exp scaling belongs to Rebirth — the tree deliberately has no
-    // blanket "more of every resource" node
-    goldBonus: rb(s, "gold"),
-    expBonus: rb(s, "exp"),
+    // No retired Rebirth multiplier may affect rewards.
+    expBonus: 0,
     // tree-driven multipliers, applied at the point each resource is granted
     petPct, petDmgPct, petElem: el,
     skillDmgBonus: treeSum(s, "skillDmg") + A("skilldmg"),
@@ -2747,11 +3306,15 @@ function makeItem(slot, rarity, forgeLevel) {
   const wt = slot === "arme" ? WEAPON_LIST[Math.floor(Math.random() * WEAPON_LIST.length)] : undefined;
   // which stat a piece leads with comes from one table now, so a new slot
   // cannot be added without deciding what it is for
-  const roll = SINGLE_STAT_MUL * (0.9 + Math.random() * 0.4);
+  /* V558: tightly bounded stat rolls ensure higher rarity always wins at equal forge and mastery levels. */
+  const roll = SINGLE_STAT_MUL * (0.98 + Math.random() * 0.04);
   const dmg = MASTERY_STAT[slot] === "dmg" ? Math.floor(base * mul * roll) : 0;
   const hp = MASTERY_STAT[slot] === "hp" ? Math.floor(base * mul * 4 * roll) : 0;
   const name = SLOT_LABEL[slot] + " " + (RARITY_NAMES[equipRank(rarity)] || "");
-  return { id: rid(), slot, rarity, weaponType: wt, damage: dmg, hp, level: 0,
+  const masteryRank = equipmentMasteryInfo(S).rank;
+  return { id: rid(), slot, rarity, weaponType: wt, damage: dmg, hp,
+    level: masteryRank, upgradeLevel: 0,
     baseDamage: dmg, baseHp: hp, upgradeBaseLevel: 0, originalPower: dmg + hp,
-    power: dmg + hp, name: name.trim(), affixes: rollAffixes(rarity) };
+    power: dmg + hp, name: name.trim(), affixes: rollAffixes(rarity),
+    equipmentLevelModelVersion: 456 };
 }

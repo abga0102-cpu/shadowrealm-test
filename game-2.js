@@ -59,15 +59,15 @@ let dirty = false;
 let offlineRecap = null;
 
 /* -------- state mutation -------- */
-function update(fn) {
+function update(fn, opts) {
   const beforePower = Number(S.power || computePower(S) || 0);
   fn(S);
   S.power = computePower(S);
   D = computeDerived(S);
   const delta = Math.round(S.power - beforePower);
-  if (delta) queuePowerDelta(delta);
+  if (delta && !(opts && opts.suppressPowerDelta)) queuePowerDelta(delta);
   dirty = true;
-  scheduleRender();
+  if (!(opts && opts.skipRender)) scheduleRender();
 }
 function refreshDerived() { D = computeDerived(S); }
 
@@ -79,36 +79,101 @@ function refreshDerived() { D = computeDerived(S); }
    make every combat check fail for reasons that have nothing to do with the
    code being tested. */
 const SMOKE = /[?&]smoke=1(?:&|$)/.test(location.search);
+const SAVE_BACKUP_PREFIX = "shadowreach.save.backup.v340.";
+const SAVE_RESCUE_KEY = "shadowreach.save.rescue.v430";
+let saveLoadGuardV430 = { status: "pending", blocked: false, reason: "", error: "" };
+
+function hasLocalRecoveryV430() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) || "";
+      if (key === SAVE_RESCUE_KEY || key.indexOf(SAVE_BACKUP_PREFIX) === 0) {
+        const raw = localStorage.getItem(key);
+        if (raw && typeof JSON.parse(raw) === "object") return true;
+      }
+    }
+  } catch (_) { }
+  return false;
+}
+
+function publishSaveLoadGuardV430() {
+  try {
+    window.__srSaveLoadGuardV430 = Object.assign({}, saveLoadGuardV430, {
+      allowWrite: function () {
+        saveLoadGuardV430.blocked = false;
+        saveLoadGuardV430.reason = "user-authorized";
+        publishSaveLoadGuardV430();
+      }
+    });
+  } catch (_) { }
+}
+
 function saveNow() {
   if (SMOKE) { dirty = false; return; }
+  if (saveLoadGuardV430.blocked) {
+    console.warn("save blocked after failed local save load", saveLoadGuardV430.reason);
+    return false;
+  }
   try {
     S.lastSeen = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(S));
     dirty = false;
+    return true;
   } catch (e) { console.warn("save failed", e); }
+  return false;
 }
 function loadSave() {
-  if (SMOKE) return null;
+  if (SMOKE) {
+    saveLoadGuardV430 = { status: "smoke", blocked: false, reason: "", error: "" };
+    publishSaveLoadGuardV430();
+    return null;
+  }
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-    return migrate(JSON.parse(raw), "Héros");
-  } catch (e) { return null; }
+    if (!raw) {
+      const recoverable = hasLocalRecoveryV430();
+      saveLoadGuardV430 = {
+        status: "missing", blocked: recoverable,
+        reason: recoverable ? "main-missing-recovery-present" : "new-player", error: ""
+      };
+      publishSaveLoadGuardV430();
+      return null;
+    }
+    const loaded = migrate(JSON.parse(raw), "Héros");
+    saveLoadGuardV430 = { status: "loaded", blocked: false, reason: "", error: "" };
+    publishSaveLoadGuardV430();
+    return loaded;
+  } catch (e) {
+    saveLoadGuardV430 = {
+      status: "error", blocked: true, reason: "main-unreadable",
+      error: String(e && e.message || e || "unknown")
+    };
+    publishSaveLoadGuardV430();
+    console.warn("save load failed; automatic writes are blocked", e);
+    return null;
+  }
 }
 
 /* -------- daily reset & offline -------- */
-function applyDailyReset(s) {
-  const t = todayStr();
-  if (s.lastKeyReset !== t) {
-    RAID_IDS.forEach((r) => {
-      // tree-granted keys raise both the daily refill and the cap for that raid
-      const bonus = (s.raidKeyAlloc || {})[r] || 0;
-      s.raids[r].keys = Math.min(RULES.RAID_KEY_CAP + bonus,
-        s.raids[r].keys + RULES.RAID_FREE_KEYS + bonus);
-    });
-    s.adKeysToday = 0;
-    s.lastKeyReset = t;
-  }
+function applyRaidKeyReset(s, now) {
+  // V518: raid keys use ONLY the real device calendar. Never trust a supplied
+  // timestamp: callers may pass simulated time after using accelerators.
+  const keyDay = raidKeyResetDayKey(Date.now());
+  if (s.lastKeyReset === keyDay) return false;
+  RAID_IDS.forEach((r) => {
+    // tree-granted keys raise both the daily refill and the cap for that raid
+    const bonus = (s.raidKeyAlloc || {})[r] || 0;
+    s.raids[r].keys = Math.min(RULES.RAID_KEY_CAP + bonus,
+      s.raids[r].keys + RULES.RAID_FREE_KEYS + bonus);
+  });
+  s.adKeysToday = 0;
+  s.lastKeyReset = keyDay;
+  return true;
+}
+function applyDailyReset(s, now) {
+  const at = now == null ? simulatedNow(s) : Number(now);
+  applyRaidKeyReset(s);
+  const t = simulatedDateStr(s, (now == null ? Date.now() : Number(now) - Math.max(0, Number(s.simulatedMs) || 0)));
   if (s.eventDay !== t) { s.eventDay = t; s.eventClaims = {}; s.eventProgress = {}; }
   return s;
 }
@@ -129,11 +194,25 @@ function grantLevels(s) {
     s.level += 1;
     s.statPoints += RULES.STAT_POINTS_PER_LEVEL;
   }
+  /* V456: Hero level never changes the Roman equipment rank.
+     Equipment rank is owned exclusively by permanent Equipment Mastery. */
   if (s.level >= RULES.MAX_LEVEL) { s.exp = 0; s.ascensionAvailable = true; }
   return s;
 }
 
 /* -------- enemy / wave construction -------- */
+/* V380: abilities whose damage is not derived from enemy.dmg still need the
+   same global -40% damage pass. Attacks already based on enemy.dmg inherit the
+   nerf from the enemy balance authority and are intentionally not scaled twice. */
+function enemyAbilityDamageV380(raw) {
+  return Math.max(1, Math.floor(Math.max(0, Number(raw) || 0) * 0.60));
+}
+window.__srEnemyAbilityDamageV380 = enemyAbilityDamageV380;
+function enemyAbilityDamageV381(raw) {
+  return Math.max(1, Math.floor(enemyAbilityDamageV380(raw) * 0.50));
+}
+window.__srEnemyAbilityDamageV381 = enemyAbilityDamageV381;
+
 /* ---- elite abilities ------------------------------------------------------
    One per elite, taken from what its artwork already shows: the Chevalier has a
    shield, the Bete de Guerre is soaked in blood, the Seigneur burns. Each hooks
@@ -235,9 +314,8 @@ const ELITE_ABIL = {
     onLand(c, e) {
       if (!e.stored) return;
       // capped, so a long channel into the crystal cannot one-shot the hero
-      const back = Math.min(Math.floor(c.heroMaxHP * 0.30), Math.floor(e.stored * 0.6));
+      const back = damageHero(c, enemyAbilityDamageV381(Math.min(Math.floor(c.heroMaxHP * 0.30), Math.floor(e.stored * 0.6))));
       e.stored = 0;
-      c.heroHP -= back;
       addShake(c, 6);
       c.floats.push({ id: rid(), x: c.heroX, val: back, crit: true, color: "#3FA7FF", born: Date.now() });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
@@ -251,14 +329,14 @@ const ELITE_ABIL = {
     filter(c, e, dmg, src, crit) {
       if (!crit || e.shardCd > 0 || !e.alive) return dmg;
       e.shardCd = 3;                       // so a high-crit build is not simply deleted
-      const each = Math.max(1, Math.floor(c.heroMaxHP * 0.04));
+      const each = enemyAbilityDamageV381(c.heroMaxHP * 0.04);
       for (let k = 0; k < 3; k++) {
         c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX, color: "#B15CF6", kind: "magic", life: 0.35 });
         scheduleHit(c, 0.15 + k * 0.09, () => {
           if (c.status !== "fight") return;
-          c.heroHP -= each;
+          const dealt = damageHero(c, each);
           c.heroHit = 0.2;
-          c.floats.push({ id: rid(), x: c.heroX, val: each, crit: false, color: "#B15CF6", born: Date.now() });
+          c.floats.push({ id: rid(), x: c.heroX, val: dealt, crit: false, color: "#B15CF6", born: Date.now() });
           if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
         });
       }
@@ -349,8 +427,7 @@ const ELITE_ABIL = {
       e.stompCd = 12;
       addShake(c, 9);
       addBurst(c, "crit", c.heroX, "#E8B44A");
-      const hit = Math.max(1, Math.floor(c.heroMaxHP * 0.08));
-      c.heroHP -= hit;
+      const hit = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.08));
       c.floats.push({ id: rid(), x: c.heroX, val: hit, crit: true, color: "#E8B44A", born: Date.now() });
       // knocked back to the edge: melee has to walk the whole way in again,
       // which is the point -- a bow keeps firing, a dagger does not
@@ -408,8 +485,7 @@ const ELITE_ABIL = {
       if (dmg <= 0 || src !== "weapon") return dmg;
       const mult = (D && D.critMult) || BASE.critMult;
       const physical = crit && mult > 1 ? dmg / mult : dmg;
-      const back = Math.max(1, Math.floor(physical * 0.05));
-      c.heroHP -= back;
+      const back = damageHero(c, enemyAbilityDamageV381(physical * 0.05));
       c.floats.push({ id: rid(), x: c.heroX, val: back, crit: false, color: "#CFE0FF", born: Date.now() });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
       return dmg;
@@ -426,8 +502,7 @@ const ELITE_ABIL = {
       e._zone = (e._zone || 0) + dt;
       if (e._zone < 1) return;
       e._zone = 0;
-      const b = Math.max(1, Math.floor(c.heroMaxHP * 0.02));
-      c.heroHP -= b;
+      const b = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.02));
       c.floats.push({ id: rid(), x: c.heroX, val: b, crit: false, color: "#FF7A3D", born: Date.now() });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
     },
@@ -483,8 +558,7 @@ const ELITE_ABIL = {
         // two seconds of warning, then 40% of the hero's maximum, less whatever
         // he put up in the meantime -- Rempart or a heal is the answer
         const raw = Math.floor(c.heroMaxHP * 0.4);
-        const d = Math.max(1, Math.floor(raw * (1 - heroDmgRed(c) / 100)));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(raw * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.3;
         addShake(c, 11);
         addBurst(c, "crit", c.heroX, "#FF7A3D");
@@ -514,9 +588,9 @@ const ELITE_ABIL = {
         const d = Math.max(1, Math.floor(e.dmg * 0.8 * (1 - heroDmgRed(c) / 100)));
         scheduleHit(c, HIT_DELAY_RANGED, () => {
           if (c.status !== "fight") return;
-          c.heroHP -= d;
+          const dealt = damageHero(c, d);
           c.heroHit = 0.22;
-          c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#FF7A3D", born: Date.now() });
+          c.floats.push({ id: rid(), x: c.heroX, val: dealt, crit: false, color: "#FF7A3D", born: Date.now() });
           if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
         });
         return;
@@ -609,8 +683,7 @@ const ELITE_ABIL = {
       if (e.quakeWind > 0) {
         e.quakeWind = Math.max(0, e.quakeWind - dt);
         if (e.quakeWind > 0) return;
-        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.25 * (1 - heroDmgRed(c) / 100)));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.25 * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.3;
         c.heroX = 24;
         c.heroStun = 2;
@@ -643,8 +716,7 @@ const ELITE_ABIL = {
         e._ch = (e._ch || 0) + dt;
         if (e._ch < 0.5) return;
         e._ch = 0;
-        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.07 * (1 - heroDmgRed(c) / 100)));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.07 * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.2;
         c.projs.push({ id: rid(), x: e.x - 10, toX: c.heroX, color: "#FF7A3D", kind: "magic", life: 0.3 });
         c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#FF7A3D", born: Date.now() });
@@ -761,8 +833,7 @@ const ELITE_ABIL = {
         // it detonates where he stands: the closer you are, the worse it is
         const dist = Math.max(0, e.x - c.heroX);
         const near = Math.max(0, Math.min(1, 1 - dist / 220));
-        const d = Math.max(1, Math.floor(c.heroMaxHP * (0.05 + 0.25 * near) * (1 - heroDmgRed(c) / 100)));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * (0.05 + 0.25 * near) * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.3;
         addShake(c, 10);
         addBurst(c, "crit", c.heroX, "#FF5A5A");
@@ -792,8 +863,7 @@ const ELITE_ABIL = {
         if (e._claw < 1) return;
         e._claw = 0;
         // your own familiar, clawing at you
-        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.03));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.03));
         c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#B15CF6", born: Date.now() });
         if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
         return;
@@ -815,8 +885,7 @@ const ELITE_ABIL = {
         e.leapWind = Math.max(0, e.leapWind - dt);
         if (e.leapWind > 0) return;
         e.x = c.heroX + 34;                       // lands on top of him
-        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.18 * (1 - heroDmgRed(c) / 100)));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.18 * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.3;
         addShake(c, 10);
         addBurst(c, "crit", e.x, "#B15CF6");
@@ -866,8 +935,7 @@ const ELITE_ABIL = {
     filter(c, e, dmg, src) {
       if ((e.mutations || 0) >= 2) dmg = Math.max(1, Math.floor(dmg * 0.65));
       if ((e.mutations || 0) >= 3 && dmg > 0 && src !== "dot") {
-        const back = Math.max(1, Math.floor(dmg * 0.3));
-        c.heroHP -= back;
+        const back = damageHero(c, enemyAbilityDamageV381(dmg * 0.3));
         c.floats.push({ id: rid(), x: c.heroX, val: back, crit: false, color: "#8FEFF4", born: Date.now() });
         if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
       }
@@ -900,8 +968,7 @@ const ELITE_ABIL = {
         e._grip = (e._grip || 0) + dt;
         if (e._grip < 0.5) return;
         e._grip = 0;
-        const d = Math.max(1, Math.floor(c.heroMaxHP * 0.04 * (1 - heroDmgRed(c) / 100)));
-        c.heroHP -= d;
+        const d = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.04 * (1 - heroDmgRed(c) / 100)));
         c.heroHit = 0.2;
         c.floats.push({ id: rid(), x: c.heroX, val: d, crit: false, color: "#8FEFF4", born: Date.now() });
         if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
@@ -1101,17 +1168,42 @@ function retryPendingBoss() {
   return true;
 }
 
-function megaBossFloors(s) {
-  if (!megaRaidUnlocked(s)) return [];
-  return Object.keys((s && s.bossClears) || {}).filter((k) => s.bossClears[k])
-    .map((k) => parseInt(k, 10))
-    .filter((f) => Number.isFinite(f) && isBoss(f))
-    .sort((a, b) => a - b);
+/* V498 · La progression Méga est une vraie échelle séquentielle.
+   Une fois le mode déverrouillé, le niveau suivant dépend uniquement des
+   Méga-Boss déjà vaincus : niveau 10 = 10e combat, donc disponible après
+   les 9 premiers. Les Boss Campagne restent des références de puissance,
+   jamais des verrous supplémentaires. */
+function megaMaxLevel() {
+  const maxCampaignFloor = Math.max(10, Number(window.__srCampaignMaxFloor) || 800);
+  return Math.max(1, Math.floor(maxCampaignFloor / 10));
+}
+function megaContiguousClears(s) {
+  const claimed = (s && s.megaBossClears) || {};
+  const max = megaMaxLevel();
+  let level = 0;
+  while (level < max && claimed[String((level + 1) * 10)]) level++;
+  return level;
 }
 function nextMegaBossFloor(s) {
   if (!megaRaidUnlocked(s)) return null;
+  const nextLevel = megaContiguousClears(s) + 1;
+  return nextLevel <= megaMaxLevel() ? nextLevel * 10 : null;
+}
+function megaBossFloors(s) {
+  if (!megaRaidUnlocked(s)) return [];
   const claimed = (s && s.megaBossClears) || {};
-  return megaBossFloors(s).find((f) => !claimed[String(f)]) || null;
+  const next = nextMegaBossFloor(s);
+  const visibleThrough = next ? megaLevelForFloor(next) : megaMaxLevel();
+  const floors = [];
+  for (let level = 1; level <= visibleThrough; level++) floors.push(level * 10);
+  /* Preserve replay access/visibility for any legitimate legacy clear that
+     sits above a gap, without letting it skip the sequential unlock chain. */
+  Object.keys(claimed).forEach((k) => {
+    const floor = parseInt(k, 10);
+    if (claimed[k] && Number.isFinite(floor) && isBoss(floor) &&
+        floor <= megaMaxLevel() * 10 && !floors.includes(floor)) floors.push(floor);
+  });
+  return floors.sort((a, b) => a - b);
 }
 /* Build from the exact campaign Boss path, then multiply its two combat power
    axes. noFastback is deliberate: a Mega-Boss is a fresh challenge even when
@@ -1125,6 +1217,9 @@ function makeMegaBossEnemy(floor) {
     floor, boss: true, abils: def.abils, noFastback: true, x: AW - 60 });
   enemy.hp = enemy.maxHP = Math.max(1, Math.floor(enemy.maxHP * 10));
   enemy.dmg = Math.max(1, Math.floor(enemy.dmg * 10));
+  /* V480 invariant: every Mega stage is one Boss, never an Elite. */
+  enemy.boss = true;
+  enemy.elite = false;
   enemy.mega = true;
   return enemy;
 }
@@ -1133,7 +1228,7 @@ function startMegaBoss(floor, onEnd) {
   floor = parseInt(floor, 10);
   const key = String(floor);
   const claimed = !!(S.megaBossClears && S.megaBossClears[key]);
-  if (!megaRaidUnlocked(S) || !Number.isFinite(floor) || !isBoss(floor) || !S.bossClears[key] ||
+  if (!megaRaidUnlocked(S) || !Number.isFinite(floor) || !isBoss(floor) ||
       (!claimed && floor !== nextMegaBossFloor(S))) return false;
   flushRewards();
   const enemy = makeMegaBossEnemy(floor);
@@ -1171,6 +1266,7 @@ function startRaid(raidId, useUniversal, onEnd) {
   if (!useUniversal && raid.keys <= 0) return false;
   if (useUniversal && S.universalKeys <= 0) return false;
   const level = raid.level;
+  if (!raidCampaignReady(S, level)) return false;
   const dv = D;
   const wave = spawnRaidWave(raidId, level);
   const reward = raidReward(raidId, level);
@@ -1288,6 +1384,21 @@ function petElemOf(c, dv) {
 function heroDmgRed(c) {
   return Math.min(85, (D.dmgRed || 0) + fxVal(c, "buffs", "rempart"));
 }
+/* V435 · One permanent-Defense sink for every packet that reaches the hero.
+   Existing Crit/Rempart/ability semantics stay where they already are; this
+   final layer only applies the new gear Defense once, so normal attacks, Boss
+   mechanics, Raids, Mega-Bosses and Arena live combat cannot drift apart. */
+function damageHero(c, amount, opts) {
+  let dealt = Math.max(0, Number(amount) || 0);
+  if (!c || dealt <= 0) return 0;
+  if (!(opts && opts.ignoreDefense)) {
+    const red = Math.min(DEFENSE_REDUCTION_CAP, Math.max(0, Number(D && D.defenseReduction) || 0));
+    if (red > 0) dealt = Math.max(1, Math.floor(dealt * (1 - red / 100)));
+  }
+  c.heroHP -= dealt;
+  return dealt;
+}
+window.__srDamageHeroV435 = damageHero;
 function fxList(c, bag) {
   const out = [], now = Date.now();
   const src = (c && c[bag]) || {};
@@ -1359,6 +1470,7 @@ function applyDamageToEnemy(c, e, dmg, crit, color, src) {
       dmg=dmg/Math.max(1,D.critMult||1)*eff;
     }
     const extraRed=(e._arenaRempart&&Date.now()<e._arenaRempart.until)?e._arenaRempart.value:0;
+    dmg*=1-Math.min(DEFENSE_REDUCTION_CAP,Math.max(0,Number(ap.defenseReduction)||0))/100;
     dmg*=1-Math.min(85,Math.max(0,(ap.dmgRed||0)+extraRed))/100;
   }
   if (damageSrc !== "weapon") dmg *= 1 + fxVal(c, "debuffs", "vuln") / 100;
@@ -1414,7 +1526,7 @@ function resolveArenaBotBasicHit(c,e,dv,abs,delayExtra=0) {
   }
   scheduleHit(c,(e.ranged?HIT_DELAY_RANGED:HIT_DELAY_MELEE)+delayExtra,()=>{
     if(c.status!=="fight")return;
-    c.heroHP-=dmg;
+    dmg=damageHero(c,dmg);
     if(ap.lifesteal>0)e.hp=Math.min(e.maxHP,e.hp+dmg*ap.lifesteal/100);
     c.heroHit=0.22;
     abs.forEach((a)=>{if(a.onLand)a.onLand(c,e);});
@@ -1453,11 +1565,11 @@ function tick() {
       const ap=ae.arenaProfile,nowA=Date.now();
       const regBuff=(ae._arenaRegen&&nowA<ae._arenaRegen.until)?ae._arenaRegen.value:0;
       const reg=(ap.regen||0)+regBuff;if(reg>0)ae.hp=Math.min(ae.maxHP,ae.hp+ae.maxHP*(reg/100)*dt);
-      if(ap.petElem==="feu"){c._arenaBotBurn=(c._arenaBotBurn||0)+dt;if(c._arenaBotBurn>=1){c._arenaBotBurn=0;let bd=ap.damage*.06*(ap.petElem==="toxique"?1.10:1);bd*=1-heroDmgRed(c)/100;c.heroHP-=Math.max(1,Math.floor(bd));if(c.heroHP<=0){c.heroHP=0;c.status="lost";}}}
+      if(ap.petElem==="feu"){c._arenaBotBurn=(c._arenaBotBurn||0)+dt;if(c._arenaBotBurn>=1){c._arenaBotBurn=0;let bd=ap.damage*.06*(ap.petElem==="toxique"?1.10:1);bd*=1-heroDmgRed(c)/100;damageHero(c,Math.max(1,Math.floor(bd)));if(c.heroHP<=0){c.heroHP=0;c.status="lost";}}}
       const poison=(c._arenaHeroPoison&&nowA<c._arenaHeroPoison.until)?c._arenaHeroPoison.value:0;
-      if(poison>0){c._arenaPoisonTick=(c._arenaPoisonTick||0)+dt;if(c._arenaPoisonTick>=1){c._arenaPoisonTick=0;let pd=c.heroMaxHP*(poison/100)/8*(ap.petElem==="toxique"?1.10:1);pd*=1-heroDmgRed(c)/100;c.heroHP-=Math.max(1,Math.floor(pd));if(c.heroHP<=0){c.heroHP=0;c.status="lost";}}}
+      if(poison>0){c._arenaPoisonTick=(c._arenaPoisonTick||0)+dt;if(c._arenaPoisonTick>=1){c._arenaPoisonTick=0;let pd=c.heroMaxHP*(poison/100)/8*(ap.petElem==="toxique"?1.10:1);pd*=1-heroDmgRed(c)/100;damageHero(c,Math.max(1,Math.floor(pd)));if(c.heroHP<=0){c.heroHP=0;c.status="lost";}}}
       (ap.skills||[]).forEach((entry,i)=>{const def=entry.def||entry;if(!def)return;const key='b'+i;if(c.botSkillCds[key]==null)c.botSkillCds[key]=.8+i*.55;c.botSkillCds[key]-=dt;if(c.botSkillCds[key]>0)return;const lv=entry.level||1,stars=entry.stars||0,cd=Math.max(1,def.cd*(1-Math.min(80,ap.skillCd||0)/100));c.botSkillCds[key]=cd;
-        if(def.mult){const mult=skillMult(def)*(1+(lv-1)*SKILL_LEVEL_GROWTH)*ascendPowerMul(stars,'skill');let sd=ap.damage*mult*(1+(ap.skillDmg||0)/100);sd*=1-heroDmgRed(c)/100;if(ap.petElem==='toxique')sd*=1.10;const vuln=(c._arenaHeroVuln&&nowA<c._arenaHeroVuln.until)?c._arenaHeroVuln.value:0;sd*=1+vuln/100;c.heroHP-=Math.max(1,Math.floor(sd));c.floats.push({id:rid(),x:c.heroX,val:Math.floor(sd),crit:false,color:def.color||'#C79BFF',born:nowA,text:def.name});if(c.heroHP<=0){c.heroHP=0;c.status='lost';}}
+        if(def.mult){const mult=skillMult(def)*(1+(lv-1)*SKILL_LEVEL_GROWTH)*ascendPowerMul(stars,'skill');let sd=ap.damage*mult*(1+(ap.skillDmg||0)/100);sd*=1-heroDmgRed(c)/100;if(ap.petElem==='toxique')sd*=1.10;const vuln=(c._arenaHeroVuln&&nowA<c._arenaHeroVuln.until)?c._arenaHeroVuln.value:0;sd*=1+vuln/100;sd=damageHero(c,Math.max(1,Math.floor(sd)));c.floats.push({id:rid(),x:c.heroX,val:sd,crit:false,color:def.color||'#C79BFF',born:nowA,text:def.name});if(c.heroHP<=0){c.heroHP=0;c.status='lost';}}
         if(def.heal){const h=ae.maxHP*skillHeal(def,lv)/100;ae.hp=Math.min(ae.maxHP,ae.hp+h);}
         if(def.eff){const ef=skillEff(def,lv),until=nowA+ef.dur*1000;if(ef.stat==='dmg')ae._arenaForce={value:ef.value,until};else if(ef.stat==='dmgRed')ae._arenaRempart={value:ef.value,until};else if(ef.stat==='haste')ae._arenaHaste={value:ef.value,until};else if(ef.stat==='regen')ae._arenaRegen={value:ef.value,until};else if(ef.stat==='slow')c._arenaHeroSlow={value:ef.value,until};else if(ef.stat==='vuln')c._arenaHeroVuln={value:ef.value,until};else if(ef.stat==='poison')c._arenaHeroPoison={value:ef.value,until};}
       });
@@ -1478,8 +1590,7 @@ function tick() {
     c._burnHero = (c._burnHero || 0) + dt;
     if (c._burnHero >= 1) {
       c._burnHero = 0;
-      const b = Math.max(1, Math.floor(c.heroMaxHP * 0.005 * c.burn));
-      c.heroHP -= b;
+      const b = damageHero(c, enemyAbilityDamageV381(c.heroMaxHP * 0.005 * c.burn));
       c.floats.push({ id: rid(), x: c.heroX, val: b, crit: false, color: "#FF7A3D", born: now });
       if (c.heroHP <= 0) { c.heroHP = 0; c.status = "lost"; }
     }
@@ -1570,7 +1681,7 @@ function tick() {
           life: vfxDur(fxKind), max: vfxDur(fxKind) });
         if (c.skillFxs.length > 4) c.skillFxs.shift();
         if (def.mult > 0) {
-          const sdmg = Math.floor(skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level)
+          const sdmg = Math.floor((window.__srV284SkillDamage ? window.__srV284SkillDamage(def, S.skills[sid].level) : skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level))
             * (1 + (dv.skillDmgBonus || 0) / 100));
           const wide = def.type === "AOE" || def.type === "CHAINE" || def.type === "DEBUFF";
           const struck = wide ? c.enemies.filter((e) => e.alive) : [target];
@@ -1664,7 +1775,7 @@ function tick() {
         // not, so a mage's bolt landed before it had left his hand
         scheduleHit(c, e.ranged ? HIT_DELAY_RANGED : HIT_DELAY_MELEE, () => {
           if (c.status !== "fight") return;
-          c.heroHP -= dmg;
+          dmg = damageHero(c, dmg);
           c.heroHit = 0.22;
           abs.forEach((a) => { if (a.onLand) a.onLand(c, e); });
           addShake(c, crit ? 4 : 2);
@@ -1755,7 +1866,7 @@ function handleCombatEnd(c) {
   const won = c.status === "won";
   update((s) => {
     const dv = computeDerived(s);
-    const earnedGold = Math.floor(rewardAcc.gold * (1 + dv.goldBonus / 100) * goldMul(s));
+    const earnedGold = Math.floor(rewardAcc.gold * goldMul(s));
     const earnedExp = Math.floor(rewardAcc.exp * (1 + dv.expBonus / 100));
     s.gold += earnedGold;
     s.exp += earnedExp;
@@ -1802,25 +1913,6 @@ function handleCombatEnd(c) {
         s.step = 1;
         const pendingBoss = Number(s.pendingBossFloor || 0);
         if (!(pendingBoss && pendingBoss === s.floor + 1)) s.floor += 1;
-        // Saut d'étage : uniquement après un étage dont tous les ennemis étaient verts,
-        // et jamais si l'étage à sauter est un Élite, un Boss ou un Méga Étage.
-        const nextFloor = s.floor;
-        const weakFight = !c.boss && !c.elite && c.enemies.length > 0 &&
-          c.enemies.every((e) => threatOf(c, e) === "easy");
-        const skipPct = rb(s, "floorSkip");
-        if (!(pendingBoss && pendingBoss === s.floor + 1) && weakFight && skipPct > 0 && !isElite(nextFloor) && !isBoss(nextFloor) && !isMegaFloor(nextFloor) &&
-            Math.random() * 100 < skipPct) {
-          let kills = 0;
-          for (let stp = 1; stp <= RULES.STEPS_PER_FLOOR; stp++) kills += enemyCount(nextFloor, stp);
-          const skipGoldBase = kills * goldReward(nextFloor);
-          const skipExpBase = kills * expReward(nextFloor);
-          const skipGold = Math.floor(skipGoldBase * (1 + dv.goldBonus / 100) * goldMul(s));
-          const skipExp = Math.floor(skipExpBase * (1 + dv.expBonus / 100));
-          s.gold += skipGold; s.exp += skipExp; grantLevels(s);
-          s.eventProgress.floors = (s.eventProgress.floors || 0) + 1;
-          skipNotice = { floor: nextFloor, gold: skipGold, exp: skipExp };
-          s.floor += 1;
-        }
         floorFlash = { floor: s.floor, until: Date.now() + RULES.FLOOR_FLASH_MS };
       }
       s.recordFloor = Math.max(s.recordFloor, s.floor);
@@ -1831,7 +1923,11 @@ function handleCombatEnd(c) {
       else s.floor = Math.max(cp, s.floor - 1);
       s.step = 1;
     }
-  });
+  }, { skipRender: route !== "accueil" });
+  // V438: campaign progression is autonomous. Completing a wave while the
+  // player is inspecting Equipment (or another interactive screen) must not
+  // replace #screen and destroy open panels / horizontal scroll positions.
+  if (route !== "accueil") renderHUD();
   setTimeout(startCampaign, 40);
 }
 
@@ -1842,20 +1938,27 @@ function flushRewards() {
   if (rewardAcc.gold <= 0 && rewardAcc.exp <= 0) return;
   update((st) => {
     const dv = computeDerived(st);
-    const paidGold = Math.floor(rewardAcc.gold * (1 + dv.goldBonus / 100) * goldMul(st));
+    const paidGold = Math.floor(rewardAcc.gold * goldMul(st));
     const paidExp = Math.floor(rewardAcc.exp * (1 + dv.expBonus / 100));
     st.gold += paidGold;
     st.exp += paidExp;
     addPaidFloorRewards(c.floor, paidGold, paidExp);
     rewardAcc.gold = 0; rewardAcc.exp = 0;
     grantLevels(st);
-  });
+  }, { skipRender: route !== "accueil" });
+  // Background campaign rewards must not destroy the interactive DOM of other
+  // screens. Keep the persistent HUD current without rebuilding #screen.
+  if (route !== "accueil") renderHUD();
 }
 
 /* =========================================================================
    ACTIONS
    ========================================================================= */
 function allocStat(key, pts) {
+  /* Chance Critique was removed from level allocation in V390. Whitelist the
+     three remaining destinations so stale cached buttons cannot spend points
+     into a retired stat. */
+  if (!["sante", "degats", "critred"].includes(key)) return;
   update((s) => {
     const n = Math.min(pts, s.statPoints);
     if (n <= 0) return;
@@ -1869,11 +1972,29 @@ function allocStat(key, pts) {
    Each tier now has a floor. A roll above what the Forge can produce steps down
    to the best tier it can, so the odds are never wasted, they just land lower. */
 const RARITY_MIN_FORGE = {
-  COMMUN: 1, RARE: 1, EPIQUE: 6, MYTHIQUE: 14,
-  ARTEFACT: 22, LEGENDAIRE: 30, INFERNAL: 37, IMMORTEL: 43, DIVIN: 48,
+  COMMUN: 1, PEU_COMMUN: 4, RARE: 12, EPIQUE: 15, HEROIQUE: 22, MYTHIQUE: 28,
+  ARTEFACT: 35, LEGENDAIRE: 40, INFERNAL: 999, IMMORTEL: 45, DIVIN: 48,
 };
-function rarityAllowed(rarity, forgeLevel) {
-  return forgeLevel >= (RARITY_MIN_FORGE[rarity] || 1);
+function rarityAllowed(rarity, forgeLevel, state) {
+  const st = state || S;
+  if (rarity === "INFERNAL") return false;
+  const stars = starsOf(st, "forge");
+  let min = RARITY_MIN_FORGE[rarity] || 1;
+  if (stars >= 1 && rarity === "PEU_COMMUN") min = 1;
+  if (stars >= 2 && rarity === "RARE") min = 1;
+  if (forgeLevel < min) return false;
+  if (rarity === "DIVIN") return (st.ascension || 0) >= 1;
+  return true;
+}
+function forgeRarityRequirement(rarity, state) {
+  const st = state || S;
+  const stars = starsOf(st, "forge");
+  if (rarity === "INFERNAL") return { text: "Rareté retirée", pill: "RETIRÉ" };
+  if (rarity === "PEU_COMMUN" && stars >= 1) return { text: "Plancher après Ascension équipement I", pill: "★" };
+  if (rarity === "RARE" && stars >= 2) return { text: "Plancher après Ascension équipement II", pill: "★★" };
+  if (rarity === "DIVIN") return { text: "Ascension personnage · Forge 48", pill: "ASC." };
+  const min = RARITY_MIN_FORGE[rarity] || 1;
+  return { text: "Forge " + min, pill: String(min) };
 }
 /* The gate was real in the roll but not in the rates: getRates still handed a
    locked tier its share, capRarityForForge quietly stepped that roll down, and
@@ -1884,9 +2005,9 @@ function rarityAllowed(rarity, forgeLevel) {
    once, and let the roll and every display read the same table. */
 function gateForgeRates(rates, forgeLevel) {
   const out = Object.assign({}, rates);
-  let top = EQUIP_RARITY_ORDER[0];
-  EQUIP_RARITY_ORDER.forEach((r) => { if (rarityAllowed(r, forgeLevel)) top = r; });
-  EQUIP_RARITY_ORDER.forEach((r) => {
+  let top = orderFor("forge")[0];
+  orderFor("forge").forEach((r) => { if (rarityAllowed(r, forgeLevel)) top = r; });
+  orderFor("forge").forEach((r) => {
     if (rarityAllowed(r, forgeLevel)) return;
     out[top] = (out[top] || 0) + (out[r] || 0);
     out[r] = 0;
@@ -1896,9 +2017,9 @@ function gateForgeRates(rates, forgeLevel) {
 /* Kept as a guard rather than a step: with gated rates a roll can no longer
    land on a locked tier, but nothing downstream should depend on that. */
 function capRarityForForge(rarity, forgeLevel) {
-  let i = EQUIP_RARITY_ORDER.indexOf(rarity);
-  while (i > 0 && !rarityAllowed(EQUIP_RARITY_ORDER[i], forgeLevel)) i -= 1;
-  return EQUIP_RARITY_ORDER[i];
+  let i = orderFor("forge").indexOf(rarity);
+  while (i > 0 && !rarityAllowed(orderFor("forge")[i], forgeLevel)) i -= 1;
+  return orderFor("forge")[i];
 }
 /* What the eight tiers mean, in one place, behind the (i). */
 /* Section 14's filter, one row per rarity. Tapping a row keeps or discards it;
@@ -1907,42 +2028,72 @@ function capRarityForForge(rarity, forgeLevel) {
    would change nothing today and everything the day it unlocks. */
 function showForgeFilterPicker() {
   const lv = S.forge.level;
-  const rows = EQUIP_RARITY_ORDER.map((r) => {
+  const batches = [1, 3, 5, 10];
+  const unlockedBatch = Math.max(1, Math.floor(typeof forgeBatch === "function" ? forgeBatch(S) : 1));
+  const selectedBatch = Math.max(1, Math.floor(Number(S.forge.autoBatch) || 1));
+  const discarded = typeof forgeDiscarded === "function" ? forgeDiscarded(S) : [];
+  const rows = orderFor("forge").map((r) => {
     const c = RARITY[r].c;
     const kept = S.forge.keep[r] !== false;
     const reachable = rarityAllowed(r, lv);
-    return '<div class="itemRow" style="border-left-color:' + c + ";opacity:" + (reachable ? 1 : 0.45) +
-      '" data-act="forgeKeep" data-arg="' + r + '">' +
-      '<div class="imini" style="width:22px;height:22px;border-color:' + c + '80">' +
-        ic(kept ? "bag" : "trash", 12) + "</div>" +
-      '<div class="flex1"><div class="b small" style="color:' + c + '">' + RARITY[r].label + "</div>" +
-      '<div class="mute tiny b">' + (kept ? "gardé · va dans l'Inventaire"
-        : "recyclé en poussière") +
-        (reachable ? "" : " · hors de portée à la Forge " + lv) + "</div></div>" +
-      '<div class="tgl ' + (kept ? "on" : "off") + '" style="pointer-events:none"><i></i></div>' +
-      "</div>";
+    const req = forgeRarityRequirement(r);
+    return '<button type="button" class="srForgeRarity458 ' + (kept ? "keep" : "recycle") +
+      (reachable ? "" : " locked") + '" style="--rc:' + c + '" data-act="forgeKeep" data-arg="' + r + '">' +
+      '<span class="srForgeRarityIcon458">' + ic(kept ? "bag" : "trash", 13) + "</span>" +
+      '<span class="srForgeRarityText458"><b>' + RARITY[r].label + '</b><small>' +
+        (kept ? "GARDÉ" : "RECYCLÉ") + (reachable ? "" : " · " + req.pill) + "</small></span>" +
+      '<span class="srForgeRarityState458">' + (kept ? "✓" : "♻") + "</span></button>";
   }).join("");
+  const batchButtons = batches.map((n) => {
+    const locked = n > unlockedBatch;
+    return '<button type="button" class="srBatch266 ' + (!locked && selectedBatch === n ? "on" : "") +
+      (locked ? " srBatchLocked266" : "") + '" data-act="autoForgeBatch266" data-arg="' + n + '"' +
+      (locked ? ' disabled aria-disabled="true"' : "") + ">" + (locked ? "🔒 " : "") + "×" + n + "</button>";
+  }).join("");
+
   openModal(
-    '<div class="mute tiny" style="line-height:1.45;margin-bottom:2px">' +
-      "Les raretés décochées sont recyclées dès la sortie de la Forge, " +
-      "pour la même poussière que l'Inventaire aurait payée.</div>" +
-    '<div class="row gap6 mt8">' +
-      btn(ic(S.forge.filter ? "check" : "cross", 13) +
-          (S.forge.filter ? "Filtre actif" : "Filtre inactif"),
-        { cls: S.forge.filter ? "purple" : "dark", small: true, act: "forgeFilterToggle" }) +
-      btn("Tout garder", { cls: "ghost", small: true, act: "forgeKeepAll" }) +
+    '<div class="srForgeFilterModal458">' +
+      '<section class="srForgeFilterSection458 auto">' +
+        '<div class="srForgeFilterSectionHead458"><div><b>AUTO-FORGE</b><small>Réglages de la forge automatique</small></div>' +
+          '<span class="pill" style="color:' + (S.forge.autoForge ? "var(--greenLit)" : "var(--dim)") +
+          ';border-color:' + (S.forge.autoForge ? "var(--green)" : "var(--line)") + '">' +
+          (S.forge.autoForge ? "ACTIF" : "INACTIF") + "</span></div>" +
+        '<div class="srForgeAutoTop458">' +
+          '<div class="tgl ' + (S.forge.autoForge ? "on" : "off") + '" data-act="autoForge"><span>' +
+            (S.forge.autoForge ? "● AUTO" : "AUTO") + "</span><i></i></div>" +
+          '<div class="srForgeAutoCycle458"><span>Pièces / cycle</span><b>×' + selectedBatch + "</b></div>" +
+        "</div>" +
+        '<div id="srAutoBatch266" class="srAutoBatch458">' +
+          '<div class="srBatchBtns266">' + batchButtons + "</div>" +
+          '<div class="srBatchGateNote266 mute tiny mt3">Maximum actuellement débloqué : ×' + unlockedBatch + ".</div>" +
+        "</div>" +
+      "</section>" +
+
+      '<section class="srForgeFilterSection458 filter">' +
+        '<div class="srForgeFilterSectionHead458"><div><b>FILTRE AUTO-RECYCLAGE</b><small>Choisis ce que la Forge garde ou recycle</small></div>' +
+          '<span class="pill" style="color:' + (S.forge.filter ? "var(--purpleLit)" : "var(--dim)") +
+          ';border-color:' + (S.forge.filter ? "var(--purple)" : "var(--line)") + '">' +
+          (S.forge.filter ? discarded.length + " recyclée" + (discarded.length > 1 ? "s" : "") : "INACTIF") + "</span></div>" +
+        '<div class="srForgeFilterActions458">' +
+          btn(ic(S.forge.filter ? "check" : "cross", 13) + (S.forge.filter ? "Filtre actif" : "Activer le filtre"),
+            { cls: S.forge.filter ? "purple" : "dark", small: true, act: "forgeFilterToggle" }) +
+          btn("Tout garder", { cls: "ghost", small: true, act: "forgeKeepAll" }) +
+        "</div>" +
+        '<div class="srForgeFilterHint458">Les raretés marquées <b>RECYCLÉ</b> deviennent automatiquement de la Poussière dès leur sortie de Forge.</div>' +
+        '<div class="srForgeRarityGrid458">' + rows + "</div>" +
+      "</section>" +
     "</div>" +
-    '<div class="mt6">' + rows + "</div>" +
-    '<div class="mt6">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
-    "Filtre de Forge");
+    '<div class="srForgeFilterFooter458">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
+    "Auto-Forge & filtre");
 }
 function showRarityInfo() {
   const lv = S.forge.level;
   const rates = gateForgeRates(getRates("forge", lv, S.ascension, starsOf(S, "forge")), lv);
-  const rows = EQUIP_RARITY_ORDER.map((r) => {
+  const rows = orderFor("forge").map((r) => {
     const c = RARITY[r].c;
     const min = RARITY_MIN_FORGE[r] || 1;
-    const ok = rarityAllowed(r, lv);
+    const req = forgeRarityRequirement(r);
+    const ok = rarityAllowed(r, lv, S);
     const rate = ok ? (rates[r] || 0) : 0;
     return '<div class="itemRow" style="border-left-color:' + c + ";opacity:" + (ok ? 1 : 0.45) + '">' +
       '<div class="imini" style="width:22px;height:22px;border-color:' + c + '80;box-shadow:0 0 8px ' + c + '3d">' +
@@ -1950,11 +2101,11 @@ function showRarityInfo() {
       '<div class="flex1"><div class="b small" style="color:' + c + '">' + RARITY[r].label +
         '<span class="mute" style="font-weight:700"> ×' + RARITY_MUL[r] + " puissance</span></div>" +
       '<div class="mute tiny b">' + (ok
-        ? "Forge " + min + "+ · " + rate.toFixed(rate < 10 ? 1 : 0) + "% par forge"
-        : "Débloqué à Forge " + min) + "</div></div>" +
+        ? req.text + " · " + rate.toFixed(rate < 10 ? 1 : 0) + "% par forge"
+        : "Débloqué : " + req.text) + "</div></div>" +
       (ok ? '<span class="pill" style="color:' + c + ";border-color:" + c + '99">' +
         rate.toFixed(rate < 10 ? 1 : 0) + "%</span>"
-          : '<span class="pill">' + ic("lock", 9) + min + "</span>") +
+          : '<span class="pill">' + ic("lock", 9) + req.pill + "</span>") +
       "</div>";
   }).join("");
   openModal(
@@ -1963,41 +2114,87 @@ function showRarityInfo() {
       "monter sa Maîtrise améliore les chances à l\'intérieur de ceux déjà ouverts.</div>" +
     rows +
     '<div class="mute tiny center mt6">Forge niv.' + lv + " · " +
-      EQUIP_RARITY_ORDER.filter((r) => rarityAllowed(r, lv)).length + " paliers sur " +
-      EQUIP_RARITY_ORDER.length + " ouverts</div>" +
+      orderFor("forge").filter((r) => rarityAllowed(r, lv, S)).length + " paliers sur " +
+      orderFor("forge").length + " ouverts</div>" +
     '<div class="mt8">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
     "Raretés d\'équipement");
 }
+const FORGE_GOLD_BY_RARITY_V470 = {
+  COMMUN:10, PEU_COMMUN:15, RARE:18, EPIQUE:33, HEROIQUE:45, MYTHIQUE:60,
+  ARTEFACT:105, LEGENDAIRE:180, INFERNAL:300, IMMORTEL:450, DIVIN:650,
+  ANCESTRAL:300
+};
+function forgeGoldRewardV470(s, rarity) {
+  const base = Math.max(0, Number(FORGE_GOLD_BY_RARITY_V470[rarity]) || 0);
+  return Math.max(0, Math.floor(base * goldMul(s)));
+}
+if (typeof window !== "undefined") {
+  window.__srForgeGoldV470 = {
+    version:470,
+    baseByRarity:Object.assign({}, FORGE_GOLD_BY_RARITY_V470),
+    reward:forgeGoldRewardV470,
+    paidForgeOnly:true,
+    globalGoldBonus:true
+  };
+}
+
 function forgeSummon(n) {
   const results = [];
+  let lifetimeUnlock = null;
+  let masteryDustGrant = 0;
   update((st) => {
     for (let i = 0; i < n; i++) {
       const cost = forgeCost(st.forge.level);
       if (st.minerai < cost) break;
       st.minerai -= cost;
+
+      // One PAID forge = one permanent lifetime credit. The Tree's free bonus
+      // result is deliberately created later and never increments this count.
+      const masteryApi = window.__srForgeLifetimeMasteryV445;
+      const beforeMastery = masteryApi && masteryApi.info ? masteryApi.info(st) : null;
+      st.forge.summonCount += 1;
+      st.forge.lifetimeCount = Math.max(0, Math.floor(Number(st.forge.lifetimeCount) || 0)) + 1;
+      const afterMastery = masteryApi && masteryApi.info ? masteryApi.info(st) : null;
+      if (beforeMastery && afterMastery && afterMastery.rank > beforeMastery.rank) {
+        if (masteryApi.applyState) masteryApi.applyState(st);
+        if (typeof claimEquipmentMasteryDustRewards === "function") {
+          const grant = claimEquipmentMasteryDustRewards(st);
+          masteryDustGrant += Math.max(0, Number(grant && grant.dust) || 0);
+        }
+        lifetimeUnlock = afterMastery;
+      }
+
       const rates = gateForgeRates(
         getRates("forge", st.forge.level, st.ascension, starsOf(st, "forge")), st.forge.level);
-      // one paid forge; the tree's "Forge gratuite" nodes may add a second
-      // result at no extra cost
+      Object.keys(rates).forEach((r) => { if (!rarityAllowed(r, st.forge.level, st)) rates[r] = 0; });
+      const rateSum = Object.values(rates).reduce((a,b) => a + (Number(b)||0), 0) || 1;
+      Object.keys(rates).forEach((r) => { rates[r] = rates[r] / rateSum * 100; });
       const extra = Math.random() * 100 < treeSum(st, "forgeFree") ? 1 : 0;
       for (let k = 0; k <= extra; k++) {
-        const rar = capRarityForForge(rollRarity(rates, EQUIP_RARITY_ORDER), st.forge.level);
+        const rar = capRarityForForge(rollRarity(rates, orderFor("forge")), st.forge.level);
         const item = makeItem(SLOTS[Math.floor(Math.random() * SLOTS.length)], rar, st.forge.level);
-        // a rarity the filter does not keep never reaches the bag
+        // V547: Gold is awarded only when the item is recycled, never on creation.
+        // Bonus items from the Tree remain ineligible for forge Gold.
+        const forgeGold = k === 0 ? forgeGoldRewardV470(st, rar) : 0;
+        item.srForgeRecycleGoldV547 = forgeGold;
         if (forgeKeeps(st, rar)) {
           st.inventory.push(item);
-          results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0 });
+          results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0, gold: forgeGold });
         } else {
           const dust = dustValue(st, item);
           st.poussiere += dust;
+          st.gold += forgeGold;
           results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0,
-            recycled: true, dust: dust });
+            recycled: true, dust: dust, gold: forgeGold });
         }
       }
-      st.forge.summonCount += 1;
     }
     st.eventProgress.forge = (st.eventProgress.forge || 0) + results.length;
   });
+  if (lifetimeUnlock && typeof toast === "function") {
+    toast("Maîtrise équipement " + lifetimeUnlock.roman + " · +" + lifetimeUnlock.bonusPct + "% de base" +
+      (masteryDustGrant > 0 ? " · +" + fmt(masteryDustGrant) + " poussières" : ""), true);
+  }
   return results;
 }
 
@@ -2078,7 +2275,7 @@ function toggleAutoForge() {
    the point is not to have to sort afterwards. */
 function forgeFilterOn(s) { return !!s.forge.filter; }
 function forgeKeeps(s, rar) { return !forgeFilterOn(s) || s.forge.keep[rar] !== false; }
-function forgeDiscarded(s) { return EQUIP_RARITY_ORDER.filter((r) => s.forge.keep[r] === false); }
+function forgeDiscarded(s) { return orderFor("forge").filter((r) => s.forge.keep[r] === false); }
 function toggleForgeFilter() {
   update((s) => { s.forge.filter = !s.forge.filter; });
 }
@@ -2086,12 +2283,12 @@ function toggleForgeKeep(rar) {
   update((s) => {
     const next = s.forge.keep[rar] === false;
     // refuse to let the filter throw away everything: one rarity must remain
-    if (!next && EQUIP_RARITY_ORDER.every((r) => r === rar || s.forge.keep[r] === false)) return;
+    if (!next && orderFor("forge").every((r) => r === rar || s.forge.keep[r] === false)) return;
     s.forge.keep[rar] = next;
   });
 }
 function setForgeKeepAll(v) {
-  update((s) => { EQUIP_RARITY_ORDER.forEach((r) => { s.forge.keep[r] = v; }); });
+  update((s) => { orderFor("forge").forEach((r) => { s.forge.keep[r] = v; }); });
 }
 
 /* Section 13: a batch plays ONE animation and then produces everything at once.
@@ -2155,33 +2352,36 @@ function recycleItem(id) {
   update((st) => {
     st.inventory = st.inventory.filter((x) => x.id !== id);
     st.poussiere += dust;
+    // Older items already received Gold when forged: never pay them twice.
+    st.gold += Math.max(0, Number(it.srForgeRecycleGoldV547) || 0);
   });
   return dust;
 }
-function itemUpgradeCost(it) { return Math.round(20 + it.level * 12); }
+/* V456 fallback: Equipment Mastery rank and Dust enhancement level are
+   separate. Dust economy reads upgradeLevel only. */
+function itemUpgradeCost(it) { return Math.round(30 + equipmentUpgradeLevel(it) * 18); }
 function itemUpgradePreview(it) {
   if (!it) return { label:"Stat", current:0, next:0, gain:0 };
   const anchorLevel = it.upgradeBaseLevel || 0;
-  const steps = Math.max(0, (it.level || 0) + 1 - anchorLevel);
+  const steps = Math.max(0, equipmentUpgradeLevel(it) + 1 - anchorLevel);
   let current, next, label;
   if (it.baseDamage) {
     current = Number(it.damage || 0);
-    next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.005) * 100) / 100;
+    next = Math.round(Number(it.baseDamage || 0) * (1 + steps * 0.03) * 100) / 100;
     label = "ATQ";
   } else {
     current = Number(it.hp || 0);
-    next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.005) * 100) / 100;
+    next = Math.round(Number(it.baseHp || 0) * (1 + steps * 0.03) * 100) / 100;
     label = "PV";
   }
   return { label, current, next, gain: Math.round((next - current) * 100) / 100 };
 }
-/* Jusqu'à +99, l'amélioration est garantie. À partir de +100, -5 points de
-   réussite tous les 10 niveaux, avec un plancher de 35 %. Les Sceaux de
-   stabilité ajoutent +5 points chacun. Un échec ne détruit ni l'objet ni son
-   niveau : seule la Poussière (et les Sceaux choisis) est consommée. */
+/* Canonical late authority moves risk to Dust enhancement +25; this fallback
+   only guarantees a safe pre-authority value during boot. */
 function itemUpgradeChance(it) {
-  if ((it.level || 0) < 100) return 100;
-  return Math.max(35, 95 - Math.floor(((it.level || 0) - 100) / 10) * 5);
+  const lv = equipmentUpgradeLevel(it);
+  if (lv < 25) return 100;
+  return Math.max(5, 95 - 5 * Math.floor((lv - 25) / 2));
 }
 const itemSealPlan = {};
 function itemSealCount(id) { return Math.max(0, itemSealPlan[id] || 0); }
@@ -2203,14 +2403,13 @@ function upgradeItem(id) {
     const beforeHp = Number(it.hp || 0);
     result={ok:true, success:Math.random()*100 < chance, chance:chance, seals:seals};
     if (!result.success) return;
-    it.level += 1;
-    /* Poussière additive : +0,35 % de la stat de référence par niveau réussi.
-       Les anciennes pièces gardent leur puissance acquise : leur valeur au moment
-       de la migration devient l'ancre des améliorations futures. */
+    it.upgradeLevel = equipmentUpgradeLevel(it) + 1;
+    /* V472 · chaque amélioration réussie ajoute +3 % de la stat de référence.
+       Equipment Mastery rank reste indépendant et inchangé. */
     const anchorLevel = it.upgradeBaseLevel || 0;
-    const steps = Math.max(0, it.level - anchorLevel);
-    if (it.baseDamage) it.damage = Math.round(it.baseDamage * (1 + steps * 0.0035) * 100) / 100;
-    if (it.baseHp) it.hp = Math.round(it.baseHp * (1 + steps * 0.0035) * 100) / 100;
+    const steps = Math.max(0, it.upgradeLevel - anchorLevel);
+    if (it.baseDamage) it.damage = Math.round(it.baseDamage * (1 + steps * 0.03) * 100) / 100;
+    if (it.baseHp) it.hp = Math.round(it.baseHp * (1 + steps * 0.03) * 100) / 100;
     it.power = Math.round((it.damage + it.hp) * 100) / 100;
     result.statGain = Math.round(((it.damage - beforeDamage) + (it.hp - beforeHp)) * 100) / 100;
     result.statLabel = it.baseDamage ? "ATQ" : "PV";
@@ -2253,12 +2452,24 @@ function summonSkill(n) {
         }
         const existing = s.skills[def.id];
         if (existing) {
+          const beforeLevel = existing.level;
+          const beforeGlobalPower = computePower(s);
           const need = skillDupesNeeded(existing.level);
           existing.count += 1;
           if (existing.count >= need && existing.level < RULES.SKILL_MAX_LEVEL) {
-            existing.count -= need; existing.level += 1;
+            existing.count -= need;
+            existing.level += 1;
           }
-          results.push({ id: def.id, rarity: rar, dup: true });
+          const leveled = existing.level > beforeLevel;
+          const afterGlobalPower = leveled ? computePower(s) : beforeGlobalPower;
+          results.push({
+            id: def.id, rarity: rar, dup: true,
+            beforeLevel, afterLevel: existing.level, leveled,
+            count: existing.count,
+            need: existing.level < RULES.SKILL_MAX_LEVEL ? skillDupesNeeded(existing.level) : 0,
+            levelPowerPct: leveled ? 20 : 0,
+            globalPowerGain: leveled ? Math.max(0, Math.round(afterGlobalPower - beforeGlobalPower)) : 0
+          });
         } else {
           s.skills[def.id] = { level: 1, count: 0 };
           const empty = s.skillSlots.slice(0, skillSlotCount(s)).indexOf(null);
@@ -2272,14 +2483,42 @@ function summonSkill(n) {
         s.skillMastery.progress -= mreq; s.skillMastery.level += 1;
       }
     }
-  });
+  }, { suppressPowerDelta: true });
+  /* V405 · Duplicate skill level-ups own the centered green Power feedback.
+     Newly unlocked skills do not create a misleading summon Power popup. */
+  results.levelUpPowerDelta = results
+    .filter((r) => r && r.leveled)
+    .reduce((sum, r) => sum + Math.max(0, Number(r.globalPowerGain) || 0), 0);
   return results;
 }
+function skillEquipPowerPreview(slotIdx, skillId, state) {
+  const s = state || S;
+  const before = Math.round(Number(s.power || computePower(s) || 0));
+  const slots = (s.skillSlots || []).slice();
+  const idx = Math.max(0, Math.min(slots.length - 1, Math.floor(Number(slotIdx) || 0)));
+  if (skillId) {
+    for (let i = 0; i < slots.length; i++) if (slots[i] === skillId) slots[i] = null;
+  }
+  const previousId = slots[idx] || null;
+  slots[idx] = skillId || null;
+  const after = Math.round(Number(computePower(Object.assign({}, s, { skillSlots: slots })) || 0));
+  return { before, after, delta: after - before, slotIdx: idx, previousId, skillId: skillId || null };
+}
 function equipSkill(slotIdx, skillId) {
+  const preview = skillEquipPowerPreview(slotIdx, skillId, S);
   update((s) => {
     if (skillId) s.skillSlots = s.skillSlots.map((x) => (x === skillId ? null : x));
-    s.skillSlots[slotIdx] = skillId;
+    s.skillSlots[preview.slotIdx] = skillId || null;
   });
+  return {
+    before: preview.before,
+    after: Math.round(Number(S.power) || 0),
+    delta: Math.round((Number(S.power) || 0) - preview.before),
+    slotIdx: preview.slotIdx,
+    previousId: preview.previousId,
+    skillId: skillId || null,
+    replaced: !!preview.previousId && preview.previousId !== (skillId || null)
+  };
 }
 
 /* An egg is hatching when it carries a hatchEnd, and stored when it does not.
@@ -2302,29 +2541,25 @@ function startEgg(id) {
 function summonEgg(n) {
   const results = [];
   update((s) => {
-    // "Double Œuf": one paid summon may yield 2 EGGS (not a double hatch) —
-    // each egg keeps its own independent timer.
+    // "Double Œuf": one paid summon may yield 2 EGGS. Every egg produced now
+    // counts for Familiar Mastery, including the free second egg.
     const dblChance = treeSum(s, "eggFree");
-    // each rarity carries its own reduction; a Rare upgrade must never touch
-    // an Épique egg
+    s.petMastery.bonusCount = Math.max(0, Number(s.petMastery.bonusCount) || 0);
     for (let i = 0; i < n; i++) {
-      // Essence is the only thing that can stop a summon now
       if (s.essence < PET_SUMMON_COST) break;
       s.essence -= PET_SUMMON_COST;
       const eggsToMake = Math.random() * 100 < dblChance ? 2 : 1;
       for (let e = 0; e < eggsToMake; e++) {
         const rates = getRates("pet", s.petMastery.level, s.ascension, starsOf(s, "pet"));
         const rar = rollRarity(rates, PET_RARITY_ORDER);
-        // every summoned egg enters unlimited storage; the player chooses when to hatch it
-        s.eggs.push({ id: rid(), rarity: rar, species: randSpecies(), element: randElement(),
-          hatchEnd: 0 });
-        results.push({ rarity: rar, free: e > 0 });
+        const egg = { id: rid(), rarity: rar, species: randSpecies(), element: randElement(), hatchEnd: 0 };
+        s.eggs.push(egg);
+        results.push({ id: egg.id, rarity: rar, species: egg.species, element: egg.element, free: e > 0 });
       }
-      s.petMastery.count += 1; s.petMastery.progress += 1;
-      const mreq = masteryReq(s.petMastery.level);
-      if (s.petMastery.progress >= mreq && s.petMastery.level < RULES.MASTERY_MAX) {
-        s.petMastery.progress -= mreq; s.petMastery.level += 1;
-      }
+      // Keep count as PAID summons for economy/history; progress follows real eggs.
+      s.petMastery.count += 1;
+      const credited = addMasteryCredits(s.petMastery, eggsToMake);
+      if (eggsToMake > 1) s.petMastery.bonusCount += Math.min(eggsToMake - 1, credited);
     }
   });
   return results;
@@ -2479,44 +2714,12 @@ function useAccelerator(target, key) {
   return true;
 }
 
-/* floor you would land on after a rebirth */
-function floorAfterRebirth(s) {
-  const keepPct = rebirthKeepPct(s.rebirth.upgrades.keep || 0);
-  return Math.max(1, Math.floor(s.floor * keepPct / 100));
-}
-/* Section 4A: the requirement is the floor you are standing on, and it is 25.
-   There used to be a second rule on top -- a Rebirth must also leave you at 25
-   or above -- and since you keep half your floor, that pushed the real gate out
-   to 50: at floor 25 you would land at 12 and never qualify. The stated rule
-   wins. Where you land afterwards is what the Conservation upgrade is for. */
-function canRebirth() {
-  return S.floor >= RULES.REBIRTH_UNLOCK_FLOOR;
-}
-function doRebirth() {
-  if (!canRebirth()) return 0;
-  const prGainBonus = rb(S, "prgain");
-  const pr = Math.floor(prFromFloor(S.floor) * (1 + prGainBonus / 100));
-  const keepPct = rebirthKeepPct(S.rebirth.upgrades.keep || 0);
-  update((st) => {
-    st.rebirth.pr += pr;
-    st.rebirth.count += 1;
-    st.warScore += pr * RULES.WAR_POINTS_PER_PR;
-    st.floor = Math.max(1, Math.floor(st.floor * keepPct / 100));
-    st.step = 1;
-    st.checkpoint = lastCheckpoint(st.floor);
-  });
-  setTimeout(startCampaign, 40);
-  return pr;
-}
-function buyRebirth(key) {
-  const def = REBIRTH_UPGRADES.find((u) => u.key === key);
-  const lvl = S.rebirth.upgrades[key] || 0;
-  if (lvl >= def.max) return false;
-  const cost = rebirthUpgCost(def, lvl);
-  if (S.rebirth.pr < cost) return false;
-  update((st) => { st.rebirth.pr -= cost; st.rebirth.upgrades[key] = lvl + 1; });
-  return true;
-}
+/* Rebirth is retired. Compatibility stubs prevent old routes or imported
+   saves from mutating progression if a legacy layer calls these names. */
+function floorAfterRebirth(s) { return Math.max(1, Number(s && s.floor) || 1); }
+function canRebirth() { return false; }
+function doRebirth() { return 0; }
+function buyRebirth() { return false; }
 
 function doAscension() {
   update((s) => {
@@ -2564,6 +2767,9 @@ function spendGems(amount, cb) {
 }
 
 function resetGame() {
+  if (window.__srSaveLoadGuardV430 && typeof window.__srSaveLoadGuardV430.allowWrite === "function") {
+    window.__srSaveLoadGuardV430.allowWrite();
+  }
   S = defaultState("Héros");
   S.power = computePower(S);
   refreshDerived();
@@ -2571,6 +2777,50 @@ function resetGame() {
   saveNow();
   startCampaign();
   scheduleRender();
+}
+
+/* V504 · Exact test-time simulation. The 9 h button and the 1 day button use
+   the same path, so timers, Autonomy and the displayed "Jour" cannot drift. */
+function simulateTimeHours(hours) {
+  const h = Math.max(0, Math.min(24, Number(hours) || 0));
+  if (!(h > 0)) return { ok: false, hours: 0 };
+  const ms = h * 60 * 60 * 1000;
+  const now = Date.now();
+
+  S.simulatedMs = Math.max(0, Number(S.simulatedMs) || 0) + ms;
+
+  if (S.tree && S.tree.active && Number(S.tree.activeEnd) > now) {
+    S.tree.activeEnd = Math.max(now, Number(S.tree.activeEnd) - ms);
+  }
+  if (Array.isArray(S.eggs)) {
+    S.eggs.forEach((egg) => {
+      if (egg && eggIsHatching(egg) && Number(egg.hatchEnd) > now) {
+        egg.hatchEnd = Math.max(now, Number(egg.hatchEnd) - ms);
+      }
+    });
+  }
+  if (S.forge && Number(S.forge.upgradeEnd) > now) {
+    S.forge.upgradeEnd = Math.max(now, Number(S.forge.upgradeEnd) - ms);
+  }
+
+  harvestAdvance(S, h * 3600);
+  S.lastSeen = now;
+
+  const virtualNow = simulatedNow(S, now);
+  applyDailyReset(S, virtualNow);
+
+  try {
+    if (window.__srMegaRewardsV329 && typeof window.__srMegaRewardsV329.grantWeeklyAt === "function") {
+      window.__srMegaRewardsV329.grantWeeklyAt(virtualNow);
+    }
+  } catch (_) {}
+
+  S.power = computePower(S);
+  refreshDerived();
+  dirty = true;
+  saveNow();
+  scheduleRender();
+  return { ok: true, hours: h, day: simulatedDayCount(S, now), simulatedMs: S.simulatedMs };
 }
 
 /* -------- boot -------- */
@@ -2588,7 +2838,18 @@ function boot() {
   setInterval(flushRewards, 500);
   setInterval(checkTimerNotifications, 500); // fins d’éclosion et de recherche
 
-  setInterval(() => { if (dirty) saveNow(); }, 8000);
+  /* A player can leave the app open across midnight; keys must still refill
+     without requiring a reload. Check once a minute and persist immediately. */
+  setInterval(() => {
+    if (applyRaidKeyReset(S)) {
+      dirty = true;
+      saveNow();
+      scheduleRender();
+    }
+  }, 60000);
+
+  // V545: autosave every 3 minutes when changes exist; critical actions and backgrounding still save immediately.
+  setInterval(() => { if (dirty) saveNow(); }, 180000);
   // the Récolte automatique never stops just because the player is connected
   let harvestClock = Date.now();
   setInterval(() => {

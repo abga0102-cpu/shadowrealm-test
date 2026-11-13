@@ -33,6 +33,8 @@ test('V321 moves Forge to 1-2 but keeps the V317 Raid level-3 depletion gate', a
       raidGate: RULES.RAID_UNLOCK_LEVEL,
     };
 
+    S.floor = 2; S.recordFloor = 2; startCampaign();
+    combat.status = 'lost'; handleCombatEnd(combat);
     S.level = 3;
     S.floor = 2;
     S.recordFloor = Math.max(Number(S.recordFloor) || 1, 2);
@@ -49,7 +51,7 @@ test('V321 moves Forge to 1-2 but keeps the V317 Raid level-3 depletion gate', a
     };
 
     let crafted = 0;
-    for (let i = 0; i < 25; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       const out = forgeSummon(1);
       crafted += Array.isArray(out) ? out.length : 0;
     }
@@ -116,14 +118,14 @@ test('V321 moves Forge to 1-2 but keeps the V317 Raid level-3 depletion gate', a
   expect(result.start).toMatchObject({
     level: 1,
     floor: 1,
-    minerai: 250,
+    minerai: 0,
     cost: 10,
     forgeUnlocked: false,
     raidUnlocked: false,
     raidGate: 5,
   });
   expect(result.belowForgeGate).toMatchObject({
-    minerai: 250,
+    minerai: 0,
     crafted: 0,
     raidUnlocked: false,
     raidGate: 5,
@@ -136,8 +138,8 @@ test('V321 moves Forge to 1-2 but keeps the V317 Raid level-3 depletion gate', a
   expect(result.beforeDepletion.raidScreen).toContain('Niveau 5');
 
   expect(result.afterDepletion.minerai).toBe(0);
-  expect(result.afterDepletion.summonCount).toBe(25);
-  expect(result.afterDepletion.crafted).toBe(25);
+  expect(result.afterDepletion.summonCount).toBe(10);
+  expect(result.afterDepletion.crafted).toBe(10);
   expect(result.afterDepletion.raidUnlocked).toBe(true);
   expect(result.afterDepletion.raidGate).toBe(1);
   expect(result.afterDepletion.raidScreen).not.toContain('Niveau 5');

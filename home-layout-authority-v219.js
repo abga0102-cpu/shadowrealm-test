@@ -1,4 +1,4 @@
-/* SHADOWREACH · Home layout authority V219 / V369 · Lean consolidation
+/* SHADOWREACH · Home layout authority V219 / V379 / V461 · Lean consolidation
    Sole Home geometry, render lifecycle and UI compatibility authority.
    V119 compatibility decoration is absorbed here so Home has one runtime owner.
    UI-only: no combat values, economy, progression or save data are changed. */
@@ -6,13 +6,14 @@
 'use strict';
 if(window.__srHomeLayoutAuthorityV219)return;
 window.__srHomeLayoutAuthorityV219=true;
+window.__srStarterRoadmapLayoutV461=true;window.__srStarterRoadmapLayoutV462=true;
 window.__srHomeFramePhase2B=true;
 window.__srHomeLayoutPhase2B=true;
 window.__srHomeLayoutCompatV119=true;
 var style=document.createElement('style');
 style.id='srHomeLayoutAuthorityV219';
 style.textContent=`
-#app.srHomeFullArena{position:relative!important;overflow:hidden!important;--srHudH:108px;--srSkillH:62px;--srForgeH:184px}
+#app.srHomeFullArena{position:relative!important;overflow:hidden!important;--srHudH:108px;--srSkillH:62px;--srForgeH:228px}
 #app.srHomeFullArena>#hud{position:absolute!important;left:0!important;right:0!important;top:0!important;z-index:70!important;height:var(--srHudH)!important;min-height:var(--srHudH)!important;max-height:var(--srHudH)!important;overflow:visible!important;flex:none!important;padding:4px 9px 3px!important;background:linear-gradient(180deg,#07101df2 0%,#0a1422d4 76%,#08101b70 92%,transparent 100%)!important;border:0!important;box-shadow:none!important;pointer-events:auto!important;align-items:flex-start!important}
 #app.srHomeFullArena>#hud::after{display:none!important}
 #app.srHomeFullArena>#hud>.pbox{align-self:flex-start!important;margin-top:0!important;transform:none!important}
@@ -36,6 +37,21 @@ style.textContent=`
 #app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:8px!important;line-height:1!important;white-space:nowrap!important}
 #app.srHomeFullArena .worldRebirth .worldDot,#app.srHomeFullArena .worldDefis .worldDot{width:7px!important;height:7px!important;top:1px!important;right:1px!important}
 #app.srHomeFullArena .worldMenu{left:8px!important;top:auto!important;bottom:7px!important;right:auto!important}
+#app.srHomeFullArena .srStarterRoadmapV461{position:absolute;z-index:34;right:7px;top:calc(var(--srHudH) + 92px);width:min(148px,40vw);box-sizing:border-box;padding:5px 6px 5px;border:1px solid #4b7097;border-left:3px solid #8feff4;border-radius:9px;background:linear-gradient(145deg,#122a3fe8,#091522ee);box-shadow:0 3px 9px #0008,inset 0 1px #ffffff12;color:var(--text);pointer-events:none;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+#app.srHomeFullArena .srStarterRoadmapV461[data-act]{pointer-events:auto;cursor:pointer}
+#app.srHomeFullArena .srStarterRoadmapV461.ready{border-color:#54c885;border-left-color:#65e39b;box-shadow:0 4px 12px #0009,0 0 13px #45d58a24,inset 0 1px #ffffff12}
+#app.srHomeFullArena .srStarterKickerV461{display:flex;align-items:center;gap:3px;color:#8feff4;font:900 6.3px/1 system-ui;letter-spacing:.42px}
+#app.srHomeFullArena .srStarterKickerV461 span{margin-left:auto;color:#d6e8f4}
+#app.srHomeFullArena .srStarterRoadmapV461>b{display:block;margin-top:3px;color:#fff0bd;font:900 9.4px/1.05 Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app.srHomeFullArena .srStarterRoadmapV461>small{display:block;margin-top:2px;color:#b7c7d9;font:700 6.8px/1.15 system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app.srHomeFullArena .srStarterBarV461{height:2px;margin-top:4px;border-radius:999px;background:#ffffff12;overflow:hidden}
+#app.srHomeFullArena .srStarterBarV461>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#55b8e8,#8feff4)}
+#app.srHomeFullArena .srStarterRoadmapV461.ready .srStarterBarV461>i{background:linear-gradient(90deg,#3fb950,#65e39b)}
+#app.srHomeFullArena .srStarterRoadmapV461>em{display:block;margin-top:3px;color:#7eeea8;font:900 6.2px/1 system-ui;font-style:normal;text-align:right;letter-spacing:.35px}
+#app.srHomeFullArena .srStarterRoadmapV461.srStarterTightV463{width:min(126px,36vw);padding:4px 5px}
+#app.srHomeFullArena .srStarterRoadmapV461.srStarterTightV463>small,#app.srHomeFullArena .srStarterRoadmapV461.srStarterTightV463 .srStarterBarV461{display:none!important}
+#app.srHomeFullArena .srStarterRoadmapV461.srStarterTightV463>b{font-size:8.8px;margin-top:2px}
+#app.srHomeFullArena .srStarterRoadmapV461.srStarterTightV463>em{margin-top:2px}
 #app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 2px)!important;bottom:auto!important;z-index:22!important;gap:3px!important}
 #app.srHomeFullArena #arena .floorTxt{font-size:15px!important}
 #app.srHomeFullArena #arena .fTrack{transform:scale(.90)!important;transform-origin:center!important}
@@ -46,6 +62,7 @@ style.textContent=`
 #app.srHomeFullArena .homeForge{box-sizing:border-box!important;height:100%!important;max-height:100%!important;overflow:visible!important;padding:5px 7px!important;margin:0!important;display:flex!important;flex-direction:column!important;min-height:0!important}
 #app.srHomeFullArena .homeForge .fgFilter{display:flex!important;align-items:center!important}
 #app.srHomeFullArena .homeForge .homeCompactEnd{display:block!important}
+@media(max-height:700px){#app.srHomeFullArena{--srForgeH:214px}}
 #app.srHomeFullArena .homeForge .iBtn{box-sizing:border-box!important;width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important;max-width:28px!important;max-height:28px!important;flex:0 0 28px!important;padding:0!important;margin:0!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;line-height:1!important;aspect-ratio:1/1!important;font-family:var(--fd)!important;font-size:13px!important;font-weight:900!important;color:var(--goldLit)!important;background:linear-gradient(180deg,#18253d,#0d1627)!important;border:1px solid var(--goldDim)!important;box-shadow:inset 0 1px 0 #ffffff20,0 1px 3px #0008!important}
 #app.srHomeFullArena #rewardFeed{right:8px!important;top:calc(var(--srHudH) + 10px)!important;width:min(176px,46%)!important;gap:3px!important;z-index:66!important;pointer-events:none!important}
 #app.srHomeFullArena #rewardFeed .rewardPop{padding:4px 7px!important;min-height:0!important;border-radius:8px!important;background:linear-gradient(180deg,#17263ee8,#0b1425df)!important;box-shadow:0 2px 6px #0006!important;backdrop-filter:blur(3px)!important;-webkit-backdrop-filter:blur(3px)!important;pointer-events:auto!important}
@@ -67,14 +84,113 @@ style.textContent=`
 #toast{max-width:calc(100% - 24px)!important;left:12px!important;right:12px!important;margin:0 auto!important}
 #app.srHomeFullArena #tutorialCard{bottom:calc(var(--srForgeH) + var(--srSkillH) + 68px + env(safe-area-inset-bottom))!important}
 #app.srHomeFullArena:has(#tutorialCard) #toast{bottom:calc(var(--srForgeH) + var(--srSkillH) + 160px + env(safe-area-inset-bottom))!important}
-@media(max-width:370px){#app.srHomeFullArena{--srHudH:106px;--srForgeH:240px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
-@media(max-height:720px){#app.srHomeFullArena{--srHudH:100px;--srSkillH:56px;--srForgeH:174px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
+@media(max-width:430px){#app.srHomeFullArena .srStarterRoadmapV461{right:6px;width:min(142px,39vw);padding:5px 6px}#app.srHomeFullArena .srStarterRoadmapV461>small{font-size:6.6px}}
+@media(max-width:370px){#app.srHomeFullArena{--srHudH:104px;--srSkillH:58px;--srForgeH:180px}#app.srHomeFullArena .srStarterRoadmapV461{right:5px;width:min(132px,40vw);padding:4px 5px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
+@media(max-height:720px){#app.srHomeFullArena{--srHudH:100px;--srSkillH:56px;--srForgeH:174px}#app.srHomeFullArena .srStarterRoadmapV461{padding:4px 5px}#app.srHomeFullArena .srStarterRoadmapV461>small{font-size:6.4px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
+`;
+/* V526: restore the original combat arena height on iPhone.
+   Keep Roman mastery inside the existing scrollable forge slot rather than
+   enlarging the slot at the expense of the battle. */
+style.textContent += `
+#app.srHomeFullArena{--srForgeH:228px!important}
+@media(max-height:700px){#app.srHomeFullArena{--srForgeH:214px!important}}
+@media(max-width:370px){#app.srHomeFullArena{--srForgeH:180px!important}}
+@media(max-height:720px){#app.srHomeFullArena{--srForgeH:174px!important}}
+#app.srHomeFullArena #screen.fixed>.pad.mt4{overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;scrollbar-width:thin!important}
+#app.srHomeFullArena #screen.fixed>.pad.mt4>.homeForge{height:auto!important;max-height:none!important;min-height:100%!important;overflow:visible!important;flex-shrink:0!important}
+#app.srHomeFullArena #homeForge .srRomanMasteryV525{display:block!important;visibility:visible!important;flex:0 0 auto!important}
 `;
 document.head.appendChild(style);
 var app=document.getElementById('app'),screen=document.getElementById('screen');
 function important(el,prop,value){if(el)el.style.setProperty(prop,value,'important');}
+
+function eggReadyCandidate(){
+  try{
+    if(typeof S==='undefined'||!S||!Array.isArray(S.eggs))return null;
+    var now=Date.now(),ready=S.eggs.filter(function(e){return !!(e&&Number(e.hatchEnd)>0&&Number(e.hatchEnd)<=now);});
+    if(!ready.length)return null;
+    ready.sort(function(a,b){
+      var ar=0,br=0;
+      try{ar=typeof PET_RARITY_ORDER!=='undefined'?PET_RARITY_ORDER.indexOf(a.rarity):0;}catch(_){}
+      try{br=typeof PET_RARITY_ORDER!=='undefined'?PET_RARITY_ORDER.indexOf(b.rarity):0;}catch(_){}
+      return br-ar;
+    });
+    return ready[0];
+  }catch(_){return null;}
+}
+function eggReadyCount(){
+  try{
+    if(typeof S==='undefined'||!S||!Array.isArray(S.eggs))return 0;
+    var now=Date.now();
+    return S.eggs.filter(function(e){return !!(e&&Number(e.hatchEnd)>0&&Number(e.hatchEnd)<=now);}).length;
+  }catch(_){return 0;}
+}
+function eggReadyArt(r){
+  var key=String(r||'COMMUN').toLowerCase().replace(/é|è|ê|ë/g,'e').replace(/[^a-z0-9]+/g,'_');
+  if(key==='peu_commun')key='commun';
+  return 'art/eggs/'+key+'.png';
+}
+function eggReadyLabels(e){
+  var rar=String((e&&e.rarity)||'COMMUN'),rarLabel=rar,species='';
+  try{if(typeof RARITY!=='undefined'&&RARITY[rar]&&RARITY[rar].label)rarLabel=RARITY[rar].label;}catch(_){}
+  try{if(typeof PET_SPECIES_BY_ID!=='undefined'&&e&&PET_SPECIES_BY_ID[e.species])species=PET_SPECIES_BY_ID[e.species].label;}catch(_){}
+  return {rarity:rarLabel,species:species};
+}
+function decorateEggReady(){
+  if(!screen)return;
+  var world=screen.querySelector('.campaignWorld');
+  var existing=screen.querySelector('.srEggReadyV377');
+  var egg=eggReadyCandidate();
+  if(!world||!egg){if(existing)existing.remove();return;}
+  var labels=eggReadyLabels(egg),readyCount=eggReadyCount();
+  var sig=String(egg.id||'')+'|'+String(egg.rarity||'')+'|'+String(egg.species||'')+'|'+readyCount;
+  if(existing&&existing.getAttribute('data-sig')===sig)return;
+  if(existing)existing.remove();
+  var card=document.createElement('button');
+  card.type='button';
+  card.className='srEggReadyV377';
+  card.setAttribute('data-act','go');
+  card.setAttribute('data-arg','familiers');
+  card.setAttribute('data-sig',sig);
+  card.setAttribute('aria-label','Œuf prêt à éclore');
+  card.innerHTML='<span class="srEggReadyCopyV377"><b>Œuf prêt à éclore'+(readyCount>1?' · '+readyCount:'')+'</b><small>'+labels.rarity.toUpperCase()+(labels.species?' · '+labels.species.toLowerCase():'')+(readyCount>1?' · voir les autres':'')+'</small></span><span class="srEggReadyNestV377"><img src="'+eggReadyArt(egg.rarity)+'" alt=""></span><span class="srEggReadyChevronV377">›</span>';
+  world.appendChild(card);
+}
+
+function positionStarterRoadmapV463(){
+  if(!screen)return;
+  var world=screen.querySelector('.campaignWorld');
+  var card=screen.querySelector('.srStarterRoadmapV461');
+  var floor=screen.querySelector('#arena .floorTag');
+  if(!world||!card||!floor)return;
+
+  /* The stage label is gameplay information and always wins over onboarding UI.
+     Place the compact roadmap below the ENTIRE floor tag (title + progress + wave
+     chips), regardless of horizontal overlap. This fixes cases where a narrow
+     right-hand card still covered "FACILE x-x" on iPhone-sized viewports. */
+  card.classList.remove('srStarterTightV463');
+  var wr=world.getBoundingClientRect(),fr=floor.getBoundingClientRect();
+  var gap=8;
+  var desired=Math.ceil(fr.bottom-wr.top+gap);
+  card.style.setProperty('top',desired+'px','important');
+
+  var cr=card.getBoundingClientRect();
+  if(cr.bottom>wr.bottom-8){
+    card.classList.add('srStarterTightV463');
+    cr=card.getBoundingClientRect();
+    var maxTop=Math.max(8,Math.floor(wr.height-cr.height-8));
+    desired=Math.min(desired,maxTop);
+    /* Never move it back into the protected stage band when room exists below. */
+    if(wr.height-(fr.bottom-wr.top)>=cr.height+gap)desired=Math.ceil(fr.bottom-wr.top+gap);
+    card.style.setProperty('top',desired+'px','important');
+  }
+  card.setAttribute('data-stage-safe-v463','1');
+}
+
 function decorate(){
   if(!screen)return;
+  decorateEggReady();
+  positionStarterRoadmapV463();
   var info=screen.querySelector('.homeForge .iBtn');
   if(info){
     ['width','height','min-width','min-height','max-width','max-height'].forEach(function(p){important(info,p,'28px');});
@@ -96,7 +212,22 @@ function sync(){
 }
 var queued=false;function schedule(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;sync();});}
 window.__srApplyHomeCompatV119=decorate;
+window.__srPositionStarterRoadmapV463=positionStarterRoadmapV463;
 window.__srSyncHomeLayoutV219=sync;window.__srSyncHomeFramePhase2B=sync;
 window.addEventListener('sr:bottomnavrendered',schedule);
-window.addEventListener('resize',schedule,{passive:true});window.addEventListener('orientationchange',schedule,{passive:true});sync();
+var lastViewportWidth=Math.round(window.innerWidth||0);
+function stableResizeSchedule(){
+  var width=Math.round(window.innerWidth||0);
+  // V436: Safari's address/tool bars change the visible height while scrolling.
+  // Home geometry is flex-based, so a height-only resize must not redecorate
+  // the whole Home tree. Width/orientation changes remain real layout changes.
+  if(width===lastViewportWidth)return;
+  lastViewportWidth=width;
+  schedule();
+}
+window.addEventListener('resize',stableResizeSchedule,{passive:true});window.addEventListener('orientationchange',function(){lastViewportWidth=Math.round(window.innerWidth||0);schedule();},{passive:true});
+try{var homeObserver=new MutationObserver(schedule);homeObserver.observe(screen,{childList:true,subtree:false});}catch(_){}
+/* V530: refresh the egg badge without re-positioning the entire Home layout every second. */
+var eggTicker=setInterval(function(){if(app&&app.classList.contains('srHomeFullArena')&&!document.hidden){try{decorateEggReady();}catch(_){}}},1000);
+window.addEventListener('pagehide',function(){try{clearInterval(eggTicker);}catch(_){}});sync();
 })();

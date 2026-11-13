@@ -10,12 +10,12 @@ test('L3: settled Forge and Familiar policies have one durable owner each', asyn
   const v304 = src('progression-stability-authority-v304.js');
   const v307 = src('progression-batch-qa-v307.js');
 
-  expect(v224).toContain("if(system==='forge')return forgeRatesV323(mastery,stars)");
-  expect(v224).toContain('forgeRarityV323:');
+  expect(v224).toContain("if(system==='forge')return forgeRatesV501(mastery,ascension,stars)");
+  expect(v224).toContain('forgeRarityV501:');
   expect(v296).toContain("if(system!=='pet'||!out)return out");
   expect(v296).toContain('rateOwner:true');
-  expect(v304).not.toContain("if(system==='forge')return forgeRatesV323");
-  expect(v304).toContain('FORGE_ASCEND_MAX_STARS_V323=4');
+  expect(v304).not.toContain("if(system==='forge')return forgeRatesV501");
+  expect(v304).toContain('FORGE_ASCEND_MAX_STARS_V501=2');
   expect(v304).toContain('powerStopsGrowingAfterStar:1');
   expect(v307).not.toContain('getRates=function(');
   expect(v307).toContain("familiarRateOwner:'V296'");

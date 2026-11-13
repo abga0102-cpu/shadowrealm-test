@@ -68,7 +68,7 @@ test('L3: V296 preserves Familiar rates and exact Ancestral policy at runtime', 
 
 test('L3: V307 retains only its distinct hatch and generic rarity-roll guards', async () => {
   const v307 = src('progression-batch-qa-v307.js');
-  expect(v307).toContain('EGG_TIMERS.ANCESTRAL=16*3600');
+  expect(v307).toContain('EGG_TIMERS.ANCESTRAL=48*3600');
   expect(v307).toContain('startEgg=function(id)');
   expect(v307).toContain('rollRarity=function(rates,order)');
   expect(v307).toContain('ancestralRateBeforeMax');

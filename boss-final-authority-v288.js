@@ -60,7 +60,18 @@
           if(!isFinite(typeMul)||typeMul<=0)typeMul=1;
           var mulD=(Number(opts.floor)===40)?1.7:1.8;
           var firstBossMul=(Number(opts.floor)===5&&!opts.noFastback)?0.80:1;
-          var base=(typeof enemyDamage==='function')?Number(enemyDamage(opts.floor)):NaN;
+          var baseFn=(typeof enemyDamage==='function')?enemyDamage:null;
+          /* V475 targets normal Campaign enemies / Elites / Bosses only.
+             Mega-Boss construction is identified by noFastback and keeps the
+             pre-V475 Campaign Boss damage reference before its existing x10. */
+          try{
+            var cfg=window.__srEnemyDamageConfigV289;
+            if(opts.noFastback&&cfg&&cfg.difficile17DamageV475&&
+               typeof cfg.difficile17DamageV475.sourceDamage==='function'){
+              baseFn=cfg.difficile17DamageV475.sourceDamage;
+            }
+          }catch(_){ }
+          var base=baseFn?Number(baseFn(opts.floor)):NaN;
           if(isFinite(base)&&base>0){
             enemy.dmg=Math.max(1,Math.floor(base*typeMul*mulD*legacyBossDamageStatMul(opts.floor)*firstBossMul));
           }
@@ -71,5 +82,5 @@
     }
   }catch(_){ }
 
-  window.__srBossFinalConfigV288={bossHP:BOSS_HP,damageStatMul:legacyBossDamageStatMul,semanticLegacyFloor:semanticLegacyFloor};
+  window.__srBossFinalConfigV288={bossHP:BOSS_HP,damageStatMul:legacyBossDamageStatMul,semanticLegacyFloor:semanticLegacyFloor,preserveMegaDamageV475:true};
 })();

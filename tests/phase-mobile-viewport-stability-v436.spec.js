@@ -1,0 +1,11 @@
+const fs=require('fs');const assert=require('assert');
+const css=fs.readFileSync('style.css','utf8');
+const home=fs.readFileSync('home-layout-authority-v219.js','utf8');
+const index=fs.readFileSync('index.html','utf8');
+assert(css.includes('height:100svh'),'V436 must use stable small viewport height');
+assert(css.includes('height:100%; height:100svh'),'app/body stable viewport fallback must exist');
+assert(home.includes('function stableResizeSchedule()'),'V436 resize guard must exist');
+assert(home.includes('if(width===lastViewportWidth)return;'),'height-only Safari resize must not schedule Home layout');
+assert(home.includes("window.addEventListener('orientationchange'"),'orientation changes must remain handled');
+assert(index.includes('2026.09.24.436'),'V436 build stamp must be present');
+console.log('V436 mobile viewport stability contract OK');

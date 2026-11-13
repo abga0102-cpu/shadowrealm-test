@@ -1,0 +1,1 @@
+const fs=require('fs'),assert=require('assert');const s=fs.readFileSync('forge-comparison-authority-v146.js','utf8');assert(s.includes('IMPACT SUR TON BUILD'));assert(s.includes('CE QUE TU GAGNES'));assert(s.includes('CE QUE TU PERDS'));assert(s.includes('vs actuel'));assert(s.includes('powerPct(pv)'));console.log('V443 comparison clarity OK');

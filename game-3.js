@@ -4,6 +4,128 @@
    the same 0.22 lerp smoothing and layered-sine idle animation as the app.
    ========================================================================= */
 const RANGED_IDS = ["arc", "arbalete", "baton"];
+
+/* V417 visual rollback: keep the experimental equipment renderer isolated
+   after live-device validation showed incorrect scale/alignment. QA can opt in
+   with ?equipV410=1 while the renderer is rebuilt against the live hero. */
+const HERO_EQUIP_V410_ENABLED = (() => {
+  try {
+    return typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("equipV410") === "1";
+  } catch (_) {
+    return false;
+  }
+})();
+if (typeof window !== "undefined") window.__srEquipV410Enabled = HERO_EQUIP_V410_ENABLED;
+
+/* ---- Dynamic Hero Equipment Layer Manager ---- */
+/* V409: the V2 PNGs are cropped 192px-wide atlas slices, not 192x192
+   full-canvas sprites. Keep their native aspect ratio and place each slice
+   on an explicit 192x192 hero coordinate system. */
+const EQUIP_CANVAS = 192;
+/* V415 calibration: atlas rows are 192px wide, but their visible art was
+   authored for a much larger reference body than the 64px live hero.  Treat
+   every row as a local sprite and calibrate it around the live body's centre,
+   rather than stretching the whole 192px strip over the hero. */
+const EQUIP_PARTS_CONFIG = [
+  { part: "armure_torse_arriere", slot: "armure",   plane: "back",  x: 37, y: 57,  w: 118, h: 39 },
+  { part: "ceinture_arriere",     slot: "ceinture", plane: "back",  x: 45, y: 91,  w: 102, h: 34 },
+  { part: "bottes_jambieres",     slot: "bottes",   plane: "legs",  x: 45, y: 108, w: 102, h: 38 },
+  { part: "bottes",               slot: "bottes",   plane: "legs",  x: 45, y: 137, w: 102, h: 34 },
+  { part: "ceinture_avant",       slot: "ceinture", plane: "front", x: 45, y: 90,  w: 102, h: 30 },
+  { part: "armure_torse_avant",   slot: "armure",   plane: "front", x: 37, y: 55,  w: 118, h: 49 },
+  { part: "armure_epaules",       slot: "armure",   plane: "front", x: 30, y: 49,  w: 132, h: 44 },
+  { part: "casque",               slot: "casque",   plane: "front", x: 52, y: 15,  w: 88,  h: 38 },
+  { part: "collier",              slot: "collier",  plane: "front", x: 57, y: 49,  w: 78,  h: 30 },
+  { part: "gants",                slot: "gants",    plane: "front", x: 27, y: 76,  w: 138, h: 42 },
+  { part: "anneau",               slot: "anneau",   plane: "front", x: 126,y: 82,  w: 28,  h: 18 }
+];
+
+function normRarityKey(rarity) {
+  if (!rarity) return null;
+  const s = String(rarity).trim().toLowerCase();
+  if (s === "peu_commun" || s === "peu commun" || s === "peu-commun") return "peu_commun";
+  if (s === "epique" || s === "épique") return "epique";
+  if (s === "heroique" || s === "héroïque") return "heroique";
+  if (s === "legendaire" || s === "légendaire") return "legendaire";
+  return s;
+}
+
+const PRELOADED_EQUIP_URLS = new Set();
+let cachedEquipSig = "";
+let cachedEquipBody = "";
+
+function equipPct(n) {
+  return ((Number(n) || 0) * 100 / EQUIP_CANVAS).toFixed(4) + "%";
+}
+
+function getEquipSig(equipped) {
+  if (!equipped || typeof equipped !== "object") return "";
+  let s = "";
+  for (let i = 0; i < EQUIP_PARTS_CONFIG.length; i++) {
+    const cfg = EQUIP_PARTS_CONFIG[i];
+    const item = equipped[cfg.slot];
+    if (item && item.rarity) s += cfg.part + ":" + normRarityKey(item.rarity) + ";";
+  }
+  return s;
+}
+
+function placedEquipImgHTML(cfg, src, extraClass) {
+  const scale = Number(cfg.scale || 1);
+  return '<img class="srEquipLayer ' + (extraClass || "") + '" data-equip-part="' + cfg.part +
+    '" data-anchor-x="' + cfg.x + '" data-anchor-y="' + cfg.y + '" src="' + src +
+    '" style="position:absolute;left:' + equipPct(cfg.x) + ';top:' + equipPct(cfg.y) +
+    ';width:' + equipPct(cfg.w) + ';height:' + equipPct(cfg.h) +
+    ';pointer-events:none;transform:scale(' + scale + ');transform-origin:50% 50%">';
+}
+
+function legEquipLayerHTML(cfg, src) {
+  const art = placedEquipImgHTML(cfg, src, "srEquipLegArt");
+  return '<div class="srEquipLegLayer" data-equip-part="' + cfg.part +
+    '" style="position:absolute;inset:0;pointer-events:none">' +
+    '<div class="srEquipLegIdle">' + art + '</div>' +
+    '<div class="srEquipLegHalf srEquipLegLeft" style="display:none">' + art + '</div>' +
+    '<div class="srEquipLegHalf srEquipLegRight" style="display:none">' + art + '</div>' +
+    '</div>';
+}
+
+function getEquipBodyHTML(equipped) {
+  const sig = getEquipSig(equipped);
+  if (sig === cachedEquipSig) return cachedEquipBody;
+  let back = "", front = "", legs = "";
+  for (let i = 0; i < EQUIP_PARTS_CONFIG.length; i++) {
+    const cfg = EQUIP_PARTS_CONFIG[i];
+    const item = equipped && equipped[cfg.slot];
+    if (!item || !item.rarity) continue;
+    const rKey = normRarityKey(item.rarity);
+    if (!rKey) continue;
+    const src = "art/equipment/" + rKey + "/" + cfg.part + ".png";
+    if (!PRELOADED_EQUIP_URLS.has(src)) {
+      PRELOADED_EQUIP_URLS.add(src);
+      preloadImg(src);
+    }
+    if (cfg.plane === "legs") legs += legEquipLayerHTML(cfg, src);
+    else if (cfg.plane === "back") back += placedEquipImgHTML(cfg, src, "");
+    else front += placedEquipImgHTML(cfg, src, "");
+  }
+  cachedEquipSig = sig;
+  cachedEquipBody = JSON.stringify({ back, front, legs });
+  return cachedEquipBody;
+}
+
+function heroEquipmentLayersHTML(equipped, tilt, sc) {
+  if (!HERO_EQUIP_V410_ENABLED) return "";
+  const raw = getEquipBodyHTML(equipped);
+  if (!raw) return "";
+  const body = JSON.parse(raw);
+  if (!body.back && !body.front && !body.legs) return "";
+  const tf = "rotate(" + tilt + "deg) scale(" + sc + ")";
+  /* Legs render before the front torso plane at the same stack level so
+     belts/torso pieces naturally cover the upper edge of the greaves. */
+  return (body.back ? '<div class="srEquipPoseWrap srEquipBackWrap" style="position:absolute;inset:0;z-index:1;pointer-events:none;transform-origin:50% 92%;transform:' + tf + '">' + body.back + '</div>' : '') +
+    (body.legs ? '<div class="srEquipLegWrap" style="position:absolute;inset:0;z-index:5;pointer-events:none;transform-origin:50% 92%;transform:' + tf + '">' + body.legs + '</div>' : '') +
+    (body.front ? '<div class="srEquipPoseWrap srEquipFrontWrap" style="position:absolute;inset:0;z-index:5;pointer-events:none;transform-origin:50% 92%;transform:' + tf + '">' + body.front + '</div>' : '');
+}
 /* width-to-height of each sprite, so none of them stretch */
 const WEAPON_ASPECT = { epee: 0.543, hache: 0.359, masse: 0.258, dague: 0.301, arc: 0.219, arbalete: 0.664, baton: 0.93 };
 const WEAPON_SILVER = "#d6dae4";
@@ -105,6 +227,24 @@ function floorTrack(floor) {
     if (f < floor) cls += " on";
     if (f === floor) cls += " cur";
     h += '<span class="' + cls + '">' + (isBoss(f) ? MINI_SKULL : "") + "</span>";
+  }
+  return h;
+}
+
+/* V480 · Mega-Boss has its own progression track. Every Mega stage is a Boss;
+   never reuse the Campaign track because its odd 5-floor markers are Elites. */
+function megaBossTrack(floor) {
+  const level = megaLevelForFloor(floor);
+  const block = 10;
+  const base = Math.floor((level - 1) / block) * block + 1;
+  let h = "";
+  for (let i = 0; i < block; i++) {
+    const lv = base + i;
+    if (i) h += '<i class="' + (lv <= level ? "on" : "") + '"></i>';
+    let cls = "sdot boss";
+    if (lv < level) cls += " on";
+    if (lv === level) cls += " cur";
+    h += '<span class="' + cls + '">' + MINI_SKULL + "</span>";
   }
   return h;
 }
@@ -384,6 +524,7 @@ function attackFrames(key) {
 }
 /* which image to draw for a unit right now */
 function spriteFrame(key, attacking, t) {
+  if (key === "hero" && HERO_EQUIP_V410_ENABLED && ASSETS.hero_bare_v412) return ASSETS.hero_bare_v412;
   const f = attackFrames(key);
   if (!f.length || !(attacking > 0)) return ASSETS[key];
   // attacking counts DOWN, so progress runs 0 -> 1 across the swing
@@ -446,7 +587,8 @@ function drawArena() {
     : c.raidId ? RAIDS[c.raidId].name : "Épreuve d'Ascension";
   if (arenaNodes.label.textContent !== label) arenaNodes.label.textContent = label;
 
-  const track = c.ctx === "campaign" || c.ctx === "mega" ? floorTrack(c.floor) : "";
+  const track = c.ctx === "campaign" ? floorTrack(c.floor)
+    : c.ctx === "mega" ? megaBossTrack(c.floor) : "";
   if (lastTrack !== track) { arenaNodes.track.innerHTML = track; lastTrack = track; }
 
   const alive = c.enemies.filter((e) => e.alive).length;
@@ -459,7 +601,7 @@ function drawArena() {
         : c.elite ? '<span class="fPill elite">' + ic("crown", 10) + "ÉLITE</span>" : "");
   } else if (c.ctx === "mega") {
     sub = '<span class="fPill boss">' + ic("skull", 10) + "MÉGA-BOSS ×10</span>" +
-      '<span class="fPill">Étage ' + fmtInt(c.floor) + "</span>";
+      '<span class="fPill boss">' + ic("skull", 10) + "Étage Méga " + megaLevelForFloor(c.floor) + "</span>";
   } else if (c.ctx === "arenaLive") {
     const ae=c.enemies.find(e=>e.arenaProfile),ap=ae&&ae.arenaProfile;
     sub='<span class="fPill">'+ic("swords",10)+'TEMPS RÉEL</span>'+(ap?'<span class="fPill">'+esc(ARENA_BUILDS[ap.kind]?.label||"Bot")+' · '+fmt(ap.power||arenaProfilePower(ap))+' P</span>':'');
@@ -530,6 +672,7 @@ function drawArena() {
     const sc = 1;   // the hero holds one size: no breathing, no attack punch
     const auraPulse = 1 + Math.sin(t * 0.006) * 0.06;
     const hpPct = Math.max(0, (c.heroHP / c.heroMaxHP) * 100);
+    const visualWeapon = (S.equipped && S.equipped.arme) ? D.weapon : null;
 
     html += '<div class="unit" style="left:' + (P.hero * scale - size / 2) + 'px;top:' + (groundY - size) + 'px;' +
       'width:' + size + 'px;height:' + size + 'px;transform:translate(' + (lunge + knock) + 'px,' + (idle + hop) + 'px);z-index:4">' +
@@ -538,10 +681,13 @@ function drawArena() {
         'height:' + (size * 0.94) + 'px;background:' + auraColor + '22;border-color:' + auraColor + '99;' +
         'transform:scale(' + auraPulse + ');box-shadow:0 0 14px ' + auraColor + '"></div>' : '') +
 
-      '<img src="' + spriteFrame("hero", c.heroAttacking, t) + '" style="transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
-      weaponHTML(D.weapon, weaponColor, c.heroAttacking > 0, t, size) +
-      (c.heroAttacking > 0
-        ? (RANGED_IDS.includes(D.weapon)
+      '<img src="' + spriteFrame("hero", c.heroAttacking, t) + '" style="' +
+      (HERO_EQUIP_V410_ENABLED ? 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;' : '') +
+      'transform:rotate(' + tilt + 'deg) scale(' + sc + ')">' +
+      (HERO_EQUIP_V410_ENABLED ? heroEquipmentLayersHTML(S.equipped, tilt, sc) : '') +
+      (visualWeapon ? weaponHTML(visualWeapon, weaponColor, c.heroAttacking > 0, t, size) : '') +
+      (c.heroAttacking > 0 && visualWeapon
+        ? (RANGED_IDS.includes(visualWeapon)
             ? releaseHTML(c.heroAttacking, size, weaponColor)
             : slashHTML(c.heroAttacking, size))
         : '') +
@@ -838,7 +984,7 @@ const RESOURCE_INFO = {
     from: ["Raid Familier", "Récolte automatique — 25 % d'une entrée par heure"] },
   apples:    { icon: "paw", c: "#8ED05A", label: "Pommes", get: (s) => s.apples || 0,
     desc: "Sert à améliorer le niveau des Familiers. Une récompense de première victoire uniquement.",
-    from: ["Première victoire contre chaque Méga-Boss", "Bonus Rebirth Gain Pommes",
+    from: ["Première victoire contre chaque Méga-Boss",
       "Remboursement des doublons fusionnés et de l’Ascension Familier"] },
   pa:        { icon: "pa", c: "#FFD65E", label: "Points de Statistique", get: (s) => s.statPoints,
     desc: "S'attribuent librement entre Santé, Dégâts, Chance critique et Réduction critique.",
@@ -853,30 +999,30 @@ const RESOURCE_INFO = {
 const STAT_INFO = {
   maxhp:      { label: "PV Max", c: "#E5484D", icon: "heart", get: () => fmt(D.maxHP),
     desc: "Points de vie totaux. Tomber à zéro fait échouer la vague en cours.",
-    from: ["Points de Santé (+20 / point)", "Équipement (Casque, Armure, Chaussures)", "Familier actif", "Forge", "Rebirth"] },
+    from: ["Points de Santé (+20 / point)", "Équipement (Casque, Armure, Chaussures)", "Familier actif", "Forge"] },
   damage:     { label: "Dégâts", c: "#F0883E", icon: "flame", get: () => fmt(D.damage),
     desc: "Dégâts d'une attaque de base, avant critique.",
     from: ["Points de Dégâts (+2,2 / point)", "Équipement (Arme, Gants, Anneau)", "Familier actif", "Forge", "Maîtrises"] },
   atkspeed:   { label: "Vitesse d'attaque", c: "#F5C542", icon: "bolt", get: () => D.attackSpeed.toFixed(2),
-    desc: "Nombre d'attaques par seconde.", from: ["Rebirth", "Bonus d'équipement", "Familier Électrique (+8 %)"] },
+    desc: "Nombre d'attaques par seconde.", from: ["Bonus d'équipement", "Familier Électrique (+8 %)"] },
   movespeed:  { label: "Vitesse de déplacement", c: "#3FCFD6", icon: "haste", get: () => fmt(D.moveSpeed),
     desc: "Vitesse d'approche vers l'ennemi au début de chaque vague.", from: ["Bonus d'équipement"] },
   crit:       { label: "Chance Critique", c: "#F5C542", icon: "target", get: () => D.critChance.toFixed(1) + "%",
     desc: "Probabilité qu'une attaque soit critique. Plafonnée à " + CRIT_CHANCE_CAP + " %.",
     from: ["Points de Chance Critique (+0,2 / point)", "Bonus d'équipement"] },
   critmult:   { label: "Dégâts Critiques", c: "#FF5AA0", icon: "sparkle", get: () => "x" + D.critMult.toFixed(2),
-    desc: "Multiplicateur appliqué aux dégâts lors d'un coup critique.", from: ["Rebirth", "Bonus d'équipement"] },
+    desc: "Multiplicateur appliqué aux dégâts lors d'un coup critique.", from: ["Bonus d'équipement"] },
   critred:    { label: "Réduction Critique", c: "#4A90D9", icon: "shield", get: () => D.critRed.toFixed(1) + "%",
     desc: "Réduit la probabilité que les ennemis te touchent en critique. Plafonnée à " + CRIT_RED_CAP + " %.",
     from: ["Points de Réduc. Crit (+0,3 / point)"] },
   dmgred:     { label: "Réduction de Dégâts", c: "#4A90D9", icon: "shield", get: () => D.dmgRed.toFixed(1) + "%",
-    desc: "Réduit tous les dégâts subis.", from: ["Rebirth"] },
+    desc: "Réduit tous les dégâts subis.", from: ["Aucune source active"] },
   regen:      { label: "Régénération", c: "#3FB950", icon: "heal", get: () => D.regen.toFixed(2) + "%/s",
-    desc: "Pourcentage de tes PV max régénéré chaque seconde en combat.", from: ["Rebirth"] },
+    desc: "Pourcentage de tes PV max régénéré chaque seconde en combat.", from: ["Aucune source active"] },
   lifesteal:  { label: "Vol de Vie", c: "#3FA7FF", icon: "droplet", get: () => D.lifesteal.toFixed(2) + "%",
-    desc: "Part des dégâts infligés qui te sont rendus en PV.", from: ["Rebirth", "Bonus d'équipement"] },
+    desc: "Part des dégâts infligés qui te sont rendus en PV.", from: ["Bonus d'équipement"] },
   bossdmg:    { label: "Dégâts Boss", c: "#E5484D", icon: "skull", get: () => "+" + D.bossDmg.toFixed(0) + "%",
-    desc: "Dégâts supplémentaires contre les Boss et les Élites.", from: ["Rebirth"] },
+    desc: "Dégâts supplémentaires contre les Boss et les Élites.", from: ["Aucune source active"] },
   block:      { label: "Chance de blocage", c: "#72A7E8", icon: "shield", get: () => D.blockChance.toFixed(1) + "%",
     desc: "Chance de bloquer une attaque ennemie.", from: ["Bonus d'équipement"] },
   doubleatk:  { label: "Double attaque", c: "#F5C542", icon: "swords", get: () => D.doubleAtk.toFixed(1) + "%",

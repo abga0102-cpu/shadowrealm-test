@@ -75,7 +75,7 @@ test('V312/V318 tutorial runway follows current progression and never revives re
   expect(result.currentKeyIsRebirth).toBe(false);
 });
 
-test('V312 tutorial takes priority on Home, then the useful recommendation returns after the step is seen', async ({ page }) => {
+test('V459 off-screen tutorials no longer interrupt Home and appear immediately on system entry', async ({ page }) => {
   await openCleanGame(page);
 
   await page.evaluate(() => {
@@ -97,23 +97,14 @@ test('V312 tutorial takes priority on Home, then the useful recommendation retur
     if (typeof clearTutorialGuide === 'function') clearTutorialGuide();
     if (typeof tutorialCurrentKey !== 'undefined') tutorialCurrentKey = null;
     nav('accueil');
-    scheduleRender();
-  });
-
-  await expect(page.locator('#tutorialCard')).toContainText('Arbre personnel', { timeout: 5000 });
-  await expect(page.locator('.recommendedActionCard')).toHaveCount(0);
-
-  await page.evaluate(() => {
-    S.tutorial.seen.tree = true;
-    const card = document.getElementById('tutorialCard');
-    if (card) card.remove();
-    if (typeof clearTutorialGuide === 'function') clearTutorialGuide();
-    if (typeof tutorialCurrentKey !== 'undefined') tutorialCurrentKey = null;
-    scheduleRender();
   });
 
   await expect(page.locator('#tutorialCard')).toHaveCount(0, { timeout: 5000 });
   await expect(page.locator('.recommendedActionCard')).toContainText('Récupérer la Forge', { timeout: 5000 });
+
+  await page.evaluate(() => nav('arbre'));
+  await expect(page.locator('#tutorialCard')).toContainText('Arbre personnel', { timeout: 1500 });
+  await expect(page.locator('#tutorialCard')).toHaveAttribute('data-tutorial-route', 'arbre');
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
 

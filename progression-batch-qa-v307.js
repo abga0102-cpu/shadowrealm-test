@@ -16,9 +16,8 @@ if(window.__srProgressionBatchQAV307)return;window.__srProgressionBatchQAV307=tr
 /* ---------- Familiar Ancestral hatch integration ---------- */
 try{
   if(typeof EGG_TIMERS!=='undefined'&&EGG_TIMERS){
-    /* Geometric midpoint between Mythique (10h) and Legendaire (24h), rounded
-       to a clean gameplay value. This only fills the previously missing tier. */
-    if(!(Number(EGG_TIMERS.ANCESTRAL)>0))EGG_TIMERS.ANCESTRAL=16*3600;
+    /* V476: Ancestral is a direct hatch tier at 2 days. */
+    if(!(Number(EGG_TIMERS.ANCESTRAL)>0))EGG_TIMERS.ANCESTRAL=48*3600;
   }
 }catch(_){ }
 
@@ -98,24 +97,27 @@ var audit={
   raidSkill50:safe(function(){return raidReward('competence',50);}),
   raidPet1:safe(function(){return raidReward('familier',1);}),
   raidPet50:safe(function(){return raidReward('familier',50);}),
-  dustChanceHigh:safe(function(){return itemUpgradeChance({level:999});}),
-  dustCost0:safe(function(){return itemUpgradeCost({level:0});}),
+  dustChance25:safe(function(){return itemUpgradeChance({level:1,upgradeLevel:25});}),
+  dustChanceHigh:safe(function(){return itemUpgradeChance({level:1,upgradeLevel:999});}),
+  dustCost0:safe(function(){return itemUpgradeCost({level:1,upgradeLevel:0});}),
+  dustCost10:safe(function(){return itemUpgradeCost({level:1,upgradeLevel:10});}),
   forgeStar1:safe(function(){return ascendPowerMul(1,'forge');}),
   skillStar1:safe(function(){return ascendPowerMul(1,'skill');}),
   petStars:safe(function(){return [ascendPowerMul(1,'pet'),ascendPowerMul(2,'pet'),ascendPowerMul(3,'pet')];}),
   treeTotalPE:safe(function(){return treeTotalPE();})
 };
 audit.ok=!!(
-  audit.ancestralHatchSeconds===57600&&audit.ancestralRateBeforeMax===0&&Math.abs(audit.ancestralRateAtMax-5)<1e-6&&
+  audit.ancestralHatchSeconds===172800&&audit.ancestralRateBeforeMax===0&&Math.abs(audit.ancestralRateAtMax-5)<1e-6&&
   audit.raidEvolution1===100&&audit.raidEvolution50===247&&audit.raidSkill1===250&&audit.raidSkill50===740&&
-  audit.raidPet1===250&&audit.raidPet50===740&&audit.dustChanceHigh===5&&audit.dustCost0===60&&
+  audit.raidPet1===250&&audit.raidPet50===740&&audit.dustChance25===95&&audit.dustChanceHigh===5&&
+  audit.dustCost0===15&&audit.dustCost10===105&&
   audit.forgeStar1===2&&audit.skillStar1===1.5&&Array.isArray(audit.petStars)&&audit.petStars[0]===1.5&&audit.petStars[1]===2.1&&audit.petStars[2]===3
 );
 window.__srProgressionAuditV307=audit;
 
 try{if(typeof S!=='undefined'&&S){S.progressionBatchQAVersion=307;if(typeof saveNow==='function')saveNow();if(typeof scheduleRender==='function')scheduleRender();}}catch(_){ }
 window.__srProgressionBatchQAConfigV307={
-  ancestralHatchHours:16,
+  ancestralHatchHours:48,
   ancestralDirectRateAtMax:5,
   invalidRarityGuard:true,
   familiarRateOwner:'V296',

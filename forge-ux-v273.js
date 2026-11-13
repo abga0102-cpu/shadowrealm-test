@@ -1,8 +1,8 @@
-/* SHADOWREACH · Forge UX V273
+/* SHADOWREACH · Forge UX V273 / V371 / V458
    Event-driven Forge loot authority: bounded queue, background-safe kept stack,
    comparison-aware AUTO feedback, and no permanent 140ms watcher while idle.
-   AUTO batch sizing remains owned by auto-forge-compare; manual forge quantities are untouched.
-   No economy/progression/save changes. No overlay, no hot-loader.
+   V458 retires the fragile DOM injection for AUTO batch controls; the canonical
+   Forge filter modal now renders them directly. No economy/progression/save changes.
 */
 (function(){
 'use strict';
@@ -11,7 +11,6 @@ if(typeof S==='undefined'||!S.forge||typeof forgeSummon!=='function')return;
 
 var reduced=false;try{reduced=!!matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(_){}
 var nativeForgeSummon=forgeSummon;
-var nativeFilter=(typeof showForgeFilterPicker==='function')?showForgeFilterPicker:null;
 var nativeAutoAct=(typeof ACT!=='undefined'&&ACT&&typeof ACT.autoForge==='function')?ACT.autoForge:null;
 var BATCHES=[1,3,5,10],MAX_VISIBLE=5,KEEP_LIMIT=30,MAX_TRANSIENT=4,MAX_PENDING=12;
 var STACK_START_X=34,STACK_STEP_X=24,STACK_START_Y=4,STACK_STEP_Y=1;
@@ -52,10 +51,10 @@ function addKept(r,animate){if(!r||r.recycled||!mountRoot())return false;var nod
 function stashKept(r){if(!r||r.recycled)return;suspendedKept.push(r);if(suspendedKept.length>KEEP_LIMIT)suspendedKept.shift();}
 function restoreSuspended(){if(document.hidden||!reserve()||!suspendedKept.length)return;var arr=suspendedKept.splice(0);arr.forEach(function(r){addKept(r,false);});}
 function compactPending(){while(pendingResults.length>MAX_PENDING){var r=pendingResults.shift();if(r&&!r.recycled)addKept(r,false);}}
-function transientCard(r){var rec=!!r.recycled,d=document.createElement('div');d.className='srForgeTransientCard273 '+(rec?'recycled':'kept');d.style.setProperty('--r',col(r.rarity));d.innerHTML='<div class="srForgeTransientIcon273"><img src="'+img(r.slot)+'" alt=""></div><div class="srForgeTransientText273"><b>'+label(r.slot)+'</b><small>'+String(r.rarity||'').replace(/_/g,' ')+(r.power!=null?' · '+fmt2(r.power):'')+'</small>'+(rec&&r.dust!=null?'<em>+'+fmt2(r.dust)+' poussière</em>':'')+'</div>';return d;}
+function transientCard(r){var rec=!!r.recycled,d=document.createElement('div');d.className='srForgeTransientCard273 '+(rec?'recycled':'kept');d.style.setProperty('--r',col(r.rarity));var gains=(rec&&r.dust!=null?'<em>+'+fmt2(r.dust)+' poussière</em>':'')+(Number(r.gold)>0?'<em>+'+fmt2(r.gold)+' Or</em>':'');d.innerHTML='<div class="srForgeTransientIcon273"><img src="'+img(r.slot)+'" alt=""></div><div class="srForgeTransientText273"><b>'+label(r.slot)+'</b><small>'+String(r.rarity||'').replace(/_/g,' ')+(r.power!=null?' · '+fmt2(r.power):'')+'</small>'+gains+'</div>';return d;}
 function layoutTransients(){activeTransients.forEach(function(entry,i){entry.node.style.setProperty('--tx',(i*13)+'px');entry.node.style.setProperty('--ty',(i*1.5)+'px');entry.node.style.zIndex=String(20+i);});}
 function removeTransient(entry){var i=activeTransients.indexOf(entry);if(i>=0)activeTransients.splice(i,1);if(entry&&entry.node&&entry.node.parentNode)entry.node.remove();layoutTransients();pumpQueue();if(!needsFastWatch())stopWatch();}
-function startResult(r){if(document.hidden||!mountRoot())return false;var d=transientCard(r),entry={data:r,node:d};activeTransients.push(entry);transientNode.appendChild(d);layoutTransients();requestAnimationFrame(function(){requestAnimationFrame(function(){if(d.isConnected)d.classList.add('enter');});});if(r.recycled){later(function(){if(d.isConnected)d.classList.add('recycleOut');later(function(){removeTransient(entry);},reduced?110:400);},reduced?150:500);}else{later(function(){if(d.isConnected)d.classList.add('merge');later(function(){removeTransient(entry);addKept(r,true);},reduced?90:200);},reduced?160:520);}return true;}
+function startResult(r){if(document.hidden||!mountRoot())return false;var d=transientCard(r),entry={data:r,node:d};activeTransients.push(entry);transientNode.appendChild(d);layoutTransients();requestAnimationFrame(function(){requestAnimationFrame(function(){if(d.isConnected)d.classList.add('enter');});});if(r.recycled){later(function(){if(d.isConnected)d.classList.add('recycleOut');later(function(){removeTransient(entry);},reduced?110:400);},reduced?300:950);}else{later(function(){if(d.isConnected)d.classList.add('merge');later(function(){removeTransient(entry);addKept(r,true);},reduced?90:200);},reduced?160:520);}return true;}
 function pumpQueue(){if(document.hidden||!reserve())return;compactPending();while(activeTransients.length<MAX_TRANSIENT&&pendingResults.length){var r=pendingResults.shift();if(!startResult(r))break;}}
 function enqueue(res){if(!Array.isArray(res)||!res.length)return;var batchResults=res.slice(0,20);if(document.hidden){batchResults.forEach(stashKept);return;}if(!reserve())return;Array.prototype.push.apply(pendingResults,batchResults);compactPending();impactBatch(batchResults.length);pumpQueue();startWatch();}
 function suspendVisuals(){pendingResults.forEach(stashKept);activeTransients.forEach(function(e){stashKept(e&&e.data);});clearTimers();pendingResults.length=0;activeTransients.forEach(function(e){if(e.node&&e.node.parentNode)e.node.remove();});activeTransients.length=0;if(toolNode)toolNode.classList.remove('impact','burst');syncTool();}
@@ -65,9 +64,20 @@ function startWatch(){if(watchTimer||document.hidden||!needsFastWatch())return;w
 
 forgeSummon=function(){var out=nativeForgeSummon.apply(this,arguments);try{enqueue(out);}catch(e){console.warn('forge queue V273 skipped',e);}return out;};
 try{window.forgeSummon=forgeSummon;}catch(_){}
-if(typeof ACT!=='undefined'&&ACT){if(nativeAutoAct){ACT.autoForge=function(){var out=nativeAutoAct.apply(this,arguments);later(function(){if(reserve()){mountRoot();restoreSuspended();syncTool();if(S.forge.autoForge)startWatch();else stopWatch();}},0);return out;};}ACT.autoForgeBatch266=function(a){persistBatch(a);try{if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}if(S.forge.autoForge&&typeof scheduleAutoForge==='function'&&!(window.__srAutoForgePausedForCompareV199&&window.__srAutoForgePausedForCompareV199()))scheduleAutoForge(180);}catch(_){}if(nativeFilter)showForgeFilterPicker();};}
-function injectBatch(){var toggle=document.querySelector('[data-act="forgeFilterToggle"]');if(!toggle)return;var row=toggle.parentElement;if(!row||document.getElementById('srAutoBatch266'))return;var box=document.createElement('div');box.id='srAutoBatch266';box.innerHTML='<div class="b small">Auto-Forge simultanée</div><div class="mute tiny mt2">Nombre de pièces forgées à chaque cycle AUTO.</div><div class="srBatchBtns266">'+BATCHES.map(function(n){return '<button type="button" class="srBatch266 '+(batch()===n?'on':'')+'" data-act="autoForgeBatch266" data-arg="'+n+'">×'+n+'</button>';}).join('')+'</div><div class="mute tiny mt3">Le coût reste normal par pièce. Les valeurs non débloquées sont verrouillées par ta progression.</div>';row.insertAdjacentElement('afterend',box);}
-if(nativeFilter){showForgeFilterPicker=function(){var r=nativeFilter.apply(this,arguments);requestAnimationFrame(injectBatch);return r;};try{window.showForgeFilterPicker=showForgeFilterPicker;}catch(_){} }
+if(typeof ACT!=='undefined'&&ACT){
+ if(nativeAutoAct){ACT.autoForge=function(){var out=nativeAutoAct.apply(this,arguments);later(function(){if(reserve()){mountRoot();restoreSuspended();syncTool();if(S.forge.autoForge)startWatch();else stopWatch();}},0);return out;};}
+ ACT.autoForgeBatch266=function(a){
+  persistBatch(a);
+  try{
+   if(typeof autoForgeTimer!=='undefined'&&autoForgeTimer!==null){clearTimeout(autoForgeTimer);autoForgeTimer=null;}
+   if(S.forge.autoForge&&typeof scheduleAutoForge==='function'&&!(window.__srAutoForgePausedForCompareV199&&window.__srAutoForgePausedForCompareV199()))scheduleAutoForge(180);
+  }catch(_){}
+  if(typeof showForgeFilterPicker==='function')showForgeFilterPicker();
+ };
+}
+/* V458: #srAutoBatch266 is rendered directly by showForgeFilterPicker().
+   Keeping injection here created a second layout owner and could place controls
+   outside the visible modal body on short mobile screens. */
 
 document.addEventListener('click',function(e){var go=e.target&&e.target.closest?e.target.closest('[data-act="go"],[data-act="nav"]'):null;if(go)later(scheduleRemount,0);},true);
 document.addEventListener('visibilitychange',function(){if(document.hidden){suspendVisuals();stopWatch();return;}if(reserve()&&(kept.length||suspendedKept.length||S.forge.autoForge)){mountRoot();restoreSuspended();syncTool();if(needsFastWatch())startWatch();}});
@@ -85,7 +95,7 @@ var st=document.createElement('style');st.id='srForgeUX273Style';st.textContent=
 #srForgeLoot273 .srForgeTransientCard273{--r:#8fa3bf;--tx:0px;--ty:0px;position:absolute;left:30px;top:4px;height:52px;width:118px;border:1.5px solid var(--r);border-radius:10px;background:linear-gradient(180deg,#182840fa,#091321fa);box-shadow:0 3px 9px #000a,0 0 8px color-mix(in srgb,var(--r) 24%,transparent);display:flex;align-items:center;gap:6px;padding:5px 7px;box-sizing:border-box;opacity:0;transform:translate(var(--tx),calc(var(--ty) + 5px)) scale(.98);filter:brightness(.92);overflow:hidden}\
 #srForgeLoot273 .srForgeTransientCard273.enter{animation:srForgeEnter273 .21s cubic-bezier(.2,.82,.3,1.08) both}\
 #srForgeLoot273 .srForgeTransientIcon273{width:34px;height:34px;flex:0 0 34px;border-radius:8px;background:radial-gradient(circle,color-mix(in srgb,var(--r) 15%,transparent),transparent 72%);display:grid;place-items:center}#srForgeLoot273 .srForgeTransientIcon273 img{width:31px;height:31px;object-fit:contain}\
-#srForgeLoot273 .srForgeTransientText273{min-width:0;display:flex;flex-direction:column;gap:2px}.srForgeTransientText273 b{font:900 8px/1 Georgia,serif;color:#f4df9d;white-space:nowrap}.srForgeTransientText273 small{font:800 6px/1 system-ui;color:var(--r);white-space:nowrap}.srForgeTransientText273 em{font:900 6px/1 system-ui;color:#a8e8ff;font-style:normal;white-space:nowrap}\
+#srForgeLoot273 .srForgeTransientText273{min-width:0;display:flex;flex-direction:column;gap:2px}.srForgeTransientText273 b{font:900 8px/1 Georgia,serif;color:#f4df9d;white-space:nowrap}.srForgeTransientText273 small{font:800 6px/1 system-ui;color:var(--r);white-space:nowrap}.srForgeTransientText273 em{font:1000 7.5px/1 system-ui;color:#78E996;font-style:normal;white-space:nowrap;text-shadow:0 1px 1px #0008}\
 #srForgeLoot273 .srForgeTransientCard273.merge{opacity:0;transform:translate(calc(var(--tx) + 34px),var(--ty)) scale(.86);filter:brightness(1.08);transition:opacity .17s ease,transform .20s cubic-bezier(.3,.7,.4,1),filter .17s}\
 #srForgeLoot273 .srForgeTransientCard273.recycleOut{opacity:0;transform:translate(var(--tx),calc(var(--ty) - 3px)) scale(.72) rotate(-3deg);filter:grayscale(.65) blur(.7px);transition:opacity .28s ease,transform .38s ease,filter .34s ease}\
 #srForgeLoot273 .srForgeTool273{position:absolute;z-index:12;right:6px;top:2px;width:94px;height:58px;border:1px solid #4b6077;border-radius:13px;background:linear-gradient(180deg,#12253aee,#081421f2);box-shadow:inset 0 0 0 1px #ffffff0b,0 4px 10px #0008,0 0 14px #ffad3b12;overflow:hidden}\

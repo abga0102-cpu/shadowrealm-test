@@ -1,0 +1,12 @@
+const fs=require('fs');
+const assert=require('assert');
+const src=fs.readFileSync('progression-overhaul-v283.js','utf8');
+const expected={COMMUN:550,PEU_COMMUN:1100,RARE:2200,EPIQUE:8800,HEROIQUE:17600,MYTHIQUE:35200,ARTEFACT:140800,LEGENDAIRE:563200,INFERNAL:2252800,IMMORTEL:9011200,DIVIN:36044800,ANCESTRAL:2252800};
+for(const [rarity,value] of Object.entries(expected)) assert(src.includes(rarity+':'+value),rarity+' equipment base changed');
+assert(src.includes("var EQUIP_ORDER=['COMMUN','PEU_COMMUN','RARE','EPIQUE','HEROIQUE','MYTHIQUE','ARTEFACT','LEGENDAIRE','IMMORTEL','DIVIN'];"),'Infernal must not remain in the active equipment power ladder');
+assert(src.includes("if(rar==='INFERNAL')return 'IMMORTEL';"),'legacy Infernal next-rarity compatibility missing');
+assert(src.includes('makeItem.__srV283=true'),'V501 equipment authority no longer owns makeItem');
+assert(src.includes('it.powerCurveVersion=501'),'V501 item curve marker missing');
+assert(src.includes('version:501,equipmentBase:EQUIP_BASE'),'V501 equipment curve authority marker missing');
+assert(src.includes('Math.max(oldBD,x.d)')&&src.includes('Math.max(oldD,'),'V501 upward-only owned-equipment migration missing');
+console.log('V501 equipment curve authority OK');
