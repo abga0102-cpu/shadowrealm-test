@@ -1,0 +1,238 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Shadowreach · Clans fictifs (prototype)</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Arial,sans-serif;color:#eef3ff;background:#0a101c;--gold:#e6c684}*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 50% -20%,#2d4162 0,transparent 52%),#0a101c;min-height:100vh}
+main{width:min(1050px,100%);padding:18px 15px 50px;margin:0 auto}h1,h2,h3,p{margin:0}h1{font:800 27px Georgia,serif;color:var(--gold)}h2{font:750 24px Georgia,serif;color:var(--gold)}h3{color:#f5d08c;font-size:13px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.07em}
+button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
+header{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;padding:10px 0 18px}
+header .mark{font-size:32px}header .left{display:flex;gap:12px;align-items:center}header .badge{font-size:11px;font-weight:800;color:#f2d49d;border:1px solid #826735;padding:9px 12px;border-radius:30px;background:#3c301e}
+.muted{color:#9fafc6;font-size:12px;line-height:1.6}.intro{padding:16px 20px;margin-bottom:15px}.panel{border:1px solid #334462;background:linear-gradient(150deg,#16233b,#0e1728);border-radius:15px;box-shadow:0 8px 24px #0005}
+.tabs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}.tabs button{border:1px solid #3c5475;color:#b7c8df;background:#182941;padding:10px 15px;border-radius:10px;font-weight:800}
+.tabs button.on{background:#554123;border-color:#edc983;color:#ffdb91}.cols{display:grid;grid-template-columns:minmax(285px,0.9fr) minmax(340px,1.2fr);gap:15px}.list,.detail,.create{padding:17px}
+.tile{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#121e31;color:#f7faff;border:1px solid #2c405d;border-radius:11px;padding:12px 9px;margin:9px 0}.tile.selected{border-color:#f0c880;background:#25354b}.tile strong{display:block;font-size:13px}.tile small{display:block;font-size:11px;color:#9cacc8;margin-top:4px}.crest{display:grid;place-items:center;background:#1b2942;border:1px solid var(--accent);border-radius:13px;width:49px;height:49px;font-size:26px;flex:none}.crest.big{width:70px;height:70px;font-size:41px}.head{display:flex;align-items:center;gap:13px;margin-bottom:15px}
+.metrics{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0}.metrics span{background:#15233a;border:1px solid #354665;border-radius:9px;padding:10px;min-width:110px;color:#aebcd0;font-size:11px;flex:1}.metrics b{display:block;color:#ecd18e;font-size:19px}
+.action{background:linear-gradient(#91723e,#71511e);border:1px solid #c7a46a;border-radius:10px;padding:11px 13px;color:white;font-weight:800}.action.danger{background:#5e2b37;border-color:#a75564}.action:disabled{filter:grayscale(1)}.detail>.action{width:100%;margin-bottom:18px}
+.member{display:flex;align-items:center;gap:10px;padding:10px 5px;border-top:1px solid #ffffff13}.avatar{display:grid;place-items:center;width:35px;height:35px;border-radius:9px;background:#243955;color:#d2e5ff;font-weight:800;flex:none}
+.member strong{font-size:12px}.member small{display:block;color:#a5b4cf;font-size:11px;margin-top:3px}.member em{font-size:9px;color:#f3d087;font-style:normal;border:1px solid #806132;padding:2px 5px;border-radius:5px}.member em.you{color:#9ae6f7}
+.create{margin-top:15px}#crests{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}#crests button{background:#14233b;color:#fff;border:1px solid #445676;border-radius:9px;padding:7px 10px;font-size:22px}#crests button.on{border-color:#e7c783;background:#3c372d}
+form{display:flex;flex-wrap:wrap;gap:8px}form input{flex:1;min-width:170px;background:#0a1423;border:1px solid #495f7b;border-radius:9px;color:white;padding:11px}
+#status{min-height:1.4em;color:#e2c98b;font-size:12px;margin-bottom:7px}.days{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:18px 0}.day{text-align:center;border:1px solid #345073;background:#111f33;padding:10px 3px;border-radius:10px;font-size:10px}.day b{display:block;color:#f3ce83;font-size:24px}.notice{padding:12px;background:#412d1b;color:#e4c38c;border:1px solid #a78142;border-radius:10px;font-size:12px}
+footer{margin-top:25px;text-align:center;color:#8997ae;font-size:11px}footer button{background:#1d3049;border:1px solid #4a6288;padding:10px 14px;color:#dce8f7;border-radius:9px}
+@media(max-width:720px){.cols{grid-template-columns:1fr}.days{grid-template-columns:repeat(4,1fr)}header{align-items:start}main{padding:12px}.list,.detail,.create{padding:13px}}
+
+.orderGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:18px}
+.orderBtn,.dayPick{color:#d4e0ef;background:#1b2d46;border:1px solid #425775;border-radius:9px;padding:10px 7px;min-height:42px;font-size:12px;font-weight:750}
+.orderBtn.on,.dayPick.on{border-color:#e4c27e;background:#4e3d22;color:#fff0c3}
+.dayPicks{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-bottom:15px}.dayPick{font-size:11px}
+.ordersPanel h3{margin-top:20px}.action.full{width:100%;font-size:14px}
+.orderRow{display:flex;gap:12px;align-items:center;padding:11px 2px;border-top:1px solid #ffffff18}
+.orderRow b{font-size:13px}.orderRow small{display:block;color:#9fb3d0;font-size:11px;margin-top:4px}
+.orderRow select{min-width:150px;max-width:220px;width:39%;background:#172943;color:#eff5ff;border:1px solid #4a6485;border-radius:8px;padding:9px}
+.logRow{padding:7px 3px;color:#b8cde5;font-size:12px;border-bottom:1px solid #ffffff12}
+.resetActivity{background:#253651;color:#e4ebf8;border:1px solid #4b6687;border-radius:9px;padding:9px;margin:16px 0 12px}
+@media(max-width:720px){.orderGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.dayPicks{grid-template-columns:repeat(4,minmax(0,1fr))}.orderRow select{width:45%;min-width:140px}}
+
+.warPanel h3{margin-top:20px}
+.warHeading{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.versus{display:grid;grid-template-columns:minmax(0,1fr) 35px minmax(0,1fr);gap:8px;align-items:center;margin:18px 0}
+.versus>div{text-align:center;background:#12233b;border:1px solid #3c5171;padding:15px 8px;border-radius:12px;min-width:0}
+.versus strong{display:block;color:#e4d8b9;font:750 16px Georgia,serif;overflow-wrap:anywhere}
+.versus b{display:block;color:#f6ce80;font-size:25px;margin-top:6px}.versus>span{font-weight:900;color:#c7ac79;text-align:center}
+.warBanner{background:#44321f;border:1px solid #ae8652;border-radius:11px;padding:13px;text-align:center;font-weight:850;color:#ffe0a7}
+.dayGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:17px 0}
+.dayGrid .day{display:flex;flex-direction:column;gap:6px;min-height:98px}.dayGrid .day.activeDay{border-color:#f1ca87;background:#273b51}
+.dayGrid .day strong{color:#e1e8fa;font-size:13px}.dayGrid .day b{font-size:15px}
+.dayGrid .day small{font-size:10px;color:#b9c9e1;overflow-wrap:anywhere}
+.scoreGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.scoreGrid>div{background:#101e32;border:1px solid #3a4f71;padding:13px;border-radius:10px}
+.scoreGrid span{display:block;color:#a8bdd6;font-size:11px}.scoreGrid b{color:#edc47e;display:block;font-size:25px;margin-top:3px}
+.warControl,.warAuto{background:#112038;border:1px solid #344c68;padding:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-radius:12px;margin:12px 0}
+.warControl select{min-width:0;max-width:69%;color:#eff5ff;background:#182d47;border:1px solid #536e8e;border-radius:9px;padding:10px}
+.warAuto strong{font-size:13px;display:block;margin-bottom:4px}.warAuto button{flex:none;min-width:105px}
+.warActions{display:grid;grid-template-columns:1.2fr .8fr;gap:8px;margin-top:16px}.warActions button{min-height:49px}
+.action.full{width:100%}.action.subtle{background:#183451;border:1px solid #426e9f}
+@media(max-width:720px){.dayGrid{grid-template-columns:repeat(4,minmax(0,1fr))}.warActions{grid-template-columns:1fr}.versus strong{font-size:14px}}
+</style></head><body><main>
+<header><div class="left"><div class="mark">⚔️</div><div><h1>SHADOWREACH</h1><p class="muted">Création de clans · prototype isolé</p></div></div><span class="badge">BOTS FICTIFS · DÉMO LOCALE</span></header>
+<section class="panel intro"><strong>Les clans arrivent dans Shadowreach</strong><p class="muted">Rejoins une guilde de personnages simulés ou crée la tienne. Aucun compte, combat, gain ou dépense de ressources réelles.</p><p class="muted" id="myLabel">Aucun clan</p></section>
+<nav class="tabs" aria-label="Navigation des clans"><button data-tab="explore" class="on">Explorer</button><button data-tab="mine">Mon clan</button><button data-tab="orders">🎖️ Mes ordres</button><button data-tab="war">Guerre (aperçu)</button></nav>
+<div id="status" role="status" aria-live="polite"></div><div id="clanApp"></div>
+<footer><button type="button" id="reset">Effacer uniquement cette démo</button><p class="muted">Aucune lecture ou modification de la sauvegarde Shadowreach.</p></footer>
+</main><script src="clan-war-rules.js"></script><script src="clan-bot-sandbox.js"></script><script>
+(()=>{
+  'use strict';
+  const C=window.ShadowreachBotClans, W=window.ShadowreachClanWarRules;
+  const app=document.getElementById('clanApp'),status=document.getElementById('status');
+  if(!C||!W){status.textContent='Fichiers de démonstration manquants.';return;}
+  let state=C.read(localStorage),selected=state.memberOf||'aube',tab='explore',crest='🛡️';
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=n=>n.toLocaleString('fr-FR'), clans=()=>C.allClans(state),my=()=>C.myClan(state);
+  const commands=()=>C.readOrders(localStorage,state.memberOf);
+  const exhibition=()=>C.readExhibition(localStorage,state.memberOf);
+  const say=msg=>{status.textContent=msg;};
+  function apply(result,message){
+    if(!result.ok){say(result.error);return;}
+    if(!C.write(localStorage,result.state)){say('Stockage indisponible, action annulée.');return;}
+    const previous=state.memberOf;state=C.read(localStorage);if(previous!==state.memberOf){C.clearOrders(localStorage);C.clearExhibition(localStorage);}selected=state.memberOf||'aube';say(message);render();
+  }
+  function render(){
+    const list=clans(),mine=my();
+    if(tab==='mine'&&!mine)tab='explore';
+    document.querySelectorAll('[data-tab]').forEach(n=>n.classList.toggle('on',n.dataset.tab===tab));
+    document.getElementById('myLabel').textContent=mine?'Mon clan : '+mine.name:'Aucun clan';
+    if(tab==='orders'){
+      if(!mine){app.innerHTML='<section class="panel detail"><h2>🎖️ Tes ordres</h2><p class="muted">Rejoins un clan pour commander les bots de la simulation.</p></section>';return;}
+      const plan=commands(),stats=C.commandStats(plan,state.memberOf);
+      const modes=Object.entries(C.ORDERS).map(([id,label])=>
+        '<button type="button" class="orderBtn '+(stats.global===id?'on':'')+'" data-command="'+esc(id)+'" aria-pressed="'+(stats.global===id)+'">'+esc(label)+'</button>').join('');
+      const days=W.WAR_DAYS.map(x=>
+        '<button type="button" class="dayPick '+(stats.day===x.day?'on':'')+'" data-command-day="'+x.day+'">J'+x.day+' · '+(x.day===7?'Bilan':x.day===6?'Combat':'Mission')+'</button>').join('');
+      const options=override=>'<option value="inherit">Ordre collectif</option>'+
+        Object.entries(C.ORDERS).map(([id,label])=>'<option value="'+id+'" '+(override===id?'selected':'')+'>'+esc(label)+'</option>').join('');
+      const roster=stats.bots.map(bot=>{
+        const member=mine.members.find(m=>m.id===bot.id);
+        return '<div class="orderRow"><span class="grow"><b>'+esc(bot.name)+'</b><small>Niv. '+member.level+' · '+esc(C.ORDERS[bot.order])+' · '+bot.total+' actions · J6 : '+bot.attacks+'/5 tickets</small></span>'+
+          '<select data-bot-command="'+esc(bot.id)+'" aria-label="Ordre pour '+esc(bot.name)+'">'+options(bot.override)+'</select></div>';
+      }).join('');
+      const journal=stats.recent.length?stats.recent.map(e=>{
+        const member=mine.members.find(m=>m.id===e.id);
+        return '<div class="logRow">J'+e.day+' · '+esc(member?member.name:'Bot')+' · '+esc(C.ACTIVITY_LABEL[e.action])+' · +'+e.points+' points fictifs</div>';
+      }).join(''):'<p class="muted">Aucune action simulée pour le moment.</p>';
+      app.innerHTML='<section class="panel detail ordersPanel"><h2>🎖️ Ordres · '+esc(mine.name)+'</h2>'+
+        '<p class="muted">Chaque bot obéit à l’ordre collectif ou à son ordre individuel. S’il ne peut pas l’exécuter ce jour-là, il attend. Ici, les directives sont accessibles dans tous les clans fictifs, même si tu es simple membre.</p>'+
+        '<h3>Ordre collectif</h3><div class="orderGrid">'+modes+'</div>'+
+        '<h3>Jour d’entraînement</h3><div class="dayPicks">'+days+'</div>'+
+        '<div class="metrics"><span><b>'+stats.total+'</b>Actions fictives cumulées</span><span><b>'+stats.bots.length+'</b>Bots sous tes ordres</span></div>'+
+        '<button id="runOrders" class="action full" type="button" '+(stats.day===7?'disabled':'')+'>▶ Faire agir les bots · 1 ronde</button>'+
+        '<p class="muted" style="margin:9px 0 20px">Une action maximum par bot et par ronde. J1–J5 : 8 actions max par bot et par jour ; J6 : 5 tickets. J7 : aucun combat.</p>'+
+        '<h3>Ordres individuels</h3><div class="orderRoster">'+roster+'</div>'+
+        '<h3>Rapport de simulation</h3><div class="logs">'+journal+'</div>'+
+        '<button type="button" class="resetActivity" id="resetOrders">Réinitialiser les rondes</button>'+
+        '<p class="notice">Prototype local. Ni or, ni minerais, ni scores de guerre réels ne sont modifiés. Les bots ne travaillent pas lorsque la page est fermée.</p></section>';
+      return;
+    }
+    if(tab==='war'){
+      if(!mine){
+        app.innerHTML='<section class="panel detail"><h2>⚔️ Guerre d’entraînement</h2><p class="muted">Rejoins ou crée un clan pour affronter des bots.</p></section>';return;
+      }
+      const war=exhibition(),s=C.exhibitionSummary(war,state.memberOf,W);
+      const day=s.day,done=day===7,ally=s.scores[day-1]||0,enemy=s.rivalScore||0;
+      const changeable=day===1&&ally===0;
+      const options=C.rivalCandidates(state.memberOf).map(c=>'<option value="'+esc(c.id)+'" '+(c.id===s.rivalId?'selected':'')+'>'+esc(c.name)+'</option>').join('');
+      const cells=W.WAR_DAYS.map(c=>{
+        const closed=s.settled.find(row=>row.day===c.day),active=day===c.day;
+        const own=closed?closed.homePoints:active&&!done?ally:null;
+        const foe=closed?closed.awayPoints:active&&!done?enemy:null;
+        const outcome=closed?(closed.homePoints>closed.awayPoints?'🟢 Victoire':closed.homePoints<closed.awayPoints?'🔴 Défaite':'⚪ Égalité'):active?'EN COURS':'À VENIR';
+        return '<div class="day '+(active?'activeDay':'')+'"><strong>J'+c.day+'</strong><b>'+c.victoryPoints+' PV</b><small>'+outcome+'</small>'+
+          (own!==null?'<small>'+num(own)+' : '+num(foe)+'</small>':'')+'</div>';
+      }).join('');
+      const verdict=s.verdict||{homeVictoryPoints:0,awayVictoryPoints:0,status:'pending'};
+      const banner=done?verdict.status==='home'?'🏆 Victoire ! Ton clan remporte cette guerre.':
+        verdict.status==='away'?'💀 Défaite. Prépare la revanche.':'⚖️ Match nul, prépare la revanche.':
+        'JOUR '+day+' · '+(day===6?'ASSAUTS':'MISSIONS');
+      const journal=war.journal.slice(-8).reverse().map(e=>{
+        const member=mine.members.find(m=>m.id===e.id);
+        return '<div class="logRow">J'+e.day+' · '+esc(member?member.name:'Bot')+' · '+esc(C.ACTIVITY_LABEL[e.action])+' · +'+e.points+' pts fictifs</div>';
+      }).join('');
+      app.innerHTML='<section class="panel detail warPanel">'+
+        '<div class="warHeading"><div><h2>⚔️ Guerre d’entraînement</h2><p class="muted">Une compétition complète contre un clan fictif.</p></div><span class="badge">SIMULATION</span></div>'+
+        '<div class="versus"><div><strong>'+esc(mine.name)+'</strong><b>'+verdict.homeVictoryPoints+' PV</b></div><span>VS</span>'+
+        '<div><strong>'+esc(s.rivalName)+'</strong><b>'+verdict.awayVictoryPoints+' PV</b></div></div>'+
+        '<div class="warBanner">'+banner+'</div><div class="dayGrid">'+cells+'</div>'+
+        '<div class="scoreGrid"><div><span>Score de tes bots · J'+(done?6:day)+'</span><b>'+num(done?s.scores[5]:ally)+'</b></div>'+
+        '<div><span>Objectif du clan rival</span><b>'+(done?'Terminé':num(enemy))+'</b></div></div>'+
+        (day===6||done?'<p class="muted" style="margin:4px 0 12px">🛡️ Bouclier des défenseurs : -'+s.shield+' points sur le score rival.</p>':'')+
+        '<div class="warControl"><label class="muted" for="warRival">Clan adversaire</label><select id="warRival" '+(!changeable?'disabled':'')+'>'+options+'</select></div>'+
+        '<div class="warAuto"><div><strong>Ordres automatiques en ton absence</strong><p class="muted">1 ronde par heure écoulée, 8 maximum au retour. Aucun changement de journée sans ton accord.</p></div>'+
+        '<button id="autoWar" type="button" class="orderBtn '+(war.auto?'on':'')+'" '+(done?'disabled':'')+'>'+(war.auto?'Auto ON':'Auto OFF')+'</button></div>'+
+        (done?'<button type="button" class="action full" id="warRestart">Nouvelle guerre</button>':
+          '<div class="warActions"><button id="warRun" class="action" type="button">▶ Exécuter les ordres (1 ronde)</button>'+
+          '<button id="warClose" class="action danger" type="button">Clôturer J'+day+'</button></div>')+
+        '<p class="muted" style="margin:12px 0">Les bots respectent tes ordres. Attaque uniquement J6, 5 tickets/bot. Une journée clôturée ne peut pas être rejouée.</p>'+
+        '<button type="button" class="action subtle" data-tab="orders">🎖️ Modifier mes ordres</button>'+
+        '<h3>Rapport des dernières missions</h3>'+(journal||'<p class="muted">Les bots attendent tes instructions.</p>')+
+        '<p class="notice">Aucun combat multijoueur réel ni récompense n’est activé. Cette simulation ne modifie jamais la progression de Shadowreach.</p></section>';
+      return;
+    }
+    const current=(tab==='mine'?mine:list.find(c=>c.id===selected))||list[0];selected=current.id;
+    const tiles=list.map(c=>'<button type="button" class="tile '+(c.id===selected?'selected':'')+'" data-clan="'+esc(c.id)+'"><span class="crest" style="--accent:'+c.color+'">'+esc(c.crest)+'</span><span><strong>'+esc(c.name)+'</strong><small>['+esc(c.tag)+'] · '+c.count+'/'+c.capacity+' membres bots'+(c.joined?' · MON CLAN':'')+'</small></span></button>').join('');
+    const members=current.members.map(m=>'<div class="member"><span class="avatar">'+esc(m.kind==='bot'?m.name[0]:'★')+'</span><span><strong>'+esc(m.name)+'</strong> '+(m.kind==='bot'?'<em>BOT</em>':'<em class="you">VOUS</em>')+'<small>'+esc(m.role)+(m.kind==='bot'?' · niveau '+m.level+' · '+num(m.power)+' puissance':'')+'</small></span></div>').join('');
+    const action=current.joined?'<button type="button" class="action danger" id="leaveClan">Quitter le clan</button>':'<button type="button" class="action" id="joinClan" '+(mine?'disabled':'')+'>'+ (mine?'Quitte ton clan avant de rejoindre':'Rejoindre ce clan')+'</button>';
+    const founding=mine?'':'<section class="panel create"><h3>Fonder un clan</h3><p class="muted">Tu seras chef avec 8 bots. Aucun coût, aucune récompense.</p><div id="crests">'+C.CRESTS.map(s=>'<button type="button" data-crest="'+esc(s)+'" class="'+(crest===s?'on':'')+'">'+esc(s)+'</button>').join('')+'</div><form id="createForm"><input id="clanName" maxlength="24" minlength="3" placeholder="Nom du clan" aria-label="Nom du clan" required><button class="action" type="submit">Créer mon clan</button></form></section>';
+    app.innerHTML='<div class="cols"><section class="panel list"><h3>Clans fictifs · '+list.length+'</h3>'+tiles+'</section><section class="panel detail"><div class="head"><span class="crest big" style="--accent:'+current.color+'">'+esc(current.crest)+'</span><div><h2>'+esc(current.name)+'</h2><p class="muted">['+esc(current.tag)+'] · Clan de démonstration</p></div></div><div class="metrics"><span><b>'+current.count+'/'+current.capacity+'</b>Membres</span><span><b>'+num(current.power)+'</b>Puissance des bots</span></div>'+action+'<h3>Effectif</h3><div class="roster">'+members+'</div></section></div>'+founding;
+  }
+  document.addEventListener('click',e=>{
+    const t=e.target.closest('[data-tab]'),c=e.target.closest('[data-clan]'),s=e.target.closest('[data-crest]');
+    if(t){tab=t.dataset.tab;if(tab==='war')catchUpExhibition();render();}
+    else if(c){selected=c.dataset.clan;tab='explore';render();}
+    else if(s){crest=s.dataset.crest;document.querySelectorAll('#crests [data-crest]').forEach(btn=>btn.classList.toggle('on',btn===s));}
+    else if(e.target.closest('[data-command]'))commitCommand(C.setOrder(commands(),state.memberOf,e.target.closest('[data-command]').dataset.command),'Ordre collectif enregistré.');
+    else if(e.target.closest('[data-command-day]'))commitCommand(C.chooseDay(commands(),state.memberOf,Number(e.target.closest('[data-command-day]').dataset.commandDay)),'Jour d’entraînement sélectionné.');
+    else if(e.target.closest('#runOrders')){
+      const result=C.runRound(commands(),state.memberOf,W);
+      commitCommand(result,result.acted+' bots ont exécuté leurs ordres · +'+result.points+' points fictifs.');
+    }
+    else if(e.target.closest('#resetOrders')){
+      if(confirm('Effacer les rondes fictives sans supprimer les ordres ?'))commitCommand(C.resetRounds(commands(),state.memberOf),'Rondes fictives effacées.');
+    }
+    else if(e.target.closest('#warRun')){
+      const result=C.exhibitionRound(exhibition(),commands(),state.memberOf,W);
+      commitExhibition(result,result.ok?result.acted+' bots en mission · +'+result.points+' points fictifs.':'Action impossible.');
+    }
+    else if(e.target.closest('#warClose')){
+      if(confirm('Clôturer définitivement J'+exhibition().day+' pour cette guerre fictive ?'))
+        commitExhibition(C.exhibitionNextDay(exhibition(),state.memberOf,W),'Journée clôturée, score sauvegardé.');
+    }
+    else if(e.target.closest('#warRestart')){
+      if(confirm('Nouvelle guerre fictive ? Les anciens résultats seront effacés.'))
+        commitExhibition({ok:true,state:C.newExhibition(state.memberOf,exhibition().rivalId)},'Nouvelle saison fictive commencée.');
+    }
+    else if(e.target.closest('#autoWar')){
+      const war=exhibition();
+      commitExhibition(C.setExhibitionAuto(war,state.memberOf,!war.auto,Date.now()),'Auto '+(!war.auto?'activé':'désactivé')+'.');
+    }
+    else if(e.target.closest('#joinClan'))apply(C.join(state,selected),'Clan rejoint.');
+    else if(e.target.closest('#leaveClan')){if(confirm('Quitter ce clan ? Ton clan personnel sera supprimé.'))apply(C.leave(state),'Clan quitté.');}
+    else if(e.target.closest('#reset')){if(confirm('Effacer uniquement les clans de démonstration ?')&&C.clear(localStorage)){C.clearOrders(localStorage);C.clearExhibition(localStorage);state=C.read(localStorage);selected='aube';tab='explore';render();say('Démonstration réinitialisée.');}}
+  });
+  function commitCommand(result,message){
+    if(!result.ok){say(result.error);return;}
+    if(!C.writeOrders(localStorage,state.memberOf,result.state)){say('Stockage indisponible : ordre non enregistré.');return;}
+    say(message);render();
+  }
+  function commitExhibition(result,message){
+    if(!result.ok){say(result.error);return;}
+    if(!C.writeExhibition(localStorage,state.memberOf,result.state)){say('Stockage indisponible : aucun changement enregistré.');return;}
+    say(message);render();
+  }
+  function catchUpExhibition(){
+    if(!state.memberOf)return;
+    const previous=exhibition(),result=C.exhibitionCatchUp(previous,commands(),state.memberOf,W,Date.now());
+    if(!result.ok){say(result.error);return;}
+    if(result.ticks>0){
+      if(C.writeExhibition(localStorage,state.memberOf,result.state))
+        say(result.acted+' actions récupérées sur '+result.ticks+' rondes fictives.');
+      else say('Stockage bloqué, progression non conservée.');
+    }else if(previous.auto&&previous.lastAt!==result.state.lastAt){
+      C.writeExhibition(localStorage,state.memberOf,result.state);
+    }
+  }
+  document.addEventListener('change',e=>{
+    const rival=e.target.closest('#warRival');
+    if(rival){
+      const old=exhibition();
+      if(old.day!==1||old.scores[0]!==0){say('Adversaire verrouillé après la première action.');return;}
+      commitExhibition(C.setRival(state.memberOf,rival.value),'Adversaire sélectionné.');return;
+    }
+    const select=e.target.closest('[data-bot-command]');if(!select)return;
+    commitCommand(C.setOrder(commands(),state.memberOf,select.value,select.dataset.botCommand),'Ordre individuel enregistré.');
+  });
+  document.addEventListener('submit',e=>{
+    if(e.target.id==='createForm'){e.preventDefault();apply(C.create(state,document.getElementById('clanName').value,crest),'Clan fondé avec 8 bots.');}
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&tab==='war'){catchUpExhibition();render();}});
+  render();
+})();
+
+</script></body></html>

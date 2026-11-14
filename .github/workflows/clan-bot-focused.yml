@@ -1,0 +1,55 @@
+name: Clan bot focused regression
+
+on:
+  pull_request:
+    paths:
+      - 'clan-bot-sandbox.js'
+      - 'clan-war-rules.js'
+      - 'clan-bots-preview.html'
+      - 'game-5.js'
+      - 'style.css'
+      - 'tests/phase-clan-native-*.spec.js'
+      - 'tests/phase-clan-bot-*.spec.js'
+      - 'tests/phase-clan-war-*.spec.js'
+      - '.github/workflows/clan-bot-focused.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Bot clan Node + Chrome + iPhone WebKit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install test tooling
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Node clan source contracts
+        run: |
+          node tests/phase-clan-war-rules.spec.js
+          node tests/phase-clan-bot-rosters.spec.js
+          node tests/phase-clan-bot-orders.spec.js
+          node tests/phase-clan-war-exhibition.spec.js
+          node tests/phase-clan-native-route.spec.js
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium webkit
+      - name: Test isolated clan UI in desktop and iPhone
+        run: npx playwright test -c tests/playwright.config.js tests/phase-clan-bot-preview.spec.js tests/phase-clan-bot-orders-ui.spec.js tests/phase-clan-war-exhibition-ui.spec.js tests/phase-clan-native-route-ui.spec.js --reporter=list
+      - name: Upload browser diagnostics if needed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clan-bot-focused-diagnostics
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -954,3 +954,88 @@ button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; fil
 .equipFilterScroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;justify-content:flex-start}
 .equipFilterScroll::-webkit-scrollbar{display:none}
 .equipFilterScroll>span{flex:0 0 auto;min-width:78px;overflow:visible;text-overflow:clip}
+
+
+/* Native Shadowreach Clan beta UI. Scope ALL rules to srClanNative. */
+.srClanNative{padding-bottom:28px}
+.srClanNative .card{margin:0 0 10px;padding:14px}
+.srClanNative button,.srClanNative select,.srClanNative input{font-family:inherit;touch-action:manipulation}
+.srClanNative button:disabled{opacity:.43;cursor:not-allowed}
+.srClanHeader{background:linear-gradient(120deg,#292a3a,#15273c);border:1px solid #7c613a;
+ border-radius:13px;display:flex;justify-content:space-between;align-items:center;padding:13px;gap:10px;margin:3px 0 13px}
+.srClanHeader span{font-size:9px;font-weight:900;color:#ffe0a5;border:1px solid #987446;
+ border-radius:18px;background:#4e382245;padding:7px;text-align:center;flex:none}
+.srClanTabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.srClanTabs button,.srClanMode{background:#192c48;color:#c4d8f2;border:1px solid #415674;
+ border-radius:9px;font-size:11px;font-weight:800;padding:10px 5px;min-width:0}
+.srClanTabs button.on,.srClanMode.on,.srClanListItem.on,.srClanCrest.on,.srClanWarDay.on{
+ border-color:#edbe76!important;background:#463827!important;color:#ffdfaa!important}
+.srClanNotice{padding:10px 12px;background:#254535;color:#dbf7da;border:1px solid #54815f;
+ border-radius:9px;margin-bottom:12px;font-size:12px}
+.srClanColumns{display:grid;grid-template-columns:minmax(0,.91fr) minmax(0,1.09fr);gap:9px}
+.srClanSect{color:#e9ca89;font-size:11px;font-weight:900;letter-spacing:.08em;margin:8px 0 11px}
+.srClanListItem{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:#142238;
+ color:#eaf2fe;border:1px solid #3d5470;border-radius:10px;padding:10px;margin-bottom:8px}
+.srClanListItem b{display:block;font-size:13px}.srClanListItem small{display:block;color:#a9bdd6;font-size:10px;margin-top:4px}
+.srClanSymbol{background:#1d3150;border:1px solid #b49257;border-radius:10px;font-size:26px;
+ width:49px;height:49px;display:grid;place-items:center;flex:none}
+.srClanSymbol.large{width:70px;height:70px;font-size:38px}
+.srClanProfile{display:flex;gap:12px;align-items:center;margin:6px 0 15px}
+.srClanProfile h3{font-size:18px;color:#edd29e;margin:0}
+.srClanProfile small{color:#a2b9d3;font-size:11px}
+.srClanStats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}
+.srClanStats>div{border:1px solid #435775;background:#15283f;border-radius:10px;
+ padding:11px;text-align:center}
+.srClanStats b{display:block;font-size:21px;color:#f0c989}
+.srClanStats small{display:block;font-size:10px;color:#a9c2df;margin-top:3px}
+.srClanFull{width:100%}
+.srClanMembers{max-height:420px;overflow:auto;-webkit-overflow-scrolling:touch}
+.srClanMember{display:flex;align-items:center;gap:9px;border-top:1px solid #ffffff15;padding:9px 2px}
+.srClanMember>div{flex:1;min-width:0}
+.srClanMember b{font-size:12px}.srClanMember small{display:block;color:#b2c5df;font-size:10px;margin-top:4px}
+.srClanMember em{font-style:normal;font-size:9px;color:#f7cf7a;border:1px solid #8d7642;
+ border-radius:5px;padding:2px 4px}
+.srClanAvatar{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;
+ color:#c8e4ff;background:#1f3956;flex:none}
+.srClanCrests{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}
+.srClanCrest{background:#16263f;border:1px solid #536783;border-radius:9px;padding:7px 10px;
+ color:white;font-size:22px}
+.srClanCreateForm{display:flex;gap:8px;flex-wrap:wrap}
+.srClanCreateForm input{flex:1;min-width:155px;border:1px solid #557091;border-radius:9px;
+ background:#142842;color:white;padding:11px}
+.srClanModeGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:12px 0}
+.srClanDays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:10px 0}
+.srClanCommand{border-top:1px solid #ffffff17;display:flex;justify-content:space-between;
+ align-items:center;gap:10px;padding:10px 2px}
+.srClanCommand>div{min-width:0;flex:1}
+.srClanCommand b{font-size:12px}.srClanCommand small{display:block;margin-top:3px;color:#a6bdd9;font-size:10px}
+.srClanCommand select,.srClanChoose select{color:#e9f2ff;background:#1a2d46;
+ border:1px solid #526c8a;padding:9px;border-radius:8px;min-width:0;max-width:46%;font-size:11px}
+.srClanLog{font-size:11px;color:#bed0e7;padding:8px 2px;border-bottom:1px solid #ffffff12}
+.srClanVs{display:grid;grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr);
+ align-items:center;gap:7px;margin:15px 0}
+.srClanVs>div{background:#172940;border:1px solid #415a75;border-radius:10px;
+ padding:12px 6px;text-align:center;min-width:0}
+.srClanVs b{color:#ecd4a0;font-size:13px;display:block;overflow-wrap:anywhere}
+.srClanVs strong{display:block;color:#f7cd8c;font-size:24px;margin-top:5px}
+.srClanVs>span{color:#d6ad72;text-align:center;font-weight:900}
+.srClanWarBanner{border:1px solid #af864d;background:#45321f;color:#ffe3a6;border-radius:10px;
+ text-align:center;padding:13px;font-weight:850}
+.srClanWarDay{background:#182840;border:1px solid #3f5776;border-radius:8px;padding:9px 2px;
+ display:flex;align-items:center;flex-direction:column;gap:6px;min-width:0}
+.srClanWarDay b{font-size:12px}.srClanWarDay small{color:#b5cbe4;font-size:9px;overflow-wrap:anywhere}
+.srClanWarDay span{color:#f6cd80}
+.srClanChoose,.srClanAuto{display:flex;justify-content:space-between;align-items:center;gap:10px;
+ background:#142840;border:1px solid #3a5575;padding:10px;border-radius:10px;
+ font-size:12px;margin:12px 0}
+.srClanAuto small{display:block;font-size:10px;color:#b4c6df;margin-top:4px}
+.srClanWarActions{display:grid;grid-template-columns:1.15fr .85fr;gap:8px}
+@media(max-width:720px){
+ .srClanColumns{grid-template-columns:1fr}
+ .srClanModeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .srClanDays{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .srClanTabs button{font-size:10px}
+ .srClanCreateForm button{width:100%}
+ .srClanWarActions{grid-template-columns:1fr}
+ .srClanHeader span{font-size:8px}
+}
