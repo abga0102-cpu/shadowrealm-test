@@ -190,6 +190,8 @@ test('V461 Home shows a compact next milestone overlay without shrinking the are
   });
   expect(geometry.card.top).toBeGreaterThanOrEqual(geometry.world.top);
   expect(geometry.card.bottom).toBeLessThanOrEqual(geometry.world.bottom);
+  // V520: preserve the strict arena invariant while exposing actual mobile geometry in CI.
+  console.log('V520 starter arena geometry:', JSON.stringify(geometry));
   expect(Math.abs(geometry.arena.height-geometry.world.height)).toBeLessThanOrEqual(1);
   const overlaps=!(geometry.card.bottom<=geometry.floor.top || geometry.card.top>=geometry.floor.bottom || geometry.card.right<=geometry.floor.left || geometry.card.left>=geometry.floor.right);
   expect(overlaps).toBe(false);
