@@ -176,6 +176,27 @@ test('V461 Home shows a compact next milestone overlay without shrinking the are
   await expect(card).toBeVisible();
   await expect(card).toContainText('DÉBUT RAPIDE');
   await expect(card).toContainText('Forge');
+  // Home replaces and repositions the arena over successive animation frames.
+  // Check the actual final geometry, never a stale layout marker or a relaxed threshold.
+  await expect.poll(async () => page.evaluate(async () => {
+    const aligned = () => {
+      const card = document.querySelector('.srStarterRoadmapV461');
+      const world = document.querySelector('.campaignWorld');
+      const arena = document.querySelector('#arenaSlot');
+      const floor = document.querySelector('#arena .floorTag');
+      if (!card || !world || !arena || !floor) return false;
+      const c = card.getBoundingClientRect();
+      const w = world.getBoundingClientRect();
+      const a = arena.getBoundingClientRect();
+      const f = floor.getBoundingClientRect();
+      return c.top >= w.top && c.bottom <= w.bottom &&
+        Math.abs(a.height - w.height) <= 1 &&
+        (c.bottom <= f.top || c.top >= f.bottom || c.right <= f.left || c.left >= f.right);
+    };
+    if (!aligned()) return false;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return aligned();
+  }), { timeout: 7000 }).toBe(true);
   const geometry=await page.evaluate(() => {
     const card=document.querySelector('.srStarterRoadmapV461').getBoundingClientRect();
     const world=document.querySelector('.campaignWorld').getBoundingClientRect();
