@@ -197,6 +197,10 @@ test('V461 Home shows a compact next milestone overlay without shrinking the are
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     return aligned();
   }), { timeout: 7000 }).toBe(true);
+  // The Home geometry authority loads through the deferred mobile script chain.
+  // Measure only after that authority has mounted; retain the strict 1px invariant.
+  await page.waitForFunction(() => window.__srHomeLayoutAuthorityV219 === true && !!document.getElementById('srHomeLayoutAuthorityV219'));
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const geometry=await page.evaluate(() => {
     const card=document.querySelector('.srStarterRoadmapV461').getBoundingClientRect();
     const world=document.querySelector('.campaignWorld').getBoundingClientRect();
