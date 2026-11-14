@@ -27,7 +27,7 @@ assert.equal((result.match(/raidLevelLabel\(RULES\.RAID_MAX_LEVEL\)/g) || []).le
   'Raid result must use canonical cap label');
 assert.doesNotMatch(cards, /7-10/, 'Raid cards must not display legacy 70-level cap');
 assert.doesNotMatch(result, /7-10/, 'Raid result must not display legacy 70-level cap');
-assert.match(index, /game-4\.js\?v=2026\.10\.30\.510-raid-cap-label/);
-assert.match(index, /game-5\.js\?v=2026\.10\.30\.510-raid-cap-label-sanctuary-pause/);
+assert.match(index, /game-4\.js\?v=2026\.11\.14\.510-raid-cap-label/);
+assert.match(index, /game-5\.js\?v=2026\.11\.14\.510-raid-cap-label-sanctuary-pause/);
 assert.ok(index.includes('PAUSED_SANCTUARY'), 'Sanctuary pause must remain visible');
 console.log('Raid cap UX source regression passed: ' + cap + ' = ' + label);

@@ -22,6 +22,6 @@ test('V369 strict reference composition owns geometry in Home authority and keep
   expect(v369).not.toContain('localStorage');
   expect(v369).not.toContain('S.');
 
-  expect(index).toContain('shadowreach-build" content="2026.09.18.369"');
-  expect(index).toContain("var V='2026.09.18.369'");
+  expect(index).toContain('home-layout-authority-v219.js');
+  expect(index).toContain('premium-ui-v209.js');
 });
