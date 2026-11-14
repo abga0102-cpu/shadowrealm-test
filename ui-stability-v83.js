@@ -207,6 +207,9 @@
     const sc=document.getElementById('screen');
     if(sc)sc.classList.toggle('srHomeCompact',!!sc.querySelector('.campaignWorld'));
   }
+  // V520: let the existing screen-scoped Home render authority reconcile
+  // a replaced Home DOM after it settles, without a broad #app observer.
+  window.__srSyncCampaignCompactV83=syncCampaignCompact;
   function scheduleCampaignCompact(){
     if(campaignCompactQueued)return;
     campaignCompactQueued=true;
