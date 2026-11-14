@@ -1671,7 +1671,7 @@ function showRaidResult(r) {
     '<div class="modalT mt6" style="color:' + (r.won ? "var(--goldLit)" : "var(--redLit)") +
       ';text-shadow:0 2px 0 #000,0 0 18px ' + col + '80">' + (r.won ? "VICTOIRE" : "DÉFAITE") + "</div>" +
     '<div class="dim small center" style="margin-bottom:12px;line-height:1.55">' + meta.name + " · niveau " + raidLevelLabel(r.level) + "<br>" +
-    (r.won ? rewardLine + (r.level >= RULES.RAID_MAX_LEVEL ? "Palier maximum 7-10 atteint." : "Niveau de raid suivant débloqué.")
+    (r.won ? rewardLine + (r.level >= RULES.RAID_MAX_LEVEL ? "Palier maximum " + raidLevelLabel(RULES.RAID_MAX_LEVEL) + " atteint." : "Niveau de raid suivant débloqué.")
       : "Aucune clé consommée. Renforce ton personnage et réessaie.") + "</div>" +
     btn("Continuer", { cls: r.won ? "green" : "ghost", act: "closeRaid" }),
     r.won ? "Raid terminé" : "Raid échoué");
