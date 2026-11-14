@@ -206,6 +206,10 @@ function decorate(){
 }
 function sync(){
   if(!app||!screen)return;
+  // V520: the Home content can mount after BottomNav has already fired.
+  // Reconcile V83's compact state during this owner's existing scoped
+  // #screen render cycle; do not add another broad MutationObserver.
+  if(typeof window.__srSyncCampaignCompactV83==='function')window.__srSyncCampaignCompactV83();
   var home=screen.classList.contains('fixed')&&!!screen.querySelector('.campaignWorld');
   app.classList.toggle('srHomeFullArena',home);
   decorate();
