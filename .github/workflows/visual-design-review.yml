@@ -1,0 +1,52 @@
+name: Shadowreach - captures UI pour Figma
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/visual-design-review.yml'
+      - 'design/shadowreach-tokens.json'
+      - 'scripts/export-design-tokens.cjs'
+      - 'tests/playwright.visual.config.js'
+      - 'tests/visual-review.spec.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  design-capture:
+    name: Chromium desktop et iPhone WebKit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Verifier les couleurs exportees pour Figma
+        run: node scripts/export-design-tokens.cjs --check
+
+      - name: Installer les dependances de test
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Installer Chromium et WebKit
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Capturer les ecrans du jeu dans des sessions vierges
+        run: npx playwright test -c tests/playwright.visual.config.js
+
+      - name: Conserver les captures et diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shadowreach-design-review-${{ github.sha }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: warn
+          retention-days: 14
