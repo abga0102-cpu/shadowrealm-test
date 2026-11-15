@@ -1,7 +1,7 @@
-/* SHADOWREACH · tutorial sequencing + AUTO unlock v100 · Phase 2C
+/* SHADOWREACH · tutorial sequencing + AUTO unlock v100 / V460 · Phase 2C
    - Tutorial cards never stack over a modal/result window.
-   - Tutorial sequencing consumes the canonical modal lifecycle instead of DOM mutation.
-   - The next tutorial step waits for the previous UI to be fully closed.
+   - V460 introductions trigger on the destination's first mounted frame, before interaction.
+   - Delayed modal/boot checks are route-scoped so stale intros cannot appear after leaving.
    - Automatic skill casting unlocks at character level 10.
 */
 (function(){
@@ -65,22 +65,26 @@
     var nativeCheckTutorial = checkTutorial;
     var tutorialTimer = 0;
 
-    function scheduleTutorialCheck(delay){
+    function scheduleTutorialCheck(delay, routeSnapshot){
       clearTimeout(tutorialTimer);
-      tutorialTimer = setTimeout(function(){
-        if (blockingUiOpen()) return;
-        if (typeof route !== 'undefined' && route !== 'accueil') return;
-        nativeCheckTutorial();
-      }, Math.max(0, Number(delay)||0));
+      var wait=Math.max(0,Number(delay)||0);
+      var expected=routeSnapshot || (typeof route!=='undefined'?route:null);
+      tutorialTimer=setTimeout(function(){
+        tutorialTimer=0;
+        if(blockingUiOpen())return;
+        if(expected && typeof route!=='undefined' && route!==expected)return;
+        nativeCheckTutorial(expected);
+      },wait);
     }
 
-    checkTutorial = function(){
-      /* A forge result, item detail, reward popup, research popup, etc. owns the
-         screen until it is closed. Never insert a tutorial under/over it. */
+    checkTutorial = function(expectedRoute){
+      /* render() calls us only after the destination DOM is mounted. Run the
+         contextual intro synchronously on that first frame; do not add another
+         timer that lets the player interact before onboarding appears. */
       if (blockingUiOpen()) return;
-      if (document.getElementById('tutorialCard')) return;
-      /* Delay one short beat so a modal opened by the same click has time to mount. */
-      scheduleTutorialCheck(180);
+      var expected=expectedRoute || (typeof route!=='undefined'?route:null);
+      if(expected && typeof route!=='undefined' && route!==expected)return;
+      nativeCheckTutorial(expected);
     };
 
     function removeTutorialBehindModal(){
@@ -100,11 +104,25 @@
         clearTimeout(tutorialTimer);
         removeTutorialBehindModal();
       } else {
-        scheduleTutorialCheck(220);
+        scheduleTutorialCheck(0, typeof route!=='undefined'?route:null);
       }
     });
 
-    /* Re-check after normal navigation/render settles as well. */
-    window.addEventListener('load', function(){ scheduleTutorialCheck(300); }, {once:true});
+    /* Initial boot waits for the first renderer. The route snapshot prevents a
+       boot/modal callback from resurrecting an intro after navigation changed. */
+    window.addEventListener('load', function(){
+      scheduleTutorialCheck(80, typeof route!=='undefined'?route:null);
+    }, {once:true});
+  }
+
+  /* V446: permanent contextual help complements the one-time tutorial. It is
+     loaded here so it stays independent from screen renderers and can be reused
+     by every system without duplicating modal logic. */
+  if (!window.__srSystemInfoV446 && !document.querySelector('script[data-sr-system-info-v446]')) {
+    var helpScript = document.createElement('script');
+    helpScript.src = 'system-info-v446.js?v=2026.09.24.446';
+    helpScript.async = false;
+    helpScript.setAttribute('data-sr-system-info-v446', '1');
+    document.body.appendChild(helpScript);
   }
 })();

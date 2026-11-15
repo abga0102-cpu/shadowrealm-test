@@ -1,67 +1,60 @@
-/* SHADOWREACH V304 · Progression stability authority / V323 Forge rarity Ascensions
-   One late, additive authority for approved progression rules.
-   Purpose: reduce cross-version drift without rewriting legacy files.
+/* SHADOWREACH V304 · Progression stability authority / V501 Forge Ascensions / V491 Dust power
+   One late authority for approved progression rules.
    - Ascension multipliers remain: Forge x2 from 1★ onward,
      Skill x1.5 at 1★, Familiar x1 / x1.5 / x2.1 / x3.
-   - V323 extends Forge Ascension to 4★ only for the rarity ladder:
-     ★ Légendaire, ★★ Infernal, ★★★ Immortel, ★★★★ Divin.
+   - V501 caps Forge Ascension at 2★:
+     ★ removes Commun from equipment drops, ★★ removes Peu commun.
+     No higher rarity is removed and rarity unlocks no longer depend on Forge stars.
    - Raid rewards keep the approved V290/V291 curves.
-   - Dust upgrade keeps the approved V301 5% minimum and V283 cost curve.
+   - Dust cost stays in V283 and success chance in V301.
+   - V491 owns only Dust-upgrade stat power: +6% base stat per successful level.
    This layer changes no save schema and performs no destructive migration. */
 (function(){'use strict';
 if(window.__srProgressionStabilityV304)return;window.__srProgressionStabilityV304=true;
 
 var PET_STAR=[1,1.5,2.1,3],FORGE_STAR=[1,2],SKILL_STAR=[1,1.5];
-var FORGE_ASCEND_MAX_STARS_V323=4;
-var FORGE_RARITY_BY_STAR_V323={1:'Légendaire',2:'Infernal',3:'Immortel',4:'Divin'};
+var FORGE_ASCEND_MAX_STARS_V501=2;
+var FORGE_REMOVED_RARITY_BY_STAR_V501={1:'Commun',2:'Peu commun'};
 function pick(table,stars){stars=Math.max(0,Math.floor(Number(stars)||0));return table[Math.min(stars,table.length-1)];}
 try{
   ascendPowerMul=function(stars,sys){
     if(sys==='pet')return pick(PET_STAR,stars);
     if(sys==='skill')return pick(SKILL_STAR,stars);
-    /* Preserve historical callers that omit sys: Forge was the legacy default.
-       V323 deliberately keeps Forge power at x2 after the first star; later
-       Forge stars advance rarity access instead of multiplying power again. */
     if(sys==='forge'||sys==null)return pick(FORGE_STAR,stars);
     return 1;
   };
 }catch(_){ }
 
-/* V323: Forge may Ascend four times so each post-Artefact rarity has its own
-   earned star. Pet and Skill retain their existing caps unchanged. */
 try{
-  if(typeof canAscend==='function'&&!canAscend.__srV323){
+  if(typeof canAscend==='function'&&!canAscend.__srV501){
     var oldCanAscend=canAscend;
     canAscend=function(s,sys){
       if(sys==='forge'){
         var stars=0,level=0,max=50;
         try{stars=Math.max(0,Math.floor(Number(starsOf(s,'forge'))||0));}catch(_){ }
         try{level=Number(masteryLevel(s,'forge'))||0;max=Number(masteryMax('forge'))||50;}catch(_){ }
-        return level>=max&&stars<FORGE_ASCEND_MAX_STARS_V323;
+        return level>=max&&stars<FORGE_ASCEND_MAX_STARS_V501;
       }
       return oldCanAscend(s,sys);
     };
-    canAscend.__srV323=true;canAscend.__srPrevious=oldCanAscend;
+    canAscend.__srV501=true;canAscend.__srPrevious=oldCanAscend;
   }
 }catch(_){ }
 
-/* Keep the Ascension preview honest: the first Forge star still doubles base
-   equipment power; stars 2-4 are rarity unlocks, not extra hidden power. */
 try{
-  if(typeof ascensionPreview==='function'&&!ascensionPreview.__srV323){
+  if(typeof ascensionPreview==='function'&&!ascensionPreview.__srV501){
     var oldAscensionPreview=ascensionPreview;
     ascensionPreview=function(s,sys){
       var out=oldAscensionPreview(s,sys);
       if(sys!=='forge'||!out)return out;
       var next=Math.max(1,Math.floor(Number(out.nextStars)||1));
-      var rarity=FORGE_RARITY_BY_STAR_V323[next]||'';
-      if(rarity){
-        var unlock=rarity+' · 0,25 % à Forge 45 → 1 % à Forge 50';
-        out.gain=next===1?'Puissance de base des équipements ×2 · '+unlock:unlock;
+      var removed=FORGE_REMOVED_RARITY_BY_STAR_V501[next]||'';
+      if(removed){
+        out.gain=(next===1?'Puissance de base des équipements ×2 · ':'')+'Retire '+removed+' des équipements forgés';
       }
       return out;
     };
-    ascensionPreview.__srV323=true;ascensionPreview.__srPrevious=oldAscensionPreview;
+    ascensionPreview.__srV501=true;ascensionPreview.__srPrevious=oldAscensionPreview;
   }
 }catch(_){ }
 
@@ -79,14 +72,82 @@ try{
   }
 }catch(_){ }
 
-function dustChance(level){level=Math.max(0,Math.floor(Number(level)||0));if(level<70)return 100;return Math.max(5,95-5*Math.floor((level-70)/2));}
-function dustCost(level){return Math.max(0,Math.round(60+36*Math.max(0,Number(level)||0)));}
-try{if(typeof itemUpgradeChance==='function')itemUpgradeChance=function(it){return dustChance((it&&it.level)||0);};}catch(_){ }
-try{if(typeof itemUpgradeCost==='function')itemUpgradeCost=function(it){return dustCost((it&&it.level)||0);};}catch(_){ }
+/* V491 · Dust power only. Cost/chance stay delegated to V283/V301. */
+var DUST_STEP_V491=.06;
+function dustLevelV491(it){
+  try{if(typeof equipmentUpgradeLevel==='function')return Math.max(0,Math.floor(Number(equipmentUpgradeLevel(it))||0));}catch(_){ }
+  return Math.max(0,Math.floor(Number(it&&it.upgradeLevel)||0));
+}
+function dustStepsV491(it,next){
+  var lv=dustLevelV491(it)+(next?1:0);
+  var anchor=Math.max(0,Math.floor(Number(it&&it.upgradeBaseLevel)||0));
+  return Math.max(0,lv-anchor);
+}
+function dustRoundV491(n){return Math.round((Number(n)||0)*100)/100;}
+function dustTargetV491(it,n){
+  if(!it)return {label:'Stat',value:0};
+  if(Number(it.baseDamage)>0)return {label:'ATQ',value:dustRoundV491(Number(it.baseDamage)*(1+n*DUST_STEP_V491))};
+  return {label:'PV',value:dustRoundV491(Number(it.baseHp||0)*(1+n*DUST_STEP_V491))};
+}
+function applyDustItemV491(it){
+  if(!it)return false;
+  var beforeD=Number(it.damage)||0,beforeH=Number(it.hp)||0;
+  var t=dustTargetV491(it,dustStepsV491(it,false));
+  if(Number(it.baseDamage)>0)it.damage=t.value;
+  if(Number(it.baseHp)>0)it.hp=t.value;
+  it.power=dustRoundV491((Number(it.damage)||0)+(Number(it.hp)||0));
+  it.dustPowerVersion=491;
+  return beforeD!==Number(it.damage||0)||beforeH!==Number(it.hp||0);
+}
+function applyDustStateV491(s){
+  if(!s)return false;
+  var changed=false;
+  (s.inventory||[]).forEach(function(it){if(applyDustItemV491(it))changed=true;});
+  if(s.equipped)Object.keys(s.equipped).forEach(function(k){if(applyDustItemV491(s.equipped[k]))changed=true;});
+  s.equipmentDustPowerVersion=491;
+  return changed;
+}
+try{
+  itemUpgradePreview=function(it){
+    if(!it)return {label:'Stat',current:0,next:0,gain:0};
+    var cur=Number(it.baseDamage)>0?Number(it.damage||0):Number(it.hp||0);
+    var t=dustTargetV491(it,dustStepsV491(it,true));
+    return {label:t.label,current:cur,next:t.value,gain:dustRoundV491(t.value-cur)};
+  };
+}catch(_){ }
+try{
+  upgradeItem=function(id){
+    var result={ok:false,reason:'missing',chance:0};
+    update(function(s){
+      var it=Object.values(s.equipped||{}).find(function(x){return x&&x.id===id;})||(s.inventory||[]).find(function(x){return x&&x.id===id;});
+      if(!it)return;
+      var cost=itemUpgradeCost(it);
+      if(s.poussiere<cost){result.reason='dust';return;}
+      var baseChance=itemUpgradeChance(it);
+      var want=Math.min(itemSealCount(id),Math.ceil((100-baseChance)/5));
+      var seals=Math.min(want,(s.sanctuary&&s.sanctuary.stabilitySeals)||0);
+      var chance=Math.min(100,baseChance+seals*5);
+      s.poussiere-=cost;
+      if(seals)s.sanctuary.stabilitySeals-=seals;
+      itemSealPlan[id]=0;
+      var beforeD=Number(it.damage)||0,beforeH=Number(it.hp)||0;
+      result={ok:true,success:Math.random()*100<chance,chance:chance,seals:seals};
+      if(!result.success)return;
+      it.upgradeLevel=dustLevelV491(it)+1;
+      applyDustItemV491(it);
+      result.statGain=dustRoundV491(((Number(it.damage)||0)-beforeD)+((Number(it.hp)||0)-beforeH));
+      result.statLabel=Number(it.baseDamage)>0?'ATQ':'PV';
+      result.powerMultiplier=2;
+      result.perStepPct=6;
+    });
+    return result;
+  };
+}catch(_){ }
 
 try{
   if(typeof S!=='undefined'&&S){
     S.progressionStabilityVersion=304;
+    if(Number(S.equipmentDustPowerVersion)<491)applyDustStateV491(S);
     if(typeof computePower==='function')S.power=computePower(S);
     if(typeof computeDerived==='function'&&typeof D!=='undefined')D=computeDerived(S);
     if(typeof saveNow==='function')saveNow();
@@ -96,9 +157,10 @@ try{
 
 window.__srProgressionStabilityConfigV304={
   stars:{forge:FORGE_STAR,skill:SKILL_STAR,pet:PET_STAR},
-  forgeRarityAscensionV323:{maxStars:FORGE_ASCEND_MAX_STARS_V323,rarityByStar:FORGE_RARITY_BY_STAR_V323,powerStopsGrowingAfterStar:1},
+  forgeRarityAscensionV501:{maxStars:FORGE_ASCEND_MAX_STARS_V501,removedByStar:FORGE_REMOVED_RARITY_BY_STAR_V501,powerStopsGrowingAfterStar:1},
   raids:{evolution:{base:100,perLevel:3},competence:{base:250,perLevel:10},familier:{base:250,perLevel:10}},
-  dust:{minimumChance:5,costBase:60,costPerLevel:36},
+  dust:{delegated:true,costOwner:'progression-overhaul-v283.js',chanceOwner:'dust-chance-floor-v301.js',powerOwner:'V491',perStepPct:6,multiplier:2},
   destructiveMigration:false
 };
+window.__srEquipmentDustPowerV491={version:491,perStepPct:6,previousPerStepPct:3,multiplier:2,applyItem:applyDustItemV491,applyState:applyDustStateV491,costChanged:false,chanceChanged:false};
 })();

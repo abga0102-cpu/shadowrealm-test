@@ -1,0 +1,10 @@
+const fs=require('fs');
+const assert=require('assert');
+const src=fs.readFileSync('accomplishments-claim-v140.js','utf8');
+const expected='[[10,250],[15,350],[20,500],[25,700],[30,1000],[35,1200],[40,1500],[50,2000],[60,2500],[70,3000],[80,3500],[90,4000],[100,5000]]';
+assert(src.includes('var LEVEL_STEPS='+expected),'V494 character-level reward table changed');
+assert(src.includes("Number(S&&S.level)>=row[0]"),'V494 must use real character level S.level');
+assert(src.includes("Math.round(row[1]*0.25)"),'V494 Premium reward must remain 25% of free Minerai');
+assert(src.includes("a.claimed")&&src.includes("a.premiumClaimed"),'V494 must preserve existing claim save maps');
+assert(src.includes("if(root.querySelector('#srHeroLevelAccomplishmentsV494'))return"),'V494 renderer must be idempotent');
+console.log('V494 character-level accomplishments guard: OK');

@@ -4,16 +4,24 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 
-test.describe('Progression Pass V331 visual presentation', () => {
+test.describe('Progression Pass V331/V466/V481/V482 visual presentation', () => {
   test('stays in the existing stability owner and decorates the live pass', async ({ page }) => {
     const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     const source = fs.readFileSync(path.join(root, 'accomplishments-stability-v138.js'), 'utf8');
-    expect(index).toContain('accomplishments-stability-v138.js?v=2026.09.15.331');
+    expect(index).toContain('accomplishments-stability-v138.js?v=2026.09.30.482');
+    expect(index).toContain('accomplishments-canonical-v139.js?v=2026.09.30.481');
     expect(index).not.toContain('accomplishments-visual-v331.js');
     expect(source).toContain('srPassOverlay331');
     expect(source).toContain('srPassFloor331');
     expect(source).toContain('srRewardVisual331');
     expect(source).toContain('srPassFooter331');
+    expect(source).toContain('achRowClaimable466');
+    expect(source).toContain('achHeroStats466');
+    expect(source).toContain('srPassRibbon481');
+    expect(source).toContain('srRewardLane481');
+    expect(source).toContain('srStageProgress481');
+    expect(source).toContain('overflow-wrap:break-word!important');
+    expect(source).toContain('grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important');
     expect(source).toContain('srAchLaunchTrack');
     expect(source).not.toContain('ACT.accomplishments=');
     expect(source).not.toContain('openModal=');
@@ -24,11 +32,18 @@ test.describe('Progression Pass V331 visual presentation', () => {
     await page.evaluate(() => ACT.accomplishments());
     const pass = page.locator('.srAch139');
     await expect(pass).toBeVisible();
+    await expect(pass).toHaveAttribute('data-ach-visual-v466','1');
+    await expect(pass).toHaveAttribute('data-ach-visual-v481','1');
     await expect(page.locator('#overlay')).toHaveClass(/srPassOverlay331/);
     await expect(pass.locator('.srPassCrown331')).toHaveCount(1);
     await expect(pass.locator('.srPassClose331')).toHaveCount(1);
     await expect(pass.locator('.srPassFloor331').first()).toBeVisible();
     await expect(pass.locator('.srRewardVisual331').first()).toBeVisible();
     await expect(pass.locator('.srPassFooter331')).toHaveCount(1);
+    await expect(pass.locator('.achHeroStats466')).toHaveCount(1);
+    await expect(pass.locator('.achCatIcon466').first()).toBeVisible();
+    await expect(pass.locator('.srPassRibbon481')).toHaveCount(1);
+    await expect(pass.locator('.srRewardLane481').first()).toBeVisible();
+    await expect(pass.locator('.srStageProgress481').first()).toBeVisible();
   });
 });

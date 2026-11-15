@@ -1,7 +1,7 @@
-/* SHADOWREACH V291 · Skill/Familiar summon economy authority
-   Raid summon rewards remain on the validated V291 curve:
-   - Raid Compétence: 250 at lvl1, +10 per level.
-   - Raid Familier:   250 at lvl1, +10 per level.
+/* SHADOWREACH V496 · Skill/Familiar summon economy compatibility
+   - Raid Compétence starts at 300 at lvl1, +10 per level.
+   - Raid Familier starts at 225, gains +5 per level until 275 at lvl11,
+     then +2 per level through the permanent lvl70 / 7-10 ceiling.
    V322A changes only the PAID Familiar invocation price from 25 to 50 Essence.
    Tree Double Œuf stays a free extra result and never pays a second 50 Essence.
    Skill costs, raid keys, reward curves and all other raids remain unchanged. */
@@ -12,16 +12,23 @@
 
   var FAMILIAR_SUMMON_COST_V322A=50;
 
-  function summonReward(level){
+  function competenceReward(level){
     level=Math.max(1,Math.floor(Number(level)||1));
-    return 250+10*(level-1);
+    return 300+10*(level-1);
+  }
+
+  function familiarReward(level){
+    level=Math.max(1,Math.min(70,Math.floor(Number(level)||1)));
+    if(level<=11) return 225+5*(level-1);
+    return 275+2*(level-11);
   }
 
   try{
     if(typeof raidReward==='function'&&!raidReward.__srV291){
       var previousRaidReward=raidReward;
       var wrappedReward=function(type,level){
-        if(type==='competence'||type==='familier')return summonReward(level);
+        if(type==='competence')return competenceReward(level);
+        if(type==='familier')return familiarReward(level);
         return previousRaidReward.apply(this,arguments);
       };
       wrappedReward.__srV291=true;
@@ -116,8 +123,8 @@
 
   window.__srFamiliarSummonCostV322A=FAMILIAR_SUMMON_COST_V322A;
   window.__srRaidSummonEconomyConfigV291={
-    competence:{base:250,perLevel:10},
-    familier:{base:250,perLevel:10,paidSummonCost:FAMILIAR_SUMMON_COST_V322A},
-    expectedPaidSummonsPerBaseRaidWin:{level1:5,level50:14.8}
+    competence:{base:300,perLevel:10},
+    familier:{base:225,perLevelTo11:5,level11:275,perLevelAfter11:2,level70:393,paidSummonCost:FAMILIAR_SUMMON_COST_V322A},
+    expectedPaidSummonsPerBaseRaidWin:{level1:4,level11:5,level70:7.36}
   };
 })();

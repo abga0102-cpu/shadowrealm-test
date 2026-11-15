@@ -34,9 +34,35 @@ test('V330 victory UI reports direct and weekly Mega rewards as separate circuit
   expect(source).toContain('RÉCOMPENSE DU BOSS · ENCAISSÉE IMMÉDIATEMENT');
   expect(source).toContain('Récompense directe déjà encaissée lors de la première victoire');
   expect(source).toContain('PALIER HEBDOMADAIRE');
-  expect(source).toContain('versement le lundi à 02:00 selon le meilleur palier atteint');
+  expect(source).toContain('versement le lundi à 01:00 selon le meilleur palier atteint');
 
   await page.goto('/index.html?smoke=1');
   await page.waitForFunction(() => window.__srMegaVictoryRewardV330 === true);
   expect(await page.evaluate(() => !!window.__srMegaVictoryRewardV330)).toBe(true);
 });
+test('V502 weekly Mega epoch flips at Monday 01:00 local time', async ({ page }) => {
+  await page.goto('/index.html?smoke=1');
+  await page.waitForFunction(() => window.__srMegaRewardsV329 && typeof window.__srMegaRewardsV329.weekEpoch === 'function');
+  const out = await page.evaluate(() => {
+    const f = window.__srMegaRewardsV329.weekEpoch;
+    const before = new Date(2026, 9, 12, 0, 59, 59, 999);
+    const at = new Date(2026, 9, 12, 1, 0, 0, 0);
+    const beforeEpoch = new Date(f(before.getTime()));
+    const atEpoch = new Date(f(at.getTime()));
+    return {
+      beforeDay: beforeEpoch.getDay(),
+      beforeHour: beforeEpoch.getHours(),
+      beforeDate: beforeEpoch.getDate(),
+      atDay: atEpoch.getDay(),
+      atHour: atEpoch.getHours(),
+      atDate: atEpoch.getDate()
+    };
+  });
+  expect(out.beforeDay).toBe(1);
+  expect(out.beforeHour).toBe(1);
+  expect(out.beforeDate).toBe(5);
+  expect(out.atDay).toBe(1);
+  expect(out.atHour).toBe(1);
+  expect(out.atDate).toBe(12);
+});
+

@@ -19,15 +19,32 @@ async function runOneAutoCycle(page, forgeImpl) {
     S.forge.autoForge = false;
     S.forge.autoBatch = 1;
     S.forge.level = Math.max(10, Number(S.forge.level) || 10);
+    // Auto-Forge V103 is unlocked by CHARACTER level, not Forge level.
+    // Keep the synthetic cycle eligible so this test checks Dust settlement.
+    S.level = Math.max(10, Number(S.level) || 1);
     S.minerai = 9999;
     S.poussiere = 0;
 
     const previousForgeSummon = forgeSummon;
-    forgeSummon = (0, eval)('(' + forgeImplSource + ')');
+    const simulatedSummon = (0, eval)('(' + forgeImplSource + ')');
+    let summonCalls = 0;
+    forgeSummon = function (...args) {
+      summonCalls += 1;
+      return simulatedSummon.apply(this, args);
+    };
     try {
       S.forge.autoForge = true;
       scheduleAutoForge(0);
-      await new Promise((resolve) => setTimeout(resolve, 140));
+      // The scheduler uses setTimeout(0), but a busy CI browser can take
+      // longer than 140 ms to run it. Observe the real tick, not wall time.
+      const started = Date.now();
+      while (summonCalls === 0 && Date.now() - started < 3000) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      if (summonCalls === 0) {
+        throw new Error('Auto-Forge scheduler did not invoke forgeSummon within 3000 ms');
+      }
+      // The scheduler settles canonical Dust synchronously after summon returns.
       return {
         dust: Number(S.poussiere) || 0,
         authority350: !!window.__srAutoForgeDustV350,
@@ -45,7 +62,7 @@ async function runOneAutoCycle(page, forgeImpl) {
   }, { forgeImplSource: forgeImpl.toString() });
 }
 
-test('V350 Dust rarity table returns the canonical values', async ({ page }) => {
+test('V467 Dust rarity table returns doubled canonical values', async ({ page }) => {
   await openCleanGame(page);
   const values = await page.evaluate(() => {
     const cfg = window.__srDustEconomyConfigV293;
@@ -54,15 +71,15 @@ test('V350 Dust rarity table returns the canonical values', async ({ page }) => 
   });
 
   expect(values).toEqual({
-    COMMUN: 1,
-    RARE: 2,
-    EPIQUE: 4,
-    MYTHIQUE: 10,
-    ARTEFACT: 25,
-    LEGENDAIRE: 60,
-    INFERNAL: 150,
-    IMMORTEL: 400,
-    DIVIN: 1000,
+    COMMUN: 2,
+    RARE: 8,
+    EPIQUE: 16,
+    MYTHIQUE: 40,
+    ARTEFACT: 70,
+    LEGENDAIRE: 120,
+    INFERNAL: 200,
+    IMMORTEL: 320,
+    DIVIN: 500,
   });
 });
 
@@ -84,8 +101,8 @@ test('V350 Auto-Forge overrides stale +1 payload with canonical rarity value', a
   });
 
   expect(result.canonical).toBe(true);
-  expect(result.missing).toBe(2);
-  expect(result.dust).toBe(6002);
+  expect(result.missing).toBe(8);
+  expect(result.dust).toBe(6008);
 });
 
 test('V350 Auto-Forge scheduler restores canonical Dust when result was not credited', async ({ page }) => {
@@ -95,18 +112,18 @@ test('V350 Auto-Forge scheduler restores canonical Dust when result was not cred
   });
 
   expect(result.authority350).toBe(true);
-  expect(result.dust).toBe(10);
+  expect(result.dust).toBe(40);
 });
 
 test('V350 Auto-Forge never double-credits canonical Dust already paid by forgeSummon', async ({ page }) => {
   await openCleanGame(page);
   const result = await runOneAutoCycle(page, function () {
-    S.poussiere += 4;
+    S.poussiere += 16;
     return [{ rarity: 'EPIQUE', slot: 'gants', recycled: true, dust: 1 }];
   });
 
   expect(result.authority350).toBe(true);
-  expect(result.dust).toBe(4);
+  expect(result.dust).toBe(16);
 });
 
 test('V351 global Dust authority normalizes rarity names and never falls back unknown rarity to +1', async ({ page }) => {
@@ -125,15 +142,15 @@ test('V351 global Dust authority normalizes rarity names and never falls back un
   }));
 
   expect(values).toEqual({
-    commun: 1,
-    rare: 2,
-    epiqueAccent: 4,
-    mythique: 10,
-    artefact: 25,
-    legendaireAccent: 60,
-    infernal: 150,
-    immortel: 400,
-    divin: 1000,
+    commun: 2,
+    rare: 8,
+    epiqueAccent: 16,
+    mythique: 40,
+    artefact: 70,
+    legendaireAccent: 120,
+    infernal: 200,
+    immortel: 320,
+    divin: 500,
     unknown: 0,
   });
 });
@@ -151,5 +168,5 @@ test('V351 final integrity layer overrides stale +1 result payload by rarity', a
     };
   });
 
-  expect(values).toEqual({ loaded: true, rare: 2, epique: 4, mythique: 10, divin: 1000 });
+  expect(values).toEqual({ loaded: true, rare: 8, epique: 16, mythique: 40, divin: 500 });
 });

@@ -1,0 +1,1 @@
+Regression scope: character-level accomplishment rewards and Premium +25% Minerai lane only.

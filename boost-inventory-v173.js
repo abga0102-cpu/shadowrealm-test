@@ -18,7 +18,17 @@ var DEFS={
  gold50_300:{type:'gold',pct:50,mins:300,label:'Or',icon:'gold'},
  xp50_300:{type:'xp',pct:50,mins:300,label:'XP',icon:'chart'}
 };
-function st(){return sanctMergeState();}
+function st(){
+  // During the pause, read boost data without running Sanctuary board migrations.
+  var state=window.__SHADOWREACH_SANCTUARY_PAUSED===true
+    ? (S.sanctuary||(S.sanctuary={})) : sanctMergeState();
+  // The Sanctuary endgame script is intentionally unloaded during the pause.
+  // Its old initializer supplied these boost maps; keep them available without
+  // resetting any existing boosts, board contents or player rewards.
+  if(!state.activeBoosts || typeof state.activeBoosts!=='object')state.activeBoosts={};
+  if(!state.boostItems || typeof state.boostItems!=='object')state.boostItems={};
+  return state;
+}
 function clean(type){
  var s=st(),a=s.activeBoosts[type],now=Date.now();if(!a)return null;
  a.queue=Array.isArray(a.queue)?a.queue:[];
@@ -87,5 +97,25 @@ function hookScreens(){
 }
 document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('[data-boost-v173="activate"]'):null;if(!b)return;e.preventDefault();e.stopPropagation();activate(b.getAttribute('data-key'));},true);
 hookScreens();
-window.SRBoostInventoryV173={defs:DEFS,activate:activate,panel:panel};
+// Keep the original endgame reward multipliers while the Sanctuary is paused.
+// Installed after reward-authority modules by index.html, so later wrappers are
+// not silently overwritten. Uses the same expiry/queue handling as the boost UI.
+function installPauseRewardMultipliers(){
+  if(window.__SHADOWREACH_SANCTUARY_PAUSED!==true||window.__srSanctuaryPauseBoostsV1)return;
+  window.__srSanctuaryPauseBoostsV1=true;
+  function multiplier(type){var a=clean(type);return a?1+(Number(a.pct)||0)/100:1;}
+  if(typeof goldReward==='function'){
+    var prevGold=goldReward;
+    goldReward=function(){return prevGold.apply(this,arguments)*multiplier('gold');};
+  }
+  if(typeof expReward==='function'){
+    var prevXp=expReward;
+    expReward=function(){return prevXp.apply(this,arguments)*multiplier('xp');};
+  }
+  if(typeof prFromFloor==='function'){
+    var prevPr=prFromFloor;
+    prFromFloor=function(){return prevPr.apply(this,arguments)*multiplier('pr');};
+  }
+}
+window.SRBoostInventoryV173={defs:DEFS,activate:activate,panel:panel,installPauseRewardMultipliers:installPauseRewardMultipliers};
 })();

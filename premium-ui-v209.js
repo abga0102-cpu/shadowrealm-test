@@ -1,5 +1,5 @@
-/* SHADOWREACH · Premium UI polish V209 / V369
-   Strict reference composition: brighter fantasy arena, compact Forge, ornate blue-and-gold HUD and navigation.
+/* SHADOWREACH · Premium UI polish V209 / V392
+   Reference-locked dark fantasy composition: V392 skill cards matched to the approved reference crop.
    Presentation-only: no routes, economy, saves, timers, combat values or gameplay state are changed. */
 (function(){
   'use strict';
@@ -1340,6 +1340,2488 @@ body{
   #app.srHomeFullArena #arena .floorTxt{min-width:138px!important;font-size:15px!important}
   #app.srHomeFullArena .srForgeLootReserve266{height:34px!important;min-height:34px!important;max-height:34px!important;flex-basis:34px!important}
   #app.srHomeFullArena #srForgeLoot273{height:34px!important;max-height:34px!important}
+}
+
+
+/* V377 REFERENCE LOCK
+   Locked to the annotated reference: dark navy UI, gold trim, luminous ruins,
+   premium skill buttons, ready-egg capsule and a dramatic visible Forge fire. */
+
+/* Global navy/gold language: no light-cyan dominant surfaces. */
+#app.srHomeFullArena{
+  background:#06182B!important;
+  border-left-color:#244C6E!important;
+  border-right-color:#244C6E!important;
+}
+#app.srHomeFullArena>#hud{
+  background:
+    radial-gradient(88% 90% at 18% -18%,rgba(54,112,157,.18),transparent 64%),
+    linear-gradient(180deg,#0D2A47 0%,#09213A 58%,#06182B 88%,rgba(6,24,43,.38) 100%)!important;
+  border-bottom:2px solid #D6A948!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 4px 10px rgba(0,0,0,.28)!important;
+}
+#app.srHomeFullArena>#hud>.pbox{
+  border:1.5px solid #D6AA4D!important;
+  background:linear-gradient(145deg,#173B60 0%,#102E4D 48%,#081D33 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -3px 8px rgba(0,10,22,.58),0 3px 8px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena .avatar{
+  background:radial-gradient(circle at 50% 30%,#315F87,#0C2947 66%,#061629)!important;
+  box-shadow:0 0 0 1px #684611,0 0 0 3px #E8BA55,0 3px 8px rgba(0,0,0,.50),0 0 10px rgba(231,183,76,.22)!important;
+}
+#app.srHomeFullArena .power{
+  color:#FFE3A0!important;
+  border-color:#C99A3E!important;
+  background:#071A2F!important;
+}
+#app.srHomeFullArena .curr{
+  border-color:#D0A345!important;
+  background:linear-gradient(180deg,#173C60,#0A2744)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),inset 0 -2px 0 #041426,0 3px 6px rgba(0,0,0,.28)!important;
+}
+#app.srHomeFullArena .curr>.plus{
+  border-color:#13713A!important;
+  background:linear-gradient(180deg,#55E77C,#19B851)!important;
+  box-shadow:inset 0 1px 0 #C6FBD2,0 1px 4px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena .hudBtn,
+#app.srHomeFullArena .menuBtn{
+  color:#BFD4E8!important;
+  border:1.5px solid #CCA042!important;
+  background:linear-gradient(180deg,#173B5E,#0B2744)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -2px 0 #041528,0 2px 6px rgba(0,0,0,.30)!important;
+}
+
+/* Reference arena: luminous forgotten ruins, dark UI stays on top. */
+#app.srHomeFullArena #screen.fixed>.campaignWorld{
+  background:#0B2A40!important;
+  border-top:0!important;
+  border-bottom:2px solid #DDB14E!important;
+}
+#app.srHomeFullArena #arenaBg{
+  background-image:url("art/env_ruins.jpg")!important;
+  background-position:center 48%!important;
+  background-size:cover!important;
+  filter:brightness(1.08) saturate(1.08) contrast(1.03)!important;
+}
+#app.srHomeFullArena #arenaShade{
+  background:
+    radial-gradient(90% 46% at 50% 12%,rgba(197,237,255,.05),transparent 75%),
+    linear-gradient(90deg,rgba(4,19,32,.13),transparent 12%,transparent 88%,rgba(4,19,32,.13)),
+    linear-gradient(180deg,rgba(4,22,36,.02) 0%,rgba(2,18,31,.02) 58%,rgba(2,14,25,.16) 100%)!important;
+}
+#app.srHomeFullArena #aDecor{
+  filter:brightness(1.03) saturate(1.04) drop-shadow(0 3px 3px rgba(0,0,0,.20))!important;
+}
+#app.srHomeFullArena #aLayer .unit{
+  scale:.80!important;
+  filter:saturate(1.05) brightness(1.03) drop-shadow(0 4px 4px rgba(0,0,0,.30))!important;
+}
+
+/* Stage hierarchy like the reference: title floats over the scenery, not inside a cyan plate. */
+#app.srHomeFullArena #arena .floorTxt{
+  min-width:0!important;
+  padding:2px 7px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#FFF1BF!important;
+  font-family:Georgia,var(--fd),serif!important;
+  font-size:18px!important;
+  letter-spacing:1.4px!important;
+  text-shadow:0 2px 0 #07101A,0 0 4px #000,0 0 8px rgba(223,177,70,.30)!important;
+  box-shadow:none!important;
+}
+#app.srHomeFullArena #arena .fTrack{
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#app.srHomeFullArena #arena .sdot{
+  border-color:#0C2138!important;
+  box-shadow:0 0 0 1px rgba(238,199,104,.42),0 1px 4px rgba(0,0,0,.40)!important;
+}
+#app.srHomeFullArena #arena .sdot.cur,
+#app.srHomeFullArena #arena .sdot.on{
+  border-color:#FFF1B3!important;
+  box-shadow:0 0 8px rgba(200,92,255,.42),0 0 0 1px #8558C6!important;
+}
+#app.srHomeFullArena #arena .fPill{
+  border:1px solid #284C6D!important;
+  background:linear-gradient(180deg,rgba(13,43,70,.97),rgba(6,26,46,.98))!important;
+  color:#F6F4F1!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 5px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena .campaignWorld .btn.red{
+  border:1.5px solid #FF7A8B!important;
+  background:linear-gradient(180deg,#992238,#5B101E)!important;
+  color:#FFD7D9!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -3px 0 #370814,0 0 12px rgba(217,54,75,.22),0 4px 8px rgba(0,0,0,.34)!important;
+}
+
+/* Egg-ready capsule: visible, elegant and anchored under the right HUD controls. */
+#app.srHomeFullArena .srEggReadyV377{
+  position:absolute!important;
+  top:calc(var(--srHudH) + 46px)!important;
+  right:10px!important;
+  z-index:42!important;
+  width:min(196px,51vw)!important;
+  min-height:48px!important;
+  padding:5px 34px 5px 10px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  appearance:none!important;
+  border:1.5px solid #567EA3!important;
+  border-radius:12px!important;
+  background:linear-gradient(180deg,rgba(17,50,79,.98),rgba(7,29,51,.98))!important;
+  color:#F3F7FB!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -2px 0 #03111F,0 3px 8px rgba(0,0,0,.38)!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377{
+  min-width:0!important;flex:1!important;
+  display:flex!important;flex-direction:column!important;gap:2px!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377 b{
+  font-size:10px!important;line-height:1.05!important;color:#E8EEF6!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377 small{
+  font-size:7.5px!important;line-height:1!important;font-weight:900!important;color:#B8C7D8!important;
+}
+#app.srHomeFullArena .srEggReadyNestV377{
+  position:absolute!important;right:18px!important;bottom:2px!important;
+  width:45px!important;height:45px!important;
+  display:grid!important;place-items:center!important;
+  background:radial-gradient(ellipse at 50% 82%,rgba(227,184,64,.70),rgba(117,75,17,.12) 48%,transparent 69%)!important;
+}
+#app.srHomeFullArena .srEggReadyNestV377 img{
+  width:36px!important;height:36px!important;object-fit:contain!important;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))!important;
+}
+#app.srHomeFullArena .srEggReadyChevronV377{
+  position:absolute!important;right:5px!important;top:50%!important;transform:translateY(-50%)!important;
+  color:#C5D7E7!important;font-size:20px!important;font-weight:900!important;
+}
+
+/* Secondary reward feed lives left so it never collides with the egg capsule. */
+#app.srHomeFullArena #rewardFeed{
+  left:8px!important;right:auto!important;
+  top:calc(var(--srHudH) + 55px)!important;
+  width:min(160px,42%)!important;
+}
+
+/* Skills: thick premium frames, dark wells, circular painted icons and stronger cooldown readability. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  padding:5px 7px!important;
+  gap:6px!important;
+  background:linear-gradient(180deg,#0F3456 0%,#082440 60%,#061B31 100%)!important;
+  border-top:2px solid #D8AB4B!important;
+  border-bottom:2px solid #D8AB4B!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -3px 7px rgba(0,11,22,.52),0 -2px 8px rgba(0,0,0,.24)!important;
+}
+#app.srHomeFullArena #skillbar .slot{
+  width:45px!important;height:45px!important;
+  border:2px solid #D8AB4B!important;
+  border-radius:11px!important;
+  background:linear-gradient(180deg,#102C49,#061A2F)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -4px 8px rgba(0,10,22,.58),0 2px 6px rgba(0,0,0,.36)!important;
+}
+#app.srHomeFullArena #skillbar .slot .skfx{
+  inset:3px!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.20),0 0 6px rgba(0,0,0,.34)!important;
+}
+#app.srHomeFullArena #skillbar .slot .skfx::after{
+  border-radius:50%!important;
+  background:radial-gradient(circle at 50% 20%,rgba(255,255,255,.38),transparent 54%)!important;
+}
+#app.srHomeFullArena #skillbar .slot .cdRing{inset:1px!important}
+#app.srHomeFullArena #skillbar .slot .cdTxt{
+  font-size:13px!important;color:#FFF4D3!important;
+  -webkit-text-stroke:1px rgba(4,9,16,.55)!important;
+}
+#app.srHomeFullArena #skillbar .slot .catBar{
+  left:4px!important;right:4px!important;bottom:1px!important;height:3px!important;border-radius:999px!important;
+  box-shadow:0 0 5px currentColor!important;
+}
+#app.srHomeFullArena #skillbar .autoSk{
+  width:45px!important;height:45px!important;
+  border:2px solid #B98C31!important;
+  border-radius:11px!important;
+  background:linear-gradient(180deg,#163657,#08233E)!important;
+  color:#D3C18D!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),inset 0 -3px 6px rgba(0,10,21,.48)!important;
+}
+#app.srHomeFullArena #skillbar .autoSk.on{
+  color:#FFE08C!important;border-color:#E2B348!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 8px rgba(226,179,72,.20)!important;
+}
+#app.srHomeFullArena #skillbar .petMini{
+  height:45px!important;
+  min-width:104px!important;
+  border:2px solid #D8AB4B!important;
+  border-radius:11px!important;
+  background:linear-gradient(180deg,#123252,#071E36)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.11),inset 0 -3px 7px rgba(0,10,22,.50),0 2px 6px rgba(0,0,0,.32)!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:39px!important;height:39px!important;
+  filter:saturate(1.12) brightness(1.06) drop-shadow(0 2px 4px rgba(0,0,0,.45))!important;
+}
+
+/* Forge: dark navy frame with a large visible fire/anvil atmosphere on the right. */
+#app.srHomeFullArena #screen.fixed>.pad.mt4{
+  background:linear-gradient(180deg,#08243F,#061A2F)!important;
+  padding:4px 7px!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266{
+  position:relative!important;
+  border:2px solid #D5A640!important;
+  border-radius:13px!important;
+  background:
+    linear-gradient(90deg,rgba(8,29,50,.98) 0%,rgba(8,31,54,.94) 52%,rgba(20,28,35,.50) 71%,rgba(32,22,16,.36) 100%),
+    radial-gradient(circle at 84% 56%,rgba(255,119,22,.64),rgba(232,70,10,.19) 28%,transparent 54%),
+    url("art/props/brazier.png") 84% 58% / 142px auto no-repeat,
+    url("art/props/brazier.png") 101% 67% / 96px auto no-repeat,
+    url("art/props/crystal.png") 97% 70% / 34px auto no-repeat,
+    linear-gradient(180deg,#123856,#071D34)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.11),inset 0 -3px 0 rgba(2,15,28,.58),0 0 0 1px rgba(92,53,10,.42),0 4px 10px rgba(0,0,0,.34)!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266::before{
+  content:""!important;
+  position:absolute!important;inset:1px!important;pointer-events:none!important;border-radius:10px!important;
+  background:radial-gradient(45% 70% at 83% 57%,rgba(255,177,53,.16),transparent 70%)!important;
+  border:1px solid rgba(241,195,89,.24)!important;
+}
+#app.srHomeFullArena .srForgeHead266{
+  border-bottom:1px solid rgba(209,164,69,.34)!important;
+}
+#app.srHomeFullArena .srForgeHeadLeft266>b{
+  color:#FFF0B8!important;
+  font-family:Georgia,var(--fd),serif!important;
+  font-size:11.5px!important;
+  letter-spacing:.75px!important;
+  text-shadow:0 2px 2px #000!important;
+}
+#app.srHomeFullArena .srForgeHammer266{
+  border-color:#D7AA4A!important;
+  background:linear-gradient(180deg,#183A5A,#0A2540)!important;
+}
+#app.srHomeFullArena .srForgeMineral266{
+  color:#E4EEF7!important;
+  border-color:#4F7190!important;
+  background:rgba(5,26,45,.76)!important;
+}
+#app.srHomeFullArena .srForgeUpgrade266{
+  border:1px solid #436789!important;
+  background:linear-gradient(180deg,rgba(17,50,78,.96),rgba(7,28,49,.97))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#app.srHomeFullArena .srForgeUpgrade266>.btn{
+  --bA:#F9B73B;--bB:#D97A13;--bS:#8C4604;--bE:#FFF0A9;--bT:#fff;--bSh:0 1px 1px #6B3600;
+  min-width:82px!important;
+  border:1px solid #6F3D05!important;
+  border-radius:8px!important;
+  box-shadow:inset 0 1px 0 #FFE2A2,inset 0 -3px 0 #9A5107,0 2px 5px rgba(0,0,0,.32)!important;
+}
+#app.srHomeFullArena .srForgeLootReserve266{
+  border:1px solid rgba(72,104,132,.46)!important;
+  background:linear-gradient(90deg,rgba(4,22,39,.78),rgba(5,26,44,.30) 55%,transparent 100%)!important;
+  box-shadow:inset 0 1px 8px rgba(0,0,0,.32)!important;
+}
+#app.srHomeFullArena .srForgeActions266>.btn.blue{
+  border:1px solid #16669B!important;
+  background:linear-gradient(180deg,#1D91D5,#0D5F9F)!important;
+  color:#F3F8FC!important;
+  box-shadow:inset 0 1px 0 #9FD8F6,inset 0 -3px 0 #074E86,0 2px 0 #032D4C,0 4px 7px rgba(0,0,0,.28)!important;
+}
+#app.srHomeFullArena .srForgeActions266 .tgl{
+  border:1px solid #496D8E!important;
+  background:linear-gradient(180deg,#183B5D,#0A2643)!important;
+  color:#C1CEE0!important;
+}
+#app.srHomeFullArena .srForgeActions266 .tgl.on{
+  border-color:#6FD28D!important;
+  background:linear-gradient(180deg,#1B6E45,#11492F)!important;
+  color:#A5F0BB!important;
+}
+#app.srHomeFullArena .srForgeFilter266{
+  border-color:#395D7C!important;
+  background:linear-gradient(180deg,rgba(12,40,65,.95),rgba(5,25,44,.96))!important;
+}
+
+/* Preserve V371 dust feedback as part of the Forge language. */
+#app.srHomeFullArena #srAutoDustNoticeV371{
+  color:#78E996!important;
+  border-color:rgba(87,214,126,.55)!important;
+  background:rgba(7,43,26,.91)!important;
+}
+
+/* Bottom navigation: deep navy, gold separators and a strong active glow. */
+#tabs{
+  border-top:2px solid #D8AB49!important;
+  background:linear-gradient(180deg,#0E2F50 0%,#08233E 55%,#05182C 100%)!important;
+  box-shadow:0 -4px 12px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#tabs::before{
+  height:3px!important;
+  background:linear-gradient(90deg,#71470F,#F0C968 17%,#8E6120 50%,#F0C968 83%,#71470F)!important;
+  box-shadow:0 0 8px rgba(232,182,72,.18)!important;
+}
+#tabs>.tab{
+  color:#AFC1D2!important;
+  border-right:1px solid rgba(217,174,73,.25)!important;
+}
+#tabs>.tab.on,
+#tabs>.tab.active,
+#tabs>.tab[aria-current="page"]{
+  color:#FFF0B3!important;
+  background:
+    linear-gradient(180deg,rgba(211,159,49,.16),rgba(108,70,16,.04) 58%,transparent),
+    radial-gradient(circle at 50% 14%,rgba(255,216,105,.28),transparent 63%)!important;
+}
+#tabs>.tab.on::before,
+#tabs>.tab.active::before,
+#tabs>.tab[aria-current="page"]::before{
+  background:linear-gradient(90deg,transparent,#FFF0A9 18%,#E3AC38 82%,transparent)!important;
+  box-shadow:0 0 9px rgba(236,182,66,.40)!important;
+}
+#tabs>.tab.on>.ico>.fantasyNavIcon,
+#tabs>.tab.active>.ico>.fantasyNavIcon,
+#tabs>.tab[aria-current="page"]>.ico>.fantasyNavIcon{
+  filter:saturate(1.06) brightness(1.17) drop-shadow(0 0 8px rgba(243,194,78,.48))!important;
+}
+
+/* Keep the same identity on smaller phones instead of inflating Forge again. */
+@media(max-width:390px){
+  #app.srHomeFullArena .srEggReadyV377{right:7px!important;width:min(184px,52vw)!important;top:calc(var(--srHudH) + 42px)!important}
+  #app.srHomeFullArena #skillbar .slot,
+  #app.srHomeFullArena #skillbar .autoSk{width:42px!important;height:42px!important}
+  #app.srHomeFullArena #skillbar .petMini{height:42px!important;min-width:92px!important}
+  #app.srHomeFullArena #skillbar .petMini img{width:36px!important;height:36px!important}
+}
+
+
+/* V378 TARGETED REFERENCE FINISH
+   Final pass from the V377 phone capture: keep the approved navy/gold identity,
+   but restore reference hierarchy, move secondary feedback out of combat,
+   brighten the ruins and make the Forge fire/anvil read immediately. */
+
+/* 1) Arena: same ruins asset, now closer to the bright reference instead of dusk-purple. */
+#app.srHomeFullArena #arenaBg{
+  filter:brightness(1.24) saturate(1.13) contrast(1.01) hue-rotate(-18deg)!important;
+  background-position:center 43%!important;
+}
+#app.srHomeFullArena #arenaBg::after{
+  content:""!important;
+  position:absolute!important;inset:0!important;pointer-events:none!important;
+  background:
+    url("art/props/bush.png") left -22px bottom -22px / 150px auto no-repeat,
+    url("art/props/bush.png") right -26px bottom -26px / 145px auto no-repeat,
+    url("art/props/crystal.png") 7% 83% / 48px auto no-repeat,
+    url("art/props/crystal.png") 94% 79% / 42px auto no-repeat,
+    linear-gradient(180deg,rgba(112,199,235,.045) 0%,rgba(58,165,144,.025) 48%,rgba(44,145,86,.11) 100%)!important;
+  opacity:.88!important;
+}
+#app.srHomeFullArena #arenaShade{
+  background:
+    radial-gradient(85% 52% at 50% 8%,rgba(165,225,255,.08),transparent 70%),
+    linear-gradient(90deg,rgba(3,22,35,.08),transparent 11%,transparent 89%,rgba(3,22,35,.08)),
+    linear-gradient(180deg,rgba(4,21,33,0) 0%,rgba(3,21,31,.015) 56%,rgba(3,19,27,.10) 100%)!important;
+}
+#app.srHomeFullArena #aDecor{
+  filter:brightness(1.08) saturate(1.08) drop-shadow(0 3px 3px rgba(0,0,0,.18))!important;
+  opacity:.90!important;
+}
+
+/* 2) Reference hierarchy: notification lane below HUD, then stage content. */
+#app.srHomeFullArena .srEggReadyV377{
+  top:calc(var(--srHudH) + 10px)!important;
+  right:10px!important;
+  width:min(190px,50vw)!important;
+  min-height:44px!important;
+  padding:5px 61px 5px 10px!important;
+  border-radius:11px!important;
+  background:linear-gradient(180deg,rgba(14,47,77,.98),rgba(6,27,48,.985))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -2px 0 #03111F,0 3px 7px rgba(0,0,0,.34)!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377 b{font-size:9.5px!important;white-space:nowrap!important}
+#app.srHomeFullArena .srEggReadyCopyV377 small{font-size:7.2px!important;white-space:nowrap!important}
+#app.srHomeFullArena .srEggReadyNestV377{
+  right:17px!important;bottom:1px!important;width:43px!important;height:43px!important;
+}
+#app.srHomeFullArena .srEggReadyNestV377 img{width:35px!important;height:35px!important}
+#app.srHomeFullArena #arena .floorTag{
+  top:calc(var(--srHudH) + 66px)!important;
+  gap:3px!important;
+}
+#app.srHomeFullArena #arena .floorTxt{
+  font-size:17.5px!important;
+  letter-spacing:1.25px!important;
+}
+#app.srHomeFullArena #rewardFeed{
+  top:calc(var(--srHudH) + 9px)!important;
+  left:8px!important;right:auto!important;
+  width:min(145px,38%)!important;
+  z-index:41!important;
+}
+#app.srHomeFullArena #rewardFeed .rewardPop{
+  padding:3px 6px!important;
+  background:linear-gradient(180deg,rgba(12,40,65,.88),rgba(5,25,44,.88))!important;
+  border-color:rgba(91,132,166,.55)!important;
+  box-shadow:0 2px 5px rgba(0,0,0,.24)!important;
+}
+#app.srHomeFullArena #rewardFeed .rewardPop .rpT{font-size:8.5px!important}
+#app.srHomeFullArena #rewardFeed .rewardPop .rpS{font-size:7.5px!important}
+
+/* 3) Skills: preserve V377 proportions, strengthen the painted-circle / cooldown treatment. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  background:linear-gradient(180deg,#0B2B49 0%,#071F39 62%,#05182D 100%)!important;
+  border-top-color:#DAB04F!important;
+  border-bottom-color:#DAB04F!important;
+}
+#app.srHomeFullArena #skillbar .slot{
+  background:linear-gradient(180deg,#0F3152,#061B31)!important;
+  border-color:#D7AA49!important;
+}
+#app.srHomeFullArena #skillbar .slot .skfx{
+  inset:4px!important;
+  border:1.5px solid rgba(241,219,154,.34)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.13),0 0 7px rgba(0,0,0,.38)!important;
+}
+#app.srHomeFullArena #skillbar .slot .cdArc{
+  stroke-width:4!important;
+  filter:drop-shadow(0 0 1.5px currentColor)!important;
+}
+#app.srHomeFullArena #skillbar .slot .cdTxt{
+  font-size:13.5px!important;
+  font-weight:1000!important;
+}
+#app.srHomeFullArena #skillbar .autoSk{
+  background:linear-gradient(180deg,#123653,#071F37)!important;
+}
+#app.srHomeFullArena #skillbar .petMini{
+  background:linear-gradient(180deg,#103553,#071F37)!important;
+  padding-right:6px!important;
+}
+#app.srHomeFullArena #skillbar .petMini>.flex1{min-width:0!important;overflow:hidden!important}
+#app.srHomeFullArena #skillbar .petMini .mute{font-size:7px!important;line-height:1!important}
+#app.srHomeFullArena #skillbar .petMini .bb{font-size:10.5px!important;line-height:1.05!important}
+#app.srHomeFullArena #skillbar .petMini .tiny{font-size:7.5px!important;line-height:1.05!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+
+/* 4) Forge: a real visual furnace window with large fire and an anvil silhouette. */
+#app.srHomeFullArena .homeForge.srForgePanel266{
+  overflow:hidden!important;
+  background:
+    linear-gradient(90deg,rgba(7,29,50,.99) 0%,rgba(7,30,52,.97) 52%,rgba(13,27,38,.72) 69%,rgba(31,22,16,.50) 100%),
+    linear-gradient(180deg,#123858,#071D34)!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266>*{
+  position:relative!important;
+  z-index:3!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266::before{
+  content:""!important;
+  position:absolute!important;
+  right:-6px!important;
+  top:54px!important;
+  width:184px!important;
+  height:82px!important;
+  left:auto!important;bottom:auto!important;
+  border:0!important;
+  border-radius:18px 0 0 18px!important;
+  pointer-events:none!important;
+  z-index:0!important;
+  background:
+    radial-gradient(ellipse at 58% 84%,rgba(255,226,125,.94) 0 7%,rgba(255,155,37,.86) 13%,rgba(240,75,11,.58) 29%,transparent 57%),
+    radial-gradient(ellipse at 77% 72%,rgba(255,196,73,.78),rgba(232,64,8,.35) 34%,transparent 61%),
+    url("art/props/brazier.png") 70% 78% / 168px auto no-repeat,
+    linear-gradient(180deg,rgba(69,30,15,.12),rgba(33,18,14,.45))!important;
+  filter:saturate(1.16) brightness(1.13) drop-shadow(0 0 10px rgba(255,100,16,.32))!important;
+  opacity:.98!important;
+  animation:srForgeFirePulseV378 1.8s ease-in-out infinite alternate!important;
+}
+#app.srHomeFullArena .homeForge.srForgePanel266::after{
+  content:""!important;
+  position:absolute!important;
+  right:45px!important;
+  top:91px!important;
+  width:78px!important;
+  height:24px!important;
+  z-index:1!important;
+  pointer-events:none!important;
+  background:linear-gradient(180deg,#9AA5B3 0%,#5D6875 36%,#2D343D 100%)!important;
+  clip-path:polygon(0 23%,57% 23%,67% 0,100% 0,100% 34%,73% 48%,69% 72%,91% 72%,91% 100%,25% 100%,25% 72%,10% 63%)!important;
+  box-shadow:0 4px 0 #12161C,0 6px 9px rgba(0,0,0,.46)!important;
+  filter:drop-shadow(0 0 3px rgba(255,170,67,.24))!important;
+}
+@keyframes srForgeFirePulseV378{
+  from{filter:saturate(1.08) brightness(1.04) drop-shadow(0 0 7px rgba(255,92,12,.24))}
+  to{filter:saturate(1.24) brightness(1.22) drop-shadow(0 0 14px rgba(255,115,20,.42))}
+}
+#app.srHomeFullArena .srForgeLootReserve266{
+  position:relative!important;
+  z-index:2!important;
+  background:
+    linear-gradient(90deg,rgba(4,24,42,.93) 0%,rgba(5,27,47,.88) 48%,rgba(5,26,45,.47) 62%,rgba(5,24,40,.05) 77%,transparent 100%)!important;
+  border-color:rgba(73,110,141,.56)!important;
+}
+#app.srHomeFullArena #srForgeLoot273{z-index:4!important}
+#app.srHomeFullArena .srForgeActions266,
+#app.srHomeFullArena .srForgeFilter266{z-index:4!important}
+#app.srHomeFullArena .srForgeActions266>.btn.blue{
+  background:linear-gradient(180deg,#209BDF,#0C659F)!important;
+  border-color:#0B5585!important;
+}
+#app.srHomeFullArena #srAutoDustNoticeV371{
+  left:10px!important;
+  right:104px!important;
+  bottom:61px!important;
+  z-index:12!important;
+  min-height:18px!important;
+  background:rgba(7,44,27,.94)!important;
+  color:#7BF09A!important;
+  border-color:rgba(103,228,139,.62)!important;
+}
+
+/* Smaller phones keep the same vertical order: egg card first, stage second. */
+@media(max-width:390px){
+  #app.srHomeFullArena .srEggReadyV377{
+    top:calc(var(--srHudH) + 8px)!important;
+    right:7px!important;
+    width:min(178px,51vw)!important;
+    min-height:42px!important;
+    padding-right:57px!important;
+  }
+  #app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 62px)!important}
+  #app.srHomeFullArena #rewardFeed{top:calc(var(--srHudH) + 8px)!important;width:min(134px,37%)!important}
+  #app.srHomeFullArena .homeForge.srForgePanel266::before{width:168px!important;height:77px!important;top:54px!important}
+  #app.srHomeFullArena .homeForge.srForgePanel266::after{right:39px!important;top:90px!important;width:72px!important}
+}
+
+
+/* V379 CLEAN HOME HIERARCHY
+   One ready-egg capsule, quieter foreground scenery, brighter ruins and a
+   roomier Familiar strip. Presentation only. */
+
+/* The reference is luminous blue/green fantasy, not pink dusk. */
+#app.srHomeFullArena #arenaBg{
+  filter:brightness(1.31) saturate(1.04) contrast(.99) hue-rotate(18deg)!important;
+  background-position:center 41%!important;
+}
+#app.srHomeFullArena #arenaBg::after{
+  background:
+    url("art/props/bush.png") left -18px bottom -15px / 100px auto no-repeat,
+    url("art/props/bush.png") right -20px bottom -17px / 98px auto no-repeat,
+    url("art/props/crystal.png") 7% 85% / 34px auto no-repeat,
+    url("art/props/crystal.png") 94% 82% / 30px auto no-repeat,
+    linear-gradient(180deg,rgba(142,218,246,.055) 0%,rgba(94,195,176,.03) 50%,rgba(50,151,92,.075) 100%)!important;
+  opacity:.64!important;
+}
+#app.srHomeFullArena #arenaShade{
+  background:
+    radial-gradient(88% 56% at 50% 5%,rgba(188,235,255,.10),transparent 72%),
+    linear-gradient(90deg,rgba(3,19,31,.06),transparent 12%,transparent 88%,rgba(3,19,31,.06)),
+    linear-gradient(180deg,rgba(3,20,31,0) 0%,rgba(3,18,28,.008) 60%,rgba(3,17,25,.075) 100%)!important;
+}
+#app.srHomeFullArena #aDecor{
+  filter:brightness(1.13) saturate(1.03) drop-shadow(0 2px 2px rgba(0,0,0,.15))!important;
+  opacity:.82!important;
+}
+
+/* A single right-side egg card owns the ready state. */
+#app.srHomeFullArena .srEggReadyV377{
+  top:calc(var(--srHudH) + 8px)!important;
+  right:8px!important;
+  width:min(190px,52vw)!important;
+  min-height:42px!important;
+  padding:5px 58px 5px 9px!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377 b{
+  font-size:9.2px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#app.srHomeFullArena .srEggReadyCopyV377 small{
+  font-size:6.9px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#app.srHomeFullArena .srEggReadyNestV377{
+  right:16px!important;
+  width:41px!important;height:41px!important;
+}
+#app.srHomeFullArena .srEggReadyNestV377 img{
+  width:34px!important;height:34px!important;
+}
+#app.srHomeFullArena #arena .floorTag{
+  top:calc(var(--srHudH) + 59px)!important;
+}
+
+/* No egg-ready reward card should remain visible on Home even during a hot reload. */
+#app.srHomeFullArena #rewardFeed .rewardPop[data-sr-egg-ready],
+#app.srHomeFullArena #rewardFeed .rewardPop.eggReady{display:none!important}
+
+/* Free horizontal room for Familiar without shrinking the visual quality of skills. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  gap:4px!important;
+  padding-left:6px!important;
+  padding-right:6px!important;
+}
+#app.srHomeFullArena #skillbar .slot,
+#app.srHomeFullArena #skillbar .autoSk{
+  width:43px!important;
+  height:43px!important;
+}
+#app.srHomeFullArena #skillbar .petMini{
+  min-width:110px!important;
+  height:43px!important;
+  padding:0 5px 0 3px!important;
+  gap:4px!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:34px!important;
+  height:34px!important;
+}
+#app.srHomeFullArena #skillbar .petMini .mute{
+  font-size:6.8px!important;
+}
+#app.srHomeFullArena #skillbar .petMini .bb{
+  font-size:10px!important;
+}
+#app.srHomeFullArena #skillbar .petMini .tiny{
+  font-size:7.2px!important;
+  max-width:100%!important;
+}
+
+/* Keep the V378 Forge spectacle exactly as approved; only preserve its green feedback clarity. */
+#app.srHomeFullArena #srAutoDustNoticeV371{
+  color:#80F09D!important;
+  background:rgba(6,43,25,.95)!important;
+}
+
+@media(max-width:390px){
+  #app.srHomeFullArena .srEggReadyV377{
+    width:min(180px,52vw)!important;
+    padding-right:55px!important;
+  }
+  #app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 57px)!important}
+  #app.srHomeFullArena #skillbar .slot,
+  #app.srHomeFullArena #skillbar .autoSk{width:41px!important;height:41px!important}
+  #app.srHomeFullArena #skillbar .petMini{height:41px!important;min-width:104px!important}
+  #app.srHomeFullArena #skillbar .petMini img{width:32px!important;height:32px!important}
+}
+
+
+/* V382 REFERENCE SKILL BUTTONS
+   Actual redesign of the Home skill buttons from the annotated reference.
+   Strong gold frames, circular painted skill wells, thicker coloured cooldown
+   rings and a distinct AUTO tile. Presentation only. */
+
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  gap:5px!important;
+  padding:5px 7px!important;
+  background:
+    linear-gradient(180deg,#0E2F4D 0%,#08233C 55%,#05172A 100%)!important;
+  border-top:2px solid #E0B650!important;
+  border-bottom:2px solid #C89A38!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -3px 7px rgba(0,8,17,.58),
+    0 -2px 7px rgba(0,0,0,.24)!important;
+}
+
+/* Real outer frame: visibly different from the flat V379 squares. */
+#app.srHomeFullArena #skillbar .slot{
+  position:relative!important;
+  width:46px!important;
+  height:46px!important;
+  flex:0 0 46px!important;
+  border:2px solid #D9AC4D!important;
+  border-radius:12px!important;
+  overflow:visible!important;
+  background:
+    linear-gradient(180deg,#183A5E 0%,#0B2743 55%,#06182B 100%)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 -3px 0 #03101E,
+    0 2px 0 #5B3C0D,
+    0 3px 7px rgba(0,0,0,.42)!important;
+  transform:translateY(-1px)!important;
+}
+#app.srHomeFullArena #skillbar .slot::before{
+  content:""!important;
+  position:absolute!important;
+  inset:2px!important;
+  z-index:0!important;
+  pointer-events:none!important;
+  border-radius:9px!important;
+  border:1px solid rgba(255,225,147,.28)!important;
+  background:
+    linear-gradient(135deg,rgba(255,239,190,.09),transparent 30%),
+    linear-gradient(315deg,rgba(0,0,0,.22),transparent 35%)!important;
+}
+#app.srHomeFullArena #skillbar .slot::after{
+  content:""!important;
+  position:absolute!important;
+  width:7px!important;height:7px!important;
+  left:50%!important;top:-4px!important;
+  transform:translateX(-50%) rotate(45deg)!important;
+  z-index:5!important;
+  pointer-events:none!important;
+  background:#D8AB4A!important;
+  border:1px solid #FFE7A8!important;
+  box-shadow:0 0 5px rgba(233,188,81,.35)!important;
+}
+
+/* The actual skill art becomes a circular medallion like the reference. */
+#app.srHomeFullArena #skillbar .slot[data-skill] .skfx{
+  position:absolute!important;
+  inset:4px!important;
+  z-index:1!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  border:2px solid rgba(231,196,112,.62)!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.16),
+    inset 0 -5px 8px rgba(0,0,0,.35),
+    0 0 5px rgba(0,0,0,.38)!important;
+}
+#app.srHomeFullArena #skillbar .slot[data-skill] .skfx::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  border-radius:50%!important;
+  z-index:0!important;
+  background:
+    radial-gradient(circle at 50% 23%,rgba(255,255,255,.30),transparent 34%),
+    radial-gradient(circle at 50% 68%,rgba(0,0,0,.05),rgba(0,0,0,.28) 82%)!important;
+}
+#app.srHomeFullArena #skillbar .slot[data-skill] .skfx::after{
+  content:""!important;
+  position:absolute!important;
+  inset:1px!important;
+  border-radius:50%!important;
+  z-index:2!important;
+  pointer-events:none!important;
+  background:
+    linear-gradient(155deg,rgba(255,255,255,.18),transparent 38%),
+    radial-gradient(circle at 50% 110%,rgba(0,0,0,.28),transparent 54%)!important;
+}
+#app.srHomeFullArena #skillbar .slot[data-skill] .skfx>svg{
+  position:relative!important;
+  z-index:1!important;
+  width:26px!important;
+  height:26px!important;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.58))!important;
+}
+
+/* Coloured cooldown ring is now a dominant visual element rather than a thin outline. */
+#app.srHomeFullArena #skillbar .slot[data-skill] .cdRing{
+  position:absolute!important;
+  inset:1px!important;
+  z-index:3!important;
+  width:44px!important;
+  height:44px!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+  filter:drop-shadow(0 0 2px rgba(255,255,255,.14))!important;
+}
+#app.srHomeFullArena #skillbar .slot[data-skill] .cdArc{
+  stroke-width:4.5!important;
+  stroke-linecap:round!important;
+  filter:drop-shadow(0 0 2.4px currentColor)!important;
+}
+#app.srHomeFullArena #skillbar .slot[data-skill] .cdTxt{
+  z-index:4!important;
+  font-size:14px!important;
+  font-weight:1000!important;
+  letter-spacing:.1px!important;
+  color:#FFF7E0!important;
+  text-shadow:
+    0 2px 2px #000,
+    0 0 4px rgba(0,0,0,.9)!important;
+  -webkit-text-stroke:.35px rgba(0,0,0,.5)!important;
+}
+#app.srHomeFullArena #skillbar .slot[data-skill].cooling .skfx{
+  filter:saturate(.68) brightness(.62)!important;
+}
+
+/* Level badge becomes a small deliberate jewel rather than flat text. */
+#app.srHomeFullArena #skillbar .slot .lv{
+  right:-2px!important;
+  bottom:-3px!important;
+  z-index:6!important;
+  min-width:15px!important;
+  height:14px!important;
+  padding:0 3px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:7px!important;
+  border:1px solid #D2A64A!important;
+  background:linear-gradient(180deg,#272D3B,#0B101B)!important;
+  color:#FFF0BC!important;
+  font-size:8.5px!important;
+  line-height:12px!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.52)!important;
+}
+#app.srHomeFullArena #skillbar .slot .catBar{
+  left:8px!important;
+  right:8px!important;
+  bottom:2px!important;
+  z-index:5!important;
+  height:3px!important;
+  border-radius:999px!important;
+  box-shadow:0 0 6px currentColor!important;
+}
+
+/* Weapon slot uses its own inset plate, matching the left-most reference tile. */
+#app.srHomeFullArena #skillbar>.slot:first-child{
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 50% 36%,rgba(63,138,198,.23),transparent 52%),
+    linear-gradient(180deg,#123859,#071E35)!important;
+}
+#app.srHomeFullArena #skillbar>.slot:first-child::before{
+  inset:3px!important;
+  border-color:rgba(92,176,229,.40)!important;
+  box-shadow:inset 0 0 10px rgba(37,138,203,.18)!important;
+}
+#app.srHomeFullArena #skillbar>.slot:first-child img{
+  width:30px!important;
+  height:30px!important;
+  z-index:2!important;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.58))!important;
+}
+
+/* AUTO gets the same premium depth as the reference instead of looking like a normal slot. */
+#app.srHomeFullArena #skillbar .autoSk{
+  position:relative!important;
+  width:46px!important;
+  height:46px!important;
+  flex:0 0 46px!important;
+  border:2px solid #D4A84A!important;
+  border-radius:12px!important;
+  gap:0!important;
+  background:
+    linear-gradient(180deg,#173653 0%,#0A243D 58%,#06182B 100%)!important;
+  color:#D7C793!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -3px 0 #03111F,
+    0 2px 0 #5A3A0D,
+    0 3px 6px rgba(0,0,0,.38)!important;
+  transform:translateY(-1px)!important;
+}
+#app.srHomeFullArena #skillbar .autoSk svg{
+  width:17px!important;
+  height:17px!important;
+  color:#FFD256!important;
+  filter:drop-shadow(0 0 4px rgba(255,199,55,.36))!important;
+  margin-bottom:1px!important;
+}
+#app.srHomeFullArena #skillbar .autoSk>span{
+  font-size:7.5px!important;
+  line-height:9px!important;
+  letter-spacing:.5px!important;
+}
+#app.srHomeFullArena #skillbar .autoSk>i{
+  width:20px!important;
+  height:3px!important;
+  margin-top:2px!important;
+  border-radius:999px!important;
+  background:#5C6570!important;
+}
+#app.srHomeFullArena #skillbar .autoSk.on{
+  color:#FFE59A!important;
+  border-color:#E8BC55!important;
+  background:
+    radial-gradient(circle at 50% 22%,rgba(242,188,63,.13),transparent 48%),
+    linear-gradient(180deg,#183B59,#0A263F 58%,#06182B)!important;
+}
+#app.srHomeFullArena #skillbar .autoSk.on>i{
+  background:#F0BB3F!important;
+  box-shadow:0 0 7px rgba(240,187,63,.58)!important;
+}
+
+/* Familiar remains readable; the skills get the visual change, not its width. */
+#app.srHomeFullArena #skillbar .petMini{
+  height:46px!important;
+  min-width:106px!important;
+  border:2px solid #D4A84A!important;
+  background:linear-gradient(180deg,#12324F,#071D34)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -3px 0 #03101E,
+    0 2px 0 #5A3A0D,
+    0 3px 6px rgba(0,0,0,.34)!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:36px!important;
+  height:36px!important;
+}
+
+@media(max-width:390px){
+  #app.srHomeFullArena #screen.fixed>#skillbar{gap:4px!important;padding-left:5px!important;padding-right:5px!important}
+  #app.srHomeFullArena #skillbar .slot,
+  #app.srHomeFullArena #skillbar .autoSk{
+    width:43px!important;height:43px!important;flex-basis:43px!important;
+  }
+  #app.srHomeFullArena #skillbar .slot[data-skill] .cdRing{
+    width:41px!important;height:41px!important;
+  }
+  #app.srHomeFullArena #skillbar .petMini{
+    height:43px!important;min-width:101px!important;
+  }
+  #app.srHomeFullArena #skillbar .petMini img{width:33px!important;height:33px!important}
+}
+
+
+/* V383 TRUE REFERENCE SKILLS
+   Rebuilds the skill strip from the actual reference: weapon tile, three large
+   circular coloured skill orbs, rectangular AUTO tile, then Familiar. */
+
+/* Remove the V382 decorative diamonds/triangles completely. */
+#app.srHomeFullArena #skillbar .slot::before,
+#app.srHomeFullArena #skillbar .slot::after{
+  display:none!important;
+  content:none!important;
+}
+
+/* Reference strip itself: thin gold rails, dark interior, no boxed skill cards. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  display:flex!important;
+  align-items:center!important;
+  gap:4px!important;
+  padding:5px 7px!important;
+  background:
+    linear-gradient(180deg,#0B2946 0%,#071D34 58%,#041426 100%)!important;
+  border-top:2px solid #D8AD4D!important;
+  border-bottom:2px solid #C99A38!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 -3px 7px rgba(0,8,16,.50),
+    0 -2px 6px rgba(0,0,0,.22)!important;
+}
+
+/* Weapon remains a framed square, as in the left-most reference tile. */
+#app.srHomeFullArena #skillbar .srWeaponSlotV383{
+  width:43px!important;
+  height:43px!important;
+  flex:0 0 43px!important;
+  border:2px solid #D7A947!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 50% 33%,rgba(54,139,198,.20),transparent 58%),
+    linear-gradient(180deg,#123A5E,#071D34)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.13),
+    inset 0 -3px 0 #03101D,
+    0 2px 4px rgba(0,0,0,.34)!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srWeaponSlotV383 img{
+  width:27px!important;height:27px!important;
+}
+#app.srHomeFullArena #skillbar .srWeaponSlotV383 .catBar{
+  left:3px!important;right:3px!important;bottom:1px!important;height:3px!important;
+  border-radius:999px!important;
+}
+
+/* Filled skills are genuine circular orbs now, not gold squares with circles inside. */
+#app.srHomeFullArena #skillbar .srSkillRefV383{
+  position:relative!important;
+  width:43px!important;
+  height:43px!important;
+  flex:0 0 43px!important;
+  overflow:visible!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillOrbV383{
+  position:absolute!important;
+  inset:0!important;
+  border-radius:50%!important;
+  overflow:visible!important;
+  background:#07182A!important;
+  box-shadow:
+    0 0 0 1px #07111D,
+    0 0 0 3px var(--srSkillColor),
+    0 0 0 4px rgba(236,203,123,.30),
+    0 3px 6px rgba(0,0,0,.42),
+    inset 0 0 10px rgba(0,0,0,.34)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx{
+  position:absolute!important;
+  inset:4px!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  border:0!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 -6px 9px rgba(0,0,0,.35),
+    0 0 5px color-mix(in srgb,var(--srSkillColor) 40%,transparent)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  border-radius:50%!important;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,255,255,.34),transparent 33%),
+    linear-gradient(160deg,rgba(255,255,255,.12),transparent 38%)!important;
+  z-index:0!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx::after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  border-radius:50%!important;
+  background:radial-gradient(circle at 50% 110%,rgba(0,0,0,.32),transparent 56%)!important;
+  z-index:2!important;
+  pointer-events:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx>svg{
+  position:relative!important;
+  z-index:1!important;
+  width:25px!important;height:25px!important;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.60))!important;
+}
+
+/* Thick category-colour ring exactly around the orb. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdRing{
+  position:absolute!important;
+  inset:-1px!important;
+  width:45px!important;
+  height:45px!important;
+  z-index:3!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .srSkillRingBaseV383{
+  opacity:.72!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdArc{
+  stroke-width:4.2!important;
+  stroke-linecap:round!important;
+  filter:drop-shadow(0 0 2.2px var(--srSkillColor))!important;
+}
+
+/* Main cooldown number is centered and dominant like the reference. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdTxt{
+  position:absolute!important;
+  inset:0!important;
+  z-index:4!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-size:14px!important;
+  line-height:1!important;
+  font-weight:1000!important;
+  color:#FFF7DF!important;
+  text-shadow:0 2px 2px #000,0 0 5px #000!important;
+  -webkit-text-stroke:.3px rgba(0,0,0,.62)!important;
+}
+
+/* Active-effect duration becomes the small coloured pill underneath the orb. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .fxBub{
+  left:50%!important;
+  bottom:-5px!important;
+  transform:translateX(-50%)!important;
+  z-index:7!important;
+  min-width:27px!important;
+  padding:1px 4px!important;
+  border-radius:999px!important;
+  font-size:7px!important;
+  line-height:9px!important;
+  text-align:center!important;
+  background:#071421f2!important;
+  border:1px solid currentColor!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.55),0 0 4px currentColor!important;
+}
+
+/* Level badge is a tiny dark circle at the bottom-right, matching the reference. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .lv{
+  right:-3px!important;
+  bottom:-4px!important;
+  z-index:8!important;
+  min-width:13px!important;
+  width:13px!important;
+  height:13px!important;
+  padding:0!important;
+  border-radius:50%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border:1px solid #D6AA4D!important;
+  background:#0A101A!important;
+  color:#FFF0BB!important;
+  font-size:7px!important;
+  line-height:13px!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.62)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383.cooling .skfx{
+  filter:saturate(.72) brightness(.62)!important;
+}
+
+/* Empty skill slots keep the circular language too. */
+#app.srHomeFullArena #skillbar .srSkillEmptyV383{
+  width:43px!important;height:43px!important;flex:0 0 43px!important;
+  border:0!important;border-radius:50%!important;background:transparent!important;
+  box-shadow:none!important;overflow:visible!important;transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillEmptyOrbV383{
+  width:39px!important;height:39px!important;margin:2px!important;
+  border-radius:50%!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  color:#8CA4BA!important;border:2px solid #58728B!important;
+  background:linear-gradient(180deg,#102B46,#071A2D)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.32)!important;
+}
+
+/* AUTO remains rectangular and visually separate, just like the reference. */
+#app.srHomeFullArena #skillbar .srAutoRefV383{
+  width:43px!important;
+  height:43px!important;
+  flex:0 0 43px!important;
+  border:2px solid #D5A949!important;
+  border-radius:10px!important;
+  gap:0!important;
+  background:linear-gradient(180deg,#153653,#08233B 58%,#05182A)!important;
+  color:#D6C58F!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -3px 0 #03111E,
+    0 2px 4px rgba(0,0,0,.34)!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV383 .srAutoBoltV383{
+  width:20px!important;height:20px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  margin-bottom:0!important;color:#FFD45A!important;
+  filter:drop-shadow(0 0 4px rgba(255,204,68,.35))!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV383>span:not(.srAutoBoltV383){
+  font-size:7px!important;line-height:8px!important;letter-spacing:.5px!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV383>i{
+  width:19px!important;height:3px!important;margin-top:2px!important;border-radius:999px!important;
+  background:#606A74!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV383.on>i{
+  background:#F0BD42!important;
+  box-shadow:0 0 6px rgba(240,189,66,.58)!important;
+}
+
+/* Keep Familiar as the long right-side card from the reference. */
+#app.srHomeFullArena #skillbar .petMini{
+  height:43px!important;
+  min-width:98px!important;
+  flex:1 1 auto!important;
+  border:2px solid #D5A949!important;
+  border-radius:10px!important;
+  background:linear-gradient(180deg,#113452,#071E35)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 2px 4px rgba(0,0,0,.32)!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:34px!important;height:34px!important;
+}
+
+@media(max-width:390px){
+  #app.srHomeFullArena #screen.fixed>#skillbar{
+    gap:3px!important;
+    padding-left:5px!important;
+    padding-right:5px!important;
+  }
+  #app.srHomeFullArena #skillbar .srWeaponSlotV383,
+  #app.srHomeFullArena #skillbar .srSkillRefV383,
+  #app.srHomeFullArena #skillbar .srSkillEmptyV383,
+  #app.srHomeFullArena #skillbar .srAutoRefV383{
+    width:41px!important;height:41px!important;flex-basis:41px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV383 .cdRing{
+    width:43px!important;height:43px!important;
+  }
+  #app.srHomeFullArena #skillbar .petMini{height:41px!important;min-width:94px!important}
+  #app.srHomeFullArena #skillbar .petMini img{width:32px!important;height:32px!important}
+}
+
+
+/* V386 SKILL ICON PRIORITY
+   Keep the V383 circular reference structure, but make the skill art the hero.
+   Cooldowns become supporting information instead of covering the icon. */
+
+/* Give the artwork more room and more light. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx{
+  inset:2px!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.30),
+    inset 0 -5px 8px rgba(0,0,0,.20),
+    0 0 8px color-mix(in srgb,var(--srSkillColor) 55%,transparent)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx::before{
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,255,255,.38),transparent 31%),
+    linear-gradient(160deg,rgba(255,255,255,.16),transparent 36%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx::after{
+  background:
+    radial-gradient(circle at 50% 115%,rgba(0,0,0,.18),transparent 54%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .skfx>svg{
+  width:30px!important;
+  height:30px!important;
+  color:#FFF6DA!important;
+  filter:
+    brightness(1.28)
+    saturate(1.12)
+    drop-shadow(0 1px 2px rgba(0,0,0,.62))
+    drop-shadow(0 0 4px color-mix(in srgb,var(--srSkillColor) 62%,transparent))!important;
+  transform:scale(1.03)!important;
+}
+
+/* Cooling must never black out the skill artwork. */
+#app.srHomeFullArena #skillbar .srSkillRefV383.cooling .skfx{
+  filter:brightness(.96) saturate(.96)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383.cooling .skfx::after{
+  background:
+    linear-gradient(rgba(2,10,17,.08),rgba(2,10,17,.08)),
+    radial-gradient(circle at 50% 115%,rgba(0,0,0,.18),transparent 54%)!important;
+}
+
+/* The ring is a progress accent, not the dominant shape. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdRing{
+  inset:-1px!important;
+  width:45px!important;
+  height:45px!important;
+  opacity:.90!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .srSkillRingBaseV383{
+  stroke-width:2.4!important;
+  opacity:.46!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdArc{
+  stroke-width:2.8!important;
+  filter:drop-shadow(0 0 1.5px var(--srSkillColor))!important;
+}
+
+/* Timer moves to a compact lower badge so the center remains the skill icon. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdTxt{
+  inset:auto 7px 3px 7px!important;
+  min-height:13px!important;
+  border-radius:7px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  z-index:6!important;
+  font-size:9.5px!important;
+  line-height:11px!important;
+  font-weight:1000!important;
+  letter-spacing:0!important;
+  color:#FFF7DE!important;
+  background:rgba(4,13,22,.72)!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.48)!important;
+  text-shadow:0 1px 1px #000!important;
+  -webkit-text-stroke:0!important;
+  pointer-events:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .cdTxt:empty{
+  display:none!important;
+}
+
+/* Keep secondary information truly secondary. */
+#app.srHomeFullArena #skillbar .srSkillRefV383 .lv{
+  width:12px!important;
+  min-width:12px!important;
+  height:12px!important;
+  right:-2px!important;
+  bottom:-2px!important;
+  font-size:6.5px!important;
+  line-height:12px!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383 .fxBub{
+  bottom:-4px!important;
+  min-width:24px!important;
+  padding:1px 3px!important;
+  font-size:6.5px!important;
+  line-height:8px!important;
+  opacity:.94!important;
+}
+
+/* Ready skills receive a subtle coloured halo, so they read as abilities rather than timers. */
+#app.srHomeFullArena #skillbar .srSkillRefV383:not(.cooling) .srSkillOrbV383{
+  box-shadow:
+    0 0 0 1px #07111D,
+    0 0 0 2px var(--srSkillColor),
+    0 0 8px color-mix(in srgb,var(--srSkillColor) 58%,transparent),
+    0 3px 6px rgba(0,0,0,.38),
+    inset 0 0 8px rgba(0,0,0,.22)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV383.cooling .srSkillOrbV383{
+  box-shadow:
+    0 0 0 1px #07111D,
+    0 0 0 2px color-mix(in srgb,var(--srSkillColor) 74%,#23313D),
+    0 2px 5px rgba(0,0,0,.34),
+    inset 0 0 8px rgba(0,0,0,.18)!important;
+}
+
+@media(max-width:390px){
+  #app.srHomeFullArena #skillbar .srSkillRefV383 .skfx>svg{
+    width:28px!important;height:28px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV383 .cdTxt{
+    inset:auto 6px 3px 6px!important;
+    font-size:9px!important;
+  }
+}
+
+
+/* V387 REFERENCE SKILL BAND
+   Final structure from the approved reference: square weapon, bright circular
+   abilities, cooldown written below the art, square AUTO, long Familiar card. */
+
+/* Strip proportions: the abilities get a little vertical room for the timer lane. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  align-items:flex-start!important;
+  gap:4px!important;
+  padding:4px 7px 3px!important;
+  background:
+    linear-gradient(180deg,#0C2D4C 0%,#08223B 55%,#05182B 100%)!important;
+  border-top:2px solid #DDB24E!important;
+  border-bottom:2px solid #C69838!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 -3px 7px rgba(0,8,17,.48),
+    0 -2px 6px rgba(0,0,0,.22)!important;
+}
+
+/* Weapon: compact framed square, visually separate from the circular abilities. */
+#app.srHomeFullArena #skillbar .srWeaponSlotV387{
+  width:43px!important;
+  height:43px!important;
+  flex:0 0 43px!important;
+  margin-top:1px!important;
+  border:2px solid #D6A946!important;
+  border-radius:9px!important;
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 50% 30%,rgba(65,149,205,.22),transparent 58%),
+    linear-gradient(180deg,#123A5E,#071E36)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -3px 0 #03101D,
+    0 2px 4px rgba(0,0,0,.34)!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srWeaponSlotV387 img{
+  width:29px!important;
+  height:29px!important;
+  filter:brightness(1.12) drop-shadow(0 2px 3px rgba(0,0,0,.55))!important;
+}
+#app.srHomeFullArena #skillbar .srWeaponSlotV387 .catBar{
+  left:4px!important;right:4px!important;bottom:1px!important;height:2px!important;border-radius:999px!important;
+}
+
+/* Real ability button: the orb owns the visual, while the wrapper reserves a text lane below. */
+#app.srHomeFullArena #skillbar .srSkillRefV387{
+  position:relative!important;
+  width:43px!important;
+  height:52px!important;
+  flex:0 0 43px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV387::before,
+#app.srHomeFullArena #skillbar .srSkillRefV387::after{
+  display:none!important;
+  content:none!important;
+}
+
+/* Large clean artwork, matching the reference more closely than the timer-heavy V386. */
+#app.srHomeFullArena #skillbar .srSkillOrbV387{
+  position:absolute!important;
+  left:2px!important;
+  top:1px!important;
+  width:39px!important;
+  height:39px!important;
+  border-radius:50%!important;
+  background:#071728!important;
+  box-shadow:
+    0 0 0 1px #07111C,
+    0 0 0 2px color-mix(in srgb,var(--srSkillColor) 88%,#9DB0C0),
+    0 0 7px color-mix(in srgb,var(--srSkillColor) 42%,transparent),
+    0 3px 6px rgba(0,0,0,.38)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV387 .skfx{
+  position:absolute!important;
+  inset:2px!important;
+  border:0!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.29),
+    inset 0 -5px 8px rgba(0,0,0,.18),
+    0 0 6px color-mix(in srgb,var(--srSkillColor) 50%,transparent)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV387 .skfx::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  border-radius:50%!important;
+  background:
+    radial-gradient(circle at 48% 16%,rgba(255,255,255,.34),transparent 30%),
+    linear-gradient(155deg,rgba(255,255,255,.12),transparent 37%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV387 .skfx::after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:2!important;
+  pointer-events:none!important;
+  border-radius:50%!important;
+  background:radial-gradient(circle at 50% 116%,rgba(0,0,0,.16),transparent 55%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV387 .skfx>svg{
+  position:relative!important;
+  z-index:1!important;
+  width:29px!important;
+  height:29px!important;
+  color:#FFF7E6!important;
+  transform:scale(1.04)!important;
+  filter:
+    brightness(1.28)
+    saturate(1.10)
+    drop-shadow(0 1px 2px rgba(0,0,0,.62))
+    drop-shadow(0 0 3px color-mix(in srgb,var(--srSkillColor) 55%,transparent))!important;
+}
+
+/* Cooling barely dims the artwork. The ability must always remain identifiable. */
+#app.srHomeFullArena #skillbar .srSkillRefV387.cooling .skfx{
+  filter:brightness(.94) saturate(.92)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV387.cooling .skfx::after{
+  background:
+    linear-gradient(rgba(3,10,17,.05),rgba(3,10,17,.05)),
+    radial-gradient(circle at 50% 116%,rgba(0,0,0,.16),transparent 55%)!important;
+}
+
+/* Cooldown progress is now only a thin accent around the edge. */
+#app.srHomeFullArena #skillbar .srSkillRefV387 .cdRing{
+  position:absolute!important;
+  left:-2px!important;
+  top:-2px!important;
+  width:43px!important;
+  height:43px!important;
+  z-index:3!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+  opacity:.88!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV387 .srSkillRingBaseV387{
+  stroke-width:1.7!important;
+  opacity:.34!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV387 .cdArc{
+  stroke-width:2.15!important;
+  stroke-linecap:round!important;
+  filter:drop-shadow(0 0 1px var(--srSkillColor))!important;
+}
+
+/* Key change: cooldown is written UNDER the icon, never over it. */
+#app.srHomeFullArena #skillbar .srSkillCooldownV387{
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:42px!important;
+  bottom:auto!important;
+  min-height:9px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  z-index:6!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#DCE8F4!important;
+  font-size:8.2px!important;
+  line-height:9px!important;
+  font-weight:900!important;
+  letter-spacing:.1px!important;
+  text-shadow:0 1px 2px #000,0 0 3px rgba(0,0,0,.55)!important;
+  -webkit-text-stroke:0!important;
+  pointer-events:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillCooldownV387:empty{
+  display:none!important;
+}
+
+/* Effect duration lives in a tiny corner badge, away from the cooldown lane. */
+#app.srHomeFullArena #skillbar .srSkillEffectV387{
+  position:absolute!important;
+  left:auto!important;
+  right:-4px!important;
+  top:-2px!important;
+  bottom:auto!important;
+  transform:none!important;
+  z-index:7!important;
+  min-width:18px!important;
+  padding:1px 3px!important;
+  border-radius:999px!important;
+  font-size:5.8px!important;
+  line-height:7px!important;
+  font-weight:900!important;
+  background:#06111CF2!important;
+  border:1px solid currentColor!important;
+  box-shadow:0 1px 2px rgba(0,0,0,.48)!important;
+  opacity:.92!important;
+}
+
+/* Level is tiny and tucked to the orb edge instead of competing with the art. */
+#app.srHomeFullArena #skillbar .srSkillLevelV387{
+  position:absolute!important;
+  right:0!important;
+  top:30px!important;
+  bottom:auto!important;
+  z-index:8!important;
+  min-width:11px!important;
+  width:11px!important;
+  height:11px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:50%!important;
+  border:1px solid #D5AA4E!important;
+  background:#08111D!important;
+  color:#FFF0B8!important;
+  font-size:6px!important;
+  line-height:11px!important;
+  box-shadow:0 1px 2px rgba(0,0,0,.54)!important;
+}
+
+/* Empty abilities keep the same clean circular footprint. */
+#app.srHomeFullArena #skillbar .srSkillEmptyV387{
+  position:relative!important;
+  width:43px!important;
+  height:52px!important;
+  flex:0 0 43px!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillEmptyV387::before,
+#app.srHomeFullArena #skillbar .srSkillEmptyV387::after{display:none!important;content:none!important}
+#app.srHomeFullArena #skillbar .srSkillEmptyOrbV387{
+  width:37px!important;height:37px!important;margin:2px 3px!important;
+  border-radius:50%!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  color:#91A9BE!important;
+  border:2px solid #58748D!important;
+  background:linear-gradient(180deg,#102D49,#071A2E)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.30)!important;
+}
+
+/* AUTO: compact framed square, deliberately different from the round abilities. */
+#app.srHomeFullArena #skillbar .srAutoRefV387{
+  width:43px!important;
+  height:43px!important;
+  flex:0 0 43px!important;
+  margin-top:1px!important;
+  border:2px solid #D5AA4A!important;
+  border-radius:9px!important;
+  gap:0!important;
+  background:linear-gradient(180deg,#153653,#08233C 58%,#05182B)!important;
+  color:#D7C792!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.11),
+    inset 0 -3px 0 #03111F,
+    0 2px 4px rgba(0,0,0,.32)!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV387 .srAutoBoltV387{
+  width:20px!important;height:20px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  color:#FFD55A!important;
+  filter:drop-shadow(0 0 4px rgba(255,204,70,.34))!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV387>span:not(.srAutoBoltV387){
+  font-size:7px!important;line-height:8px!important;letter-spacing:.45px!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV387>i{
+  width:18px!important;height:3px!important;margin-top:2px!important;border-radius:999px!important;background:#626D77!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV387.on>i{
+  background:#F0BD42!important;
+  box-shadow:0 0 6px rgba(240,189,66,.58)!important;
+}
+
+/* Familiar: long right-hand card, aligned to the weapon/AUTO height. */
+#app.srHomeFullArena #skillbar .petMini{
+  height:43px!important;
+  min-width:98px!important;
+  flex:1 1 auto!important;
+  margin-top:1px!important;
+  border:2px solid #D5AA4A!important;
+  border-radius:9px!important;
+  background:linear-gradient(180deg,#113452,#071E35)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 2px 4px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:34px!important;height:34px!important;
+}
+#app.srHomeFullArena #skillbar .petMini .bb{font-size:10px!important}
+#app.srHomeFullArena #skillbar .petMini .tiny{font-size:6.9px!important}
+
+@media(max-width:390px){
+  #app.srHomeFullArena #screen.fixed>#skillbar{gap:3px!important;padding-left:5px!important;padding-right:5px!important}
+  #app.srHomeFullArena #skillbar .srWeaponSlotV387,
+  #app.srHomeFullArena #skillbar .srAutoRefV387{
+    width:41px!important;height:41px!important;flex-basis:41px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV387,
+  #app.srHomeFullArena #skillbar .srSkillEmptyV387{
+    width:41px!important;height:50px!important;flex-basis:41px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillOrbV387{
+    left:2px!important;width:37px!important;height:37px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV387 .cdRing{
+    width:41px!important;height:41px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV387 .skfx>svg{
+    width:27px!important;height:27px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillCooldownV387{top:40px!important;font-size:7.8px!important}
+  #app.srHomeFullArena #skillbar .petMini{height:41px!important;min-width:94px!important}
+  #app.srHomeFullArena #skillbar .petMini img{width:32px!important;height:32px!important}
+}
+
+
+/* V388 REFERENCE SKILL TILES
+   Correction after visual comparison with the approved reference:
+   skills are framed fantasy tiles, not circular orbs. Cooldown is plain text
+   below the artwork and never covers it. */
+
+/* Strip alignment and breathing room. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  align-items:flex-start!important;
+  gap:4px!important;
+  padding:4px 7px 3px!important;
+  background:
+    linear-gradient(180deg,#0D2F50 0%,#08233D 58%,#05182B 100%)!important;
+  border-top:2px solid #DCAF4B!important;
+  border-bottom:2px solid #C69537!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 -3px 7px rgba(0,8,17,.45),
+    0 -2px 6px rgba(0,0,0,.22)!important;
+}
+
+/* Weapon: clean framed square like the reference. */
+#app.srHomeFullArena #skillbar .srWeaponSlotV388{
+  width:43px!important;
+  height:43px!important;
+  flex:0 0 43px!important;
+  margin-top:1px!important;
+  border:2px solid #D4A744!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 50% 28%,rgba(65,149,205,.20),transparent 58%),
+    linear-gradient(180deg,#133B5F,#071E36)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -3px 0 #03101D,
+    0 2px 4px rgba(0,0,0,.34)!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srWeaponSlotV388 img{
+  width:29px!important;
+  height:29px!important;
+  filter:brightness(1.12) drop-shadow(0 2px 3px rgba(0,0,0,.55))!important;
+}
+#app.srHomeFullArena #skillbar .srWeaponSlotV388 .catBar{
+  left:4px!important;right:4px!important;bottom:1px!important;height:2px!important;border-radius:999px!important;
+}
+
+/* Ability wrapper reserves one line BELOW the tile for cooldown text. */
+#app.srHomeFullArena #skillbar .srSkillRefV388{
+  position:relative!important;
+  width:45px!important;
+  height:52px!important;
+  flex:0 0 45px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388::before,
+#app.srHomeFullArena #skillbar .srSkillRefV388::after{
+  display:none!important;
+  content:none!important;
+}
+
+/* The reference reads as a framed fantasy button, not a floating circle. */
+#app.srHomeFullArena #skillbar .srSkillTileV388{
+  position:absolute!important;
+  left:1px!important;
+  top:1px!important;
+  width:43px!important;
+  height:41px!important;
+  border:2px solid #D6AA49!important;
+  border-radius:10px!important;
+  padding:2px!important;
+  overflow:hidden!important;
+  background:
+    linear-gradient(180deg,#173956,#0A223A)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -3px 0 rgba(2,12,22,.72),
+    0 2px 5px rgba(0,0,0,.36)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillTileV388::after{
+  content:""!important;
+  position:absolute!important;
+  left:4px!important;
+  right:4px!important;
+  bottom:2px!important;
+  height:2px!important;
+  z-index:4!important;
+  border-radius:999px!important;
+  background:var(--srSkillColor)!important;
+  box-shadow:0 0 5px color-mix(in srgb,var(--srSkillColor) 70%,transparent)!important;
+  pointer-events:none!important;
+}
+
+/* Artwork fills the button and is ALWAYS the dominant element. */
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx{
+  position:absolute!important;
+  inset:3px!important;
+  border-radius:7px!important;
+  overflow:hidden!important;
+  border:0!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.24),
+    inset 0 -5px 8px rgba(0,0,0,.18),
+    0 0 5px color-mix(in srgb,var(--srSkillColor) 42%,transparent)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  border-radius:7px!important;
+  background:
+    radial-gradient(circle at 50% 15%,rgba(255,255,255,.30),transparent 31%),
+    linear-gradient(155deg,rgba(255,255,255,.10),transparent 38%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx::after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:2!important;
+  pointer-events:none!important;
+  border-radius:7px!important;
+  background:linear-gradient(180deg,transparent 62%,rgba(0,0,0,.12))!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx>svg{
+  position:relative!important;
+  z-index:1!important;
+  width:30px!important;
+  height:30px!important;
+  color:#FFF7E5!important;
+  transform:scale(1.05)!important;
+  filter:
+    brightness(1.30)
+    saturate(1.10)
+    drop-shadow(0 1px 2px rgba(0,0,0,.62))
+    drop-shadow(0 0 3px color-mix(in srgb,var(--srSkillColor) 50%,transparent))!important;
+}
+
+/* Crucial: cooldown does NOT darken or gray out the artwork. */
+#app.srHomeFullArena #skillbar .srSkillRefV388.cooling .skfx{
+  filter:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388.cooling .skfx>svg{
+  filter:
+    brightness(1.20)
+    saturate(1.02)
+    drop-shadow(0 1px 2px rgba(0,0,0,.62))
+    drop-shadow(0 0 2px color-mix(in srgb,var(--srSkillColor) 42%,transparent))!important;
+}
+
+/* Cooldown: plain small text BELOW the tile. No ring, no overlay, no black badge. */
+#app.srHomeFullArena #skillbar .srSkillCooldownV388{
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:43px!important;
+  bottom:auto!important;
+  min-height:9px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  z-index:6!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#F3E6BF!important;
+  font-size:8.4px!important;
+  line-height:9px!important;
+  font-weight:900!important;
+  letter-spacing:.05px!important;
+  text-shadow:0 1px 2px #000!important;
+  -webkit-text-stroke:0!important;
+  pointer-events:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillCooldownV388:empty{
+  display:none!important;
+}
+
+/* Effect timer: tiny top-right chip, never on top of the icon center. */
+#app.srHomeFullArena #skillbar .srSkillEffectV388{
+  position:absolute!important;
+  left:auto!important;
+  right:-3px!important;
+  top:-2px!important;
+  bottom:auto!important;
+  transform:none!important;
+  z-index:8!important;
+  min-width:18px!important;
+  padding:1px 3px!important;
+  border-radius:999px!important;
+  font-size:5.7px!important;
+  line-height:7px!important;
+  font-weight:900!important;
+  background:#06111CF0!important;
+  border:1px solid currentColor!important;
+  box-shadow:0 1px 2px rgba(0,0,0,.45)!important;
+  opacity:.92!important;
+}
+
+/* Level: tiny corner token. */
+#app.srHomeFullArena #skillbar .srSkillLevelV388{
+  position:absolute!important;
+  right:-1px!important;
+  top:30px!important;
+  bottom:auto!important;
+  z-index:9!important;
+  min-width:11px!important;
+  width:11px!important;
+  height:11px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:50%!important;
+  border:1px solid #D5AA4E!important;
+  background:#08111D!important;
+  color:#FFF0B8!important;
+  font-size:6px!important;
+  line-height:11px!important;
+  box-shadow:0 1px 2px rgba(0,0,0,.54)!important;
+}
+
+/* Empty skills follow the same framed-tile language. */
+#app.srHomeFullArena #skillbar .srSkillEmptyV388{
+  position:relative!important;
+  width:45px!important;
+  height:52px!important;
+  flex:0 0 45px!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillEmptyV388::before,
+#app.srHomeFullArena #skillbar .srSkillEmptyV388::after{display:none!important;content:none!important}
+#app.srHomeFullArena #skillbar .srSkillEmptyTileV388{
+  width:41px!important;height:39px!important;margin:1px 2px!important;
+  border-radius:9px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  color:#91A9BE!important;
+  border:2px solid #6E8194!important;
+  background:linear-gradient(180deg,#102D49,#071A2E)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.30)!important;
+}
+
+/* AUTO: reference-like square system button. */
+#app.srHomeFullArena #skillbar .srAutoRefV388{
+  width:43px!important;
+  height:43px!important;
+  flex:0 0 43px!important;
+  margin-top:1px!important;
+  border:2px solid #D5AA4A!important;
+  border-radius:10px!important;
+  gap:0!important;
+  background:linear-gradient(180deg,#153653,#08233C 58%,#05182B)!important;
+  color:#D8C994!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.11),
+    inset 0 -3px 0 #03111F,
+    0 2px 4px rgba(0,0,0,.32)!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV388 .srAutoBoltV388{
+  width:20px!important;height:20px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  color:#FFD55A!important;
+  filter:drop-shadow(0 0 4px rgba(255,204,70,.34))!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV388>span:not(.srAutoBoltV388){
+  font-size:7px!important;line-height:8px!important;letter-spacing:.45px!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV388>i{
+  width:18px!important;height:3px!important;margin-top:2px!important;border-radius:999px!important;background:#626D77!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV388.on>i{
+  background:#F0BD42!important;
+  box-shadow:0 0 6px rgba(240,189,66,.58)!important;
+}
+
+/* Familiar: long card aligned with weapon/AUTO, no cramped text. */
+#app.srHomeFullArena #skillbar .petMini{
+  height:43px!important;
+  min-width:99px!important;
+  flex:1 1 auto!important;
+  margin-top:1px!important;
+  padding-left:6px!important;
+  padding-right:6px!important;
+  border:2px solid #D5AA4A!important;
+  border-radius:10px!important;
+  background:linear-gradient(180deg,#113452,#071E35)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 2px 4px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:34px!important;height:34px!important;
+}
+#app.srHomeFullArena #skillbar .petMini .bb{font-size:10px!important}
+#app.srHomeFullArena #skillbar .petMini .tiny{font-size:6.9px!important}
+
+@media(max-width:390px){
+  #app.srHomeFullArena #screen.fixed>#skillbar{
+    gap:3px!important;
+    padding-left:5px!important;
+    padding-right:5px!important;
+  }
+  #app.srHomeFullArena #skillbar .srWeaponSlotV388,
+  #app.srHomeFullArena #skillbar .srAutoRefV388{
+    width:41px!important;height:41px!important;flex-basis:41px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV388,
+  #app.srHomeFullArena #skillbar .srSkillEmptyV388{
+    width:43px!important;height:50px!important;flex-basis:43px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillTileV388{
+    width:41px!important;height:39px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillCooldownV388{
+    top:41px!important;font-size:8px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV388 .skfx>svg{
+    width:28px!important;height:28px!important;
+  }
+  #app.srHomeFullArena #skillbar .petMini{height:41px!important;min-width:94px!important}
+  #app.srHomeFullArena #skillbar .petMini img{width:32px!important;height:32px!important}
+}
+
+
+/* V391 SKILL BAND POLISH
+   Keep V388 structure. Improve only readability, icon emphasis, badge placement
+   and spacing based on the latest phone screenshot. */
+
+/* Skill art gets more visual weight and a brighter, cleaner center. */
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx{
+  inset:2px!important;
+  background:
+    radial-gradient(circle at 50% 28%,var(--srSkillLight) 0%,
+      color-mix(in srgb,var(--srSkillLight) 66%,var(--srSkillColor)) 32%,
+      color-mix(in srgb,var(--srSkillColor) 74%,var(--srSkillDark)) 68%,
+      var(--srSkillDark) 100%)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    inset 0 -4px 7px rgba(0,0,0,.13),
+    0 0 6px color-mix(in srgb,var(--srSkillColor) 50%,transparent)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx::before{
+  background:
+    radial-gradient(circle at 50% 13%,rgba(255,255,255,.42),transparent 29%),
+    linear-gradient(150deg,rgba(255,255,255,.15),transparent 39%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx::after{
+  background:linear-gradient(180deg,transparent 72%,rgba(0,0,0,.08))!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388 .skfx>svg{
+  width:32px!important;
+  height:32px!important;
+  transform:scale(1.06)!important;
+  filter:
+    brightness(1.42)
+    contrast(1.10)
+    saturate(1.18)
+    drop-shadow(0 1px 2px rgba(0,0,0,.56))
+    drop-shadow(0 0 4px color-mix(in srgb,var(--srSkillColor) 56%,transparent))!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388.cooling .skfx{
+  filter:none!important;
+  opacity:1!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388.cooling .skfx>svg{
+  filter:
+    brightness(1.34)
+    contrast(1.08)
+    saturate(1.12)
+    drop-shadow(0 1px 2px rgba(0,0,0,.56))
+    drop-shadow(0 0 3px color-mix(in srgb,var(--srSkillColor) 48%,transparent))!important;
+}
+
+/* Slightly cleaner tile frame so the artwork, not the border, leads. */
+#app.srHomeFullArena #skillbar .srSkillTileV388{
+  border-width:1.5px!important;
+  border-color:#D6AA49!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.15),
+    inset 0 -2px 0 rgba(2,12,22,.64),
+    0 2px 4px rgba(0,0,0,.31)!important;
+}
+
+/* Cooldown stays BELOW the tile and becomes quieter/smaller. */
+#app.srHomeFullArena #skillbar .srSkillCooldownV388{
+  top:45px!important;
+  min-height:8px!important;
+  font-size:7.3px!important;
+  line-height:8px!important;
+  font-weight:850!important;
+  color:#E8DDBF!important;
+  letter-spacing:0!important;
+  text-shadow:0 1px 1px #000!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV388{
+  height:54px!important;
+}
+
+/* Move level badge inside the tile's upper corner, away from the cooldown lane. */
+#app.srHomeFullArena #skillbar .srSkillLevelV388{
+  right:2px!important;
+  top:3px!important;
+  width:10px!important;
+  min-width:10px!important;
+  height:10px!important;
+  font-size:5.5px!important;
+  line-height:10px!important;
+  border-color:rgba(229,190,101,.82)!important;
+  background:#07121DEE!important;
+  color:#FFEEC0!important;
+  box-shadow:0 1px 2px rgba(0,0,0,.46)!important;
+}
+
+/* Active-effect timer moves to the opposite upper corner, compact and non-overlapping. */
+#app.srHomeFullArena #skillbar .srSkillEffectV388{
+  left:-1px!important;
+  right:auto!important;
+  top:-1px!important;
+  min-width:16px!important;
+  padding:1px 3px!important;
+  font-size:5.4px!important;
+  line-height:7px!important;
+  opacity:.90!important;
+}
+
+/* AUTO gets a little more finish without changing its structure. */
+#app.srHomeFullArena #skillbar .srAutoRefV388{
+  background:
+    radial-gradient(circle at 50% 24%,rgba(255,214,92,.10),transparent 42%),
+    linear-gradient(180deg,#173B5B,#092641 58%,#05192D)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -3px 0 #03111F,
+    0 2px 4px rgba(0,0,0,.30)!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV388 .srAutoBoltV388{
+  color:#FFE06A!important;
+  filter:brightness(1.18) drop-shadow(0 0 5px rgba(255,210,72,.44))!important;
+}
+
+/* Familiar keeps the current successful structure but gets slightly more breathing room. */
+#app.srHomeFullArena #skillbar .petMini{
+  padding-left:7px!important;
+  padding-right:7px!important;
+  gap:5px!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:35px!important;
+  height:35px!important;
+}
+
+@media(max-width:390px){
+  #app.srHomeFullArena #skillbar .srSkillRefV388{
+    height:52px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillCooldownV388{
+    top:43px!important;
+    font-size:7px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV388 .skfx>svg{
+    width:30px!important;
+    height:30px!important;
+  }
+}
+
+
+/* V392 APPROVED REFERENCE SKILL CARDS
+   Match the supplied reference crop: coloured rounded card, large circular art,
+   cooldown number centred with NO dark backing, effect pill at bottom-left,
+   level token at bottom-right. */
+
+/* Compact one-line strip: no cooldown row below the buttons. */
+#app.srHomeFullArena #screen.fixed>#skillbar{
+  align-items:center!important;
+  gap:4px!important;
+  padding:4px 7px!important;
+  background:
+    linear-gradient(180deg,#0C2C4B 0%,#08233C 58%,#05182B 100%)!important;
+  border-top:2px solid #DCAF4B!important;
+  border-bottom:2px solid #C69537!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 -3px 7px rgba(0,8,17,.45),
+    0 -2px 6px rgba(0,0,0,.22)!important;
+}
+
+/* Weapon stays a separate square like the left edge of the reference. */
+#app.srHomeFullArena #skillbar .srWeaponSlotV392{
+  width:43px!important;
+  height:48px!important;
+  flex:0 0 43px!important;
+  margin:0!important;
+  border:2px solid #D4A744!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 50% 28%,rgba(65,149,205,.22),transparent 58%),
+    linear-gradient(180deg,#133B5F,#071E36)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -3px 0 #03101D,
+    0 2px 4px rgba(0,0,0,.34)!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srWeaponSlotV392 img{
+  width:29px!important;height:29px!important;
+  filter:brightness(1.12) drop-shadow(0 2px 3px rgba(0,0,0,.55))!important;
+}
+#app.srHomeFullArena #skillbar .srWeaponSlotV392 .catBar{
+  left:4px!important;right:4px!important;bottom:2px!important;height:2px!important;border-radius:999px!important;
+}
+
+/* Skill wrapper: reference-sized, slightly larger than the system tiles. */
+#app.srHomeFullArena #skillbar .srSkillRefV392{
+  position:relative!important;
+  width:48px!important;
+  height:48px!important;
+  flex:0 0 48px!important;
+  border:0!important;
+  border-radius:12px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV392::before,
+#app.srHomeFullArena #skillbar .srSkillRefV392::after{
+  display:none!important;
+  content:none!important;
+}
+
+/* Coloured rounded-square shell from the reference, not a gold frame. */
+#app.srHomeFullArena #skillbar .srSkillCardV392{
+  position:absolute!important;
+  inset:0!important;
+  border-radius:12px!important;
+  overflow:visible!important;
+  border:2px solid color-mix(in srgb,var(--srSkillColor) 78%,#A8C0D2)!important;
+  background:
+    radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--srSkillColor) 28%,transparent),transparent 66%),
+    linear-gradient(180deg,#17354F,#0A2037)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 -3px 0 rgba(2,11,20,.68),
+    0 0 6px color-mix(in srgb,var(--srSkillColor) 36%,transparent),
+    0 2px 4px rgba(0,0,0,.35)!important;
+}
+
+/* Big circular skill art nearly fills the card. */
+#app.srHomeFullArena #skillbar .srSkillRefV392 .skfx{
+  position:absolute!important;
+  left:3px!important;
+  top:3px!important;
+  width:38px!important;
+  height:38px!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  border:1px solid color-mix(in srgb,var(--srSkillColor) 66%,#D7E4ED)!important;
+  background:
+    radial-gradient(circle at 48% 27%,
+      var(--srSkillLight) 0%,
+      color-mix(in srgb,var(--srSkillLight) 62%,var(--srSkillColor)) 33%,
+      color-mix(in srgb,var(--srSkillColor) 74%,var(--srSkillDark)) 68%,
+      var(--srSkillDark) 100%)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    inset 0 -5px 8px rgba(0,0,0,.18),
+    0 0 5px color-mix(in srgb,var(--srSkillColor) 48%,transparent)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV392 .skfx::before{
+  content:""!important;
+  position:absolute!important;inset:0!important;z-index:0!important;
+  border-radius:50%!important;
+  background:
+    radial-gradient(circle at 50% 14%,rgba(255,255,255,.42),transparent 29%),
+    linear-gradient(150deg,rgba(255,255,255,.15),transparent 40%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV392 .skfx::after{
+  content:""!important;
+  position:absolute!important;inset:0!important;z-index:2!important;
+  pointer-events:none!important;border-radius:50%!important;
+  background:radial-gradient(circle at 50% 112%,rgba(0,0,0,.12),transparent 55%)!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV392 .skfx>svg{
+  position:relative!important;
+  z-index:1!important;
+  width:31px!important;
+  height:31px!important;
+  color:#FFF7E7!important;
+  transform:scale(1.04)!important;
+  filter:
+    brightness(1.38)
+    contrast(1.08)
+    saturate(1.14)
+    drop-shadow(0 1px 2px rgba(0,0,0,.58))
+    drop-shadow(0 0 3px color-mix(in srgb,var(--srSkillColor) 52%,transparent))!important;
+}
+
+/* Cooling never hides the image. */
+#app.srHomeFullArena #skillbar .srSkillRefV392.cooling .skfx{
+  filter:none!important;
+  opacity:1!important;
+}
+#app.srHomeFullArena #skillbar .srSkillRefV392.cooling .skfx>svg{
+  filter:
+    brightness(1.25)
+    contrast(1.06)
+    saturate(1.08)
+    drop-shadow(0 1px 2px rgba(0,0,0,.58))
+    drop-shadow(0 0 2px color-mix(in srgb,var(--srSkillColor) 45%,transparent))!important;
+}
+
+/* Main cooldown exactly where the reference puts it: centred, no opaque badge. */
+#app.srHomeFullArena #skillbar .srSkillCooldownV392{
+  position:absolute!important;
+  left:2px!important;
+  right:2px!important;
+  top:11px!important;
+  bottom:auto!important;
+  height:22px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  z-index:7!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#FFFDF3!important;
+  font-size:13.2px!important;
+  line-height:1!important;
+  font-weight:1000!important;
+  letter-spacing:-.2px!important;
+  text-shadow:
+    0 2px 2px rgba(0,0,0,.92),
+    0 0 4px rgba(0,0,0,.74)!important;
+  -webkit-text-stroke:.45px rgba(0,0,0,.72)!important;
+  pointer-events:none!important;
+}
+#app.srHomeFullArena #skillbar .srSkillCooldownV392:empty{
+  display:none!important;
+}
+
+/* Secondary active-effect time = compact coloured pill at bottom-left. */
+#app.srHomeFullArena #skillbar .srSkillEffectV392{
+  position:absolute!important;
+  left:3px!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:-3px!important;
+  transform:none!important;
+  z-index:9!important;
+  min-width:25px!important;
+  height:13px!important;
+  padding:0 4px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:999px!important;
+  font-size:7px!important;
+  line-height:13px!important;
+  font-weight:1000!important;
+  background:#09243AEF!important;
+  border:1px solid currentColor!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.55)!important;
+  text-shadow:0 1px 1px rgba(0,0,0,.65)!important;
+}
+
+/* Level badge = small black circle bottom-right, like the reference. */
+#app.srHomeFullArena #skillbar .srSkillLevelV392{
+  position:absolute!important;
+  right:-4px!important;
+  top:auto!important;
+  bottom:-3px!important;
+  z-index:10!important;
+  min-width:14px!important;
+  width:14px!important;
+  height:14px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:50%!important;
+  border:1px solid rgba(230,208,154,.78)!important;
+  background:#060A10F5!important;
+  color:#FFF!important;
+  font-size:7px!important;
+  line-height:14px!important;
+  font-weight:1000!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.64)!important;
+}
+
+/* Empty skill cards follow the same coloured-card footprint. */
+#app.srHomeFullArena #skillbar .srSkillEmptyV392{
+  position:relative!important;
+  width:48px!important;height:48px!important;flex:0 0 48px!important;
+  border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important;
+}
+#app.srHomeFullArena #skillbar .srSkillEmptyV392::before,
+#app.srHomeFullArena #skillbar .srSkillEmptyV392::after{display:none!important;content:none!important}
+#app.srHomeFullArena #skillbar .srSkillEmptyCardV392{
+  width:44px!important;height:44px!important;margin:2px!important;
+  border-radius:11px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  color:#91A9BE!important;
+  border:2px solid #6E8194!important;
+  background:linear-gradient(180deg,#102D49,#071A2E)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.30)!important;
+}
+
+/* AUTO mirrors the compact reference system tile. */
+#app.srHomeFullArena #skillbar .srAutoRefV392{
+  width:43px!important;
+  height:48px!important;
+  flex:0 0 43px!important;
+  margin:0!important;
+  border:2px solid #D5AA4A!important;
+  border-radius:10px!important;
+  gap:0!important;
+  background:
+    radial-gradient(circle at 50% 24%,rgba(255,214,92,.11),transparent 42%),
+    linear-gradient(180deg,#173B5B,#092641 58%,#05192D)!important;
+  color:#FFF1C0!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.13),
+    inset 0 -3px 0 #03111F,
+    0 2px 4px rgba(0,0,0,.31)!important;
+  transform:none!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV392 .srAutoBoltV392{
+  width:21px!important;height:21px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  color:#FFE05F!important;
+  filter:brightness(1.2) drop-shadow(0 0 5px rgba(255,210,72,.48))!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV392>span:not(.srAutoBoltV392){
+  font-size:7px!important;line-height:8px!important;letter-spacing:.5px!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV392>i{
+  width:20px!important;height:3px!important;margin-top:2px!important;border-radius:999px!important;background:#717980!important;
+}
+#app.srHomeFullArena #skillbar .srAutoRefV392.on>i{
+  background:#F0BD42!important;
+  box-shadow:0 0 6px rgba(240,189,66,.58)!important;
+}
+
+/* Familiar aligns with the taller skill cards. */
+#app.srHomeFullArena #skillbar .petMini{
+  height:48px!important;
+  min-width:94px!important;
+  flex:1 1 auto!important;
+  margin:0!important;
+  padding-left:6px!important;padding-right:6px!important;
+  gap:5px!important;
+  border:2px solid #D5AA4A!important;
+  border-radius:10px!important;
+}
+#app.srHomeFullArena #skillbar .petMini img{
+  width:36px!important;height:36px!important;
+}
+
+@media(max-width:390px){
+  #app.srHomeFullArena #screen.fixed>#skillbar{
+    gap:3px!important;
+    padding-left:5px!important;
+    padding-right:5px!important;
+  }
+  #app.srHomeFullArena #skillbar .srWeaponSlotV392,
+  #app.srHomeFullArena #skillbar .srAutoRefV392{
+    width:41px!important;height:46px!important;flex-basis:41px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV392,
+  #app.srHomeFullArena #skillbar .srSkillEmptyV392{
+    width:46px!important;height:46px!important;flex-basis:46px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillCardV392{
+    border-radius:11px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV392 .skfx{
+    width:36px!important;height:36px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillRefV392 .skfx>svg{
+    width:29px!important;height:29px!important;
+  }
+  #app.srHomeFullArena #skillbar .srSkillCooldownV392{
+    top:10px!important;
+    font-size:12.6px!important;
+  }
+  #app.srHomeFullArena #skillbar .petMini{
+    height:46px!important;min-width:90px!important;
+  }
+  #app.srHomeFullArena #skillbar .petMini img{
+    width:34px!important;height:34px!important;
+  }
 }
 
 `;

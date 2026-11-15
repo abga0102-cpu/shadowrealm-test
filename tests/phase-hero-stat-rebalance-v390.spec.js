@@ -1,0 +1,23 @@
+const { test, expect } = require('@playwright/test');
+const fs=require('fs'),path=require('path');
+test('V393 hero level stats use 1 percent plus flat bonus and Crit allocation stays retired', async()=>{
+  const root=path.join(__dirname,'..');
+  const g1=fs.readFileSync(path.join(root,'game-1.js'),'utf8');
+  const g2=fs.readFileSync(path.join(root,'game-2.js'),'utf8');
+  const g4=fs.readFileSync(path.join(root,'game-4.js'),'utf8');
+  expect(g1).toContain('perPointPct: 1.00, perPointFlat: 2');
+  expect(g1).toContain('perPointPct: 1.00, perPointFlat: 0.25');
+  expect(g1).toContain('heroHpStatMul');
+  expect(g1).toContain('heroDmgStatMul');
+  expect(g1).toContain('critDefenseFactor');
+  expect(g1).toContain('merged.statPoints = Math.max(0, Number(merged.statPoints) || 0) + oldCritPoints');
+  expect(g1).toContain('merged.stats.crit = 0');
+  expect(g2).toContain('["sante", "degats", "critred"].includes(key)');
+  const meta=g4.slice(g4.indexOf('const STAT_META = ['),g4.indexOf('];',g4.indexOf('const STAT_META = ['))+2);
+  expect(meta).not.toContain('key: "crit"');
+  expect(meta).toContain('+1% PV + 2 PV / point');
+  expect(meta).toContain('+1% dégâts + 0,25 / point');
+  expect(meta).toContain('-0,40% dégâts crit. reçus / point');
+  expect(g1).toContain('heroHpStatFlat');
+  expect(g1).toContain('heroDmgStatFlat');
+});

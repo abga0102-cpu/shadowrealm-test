@@ -1,0 +1,42 @@
+name: Save recovery focused regression
+
+on:
+  pull_request:
+    paths:
+      - 'save-safety-v340.js'
+      - 'save-recovery-v341.js'
+      - 'index.html'
+      - 'tests/phase-save-*.spec.js'
+      - 'tests/phase-restore-backup-v509.spec.js'
+      - 'tests/restore-backup-failclosed-v509.test.js'
+      - '.github/workflows/save-recovery-focused.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: save-recovery-focused-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  recovery:
+    name: Recovery safeguards in Chromium and iPhone WebKit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install test tooling
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify fail-closed backup and ancestral preservation
+        run: node tests/restore-backup-failclosed-v509.test.js
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium webkit
+      - name: Verify legacy V430-V433 recovery and unified V340/V341 ownership
+        run: npx playwright test -c tests/playwright.config.js tests/phase-save-recovery-v430.spec.js tests/phase-save-recovery-v341.spec.js tests/phase-save-startup-safety-v340.spec.js tests/phase-restore-backup-v509.spec.js --reporter=list

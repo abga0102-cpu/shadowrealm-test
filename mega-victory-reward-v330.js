@@ -29,7 +29,7 @@
         direct='<div class="notice mt10" style="text-align:left"><b>REPLAY</b><br><span class="small">Récompense directe déjà encaissée lors de la première victoire · aucun nouveau gain direct.</span></div>';
       }
       var weekly=won
-        ? '<div class="card mt8" style="padding:9px 11px;text-align:left"><b class="small">PALIER HEBDOMADAIRE</b><br><span class="mute tiny">La case Méga correspondante est cochée. Les fragments de fusion + accélérateurs du palier ne sont pas encaissés ici : versement le lundi à 02:00 selon le meilleur palier atteint.</span></div>'
+        ? '<div class="card mt8" style="padding:9px 11px;text-align:left"><b class="small">PALIER HEBDOMADAIRE</b><br><span class="mute tiny">La case Méga correspondante est cochée. Les fragments de fusion + accélérateurs du palier ne sont pas encaissés ici : versement le lundi à 01:00 selon le meilleur palier atteint.</span></div>'
         : '';
       openModal('<div class="center">'+ic(won?'trophy':'skull',40)+'</div>'+
         '<div class="modalT mt6" style="color:'+(won?'var(--goldLit)':'var(--redLit)')+'">'+(won?'VICTOIRE':'DÉFAITE')+'</div>'+

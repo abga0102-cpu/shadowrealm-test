@@ -122,7 +122,7 @@ try{
 try{
  if(!window.__srFusionGoldRewardsV357){
   var r=document.createElement('script');
-  r.src='fusion-gold-rewards-v352.js?v=2026.09.17.357';
+  r.src='fusion-gold-rewards-v352.js?v=2026.09.28.468';
   r.async=false;
   document.body.appendChild(r);
  }

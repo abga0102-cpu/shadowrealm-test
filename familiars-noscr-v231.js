@@ -10,7 +10,7 @@
     s.onload=function(){if(done)done();};
     document.body.appendChild(s);
   }
-  load('equipment-recycle-infusion-v239.js?v=2026.09.09.247',function(){
+  load('equipment-recycle-infusion-v239.js?v=2026.09.23.429a',function(){
     load('familiars-rates-balance-v237.js?v=2026.09.09.247',function(){
       load('familiars-noscr-v234.js?v=2026.09.09.247',function(){
         load('familiars-compact-active-v235.js?v=2026.09.09.247',function(){

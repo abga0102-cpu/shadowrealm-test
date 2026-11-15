@@ -20,6 +20,7 @@ window.__srForgeIntroCombatV321=true;
 var CAMPAIGN_MAX=800;
 var LEGACY_CAMPAIGN_MAX=400;
 var FORGE_INTRO_FLOOR_V321=2;
+var FORGE_INTRO_MINERAI_REWARD_V407=100;
 var DIFFICULTIES=[
   {id:'normal',label:'Facile',start:1,end:100},
   {id:'difficile',label:'Difficile',start:101,end:200},
@@ -218,7 +219,28 @@ function applyForgeIntroCombatV321(c){
 }
 window.__srNeedsForgeIntroV321=forgeIntroEligibleV321;
 window.__srApplyForgeIntroCombatV321=applyForgeIntroCombatV321;
-window.__srForgeIntroCombatConfigV321={floor:FORGE_INTRO_FLOOR_V321,stage:'1-2',hpVsHero:1000,damageVsHero:20};
+function forgeIntroTutorialStateV407(s){
+  if(!s)return null;
+  s.tutorial=s.tutorial||{};
+  s.tutorial.seen=s.tutorial.seen||{};
+  return s.tutorial;
+}
+function prepareForgeIntroMineralV407(s){
+  if(!forgeIntroEligibleV321(s))return false;
+  var t=forgeIntroTutorialStateV407(s);
+  if(!t||t.forgeIntroMineralGrantV323)return false;
+  /* Recovery for saves that already suffered the regression: the V321 loss
+     marker proves the teaching defeat happened, so restore the missing reward
+     immediately instead of forcing the player to lose 1-2 a second time. */
+  if(t.forgeIntroReadyV321&&Number(s.minerai)<=0){
+    s.minerai=FORGE_INTRO_MINERAI_REWARD_V407;
+    t.forgeIntroMineralGrantV323=true;
+    return true;
+  }
+  if(Number(s.minerai)===400){s.minerai=0;return true;}
+  return false;
+}
+window.__srForgeIntroCombatConfigV321={floor:FORGE_INTRO_FLOOR_V321,stage:'1-2',hpVsHero:1000,damageVsHero:20,mineraiBeforeDefeat:0,mineraiReward:FORGE_INTRO_MINERAI_REWARD_V407,recoverMissingReward:true};
 
 /* One-time migration preserves each legacy difficulty and position within it:
    legacy 1..50 becomes the same difficulty's odd positions 1..99. Completed
@@ -255,6 +277,16 @@ function normalizeCampaignState(){
   }catch(_){ }
 }
 normalizeCampaignState();
+/* V407 restores the intended onboarding economy: a genuinely fresh pre-Forge
+   player enters 1-2 with 0 Minerai, then receives exactly 100 after the first
+   forced defeat. The historical V323 save flag is preserved to prevent any
+   duplicate grant for players who already received it. */
+try{
+  if(typeof S!=='undefined'&&S&&prepareForgeIntroMineralV407(S)){
+    if(typeof saveNow==='function')saveNow();
+    if(typeof scheduleRender==='function')scheduleRender();
+  }
+}catch(_){ }
 
 try{
   if(typeof startCampaign==='function'&&!startCampaign.__srCampaign800V322){
@@ -281,10 +313,15 @@ try{
       if(forgeIntroLoss){
         try{
           if(typeof S!=='undefined'&&S){
-            S.tutorial=S.tutorial||{};S.tutorial.seen=S.tutorial.seen||{};
-            S.tutorial.forgeIntroReadyV321=true;
-            S.tutorial.forgeIntroDefeatsV321=Math.max(0,Number(S.tutorial.forgeIntroDefeatsV321)||0)+1;
+            var forgeTut=forgeIntroTutorialStateV407(S);
+            forgeTut.forgeIntroReadyV321=true;
+            forgeTut.forgeIntroDefeatsV321=Math.max(0,Number(forgeTut.forgeIntroDefeatsV321)||0)+1;
+            if(!forgeTut.forgeIntroMineralGrantV323){
+              S.minerai=Math.max(0,Number(S.minerai)||0)+FORGE_INTRO_MINERAI_REWARD_V407;
+              forgeTut.forgeIntroMineralGrantV323=true;
+            }
             if(typeof saveNow==='function')saveNow();
+            if(typeof scheduleRender==='function')scheduleRender();
           }
         }catch(_){ }
       }

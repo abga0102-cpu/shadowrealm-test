@@ -8,15 +8,15 @@ const src = file => fs.readFileSync(path.join(root, file), 'utf8');
 test.describe('Tree clearer-label ownership', () => {
   test.skip(({ project }) => project.name !== 'chromium-desktop', 'source ownership is engine-independent');
 
-  test('V116 owns clearer gold labels while retired V117 stays absent', () => {
+  test('V116 owns existing Or obtenu labels while retired V117 stays absent', () => {
     const owner = src('tree-dedicated-v116.js');
     const index = src('index.html');
 
     for (const pair of [
-      ['n1_07', 'Gain d’Or I'],
-      ['n2_07', 'Gain d’Or II'],
-      ['n3_07', 'Gain d’Or III'],
-      ['n4_07', 'Gain d’Or IV'],
+      ['n1_06', 'Or obtenu I'],
+      ['n2_06', 'Or obtenu II'],
+      ['n3_06', 'Or obtenu III'],
+      ['n4_06', 'Or obtenu IV'],
     ]) {
       expect(owner).toContain(`${pair[0]}:'${pair[1]}'`);
     }

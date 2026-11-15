@@ -308,35 +308,40 @@ function run(W) {
 
   // ---------------------------------------------------------------- tree
   group("ARBRE — la fiche de référence fait foi");
-  check("130 nœuds : 120 normaux + 10 spéciaux", function () {
+  check("159 nœuds runtime : 144 normaux + 15 spéciaux/maîtrise", function () {
     const n = H.TREE_NODES.length;
     const norm = H.TREE_NODES.filter(function (x) { return !x.special; }).length;
-    return (n === 130 && norm === 120) ? true : n + " nœuds dont " + norm + " normaux";
+    return (n === 159 && norm === 144) ? true : n + " nœuds dont " + norm + " normaux";
   });
-  check("30 familles présentes une fois par palier", function () {
+  check("36 familles présentes une fois par palier", function () {
     const bad = [];
     for (let p = 1; p <= 4; p++) {
       const pal = H.TREE_NODES.filter(function (x) { return !x.special && x.tier === p; });
-      if (pal.length !== 30) bad.push("palier " + p + " : " + pal.length);
+      if (pal.length !== 36) bad.push("palier " + p + " : " + pal.length);
       const eff = {}; pal.forEach(function (x) { eff[x.effect] = (eff[x.effect] || 0) + 1; });
       const dup = Object.keys(eff).filter(function (k) { return eff[k] !== 1; });
       if (dup.length) bad.push("palier " + p + " doublons : " + dup.slice(0, 2));
     }
     return bad.length ? bad.join(", ") : true;
   });
-  check("valeurs conformes à la liste officielle", function () {
-    const V = { forgeTime: "+10%", forgeCost: "-5%", forgeFree: "+5%", research: "+20%",
-      techCost: "-10%", goldAll: "+5%", afkGain: "+5%", afkTime: "+50%", skillDmg: "+10%",
-      passDmg: "+10%", passHp: "+10%", skillCost: "-5%", petDmg: "+10%", petHp: "+10%",
-      eq_arme: "+10%", eq_casque: "+10%", eq_gants: "+10%", eq_collier: "+10%",
-      eq_armure: "+10%", eq_anneau: "+10%", eq_bottes: "+10%", eq_ceinture: "+10%",
-      hatch_COMMUN: "+50%", hatch_RARE: "+50%", hatch_EPIQUE: "+50%",
-      hatch_MYTHIQUE: "+50%", hatch_LEGENDAIRE: "+50%", eggFree: "+5%",
-      skillFree: "+5%", peRaid: "+10%" };
-    const bad = H.TREE_NODES.filter(function (n) {
-      return !n.special && W.treeEffectValue(n, n.max) !== V[n.effect];
+  check("V496 : éclosion +120%, Or +50% et 4 Autonomies 10→25%", function () {
+    const bad = [];
+    const hatch = ["COMMUN","PEU_COMMUN","RARE","EPIQUE","MYTHIQUE","ANCESTRAL","LEGENDAIRE","DIVIN"];
+    hatch.forEach(function(r) {
+      const nodes = H.TREE_NODES.filter(function(n){ return n.effect === "hatch_" + r; });
+      if (nodes.length !== 4) bad.push(r + " a " + nodes.length + " nœuds");
+      const total = nodes.reduce(function(sum,n){ return sum + W.treeEffectivePer(n) * n.max; },0);
+      if (Math.abs(total - 120) > 1e-9) bad.push(r + "=" + total + "%");
     });
-    return bad.length ? bad.length + " valeurs fausses, ex. " + bad[0].label : true;
+    const gold = H.TREE_NODES.filter(function(n){ return n.effect === "goldAll"; })
+      .reduce(function(sum,n){ return sum + W.treeEffectivePer(n) * n.max; },0);
+    if (Math.abs(gold - 50) > 1e-9) bad.push("Or=" + gold + "%");
+    ["afkGold","afkMinerai","afkEssence","afkEclat"].forEach(function(effect){
+      const nodes=H.TREE_NODES.filter(function(n){return n.effect===effect;});
+      const add=nodes.reduce(function(sum,n){return sum+W.treeEffectivePer(n)*n.max;},0);
+      if(nodes.length!==4||Math.abs(add-15)>1e-9)bad.push(effect+"="+add);
+    });
+    return bad.length ? bad.join(", ") : true;
   });
   check("aucun nœud n'en chevauche un autre", function () {
     const bad = [];
@@ -379,24 +384,21 @@ function run(W) {
     const ok = !!(H.ASCENSION && W.canAscendRaid && W.doAscendRaid);
     return ok ? true : "une piste manque";
   });
-  check("chaque raid ascensionne seul, clés et record conservés", function () {
+  check("l'Ascension Raid est retirée sans muter la progression existante", function () {
     set(function (st) {
       st.level = 60;
       Object.keys(st.raids).forEach(function (r) {
-        st.raids[r].level = 10; st.raids[r].keys = 4; st.raids[r].record = 33; st.raids[r].stars = 0;
+        st.raids[r].level = 10; st.raids[r].keys = 4; st.raids[r].record = 9; st.raids[r].stars = 0;
       });
       st.raids.minerai.level = H.RULES.RAID_MAX_LEVEL;
+      st.raids.minerai.record = H.RULES.RAID_MAX_LEVEL;
     });
-    if (W.canAscendRaid(H.S, "or")) return "un raid à 10 peut ascensionner";
-    if (!W.canAscendRaid(H.S, "minerai")) return "un raid à 50 ne peut pas ascensionner";
-    W.doAscendRaid("minerai");
-    const m = H.S.raids.minerai;
-    if (m.level !== 1) return "le niveau n'est pas revenu à 1";
-    if (m.stars !== 1) return "l'étoile n'a pas été accordée";
-    if (m.keys !== 4 || m.record !== 33) return "clés ou record perdus";
-    const others = ["or", "competence", "familier", "evolution"];
-    const moved = others.filter(function (k) { return H.S.raids[k].level !== 10 || H.S.raids[k].stars !== 0; });
-    return moved.length ? "raids touchés à tort : " + moved.join(", ") : true;
+    const before = JSON.stringify(H.S.raids);
+    if (W.canAscendRaid(H.S, "minerai")) return "un Raid propose encore une Ascension";
+    const out = W.doAscendRaid("minerai");
+    if (!out || out.ok !== false || !out.retired) return "l'ancien appel n'est pas neutralisé";
+    const after = JSON.stringify(H.S.raids);
+    return before === after ? true : "l'appel retiré a modifié un Raid";
   });
   /* Section 2 in one place: fill the save, ascend one feature, and prove that it
      took its own items, left every currency alone, and did not reach into the
@@ -426,29 +428,20 @@ function run(W) {
       poussiere: H.S.poussiere, gems: H.S.gems, gold: H.S.gold, pe: H.S.pe,
       eggSlots: H.S.eggSlots };
   }
-  check("Raid Minerai suit 500 + 10 par niveau, 850 après une étoile", function () {
+  check("V499 Raid Minerai : 1000, +50→2000, +25→2500, +15→2800, puis +5", function () {
     const bad = [];
-    const sans = { 1: 500, 10: 590, 20: 690, 30: 790, 40: 890, 50: 990 };
-    const avec = { 1: 850, 14: 980, 15: 990, 16: 1000, 20: 1040, 30: 1140, 40: 1240, 50: 1340 };
-    set(function (st) { st.raids.minerai.stars = 0; });
-    Object.keys(sans).forEach(function (l) {
+    const expected = { 1: 1000, 5: 1200, 10: 1450, 20: 1950, 21: 2000, 30: 2225, 40: 2475, 41: 2500, 50: 2635, 60: 2785, 61: 2800, 62: 2805, 70: 2845 };
+    Object.keys(expected).forEach(function (l) {
       const got = W.raidReward("minerai", +l);
-      if (got !== sans[l]) bad.push("niv" + l + " " + got + "≠" + sans[l]);
+      if (got !== expected[l]) bad.push("niv" + l + " " + got + "≠" + expected[l]);
     });
-    const plafond = W.raidReward("minerai", 50);
-    set(function (st) { st.raids.minerai.stars = 1; });
-    Object.keys(avec).forEach(function (l) {
-      const got = W.raidReward("minerai", +l);
-      if (got !== avec[l]) bad.push("★niv" + l + " " + got + "≠" + avec[l]);
-    });
-    if (W.raidReward("minerai", 15) !== plafond) bad.push("niv15 étoilé n'égale pas l'ancien plafond");
-    if (W.raidReward("minerai", 16) <= plafond) bad.push("niv16 ne dépasse pas l'ancien plafond");
-    for (let l = 1; l < 50; l++) {
-      if (W.raidReward("minerai", l + 1) - W.raidReward("minerai", l) !== 10) {
-        bad.push("le pas n'est pas +10 au niveau " + l); break;
+    for (let l = 1; l < 70; l++) {
+      const expectedStep = l < 21 ? 50 : l < 41 ? 25 : l < 61 ? 15 : 5;
+      const gotStep = W.raidReward("minerai", l + 1) - W.raidReward("minerai", l);
+      if (gotStep !== expectedStep) {
+        bad.push("pas niv" + l + "→" + (l + 1) + " " + gotStep + "≠" + expectedStep); break;
       }
     }
-    set(function (st) { st.raids.minerai.stars = 0; });
     return bad.length ? bad.slice(0, 3).join(", ") : true;
   });
   group("FORGE");
@@ -1012,32 +1005,74 @@ function run(W) {
     if (H.S.essence !== 5) return "Essence restante " + H.S.essence + " au lieu de 5";
     return true;
   });
-  check("la Récolte Autonomie paie la moitié du Raid Minerai courant", function () {
+  check("la Récolte Autonomie produit 10 %/h sans boost", function () {
     const bad = [];
     set(function (st) { st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 }; });
-    [[1, 0, 250], [50, 0, 495], [1, 1, 425], [30, 1, 570]].forEach(function (c) {
+    [[1, 0], [50, 0], [1, 1], [30, 1]].forEach(function (c) {
       set(function (st) { st.raids.minerai.level = c[0]; st.raids.minerai.stars = c[1]; });
       const r = W.harvestRates(H.S).minerai;
-      if (r !== c[2]) bad.push("niv" + c[0] + " ★" + c[1] + " : " + r + "/h au lieu de " + c[2]);
-      if (r !== W.raidReward("minerai", c[0]) * 0.5) bad.push("niv" + c[0] + " n'est pas la moitié");
+      const expected = W.raidReward("minerai", c[0]) * 0.10;
+      if (Math.abs(r - expected) > 1e-9) bad.push("niv" + c[0] + " ★" + c[1] + " : " + r + "/h au lieu de " + expected);
     });
     set(function (st) { st.raids.minerai.level = 1; st.raids.minerai.stars = 0; });
     return bad.length ? bad.join(", ") : true;
   });
-  check("les autres ressources de la Récolte n'ont pas bougé", function () {
+  check("les 4 ressources Autonomie progressent indépendamment de 10 à 25 %/h", function () {
+    const effects = { minerai:"afkMinerai", essence:"afkEssence", eclat:"afkEclat", gold:"afkGold" };
     set(function (st) {
-      st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 }; st.floor = 40;
+      st.tree = { levels: {}, active: null, activeLevel: 0, activeEnd: 0 };
+      st.floor = 40;
     });
-    const r = W.harvestRates(H.S);
-    const bad = [];
-    if (r.essence !== W.raidReward("familier", H.S.raids.familier.level) * 0.25)
-      bad.push("Essence");
-    if (r.eclat !== W.raidReward("competence", H.S.raids.competence.level) * 0.25)
-      bad.push("Éclat");
-    if (!(r.gold > 0)) bad.push("Or");
-    return bad.length ? "part modifiée : " + bad.join(", ") : true;
+    const base = W.harvestRates(H.S);
+    const rewards = {
+      minerai: W.raidReward("minerai", H.S.raids.minerai.level),
+      essence: W.raidReward("familier", H.S.raids.familier.level),
+      eclat: W.raidReward("competence", H.S.raids.competence.level),
+      gold: W.raidReward("or", H.S.raids.or.level)
+    };
+    const bad=[];
+    Object.keys(rewards).forEach(function(k){
+      if(Math.abs(base[k]-rewards[k]*0.10)>1e-9)bad.push(k+" base");
+    });
+    set(function(st){
+      H.TREE_NODES.filter(function(n){return n.effect===effects.minerai;})
+        .forEach(function(n){st.tree.levels[n.id]=5;});
+    });
+    const one=W.harvestRates(H.S);
+    if(Math.abs(one.minerai-rewards.minerai*0.25)>1e-9)bad.push("minerai max");
+    ["essence","eclat","gold"].forEach(function(k){
+      if(Math.abs(one[k]-rewards[k]*0.10)>1e-9)bad.push(k+" a bougé");
+    });
+    set(function(st){
+      Object.keys(effects).forEach(function(k){
+        H.TREE_NODES.filter(function(n){return n.effect===effects[k];})
+          .forEach(function(n){st.tree.levels[n.id]=5;});
+      });
+    });
+    const all=W.harvestRates(H.S);
+    Object.keys(rewards).forEach(function(k){
+      if(Math.abs(all[k]-rewards[k]*0.25)>1e-9)bad.push(k+" max");
+    });
+    return bad.length ? bad.join(", ") : true;
   });
-  check("l'Ascension d'un raid quintuple exactement sa difficulté", function () {
+  check("V476 : timers d'œufs et durées de recherche", function () {
+    const expectedEgg={COMMUN:600,PEU_COMMUN:1800,RARE:7200,EPIQUE:28800,MYTHIQUE:86400,ANCESTRAL:172800,LEGENDAIRE:518400,DIVIN:1814400};
+    const bad=[];
+    Object.keys(expectedEgg).forEach(function(k){if(H.EGG_TIMERS[k]!==expectedEgg[k])bad.push(k+"="+H.EGG_TIMERS[k]);});
+    const expected=[
+      [240,480,840,1320,1920],
+      [10800,11100,11400,11700,12000],
+      [36000,36300,36600,36900,37200],
+      [259200,277200,295200,313200,331200]
+    ];
+    expected.forEach(function(arr,i){
+      const node=H.TREE_NODES.find(function(n){return !n.special&&n.tier===i+1;});
+      if(!node)return bad.push("palier "+(i+1)+" absent");
+      arr.forEach(function(v,j){if(node.times[j]!==v)bad.push("P"+(i+1)+" L"+(j+1));});
+    });
+    return bad.length ? bad.join(", ") : true;
+  });
+  check("les anciennes étoiles Raid n'influencent plus la difficulté", function () {
     const bad = [];
     H.RAID_IDS.forEach(function (rid) {
       set(function (st) { st.raids[rid].stars = 0; });
@@ -1046,8 +1081,8 @@ function run(W) {
       set(function (st) { st.raids[rid].stars = 1; });
       const hp1 = W.raidWaveHP(rid, 1), dm1 = W.raidWaveDamage(rid, 1);
       const n1 = W.raidEnemyCount(rid, 1);
-      if (Math.abs(hp1 / hp0 - 5) > 1e-9) bad.push(rid + " PV ×" + (hp1 / hp0).toFixed(3));
-      if (Math.abs(dm1 / dm0 - 5) > 1e-9) bad.push(rid + " dégâts ×" + (dm1 / dm0).toFixed(3));
+      if (Math.abs(hp1 / hp0 - 1) > 1e-9) bad.push(rid + " PV ×" + (hp1 / hp0).toFixed(3));
+      if (Math.abs(dm1 / dm0 - 1) > 1e-9) bad.push(rid + " dégâts ×" + (dm1 / dm0).toFixed(3));
       if (n0 !== n1) bad.push(rid + " le nombre d'ennemis a changé");
       set(function (st) { st.raids[rid].stars = 0; });
     });
