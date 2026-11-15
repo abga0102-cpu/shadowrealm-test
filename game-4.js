@@ -1025,7 +1025,7 @@ function scrRaid() {
     const label = raidLevelLabel(r.level);
     const recordLabel = r.record > 0 ? raidLevelLabel(r.record) : "—";
     const refLabel = raidReferenceCampaignLabel(r.level);
-    const detail = "Niv " + label + "/7-10 · rec " + recordLabel +
+    const detail = "Niv " + label + "/" + raidLevelLabel(RULES.RAID_MAX_LEVEL) + " · rec " + recordLabel +
       " · réf. " + refLabel + " · " + raidEnemyCount(id, r.level) +
       " ennemis · " + fmt(raidEnemyHP(id, r.level)) + " PV";
     return '<div class="raidCard" style="border-left-color:' + meta.color + '" title="' + esc(detail) +
@@ -1045,7 +1045,7 @@ function scrRaid() {
       (!ready
         ? '<div class="notice mt6 tiny b" style="padding:6px">🔒 Campagne requise : ' + esc(refLabel) + "</div>"
         : (r.level >= RULES.RAID_MAX_LEVEL && r.record >= RULES.RAID_MAX_LEVEL
-          ? '<div class="notice mt6 tiny b center" style="padding:6px;color:var(--goldLit)">Palier maximum 7-10 atteint · rejouable pour les récompenses</div>'
+          ? '<div class="notice mt6 tiny b center" style="padding:6px;color:var(--goldLit)">Palier maximum ' + raidLevelLabel(RULES.RAID_MAX_LEVEL) + ' atteint · rejouable pour les récompenses</div>'
           : "")) +
       "</div>";
   }).join("");
@@ -1062,7 +1062,7 @@ function scrRaid() {
           S.universalKeys + " / " + RULES.UNIVERSAL_KEY_CAP) + "</div>" +
         '<div class="mute tiny mt6">' + RULES.RAID_FREE_KEYS + " clés gratuites par raid chaque jour, plafond " +
         RULES.RAID_KEY_CAP + ". Le bouton ★ utilise une clé universelle.</div></div>" +
-      '<div class="sect">Raids disponibles · 1-1 → 7-10</div>' + cards +
+      '<div class="sect">Raids disponibles · 1-1 → ' + raidLevelLabel(RULES.RAID_MAX_LEVEL) + '</div>' + cards +
       '<div class="mute tiny center mt6">Chaque niveau Raid correspond à une progression Campagne environ 2× plus loin. Victoire : clé consommée, récompense et niveau suivant. Défaite/abandon : clé conservée.</div>' +
     '<div style="height:2px"></div></div>';
 }

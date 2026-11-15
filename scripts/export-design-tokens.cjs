@@ -21,7 +21,7 @@ const contents = JSON.stringify({
 const file = path.join(root, 'design', 'shadowreach-tokens.json');
 if (process.argv.includes('--check')) {
   if (!fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== contents) {
-    console.error('Design tokens are out of sync with style.css. Run: node scripts/export-design-tokens.js');
+    console.error('Design tokens are out of sync with style.css. Run: node scripts/export-design-tokens.cjs');
     process.exitCode = 1;
   } else {
     console.log('Design tokens match style.css (' + Object.keys(colors).length + ' base colors).');

@@ -58,16 +58,47 @@ test('V463 keeps the stage-safe rule after a Home rerender', async ({ page }) =>
   });
   // The marker may survive render() before the next layout frame completes.
   // Wait for the actual stage-clearance contract, not a potentially stale flag.
+  // Preserve the assertion; on failure report geometry and computed positioning
+  // so WebKit layout regressions can be diagnosed without weakening the gate.
+  try {
   await expect.poll(async () => page.evaluate(() => {
     const card = document.querySelector('.srStarterRoadmapV461');
     const stage = document.querySelector('#arena .floorTag');
     if (!card || !stage || card.getAttribute('data-stage-safe-v463') !== '1') return false;
     return card.getBoundingClientRect().top >= stage.getBoundingClientRect().bottom + 5;
   }), { timeout: 7000 }).toBe(true);
-  const safe = await page.evaluate(() => {
-    const card = document.querySelector('.srStarterRoadmapV461').getBoundingClientRect();
-    const stage = document.querySelector('#arena .floorTag').getBoundingClientRect();
-    return card.top >= stage.bottom + 5;
-  });
-  expect(safe).toBe(true);
+  } catch (error) {
+    const geometry = await page.evaluate(() => {
+      const card = document.querySelector('.srStarterRoadmapV461');
+      const stage = document.querySelector('#arena .floorTag');
+      const world = document.querySelector('.campaignWorld');
+      const rect = el => {
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { top:r.top, bottom:r.bottom, height:r.height, width:r.width };
+      };
+      return {
+        card:rect(card), stage:rect(stage), world:rect(world),
+        stageSafeMarker:card?.getAttribute('data-stage-safe-v463'),
+        cardInlineTop:card?.style.getPropertyValue('top'),
+        cardComputedTop:card ? getComputedStyle(card).top : null,
+        cardTight:card?.classList.contains('srStarterTightV463'),
+        viewport:{width:innerWidth,height:innerHeight}
+      };
+    });
+    throw new Error(error.message + '\\nWebKit V463 rerender geometry: ' + JSON.stringify(geometry));
+  }
+  // The earlier poll can succeed between two asynchronous Home layout passes.
+  // Require clearance across consecutive animation frames, not a single snapshot.
+  await expect.poll(async () => page.evaluate(async () => {
+    const safe = () => {
+      const card = document.querySelector('.srStarterRoadmapV461');
+      const stage = document.querySelector('#arena .floorTag');
+      return !!(card && stage && card.getAttribute('data-stage-safe-v463') === '1' &&
+        card.getBoundingClientRect().top >= stage.getBoundingClientRect().bottom + 5);
+    };
+    if (!safe()) return false;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return safe();
+  }), { timeout: 7000 }).toBe(true);
 });
