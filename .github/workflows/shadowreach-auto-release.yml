@@ -98,7 +98,7 @@ jobs:
             const labels = new Set((pr.labels || []).map(x => x.name));
             const lowRisk = files.length > 0 && files.every(f =>
               ['added','modified'].includes(f.status) && !f.previous_filename &&
-              (/^docs\/[a-zA-Z0-9_.\/-]+\.md$/.test(f.filename) || ['README.md','style.css'].includes(f.filename)));
+              (/^docs\/[a-zA-Z0-9_.\/-]+\.md$/.test(f.filename) || ['README.md'].includes(f.filename)));
             if (pr.state !== 'open' || pr.draft) problems.push('PR closed or draft');
             if (pr.base.ref !== 'main' || pr.base.sha !== mainSha) problems.push('Wrong or changed base');
             if (pr.head.repo.full_name !== context.repo.owner + '/' + context.repo.repo) problems.push('Fork not allowed');
