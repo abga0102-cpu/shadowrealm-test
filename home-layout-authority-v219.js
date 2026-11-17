@@ -88,6 +88,18 @@ style.textContent=`
 @media(max-width:370px){#app.srHomeFullArena{--srHudH:104px;--srSkillH:58px;--srForgeH:180px}#app.srHomeFullArena .srStarterRoadmapV461{right:5px;width:min(132px,40vw);padding:4px 5px}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{width:76px!important;height:32px!important;left:8px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 54px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 100px)!important}#app.srHomeFullArena .worldRebirth span,#app.srHomeFullArena .worldDefis span{font-size:7.5px!important}#app.srHomeFullArena #aLayer .unit{scale:.75!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}#app.srHomeFullArena #arena .fTrack{transform:scale(.84)!important}#screen .settingsStatGridCompat{grid-template-columns:1fr!important}#app.srHomeFullArena #rewardFeed{width:min(164px,48%)!important;right:6px!important}}
 @media(max-height:720px){#app.srHomeFullArena{--srHudH:100px;--srSkillH:56px;--srForgeH:174px}#app.srHomeFullArena .srStarterRoadmapV461{padding:4px 5px}#app.srHomeFullArena .srStarterRoadmapV461>small{font-size:6.4px}#app.srHomeFullArena>#hud{top:0!important;padding-top:3px!important}#app.srHomeFullArena .worldRebirth,#app.srHomeFullArena .worldDefis{height:31px!important}#app.srHomeFullArena .worldRebirth{top:calc(var(--srHudH) + 50px)!important}#app.srHomeFullArena .worldDefis{top:calc(var(--srHudH) + 94px)!important}#app.srHomeFullArena #arena .floorTag{top:calc(var(--srHudH) + 1px)!important}}
 `;
+/* V526: restore the original combat arena height on iPhone.
+   Keep Roman mastery inside the existing scrollable forge slot rather than
+   enlarging the slot at the expense of the battle. */
+style.textContent += `
+#app.srHomeFullArena{--srForgeH:228px!important}
+@media(max-height:700px){#app.srHomeFullArena{--srForgeH:214px!important}}
+@media(max-width:370px){#app.srHomeFullArena{--srForgeH:180px!important}}
+@media(max-height:720px){#app.srHomeFullArena{--srForgeH:174px!important}}
+#app.srHomeFullArena #screen.fixed>.pad.mt4{overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;scrollbar-width:thin!important}
+#app.srHomeFullArena #screen.fixed>.pad.mt4>.homeForge{height:auto!important;max-height:none!important;min-height:100%!important;overflow:visible!important;flex-shrink:0!important}
+#app.srHomeFullArena #homeForge .srRomanMasteryV525{display:block!important;visibility:visible!important;flex:0 0 auto!important}
+`;
 document.head.appendChild(style);
 var app=document.getElementById('app'),screen=document.getElementById('screen');
 function important(el,prop,value){if(el)el.style.setProperty(prop,value,'important');}
@@ -194,6 +206,10 @@ function decorate(){
 }
 function sync(){
   if(!app||!screen)return;
+  // V520: the Home content can mount after BottomNav has already fired.
+  // Reconcile V83's compact state during this owner's existing scoped
+  // #screen render cycle; do not add another broad MutationObserver.
+  if(typeof window.__srSyncCampaignCompactV83==='function')window.__srSyncCampaignCompactV83();
   var home=screen.classList.contains('fixed')&&!!screen.querySelector('.campaignWorld');
   app.classList.toggle('srHomeFullArena',home);
   decorate();
@@ -214,7 +230,16 @@ function stableResizeSchedule(){
   schedule();
 }
 window.addEventListener('resize',stableResizeSchedule,{passive:true});window.addEventListener('orientationchange',function(){lastViewportWidth=Math.round(window.innerWidth||0);schedule();},{passive:true});
-try{var homeObserver=new MutationObserver(schedule);homeObserver.observe(screen,{childList:true,subtree:false});}catch(_){}
-var eggTicker=setInterval(function(){if(app&&app.classList.contains('srHomeFullArena'))schedule();},1000);
+/* V518: a Home rerender replaces the roadmap before its queued animation frame.
+   Reconcile only fresh, unpositioned roadmap nodes during the existing direct
+   #screen child mutation. Keep the scheduled frame for the remaining layout. */
+try{var homeObserver=new MutationObserver(function(){
+  if(app&&app.classList.contains('srHomeFullArena')&&screen.querySelector('.srStarterRoadmapV461:not([data-stage-safe-v463])')){
+    positionStarterRoadmapV463();
+  }
+  schedule();
+});homeObserver.observe(screen,{childList:true,subtree:false});}catch(_){}
+/* V530: refresh the egg badge without re-positioning the entire Home layout every second. */
+var eggTicker=setInterval(function(){if(app&&app.classList.contains('srHomeFullArena')&&!document.hidden){try{decorateEggReady();}catch(_){}}},1000);
 window.addEventListener('pagehide',function(){try{clearInterval(eggTicker);}catch(_){}});sync();
 })();

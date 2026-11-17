@@ -1,188 +1,56 @@
-/* SHADOWREACH · Forge comparison authority v146 / V378
-   Additive final presentation authority loaded after v145.
-   Keeps every previous Forge file in place, but future Forge results are handled here.
-   V199: Auto-Forge results selected by the Forge filter are queued exactly as dropped,
-   regardless of power, and AUTO resumes only after the comparison queue is resolved.
-   V226: multi-drop Auto-Forge batches show their sequential position (1/2, 2/2, etc.).
-   V320: preview the total Power replacement without mutating equipped gear and expose
-   explicit Equip / Keep in inventory / Recycle choices on the Forge result. */
+/* SHADOWREACH · Forge comparison authority v146 / V495
+   Canonical Forge result/comparison owner.
+   V495: adds full-build Power / Offense / Survival comparison without mutating S. */
 (function(){
 'use strict';
 if(window.__srForgeComparisonAuthorityV146)return;
 window.__srForgeComparisonAuthorityV146=true;
 if(typeof showForgeResult!=='function'||typeof equipItem!=='function')return;
-
-var ROOT='srForgeArenaPreview146';
-var pending={};
-var autoPending=[];
-var current=null;
-
-function byId(id){
- var eq=Object.values((typeof S!=='undefined'&&S.equipped)||{}).find(function(x){return x&&x.id===id;});
- return eq||(((typeof S!=='undefined'&&S.inventory)||[]).find(function(x){return x&&x.id===id;}))||null;
-}
+var ROOT='srForgeArenaPreview146',pending={},autoPending=[],current=null;
+function byId(id){var eq=Object.values((typeof S!=='undefined'&&S.equipped)||{}).find(function(x){return x&&x.id===id;});return eq||(((typeof S!=='undefined'&&S.inventory)||[]).find(function(x){return x&&x.id===id;}))||null;}
 function rarity(it){return (typeof RARITY!=='undefined'&&RARITY[it.rarity])||{c:'#9FB0C8',label:it.rarity||''};}
 function levelTag(it){try{var r=typeof equipmentRomanLevel==='function'?equipmentRomanLevel(it&&it.level):'';return r?' | '+r:'';}catch(_){return '';}}
 function slotName(it){var name=(typeof SLOT_LABEL!=='undefined'&&SLOT_LABEL[it.slot])||it.slot||'Équipement';return name+levelTag(it);}
-function primary(it){
- if(!it)return 0;
- try{if(typeof MASTERY_STAT!=='undefined'&&MASTERY_STAT[it.slot]==='dmg')return Number(it.baseDamage!=null?it.baseDamage:(it.damage||0));}catch(_){}
- return Number(it.baseHp!=null?it.baseHp:(it.hp||0));
-}
+function primary(it){if(!it)return 0;try{if(typeof MASTERY_STAT!=='undefined'&&MASTERY_STAT[it.slot]==='dmg')return Number(it.baseDamage!=null?it.baseDamage:(it.damage||0));}catch(_){}return Number(it.baseHp!=null?it.baseHp:(it.hp||0));}
 function primaryLabel(it){try{return typeof MASTERY_STAT!=='undefined'&&MASTERY_STAT[it.slot]==='dmg'?'ATQ':'PV';}catch(_){return 'STAT';}}
 function defenseValue(it){try{return typeof equipmentDefenseRating==='function'?Math.round(equipmentDefenseRating(it)):0;}catch(_){return 0;}}
 function defenseHtml(it){var d=defenseValue(it);return d>0?'<div style="font-size:8px;font-weight:900;color:#72A7E8;margin-top:2px">DÉFENSE +'+d+'</div>':'';}
-function powerPreview(it){
- var fallback=0;
- try{fallback=Number((typeof S!=='undefined'&&S.power)||0)||0;}catch(_){}
- if(!it||!it.slot||typeof computePower!=='function')return {before:fallback,after:fallback,delta:0};
- try{
-  var before=Number(S.power||computePower(S)||0),eq=Object.assign({},S.equipped||{});eq[it.slot]=it;
-  var after=Number(computePower(Object.assign({},S,{equipped:eq}))||0);
-  if(!isFinite(before))before=0;if(!isFinite(after))after=before;
-  before=Math.round(before);after=Math.round(after);
-  return {before:before,after:after,delta:after-before};
- }catch(_){return {before:fallback,after:fallback,delta:0};}
-}
+function trialState(it){var eq=Object.assign({},S.equipped||{});eq[it.slot]=it;return Object.assign({},S,{equipped:eq});}
+function derived(s){try{return typeof computeDerived==='function'?computeDerived(s):null;}catch(_){return null;}}
+function firstNum(o,keys){if(!o)return null;for(var i=0;i<keys.length;i++){var v=Number(o[keys[i]]);if(Number.isFinite(v))return v;}return null;}
+function equipFallback(s,kind){var total=0;Object.values((s&&s.equipped)||{}).forEach(function(x){if(!x)return;if(kind==='offense')total+=Number(x.damage!=null?x.damage:x.baseDamage)||0;else total+=Number(x.hp!=null?x.hp:x.baseHp)||0;});return total;}
+function buildMetrics(s){var d=derived(s),off=firstNum(d,['damage','dmg','attack','atk','heroDamage','totalDamage']),surv=firstNum(d,['maxHP','hp','health','heroMaxHP','totalHp']);if(off==null)off=equipFallback(s,'offense');if(surv==null)surv=equipFallback(s,'survival');var p=0;try{p=Number(computePower(s))||0;}catch(_){}return {power:Math.round(p),offense:off,survival:surv};}
+function buildPreview(it){var before=buildMetrics(S),after=buildMetrics(trialState(it));return {before:before,after:after,power:after.power-before.power,offense:after.offense-before.offense,survival:after.survival-before.survival};}
+function powerPreview(it){var b=buildPreview(it);return {before:b.before.power,after:b.after.power,delta:b.power};}
 function powerDelta(it){return powerPreview(it).delta;}
 function powerPct(pv){var b=Math.max(1,Math.abs(Number(pv&&pv.before)||0));return (Number(pv&&pv.delta)||0)/b*100;}
 function affixMap(it){var o={};((it&&it.affixes)||[]).forEach(function(a){o[a.key]=(o[a.key]||0)+Number(a.value||0);});return o;}
 function tradeoffHtml(it,cur){if(!cur)return '';var n=affixMap(it),o=affixMap(cur),keys={};Object.keys(n).concat(Object.keys(o)).forEach(function(k){keys[k]=1;});var gains=[],losses=[];Object.keys(keys).forEach(function(k){var d=(n[k]||0)-(o[k]||0);if(Math.abs(d)<.05)return;var def=(typeof AFFIX_BY_KEY!=='undefined'&&AFFIX_BY_KEY[k])||{},label=def.label||k;var better=def.negative?d<0:d>0;var txt=esc2(label)+' '+(d>0?'+':'')+(Math.round(d*10)/10)+'%';(better?gains:losses).push(txt);});var row=function(title,list,col){return list.length?'<div style="margin-top:4px"><div style="font-size:7px;font-weight:900;color:'+col+'">'+title+'</div><div style="font-size:8px;color:#c9d4e6;line-height:1.35">'+list.slice(0,3).map(esc2).join(' · ')+'</div></div>':'';};return row('CE QUE TU GAGNES',gains,'#6ee7a0')+row('CE QUE TU PERDS',losses,'#ff7474');}
-function score(it){
- if(!it)return -Infinity;
- var p=powerDelta(it),r=0;
- try{r=typeof equipRank==='function'?equipRank(it.rarity):0;}catch(_){}
- return p*100000+r*1000+primary(it);
-}
+function score(it){if(!it)return -Infinity;var p=powerDelta(it),r=0;try{r=typeof equipRank==='function'?equipRank(it.rarity):0;}catch(_){}return p*100000+r*1000+primary(it);}
 function fmt2(v){return typeof fmt==='function'?fmt(v):String(v);}
 function signed(v){v=Math.round(Number(v)||0);return(v>0?'+':'')+fmt2(v);}
 function esc2(v){return typeof esc==='function'?esc(String(v==null?'':v)):String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'})[c];});}
 function iconHtml(it,size){if(!it)return '';try{if(typeof slotIcon==='function')return slotIcon(it.slot,size||22,it);}catch(_){}return '⚔';}
 function upgradeText(it){try{if(typeof equipmentUpgradeText==='function')return equipmentUpgradeText(it);}catch(_){}var lv=Math.max(0,Number(it&&it.upgradeLevel)||0);return lv===0?'Non amélioré':'+'+lv+' amélioration'+(lv>1?'s':'');}
-function affixValue(a,def){
- try{if(typeof formatAffixValue==='function')return formatAffixValue(a,def);}catch(_){}
- if(a&&a.display!=null)return String(a.display);
- var n=Number(a&&a.value);if(!Number.isFinite(n))return String((a&&a.value)||'');
- var sign=n>0?'+':n<0?'':'+';
- if(def&&def.negative)sign='-';
- if(def&&def.unit)return sign+Math.abs(n)+String(def.unit);
- return sign+Math.abs(n)+'%';
-}
-function affixChip(a){
- var def=(typeof AFFIX_BY_KEY!=='undefined'&&AFFIX_BY_KEY[a.key])||null;
- var label=def&&def.label?def.label:a.key;
- return '<span style="font-size:8px;font-weight:800;padding:2px 5px;border:1px solid #34445f;border-radius:999px;color:#c9d4e6;background:#0b1220;white-space:nowrap">'+esc2(label)+' '+esc2(affixValue(a,def))+'</span>';
-}
-function affixHtml(it){
- var list=(it&&Array.isArray(it.affixes)?it.affixes:[]).slice(0,3);
- if(!list.length)return '<span style="font-size:8px;color:#65758d">Aucun bonus</span>';
- return '<div style="display:flex;gap:4px;flex-wrap:wrap">'+list.map(affixChip).join('')+'</div>';
-}
-function weaponHtml(it){
- if(!it||it.slot!=='arme'||!it.weaponType)return '';
- try{var wt=(typeof WEAPON_TYPES!=='undefined'&&WEAPON_TYPES[it.weaponType])||null;if(!wt)return '';return '<div style="font-size:9px;color:#8ea1bd;margin-top:4px">'+esc2(wt.name||it.weaponType)+' · '+esc2(wt.attackType==='MELEE'?'mêlée':'distance')+' · vitesse ×'+esc2(wt.speed||1)+'</div>';}catch(_){return '';}
-}
+function affixValue(a,def){try{if(typeof formatAffixValue==='function')return formatAffixValue(a,def);}catch(_){}if(a&&a.display!=null)return String(a.display);var n=Number(a&&a.value);if(!Number.isFinite(n))return String((a&&a.value)||'');var sign=n>0?'+':n<0?'':'+';if(def&&def.negative)sign='-';if(def&&def.unit)return sign+Math.abs(n)+String(def.unit);return sign+Math.abs(n)+'%';}
+function affixChip(a){var def=(typeof AFFIX_BY_KEY!=='undefined'&&AFFIX_BY_KEY[a.key])||null,label=def&&def.label?def.label:a.key;return '<span style="font-size:8px;font-weight:800;padding:2px 5px;border:1px solid #34445f;border-radius:999px;color:#c9d4e6;background:#0b1220;white-space:nowrap">'+esc2(label)+' '+esc2(affixValue(a,def))+'</span>';}
+function affixHtml(it){var list=(it&&Array.isArray(it.affixes)?it.affixes:[]).slice(0,3);if(!list.length)return '<span style="font-size:8px;color:#65758d">Aucun bonus</span>';return '<div style="display:flex;gap:4px;flex-wrap:wrap">'+list.map(affixChip).join('')+'</div>';}
+function weaponHtml(it){if(!it||it.slot!=='arme'||!it.weaponType)return '';try{var wt=(typeof WEAPON_TYPES!=='undefined'&&WEAPON_TYPES[it.weaponType])||null;if(!wt)return '';return '<div style="font-size:9px;color:#8ea1bd;margin-top:4px">'+esc2(wt.name||it.weaponType)+' · '+esc2(wt.attackType==='MELEE'?'mêlée':'distance')+' · vitesse ×'+esc2(wt.speed||1)+'</div>';}catch(_){return '';}}
 function remove(){['srForgeArenaPreview142','srForgeArenaPreview143','srForgeArenaPreview145',ROOT].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});}
-function position(root){
- var vw=Math.max(document.documentElement.clientWidth||0,window.innerWidth||0),vh=Math.max(document.documentElement.clientHeight||0,window.innerHeight||0);
- var w=Math.min(vw-16,370);
- root.style.width=w+'px';
- root.style.left=Math.max(8,(vw-w)/2)+'px';
- root.style.transform='none';
- root.style.top='auto';
- root.style.bottom='calc(env(safe-area-inset-bottom) + 64px)';
- root.style.maxHeight=Math.max(180,Math.min(250,vh-150))+'px';
- root.style.overflow='auto';
- root.style.borderRadius='12px';
-}
-function maybeResumeAuto(){
- if(current||autoPending.length||Object.keys(pending).length)return;
- try{if(typeof window.__srResumeAutoForgeV199==='function')window.__srResumeAutoForgeV199();}catch(_){}
-}
-function cleanPending(){
- Object.keys(pending).forEach(function(slot){var r=pending[slot],it=byId(r&&r.id);if(!it||it.slot!==slot)delete pending[slot];});
- autoPending=autoPending.filter(function(r){return !!byId(r&&r.id);});
-}
+function position(root){var vw=Math.max(document.documentElement.clientWidth||0,window.innerWidth||0),vh=Math.max(document.documentElement.clientHeight||0,window.innerHeight||0),w=Math.min(vw-16,370);root.style.width=w+'px';root.style.left=Math.max(8,(vw-w)/2)+'px';root.style.transform='none';root.style.top='auto';root.style.bottom='calc(env(safe-area-inset-bottom) + 64px)';root.style.maxHeight=Math.max(180,Math.min(280,vh-150))+'px';root.style.overflow='auto';root.style.borderRadius='12px';}
+function maybeResumeAuto(){if(current||autoPending.length||Object.keys(pending).length)return;try{if(typeof window.__srResumeAutoForgeV199==='function')window.__srResumeAutoForgeV199();}catch(_){}}
+function cleanPending(){Object.keys(pending).forEach(function(slot){var r=pending[slot],it=byId(r&&r.id);if(!it||it.slot!==slot)delete pending[slot];});autoPending=autoPending.filter(function(r){return !!byId(r&&r.id);});}
 function pendingCount(){cleanPending();return autoPending.length+Object.keys(pending).length;}
-function takeBest(){
- cleanPending();
- if(autoPending.length)return autoPending.shift();
- var slots=Object.keys(pending);if(!slots.length)return null;
- slots.sort(function(a,b){return score(byId(pending[b].id))-score(byId(pending[a].id));});
- var slot=slots[0],r=pending[slot];delete pending[slot];return r;
-}
+function takeBest(){cleanPending();if(autoPending.length)return autoPending.shift();var slots=Object.keys(pending);if(!slots.length)return null;slots.sort(function(a,b){return score(byId(pending[b].id))-score(byId(pending[a].id));});var slot=slots[0],r=pending[slot];delete pending[slot];return r;}
 function next(){current=takeBest();if(!current){remove();maybeResumeAuto();return;}render();}
 function clearAll(){pending={};autoPending=[];current=null;remove();maybeResumeAuto();}
-function ingest(r){
- var it=byId(r&&r.id);if(!it||!it.slot)return;
- if(r&&r.__autoForgeCompareV199){
-   if(!current){current=r;return;}
-   autoPending.push(r);return;
- }
- if(current){var curIt=byId(current.id);if(curIt&&curIt.slot===it.slot){if(score(it)>score(curIt)){current=r;render();}return;}}
- var old=pending[it.slot],oldIt=old&&byId(old.id);if(!oldIt||score(it)>score(oldIt))pending[it.slot]=r;
-}
-function wornCard(cur){
- if(!cur)return '<div style="padding:6px;border-radius:8px;background:#0b1220"><div style="font-size:8px;color:#8493aa;font-weight:900">ACTUEL</div><div style="font-size:10px;font-weight:900;color:#9dacbf;margin-top:4px">Emplacement vide</div><div style="font-size:8px;color:#65758d;margin-top:4px">Le nouveau sera ajouté sans remplacer de pièce.</div></div>';
- var cr=rarity(cur);
- return '<div style="padding:6px;border-radius:8px;background:#0b1220;min-width:0">'+
-  '<div style="font-size:8px;color:#8493aa;font-weight:900">ACTUEL · PORTÉ</div>'+
-  '<div style="display:flex;gap:6px;align-items:center;margin-top:3px"><div style="width:30px;height:30px;flex:0 0 30px;border:1px solid '+cr.c+'88;border-radius:7px;display:flex;align-items:center;justify-content:center;background:#08101d">'+iconHtml(cur,20)+'</div>'+
-  '<div style="min-width:0;flex:1"><div style="font-size:9px;font-weight:900;color:'+cr.c+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(cr.label)+esc2(levelTag(cur))+' · '+primaryLabel(cur)+' '+fmt2(primary(cur))+'</div><div style="font-size:8px;font-weight:900;color:#f0c96a">'+esc2(upgradeText(cur))+'</div>'+defenseHtml(cur)+'</div></div>'+
-  '<div style="font-size:8px;color:#8493aa;font-weight:900;margin:5px 0 3px">BONUS</div>'+affixHtml(cur)+'</div>';
-}
-function powerCompareHtml(pv,worn){
- var d=Math.round(Number(pv&&pv.delta)||0),pct=powerPct(pv),c=d>0?'#6ee7a0':d<0?'#ff7474':'#9dacbf';
- var verdict=worn?'PIÈCE ÉQUIPÉE':d>0?'Ton build gagne en Puissance':d<0?'La pièce actuelle reste plus puissante pour ton build':'Puissance globale inchangée';
- return '<div data-sr-forge-power-v320="1" style="margin-top:5px;padding:7px;border:1px solid '+c+'88;border-radius:8px;background:#08101d">'+
-  '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="min-width:0"><div style="font-size:7px;color:#8493aa;font-weight:900">IMPACT SUR TON BUILD</div><div style="font-size:10px;font-weight:900;color:#d5deec;white-space:nowrap"><span data-sr-forge-power-before-v320>'+fmt2(pv.before)+'</span> → <span data-sr-forge-power-after-v320>'+fmt2(pv.after)+'</span></div></div>'+
-  '<div data-sr-forge-power-delta-v320 style="text-align:right;font-size:10px;font-weight:1000;color:'+c+';white-space:nowrap">'+(worn?'ÉQUIPÉ':signed(d)+'<br><span style="font-size:8px">'+(pct>0?'+':'')+pct.toFixed(1)+'%</span>')+'</div></div>'+
-  '<div style="font-size:8px;font-weight:900;color:'+c+';margin-top:4px">'+verdict+'</div></div>';
-}
-function render(){
- remove();var it=byId(current&&current.id);if(!it){next();return;}
- var cur=(S.equipped||{})[it.slot]||null,worn=cur&&cur.id===it.id,nb=primary(it),cb=cur&&!worn?primary(cur):0,bd=cur&&!worn?Math.round(nb-cb):Math.round(nb),pv=powerPreview(it),r=rarity(it),more=pendingCount(),dust=0;
- var batchTotal=Math.max(0,Number(current&&current.__srAutoForgeBatchTotal)||0),batchIndex=Math.max(0,Number(current&&current.__srAutoForgeBatchIndex)||0);
- var queueBadge=batchTotal>1&&batchIndex>0?('<span style="font-size:8px;font-weight:900;padding:2px 5px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">'+batchIndex+'/'+batchTotal+'</span>'):(more?'<span style="font-size:8px;font-weight:900;padding:2px 5px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">+'+more+'</span>':'');
- try{if(!worn&&typeof dustValue==='function')dust=dustValue(S,it);}catch(_){}
- var root=document.createElement('div');root.id=ROOT;root.style.cssText='position:fixed;z-index:8800;pointer-events:auto;font-family:inherit;max-width:calc(100vw - 16px);';
- var currentMini=cur&&!worn?('<div style="font-size:7px;color:#8493aa;font-weight:900;margin-top:3px">PORTÉ</div><div style="font-size:8px;font-weight:900;color:'+(RARITY[cur.rarity]?RARITY[cur.rarity].c:'#9dacbf')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(RARITY[cur.rarity]?RARITY[cur.rarity].label:cur.rarity)+esc2(levelTag(cur))+' · '+primaryLabel(cur)+' '+fmt2(primary(cur))+' · '+esc2(upgradeText(cur))+'</div>'):'';
- root.innerHTML='<div style="background:rgba(7,12,21,.97);border:1px solid '+r.c+'88;border-radius:12px;box-shadow:0 8px 24px #0009;padding:7px;overflow:hidden">'+
-  '<div style="display:flex;align-items:center;gap:6px"><div style="width:30px;height:30px;flex:0 0 30px;border:1px solid '+r.c+'99;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#0b1220">'+iconHtml(it,20)+'</div><div style="min-width:0;flex:1"><div style="font-size:8px;font-weight:900;letter-spacing:.6px;color:'+r.c+'">FORGE · '+esc2(r.label).toUpperCase()+'</div><div style="font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2(slotName(it))+'</div></div>'+queueBadge+'<button data-sr-fp146="closeAll" aria-label="Fermer toute la file" style="border:0;background:transparent;color:#9dacbf;font-size:19px;padding:0 4px">×</button></div>'+
-  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px"><div style="padding:5px;border-radius:8px;background:#0b1220"><div style="font-size:7px;color:#8493aa;font-weight:900">NOUVEAU</div><div style="font-size:10px;font-weight:900;color:'+r.c+'">'+primaryLabel(it)+' '+fmt2(nb)+'</div><div style="font-size:8px;font-weight:800;color:'+(bd>0?'#6ee7a0':bd<0?'#ff7474':'#9dacbf')+'">'+primaryLabel(it)+' '+signed(bd)+' vs actuel</div>'+defenseHtml(it)+'<div style="font-size:7px;color:#8493aa;font-weight:900;margin:3px 0 2px">BONUS</div>'+affixHtml(it)+'</div>'+
-  '<div style="padding:5px;border-radius:8px;background:#0b1220;min-width:0"><div style="font-size:7px;color:#8493aa;font-weight:900">ACTUEL</div><div style="display:flex;gap:4px;align-items:center;margin-top:2px">'+(cur?'<div style="width:25px;height:25px;flex:0 0 25px;border:1px solid '+((RARITY[cur.rarity]&&RARITY[cur.rarity].c)||'#9dacbf')+'88;border-radius:7px;display:flex;align-items:center;justify-content:center;background:#08101d">'+iconHtml(cur,17)+'</div>':'')+'<div style="min-width:0;flex:1">'+(cur?'<div style="font-size:8px;font-weight:900;color:'+((RARITY[cur.rarity]&&RARITY[cur.rarity].c)||'#9dacbf')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc2((RARITY[cur.rarity]&&RARITY[cur.rarity].label)||cur.rarity)+esc2(levelTag(cur))+' · '+primaryLabel(cur)+' '+fmt2(primary(cur))+'</div><div style="font-size:7px;font-weight:900;color:#f0c96a">'+esc2(upgradeText(cur))+'</div>':'<div style="font-size:8px;font-weight:900;color:#9dacbf">Emplacement vide</div>')+'</div></div><div style="font-size:7px;color:#8493aa;font-weight:900;margin:3px 0 2px">BONUS</div>'+(cur?affixHtml(cur):'<span style="font-size:8px;color:#65758d">Aucun</span>')+'</div></div>'+
-  tradeoffHtml(it,cur&&!worn?cur:null)+powerCompareHtml(pv,worn)+weaponHtml(it)+
-  '<div style="display:grid;grid-template-columns:1.05fr .9fr 1fr;gap:5px;margin-top:6px">'+
-    (worn?'<div style="display:flex;align-items:center;justify-content:center;min-height:34px;color:#6ee7a0;font-weight:900;font-size:9px">✓ ÉQUIPÉ</div>':'<button data-sr-fp146="equip" style="min-height:34px;border-radius:8px;border:1px solid #3fb950;background:#173d26;color:#8ff0aa;font-weight:900;font-size:9px">ÉQUIPER</button>')+
-    '<button data-sr-fp146="keep" style="min-height:34px;border-radius:8px;border:1px solid #35445e;background:#111a2a;color:#c2cce0;font-weight:900;font-size:8px;line-height:1.1;padding:4px">'+(more?'GARDER · SUIVANT':'GARDER')+'</button>'+
-    (!worn?'<button data-sr-fp146="recycle" style="min-height:34px;border-radius:8px;border:1px solid #7a3137;background:#2b1216;color:#ff9aa0;font-weight:900;font-size:8px;line-height:1.1;padding:4px">RECYCLER'+(dust>0?'<br>+'+fmt2(dust):'')+'</button>':'<div></div>')+
-  '</div></div>';
- document.body.appendChild(root);position(root);
-}
-function forgeDustNoticeV378(amount,label){
- amount=Math.max(0,Math.floor(Number(amount)||0));if(!amount)return false;
- try{if(typeof window.__srShowForgeDustNoticeV378==='function')return !!window.__srShowForgeDustNoticeV378(amount,0,label||'Équipement recyclé');}catch(_){}
- try{if(typeof toast==='function'){toast((label||'Équipement recyclé')+' · +'+fmt2(amount)+' poussière',true);return true;}}catch(_){}
- return false;
-}
-showForgeResult=function(res){
- res=Array.isArray(res)?res:[];
- var kept=res.filter(function(r){return r&&!r.recycled&&r.id&&byId(r.id);});
- var melted=res.filter(function(r){return r&&r.recycled;});
- if(!kept.length){var dust=melted.reduce(function(a,r){return a+(Number(r.dust)||0);},0);forgeDustNoticeV378(dust,melted.length+' pièce'+(melted.length>1?'s':'')+' recyclée'+(melted.length>1?'s':'')+'');maybeResumeAuto();return;}
- var autoKept=kept.filter(function(r){return !!(r&&r.__autoForgeCompareV199);});
- if(autoKept.length>1)autoKept.forEach(function(r,i){r.__srAutoForgeBatchIndex=i+1;r.__srAutoForgeBatchTotal=autoKept.length;});
- kept.forEach(ingest);if(!current)next();else render();
-};
-
-document.addEventListener('click',function(e){
- var b=e.target&&e.target.closest?e.target.closest('#'+ROOT+' [data-sr-fp146]'):null;if(!b)return;
- e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();
- var a=b.getAttribute('data-sr-fp146');
- if(a==='equip'&&current){var it=byId(current.id);if(it){try{equipItem(it.id);}catch(_){}}current=null;next();}
- else if(a==='recycle'&&current){var rit=byId(current.id),dust=0;if(rit){try{if(typeof recycleItem==='function')dust=recycleItem(rit.id)||0;}catch(_){}}if(dust>0)forgeDustNoticeV378(dust,'Équipement recyclé');current=null;next();}
- else if(a==='keep'){current=null;next();}
- else if(a==='closeAll')clearAll();
-},true);
+function ingest(r){var it=byId(r&&r.id);if(!it||!it.slot)return;if(r&&r.__autoForgeCompareV199){if(!current){current=r;return;}autoPending.push(r);return;}if(current){var curIt=byId(current.id);if(curIt&&curIt.slot===it.slot){if(score(it)>score(curIt)){current=r;render();}return;}}var old=pending[it.slot],oldIt=old&&byId(old.id);if(!oldIt||score(it)>score(oldIt))pending[it.slot]=r;}
+function metricLine(label,v){var c=v>0?'#6ee7a0':v<0?'#ff7474':'#9dacbf';return '<span style="color:'+c+'">'+label+' '+signed(v)+'</span>';}
+function contextVerdict(m,worn){if(worn)return 'PIÈCE ÉQUIPÉE';if(m.power>0&&m.offense>=0&&m.survival>=0)return 'Amélioration nette';if(m.power<0&&m.offense<=0&&m.survival<=0)return 'Moins performant globalement';if(m.offense>0&&m.survival<0)return 'Plus offensif, moins résistant';if(m.survival>0&&m.offense<0)return 'Plus résistant, moins offensif';if(m.power>0)return 'Gain global malgré un compromis';if(m.power<0)return 'Perte globale malgré un avantage';return 'Impact global neutre';}
+function powerCompareHtml(pv,worn,m){var d=Math.round(Number(pv&&pv.delta)||0),pct=powerPct(pv),c=d>0?'#6ee7a0':d<0?'#ff7474':'#9dacbf';return '<div data-sr-forge-power-v495="1" style="margin-top:5px;padding:7px;border:1px solid '+c+'88;border-radius:8px;background:#08101d"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div><div style="font-size:7px;color:#8493aa;font-weight:900">IMPACT SUR TON BUILD</div><div style="font-size:10px;font-weight:900;color:#d5deec">'+fmt2(pv.before)+' → '+fmt2(pv.after)+'</div></div><div style="text-align:right;font-size:10px;font-weight:1000;color:'+c+'">'+(worn?'ÉQUIPÉ':signed(d)+'<br><span style="font-size:8px">'+(pct>0?'+':'')+pct.toFixed(1)+'%</span>')+'</div></div><div style="font-size:8px;font-weight:900;color:'+c+';margin-top:4px">'+contextVerdict(m,worn)+'</div>'+(worn?'':'<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:8px;font-weight:900;margin-top:5px">'+metricLine('OFFENSE',m.offense)+metricLine('SURVIE',m.survival)+'</div>')+'</div>';}
+function render(){remove();var it=byId(current&&current.id);if(!it){next();return;}var cur=(S.equipped||{})[it.slot]||null,worn=cur&&cur.id===it.id,nb=primary(it),cb=cur&&!worn?primary(cur):0,bd=cur&&!worn?Math.round(nb-cb):Math.round(nb),m=buildPreview(it),pv={before:m.before.power,after:m.after.power,delta:m.power},r=rarity(it),more=pendingCount(),dust=0;var batchTotal=Math.max(0,Number(current&&current.__srAutoForgeBatchTotal)||0),batchIndex=Math.max(0,Number(current&&current.__srAutoForgeBatchIndex)||0);var queueBadge=batchTotal>1&&batchIndex>0?('<span style="font-size:8px;font-weight:900;padding:2px 5px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">'+batchIndex+'/'+batchTotal+'</span>'):(more?'<span style="font-size:8px;font-weight:900;padding:2px 5px;border:1px solid #40516d;border-radius:999px;color:#b8c5db">+'+more+'</span>':'');try{if(!worn&&typeof dustValue==='function')dust=dustValue(S,it);}catch(_){}var root=document.createElement('div');root.id=ROOT;root.style.cssText='position:fixed;z-index:8800;pointer-events:auto;font-family:inherit;max-width:calc(100vw - 16px);';root.innerHTML='<div style="background:rgba(7,12,21,.97);border:1px solid '+r.c+'88;border-radius:12px;box-shadow:0 8px 24px #0009;padding:7px;overflow:hidden"><div style="display:flex;align-items:center;gap:6px"><div style="width:30px;height:30px;flex:0 0 30px;border:1px solid '+r.c+'99;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#0b1220">'+iconHtml(it,20)+'</div><div style="min-width:0;flex:1"><div style="font-size:8px;font-weight:900;letter-spacing:.6px;color:'+r.c+'">FORGE · '+esc2(r.label).toUpperCase()+'</div><div style="font-size:11px;font-weight:900">'+esc2(slotName(it))+'</div></div>'+queueBadge+'<button data-sr-fp146="closeAll" style="border:0;background:transparent;color:#9dacbf;font-size:19px">×</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px"><div style="padding:5px;border-radius:8px;background:#0b1220"><div style="font-size:7px;color:#8493aa;font-weight:900">NOUVEAU</div><div style="font-size:10px;font-weight:900;color:'+r.c+'">'+primaryLabel(it)+' '+fmt2(nb)+'</div><div style="font-size:8px;font-weight:800;color:'+(bd>0?'#6ee7a0':bd<0?'#ff7474':'#9dacbf')+'">'+primaryLabel(it)+' '+signed(bd)+' vs actuel</div>'+defenseHtml(it)+'<div style="font-size:7px;color:#8493aa;font-weight:900;margin:3px 0 2px">BONUS</div>'+affixHtml(it)+'</div><div style="padding:5px;border-radius:8px;background:#0b1220"><div style="font-size:7px;color:#8493aa;font-weight:900">ACTUEL</div>'+(cur?'<div style="font-size:8px;font-weight:900;color:'+((RARITY[cur.rarity]&&RARITY[cur.rarity].c)||'#9dacbf')+'">'+esc2((RARITY[cur.rarity]&&RARITY[cur.rarity].label)||cur.rarity)+esc2(levelTag(cur))+' · '+primaryLabel(cur)+' '+fmt2(primary(cur))+'</div><div style="font-size:7px;font-weight:900;color:#f0c96a">'+esc2(upgradeText(cur))+'</div><div style="font-size:7px;color:#8493aa;font-weight:900;margin:3px 0 2px">BONUS</div>'+affixHtml(cur):'<div style="font-size:8px;color:#9dacbf">Emplacement vide</div>')+'</div></div>'+tradeoffHtml(it,cur&&!worn?cur:null)+powerCompareHtml(pv,worn,m)+weaponHtml(it)+'<div style="display:grid;grid-template-columns:1.05fr .9fr 1fr;gap:5px;margin-top:6px">'+(worn?'<div style="display:flex;align-items:center;justify-content:center;min-height:34px;color:#6ee7a0;font-weight:900;font-size:9px">✓ ÉQUIPÉ</div>':'<button data-sr-fp146="equip" style="min-height:34px;border-radius:8px;border:1px solid #3fb950;background:#173d26;color:#8ff0aa;font-weight:900;font-size:9px">ÉQUIPER</button>')+'<button data-sr-fp146="keep" style="min-height:34px;border-radius:8px;border:1px solid #35445e;background:#111a2a;color:#c2cce0;font-weight:900;font-size:8px">'+(more?'GARDER · SUIVANT':'GARDER')+'</button>'+(!worn?'<button data-sr-fp146="recycle" style="min-height:34px;border-radius:8px;border:1px solid #7a3137;background:#2b1216;color:#ff9aa0;font-weight:900;font-size:8px">RECYCLER'+(dust>0?'<br>+'+fmt2(dust):'')+'</button>':'<div></div>')+'</div></div>';document.body.appendChild(root);position(root);}
+function forgeDustNoticeV378(amount,label){amount=Math.max(0,Math.floor(Number(amount)||0));if(!amount)return false;try{if(typeof window.__srShowForgeDustNoticeV378==='function')return !!window.__srShowForgeDustNoticeV378(amount,0,label||'Équipement recyclé');}catch(_){}try{if(typeof toast==='function'){toast((label||'Équipement recyclé')+' · +'+fmt2(amount)+' poussière',true);return true;}}catch(_){}return false;}
+showForgeResult=function(res){res=Array.isArray(res)?res:[];var kept=res.filter(function(r){return r&&!r.recycled&&r.id&&byId(r.id);});var melted=res.filter(function(r){return r&&r.recycled;});if(!kept.length){var dust=melted.reduce(function(a,r){return a+(Number(r.dust)||0);},0);forgeDustNoticeV378(dust,melted.length+' pièce'+(melted.length>1?'s':'')+' recyclée'+(melted.length>1?'s':'')+'');maybeResumeAuto();return;}var autoKept=kept.filter(function(r){return !!(r&&r.__autoForgeCompareV199);});if(autoKept.length>1)autoKept.forEach(function(r,i){r.__srAutoForgeBatchIndex=i+1;r.__srAutoForgeBatchTotal=autoKept.length;});kept.forEach(ingest);if(!current)next();else render();};
+document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('#'+ROOT+' [data-sr-fp146]'):null;if(!b)return;e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();var a=b.getAttribute('data-sr-fp146');if(a==='equip'&&current){var it=byId(current.id);if(it){try{equipItem(it.id);}catch(_){}}current=null;next();}else if(a==='recycle'&&current){var rit=byId(current.id),dust=0;if(rit){try{if(typeof recycleItem==='function')dust=recycleItem(rit.id)||0;}catch(_){}}if(dust>0)forgeDustNoticeV378(dust,'Équipement recyclé');current=null;next();}else if(a==='keep'){current=null;next();}else if(a==='closeAll')clearAll();},true);
 window.addEventListener('resize',function(){var r=document.getElementById(ROOT);if(r)position(r);});
 })();

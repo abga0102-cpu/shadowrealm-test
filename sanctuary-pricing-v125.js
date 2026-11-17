@@ -2,6 +2,8 @@
    Direct purchases now follow the real 2->1 Merge economy.
    Each supplier bracket only discounts the rarity currently being progressed.
    Older unlocked rarities keep the best price reached in their own bracket.
+   V536: Epic I must cost more than crafting it from 4 Rare I (4 x 1050 = 4200
+   at supplier levels 13-15). Direct buying has a modest convenience premium.
 */
 (function(){
   if (window.__srSanctuaryPricingV125) return;
@@ -14,7 +16,7 @@
     COMMUN:      { unlock:1,  prices:[250,240,230,225] },
     PEU_COMMUN:  { unlock:5,  prices:[600,575,550,525] },
     RARE:        { unlock:9,  prices:[1200,1150,1100,1050] },
-    EPIQUE:      { unlock:13, prices:[2400,2300,2100] }
+    EPIQUE:      { unlock:13, prices:[4800,4600,4400] }
   };
 
   function balancedPrice(level, rarity){

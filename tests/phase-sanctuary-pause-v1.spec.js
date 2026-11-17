@@ -1,0 +1,150 @@
+const { test, expect } = require('@playwright/test');
+
+test.describe('Sanctuary pause: gameplay and save isolation', () => {
+  test('21 paid slots and Mythique I survive rendering; drag/drop cannot mutate the board', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'One deterministic engine test is sufficient.');
+    await page.goto('/?smoke=1');
+    await page.waitForFunction(() => !!window.__smoke && window.__SHADOWREACH_SANCTUARY_PAUSED === true);
+    const result = await page.evaluate(() => {
+      const board = Array(21).fill(null);
+      board[17] = 'MYTHIQUE_I';
+      board[20] = 'EPIQUE_I';
+      S.sanctuary = S.sanctuary || {};
+      S.sanctuary.mergeBoard = board.slice();
+      S.sanctuary.boardExpansions = 5;
+      const before = JSON.stringify(S.sanctuary.mergeBoard);
+      const moved = sanctMergeDrop(17, 18);
+      render();
+      return {
+        paused: window.__SHADOWREACH_SANCTUARY_PAUSED,
+        endgameLoaded: !!window.__srSanctuaryEndgameV130,
+        mergeLoaded: !!window.__srAccomplishmentsMergeV126,
+        screenAvailable: typeof SCREENS.sanctuaire === 'function',
+        moved,
+        sameBoard: JSON.stringify(S.sanctuary.mergeBoard) === before,
+        length: S.sanctuary.mergeBoard.length,
+        mythic: S.sanctuary.mergeBoard[17],
+        epic: S.sanctuary.mergeBoard[20]
+      };
+    });
+    expect(result).toMatchObject({
+      paused: true, endgameLoaded: false, mergeLoaded: false,
+      screenAvailable: false, moved: false, sameBoard: true,
+      length: 21, mythic: 'MYTHIQUE_I', epic: 'EPIQUE_I'
+    });
+  });
+
+  test('active gold and XP bonuses multiply rewards, then expire without affecting the board', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'One deterministic engine test is sufficient.');
+    await page.goto('/?smoke=1');
+    await page.waitForFunction(() => !!window.__smoke && window.__srSanctuaryPauseBoostsV1 === true);
+    const result = await page.evaluate(() => {
+      S.sanctuary = S.sanctuary || {};
+      const st = S.sanctuary;
+      st.mergeBoard = Array(21).fill(null);
+      st.mergeBoard[20] = 'MYTHIQUE_I';
+      st.boardExpansions = 5;
+      st.activeBoosts = {};
+      const goldBase = goldReward(50), xpBase = expReward(50);
+      st.activeBoosts.gold = { pct: 50, end: Date.now() + 600000, queue: [] };
+      st.activeBoosts.xp = { pct: 20, end: Date.now() + 600000, queue: [] };
+      const goldBoosted = goldReward(50), xpBoosted = expReward(50);
+      st.activeBoosts.gold.end = Date.now() - 1;
+      st.activeBoosts.xp.end = Date.now() - 1;
+      const goldExpired = goldReward(50), xpExpired = expReward(50);
+      return {
+        goldBase, xpBase, goldBoosted, xpBoosted, goldExpired, xpExpired,
+        boardLength: st.mergeBoard.length, lastPiece: st.mergeBoard[20]
+      };
+    });
+    expect(result.goldBase).toBeGreaterThan(0);
+    expect(result.xpBase).toBeGreaterThan(0);
+    expect(result.goldBoosted).toBeCloseTo(result.goldBase * 1.5, 6);
+    expect(result.xpBoosted).toBeCloseTo(result.xpBase * 1.2, 6);
+    expect(result.goldExpired).toBeCloseTo(result.goldBase, 6);
+    expect(result.xpExpired).toBeCloseTo(result.xpBase, 6);
+    expect(result.boardLength).toBe(21);
+    expect(result.lastPiece).toBe('MYTHIQUE_I');
+  });
+  test('real local save and reload preserve 21 paid slots and Mythique I while paused', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'One deterministic browser persistence test is sufficient.');
+    // Unlike ?smoke=1, this exercises the actual localStorage save/load path.
+    await page.goto('/');
+    await page.waitForFunction(() => typeof saveNow === 'function' && typeof S === 'object' && window.__SHADOWREACH_SANCTUARY_PAUSED === true);
+    const saved = await page.evaluate(() => {
+      const board = Array(21).fill(null);
+      board[17] = 'MYTHIQUE_I';
+      board[20] = 'EPIQUE_I';
+      S.sanctuary = S.sanctuary || {};
+      S.sanctuary.mergeBoard = board;
+      S.sanctuary.boardExpansions = 5;
+      return saveNow() === true;
+    });
+    expect(saved).toBe(true);
+    await page.reload();
+    await page.waitForFunction(() => typeof S === 'object' && window.__SHADOWREACH_SANCTUARY_PAUSED === true);
+    const after = await page.evaluate(() => ({
+      length: S.sanctuary && S.sanctuary.mergeBoard && S.sanctuary.mergeBoard.length,
+      expansions: S.sanctuary && S.sanctuary.boardExpansions,
+      mythic: S.sanctuary && S.sanctuary.mergeBoard && S.sanctuary.mergeBoard[17],
+      epic: S.sanctuary && S.sanctuary.mergeBoard && S.sanctuary.mergeBoard[20],
+      sanctuaryScreen: typeof SCREENS.sanctuaire === 'function'
+    }));
+    expect(after).toMatchObject({
+      length: 21, expansions: 5, mythic: 'MYTHIQUE_I', epic: 'EPIQUE_I', sanctuaryScreen: false
+    });
+  });
+
+  test('boost UI does not normalize or expand a paused Sanctuary board', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'One deterministic engine test is sufficient.');
+    await page.goto('/?smoke=1');
+    await page.waitForFunction(() => !!window.SRBoostInventoryV173 && window.__SHADOWREACH_SANCTUARY_PAUSED === true);
+    const result = await page.evaluate(() => {
+      S.sanctuary = { mergeBoard: Array(16).fill(null), boardExpansions: 5, activeBoosts: {}, boostItems: {} };
+      S.sanctuary.mergeBoard[15] = 'MYTHIQUE_I';
+      const before = JSON.stringify(S.sanctuary.mergeBoard);
+      SRBoostInventoryV173.panel();
+      return {
+        sameBoard: JSON.stringify(S.sanctuary.mergeBoard) === before,
+        boardLength: S.sanctuary.mergeBoard.length,
+        expansions: S.sanctuary.boardExpansions,
+        lastPiece: S.sanctuary.mergeBoard[15]
+      };
+    });
+    expect(result).toMatchObject({ sameBoard: true, boardLength: 16, expansions: 5, lastPiece: 'MYTHIQUE_I' });
+  });
+
+  test('weekly Mega rewards are reserved without touching paid slots while Sanctuary is paused', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium-desktop', 'One deterministic engine test is sufficient.');
+    await page.goto('/?smoke=1');
+    await page.waitForFunction(() => !!window.__srMegaRewardsV329 && window.__SHADOWREACH_SANCTUARY_PAUSED === true);
+    const result = await page.evaluate(() => {
+      const board = Array(21).fill(null);
+      board[17] = 'MYTHIQUE_I';
+      board[20] = 'EPIQUE_I';
+      S.sanctuary = { mergeBoard: board, boardExpansions: 5, weeklyReserve: {} };
+      S.accels = {};
+      const before = JSON.stringify(board);
+      const reward = window.__srMegaRewardsV329.reward(30);
+      const paid = window.__srMegaRewardsV329.grantReward(reward, 'pause-test');
+      const attemptedPlacement = window.__srMegaRewardsV329.placeReserve();
+      return {
+        paid: !!paid,
+        placed: paid && paid.placed,
+        attemptedPlacement,
+        sameBoard: JSON.stringify(S.sanctuary.mergeBoard) === before,
+        length: S.sanctuary.mergeBoard.length,
+        mythic: S.sanctuary.mergeBoard[17],
+        epic: S.sanctuary.mergeBoard[20],
+        reserved: S.sanctuary.weeklyReserve[reward.rarity],
+        accelerators: S.accels.a10
+      };
+    });
+    expect(result).toMatchObject({
+      paid: true, placed: 0, attemptedPlacement: { placed: 0, left: 1 },
+      sameBoard: true, length: 21, mythic: 'MYTHIQUE_I', epic: 'EPIQUE_I',
+      reserved: 1, accelerators: 15
+    });
+  });
+
+});

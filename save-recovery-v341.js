@@ -225,8 +225,14 @@
       'La sauvegarde actuelle sera conservée dans les sauvegardes de secours avant le remplacement.';
     if(!window.confirm(msg))return false;
     try{
-      if(window.__srSaveSafetyV340&&typeof window.__srSaveSafetyV340.snapshot==='function'){
-        window.__srSaveSafetyV340.snapshot(active&&active.raw);
+      /* Force a fresh snapshot: the normal five-minute throttle can report
+         success without capturing the current hero before replacement. */
+      if(active){
+        var safety=window.__srSaveSafetyV340;
+        if(!safety||typeof safety.snapshot!=='function'||safety.snapshot(active.raw,true)!==true){
+          window.alert('Restauration annulée : impossible de sauvegarder la partie actuelle. Libère de l’espace ou exporte ta sauvegarde avant de réessayer.');
+          return false;
+        }
       }
       var restoredState=preserveAncestralPets(candidate.state,active&&active.state);
       localStorage.setItem(MAIN_KEY,JSON.stringify(restoredState));

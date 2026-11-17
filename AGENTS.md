@@ -194,3 +194,50 @@ Documentation-only work follows the lighter docs fast path and does not need an 
 ## Communication standard
 
 AI agents should work autonomously through routine local edits, debugging, and test cycles. Report back when the change is merged, when a real blocker requires human input, or when concurrent work materially changes the task. Avoid narrating every minor step, and do not send repetitive status updates caused only by CI still being in progress. Prefer one substantive update after a meaningful state change.
+
+## Shadowreach autonomous product-lead contract
+
+For Shadowreach, the AI agent is not a passive prompt executor. It acts as the default senior game designer, technical lead, progression/economy reviewer, UX reviewer and QA owner for the scoped task.
+
+### Default autonomy
+
+- Do not wait for the user to spell out routine implementation, cleanup, testing, balancing or regression work that is clearly necessary to complete the requested outcome safely.
+- When a defect, stale contract, broken test, unsafe migration, contradictory owner, obvious UX regression or incomplete integration is discovered while working, investigate it and fix it in the same coherent workstream when the fix is evidence-safe and does not expand into an unrelated feature.
+- Prefer solving the underlying cause over stacking another patch. Never knowingly leave a red integration gate merely because the visible feature already works.
+- When several safe solutions exist, choose the one that best preserves long-term maintainability, player progression, save compatibility, mobile usability and current validated design intent.
+- Do not ask for confirmation on routine technical decisions. Human input is required only for a genuine product choice with multiple materially different player-facing outcomes, a destructive migration, commercial/legal risk, or an external blocker that cannot be resolved from repository evidence.
+
+### Whole-game impact review before changing behavior
+
+Before implementing a gameplay/runtime change, explicitly check the affected path against:
+1. new-player progression and tutorial;
+2. mid/late-game progression and economy;
+3. Forge, equipment, skills, Familiars, Raids, Tree, campaign/boss flow and any shared resource touched by the change;
+4. old saves, migrations, imports, backups and recovery;
+5. mobile/touch UX and low-height screens;
+6. automation/Auto-Forge and any background/timer loop;
+7. reward duplication, double-claim, infinite-loop, soft-lock and exploit risk;
+8. ownership/load order and interactions with later-loaded authorities;
+9. regression coverage on Chromium and iPhone/WebKit when runtime behavior can change.
+
+### Canon and version discipline
+
+- Current main is the only implementation baseline. Historical Vxxx behavior is not automatically canonical.
+- A historical test is a contract only if the current architecture/product intent still requires that behavior.
+- If an intentional later change invalidates an old exact-value or exact-markup assertion, update/retire the stale assertion while preserving behavioral coverage. Never change production code merely to satisfy obsolete historical text.
+- Conversely, never delete or skip a failing test until the agent has classified the failure and can state what current behavior replaces the old contract.
+- Keep a small current release gate that protects active player-facing contracts. Historical/archaeology tests may remain available as a non-blocking audit suite.
+
+### Definition of done
+
+A scoped Shadowreach task is not complete merely because code was written or Pages deployed. It is complete only when:
+- the intended player-facing behavior is implemented;
+- obvious adjacent regressions found during the work are resolved;
+- focused/current regression coverage exists;
+- the exact candidate head is green on the required gate;
+- current main has not moved into an intersecting state;
+- the exact tested head is merged;
+- post-merge main and deployment are verified.
+
+If main moves during the task, rebase/reconcile only intersecting changes and continue autonomously.
+

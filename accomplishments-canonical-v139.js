@@ -6,11 +6,13 @@
    V466: premium visual hierarchy, per-objective progress and claim feedback only.
    V481: exposes an explicit visual marker consumed by the canonical v138 decorator
    so the mobile redesign survives its post-render decoration.
+   V546: Fusion accomplishments gain a visible Chapter 2 (2 500 → 17 500),
+   historical Fusion progress is preserved, and Premium uses only tiny Gem rewards.
    Reward values, completion conditions and save semantics remain unchanged. */
 (function(){
 'use strict';
 if(window.__srAccomplishmentsCanonicalV139)return;
-window.__srAccomplishmentsCanonicalV139=true;
+window.__srAccomplishmentsCanonicalV139=true;window.__srFusionRewardsBuild='511:5000/10000';
 var activeTab='etages';
 var lastClaimFx=null;
 function n(v){return Math.max(0,Number(v)||0);}
@@ -23,7 +25,7 @@ function floor(){return n(S.recordFloor);}
 function targetIsBoss(target){try{if(typeof isBoss==='function')return !!isBoss(target);}catch(_){}var stage=((Math.max(1,Number(target)||1)-1)%20)+1;return stage%5===0;}
 function floorDone(target){target=Math.max(1,Math.floor(Number(target)||1));if(targetIsBoss(target))return !!(S.bossClears&&S.bossClears[String(target)]);return floor()>=target;}
 function stageLabel(target){target=Math.max(1,Math.min(800,Math.floor(Number(target)||1)));try{if(typeof window.__srCampaignStageLabel==='function')return window.__srCampaignStageLabel(target);}catch(_){}var within=((target-1)%100)+1;return (Math.floor((within-1)/20)+1)+'-'+(((within-1)%20)+1);}
-function fusions(){var st=S.sanctuary||{},a=S.accomplishments||{};return Math.max(n(st.mergeCrafts),n(st.fusions),n(a.fusionCount));}
+function fusions(){var st=S.sanctuary||{},a=S.accomplishments||{};return Math.max(n(st.mergeCrafts),n(st.mergeFusions),n(st.fusions),n(a.fusionCount));}
 function ensureTitles(){S.titles=S.titles&&typeof S.titles==='object'?S.titles:{};if(typeof S.equippedTitle!=='string')S.equippedTitle='';}
 function divineUnlocked(){ensureTitles();var st=S.sanctuary||{};return !!(st.divineTitleUnlocked||S.titles.divin);}
 function saveTitle(){try{dirty=true;if(typeof saveNow==='function')saveNow();}catch(_){} }
@@ -42,20 +44,27 @@ var ITEMS={
  Forge:[
   ['forge10',10,'Forge niveau 10','7 500 Or'],['forge15',15,'Forge niveau 15','10 000 Or'],
   ['forge20',20,'Forge niveau 20','20 000 Or'],['forge25',25,'Forge niveau 25','30 000 Or'],
-  ['forge30',30,'Forge niveau 30','75 000 Or'],['forge35',35,'Forge niveau 35','100 000 Or'],
+  ['forge30',30,'Forge niveau 30','10 000 Minéraux'],['forge35',35,'Forge niveau 35','100 000 Or'],
   ['forge40',40,'Forge niveau 40','200 000 Or'],['forge45',45,'Forge niveau 45','300 000 Or'],
   ['forge50',50,'Forge niveau 50','500 000 Or']
  ],
  Fusions:[
   ['fusion50',50,'50 Fusions','500 Minéraux'],['fusion150',150,'150 Fusions','750 Minéraux'],
   ['fusion250',250,'250 Fusions','1 000 Minéraux'],['fusion350',350,'350 Fusions','1 500 Minéraux'],
-  ['fusion500',500,'500 Fusions','2 000 Minéraux'],['fusion1000',1000,'1 000 Fusions','600 000 Or'],
-  ['fusion1500',1500,'1 500 Fusions','1 000 000 Or']
+  ['fusion500',500,'500 Fusions','2 000 Minéraux'],['fusion1000',1000,'1 000 Fusions','5 000 Minéraux'],
+  ['fusion1500',1500,'1 500 Fusions','10 000 Minéraux'],
+  ['fusion2500',2500,'2 500 Fusions','10 000 Minéraux'],
+  ['fusion5000',5000,'5 000 Fusions','15 000 Minéraux + 5 Sceaux de stabilité'],
+  ['fusion7500',7500,'7 500 Fusions','15 000 Minéraux + 10 Sceaux de stabilité'],
+  ['fusion10000',10000,'10 000 Fusions','15 000 Minéraux + 1 Catalyseur d’infusion'],
+  ['fusion12500',12500,'12 500 Fusions','15 000 Minéraux + 1 Catalyseur d’infusion'],
+  ['fusion15000',15000,'15 000 Fusions','15 000 Minéraux + 1 Catalyseur d’infusion'],
+  ['fusion17500',17500,'17 500 Fusions','15 000 Minéraux + 5 Catalyseurs d’infusion']
  ],
  Raids:[
   ['raid10',10,'10 Raids accomplis','5 000 Or'],['raid20',20,'20 Raids accomplis','30 Pièces de fusion Communes'],
   ['raid50',50,'50 Raids accomplis','20 Pièces de fusion Rares + choix : 500 Étincelles OU 500 Essences','choice'],
-  ['raid100',100,'100 Raids accomplis','1 500 000 Or + 1 000 Étincelles + 1 000 Essences + 50 Pièces de fusion Rares']
+  ['raid150',150,'150 Raids accomplis','1 500 000 Or + 1 000 Étincelles + 1 000 Essences + 50 Pièces de fusion Rares']
  ],
  Etages:[
   ['floor25',45,'Vaincre Facile · 3-5','250 Essences'],
@@ -72,7 +81,8 @@ var ITEMS={
 };
 var PREMIUM_TEXT={
  fusion50:'10 000 Or',fusion150:'20 000 Or',fusion250:'30 000 Or',fusion350:'40 000 Or',fusion500:'60 000 Or',fusion1000:'120 000 Or',fusion1500:'200 000 Or',
- raid10:'2 500 Or',raid20:'10 Pièces Communes',raid50:'5 Pièces Rares + 250 Essences',raid100:'250 000 Or + 250 Étincelles + 250 Essences + 10 Pièces Rares',
+ fusion2500:'1 Gemme',fusion5000:'1 Gemme',fusion7500:'2 Gemmes',fusion10000:'2 Gemmes',fusion12500:'3 Gemmes',fusion15000:'3 Gemmes',fusion17500:'5 Gemmes',
+ raid10:'2 500 Or',raid20:'10 Pièces Communes',raid50:'5 Pièces Rares + 250 Essences',raid150:'250 000 Or + 250 Étincelles + 250 Essences + 10 Pièces Rares',
  floor25:'100 Essences',floor50:'750 Minerais + 2 500 Or',floor75:'200 Étincelles + 10 Pièces Communes',floor100:'200 Étincelles + 200 Essences + 10 Pièces Communes',floor150:'250 Étincelles + 250 Essences + 5 Pièces Rares',floor200:'300 Étincelles + 300 Essences + 5 Pièces Rares',floor250:'350 Étincelles + 350 Essences + 3 Pièces Épiques',floor300:'400 Étincelles + 400 Essences + 4 Pièces Épiques',floor350:'500 Étincelles + 500 Essences + 3 Pièces Mythiques',floor400:'750 Étincelles + 750 Essences + 5 Pièces Mythiques'
 };
 function value(cat){return cat==='Forge'?forge():cat==='Fusions'?fusions():cat==='Raids'?raids():floor();}
@@ -149,7 +159,9 @@ function row(cat,x){
 }
 function laneHead(){return '<div class="achLaneHead"><span>Objectif</span><span>Gratuit</span><span>Premium</span></div>';}
 function floorsView(){var list=ITEMS.Etages,done=catDone('Etages');return '<div data-ach-floor-overview-v138="1" data-ach-floor-overview-v137="1">'+catTitle('Etages',done,list.length)+laneHead()+list.map(function(x){return row('Etages',x);}).join('')+'</div>';}
-function challengesView(){var cats=['Forge','Fusions','Raids'];return cats.map(function(cat){return '<div>'+catTitle(cat,catDone(cat),ITEMS[cat].length)+laneHead()+ITEMS[cat].map(function(x){return row(cat,x);}).join('')+'</div>';}).join('')+titleSection();}
+function fusionChapterHead(n,done,total){return '<div class="achPassNote" data-ach-fusion-chapter="'+n+'" style="margin:9px 0 7px;border-color:#3b5274;background:#101c2d"><div class="between"><b>Fusions · Chapitre '+n+'</b><span class="pill">'+done+' / '+total+'</span></div></div>';}
+function fusionChallengeRows(){var list=ITEMS.Fusions,c1=list.filter(function(x){return x[1]<2500;}),c2=list.filter(function(x){return x[1]>=2500&&x[1]<=17500;}),d1=0,d2=0;c1.forEach(function(x){if(itemDone('Fusions',x))d1++;});c2.forEach(function(x){if(itemDone('Fusions',x))d2++;});return fusionChapterHead(1,d1,c1.length)+laneHead()+c1.map(function(x){return row('Fusions',x);}).join('')+fusionChapterHead(2,d2,c2.length)+laneHead()+c2.map(function(x){return row('Fusions',x);}).join('');}
+function challengesView(){var cats=['Forge','Fusions','Raids'];var correction='';try{var a=S.accomplishments||{};if(a.claimed&&a.claimed.fusion1000&&!a.fusion1000GoldCorrectionV516Done){correction='<div class="achPassRow" style="display:block;margin:12px 0;padding:13px;border:1px solid #c89b52;border-radius:12px;background:#16283c;color:#f9e5bc"><b>Correction · 1 000 fusions</b><p style="font-size:12px;line-height:1.5;margin:8px 0">Tu as reçu les 5 000 minéraux. Si 600 000 or ont aussi été ajoutés par erreur, tu peux les retirer une seule fois. Cette action est irréversible.</p><button type="button" class="btn sm" data-sr-fusion-gold-correct-516="1" style="width:100%;min-height:44px">Retirer 600 000 or reçus en trop</button></div>';}}catch(_){}return cats.map(function(cat){return '<div>'+catTitle(cat,catDone(cat),ITEMS[cat].length)+(cat==='Fusions'?fusionChallengeRows():laneHead()+ITEMS[cat].map(function(x){return row(cat,x);}).join(''))+'</div>';}).join('')+correction+titleSection();}
 function titleSection(){
  ensureTitles();var unlocked=divineUnlocked(),eq=S.equippedTitle==='divin';
  return '<div data-ach-titles-v134="1">'+catTitle('Titres',unlocked?1:0,1)+
@@ -197,9 +209,42 @@ function installProgressEntry(){
   }catch(_){return h;}
  };
 }
+/* V512: the mobile presentation layer can rehydrate legacy reward labels after
+   canonical rendering. Reconcile only the free fusion reward text in the live
+   Pass; never touch premium lanes, claim state or payouts. */
+function reconcileFusionLabels512(){
+ try{
+  var root=document.querySelector('.srAch139');if(!root)return;
+  [['fusion1000','5 000 Minéraux'],['fusion1500','10 000 Minéraux']].forEach(function(pair){
+   var row=root.querySelector('[data-ach-id="'+pair[0]+'"]');
+   if(!row)return;
+   var free=row.querySelector('.achReward:not(.premium) .achRewardText');
+   if(free&&free.textContent.trim()!==pair[1])free.textContent=pair[1];
+  });
+ }catch(_){}
+}
+function installFusionLabels512(){
+ if(window.__srFusionLabels512)return;window.__srFusionLabels512=true;
+ var pending=false;
+ function schedule(){if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;reconcileFusionLabels512();});}
+ if(typeof MutationObserver==='function'&&document.body){
+  var ob=new MutationObserver(function(mutations){
+   for(var i=0;i<mutations.length;i++){
+    var m=mutations[i],node=m.target;
+    if(node&&node.nodeType===3)node=node.parentElement;
+    if(node&&node.closest&&node.closest('.srAch139')){schedule();break;}
+    if(m.addedNodes&&m.addedNodes.length){schedule();break;}
+   }
+  });
+  ob.observe(document.body,{childList:true,subtree:true,characterData:true});
+ }
+ document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('[data-ach-tab]'))setTimeout(schedule,0);},true);
+ schedule();
+}
 function install(){
  if(typeof S==='undefined'||typeof ACT==='undefined'||typeof openModal!=='function')return;
  installStyles();
+ installFusionLabels512();
  ACT.accomplishments=function(){openModal(html(),'Pass Progression');};
  installTitleInteraction();installInteractions();installProgressEntry();
  try{window.dispatchEvent(new CustomEvent('sr:accomplishments-ready'));}catch(_){}

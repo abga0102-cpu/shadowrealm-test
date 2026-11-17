@@ -155,18 +155,25 @@ function loadSave() {
 }
 
 /* -------- daily reset & offline -------- */
-function applyDailyReset(s) {
-  const t = todayStr();
-  if (s.lastKeyReset !== t) {
-    RAID_IDS.forEach((r) => {
-      // tree-granted keys raise both the daily refill and the cap for that raid
-      const bonus = (s.raidKeyAlloc || {})[r] || 0;
-      s.raids[r].keys = Math.min(RULES.RAID_KEY_CAP + bonus,
-        s.raids[r].keys + RULES.RAID_FREE_KEYS + bonus);
-    });
-    s.adKeysToday = 0;
-    s.lastKeyReset = t;
-  }
+function applyRaidKeyReset(s, now) {
+  // V518: raid keys use ONLY the real device calendar. Never trust a supplied
+  // timestamp: callers may pass simulated time after using accelerators.
+  const keyDay = raidKeyResetDayKey(Date.now());
+  if (s.lastKeyReset === keyDay) return false;
+  RAID_IDS.forEach((r) => {
+    // tree-granted keys raise both the daily refill and the cap for that raid
+    const bonus = (s.raidKeyAlloc || {})[r] || 0;
+    s.raids[r].keys = Math.min(RULES.RAID_KEY_CAP + bonus,
+      s.raids[r].keys + RULES.RAID_FREE_KEYS + bonus);
+  });
+  s.adKeysToday = 0;
+  s.lastKeyReset = keyDay;
+  return true;
+}
+function applyDailyReset(s, now) {
+  const at = now == null ? simulatedNow(s) : Number(now);
+  applyRaidKeyReset(s);
+  const t = simulatedDateStr(s, (now == null ? Date.now() : Number(now) - Math.max(0, Number(s.simulatedMs) || 0)));
   if (s.eventDay !== t) { s.eventDay = t; s.eventClaims = {}; s.eventProgress = {}; }
   return s;
 }
@@ -1161,17 +1168,42 @@ function retryPendingBoss() {
   return true;
 }
 
-function megaBossFloors(s) {
-  if (!megaRaidUnlocked(s)) return [];
-  return Object.keys((s && s.bossClears) || {}).filter((k) => s.bossClears[k])
-    .map((k) => parseInt(k, 10))
-    .filter((f) => Number.isFinite(f) && isBoss(f))
-    .sort((a, b) => a - b);
+/* V498 · La progression Méga est une vraie échelle séquentielle.
+   Une fois le mode déverrouillé, le niveau suivant dépend uniquement des
+   Méga-Boss déjà vaincus : niveau 10 = 10e combat, donc disponible après
+   les 9 premiers. Les Boss Campagne restent des références de puissance,
+   jamais des verrous supplémentaires. */
+function megaMaxLevel() {
+  const maxCampaignFloor = Math.max(10, Number(window.__srCampaignMaxFloor) || 800);
+  return Math.max(1, Math.floor(maxCampaignFloor / 10));
+}
+function megaContiguousClears(s) {
+  const claimed = (s && s.megaBossClears) || {};
+  const max = megaMaxLevel();
+  let level = 0;
+  while (level < max && claimed[String((level + 1) * 10)]) level++;
+  return level;
 }
 function nextMegaBossFloor(s) {
   if (!megaRaidUnlocked(s)) return null;
+  const nextLevel = megaContiguousClears(s) + 1;
+  return nextLevel <= megaMaxLevel() ? nextLevel * 10 : null;
+}
+function megaBossFloors(s) {
+  if (!megaRaidUnlocked(s)) return [];
   const claimed = (s && s.megaBossClears) || {};
-  return megaBossFloors(s).find((f) => !claimed[String(f)]) || null;
+  const next = nextMegaBossFloor(s);
+  const visibleThrough = next ? megaLevelForFloor(next) : megaMaxLevel();
+  const floors = [];
+  for (let level = 1; level <= visibleThrough; level++) floors.push(level * 10);
+  /* Preserve replay access/visibility for any legitimate legacy clear that
+     sits above a gap, without letting it skip the sequential unlock chain. */
+  Object.keys(claimed).forEach((k) => {
+    const floor = parseInt(k, 10);
+    if (claimed[k] && Number.isFinite(floor) && isBoss(floor) &&
+        floor <= megaMaxLevel() * 10 && !floors.includes(floor)) floors.push(floor);
+  });
+  return floors.sort((a, b) => a - b);
 }
 /* Build from the exact campaign Boss path, then multiply its two combat power
    axes. noFastback is deliberate: a Mega-Boss is a fresh challenge even when
@@ -1196,7 +1228,7 @@ function startMegaBoss(floor, onEnd) {
   floor = parseInt(floor, 10);
   const key = String(floor);
   const claimed = !!(S.megaBossClears && S.megaBossClears[key]);
-  if (!megaRaidUnlocked(S) || !Number.isFinite(floor) || !isBoss(floor) || !S.bossClears[key] ||
+  if (!megaRaidUnlocked(S) || !Number.isFinite(floor) || !isBoss(floor) ||
       (!claimed && floor !== nextMegaBossFloor(S))) return false;
   flushRewards();
   const enemy = makeMegaBossEnemy(floor);
@@ -1649,7 +1681,7 @@ function tick() {
           life: vfxDur(fxKind), max: vfxDur(fxKind) });
         if (c.skillFxs.length > 4) c.skillFxs.shift();
         if (def.mult > 0) {
-          const sdmg = Math.floor(skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level)
+          const sdmg = Math.floor((window.__srV284SkillDamage ? window.__srV284SkillDamage(def, S.skills[sid].level) : skillDamageMult(dv.damage * skillMult(def), S.skills[sid].level))
             * (1 + (dv.skillDmgBonus || 0) / 100));
           const wide = def.type === "AOE" || def.type === "CHAINE" || def.type === "DEBUFF";
           const struck = wide ? c.enemies.filter((e) => e.alive) : [target];
@@ -1940,23 +1972,26 @@ function allocStat(key, pts) {
    Each tier now has a floor. A roll above what the Forge can produce steps down
    to the best tier it can, so the odds are never wasted, they just land lower. */
 const RARITY_MIN_FORGE = {
-  COMMUN: 1, PEU_COMMUN: 4, RARE: 12, EPIQUE: 18, HEROIQUE: 24, MYTHIQUE: 30,
-  ARTEFACT: 40, LEGENDAIRE: 40, INFERNAL: 40, IMMORTEL: 40, DIVIN: 48,
+  COMMUN: 1, PEU_COMMUN: 4, RARE: 12, EPIQUE: 15, HEROIQUE: 22, MYTHIQUE: 28,
+  ARTEFACT: 35, LEGENDAIRE: 40, INFERNAL: 999, IMMORTEL: 45, DIVIN: 48,
 };
 function rarityAllowed(rarity, forgeLevel, state) {
   const st = state || S;
-  if (forgeLevel < (RARITY_MIN_FORGE[rarity] || 1)) return false;
+  if (rarity === "INFERNAL") return false;
   const stars = starsOf(st, "forge");
-  if (rarity === "LEGENDAIRE") return stars >= 1;
-  if (rarity === "INFERNAL") return stars >= 2;
-  if (rarity === "IMMORTEL") return stars >= 3;
+  let min = RARITY_MIN_FORGE[rarity] || 1;
+  if (stars >= 1 && rarity === "PEU_COMMUN") min = 1;
+  if (stars >= 2 && rarity === "RARE") min = 1;
+  if (forgeLevel < min) return false;
   if (rarity === "DIVIN") return (st.ascension || 0) >= 1;
   return true;
 }
-function forgeRarityRequirement(rarity) {
-  if (rarity === "LEGENDAIRE") return { text: "Forge ★ · niv. 40", pill: "★ 40" };
-  if (rarity === "INFERNAL") return { text: "Forge ★★ · niv. 40", pill: "★★ 40" };
-  if (rarity === "IMMORTEL") return { text: "Forge ★★★ · niv. 40", pill: "★★★ 40" };
+function forgeRarityRequirement(rarity, state) {
+  const st = state || S;
+  const stars = starsOf(st, "forge");
+  if (rarity === "INFERNAL") return { text: "Rareté retirée", pill: "RETIRÉ" };
+  if (rarity === "PEU_COMMUN" && stars >= 1) return { text: "Plancher après Ascension équipement I", pill: "★" };
+  if (rarity === "RARE" && stars >= 2) return { text: "Plancher après Ascension équipement II", pill: "★★" };
   if (rarity === "DIVIN") return { text: "Ascension personnage · Forge 48", pill: "ASC." };
   const min = RARITY_MIN_FORGE[rarity] || 1;
   return { text: "Forge " + min, pill: String(min) };
@@ -1970,9 +2005,9 @@ function forgeRarityRequirement(rarity) {
    once, and let the roll and every display read the same table. */
 function gateForgeRates(rates, forgeLevel) {
   const out = Object.assign({}, rates);
-  let top = EQUIP_RARITY_ORDER[0];
-  EQUIP_RARITY_ORDER.forEach((r) => { if (rarityAllowed(r, forgeLevel)) top = r; });
-  EQUIP_RARITY_ORDER.forEach((r) => {
+  let top = orderFor("forge")[0];
+  orderFor("forge").forEach((r) => { if (rarityAllowed(r, forgeLevel)) top = r; });
+  orderFor("forge").forEach((r) => {
     if (rarityAllowed(r, forgeLevel)) return;
     out[top] = (out[top] || 0) + (out[r] || 0);
     out[r] = 0;
@@ -1982,9 +2017,9 @@ function gateForgeRates(rates, forgeLevel) {
 /* Kept as a guard rather than a step: with gated rates a roll can no longer
    land on a locked tier, but nothing downstream should depend on that. */
 function capRarityForForge(rarity, forgeLevel) {
-  let i = EQUIP_RARITY_ORDER.indexOf(rarity);
-  while (i > 0 && !rarityAllowed(EQUIP_RARITY_ORDER[i], forgeLevel)) i -= 1;
-  return EQUIP_RARITY_ORDER[i];
+  let i = orderFor("forge").indexOf(rarity);
+  while (i > 0 && !rarityAllowed(orderFor("forge")[i], forgeLevel)) i -= 1;
+  return orderFor("forge")[i];
 }
 /* What the eight tiers mean, in one place, behind the (i). */
 /* Section 14's filter, one row per rarity. Tapping a row keeps or discards it;
@@ -1997,7 +2032,7 @@ function showForgeFilterPicker() {
   const unlockedBatch = Math.max(1, Math.floor(typeof forgeBatch === "function" ? forgeBatch(S) : 1));
   const selectedBatch = Math.max(1, Math.floor(Number(S.forge.autoBatch) || 1));
   const discarded = typeof forgeDiscarded === "function" ? forgeDiscarded(S) : [];
-  const rows = EQUIP_RARITY_ORDER.map((r) => {
+  const rows = orderFor("forge").map((r) => {
     const c = RARITY[r].c;
     const kept = S.forge.keep[r] !== false;
     const reachable = rarityAllowed(r, lv);
@@ -2054,7 +2089,7 @@ function showForgeFilterPicker() {
 function showRarityInfo() {
   const lv = S.forge.level;
   const rates = gateForgeRates(getRates("forge", lv, S.ascension, starsOf(S, "forge")), lv);
-  const rows = EQUIP_RARITY_ORDER.map((r) => {
+  const rows = orderFor("forge").map((r) => {
     const c = RARITY[r].c;
     const min = RARITY_MIN_FORGE[r] || 1;
     const req = forgeRarityRequirement(r);
@@ -2079,8 +2114,8 @@ function showRarityInfo() {
       "monter sa Maîtrise améliore les chances à l\'intérieur de ceux déjà ouverts.</div>" +
     rows +
     '<div class="mute tiny center mt6">Forge niv.' + lv + " · " +
-      EQUIP_RARITY_ORDER.filter((r) => rarityAllowed(r, lv, S)).length + " paliers sur " +
-      EQUIP_RARITY_ORDER.length + " ouverts</div>" +
+      orderFor("forge").filter((r) => rarityAllowed(r, lv, S)).length + " paliers sur " +
+      orderFor("forge").length + " ouverts</div>" +
     '<div class="mt8">' + btn("Fermer", { cls: "ghost", small: true, act: "closeModal" }) + "</div>",
     "Raretés d\'équipement");
 }
@@ -2136,18 +2171,19 @@ function forgeSummon(n) {
       Object.keys(rates).forEach((r) => { rates[r] = rates[r] / rateSum * 100; });
       const extra = Math.random() * 100 < treeSum(st, "forgeFree") ? 1 : 0;
       for (let k = 0; k <= extra; k++) {
-        const rar = capRarityForForge(rollRarity(rates, EQUIP_RARITY_ORDER), st.forge.level);
+        const rar = capRarityForForge(rollRarity(rates, orderFor("forge")), st.forge.level);
         const item = makeItem(SLOTS[Math.floor(Math.random() * SLOTS.length)], rar, st.forge.level);
-        // V470: only the primary item of each paid Forge grants Gold. The Tree's
-        // bonus free item stays free of extra currency to protect the Gold economy.
+        // V547: Gold is awarded only when the item is recycled, never on creation.
+        // Bonus items from the Tree remain ineligible for forge Gold.
         const forgeGold = k === 0 ? forgeGoldRewardV470(st, rar) : 0;
-        if (forgeGold > 0) st.gold += forgeGold;
+        item.srForgeRecycleGoldV547 = forgeGold;
         if (forgeKeeps(st, rar)) {
           st.inventory.push(item);
           results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0, gold: forgeGold });
         } else {
           const dust = dustValue(st, item);
           st.poussiere += dust;
+          st.gold += forgeGold;
           results.push({ rarity: rar, slot: item.slot, power: item.power, free: k > 0,
             recycled: true, dust: dust, gold: forgeGold });
         }
@@ -2239,7 +2275,7 @@ function toggleAutoForge() {
    the point is not to have to sort afterwards. */
 function forgeFilterOn(s) { return !!s.forge.filter; }
 function forgeKeeps(s, rar) { return !forgeFilterOn(s) || s.forge.keep[rar] !== false; }
-function forgeDiscarded(s) { return EQUIP_RARITY_ORDER.filter((r) => s.forge.keep[r] === false); }
+function forgeDiscarded(s) { return orderFor("forge").filter((r) => s.forge.keep[r] === false); }
 function toggleForgeFilter() {
   update((s) => { s.forge.filter = !s.forge.filter; });
 }
@@ -2247,12 +2283,12 @@ function toggleForgeKeep(rar) {
   update((s) => {
     const next = s.forge.keep[rar] === false;
     // refuse to let the filter throw away everything: one rarity must remain
-    if (!next && EQUIP_RARITY_ORDER.every((r) => r === rar || s.forge.keep[r] === false)) return;
+    if (!next && orderFor("forge").every((r) => r === rar || s.forge.keep[r] === false)) return;
     s.forge.keep[rar] = next;
   });
 }
 function setForgeKeepAll(v) {
-  update((s) => { EQUIP_RARITY_ORDER.forEach((r) => { s.forge.keep[r] = v; }); });
+  update((s) => { orderFor("forge").forEach((r) => { s.forge.keep[r] = v; }); });
 }
 
 /* Section 13: a batch plays ONE animation and then produces everything at once.
@@ -2316,6 +2352,8 @@ function recycleItem(id) {
   update((st) => {
     st.inventory = st.inventory.filter((x) => x.id !== id);
     st.poussiere += dust;
+    // Older items already received Gold when forged: never pay them twice.
+    st.gold += Math.max(0, Number(it.srForgeRecycleGoldV547) || 0);
   });
   return dust;
 }
@@ -2741,6 +2779,50 @@ function resetGame() {
   scheduleRender();
 }
 
+/* V504 · Exact test-time simulation. The 9 h button and the 1 day button use
+   the same path, so timers, Autonomy and the displayed "Jour" cannot drift. */
+function simulateTimeHours(hours) {
+  const h = Math.max(0, Math.min(24, Number(hours) || 0));
+  if (!(h > 0)) return { ok: false, hours: 0 };
+  const ms = h * 60 * 60 * 1000;
+  const now = Date.now();
+
+  S.simulatedMs = Math.max(0, Number(S.simulatedMs) || 0) + ms;
+
+  if (S.tree && S.tree.active && Number(S.tree.activeEnd) > now) {
+    S.tree.activeEnd = Math.max(now, Number(S.tree.activeEnd) - ms);
+  }
+  if (Array.isArray(S.eggs)) {
+    S.eggs.forEach((egg) => {
+      if (egg && eggIsHatching(egg) && Number(egg.hatchEnd) > now) {
+        egg.hatchEnd = Math.max(now, Number(egg.hatchEnd) - ms);
+      }
+    });
+  }
+  if (S.forge && Number(S.forge.upgradeEnd) > now) {
+    S.forge.upgradeEnd = Math.max(now, Number(S.forge.upgradeEnd) - ms);
+  }
+
+  harvestAdvance(S, h * 3600);
+  S.lastSeen = now;
+
+  const virtualNow = simulatedNow(S, now);
+  applyDailyReset(S, virtualNow);
+
+  try {
+    if (window.__srMegaRewardsV329 && typeof window.__srMegaRewardsV329.grantWeeklyAt === "function") {
+      window.__srMegaRewardsV329.grantWeeklyAt(virtualNow);
+    }
+  } catch (_) {}
+
+  S.power = computePower(S);
+  refreshDerived();
+  dirty = true;
+  saveNow();
+  scheduleRender();
+  return { ok: true, hours: h, day: simulatedDayCount(S, now), simulatedMs: S.simulatedMs };
+}
+
 /* -------- boot -------- */
 function boot() {
   const loaded = loadSave();
@@ -2756,7 +2838,18 @@ function boot() {
   setInterval(flushRewards, 500);
   setInterval(checkTimerNotifications, 500); // fins d’éclosion et de recherche
 
-  setInterval(() => { if (dirty) saveNow(); }, 8000);
+  /* A player can leave the app open across midnight; keys must still refill
+     without requiring a reload. Check once a minute and persist immediately. */
+  setInterval(() => {
+    if (applyRaidKeyReset(S)) {
+      dirty = true;
+      saveNow();
+      scheduleRender();
+    }
+  }, 60000);
+
+  // V545: autosave every 3 minutes when changes exist; critical actions and backgrounding still save immediately.
+  setInterval(() => { if (dirty) saveNow(); }, 180000);
   // the Récolte automatique never stops just because the player is connected
   let harvestClock = Date.now();
   setInterval(() => {

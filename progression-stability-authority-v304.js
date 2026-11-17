@@ -1,10 +1,10 @@
-/* SHADOWREACH V304 · Progression stability authority / V323 Forge rarity Ascensions / V491 Dust power
-   One late, additive authority for approved progression rules.
-   Purpose: reduce cross-version drift without rewriting legacy files.
+/* SHADOWREACH V304 · Progression stability authority / V501 Forge Ascensions / V491 Dust power
+   One late authority for approved progression rules.
    - Ascension multipliers remain: Forge x2 from 1★ onward,
      Skill x1.5 at 1★, Familiar x1 / x1.5 / x2.1 / x3.
-   - V323 extends Forge Ascension to 4★ only for the rarity ladder:
-     ★ Légendaire, ★★ Infernal, ★★★ Immortel, ★★★★ Divin.
+   - V501 caps Forge Ascension at 2★:
+     ★ removes Commun from equipment drops, ★★ removes Peu commun.
+     No higher rarity is removed and rarity unlocks no longer depend on Forge stars.
    - Raid rewards keep the approved V290/V291 curves.
    - Dust cost stays in V283 and success chance in V301.
    - V491 owns only Dust-upgrade stat power: +6% base stat per successful level.
@@ -13,8 +13,8 @@
 if(window.__srProgressionStabilityV304)return;window.__srProgressionStabilityV304=true;
 
 var PET_STAR=[1,1.5,2.1,3],FORGE_STAR=[1,2],SKILL_STAR=[1,1.5];
-var FORGE_ASCEND_MAX_STARS_V323=4;
-var FORGE_RARITY_BY_STAR_V323={1:'Légendaire',2:'Infernal',3:'Immortel',4:'Divin'};
+var FORGE_ASCEND_MAX_STARS_V501=2;
+var FORGE_REMOVED_RARITY_BY_STAR_V501={1:'Commun',2:'Peu commun'};
 function pick(table,stars){stars=Math.max(0,Math.floor(Number(stars)||0));return table[Math.min(stars,table.length-1)];}
 try{
   ascendPowerMul=function(stars,sys){
@@ -26,36 +26,35 @@ try{
 }catch(_){ }
 
 try{
-  if(typeof canAscend==='function'&&!canAscend.__srV323){
+  if(typeof canAscend==='function'&&!canAscend.__srV501){
     var oldCanAscend=canAscend;
     canAscend=function(s,sys){
       if(sys==='forge'){
         var stars=0,level=0,max=50;
         try{stars=Math.max(0,Math.floor(Number(starsOf(s,'forge'))||0));}catch(_){ }
         try{level=Number(masteryLevel(s,'forge'))||0;max=Number(masteryMax('forge'))||50;}catch(_){ }
-        return level>=max&&stars<FORGE_ASCEND_MAX_STARS_V323;
+        return level>=max&&stars<FORGE_ASCEND_MAX_STARS_V501;
       }
       return oldCanAscend(s,sys);
     };
-    canAscend.__srV323=true;canAscend.__srPrevious=oldCanAscend;
+    canAscend.__srV501=true;canAscend.__srPrevious=oldCanAscend;
   }
 }catch(_){ }
 
 try{
-  if(typeof ascensionPreview==='function'&&!ascensionPreview.__srV323){
+  if(typeof ascensionPreview==='function'&&!ascensionPreview.__srV501){
     var oldAscensionPreview=ascensionPreview;
     ascensionPreview=function(s,sys){
       var out=oldAscensionPreview(s,sys);
       if(sys!=='forge'||!out)return out;
       var next=Math.max(1,Math.floor(Number(out.nextStars)||1));
-      var rarity=FORGE_RARITY_BY_STAR_V323[next]||'';
-      if(rarity){
-        var unlock=rarity+' · 0,25 % à Forge 45 → 1 % à Forge 50';
-        out.gain=next===1?'Puissance de base des équipements ×2 · '+unlock:unlock;
+      var removed=FORGE_REMOVED_RARITY_BY_STAR_V501[next]||'';
+      if(removed){
+        out.gain=(next===1?'Puissance de base des équipements ×2 · ':'')+'Retire '+removed+' des équipements forgés';
       }
       return out;
     };
-    ascensionPreview.__srV323=true;ascensionPreview.__srPrevious=oldAscensionPreview;
+    ascensionPreview.__srV501=true;ascensionPreview.__srPrevious=oldAscensionPreview;
   }
 }catch(_){ }
 
@@ -158,7 +157,7 @@ try{
 
 window.__srProgressionStabilityConfigV304={
   stars:{forge:FORGE_STAR,skill:SKILL_STAR,pet:PET_STAR},
-  forgeRarityAscensionV323:{maxStars:FORGE_ASCEND_MAX_STARS_V323,rarityByStar:FORGE_RARITY_BY_STAR_V323,powerStopsGrowingAfterStar:1},
+  forgeRarityAscensionV501:{maxStars:FORGE_ASCEND_MAX_STARS_V501,removedByStar:FORGE_REMOVED_RARITY_BY_STAR_V501,powerStopsGrowingAfterStar:1},
   raids:{evolution:{base:100,perLevel:3},competence:{base:250,perLevel:10},familier:{base:250,perLevel:10}},
   dust:{delegated:true,costOwner:'progression-overhaul-v283.js',chanceOwner:'dust-chance-floor-v301.js',powerOwner:'V491',perStepPct:6,multiplier:2},
   destructiveMigration:false

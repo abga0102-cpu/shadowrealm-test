@@ -22,10 +22,12 @@ function canon(r){return ALIAS[r]||r;}
 function normalizeState(st){
   var changed=false;
   if(Array.isArray(st.mergeBoard)){
-    st.mergeBoard=st.mergeBoard.map(function(r){
-      if(!r)return r;
-      var n=canon(r);if(n!==r)changed=true;return n;
-    });
+    /* Preserve the live board array identity during ordinary reads.
+       Only normalize in place when a legacy rarity actually exists. */
+    for(var i=0;i<st.mergeBoard.length;i++){
+      var r=st.mergeBoard[i];if(!r)continue;
+      var n=canon(r);if(n!==r){st.mergeBoard[i]=n;changed=true;}
+    }
   }
   if(Array.isArray(st.mergeReserve)){
     st.mergeReserve=st.mergeReserve.map(function(r){

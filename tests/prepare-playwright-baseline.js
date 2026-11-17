@@ -16,3 +16,10 @@ if (source.includes(malformed)) {
 } else {
   console.log('Prepared baseline: no historical syntax repair needed.');
 }
+
+/* Compare the same browser-suite selection rules in both revisions.
+   This only changes the ephemeral CI baseline checkout, never main. */
+for (const name of ['playwright.config.js', 'spec-kind.js']) {
+  fs.copyFileSync(path.join(__dirname, name), path.join(root, 'tests', name));
+}
+console.log('Prepared baseline: synchronized Playwright test selection.');

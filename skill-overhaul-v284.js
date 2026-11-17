@@ -3,8 +3,8 @@
    Duplicate requirements follow 1/2/3/4/5/6 and stay capped at 6.
    Existing cooldowns are preserved. Kameha is the new Artefact MULTI skill. */
 (function(){'use strict';if(window.__srSkillOverhaulV284)return;window.__srSkillOverhaulV284=true;
-var BASE={taillade:2000,frappe:10000,percee:50000,meteore:5000000,kameha:50000000,execution:250000000,cataclysme:1000000000};
-var RAR={COMMUN:2000,RARE:10000,EPIQUE:50000,MYTHIQUE:5000000,ARTEFACT:50000000,LEGENDAIRE:250000000,DIVIN:1000000000};
+var BASE={taillade:2000,frappe:20000,percee:250000,meteore:50000000,kameha:500000000,execution:2500000000,cataclysme:50000000000};
+var RAR={COMMUN:2000,RARE:20000,EPIQUE:250000,MYTHIQUE:50000000,ARTEFACT:500000000,LEGENDAIRE:2500000000,INFERNAL:7500000000,IMMORTEL:15000000000,DIVIN:50000000000};
 function stars(){try{return Number(starsOf(S,'skill'))||0;}catch(_){return 0;}}
 function starMulSkill(){var s=stars();return s<=0?1:s===1?1.5:1.5*Math.pow(1.35,s-1);}
 function growth(level){return 1+Math.max(0,(Number(level)||1)-1)*.20;}
@@ -44,6 +44,11 @@ try{
 }catch(_){ }
 /* Keep the old function callable for UI/support code, but its argument is now intrinsic base power. */
 try{if(typeof skillDamageMult==='function')skillDamageMult=function(base,level){return (Number(base)||0)*growth(level)*starMulSkill();};}catch(_){ }
+/* V550: adjust offensive combat multipliers only; healing and support unchanged. */
+try{if(typeof skillMult==='function'){
+var priorSkillMultV550=skillMult;
+skillMult=function(def){var m=priorSkillMultV550(def);if(!def||!(Number(def.mult)>0))return m;var prior={RARE:10000,EPIQUE:50000,MYTHIQUE:5000000,ARTEFACT:50000000,LEGENDAIRE:250000000,DIVIN:1000000000};var old=prior[def.rarity];return old&&RAR[def.rarity]?m*RAR[def.rarity]/old:m;};
+}}catch(_){}
 /* Extend rarity registries without changing existing cooldowns. */
 try{if(typeof RARITY_ORDER!=='undefined'&&RARITY_ORDER.indexOf('ARTEFACT')<0){var li=RARITY_ORDER.indexOf('LEGENDAIRE');RARITY_ORDER.splice(li<0?RARITY_ORDER.length:li,0,'ARTEFACT');}}catch(_){ }
 try{if(typeof SKILL_RARITY_MUL!=='undefined')SKILL_RARITY_MUL.ARTEFACT=1;}catch(_){ }

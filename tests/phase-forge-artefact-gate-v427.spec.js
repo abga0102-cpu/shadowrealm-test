@@ -8,30 +8,30 @@ async function openCleanGame(page) {
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V427 Artefact is impossible below Forge 40 in both rate and gate authorities', async ({ page }) => {
+test('V501 Artefact is impossible below Forge 35 in both rate and gate authorities', async ({ page }) => {
   await openCleanGame(page);
   const r = await page.evaluate(() => ({
-    rate39: Number(getRates('forge', 39, 0, 0).ARTEFACT) || 0,
-    rate40: Number(getRates('forge', 40, 0, 0).ARTEFACT) || 0,
-    allowed39: rarityAllowed('ARTEFACT', 39, defaultState('QA')),
-    allowed40: rarityAllowed('ARTEFACT', 40, defaultState('QA')),
+    rate34: Number(getRates('forge', 34, 0, 0).ARTEFACT) || 0,
+    rate35: Number(getRates('forge', 35, 0, 0).ARTEFACT) || 0,
+    allowed34: rarityAllowed('ARTEFACT', 34, defaultState('QA')),
+    allowed35: rarityAllowed('ARTEFACT', 35, defaultState('QA')),
     min: RARITY_MIN_FORGE.ARTEFACT,
-    cfg: window.__srEquipmentBalanceV224 && window.__srEquipmentBalanceV224.forgeRarityV323
+    cfg: window.__srEquipmentBalanceV224 && window.__srEquipmentBalanceV224.forgeRarityV501
   }));
 
-  expect(r.rate39).toBe(0);
-  expect(r.rate40).toBeCloseTo(0.25, 8);
-  expect(r.allowed39).toBe(false);
-  expect(r.allowed40).toBe(true);
-  expect(r.min).toBe(40);
-  expect(r.cfg.artefactUnlockLevel).toBe(40);
+  expect(r.rate34).toBe(0);
+  expect(r.rate35).toBeCloseTo(0.25, 8);
+  expect(r.allowed34).toBe(false);
+  expect(r.allowed35).toBe(true);
+  expect(r.min).toBe(35);
+  expect(r.cfg.artefactUnlockLevel).toBe(35);
 });
 
-test('V427 repairs impossible owned Artefacts below Forge 40 without changing item power', async ({ page }) => {
+test('V501 repairs impossible owned Artefacts below Forge 35 without changing item power', async ({ page }) => {
   await openCleanGame(page);
   const r = await page.evaluate(() => {
     const H = window.__smoke;
-    H.S.forge.level = 35;
+    H.S.forge.level = 34;
     const bag = {
       id:'bag-a', slot:'arme', rarity:'ARTEFACT', name:'Arme Artefact',
       damage:123456, hp:0, baseDamage:120000, baseHp:0, originalPower:120000,
@@ -50,17 +50,17 @@ test('V427 repairs impossible owned Artefacts below Forge 40 without changing it
     const afterBag = H.S.inventory[0];
     const afterWorn = H.S.equipped.casque;
 
-    H.S.forge.level = 40;
+    H.S.forge.level = 35;
     const valid = {
       id:'valid-a', slot:'gants', rarity:'ARTEFACT', name:'Gants Artefact',
       damage:222, hp:0, baseDamage:222, baseHp:0, originalPower:222,
       power:222, level:0, affixes:[], powerCurveVersion:372
     };
     H.S.inventory.push(valid);
-    const changedAt40 = window.__srEquipmentBalanceV224.repairPrematureArtefactsV427();
+    const changedAt35 = window.__srEquipmentBalanceV224.repairPrematureArtefactsV427();
 
     return {
-      changed, changedAt40,
+      changed, changedAt35,
       bag:{rarity:afterBag.rarity,name:afterBag.name,damage:afterBag.damage,hp:afterBag.hp,baseDamage:afterBag.baseDamage,originalPower:afterBag.originalPower,level:afterBag.level,affixes:afterBag.affixes},
       worn:{rarity:afterWorn.rarity,name:afterWorn.name,damage:afterWorn.damage,hp:afterWorn.hp,baseHp:afterWorn.baseHp,originalPower:afterWorn.originalPower,level:afterWorn.level,affixes:afterWorn.affixes},
       validRarity:H.S.inventory[1].rarity,
@@ -86,6 +86,6 @@ test('V427 repairs impossible owned Artefacts below Forge 40 without changing it
   expect(r.worn.level).toBe(r.before.worn.level);
   expect(r.worn.affixes).toEqual(r.before.worn.affixes);
 
-  expect(r.changedAt40).toBe(0);
+  expect(r.changedAt35).toBe(0);
   expect(r.validRarity).toBe('ARTEFACT');
 });

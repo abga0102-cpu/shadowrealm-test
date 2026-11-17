@@ -13,19 +13,41 @@ async function clean(page){
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 }
 
-test('V480 Mega eligibility rejects Elite floors and keeps only Campaign Boss floors', async({page})=>{
+test('V498 Mega level 10 becomes available exactly after the first 9 Mega-Boss victories', async({page})=>{
   await clean(page);
   const out=await page.evaluate(()=>{
     const s=defaultState('QA');
     s.level=18;
-    s.bossClears={'5':true,'10':true,'15':true,'20':true,'25':true,'30':true};
-    return {
-      floors:megaBossFloors(s),
-      kinds:[5,10,15,20,25,30].map(f=>({f,boss:isBoss(f),elite:isElite(f)}))
-    };
+    s.bossClears={'10':true}; // Campaign progress must not gate later Mega levels.
+    s.megaBossClears={};
+    for(let level=1;level<=8;level++)s.megaBossClears[String(level*10)]=true;
+    const after8={next:nextMegaBossFloor(s),floors:megaBossFloors(s)};
+    s.megaBossClears['90']=true;
+    const after9={next:nextMegaBossFloor(s),floors:megaBossFloors(s)};
+    return {after8,after9};
   });
-  expect(out.floors).toEqual([10,20,30]);
-  expect(out.kinds.filter(x=>x.elite).map(x=>x.f)).toEqual([5,15,25]);
+  expect(out.after8.next).toBe(90);
+  expect(out.after8.floors).toEqual([10,20,30,40,50,60,70,80,90]);
+  expect(out.after9.next).toBe(100);
+  expect(out.after9.floors).toEqual([10,20,30,40,50,60,70,80,90,100]);
+});
+
+test('V498 cannot skip directly to Mega 10 before Mega 9 is cleared', async({page})=>{
+  await clean(page);
+  const out=await page.evaluate(()=>{
+    S=defaultState('QA');
+    S.level=18;
+    S.bossClears={'100':true};
+    S.megaBossClears={};
+    for(let level=1;level<=8;level++)S.megaBossClears[String(level*10)]=true;
+    const blocked=startMegaBoss(100);
+    S.megaBossClears['90']=true;
+    const allowed=startMegaBoss(100);
+    return {blocked,allowed,next:nextMegaBossFloor(S)};
+  });
+  expect(out.blocked).toBe(false);
+  expect(out.allowed).toBe(true);
+  expect(out.next).toBe(100);
 });
 
 test('V480 every started Mega stage is one Boss and never an Elite', async({page})=>{
@@ -33,7 +55,7 @@ test('V480 every started Mega stage is one Boss and never an Elite', async({page
   const out=await page.evaluate(()=>{
     S=defaultState('QA');
     S.level=18;
-    S.bossClears={'10':true};
+    S.bossClears={};
     S.megaBossClears={};
     const started=startMegaBoss(10);
     const e=started&&combat&&combat.enemies&&combat.enemies[0];
@@ -91,11 +113,11 @@ test('V480 does not change the existing Mega x10 HP/damage rule', async({page})=
   expect(out.elite).toBe(false);
 });
 
-test('V480 build loads only the changed Mega owners', async()=>{
+test('V498 build loads the sequential Mega progression owners', async()=>{
   const root=path.join(__dirname,'..');
   const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  expect(index).toContain('shadowreach-build" content="2026.09.29.480"');
-  expect(index).toContain('game-2.js?v=2026.09.29.480a');
+  expect(index).toContain('game-2.js?v=2026.10.05.498a');
   expect(index).toContain('game-3.js?v=2026.09.29.480b');
-  expect(index).toContain('game-4.js?v=2026.09.29.480c');
+  expect(index).toContain('game-4.js?v=2026.10.05.498b');
+  expect(index).toContain("var V='2026.10.05.498'");
 });

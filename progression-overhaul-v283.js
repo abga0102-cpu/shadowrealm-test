@@ -5,8 +5,9 @@
 'use strict';
 if(window.__srProgressionOverhaulV283)return;window.__srProgressionOverhaulV283=true;
 
-/* V442: canonical equipment power curve. Do not duplicate or replace this table in base generators. */
-var EQUIP_BASE={COMMUN:500,PEU_COMMUN:1000,RARE:2000,EPIQUE:8000,HEROIQUE:16000,MYTHIQUE:32000,ARTEFACT:128000,LEGENDAIRE:512000,INFERNAL:2048000,IMMORTEL:8192000,DIVIN:32768000,ANCESTRAL:2048000};
+/* V501: canonical equipment power curve. Every equipment base is +10% versus V442.
+   Infernal remains only as a legacy-save base and is no longer an active Forge rarity. */
+var EQUIP_BASE={COMMUN:550,PEU_COMMUN:1100,RARE:2200,EPIQUE:8800,HEROIQUE:17600,MYTHIQUE:35200,ARTEFACT:140800,LEGENDAIRE:563200,INFERNAL:2252800,IMMORTEL:9011200,DIVIN:36044800,ANCESTRAL:2252800};
 var EQ_MEAN={COMMUN:.40,PEU_COMMUN:.425,RARE:.45,EPIQUE:.50,HEROIQUE:.53,MYTHIQUE:.56,ARTEFACT:.62,LEGENDAIRE:.68,INFERNAL:.73,IMMORTEL:.78,DIVIN:.83,ANCESTRAL:.73};
 var EQ_PERF={COMMUN:.0001,PEU_COMMUN:.0002,RARE:.0003,EPIQUE:.0008,HEROIQUE:.0013,MYTHIQUE:.002,ARTEFACT:.01,LEGENDAIRE:.02,INFERNAL:.035,IMMORTEL:.055,DIVIN:.08,ANCESTRAL:.035};
 
@@ -15,7 +16,7 @@ var EQ_PERF={COMMUN:.0001,PEU_COMMUN:.0002,RARE:.0003,EPIQUE:.0008,HEROIQUE:.001
    of owned and future equipment, while originalPower remains pre-mastery so
    recycling cannot create extra Dust. The final guard keeps every rarity
    strictly below the same-quality base of the next rarity. */
-var EQUIP_ORDER=['COMMUN','PEU_COMMUN','RARE','EPIQUE','HEROIQUE','MYTHIQUE','ARTEFACT','LEGENDAIRE','INFERNAL','IMMORTEL','DIVIN'];
+var EQUIP_ORDER=['COMMUN','PEU_COMMUN','RARE','EPIQUE','HEROIQUE','MYTHIQUE','ARTEFACT','LEGENDAIRE','IMMORTEL','DIVIN'];
 /* V456: the mastery ladder is defined once in game-1 so boot-time migration,
    UI labels, Forge drops and the stat authority all resolve the same rank. */
 var FORGE_LIFETIME_TIERS=EQUIPMENT_MASTERY_TIERS.map(function(t){return Object.assign({},t);});
@@ -32,6 +33,7 @@ function rawEquipStats(slot,rar,q,star){
   return isDmg(slot)?{d:Math.floor(b*q),h:0}:{d:0,h:Math.floor(b*4*q)};
 }
 function nextEquipRarity(rar){
+  if(rar==='INFERNAL')return 'IMMORTEL';
   var i=EQUIP_ORDER.indexOf(rar);
   return i>=0&&i<EQUIP_ORDER.length-1?EQUIP_ORDER[i+1]:null;
 }
@@ -61,12 +63,15 @@ function applyForgeLifetimeMasteryItem(it,s){
   var oldBD=Number(it.baseDamage)||0,oldBH=Number(it.baseHp)||0,oldD=Number(it.damage)||0,oldH=Number(it.hp)||0;
   var df=oldBD>0?Math.max(1,oldD/oldBD):1,hf=oldBH>0?Math.max(1,oldH/oldBH):1;
   var x=equipStats(it.slot,it.rarity,q,star,pct),changed=false;
-  if(Number(it.baseDamage)!==x.d||Number(it.baseHp)!==x.h)changed=true;
-  it.baseDamage=x.d;it.baseHp=x.h;
-  var nd=Math.round(x.d*df*100)/100,nh=Math.round(x.h*hf*100)/100;
+  /* V501 migration is strictly upward-only: no owned base, Dust investment or
+     total stat may ever be reduced while applying the +10% equipment curve. */
+  var targetBD=Math.max(oldBD,x.d),targetBH=Math.max(oldBH,x.h);
+  if(Number(it.baseDamage)!==targetBD||Number(it.baseHp)!==targetBH)changed=true;
+  it.baseDamage=targetBD;it.baseHp=targetBH;
+  var nd=Math.max(oldD,Math.round(targetBD*df*100)/100),nh=Math.max(oldH,Math.round(targetBH*hf*100)/100);
   if(Number(it.damage)!==nd||Number(it.hp)!==nh)changed=true;
   it.damage=nd;it.hp=nh;
-  it.originalPower=x.rawD+x.rawH;
+  it.originalPower=Math.max(Number(it.originalPower)||0,x.rawD+x.rawH);
   it.power=it.damage+it.hp;
   it.statQuality=Math.round(q*10000)/10000;
   if(Number(it.level)!==info.rank)changed=true;
@@ -75,6 +80,7 @@ function applyForgeLifetimeMasteryItem(it,s){
   it.forgeLifetimeMasteryRank=info.rank;
   it.forgeLifetimeMasteryPct=pct;
   it.forgeLifetimeMasteryVersion=445;
+  it.powerCurveVersion=501;
   return changed;
 }
 function applyForgeLifetimeMasteryState(s){
@@ -94,7 +100,7 @@ try{if(typeof makeItem==='function'&&!makeItem.__srV283){var oldMake=makeItem;ma
   it.damage=x.d;it.hp=x.h;it.baseDamage=x.d;it.baseHp=x.h;
   it.level=info.rank;it.upgradeLevel=0;it.upgradeBaseLevel=0;it.equipmentLevelModelVersion=456;
   it.originalPower=x.rawD+x.rawH;it.power=x.d+x.h;it.statQuality=Math.round(q*10000)/10000;
-  it.powerCurveVersion=372;it.forgeLifetimeMasteryRank=info.rank;it.forgeLifetimeMasteryPct=pct;it.forgeLifetimeMasteryVersion=445;
+  it.powerCurveVersion=501;it.forgeLifetimeMasteryRank=info.rank;it.forgeLifetimeMasteryPct=pct;it.forgeLifetimeMasteryVersion=445;
   return it;
 };makeItem.__srV283=true;}}catch(_){ }
 try{if(typeof arenaItem==='function'){arenaItem=function(slot,rar,forge,stars){
@@ -123,7 +129,7 @@ try{if(typeof upgradePet==='function')upgradePet=function(){return {ok:false,rea
 function hash(s){s=String(s||'legacy');var h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function seeded(x){return function(){x=(Math.imul(x,1664525)+1013904223)>>>0;return x/4294967296;};}
 function migrateItem(it,s){
-  var targetVersion=372;
+  var targetVersion=501;
   if(!it||!it.rarity)return;
   /* V456 semantic correction:
      - pre-V455 item.level represented Dust enhancement, so preserve it once;
@@ -149,6 +155,7 @@ function migrate(){try{
   if(!S.forge)S.forge={};
   if(!Number.isFinite(Number(S.forge.lifetimeCount)))S.forge.lifetimeCount=Math.max(0,Math.floor(Number(S.forge.summonCount)||0));
   var curveNeeded=Number(S.progressionOverhaulVersion)<372;
+  var baseBoostNeeded=Number(S.equipmentPowerCurveVersion)<501;
   var info=forgeLifetimeInfo(S);
   var masteryNeeded=Number(S.forge.lifetimeMasteryVersion)<445||Number(S.forge.lifetimeMasteryRank)!==info.rank;
   var all=(S.inventory||[]).concat(S.equipped?Object.keys(S.equipped).map(function(k){return S.equipped[k];}):[]);
@@ -158,11 +165,12 @@ function migrate(){try{
   var levelSyncNeeded=Number(S.equipmentMasterySyncVersion)<456||all.some(function(it){
     return it&&(Number(it.equipmentLevelModelVersion)<456||!Number.isFinite(Number(it.upgradeLevel))||Number(it.level)!==info.rank);
   });
-  if(!curveNeeded&&!masteryNeeded&&!levelSyncNeeded)return;
+  if(!curveNeeded&&!baseBoostNeeded&&!masteryNeeded&&!levelSyncNeeded)return;
   (S.inventory||[]).forEach(function(it){migrateItem(it,S);});
   if(S.equipped)Object.keys(S.equipped).forEach(function(k){migrateItem(S.equipped[k],S);});
   if(curveNeeded)(S.pets||[]).forEach(function(p){if(!p)return;p.legacyLevel=p.legacyLevel==null?(Number(p.level)||0):p.legacyLevel;p.level=0;p.petCurveVersion=283;});
-  S.progressionOverhaulVersion=372;
+  S.progressionOverhaulVersion=Math.max(Number(S.progressionOverhaulVersion)||0,501);
+  S.equipmentPowerCurveVersion=501;
   S.forge.lifetimeMasteryVersion=445;
   S.forge.lifetimeMasteryRank=info.rank;
   S.equipmentMasterySyncVersion=456;
@@ -203,5 +211,5 @@ window.__srEquipmentMasterySyncV456={
    semantics are now mastery-owned rather than Hero-owned. */
 window.__srEquipmentLevelSyncV455=window.__srEquipmentMasterySyncV456;
 window.__srProgressionOverhaulConfigV283={equipmentBase:EQUIP_BASE,petOrder:PET_ORDER,petFuse:PET_FUSE,dustCost:window.__srV283DustCost,upgradeChance:window.__srV283UpgradeChance,forgeLifetimeMastery:window.__srForgeLifetimeMasteryV445};
-window.__srEquipmentCurveAuthority={version:372,equipmentBase:EQUIP_BASE,ownsMakeItem:!!(typeof makeItem==='function'&&makeItem.__srV283),forgeLifetimeMastery:true,forgeLifetimeMasteryVersion:445,forgeLifetimeMasteryRevision:474};
+window.__srEquipmentCurveAuthority={version:501,equipmentBase:EQUIP_BASE,ownsMakeItem:!!(typeof makeItem==='function'&&makeItem.__srV283),forgeLifetimeMastery:true,forgeLifetimeMasteryVersion:445,forgeLifetimeMasteryRevision:474};
 })();

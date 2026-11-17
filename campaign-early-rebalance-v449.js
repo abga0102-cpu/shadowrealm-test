@@ -1,4 +1,4 @@
-/* SHADOWREACH V449 / V465 / V483 / V493 · Early Campaign rebalance authority
+/* SHADOWREACH V449 / V465 / V483 / V493 / V497 · Early Campaign rebalance authority
    Requested balance windows, applied LAST after the existing Campaign authorities.
 
    Visible Campaign mapping: 20 stages per chapter.
@@ -7,12 +7,12 @@
    - 5-5 is continuity-protected at -15% damage because a full -30% there would
      make that Boss hit softer than the 5-4 Elite. From 5-6 through 5-19 the
      full -30% damage multiplier applies.
-   - V483 adds +30% damage RELATIVE TO THE CURRENT FINAL DAMAGE from Facile 1-3
-     through Facile 3-1 (floors 3..41). This is deliberately applied after the
-     existing V465 x1.60 damage pass, so it compounds to x2.08 versus the
-     pre-V449 source rather than incorrectly replacing x1.60 with x1.90.
-   - Floors 42..44 use a short continuity taper only, preventing Facile 3-2 from
-     becoming weaker than boosted Facile 3-1. Facile 3-5 returns to the existing curve.
+   - V497 extends the extra early pressure from Facile 1-3 through Facile 3-10.
+     It keeps the existing +30% damage boost through Facile 3-6, then tapers it
+     progressively across 3-7..3-10 before returning to the canonical curve at
+     Facile 3-11. This avoids the old "boost cliff": a boosted 3-8 cannot become
+     harder than the normal 3-11 when comparing the same regular enemy profile.
+     The boost is still applied after V465's x1.60 damage pass.
    - V493: from Facile 3-16 (floor 56), the first two floors after every Boss are
      anchored to the two floors immediately before that Boss at +10%. The third
      post-Boss floor may resume the normal curve but is capped at +15% versus the
@@ -29,8 +29,8 @@ window.__srCampaignEarlyRebalanceV449=true;
 
 var FIRST=2, FIRST_END=84, SECOND_START=85, SECOND_END=99, BOSS_EVERY=5;
 var SECOND_DAMAGE_MUL=0.70;
-var CURRENT_DAMAGE_BOOST_START=3, CURRENT_DAMAGE_BOOST_END=41, CURRENT_DAMAGE_BOOST_MUL=1.30;
-var CURRENT_DAMAGE_EXIT_GUARD={42:1.21,43:1.14,44:1.07};
+var CURRENT_DAMAGE_BOOST_START=3, CURRENT_DAMAGE_BOOST_END=46, CURRENT_DAMAGE_BOOST_MUL=1.30;
+var CURRENT_DAMAGE_EXIT_GUARD={47:1.22,48:1.18,49:1.12,50:1.06};
 var BREATHING_START=56, BREATHING_REFERENCE_MUL=1.10, BREATHING_EXIT_MAX_MUL=1.15;
 function currentDamageBoostMultiplier(f){
   f=Math.max(1,Math.floor(Number(f)||1));
@@ -146,14 +146,23 @@ try{
 }catch(_){}
 
 window.__srCampaignEarlyRebalanceConfigV449={
-  version:493,first:{from:2,to:84,visible:'Facile 1-2 → Facile 5-4',hpMul:.60,damageMul:1.60},
+  version:497,first:{from:2,to:84,visible:'Facile 1-2 → Facile 5-4',hpMul:.60,damageMul:1.60},
   second:{from:85,to:99,visible:'15 étages suivants (Facile 5-5 → Facile 5-19)',hpMul:.70,damageMul:SECOND_DAMAGE_MUL,
     entryFloor:SECOND_START,entryDamageMul:SECOND_ENTRY_DAMAGE_MUL,fullDamageFrom:SECOND_START+1},
-  currentDamageBoostV483:{
-    from:CURRENT_DAMAGE_BOOST_START,to:CURRENT_DAMAGE_BOOST_END,
-    visible:'Facile 1-3 → Facile 3-1',relativeToCurrentMul:CURRENT_DAMAGE_BOOST_MUL,
-    exitContinuity:{from:42,to:44,multipliers:[1.21,1.14,1.07],returnsToCurrentAt:45},
+  currentDamageBoostV497:{
+    from:CURRENT_DAMAGE_BOOST_START,to:50,
+    visible:'Facile 1-3 → Facile 3-10',relativeToCurrentMul:CURRENT_DAMAGE_BOOST_MUL,
+    fullBoostThrough:CURRENT_DAMAGE_BOOST_END,fullBoostVisibleThrough:'Facile 3-6',
+    exitContinuity:{from:47,to:50,multipliers:[1.22,1.18,1.12,1.06],returnsToCurrentAt:51,visibleReturn:'Facile 3-11'},
     hpChanged:false,raidsChanged:false,megaBossChanged:false
+  },
+  /* Compatibility alias for diagnostics/tests that still use the V483 key. */
+  currentDamageBoostV483:{
+    from:CURRENT_DAMAGE_BOOST_START,to:50,
+    visible:'Facile 1-3 → Facile 3-10',relativeToCurrentMul:CURRENT_DAMAGE_BOOST_MUL,
+    fullBoostThrough:CURRENT_DAMAGE_BOOST_END,
+    exitContinuity:{from:47,to:50,multipliers:[1.22,1.18,1.12,1.06],returnsToCurrentAt:51},
+    supersededBy:497,hpChanged:false,raidsChanged:false,megaBossChanged:false
   },
   postBossBreathingV493:{
     from:BREATHING_START,visibleFrom:'Facile 3-16',bossCadence:BOSS_EVERY,
@@ -164,6 +173,6 @@ window.__srCampaignEarlyRebalanceConfigV449={
   currentDamageBoostMultiplier:currentDamageBoostMultiplier,
   applyCurrentDamageBoost:applyCurrentDamageBoost,
   multipliers:multipliers,isBossFloor:isBossFloor,postBossException:postBoss,postBossOffset:postBossOffset,
-  invariant:'post-boss B+1/B+2 anchored to B-2/B-1; B+3 capped at +15% vs B+2 target',raidsChanged:false,megaBossChanged:false
+  invariant:'early boost tapers to canonical at 3-11 without a 3-8 > 3-11 inversion; post-boss B+1/B+2 anchored to B-2/B-1; B+3 capped at +15% vs B+2 target',raidsChanged:false,megaBossChanged:false
 };
 })();

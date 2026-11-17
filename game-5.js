@@ -384,7 +384,8 @@ function scrParametres() {
           ["Puissance", fmt(S.power), "color:var(--goldLit)"],
           ["Ascension", "Palier " + S.ascension, ""],
           ["Environnement", ENV_NAMES[combat && combat.bg] || "—", ""],
-          ["Jour", String(Math.max(1, Math.floor((Date.now() - (S.firstSeen || Date.now())) / 86400000) + 1)), "color:var(--goldLit)"],
+          ["Jour", String(simulatedDayCount(S)), "color:var(--goldLit)"],
+          ["Temps simulé", fmtTime(Math.max(0, Number(S.simulatedMs) || 0) / 1000), ""],
         ].map((r) => '<div style="width:50%"><div class="kv" style="border:none;padding:2px 0">' +
           '<span class="dim">' + r[0] + '</span><b style="' + r[2] + '">' + r[1] + "</b></div></div>").join("") + "</div>" +
       "</div>" +
@@ -396,9 +397,16 @@ function scrParametres() {
           btn(ic("upload", 14) + "Exporter", { small: true, cls: "ghost", act: "exportSave" }) +
           btn(ic("download", 14) + "Importer", { small: true, cls: "ghost", act: "importSave" }) +
         '</div><div class="mt10">' + btn("Récupérer une ancienne partie", { small: true, cls: "ghost", act: "recoverSave" }) +
-        '</div><div class="divider"></div><div class="between"><span class="dim tiny">Version web · ' + APP_BUILD + '</span>' +
+        '</div><div class="divider"></div><div class="between"><span class="dim tiny">Version web · ' + APP_BUILD + '<br>Récompenses : ' + (window.__srFusionRewardsBuild||'ancien affichage') + ' / ' + (window.__srFusionClaimBuild||'ancien paiement') + '</span>' +
           btn("Forcer la mise à jour", { small: true, cls: "blue", act: "freshReload", style: "width:auto;padding:5px 10px" }) +
         "</div></div>") +
+      fold("testTime", "Outils de test", '<div class="card"><div class="dim small" style="line-height:1.5">' +
+        'Avance le temps de la partie sans attendre réellement. La Forge, les recherches, les œufs déjà en incubation, ' +
+        'l\'Autonomie, les resets quotidiens et le compteur <b>Jour</b> suivent tous le même temps simulé.</div>' +
+        '<div class="row gap6 mt10" style="flex-wrap:wrap">' +
+          btn(ic("forward", 14) + "Simuler 9 h", { cls: "blue", small: true, act: "simulateTime", arg: "9", style: "width:auto;min-width:130px" }) +
+          btn(ic("forward", 14) + "Simuler 1 jour", { cls: "blue", small: true, act: "simulateTime", arg: "24", style: "width:auto;min-width:130px" }) +
+        '</div><div class="mute tiny mt8">9 h s\'additionnent exactement au temps simulé. Le numéro de Jour ne change que lorsqu\'un vrai bloc de 24 h cumulé est franchi.</div></div>') +
       fold("account", "Compte", '<div class="card"><div class="dim small" style="line-height:1.5">L\'app d\'origine gère un mode invité et ' +
         "« Continuer avec Google » via le backend Emergent, avec migration de progression. " +
         "Cette version est locale et anonyme.</div>" +
@@ -744,7 +752,7 @@ function scrDefis(){ return scrHub("Défis", [
   {label:"Arène",icon:"swords",go:"arena",desc:"Affronte des bots en temps réel ou analyse des milliers de combats sans récompense."},
   {label:"Raids",icon:"flame",go:"raid",desc:"Raids spécialisés et ressources ciblées."},
   {label:"Méga-Boss",icon:"skull",go:"mega",desc:"Combats majeurs et récompenses de progression."},
-  {label:"Sanctuaire",icon:"flame",go:"sanctuaire",desc:"Fusion de ressources et recettes découvertes."}
+  // Sanctuaire temporarily paused; preserved in source and player saves.
 ]); }
 function scrProgression(){ return scrHub("Progression", [
   {label:"Ascension",icon:"star",go:"ascension",desc:"Progression de haut niveau et étoiles d'Ascension."}
@@ -757,7 +765,7 @@ const SCREENS = {
   heros: scrHerosStats,
   accueil: scrAccueil, personnage: scrEquipement, equipement: scrEquipement,
   inventaire: scrEquipement, competences: scrCompetences, familiers: scrFamiliers,
-  raid: scrRaid, mega: scrMegaRaid, sanctuaire: scrSanctuaire, arena: scrArenaSim, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
+  raid: scrRaid, mega: scrMegaRaid, arena: scrArenaSim, arbre: scrArbre, rebirth: scrRebirth, ascension: scrAscension,
   boutique: scrBoutique, evenement: scrEvenement, classement: scrClassement,
   developpement: scrDeveloppement, defis: scrDefis, progression: scrProgression,
   parametres: scrParametres,
@@ -1106,7 +1114,30 @@ function syncEquipPreviewSpacer() {
   spacer.style.height=Math.max(90,h+72)+'px';
 }
 
+// V543: prevent passive redraws from destroying the forge under a finger.
+let srForgeTouchActive543=false;
+let srForgeTouchUntil543=0;
+(function(){
+  const screen=document.getElementById('screen');if(!screen)return;
+  screen.addEventListener('touchstart',function(e){if(e.target&&e.target.closest&&e.target.closest('#homeForge')){srForgeTouchActive543=true;srForgeTouchUntil543=Date.now()+900;}},{passive:true,capture:true});
+  ['touchend','touchcancel'].forEach(function(type){screen.addEventListener(type,function(e){if(srForgeTouchActive543){srForgeTouchActive543=false;srForgeTouchUntil543=Date.now()+900;}},{passive:true,capture:true});});
+  screen.addEventListener('scroll',function(e){if(e.target&&e.target.closest&&e.target.closest('#homeForge'))srForgeTouchUntil543=Date.now()+900;},{passive:true,capture:true});
+})();
+// Only a Forge action may replace its panel; ordinary timer ticks retain it.
+(function(){
+  const sc=document.getElementById('screen');if(!sc)return;
+  sc.addEventListener('click',function(e){
+    const target=e.target&&e.target.closest&&e.target.closest('#homeForge [data-act]');
+    if(target)render.__srForgeAction546=true;
+  },true);
+})();
 function render() {
+  if (typeof route !== "undefined" && route === "sanctuaire") route = "defis";
+  // Only defer while interacting: the next gameplay/timer render refreshes UI.
+  if(typeof route!=='undefined'&&route==='accueil'&&(srForgeTouchActive543||Date.now()<srForgeTouchUntil543)){
+    if(!render.__srForgePending543){render.__srForgePending543=true;setTimeout(function(){render.__srForgePending543=false;render();},Math.max(120,srForgeTouchUntil543-Date.now()+60));}
+    return;
+  }
   // Objective tracking belongs to the global state/render layer, not to Home.
   // This keeps progress coherent when goals are completed from Skills, Pets,
   // Raids, the Tree, etc. and the player has not returned Home yet.
@@ -1121,7 +1152,43 @@ function render() {
   const sc = document.getElementById("screen");
   const fn = SCREENS[route] || scrAccueil;
   sc.className = (route === "accueil" || (route === "arena" && combat && combat.ctx === "arenaLive")) ? "fixed" : "";
+  // V535: retain Home's actual scroll container across full DOM replacement.
+  // Restore synchronously before observers/animation frames can repaint a jump.
+  const srHomeScroll535 = route === "accueil" ? (function(){
+    const host = sc.querySelector(':scope > .pad.mt4');
+    if(!host) return null;
+    const forge = host.querySelector('#homeForge');
+    return {top:host.scrollTop, left:host.scrollLeft, forgeTop:forge?forge.scrollTop:0};
+  })() : null;
+  // V546: preserve the *actual* Forge DOM across passive Home renders.
+  // Recreating the buttons breaks touch gestures even when scrollTop is restored.
+  const srForgeLive546 = route==='accueil' ? sc.querySelector('#homeForge') : null;
+  const srForgeRefresh546 = !!render.__srForgeAction546;
+  render.__srForgeAction546=false;
   sc.innerHTML = fn();
+  if(srForgeLive546 && !srForgeRefresh546){
+    const freshForge=sc.querySelector('#homeForge');
+    if(freshForge){
+      freshForge.replaceWith(srForgeLive546);
+      // Keep accelerator stock readable without replacing the tapped button.
+      srForgeLive546.querySelectorAll('.srForgeSpeedChip266[data-arg]').forEach(function(chip){
+        const key=chip.getAttribute('data-arg');
+        const stock=Number(S.accels&&S.accels[key]||0);
+        const count=chip.querySelector('b');
+        if(count)count.textContent='×'+stock;
+        chip.disabled=stock<=0;
+      });
+    }
+  }
+  if(srHomeScroll535){
+    const host = sc.querySelector(':scope > .pad.mt4');
+    if(host){
+      host.scrollTop = srHomeScroll535.top;
+      host.scrollLeft = srHomeScroll535.left;
+      const forge = host.querySelector('#homeForge');
+      if(forge) forge.scrollTop = srHomeScroll535.forgeTop;
+    }
+  }
   attachArena();
   requestAnimationFrame(() => {
     syncEquipPreviewSpacer();
@@ -1604,7 +1671,7 @@ function showRaidResult(r) {
     '<div class="modalT mt6" style="color:' + (r.won ? "var(--goldLit)" : "var(--redLit)") +
       ';text-shadow:0 2px 0 #000,0 0 18px ' + col + '80">' + (r.won ? "VICTOIRE" : "DÉFAITE") + "</div>" +
     '<div class="dim small center" style="margin-bottom:12px;line-height:1.55">' + meta.name + " · niveau " + raidLevelLabel(r.level) + "<br>" +
-    (r.won ? rewardLine + (r.level >= RULES.RAID_MAX_LEVEL ? "Palier maximum 7-10 atteint." : "Niveau de raid suivant débloqué.")
+    (r.won ? rewardLine + (r.level >= RULES.RAID_MAX_LEVEL ? "Palier maximum " + raidLevelLabel(RULES.RAID_MAX_LEVEL) + " atteint." : "Niveau de raid suivant débloqué.")
       : "Aucune clé consommée. Renforce ton personnage et réessaie.") + "</div>" +
     btn("Continuer", { cls: r.won ? "green" : "ghost", act: "closeRaid" }),
     r.won ? "Raid terminé" : "Raid échoué");
@@ -1622,7 +1689,7 @@ function showMegaResult(r) {
         ? 'Première victoire : <b style="color:#A9E06F">+' + fmt(r.apples) + " 🍎</b>" +
           (r.accel ? '<br><b style="color:var(--goldLit)">+' + fmt(r.accel.qty) + " Accélérateur " +
             esc((ACCEL_DEFS.find((a) => a.key === r.accel.key) || {}).label || r.accel.key) + "</b> (×2 Boss normal)" : "") +
-          "<br>Récompense enregistrée définitivement." + (Object.keys(S.megaBossClears || {}).length === 1 ? "<br><b style=\"color:var(--purpleLit)\">🏛️ Sanctuaire débloqué !</b>" : "")
+          "<br>Récompense enregistrée définitivement."
         : won ? "Méga-Boss déjà vaincu : <b>0 Pomme</b>."
         : "Aucune clé ni récompense perdue. Renforce-toi et réessaie.") + "</div>" +
     btn("Continuer", { cls: won ? "green" : "ghost", act: "closeMega" }),
@@ -1639,18 +1706,47 @@ function askReset() {
 
 // SANCTUARY_DRAG_MERGE_V34
 function sanctMergeDrop(from,to){
-  const st=sanctMergeState(); from=Number(from); to=Number(to);
-  if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=st.mergeBoard.length||to>=st.mergeBoard.length||from===to) return false;
-  const src=st.mergeBoard[from], dst=st.mergeBoard[to];
-  if(!src) return false;
-  if(!dst){ st.mergeBoard[to]=src; st.mergeBoard[from]=null; st.mergeSelected=-1; dirty=true; render(); return true; }
-  if(dst!==src){ toast("Deux couleurs identiques sont nécessaires"); return false; }
-  const nx=sanctMergeNext(src);
-  if(!nx){ toast("Divin est la rareté maximale"); return false; }
-  st.mergeBoard[from]=null; st.mergeBoard[to]=nx; st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
-  sanctMergeDiscover(st,nx); dirty=true;
-  if(navigator.vibrate) try{navigator.vibrate(20);}catch(_e){}
-  toast(SANCT_MERGE_NAME[src]+" + "+SANCT_MERGE_NAME[src]+" → "+SANCT_MERGE_NAME[nx],true); render(); return true;
+  if(window.__SHADOWREACH_SANCTUARY_PAUSED===true)return false;
+  const st=sanctMergeState();from=Number(from);to=Number(to);
+  if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<0||from>=st.mergeBoard.length||to>=st.mergeBoard.length||from===to)return false;
+  const src=st.mergeBoard[from],dst=st.mergeBoard[to];if(!src)return false;
+  if(dst&&dst!==src){toast("Deux couleurs identiques sont nécessaires");return false;}
+  const next=dst?sanctMergeNext(src):null;
+  if(dst&&!next){toast("Divin est la rareté maximale");return false;}
+  const oldBoard=st.mergeBoard.slice(),oldLocks=Object.assign({},st.mergeLockedSlots||{});
+  const oldFusions=Number(st.mergeFusions)||0,oldTotal=Number(st.fusions)||0;
+  const oldAudit=st.mergeLastPurchaseAudit?Object.assign({},st.mergeLastPurchaseAudit):null;
+  const oldSelected=st.mergeSelected;
+  try{
+    if(!dst){
+      st.mergeBoard[to]=src;st.mergeBoard[from]=null;
+      if(st.mergeLockedSlots){st.mergeLockedSlots[to]=!!st.mergeLockedSlots[from];delete st.mergeLockedSlots[from];}
+      if(st.mergeLastPurchaseAudit){
+        st.mergeLastPurchaseAudit.lastMove='Case '+(from+1)+' vers '+(to+1)+' : '+src;
+        st.mergeLastPurchaseAudit.lastMoveAt=Date.now();
+        if(Number(st.mergeLastPurchaseAudit.slot)===from)st.mergeLastPurchaseAudit.slot=to;
+      }
+    }else{
+      st.mergeBoard[from]=null;st.mergeBoard[to]=next;
+      if(st.mergeLockedSlots){delete st.mergeLockedSlots[from];delete st.mergeLockedSlots[to];}
+      st.mergeFusions=oldFusions+1;st.fusions=oldTotal+1;
+      if(st.mergeLastPurchaseAudit&&[from,to].includes(Number(st.mergeLastPurchaseAudit.slot))){
+        st.mergeLastPurchaseAudit.lastRemoval='Fusion manuelle';st.mergeLastPurchaseAudit.removedAt=Date.now();
+      }
+    }
+    st.mergeSelected=-1;dirty=true;
+    if(st.mergeBoard.length!==oldBoard.length||st.mergeBoard[to]!== (dst?next:src)||
+      st.mergeBoard.filter(Boolean).length!==oldBoard.filter(Boolean).length-(dst?1:0))throw Error('Intégrité du plateau');
+    if(typeof saveNow==='function'&&saveNow()===false)throw Error('Sauvegarde refusée');
+  }catch(err){
+    st.mergeBoard=oldBoard;st.mergeLockedSlots=oldLocks;
+    st.mergeFusions=oldFusions;st.fusions=oldTotal;st.mergeSelected=oldSelected;
+    if(oldAudit)st.mergeLastPurchaseAudit=oldAudit;
+    dirty=true;toast('Action annulée : '+(err&&err.message||'erreur'));render();return false;
+  }
+  if(dst){sanctMergeDiscover(st,next);if(navigator.vibrate)try{navigator.vibrate(20);}catch(_){}
+    toast(SANCT_MERGE_NAME[src]+' + '+SANCT_MERGE_NAME[src]+' → '+SANCT_MERGE_NAME[next],true);}
+  render();return true;
 }
 
 const ACT = {
@@ -1907,55 +2003,7 @@ const ACT = {
   abortMega: () => { combat = null; startCampaign(); nav("mega"); toast("Méga Boss abandonné"); },
   closeMega: () => { closeModal(); megaResult = null; startCampaign(); nav("mega"); },
 
-  // sanctuaire
-  sanctPrepare: (a) => {
-    const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
-    if(!r||!sanctMergeRecipeKnown(st,r)) return;
-    st.mergeFocusRecipe=a; dirty=true; render();
-  },
-  sanctMergeBuy: (a) => {
-    const st=sanctMergeState(), empty=st.mergeBoard.findIndex((x)=>!x);
-    if(empty<0) return toast("Plateau plein · fusionne ou fabrique d’abord");
-    const lv=st.supplierLevel, unlocked=sanctSupplierUnlocked(lv);
-    const chosen=unlocked.includes(a)?a:sanctSupplierTier(lv), price=sanctSupplierPrice(lv,chosen);
-    if(S.gold<price) return toast("Pas assez d’Or");
-    S.gold-=price; st.mergeBoard[empty]=chosen;
-    if(lv<SANCT_SUPPLIER_MAX && chosen===sanctSupplierTier(lv)){
-      st.supplierProgress++;
-      const need=sanctSupplierNeed(lv);
-      if(st.supplierProgress>=need){ st.supplierLevel=lv+1; st.supplierProgress=0; toast("Approvisionnement niveau "+st.supplierLevel,true); }
-    }
-    dirty=true; render();
-  },
-  sanctMergeTile: (a) => {
-    const st=sanctMergeState(), i=Number(a), r=st.mergeBoard[i];
-    if(!r) return;
-    const sel=Number(st.mergeSelected);
-    if(sel<0||!st.mergeBoard[sel]){ st.mergeSelected=i; dirty=true; return render(); }
-    if(sel===i){ st.mergeSelected=-1; dirty=true; return render(); }
-    const r0=st.mergeBoard[sel];
-    if(r0!==r){ st.mergeSelected=i; dirty=true; toast("Choisis une deuxième couleur identique"); return render(); }
-    const nx=sanctMergeNext(r);
-    if(!nx){ st.mergeSelected=-1; dirty=true; toast("Divin est la rareté maximale"); return render(); }
-    st.mergeBoard[sel]=null; st.mergeBoard[i]=nx; st.mergeSelected=-1; st.mergeFusions++; st.fusions=(st.fusions||0)+1;
-    sanctMergeDiscover(st,nx); dirty=true; toast(SANCT_MERGE_NAME[r]+" + "+SANCT_MERGE_NAME[r]+" → "+SANCT_MERGE_NAME[nx],true); render();
-  },
-  sanctMergeCancel: () => { const st=sanctMergeState(); st.mergeSelected=-1; dirty=true; render(); },
-  sanctMergePack: () => { const st=sanctMergeState(), kept=st.mergeBoard.filter(Boolean); st.mergeBoard=kept.concat(Array(SANCT_BOARD_SIZE-kept.length).fill(null)); st.mergeSelected=-1; dirty=true; render(); },
-  sanctSelectPair: () => { const st=sanctMergeState(), p=sanctMergePair(st); if(!p)return; st.mergeSelected=p[0]; dirty=true; toast("Première "+SANCT_MERGE_NAME[p[2]]+" sélectionnée · touche la seconde"); render(); },
-  sanctRecipeCraft: (a) => {
-    const st=sanctMergeState(), r=SANCT_MERGE_RECIPES.find((x)=>x.id===a);
-    if(!r||!sanctMergeRecipeKnown(st,r)||!sanctMergeRecipeReady(st,r)) return toast("Couleurs insuffisantes");
-    Object.keys(r.req).forEach((rar)=>{ let n=r.req[rar]; for(let i=0;i<st.mergeBoard.length&&n>0;i++) if(st.mergeBoard[i]===rar){ st.mergeBoard[i]=null; n--; } });
-    if(r.kind==="seal") st.stabilitySeals=(st.stabilitySeals||0)+r.qty;
-    else {
-      const ad=ACCEL_DEFS.find((x)=>x.mins===r.mins) || ACCEL_DEFS.reduce((best,x)=>!best||Math.abs(x.mins-r.mins)<Math.abs(best.mins-r.mins)?x:best,null);
-      if(ad) S.accels[ad.key]=(S.accels[ad.key]||0)+r.qty;
-    }
-    st.mergeDiscovered[r.id]=true; st.mergeCrafts++; st.mergeFocusRecipe=a; st.mergeSelected=-1; dirty=true;
-    toast("Rituel réussi · "+r.name+" · "+sanctMergeRecipeOutput(r),true); render();
-  },
-
+  // Sanctuary paused: all merge/crafting UI actions intentionally unavailable.
   // tree
   treeNode: (a) => showTreeNode(a),
   research: (a) => {
@@ -2015,6 +2063,11 @@ const ACT = {
   recoverSave: () => { if (window.__srSaveRecoveryV341) window.__srSaveRecoveryV341.open(); },
   saveNow: () => { saveNow(); toast("Sauvegardé", true); },
   freshReload: () => forceFreshReload(),
+  simulateTime: (a) => {
+    const r = simulateTimeHours(Number(a));
+    toast(r.ok ? ("Simulation +" + (r.hours === 24 ? "1 jour" : r.hours + " h") + " · Jour " + r.day) : "Simulation impossible", r.ok);
+    render();
+  },
   rename: () => {
     const n = prompt("Nom du héros :", S.playerName);
     if (n && n.trim()) { update((s) => { s.playerName = n.trim().slice(0, 18); }); toast("Renommé", true); }
@@ -2057,6 +2110,7 @@ const ACT = {
 
 // Drag tactile/souris du Sanctuaire.
 (function initSanctuaryDragV34(){
+  if(window.__SHADOWREACH_SANCTUARY_PAUSED===true)return;
   const app=document.getElementById("app"); if(!app)return;
   let d=null;
   const clearTarget=()=>{if(d&&d.target)d.target.classList.remove("sanctDropTarget","sanctMergeTarget","sanctRejectTarget");};
