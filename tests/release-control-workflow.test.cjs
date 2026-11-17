@@ -42,6 +42,7 @@ async function exercise({mode='inspect',filename='style.css',labels=[],draft=fal
   const github={
     rest:{
       pulls:{
+        listFiles:async()=>[{filename,status:'modified'}],
         get:async()=>({data:pr}),
         merge:async()=>{merges.push('merge');return {data:{merged:true,sha:'c'.repeat(40)}};}
       },
