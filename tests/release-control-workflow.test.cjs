@@ -30,7 +30,7 @@ test('two scripts are valid JavaScript and release control is opt-in', () => {
   }
 });
 
-async function exercise({mode='inspect',filename='style.css',labels=[],draft=false,conclusion='success',behind=0}={}) {
+async function exercise({mode='inspect',filename='README.md',labels=[],draft=false,conclusion='success',behind=0}={}) {
   const main='a'.repeat(40),head='b'.repeat(40),merges=[];
   const pr={
     number:500,state:'open',draft,mergeable:true,title:'UI readability improvement',body:'',
