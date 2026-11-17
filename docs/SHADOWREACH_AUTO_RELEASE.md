@@ -9,7 +9,7 @@ Le workflow GitHub Actions .github/workflows/shadowreach-auto-release.yml examin
 Depuis Actions > SHADOWREACH AUTO-RELEASE > Run workflow :
 
 - inspect (par défaut) : saisir le numéro de PR pour voir les blocages, sans fusion.
-- publish : saisir le numéro de PR pour fusionner uniquement une PR sûre de documentation ou de style.css, après CI complète verte et vérifications de fraîcheur. Le clic sur publish constitue l'accord explicite pour cette PR.
+- publish : saisir le numéro de PR pour fusionner uniquement une PR sûre de documentation , après CI complète verte et vérifications de fraîcheur. Le clic sur publish constitue l'accord explicite pour cette PR.
 - verify : comparer le site GitHub Pages aux fichiers index.html, style.css et game-4.js de main. Aucun changement du jeu.
 
 Pour déclencher une fusion automatique après CI verte, ajouter volontairement à la PR le label auto-release-approved. Ce label ne contourne aucune condition de sécurité. Sans ce label, un passage automatique inspecte uniquement.
@@ -19,7 +19,7 @@ Pour déclencher une fusion automatique après CI verte, ajouter volontairement 
 - PR ouverte, non DRAFT, interne au dépôt, sans conflit et actualisée sur main.
 - Aucune mention « DO NOT MERGE », « experimental », « ne pas fusionner », ni label de blocage.
 - CI Phase 1 regression guard réussie sur le SHA exact ; autres checks terminés et verts.
-- Fusion automatique limitée aux modifications dans README.md, docs/*.md et style.css, sans suppression ni renommage. Aucun JavaScript du jeu, aucune migration de sauvegarde, aucun HTML, aucune configuration CI, aucune économie, aucune progression, aucun Sanctuaire, aucune guerre de clans expérimentale.
+- Fusion automatique limitée aux modifications dans README.md, docs/*.md et sans suppression ni renommage. Aucun JavaScript du jeu, aucune migration de sauvegarde, aucun HTML, aucune configuration CI, aucune économie, aucune progression, aucun Sanctuaire, aucune guerre de clans expérimentale.
 - Nouveau contrôle du HEAD et de main immédiatement avant fusion, sans force-push.
 - Aucune exécution du code de la PR dans un contexte qui possède des droits d'écriture.
 
