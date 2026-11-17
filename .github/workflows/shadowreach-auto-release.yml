@@ -3,6 +3,10 @@ name: SHADOWREACH AUTO-RELEASE
 # Runs with write permission ONLY from the trusted default branch.
 # Never checkout or execute code supplied by a candidate PR.
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/shadowreach-auto-release.yml'
+      - 'tests/release-control-workflow.test.cjs'
   workflow_run:
     workflows:
       - Phase 1 regression guard
@@ -26,6 +30,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify release controller contracts
+        run: node --test tests/release-control-workflow.test.cjs
+
   release:
     if: >-
       (github.event_name == 'workflow_dispatch' && github.event.inputs.mode != 'verify') ||
