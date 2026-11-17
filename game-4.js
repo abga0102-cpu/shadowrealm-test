@@ -618,6 +618,31 @@ function scrEquipement() {
   const sorted = list.slice().sort((a,b)=>(equipRank(b.rarity)-equipRank(a.rarity)) || (b.power-a.power));
   const filters=["ALL"].concat(SLOTS);
   const previewDelta = hasPreview ? Math.round(previewPower - S.power) : 0;
+  // Comparison only: never used by combat, player progression or save data.
+  const equipCompareScores = (d) => {
+    const chance = (n) => Math.max(0, Number(n) || 0) / 100;
+    const expectedCrit = 1 + chance(d.critChance) * Math.max(0, (Number(d.critMult) || 1) - 1);
+    const expectedDouble = 1 + chance(d.doubleAtk);
+    const styleBonus = 1 + chance(d.weapon === "arc" ? d.rangedDmg : d.meleeDmg);
+    const offense = Math.max(0, Number(d.damage) || 0) * Math.max(.01, Number(d.attackSpeed) || 1) * expectedCrit * expectedDouble * styleBonus;
+    const keep = (n, scale = 1) => Math.max(.05, 1 - Math.min(.95, chance(n) * scale));
+    const sustain = 1 + chance(d.regen) + chance(d.lifesteal) / 2;
+    const survival = Math.max(0, Number(d.maxHP) || 0) * sustain / (keep(d.defenseReduction) * keep(d.dmgRed) * keep(d.blockChance, .5));
+    return { offense: Math.round(offense), survival: Math.round(survival) };
+  };
+  const compareNow = equipCompareScores(D), compareNext = equipCompareScores(d2);
+  const comparePct = (before, after) => before > 0 ? (after - before) / before * 100 : (after > 0 ? 100 : 0);
+  const offensePct = comparePct(compareNow.offense, compareNext.offense);
+  const survivalPct = comparePct(compareNow.survival, compareNext.survival);
+  const verdict = !hasPreview ? null : (() => {
+    if (previewDelta > 0 && offensePct >= -1 && survivalPct >= -1) return { text: "Amélioration globale", color: "#63E889", detail: "Plus de puissance sans perte notable en attaque ou en survie." };
+    if (offensePct > 2 && survivalPct < -2) return { text: "Plus offensif", color: "#F5C542", detail: "Tu gagnes en attaque, mais tu sacrifies de la survie." };
+    if (survivalPct > 2 && offensePct < -2) return { text: "Plus défensif", color: "#72A7E8", detail: "Tu gagnes en survie, mais tu sacrifies de l'attaque." };
+    if (previewDelta < 0 && offensePct <= 1 && survivalPct <= 1) return { text: "Moins intéressant", color: "#FF6B72", detail: "Ce set ne compense pas sa perte de puissance." };
+    return { text: "Choix situationnel", color: "#C79BFF", detail: "Compare l'attaque et la survie selon le combat." };
+  })();
+  const scoreCell = (label, current, next, color) => '<div class="col" style="width:33.33%;padding:6px 3px;min-width:0"><div class="mute tiny b">' + label + '</div><div class="bb" style="color:' + color + '">' + fmt(current) + '</div>' + (hasPreview ? '<div class="tiny bb" style="color:#78B7FF">→ ' + fmt(next) + '</div>' : '') + '</div>';
+
   const dockStat = (label,cur,next) => '<div class="dockStat"><div class="n">'+label+'</div><div class="v" style="color:#78B7FF">'+cur+' → '+next+'</div></div>';
   // Surface the most meaningful changes first instead of merely the first four
   // fields. Relative change makes differently-scaled stats comparable.
@@ -648,8 +673,14 @@ function scrEquipement() {
     '<div class="sect" style="margin:4px 0 6px">Équipement porté</div><div class="slotGrid" data-equip-slots-scroll="1">'+cells+'</div>' +
     (hasPreview ? '<div class="notice mt8"><div class="between"><span><b style="color:#78B7FF">Mode test :</b> '+previewItems.length+' pièce'+(previewItems.length>1?'s':'')+'</span><span class="row gap4">'+btn("Annuler",{small:true,cls:"ghost",act:"clearEquipPreview"})+btn("Équiper le set",{small:true,cls:"green",act:"equipPreviewSet"})+'</span></div><div class="mute tiny mt4">Tu peux tester une pièce par emplacement avant de valider tout le set.</div></div>' : '') +
     '<div class="equipCompareSticky">' +
-    '<div class="card frame"><div class="between"><div><div class="mute tiny b">PUISSANCE TOTALE</div><div class="bb gt" style="font-size:22px">'+fmt(S.power)+'</div></div>' +
-    (hasPreview ? '<div class="col" style="align-items:flex-end"><div class="mute tiny b">APRÈS TEST</div><div class="bb" style="font-size:20px;color:'+(previewDelta>=0?'#63E889':'#FF6B72')+'">'+fmt(previewPower)+' ('+(previewDelta>=0?'+':'')+fmt(previewDelta)+')</div></div>' : '') + '</div></div>' +
+    '<div class="card frame"><div class="between"><div><div class="mute tiny b">PUISSANCE GLOBALE</div><div class="bb gt" style="font-size:22px">'+fmt(S.power)+'</div></div>' +
+    (hasPreview ? '<div class="col" style="align-items:flex-end"><div class="mute tiny b">APRÈS TEST</div><div class="bb" style="font-size:20px;color:'+(previewDelta>=0?'#63E889':'#FF6B72')+'">'+fmt(previewPower)+' ('+(previewDelta>=0?'+':'')+fmt(previewDelta)+')</div></div>' : '') + '</div>' +
+    '<div class="row mt6" style="flex-wrap:wrap;border-top:1px solid var(--line);padding-top:4px">' +
+      scoreCell('Puissance', S.power, previewPower, 'var(--goldLit)') +
+      scoreCell('Attaque estimée', compareNow.offense, compareNext.offense, '#F0883E') +
+      scoreCell('Survie estimée', compareNow.survival, compareNext.survival, '#72A7E8') + '</div>' +
+    (verdict ? '<div class="notice mt6" style="border-color:'+verdict.color+'66"><div class="bb tiny" style="color:'+verdict.color+'">'+verdict.text+'</div><div class="mute tiny mt2">'+verdict.detail+'</div></div>' : '') +
+    '<div class="mute tiny mt6">Estimations indicatives, non utilisées dans les calculs du jeu.</div></div>' +
     '<div class="sect" style="margin:10px 0 6px">Statistiques de combat</div><div class="card frame" style="padding:6px 8px"><div class="row" style="flex-wrap:wrap">'+stats.slice(0,8).map(x=>statCell(...x)).join('')+'</div>' +
     '<details class="equipStatsMore"'+(hasPreview && stats.slice(8).some(x=>String(x[1])!==String(x[2]))?' open':'')+'><summary>Voir toutes les statistiques</summary><div class="row" style="flex-wrap:wrap">'+stats.slice(8).map(x=>statCell(...x)).join('')+'</div></details></div></div>' +
     '<div class="sect" style="margin:14px 0 8px">Équipements stockés</div><div class="seg equipFilterScroll" data-equip-filter-scroll="1">'+filters.map((f)=>'<span class="'+(invFilter===f?'on':'')+'" data-act="invFilter" data-arg="'+f+'">'+(f==='ALL'?'Tout':SLOT_LABEL[f])+'</span>').join('')+'</div>' +
