@@ -26,7 +26,7 @@ on:
         type: string
 
 concurrency:
-  group: shadowreach-autorelease-\${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
+  group: shadowreach-autorelease-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -58,8 +58,8 @@ jobs:
       - name: Inspect exact tested SHA and conditionally merge
         uses: actions/github-script@v7
         env:
-          RELEASE_MODE: \${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'auto' }}
-          RELEASE_PR: \${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || '' }}
+          RELEASE_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'auto' }}
+          RELEASE_PR: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || '' }}
         with:
           script: |
             const { owner, repo } = context.repo;
