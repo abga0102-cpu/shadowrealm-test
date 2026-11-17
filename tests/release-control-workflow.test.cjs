@@ -44,6 +44,7 @@ async function exercise({mode='inspect',filename='style.css',labels=[],draft=fal
       pulls:{
         listFiles:async()=>[{filename,status:'modified'}],
         get:async()=>({data:pr}),
+        listFiles:async()=>[{filename,status:'modified'}],
         merge:async()=>{merges.push('merge');return {data:{merged:true,sha:'c'.repeat(40)}};}
       },
       git:{getRef:async()=>({data:{object:{sha:main}}})},
