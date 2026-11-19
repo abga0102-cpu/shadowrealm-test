@@ -773,11 +773,253 @@ const SCREENS = {
     ["GET /api/chat?channel=clan", "messages du clan"], ["POST /api/chat", "envoyer"],
     ["POST /api/chat/report", "signaler"]],
     "Le chat Monde et Clan fonctionne par sondage HTTP contre le backend, avec blocage, signalement et anti-spam."),
-  clan: () => scrServerOnly("Clan", [["GET /api/clans", "liste des clans"], ["POST /api/clans", "créer"],
-    ["POST /api/clans/join", "rejoindre"], ["POST /api/clans/leave", "quitter"],
-    ["POST /api/clans/war", "points de guerre"]],
-    "Les clans (création, adhésion et guerre de clans) sont stockés côté serveur dans MongoDB."),
+  clan: clanDemoScreen,
 };
+
+
+/* Clan bot beta: canonical native route. Simulation-only. */
+const clanDemoUI={tab:'explore',selected:'aube',crest:'🛡️',name:'',message:'',load:'idle'};
+function clanDemoReady(){
+ if(window.ShadowreachBotClans&&window.ShadowreachClanWarRules)return true;
+ if(clanDemoUI.load==='pending'||clanDemoUI.load==='error')return false;
+ clanDemoUI.load='pending';
+ Promise.all([['ShadowreachClanWarRules','clan-war-rules.js?v=2026.11.08.clan'],
+  ['ShadowreachBotClans','clan-bot-sandbox.js?v=2026.11.08.clan']].map(([key,src])=>{
+  if(window[key])return Promise.resolve();
+  return new Promise((resolve,reject)=>{
+   const script=document.createElement('script');script.src=src;script.async=true;
+   script.onload=()=>window[key]?resolve():reject(new Error('Clan API missing'));
+   script.onerror=()=>reject(new Error('Clan download failed'));
+   document.head.appendChild(script);
+  });
+ })).then(()=>{clanDemoUI.load='ready';if(route==='clan')render();})
+   .catch(()=>{clanDemoUI.load='error';if(route==='clan')render();});
+ return false;
+}
+function clanDemoState(){
+ const C=window.ShadowreachBotClans,W=window.ShadowreachClanWarRules;
+ const membership=C.read(localStorage),clans=C.allClans(membership,'Héros');
+ return {C,W,membership,clans,mine:clans.find(x=>x.joined)||null};
+}
+function clanDemoMembers(members){
+ return '<div class="srClanMembers">'+members.map(m=>
+  '<div class="srClanMember"><span class="srClanAvatar">'+(m.kind==='bot'?'♟':'★')+'</span>'+
+  '<div><b>'+esc(m.name)+'</b> <em>'+(m.kind==='bot'?'BOT':'VOUS')+'</em><small>'+
+  esc(m.role)+(m.kind==='bot'?' · Niv. '+m.level+' · '+fmt(m.power)+' puissance':'')+
+  '</small></div></div>').join('')+'</div>';
+}
+function clanDemoExplore(d){
+ const {C,clans,mine}=d,c=clans.find(v=>v.id===clanDemoUI.selected)||clans[0];
+ clanDemoUI.selected=c.id;
+ const choices=clans.map(x=>
+  '<button type="button" class="srClanListItem '+(c.id===x.id?'on':'')+
+  '" data-clan-cmd="select" data-arg="'+x.id+'"><span class="srClanSymbol">'+x.crest+'</span>'+
+  '<span><b>'+esc(x.name)+'</b><small>'+x.count+'/'+x.capacity+
+  ' membres bots'+(x.joined?' · TON CLAN':'')+'</small></span></button>').join('');
+ const action=c.joined?
+  '<button class="btn dark srClanFull" data-clan-cmd="leave">Quitter le clan</button>':
+  '<button class="btn green srClanFull" data-clan-cmd="join"'+(mine?' disabled':'')+'>'+
+  (mine?'Déjà dans un clan':'Rejoindre ce clan')+'</button>';
+ const crests=C.CRESTS.map(symbol=>'<button type="button" class="srClanCrest '+
+  (clanDemoUI.crest===symbol?'on':'')+'" data-clan-cmd="crest" data-arg="'+symbol+'">'+symbol+'</button>').join('');
+ return '<div class="srClanColumns"><section class="card"><div class="srClanSect">CLANS DISPONIBLES</div>'+
+  choices+'</section><section class="card"><div class="srClanProfile"><span class="srClanSymbol large">'+
+  c.crest+'</span><div><h3>'+esc(c.name)+'</h3><small>['+esc(c.tag)+'] · simulations</small></div></div>'+
+  '<div class="srClanStats"><div><b>'+c.count+'/'+c.capacity+'</b><small>Membres</small></div>'+
+  '<div><b>'+fmt(c.power)+'</b><small>Puissance</small></div></div>'+action+
+  '<div class="srClanSect mt12">EFFECTIF</div>'+clanDemoMembers(c.members)+'</section></div>'+
+  (mine?'':'<section class="card mt10"><div class="srClanSect">CRÉER TON CLAN</div>'+
+  '<p class="dim small">Deviens chef avec 8 bots fictifs. Aucun coût réel.</p>'+
+  '<div class="srClanCrests">'+crests+'</div><form id="srClanCreate" class="srClanCreateForm">'+
+  '<input id="srClanName" aria-label="Nom du clan" required minlength="3" maxlength="24" placeholder="Nom du clan" value="'+esc(clanDemoUI.name)+'">'+
+  '<button class="btn gold" type="submit">Créer le clan</button></form></section>');
+}
+function clanDemoOrders(d){
+ if(!d.mine)return '<section class="card"><b>Rejoins un clan depuis Explorer.</b></section>';
+ const {C,W,membership,mine}=d,p=C.readOrders(localStorage,membership.memberOf),s=C.commandStats(p,membership.memberOf);
+ const modes=Object.entries(C.ORDERS).map(([id,label])=>'<button type="button" class="srClanMode '+
+  (s.global===id?'on':'')+'" data-clan-cmd="global" data-arg="'+id+'">'+esc(label)+'</button>').join('');
+ const days=W.WAR_DAYS.map(day=>'<button type="button" class="srClanMode '+
+  (s.day===day.day?'on':'')+'" data-clan-cmd="day" data-arg="'+day.day+'">J'+day.day+'</button>').join('');
+ const roster=s.bots.map(b=>{
+  const opts='<option value="inherit">Comme le clan</option>'+
+   Object.entries(C.ORDERS).map(([id,label])=>'<option value="'+id+'"'+(b.override===id?' selected':'')+
+   '>'+esc(label)+'</option>').join('');
+  return '<div class="srClanCommand"><div><b>'+esc(b.name)+'</b><small>'+
+   esc(C.ORDERS[b.order])+' · '+b.total+' actions · J6 '+b.attacks+'/5</small></div>'+
+   '<select data-clan-bot="'+esc(b.id)+'" aria-label="Ordre de '+esc(b.name)+'">'+opts+'</select></div>';
+ }).join('');
+ const log=s.recent.map(e=>{
+  const bot=mine.members.find(m=>m.id===e.id);
+  return '<div class="srClanLog">J'+e.day+' · '+esc(bot?bot.name:'Bot')+' · '+esc(C.ACTIVITY_LABEL[e.action])+
+   ' · +'+e.points+' points fictifs</div>';
+ }).join('')||'<p class="dim tiny">Aucune activité pour le moment.</p>';
+ return '<section class="card"><div class="srClanSect">ORDRES COLLECTIFS</div>'+
+  '<p class="dim small">Chaque bot suit ta consigne. Si son ordre est incompatible avec le jour, il attend.</p>'+
+  '<div class="srClanModeGrid">'+modes+'</div><div class="srClanSect mt12">JOUR D’ENTRAÎNEMENT</div>'+
+  '<div class="srClanDays">'+days+'</div>'+
+  '<div class="srClanStats"><div><b>'+s.total+'</b><small>Actions</small></div>'+
+  '<div><b>'+s.bots.length+'</b><small>Bots</small></div></div>'+
+  '<button class="btn green srClanFull" data-clan-cmd="round"'+(s.day===7?' disabled':'')+'>▶ Exécuter 1 ronde</button>'+
+  '<p class="dim tiny mt6">J1–J5 : 8 actions/bot/jour · J6 : 5 tickets · J7 : bilan.</p>'+
+  '<div class="srClanSect mt12">ORDRES INDIVIDUELS</div>'+roster+
+  '<div class="srClanSect mt12">JOURNAL</div>'+log+
+  '<button class="btn dark mt10" data-clan-cmd="resetTraining">Réinitialiser les rondes</button></section>';
+}
+function clanDemoWar(d){
+ if(!d.mine)return '<section class="card"><b>Rejoins un clan depuis Explorer pour combattre.</b></section>';
+ const {C,W,membership,mine}=d,w=C.readExhibition(localStorage,membership.memberOf);
+ const s=C.exhibitionSummary(w,membership.memberOf,W),finished=s.day===7;
+ const verdict=s.verdict||{status:'pending',homeVictoryPoints:0,awayVictoryPoints:0};
+ const days=W.WAR_DAYS.map(o=>{
+  const last=s.settled.find(v=>v.day===o.day),current=!finished&&s.day===o.day;
+  return '<div class="srClanWarDay '+(s.day===o.day?'on':'')+'"><b>J'+o.day+'</b>'+
+   '<small>'+o.victoryPoints+' PV</small><span>'+
+   (last?(last.homePoints>last.awayPoints?'✓':last.homePoints<last.awayPoints?'✕':'='):current?'●':'·')+
+   '</span>'+(last?'<small>'+last.homePoints+' / '+last.awayPoints+'</small>':
+   current?'<small>'+s.scores[o.day-1]+' / '+s.rivalScore+'</small>':'')+'</div>';
+ }).join('');
+ const options=C.rivalCandidates(membership.memberOf).map(c=>
+  '<option value="'+c.id+'"'+(c.id===s.rivalId?' selected':'')+'>'+esc(c.name)+'</option>').join('');
+ const banner=finished?(verdict.status==='home'?'🏆 Victoire !':verdict.status==='away'?'💀 Défaite':'⚖️ Match nul'):
+  'JOUR '+s.day+(s.day===6?' · ASSAUTS':' · CONTRIBUTIONS');
+ const journal=w.journal.slice(-8).reverse().map(e=>{
+  const b=mine.members.find(m=>m.id===e.id);
+  return '<div class="srClanLog">J'+e.day+' · '+esc(b?b.name:'Bot')+' · '+
+   esc(C.ACTIVITY_LABEL[e.action])+' · +'+e.points+' points fictifs</div>';
+ }).join('')||'<p class="dim small">Pas encore de mission.</p>';
+ return '<section class="card"><div class="srClanSect">GUERRE D’ENTRAÎNEMENT · BOTS</div>'+
+  '<div class="srClanVs"><div><b>'+esc(mine.name)+'</b><strong>'+verdict.homeVictoryPoints+' PV</strong></div>'+
+  '<span>VS</span><div><b>'+esc(s.rivalName)+'</b><strong>'+verdict.awayVictoryPoints+' PV</strong></div></div>'+
+  '<div class="srClanWarBanner">'+banner+'</div><div class="srClanDays mt12">'+days+'</div>'+
+  '<div class="srClanStats"><div><b>'+fmt(finished?s.scores[5]:s.scores[s.day-1])+'</b><small>Score clan</small></div>'+
+  '<div><b>'+(finished?'Terminé':fmt(s.rivalScore))+'</b><small>Score rival</small></div></div>'+
+  (s.day===6||finished?'<p class="dim tiny">🛡️ Bouclier de défense : -'+s.shield+' points ennemis.</p>':'')+
+  '<label class="srClanChoose">Adversaire <select data-clan-rival'+
+  (s.day!==1||s.scores[0]>0?' disabled':'')+'>'+options+'</select></label>'+
+  '<div class="srClanAuto"><div><b>Activité automatique</b><small>Une ronde/heure écoulée, 8 maximum au retour. Jours non terminés automatiquement.</small></div>'+
+  '<button class="srClanMode '+(w.auto?'on':'')+'" data-clan-cmd="auto"'+(finished?' disabled':'')+'>'+
+  (w.auto?'Auto ON':'Auto OFF')+'</button></div>'+
+  (finished?'<button class="btn green srClanFull" data-clan-cmd="restart">Nouvelle guerre</button>':
+   '<div class="srClanWarActions"><button class="btn green" data-clan-cmd="warRound">▶ Exécuter les ordres</button>'+
+   '<button class="btn dark" data-clan-cmd="closeDay">Clôturer J'+s.day+'</button></div>')+
+  '<p class="dim tiny mt8">Les bots suivent leurs ordres. Aucun point ou butin réel.</p>'+
+  '<div class="srClanSect mt12">DERNIÈRES MISSIONS</div>'+journal+'</section>';
+}
+function clanDemoScreen(){
+ const title=topbar('Clan');
+ if(!clanDemoReady())return title+'<div class="pad"><div class="card frame center"><b>⚔️ Clans de bots</b>'+
+  '<p class="dim small mt8">'+(clanDemoUI.load==='error'?'Téléchargement indisponible, réessaie.':'Chargement des clans…')+'</p>'+
+  (clanDemoUI.load==='error'?'<button class="btn mt8" data-clan-cmd="retry">Réessayer</button>':'')+'</div></div>';
+ const d=clanDemoState();
+ const nav=[['explore','Explorer'],['mine','Mon clan'],['orders','🎖 Ordres'],['war','⚔ Guerre']]
+  .map(([id,label])=>'<button type="button" class="'+(clanDemoUI.tab===id?'on':'')+
+   '" data-clan-cmd="tab" data-arg="'+id+'">'+label+'</button>').join('');
+ const body=clanDemoUI.tab==='mine'?(d.mine?'<section class="card"><div class="srClanSect">TON CLAN · '+
+   esc(d.mine.name)+'</div>'+clanDemoMembers(d.mine.members)+
+   '<button class="btn dark mt10" data-clan-cmd="leave">Quitter le clan</button></section>':
+   '<section class="card">Rejoins un clan dans Explorer.</section>'):
+   clanDemoUI.tab==='orders'?clanDemoOrders(d):clanDemoUI.tab==='war'?clanDemoWar(d):clanDemoExplore(d);
+ return title+'<div class="pad srClanNative"><div class="srClanHeader"><div><b>⚔️ CLANS SHADOWREACH</b>'+
+   '<p class="dim small">Dirige tes bots et défie des clans fictifs.</p></div>'+
+   '<span>SIMULATION LOCALE</span></div><nav class="srClanTabs">'+nav+'</nav>'+
+   (clanDemoUI.message?'<p class="srClanNotice" role="status">'+esc(clanDemoUI.message)+'</p>':'')+
+   body+'<p class="dim tiny center mt12">Aucune modification des sauvegardes ou des ressources réelles.</p></div>';
+}
+function clanDemoSave(result,type,message){
+ if(!result.ok){clanDemoUI.message=result.error||'Action impossible.';render();return;}
+ const {C,membership}=clanDemoState();
+ let ok=false;
+ if(type==='member'){
+  ok=C.write(localStorage,result.state);
+  if(ok&&membership.memberOf!==result.state.memberOf){
+   C.clearOrders(localStorage);C.clearExhibition(localStorage);clanDemoUI.tab='mine';
+  }
+ }else if(type==='order')ok=C.writeOrders(localStorage,membership.memberOf,result.state);
+ else if(type==='war')ok=C.writeExhibition(localStorage,membership.memberOf,result.state);
+ clanDemoUI.message=ok?message:'Stockage indisponible : aucune modification enregistrée.';
+ render();
+}
+function clanDemoCatchUp(){
+ const {C,W,membership}=clanDemoState(),id=membership.memberOf;
+ if(!id)return;
+ const old=C.readExhibition(localStorage,id);
+ const result=C.exhibitionCatchUp(old,C.readOrders(localStorage,id),id,W,Date.now());
+ if(result.ok&&(result.ticks>0||(old.auto&&old.lastAt!==result.state.lastAt))){
+  if(C.writeExhibition(localStorage,id,result.state)){
+   if(result.ticks>0)clanDemoUI.message=result.acted+' actions récupérées en '+result.ticks+' rondes fictives.';
+  }else clanDemoUI.message='Impossible de sauvegarder les actions simulées.';
+ }
+}
+(function clanDemoBind(){
+ const screen=document.getElementById('screen');if(!screen)return;
+ screen.addEventListener('click',e=>{
+  if(route!=='clan')return;
+  const node=e.target.closest('[data-clan-cmd]');if(!node)return;
+  const action=node.dataset.clanCmd,arg=node.dataset.arg;
+  if(action==='retry'){clanDemoUI.load='idle';render();return;}
+  if(!clanDemoReady())return;
+  const {C,W,membership,clans}=clanDemoState(),id=membership.memberOf;
+  const plan=()=>C.readOrders(localStorage,id),war=()=>C.readExhibition(localStorage,id);
+  if(action==='tab'){
+   if(!['explore','mine','orders','war'].includes(arg))return;
+   clanDemoUI.tab=arg;if(arg==='war')clanDemoCatchUp();render();return;
+  }
+  if(action==='select'){if(clans.some(c=>c.id===arg)){clanDemoUI.selected=arg;render();}return;}
+  if(action==='crest'){if(C.CRESTS.includes(arg)){clanDemoUI.crest=arg;render();}return;}
+  if(action==='join')clanDemoSave(C.join(membership,clanDemoUI.selected),'member','Clan rejoint.');
+  else if(action==='leave'){
+   if(confirm('Quitter ton clan fictif ?'))clanDemoSave(C.leave(membership),'member','Clan quitté.');
+  }else if(action==='global')clanDemoSave(C.setOrder(plan(),id,arg),'order','Ordre collectif enregistré.');
+  else if(action==='day')clanDemoSave(C.chooseDay(plan(),id,Number(arg)),'order','Jour choisi.');
+  else if(action==='round'){
+   const res=C.runRound(plan(),id,W);
+   clanDemoSave(res,'order',res.ok?res.acted+' bots ont agi · +'+res.points+' points fictifs.':'Impossible.');
+  }else if(action==='resetTraining'){
+   if(confirm('Effacer les rondes fictives ?'))
+    clanDemoSave(C.resetRounds(plan(),id),'order','Rondes effacées.');
+  }else if(action==='warRound'){
+   const res=C.exhibitionRound(war(),plan(),id,W);
+   clanDemoSave(res,'war',res.ok?res.acted+' bots en mission · +'+res.points+' points fictifs.':'Impossible.');
+  }else if(action==='closeDay'){
+   if(confirm('Clôturer définitivement la journée '+war().day+' ?'))
+    clanDemoSave(C.exhibitionNextDay(war(),id,W),'war','Journée clôturée.');
+  }else if(action==='restart'){
+   if(confirm('Recommencer cette guerre fictive ?'))
+    clanDemoSave({ok:true,state:C.newExhibition(id,war().rivalId)},'war','Nouvelle guerre.');
+  }else if(action==='auto'){
+   const old=war();clanDemoSave(C.setExhibitionAuto(old,id,!old.auto,Date.now()),'war',
+    !old.auto?'Auto activé.':'Auto désactivé.');
+  }
+ });
+ screen.addEventListener('input',e=>{
+  if(route==='clan'&&e.target.id==='srClanName')clanDemoUI.name=e.target.value;
+ });
+ screen.addEventListener('change',e=>{
+  if(route!=='clan'||!window.ShadowreachBotClans)return;
+  const {C,membership}=clanDemoState(),id=membership.memberOf;
+  if(e.target.matches('[data-clan-bot]'))
+   clanDemoSave(C.setOrder(C.readOrders(localStorage,id),id,e.target.value,e.target.dataset.clanBot),
+    'order','Ordre individuel enregistré.');
+  else if(e.target.matches('[data-clan-rival]')){
+   const w=C.readExhibition(localStorage,id);
+   if(w.day!==1||w.scores[0]>0){clanDemoUI.message='Rival verrouillé après le début.';render();return;}
+   clanDemoSave(C.setRival(id,e.target.value),'war','Rival modifié.');
+  }
+ });
+ screen.addEventListener('submit',e=>{
+  if(route!=='clan'||e.target.id!=='srClanCreate')return;
+  e.preventDefault();const {C,membership}=clanDemoState();
+  const created=C.create(membership,clanDemoUI.name,clanDemoUI.crest);
+  if(created.ok)clanDemoUI.name='';
+  clanDemoSave(created,'member','Ton clan est créé avec 8 bots !');
+ });
+ document.addEventListener('visibilitychange',()=>{
+  if(route==='clan'&&clanDemoUI.tab==='war'&&document.visibilityState==='visible'&&window.ShadowreachBotClans){
+   clanDemoCatchUp();render();
+  }
+ });
+})();
 
 /* ---- level-up celebration (sheet §14) ---- */
 let seenLevel = null;

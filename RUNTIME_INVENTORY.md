@@ -191,3 +191,7 @@ The retired list remains authoritative in `ARCHITECTURE.md`. Known unloaded exam
 ## L0 conclusion
 
 Every script currently requested by `index.html` is now represented in this loader inventory as a foundational owner, active extension, compatibility/migration responsibility, feature-owner-sensitive layer, deferred core layer, or optional feature. L1 may therefore focus on **proof-based dead-load removal**. Historical save migrations are not dead code merely because most current saves have already processed them.
+
+## Native Clan route (lazy loading, experimental)
+
+`game-5.js` owns `SCREENS.clan`. Only upon navigation into Clan does it fetch `clan-war-rules.js` and `clan-bot-sandbox.js` with versioned URLs. Neither module is inserted in `index.html`, preserving normal startup. If either fails to load the route exposes a retry button. The standalone `clan-bots-preview.html` continues to work. `style.css` styles the native `.srClanNative` screen. No new timers for idle bot simulation.
