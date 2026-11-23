@@ -75,7 +75,7 @@ test('V468 Accomplishments UI shows the Minerai ladder and unchanged Premium Gol
     S.sanctuary.mergeCrafts = 0;
     ACT.accomplishments();
   });
-  await page.locator('.srAch139 [data-ach-tab="defis"]').click();
+  await page.locator('.srAch139 [data-ach-tab="fusions"]').click();
   const rows = page.locator('.srAch139 .achPassRow');
   const expected = new Map([
     ['50 Fusions',['500 Minéraux','10 000 Or']],
