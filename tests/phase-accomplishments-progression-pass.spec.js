@@ -25,7 +25,9 @@ test('Progression Pass stays inside the existing Accomplishments owners', async 
 
   expect(canonical).toContain('Pass Progression');
   expect(canonical).toContain("data-ach-tab=\"etages\"");
-  expect(canonical).toContain("data-ach-tab=\"defis\"");
+  expect(canonical).toContain("data-ach-tab=\"forge\"");
+  expect(canonical).toContain("data-ach-tab=\"fusions\"");
+  expect(canonical).toContain("data-ach-tab=\"raids\"");
   expect(canonical).toContain('PREMIUM_TEXT');
   expect(canonical).toContain('__srAccomplishmentsLauncherStateV139');
   expect(canonical).toContain('ACT.accomplishments=function()');

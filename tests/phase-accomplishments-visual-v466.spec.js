@@ -48,7 +48,7 @@ test('V466 adds premium hierarchy, progress readability and mobile-safe geometry
   await expect(root.locator('.achHeroStats466')).toContainText('À réclamer');
   await expect(root.locator('.achCatIcon466').first()).toBeVisible();
 
-  await root.locator('[data-ach-tab="defis"]').click();
+  await root.locator('[data-ach-tab="forge"]').click();
 
   const claimable = root.locator('[data-ach-id="forge15"]');
   const progress = root.locator('[data-ach-id="forge20"]');
@@ -90,7 +90,7 @@ test('V466 shows transient claim feedback while preserving the exact existing pa
     S.gold = 123;
     ACT.accomplishments();
   });
-  await page.locator('#overlay .srAch139 [data-ach-tab="defis"]').click();
+  await page.locator('#overlay .srAch139 [data-ach-tab="forge"]').click();
   await page.locator('#overlay .srAch139 [data-ach="forge15"]').click();
 
   await expect(page.locator('#overlay .achClaimFlash466')).toContainText('Récompense récupérée');
