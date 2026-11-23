@@ -46,3 +46,36 @@ test('V550 shows four separate accomplishment categories without claiming reward
   }));
   expect(after).toBe(before);
 });
+
+
+test('V551 exposes active tab to screen readers and keeps navigation usable on narrow mobile screens', async ({ page }) => {
+  await page.route('**/npm/**', route => route.abort());
+  await page.addInitScript(() => { try { localStorage.removeItem('shadowreach.save.local'); } catch (_) {} });
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto('/index.html?smoke=1');
+  await page.waitForFunction(() =>
+    window.__srAccomplishmentsCanonicalV139 === true &&
+    typeof ACT !== 'undefined' && typeof ACT.accomplishments === 'function'
+  );
+  await page.evaluate(() => ACT.accomplishments());
+  const root = page.locator('#overlay .srAch139');
+  const tabs = root.locator('[data-ach-tab]');
+  await expect(tabs).toHaveCount(4);
+  for (const width of [320, 353, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    for (const tab of ['forge', 'fusions', 'raids', 'etages']) {
+      const selected = root.locator('[data-ach-tab="' + tab + '"]');
+      await selected.focus();
+      await page.keyboard.press('Enter');
+      await expect(selected).toHaveAttribute('aria-pressed', 'true');
+      await expect(root.locator('[data-ach-tab][aria-pressed="true"]')).toHaveCount(1);
+      await expect(root.locator('[data-ach-tab][aria-pressed="false"]')).toHaveCount(3);
+      const sizes = await root.evaluate(el => ({
+        rootOverflow: el.scrollWidth - el.clientWidth,
+        tabsOverflow: el.querySelector('.achTabs').scrollWidth - el.querySelector('.achTabs').clientWidth
+      }));
+      expect(sizes.rootOverflow).toBeLessThanOrEqual(1);
+      expect(sizes.tabsOverflow).toBeLessThanOrEqual(1);
+    }
+  }
+});
