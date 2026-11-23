@@ -15,7 +15,7 @@ test('V519 keeps accomplishment status ribbons after repeated Pass tab switches'
     ACT.accomplishments();
   });
   for (let i = 0; i < 3; i++) {
-    await page.locator('#overlay [data-ach-tab="defis"]').click();
+    await page.locator('#overlay [data-ach-tab="forge"]').click();
     const row = page.locator('#overlay [data-ach-id="forge15"]');
     await expect(row).toHaveAttribute('data-ach-state', 'claimable');
     await expect(row.locator('.srAchStatus481')).toHaveText('À réclamer');
