@@ -160,6 +160,17 @@ function installStyles(){
 .srAch139 .achRewardText{color:#f0d6b1;font-size:10px}.srAch139 .achReward.premium .achRewardText{color:#f0c97e}
 .srAch139 .achReward .btn[data-primary="true"]{background:linear-gradient(#ffe39a,#b9842f);border:1px solid #ffe5a5;color:#2c1b0b;font-weight:900;box-shadow:0 2px 8px #0008}
 @media(max-width:560px){.srAch139{padding:6px}.srAch139 .achPassRow{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:5px}.srAch139 .achObjective{grid-column:1/-1}.srAch139 .achTab{min-height:47px;padding:5px 2px;font-size:17px}.srAch139 .achTab span{font-size:9px}.srAch139 .achRewardText{font-size:9px}}
+/* V551: let the Progression hero reflow on narrow iPhones without clipping its premium control. */
+@media(max-width:390px){
+.srAch139 .achPassTop{flex-wrap:wrap;min-width:0}
+.srAch139 .achPassTop>div{min-width:0;flex:1 1 100%}
+.srAch139 .achPassPrice{flex:0 1 auto;max-width:100%;white-space:normal;overflow-wrap:break-word}
+.srAch139 .achHeroStats466{grid-template-columns:repeat(2,minmax(0,1fr))}
+.srAch139 .achHeroStat466{min-width:0;flex-wrap:wrap}
+.srAch139 .achPassRow,.srAch139 .achLaneHead{min-width:0}
+.srAch139 .achTabs{min-width:0}
+.srAch139 .achTab{min-width:0}
+}
 @media(prefers-reduced-motion:reduce){.srAch139 .achPassRow,.srAch139 .achClaimFlash466,.srAch139 .achClaimFlash466:before{animation:none!important;transition:none!important}}
 `;
  document.head.appendChild(st);
@@ -198,7 +209,7 @@ function claimFlash(){
  if(!lastClaimFx||Date.now()-lastClaimFx.at>2600)return '';
  return '<div class="achClaimFlash466" role="status">✦ '+(lastClaimFx.premium?'Bonus Premium récupéré':'Récompense récupérée')+' ✦</div>';
 }
-function html(){return '<div class="srAch139" data-ach-canonical-v139="1" data-ach-visual-v466="1" data-ach-visual-v481="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+claimFlash()+'<div class="achTabs"><button class="achTab '+(activeTab==='forge'?'on':'')+'" data-ach-tab="forge">⚒<span>Forge</span></button><button class="achTab '+(activeTab==='fusions'?'on':'')+'" data-ach-tab="fusions">✦<span>Fusions</span></button><button class="achTab '+(activeTab==='raids'?'on':'')+'" data-ach-tab="raids">⚔<span>Raids</span></button><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages">♜<span>Étages</span></button></div>'+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Forge :</b> récompenses en Or uniquement selon les 9 paliers dédiés. <b>Premium :</b> ajoute un bonus sur les autres jalons éligibles sans remplacer la voie gratuite.</div><div class="mt10"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
+function html(){return '<div class="srAch139" data-ach-canonical-v139="1" data-ach-visual-v466="1" data-ach-visual-v481="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+claimFlash()+'<div class="achTabs"><button class="achTab '+(activeTab==='forge'?'on':'')+'" data-ach-tab="forge" aria-pressed="'+(activeTab==='forge'?'true':'false')+'">⚒<span>Forge</span></button><button class="achTab '+(activeTab==='fusions'?'on':'')+'" data-ach-tab="fusions" aria-pressed="'+(activeTab==='fusions'?'true':'false')+'">✦<span>Fusions</span></button><button class="achTab '+(activeTab==='raids'?'on':'')+'" data-ach-tab="raids" aria-pressed="'+(activeTab==='raids'?'true':'false')+'">⚔<span>Raids</span></button><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages" aria-pressed="'+(activeTab==='etages'?'true':'false')+'">♜<span>Étages</span></button></div>'+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Forge :</b> récompenses en Or uniquement selon les 9 paliers dédiés. <b>Premium :</b> ajoute un bonus sur les autres jalons éligibles sans remplacer la voie gratuite.</div><div class="mt10"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
 function reopen(){try{if(typeof openModal==='function')openModal(html(),'Pass Progression');}catch(_){} }
 function installInteractions(){
  if(window.__srAccomplishmentsPassInteractionV139)return;window.__srAccomplishmentsPassInteractionV139=true;
