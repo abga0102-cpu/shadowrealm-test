@@ -52,6 +52,9 @@ For the active code-leaning program and cross-developer/AI coordination rules, a
 | Floating Social launcher policy | `social-v1.js` | Owns launcher creation/remount and suppression policy when Social is enabled. |
 | Social message-store policy | `social-v1.js` | Canonical owner of the `shadowreach.social.v1.messages` key, 160-message retention, malformed/non-array read fallback, and capped serialization. `social-p2p-v1.js`, `social-bot-testers-v5.js`, and `social-bot-ui-v1.js` consume this contract while retaining their own write-error and same-tab notification behavior where applicable. |
 
+| Bot clan simulated domain, lazy loaded by native Clan route | `clan-bot-sandbox.js` | Fictional rosters, command-driven training, deterministic exhibition wars and capped opt-in catch-up. Owns only three local demo keys. Used by `game-5.js` Clan screen and stand-alone `clan-bots-preview.html`, not by the regular Home loader. No real game save, economy, accounts or rewards. |
+| Clan War rules foundation (not runtime-loaded; no server or payouts) | `clan-war-rules.js` | Isolated deterministic day schedule, provisional action eligibility, pre-war join check, ticket arithmetic and settled-day victory tally. Never owns real player scores, combat validation, clan rosters, rewards, saved data or live matchmaking. See `docs/CLAN_WAR_ARCHITECTURE.md`. |
+
 ## Architecture-first file placement
 
 The canonical owner map is also the default placement map for new work. **Existing owners are extended before new production modules are introduced.**
@@ -117,3 +120,5 @@ The following files may remain in source history, but must not regain active own
 ## Guardrail philosophy
 
 Ownership tests are architectural regression tests, not a replacement for runtime behavior tests. They should fail when a retired owner is reintroduced, a canonical owner disappears from the loader, or a known duplicate wrapper/poller/observer returns. They should avoid brittle assumptions about unrelated gameplay values so concurrent balance/progression work can continue independently.
+
+| Native Clan UI and actions | `game-5.js`, `style.css` | Canonical `SCREENS.clan` renderer and delegated input handler; on-demand loading of pure rules and bot modules; mobile-scoped `srClanNative` styles. Remains a local simulation with no server or balance changes. |
