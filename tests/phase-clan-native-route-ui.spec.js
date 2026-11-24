@@ -1,6 +1,6 @@
 const {test,expect}=require('@playwright/test');
 async function enterClan(page){
-  await page.goto('/index.html');
+  await page.goto('/index.html?clanDemo=1');
   await expect(page.locator('#screen')).toBeVisible();
   await page.evaluate(()=>{window.eval('route = "clan"; render();');});
   await expect(page.locator('.srClanNative')).toBeVisible({timeout:20000});
@@ -35,4 +35,13 @@ test('native Clan founded by player has 8 bots, persistence and war board',async
   await expect(page.locator('.srClanNative')).toBeVisible({timeout:20000});
   await page.locator('[data-clan-cmd="tab"][data-arg="war"]').click();
   await expect(page.locator('.srClanNative')).toContainText('Les Astrals');
+});
+test('default Clan route retains server-only UI and does not load clan bot demo',async({page})=>{
+  await page.goto('/index.html');
+  await expect(page.locator('#screen')).toBeVisible();
+  await page.evaluate(()=>{window.eval('route = "clan"; render();');});
+  await expect(page.locator('#screen')).toContainText('FONCTION SERVEUR');
+  await expect(page.locator('#screen')).toContainText('GET /api/clans');
+  await expect(page.locator('.srClanNative')).toHaveCount(0);
+  expect(await page.evaluate(()=>!!window.ShadowreachBotClans)).toBe(false);
 });
