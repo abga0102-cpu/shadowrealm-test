@@ -773,7 +773,12 @@ const SCREENS = {
     ["GET /api/chat?channel=clan", "messages du clan"], ["POST /api/chat", "envoyer"],
     ["POST /api/chat/report", "signaler"]],
     "Le chat Monde et Clan fonctionne par sondage HTTP contre le backend, avec blocage, signalement et anti-spam."),
-  clan: clanDemoScreen,
+  clan: () => new URLSearchParams(window.location.search).get('clanDemo') === '1'
+    ? clanDemoScreen()
+    : scrServerOnly("Clan", [["GET /api/clans", "liste des clans"], ["POST /api/clans", "créer"],
+    ["POST /api/clans/join", "rejoindre"], ["POST /api/clans/leave", "quitter"],
+    ["POST /api/clans/war", "points de guerre"]],
+    "Les clans (création, adhésion et guerre de clans) sont stockés côté serveur dans MongoDB."),
 };
 
 
