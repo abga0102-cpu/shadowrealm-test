@@ -1041,3 +1041,19 @@ button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; fil
  .srClanWarActions{grid-template-columns:1fr}
  .srClanHeader span{font-size:8px}
 }
+
+
+/* Home progression: readable labels and wrapping on narrow screens. */
+.goalHead{font-size:11px;flex-wrap:wrap}
+.goalTitle{font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.goalWhy,.goalMeta{font-size:12px;line-height:1.4}
+.goalMeta{flex-wrap:wrap}
+.goalBar{height:9px}
+.goalChip{font-size:11px;line-height:1.35;padding:7px 8px;overflow-wrap:anywhere}
+.goalChip b{font-size:12px;white-space:normal;overflow:visible;text-overflow:clip}
+.goalUnlock b,.goalUnlock span{font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+.recommendedKicker{font-size:11px;flex-wrap:wrap}
+.recommendedTitle{font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.recommendedActionCard{padding-right:54px}
+.recommendedClose{width:44px;height:44px;min-height:44px!important}
+@media(max-width:340px){.goalSub{grid-template-columns:1fr}}
