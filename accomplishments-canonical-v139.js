@@ -119,7 +119,7 @@ window.__srAccomplishmentsLauncherStateV139=launcherState;
 function installStyles(){
  if(document.getElementById('srAchPassV139Style'))return;
  var st=document.createElement('style');st.id='srAchPassV139Style';st.textContent=`
-.srAch139 .achRewardFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0}.srAch139 .achRewardFilters button{min-width:0;min-height:44px;padding:5px 3px;font-size:11px;white-space:normal}.srAch139 .achFilterEmpty{padding:12px;text-align:center;color:#c1cee2;font-size:12px}
+.srAch139 .achRewardFilters{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;width:100%;max-width:100%;min-width:0;box-sizing:border-box}.srAch139 .achRewardFilters button{flex:1 1 75px;width:0;min-width:0!important;max-width:100%;box-sizing:border-box;min-height:44px;padding:5px 3px;font-size:11px;white-space:normal;overflow-wrap:anywhere}.srAch139 .achFilterEmpty{padding:12px;text-align:center;color:#c1cee2;font-size:12px}
 
 .srAch139{--achGold:#d7ae58;--achGold2:#f0d58e;--achBlue:#5d9fe8;--achPanel:#111b2b;--achPanel2:#172338;color:#e8eef7}
 .srAch139 .achPassHero{border:1px solid rgba(215,174,88,.42);border-radius:16px;padding:14px;background:radial-gradient(circle at 85% 0,rgba(215,174,88,.13),transparent 34%),linear-gradient(180deg,#17243a,#101a2a);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.28)}
