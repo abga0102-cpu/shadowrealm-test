@@ -935,12 +935,14 @@ button:disabled, [aria-disabled="true"] { opacity: .48; cursor: not-allowed; fil
 .worldMenu{position:absolute;left:8px;bottom:8px;pointer-events:auto;z-index:14}
 .worldMenu>summary{position:relative;left:auto;bottom:auto;list-style:none;width:50px;height:43px}
 .worldMenu>summary::-webkit-details-marker{display:none}
-.worldMenuPanel{position:absolute;left:0;bottom:49px;width:214px;padding:7px;border-radius:12px;border:1px solid #8a6522;
+.worldMenuPanel{position:absolute;left:0;bottom:49px;width:min(280px,calc(100vw - 24px));max-height:min(42vh,280px);overflow-y:auto;overscroll-behavior:contain;padding:7px;border-radius:12px;border:1px solid #8a6522;
   background:linear-gradient(180deg,#101827f5,#070b13f7);box-shadow:0 10px 24px #000d,inset 0 1px 0 #ffffff1c;
   display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.worldMenuPanel .navBtn{margin:0;min-width:0}
-.worldMenuPanel .navInner{height:44px}
-.worldMenuPanel .navLbl{font-size:8px;line-height:1.05}
+.worldMenuPanel .navBtn{margin:0;min-width:0;min-height:62px;padding:4px 2px;border:1px solid #344867;border-radius:9px;background:#17243a;justify-content:center;touch-action:manipulation}
+.worldMenuPanel .navInner{height:38px;width:38px;max-width:100%;flex-shrink:0}
+.worldMenuPanel .navLbl{font-size:11px;line-height:1.2;color:var(--text);text-align:center;overflow-wrap:anywhere}
+.worldMenuPanel .navBtn:active{background:#293e5b;border-color:var(--gold)}
+.worldMenuPanel .navBtn:focus-visible{outline:2px solid var(--blueLit);outline-offset:-2px}
 .homeCompactEnd{height:3px}
 .homeNavPrimary,.homeMore{display:none!important}
 @media(max-height:700px){
