@@ -181,3 +181,36 @@ test('Accomplishments legacy owners keep only Development scope and title intera
 
   await expect(page.locator('#srBootDiagnostic')).toHaveCount(0);
 });
+
+test('Progression Pass filters preserve the open modal and the complete objective list', async ({ page }, testInfo) => {
+  await openCleanGame(page);
+  // Isolated browser fixture, never a real player save.
+  await page.evaluate(() => {
+    S.recordFloor = 30;
+    S.bossClears = Object.assign({}, S.bossClears, {5:true,10:true,15:true,20:true,25:true,30:true});
+    ACT.accomplishments();
+  });
+  const root = page.locator('#overlay .srAch139');
+  await expect(root).toHaveCount(1);
+  const snapshot = () => root.evaluate(el => {
+    const rows = Array.from(el.querySelectorAll('[data-ach-id][data-ach-state]'));
+    return { total: rows.length, visible: rows.filter(r => getComputedStyle(r).display !== 'none').map(r => r.getAttribute('data-ach-state')), mode: el.getAttribute('data-ach-filter-mode') };
+  });
+  const all = await snapshot();
+  expect(all.total).toBeGreaterThan(1);
+  expect(all.visible.length).toBe(all.total);
+  await page.evaluate(() => { window.__srFilterTestOverlay = document.getElementById('overlay'); });
+  for (const mode of ['claimable', 'progress', 'all']) {
+    const button = root.locator('[data-ach-filter="' + mode + '"]');
+    await activateScrollable(page, button, testInfo);
+    await expect(button).toHaveAttribute('aria-pressed', 'true');
+    const now = await snapshot();
+    expect(now.mode).toBe(mode);
+    expect(now.total).toBe(all.total);
+    expect(now.visible.length).toBe(mode === 'all' ? all.total : all.visible.filter(state => state === mode).length);
+    if (mode !== 'all') expect(now.visible.every(state => state === mode)).toBe(true);
+    expect(await page.evaluate(() => document.getElementById('overlay') === window.__srFilterTestOverlay)).toBe(true);
+  }
+  await activateScrollable(page, root.locator('[data-act="closeModal"]').last(), testInfo);
+  await expect(page.locator('#overlay')).toHaveCount(0);
+});

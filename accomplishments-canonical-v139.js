@@ -14,6 +14,7 @@
 if(window.__srAccomplishmentsCanonicalV139)return;
 window.__srAccomplishmentsCanonicalV139=true;window.__srFusionRewardsBuild='511:5000/10000';
 var activeTab='etages';
+var activeRewardFilter='all';
 var lastClaimFx=null;
 function n(v){return Math.max(0,Number(v)||0);}
 function claimed(id){return !!(S.accomplishments&&S.accomplishments.claimed&&S.accomplishments.claimed[id]);}
@@ -118,6 +119,8 @@ window.__srAccomplishmentsLauncherStateV139=launcherState;
 function installStyles(){
  if(document.getElementById('srAchPassV139Style'))return;
  var st=document.createElement('style');st.id='srAchPassV139Style';st.textContent=`
+.srAch139 .achRewardFilters{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;width:100%;max-width:100%;min-width:0;box-sizing:border-box}.srAch139 .achRewardFilters button{flex:1 1 75px;width:0;min-width:0!important;max-width:100%;box-sizing:border-box;min-height:44px;padding:5px 3px;font-size:11px;white-space:normal;overflow-wrap:anywhere}.srAch139 .achFilterEmpty{padding:12px;text-align:center;color:#c1cee2;font-size:12px}.srAch139 .achFilterEmpty[hidden]{display:none!important}#overlay .srAch139[data-ach-filter-mode="claimable"] .achPassRow[data-ach-id]:not([data-ach-state="claimable"]),#overlay .srAch139[data-ach-filter-mode="progress"] .achPassRow[data-ach-id]:not([data-ach-state="progress"]),#overlay.srPassOverlay331 .srAch139[data-ach-filter-mode="claimable"] .achPassRow[data-ach-id]:not([data-ach-state="claimable"]),#overlay.srPassOverlay331 .srAch139[data-ach-filter-mode="progress"] .achPassRow[data-ach-id]:not([data-ach-state="progress"]){display:none!important}
+
 .srAch139{--achGold:#d7ae58;--achGold2:#f0d58e;--achBlue:#5d9fe8;--achPanel:#111b2b;--achPanel2:#172338;color:#e8eef7}
 .srAch139 .achPassHero{border:1px solid rgba(215,174,88,.42);border-radius:16px;padding:14px;background:radial-gradient(circle at 85% 0,rgba(215,174,88,.13),transparent 34%),linear-gradient(180deg,#17243a,#101a2a);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.28)}
 .srAch139 .achPassKicker{font-size:9px;letter-spacing:1.6px;color:#cdb979;font-weight:900}.srAch139 .achPassTitle{font-size:21px;line-height:1.08;margin-top:3px;font-weight:900}.srAch139 .achPassSub{margin-top:5px;font-size:11px;line-height:1.35;color:#93a2b7}
@@ -178,6 +181,8 @@ function installStyles(){
 
 function freeAction(x,done){if(claimed(x[0]))return '<span class="achState done">Récupéré</span>';if(!done)return '<span class="achState">En cours</span>';if(x[4]==='choice')return '<div style="display:grid;gap:4px"><button class="btn sm" data-ach="'+x[0]+'" data-ach-choice="eclat">+500 Étincelles</button><button class="btn sm" data-ach="'+x[0]+'" data-ach-choice="essence">+500 Essences</button></div>';return '<button class="btn sm" data-ach="'+x[0]+'" data-primary="true">Récupérer</button>';}
 function premiumAction(cat,x,done){if(cat==='Forge')return '<span class="achState locked">Or uniquement</span>';if(!premiumOwned())return '<span class="achState locked">Premium</span>';if(premiumClaimed(x[0]))return '<span class="achState done">Récupéré</span>';if(!done)return '<span class="achState">En cours</span>';return '<button class="btn sm" data-ach-premium="'+x[0]+'" data-primary="true">Récupérer</button>';}
+function rewardState(cat,x){var done=itemDone(cat,x);return claimableFor(cat,x,done)?'claimable':fullyClaimedFor(cat,x,done)?'claimed':done?'done':'progress';}
+function filterMatch(cat,x){return activeRewardFilter==='all'||rewardState(cat,x)===activeRewardFilter;}
 function row(cat,x){
  var p=progressInfo(cat,x),done=p.done,claimable=claimableFor(cat,x,done),allClaimed=fullyClaimedFor(cat,x,done);
  var premiumText=cat==='Forge'?'Aucun bonus Premium':(PREMIUM_TEXT[x[0]]||'Bonus Premium');
@@ -209,11 +214,20 @@ function claimFlash(){
  if(!lastClaimFx||Date.now()-lastClaimFx.at>2600)return '';
  return '<div class="achClaimFlash466" role="status">✦ '+(lastClaimFx.premium?'Bonus Premium récupéré':'Récompense récupérée')+' ✦</div>';
 }
-function html(){return '<div class="srAch139" data-ach-canonical-v139="1" data-ach-visual-v466="1" data-ach-visual-v481="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+claimFlash()+'<div class="achTabs"><button class="achTab '+(activeTab==='forge'?'on':'')+'" data-ach-tab="forge" aria-pressed="'+(activeTab==='forge'?'true':'false')+'">⚒<span>Forge</span></button><button class="achTab '+(activeTab==='fusions'?'on':'')+'" data-ach-tab="fusions" aria-pressed="'+(activeTab==='fusions'?'true':'false')+'">✦<span>Fusions</span></button><button class="achTab '+(activeTab==='raids'?'on':'')+'" data-ach-tab="raids" aria-pressed="'+(activeTab==='raids'?'true':'false')+'">⚔<span>Raids</span></button><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages" aria-pressed="'+(activeTab==='etages'?'true':'false')+'">♜<span>Étages</span></button></div>'+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Forge :</b> récompenses en Or uniquement selon les 9 paliers dédiés. <b>Premium :</b> ajoute un bonus sur les autres jalons éligibles sans remplacer la voie gratuite.</div><div class="mt10"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
+function rewardFilterBar(){var cats=activeTab==='etages'?['Etages']:['Forge','Fusions','Raids'].filter(function(c){return activeTab==='defis'||c.toLowerCase()===activeTab;});var count=0;cats.forEach(function(c){ITEMS[c].forEach(function(x){if(filterMatch(c,x))count++;});});return '<div class="achRewardFilters" role="group" aria-label="Filtrer les objectifs">'+[['all','Tous'],['claimable','À récupérer'],['progress','En cours']].map(function(pair){return '<button type="button" class="btn sm '+(activeRewardFilter===pair[0]?'':'ghost')+'" data-ach-filter="'+pair[0]+'" aria-pressed="'+(activeRewardFilter===pair[0])+'">'+pair[1]+'</button>';}).join('')+'</div>'+'<p class="achFilterEmpty" role="status"'+(count?' hidden':'')+'>Aucun objectif correspondant dans cette catégorie.</p>';}
+function html(){return '<div class="srAch139" data-ach-filter-mode="'+activeRewardFilter+'" data-ach-canonical-v139="1" data-ach-visual-v466="1" data-ach-visual-v481="1" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:hidden">'+hero()+claimFlash()+'<div class="achTabs"><button class="achTab '+(activeTab==='forge'?'on':'')+'" data-ach-tab="forge" aria-pressed="'+(activeTab==='forge'?'true':'false')+'">⚒<span>Forge</span></button><button class="achTab '+(activeTab==='fusions'?'on':'')+'" data-ach-tab="fusions" aria-pressed="'+(activeTab==='fusions'?'true':'false')+'">✦<span>Fusions</span></button><button class="achTab '+(activeTab==='raids'?'on':'')+'" data-ach-tab="raids" aria-pressed="'+(activeTab==='raids'?'true':'false')+'">⚔<span>Raids</span></button><button class="achTab '+(activeTab==='etages'?'on':'')+'" data-ach-tab="etages" aria-pressed="'+(activeTab==='etages'?'true':'false')+'">♜<span>Étages</span></button></div>'+rewardFilterBar()+(activeTab==='etages'?floorsView():challengesView())+'<div class="achPassNote"><b>Forge :</b> récompenses en Or uniquement selon les 9 paliers dédiés. <b>Premium :</b> ajoute un bonus sur les autres jalons éligibles sans remplacer la voie gratuite.</div><div class="mt10"><button class="btn ghost" data-act="closeModal" style="width:100%">Fermer</button></div></div>';}
 function reopen(){try{if(typeof openModal==='function')openModal(html(),'Pass Progression');}catch(_){} }
+function applyRewardFilter(root){
+ if(!root)return;
+ root.setAttribute('data-ach-filter-mode',activeRewardFilter);
+ root.querySelectorAll('[data-ach-filter]').forEach(function(b){var selected=b.getAttribute('data-ach-filter')===activeRewardFilter;b.setAttribute('aria-pressed',String(selected));b.classList.toggle('ghost',!selected);});
+ var count=0;root.querySelectorAll('[data-ach-id][data-ach-state]').forEach(function(row){if(activeRewardFilter==='all'||row.getAttribute('data-ach-state')===activeRewardFilter)count++;});
+ var empty=root.querySelector('.achFilterEmpty');if(empty)empty.hidden=count!==0;
+}
 function installInteractions(){
  if(window.__srAccomplishmentsPassInteractionV139)return;window.__srAccomplishmentsPassInteractionV139=true;
  document.addEventListener('click',function(e){
+  var filter=e.target&&e.target.closest?e.target.closest('.srAch139 [data-ach-filter]'):null;if(filter){e.preventDefault();e.stopPropagation();var mode=filter.getAttribute('data-ach-filter');if(['all','claimable','progress'].indexOf(mode)>=0){activeRewardFilter=mode;applyRewardFilter(filter.closest('.srAch139'));}return;}
   var t=e.target&&e.target.closest?e.target.closest('[data-ach-tab]'):null;if(t){e.preventDefault();e.stopPropagation();var next=t.getAttribute('data-ach-tab');activeTab=['forge','fusions','raids','etages','defis'].indexOf(next)>=0?next:'etages';reopen();return;}
   var info=e.target&&e.target.closest?e.target.closest('[data-ach-premium-info]'):null;if(info){e.preventDefault();e.stopPropagation();try{if(typeof toast==='function')toast(premiumOwned()?'Pass Premium actif':'Pass Premium · 9,99 €',premiumOwned());}catch(_){}return;}
  },true);
