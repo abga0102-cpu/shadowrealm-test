@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'accomplishments-canonical-v139.js'
+      - 'game-4.js'
+      - 'game-5.js'
       - 'tests/phase3-compatibility.spec.js'
       - 'tests/phase-ui-stability-observer-removal-proof.spec.js'
       - '.github/workflows/pass-ui-focused.yml'
@@ -23,4 +25,4 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
       - name: Verify filters and existing modal navigation on both engines
-        run: npm run test:e2e -- phase3-compatibility.spec.js phase-ui-stability-observer-removal-proof.spec.js --grep "Progression Pass filters preserve|V83 modal lifecycle remains complete" --workers=1
+        run: npm run test:e2e -- phase3-compatibility.spec.js phase-ui-stability-observer-removal-proof.spec.js --grep "Progression Pass filters preserve|V83 modal lifecycle remains complete|Equipment inventory sort and counts preserve" --workers=1
