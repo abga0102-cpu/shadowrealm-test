@@ -1,0 +1,16 @@
+diff --git a/game-1.js b/game-1.js
+--- a/game-1.js
++++ b/game-1.js
+@@ -1,5 +1,11 @@
+ function slotIcon(slot, size, item) {
+-  const a = (slot === "arme" && item && item.weaponType && ASSETS["weapon_" + item.weaponType])
++  // Armurerie premium : correspondance visuelle uniquement, aucune donnée joueur modifiée.
++  const premiumWeapons = ["epee", "hache", "masse", "dague", "arc", "arbalete", "baton"];
++  const premiumRarities = ["COMMUN", "PEU_COMMUN", "RARE", "EPIQUE", "HEROIQUE", "MYTHIQUE", "ARTEFACT", "LEGENDAIRE", "INFERNAL", "IMMORTEL", "DIVIN"];
++  const premiumArt = slot === "arme" && item && premiumWeapons.includes(item.weaponType) && premiumRarities.includes(item.rarity)
++    ? "assets/armurerie-premium/" + item.weaponType + "-" + item.rarity.toLowerCase().replaceAll("_", "-") + ".webp"
++    : null;
++  const a = premiumArt || (slot === "arme" && item && item.weaponType && ASSETS["weapon_" + item.weaponType])
+     || ASSETS["icon_" + slot];
+   return a ? '<img src="' + a + '" style="width:' + size + "px;height:" + size +
+     'px;object-fit:contain;vertical-align:middle;display:inline-block">' : ic(SLOT_ICON[slot] || "sword", size);
