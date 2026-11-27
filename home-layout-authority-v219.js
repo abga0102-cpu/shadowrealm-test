@@ -237,6 +237,8 @@ try{var homeObserver=new MutationObserver(function(){
   if(app&&app.classList.contains('srHomeFullArena')&&screen.querySelector('.srStarterRoadmapV461:not([data-stage-safe-v463])')){
     positionStarterRoadmapV463();
   }
+  // Reconcile compact state at the actual mount, before a potentially delayed Safari frame.
+  if(typeof window.__srSyncCampaignCompactV83==='function')window.__srSyncCampaignCompactV83();
   schedule();
 });homeObserver.observe(screen,{childList:true,subtree:false});}catch(_){}
 /* V530: refresh the egg badge without re-positioning the entire Home layout every second. */
