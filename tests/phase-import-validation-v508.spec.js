@@ -15,9 +15,15 @@ async function ready(page) {
 }
 
 async function importJson(page, json) {
-  const chooser = page.waitForEvent('filechooser');
-  await page.evaluate(() => ACT.importSave());
-  const file = await chooser;
+  // A trusted user click supplies browser activation for the native picker.
+  await page.evaluate(() => nav('parametres'));
+  const button = page.locator('[data-fold="save"] [data-act="importSave"]');
+  if (!(await button.isVisible())) await page.locator('[data-fold="save"] .foldT').click();
+  await expect(button).toBeVisible();
+  const [file] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    button.click()
+  ]);
   await file.setFiles({ name: 'shadowreach-save.json', mimeType: 'application/json', buffer: Buffer.from(json) });
 }
 
