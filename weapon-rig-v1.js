@@ -76,4 +76,16 @@ function open(src){
  d.showModal();draw();
 }
 window.SRWeaponRig={html,open,geometry,poseFor,valid,defaults:()=>copy(defaults)};
+ // Independent of the constantly rebuilt forge and its asset-ready checks.
+ if(local){
+  const art=new URL('assets/armurerie-premium/Epee_COMBAT.webp',document.baseURI).href;
+  const entry=document.createElement('button');
+  entry.id='srWeaponRigEntry';entry.type='button';entry.textContent='⚙ Atelier de placement';
+  entry.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + 52px);right:10px;z-index:9999;background:#15253b;color:#ffe4a0;border:1px solid #d6ad61;border-radius:8px;padding:8px 10px;font:600 12px system-ui;cursor:pointer;box-shadow:0 2px 8px #0008;';
+  entry.addEventListener('click',()=>open(art));document.body.appendChild(entry);
+  if(qs.get('rigEditor')==='1'){
+   const launch=()=>{if(!editor)open(art);};
+   if(document.readyState==='complete')launch();else window.addEventListener('load',launch,{once:true});
+  }
+ }
 })();
