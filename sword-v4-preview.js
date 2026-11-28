@@ -58,7 +58,7 @@ function replaceCombatArt(html){
 }
 if(originalWeapon)weaponHTML=function(weapon,color,attacking,t,size){
  const html=originalWeapon.apply(this,arguments);
- return combatReady&&useCombatArt(weapon,currentWeapon(),combatDemo)?replaceCombatArt(html):html;
+ return combatReady&&useCombatArt(weapon,currentWeapon(),combatDemo)?(window.SRWeaponRig?.html(combatArt,color,attacking,t,size)||replaceCombatArt(html)):html;
 };
 // In local reference mode only, show a cosmetic sword even on an unarmed hero.
 // This is an overlay, not an equipped item: no attack effects, damage or state change.
@@ -71,7 +71,7 @@ if(typeof drawArena==='function'&&originalWeapon){
    const hero=arenaNodes?.layer?.querySelector(':scope > .unit');
    if(!hero||String(hero.style.zIndex)!=='4'||hero.querySelector(':scope > .srWeapon'))return result;
    const size=parseFloat(hero.style.width)||64;
-   hero.insertAdjacentHTML('beforeend',replaceCombatArt(originalWeapon('epee','#e4b85e',combat.heroAttacking>0,performance.now(),size)));
+   hero.insertAdjacentHTML('beforeend',window.SRWeaponRig?.html(combatArt,'#e4b85e',combat.heroAttacking>0,performance.now(),size)||replaceCombatArt(originalWeapon('epee','#e4b85e',combat.heroAttacking>0,performance.now(),size)));
   }catch(_){}
   return result;
  };
@@ -79,6 +79,11 @@ if(typeof drawArena==='function'&&originalWeapon){
 const combatProbe=new Image();combatProbe.onload=()=>{combatReady=true;queue();};combatProbe.src=combatArt;
 function mountCombatTest(forge){
  if(!testMode||!forge||!combatReady)return;
+ if(window.SRWeaponRig&&!forge.querySelector('[data-sr-rig-editor]')){
+ const edit=document.createElement('button');edit.type='button';edit.dataset.srRigEditor='1';edit.textContent='Atelier de placement · 5 poses';
+ edit.style.cssText='display:block;width:100%;margin:7px 0;padding:9px;color:#ffe4a0;background:#253149;border:1px solid #d6ad61;border-radius:9px;font:600 12px system-ui;cursor:pointer';
+ edit.onclick=e=>{e.preventDefault();e.stopPropagation();window.SRWeaponRig.open(combatArt);};forge.append(edit);
+ }
  let b=forge.querySelector('[data-sr-combat-demo]');
  if(!b){
   b=document.createElement('button');b.type='button';b.dataset.srCombatDemo='1';
