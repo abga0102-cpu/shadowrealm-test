@@ -214,3 +214,28 @@ test('Progression Pass filters preserve the open modal and the complete objectiv
   await activateScrollable(page, root.locator('[data-act="closeModal"]').last(), testInfo);
   await expect(page.locator('#overlay')).toHaveCount(0);
 });
+
+test('Equipment inventory sort and counts preserve stored items', async ({page},testInfo) => {
+  await openCleanGame(page);
+  await page.evaluate(()=>{
+    const low=makeItem('arme','COMMUN',1), high=makeItem('arme','RARE',1), other=makeItem('casque','COMMUN',1);
+    low.id='ui-sort-low';low.power=900;
+    high.id='ui-sort-high';high.power=100;
+    other.id='ui-sort-other';other.power=50;
+    S.inventory=[low,high,other];
+    window.__srInventoryBefore=JSON.stringify(S.inventory);
+    invFilter='ALL';equipInventorySort='rarity';nav('equipement');
+  });
+  const sort=page.locator('[data-equip-sort]');
+  const ids=()=>page.locator('[data-equip-inventory-id]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-equip-inventory-id')));
+  await expect(sort).toHaveAttribute('data-equip-sort','rarity');
+  expect(await ids()).toEqual(['ui-sort-high','ui-sort-low','ui-sort-other']);
+  await expect(page.locator('[data-act="invFilter"][data-arg="arme"]')).toHaveAttribute('data-equip-count','2');
+  await activateScrollable(page,sort.locator('[data-act="equipInventorySort"][data-arg="power"]'),testInfo);
+  await expect(sort).toHaveAttribute('data-equip-sort','power');
+  expect(await ids()).toEqual(['ui-sort-low','ui-sort-high','ui-sort-other']);
+  await activateScrollable(page,page.locator('[data-act="invFilter"][data-arg="arme"]'),testInfo);
+  await expect(page.locator('[data-equip-visible-count]')).toHaveAttribute('data-equip-visible-count','2');
+  expect(await ids()).toEqual(['ui-sort-low','ui-sort-high']);
+  expect(await page.evaluate(()=>JSON.stringify(S.inventory)===window.__srInventoryBefore)).toBe(true);
+});

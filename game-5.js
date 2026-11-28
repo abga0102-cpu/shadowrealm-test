@@ -2134,6 +2134,7 @@ const ACT = {
     if (why) toast(why);
   },
   invFilter: (a) => { invFilter = a; if(recycleSelectMode) recycleSelectedIds.clear(); render(); },
+  equipInventorySort: (a) => { if(a==='rarity'||a==='power'){equipInventorySort=a;render();} },
   toggleRecycleSelect: () => { recycleSelectMode=!recycleSelectMode; recycleSelectedIds.clear(); render(); },
   toggleRecycleItem: (a) => { if(!recycleSelectMode)return; recycleSelectedIds.has(a)?recycleSelectedIds.delete(a):recycleSelectedIds.add(a); render(); },
   selectVisibleRecycle: () => { const list=invFilter==='ALL'?S.inventory:S.inventory.filter(x=>x.slot===invFilter); list.forEach(x=>recycleSelectedIds.add(x.id)); render(); },

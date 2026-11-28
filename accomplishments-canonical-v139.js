@@ -173,6 +173,13 @@ function installStyles(){
 .srAch139 .achPassRow,.srAch139 .achLaneHead{min-width:0}
 .srAch139 .achTabs{min-width:0}
 .srAch139 .achTab{min-width:0}
+/* Narrow viewport: explicit shrinkable tracks and border-box controls. */
+#overlay .srAch139 .achRewardFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+#overlay .srAch139 .achRewardFilters button{width:100%;min-width:0!important;max-width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere}
+#overlay .srAch139 .achTabs{grid-template-columns:repeat(4,minmax(0,1fr));max-width:100%}
+#overlay .srAch139 .achTab{width:100%;min-width:0!important;max-width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere}
+#overlay .srAch139 .achReward .btn,#overlay .srAch139 .achState{min-width:0!important;max-width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere}
+#overlay .srAch139 .achTitleRow466{grid-template-columns:minmax(0,1fr) minmax(0,.8fr)!important}
 }
 @media(prefers-reduced-motion:reduce){.srAch139 .achPassRow,.srAch139 .achClaimFlash466,.srAch139 .achClaimFlash466:before{animation:none!important;transition:none!important}}
 `;
